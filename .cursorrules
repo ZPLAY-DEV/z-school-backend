@@ -1,0 +1,5 @@
+{
+  "include_directories": ["src"],
+  "type_checking": true,
+  "preferred_language": "TypeScript"
+}

@@ -1,0 +1,70 @@
+services:
+  # app:
+  #   build:
+  #     context: ./
+  #   container_name: app
+  #   ports:
+  #     - "4001:4001"  # NestJS 기본 포트
+  #   environment:
+  #     - NODE_ENV=local  # 예시로 Node.js 환경 변수를 설정
+  #     - DYNAMODB_ENDPOINT=http://dynamodb:8000
+  #   depends_on:
+  #     - mysql
+  #     - redis
+  #     - dynamodb
+  #   networks:
+  #     - app-network
+
+  # nginx:
+  #   image: nginx:latest
+  #   container_name: nginx
+  #   volumes:
+  #     - /Users/chuck/.laradock/nginx/default.conf:/etc/nginx/conf.d/default.conf
+  #     - /Users/chuck/.laradock/nginx/ssl:/etc/nginx/ssl
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   depends_on:
+  #     - app
+  #   networks:
+  #     - app-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    volumes:
+      - ./mysql:/var/lib/mysql
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_DATABASE=school
+      - MYSQL_USER=mysql
+      - MYSQL_PASSWORD=secret
+      - MYSQL_ROOT_PASSWORD=secret
+      - TZ=UTC
+    networks:
+      - app-network
+
+  redis:
+    image: redis:latest
+    container_name: "redis"
+    volumes:
+      - ./redis:/data
+    ports:
+      - 6379:6379
+    networks:
+      - app-network
+
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb
+    volumes:
+      - ./dynamodb/data:/var/opt/dynamodb/data
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

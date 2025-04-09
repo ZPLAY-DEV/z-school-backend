@@ -1,0 +1,57 @@
+import { Controller, Get } from '@nestjs/common';
+import { Public } from 'src/common/decorators/public.decorator';
+import { AppService } from './app.service';
+
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Public()
+  @Get('/version')
+  version(): { version: string } {
+    const version = this.appService.getVersion();
+    return { version };
+  }
+
+  @Public()
+  @Get('/bust')
+  bust(): string {
+    return this.appService.cacheBust();
+  }
+}
+
+// redis 테스트용 컨트롤러
+// @Controller()
+// export class AppController {
+//   constructor(
+//     private readonly redisCacheService: RedisCacheService,
+//     private readonly redisMessageService: RedisMessageService,
+//   ) {
+//     this.redisMessageService.subscribe('test-channel', (message) => {
+//       console.log('Received message:', message);
+//     });
+//   }
+
+//   @Get('cache')
+//   async testCache() {
+//     await this.redisCacheService.set('test-key', { value: 'Hello' }, 60); // 60초 TTL
+//     const cached = await this.redisCacheService.get('test-key');
+//     return { cached };
+//   }
+
+//   @Get('publish')
+//   async testPublish() {
+//     await this.redisMessageService.publish('test-channel', {
+//       msg: 'Hello from Redis',
+//     });
+//     return { status: 'Message published' };
+//   }
+
+//   @Get('emit')
+//   async testEmit() {
+//     await this.redisMessageService.emitEvent('test-event', {
+//       data: 'Event data',
+//     });
+//     return { status: 'Event emitted' };
+//   }
+// }
