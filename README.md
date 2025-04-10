@@ -72,6 +72,7 @@ $ pnpm install multer
 $ pnpm install qs 
 $ pnpm install uuid 
 $ pnpm install @nestjs/terminus @nestjs/axios # health check module
+$ pnpm install typeorm-naming-strategies # typeorm naming strategy
 ```
 
 
