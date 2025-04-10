@@ -16,11 +16,11 @@ import { UserOtpService } from 'src/domain/user/user-otp.service';
 import { UserController } from 'src/domain/user/user.controller';
 import { UserService } from 'src/domain/user/user.service';
 import { S3Module } from 'src/services/aws/s3.module';
-// import { SesModule } from 'src/services/aws/ses.module';
 import { SqsModule } from 'src/services/aws/sqs.module';
 import { FcmModule } from 'src/services/fcm/fcm.module';
 import { SlackModule } from 'src/services/slack/slack-module';
 import { UploadModule } from 'src/services/upload/upload.module';
+import { UserRepository } from './user.repository';
 
 @Module({
   imports: [
@@ -43,16 +43,16 @@ import { UploadModule } from 'src/services/upload/upload.module';
     ]),
     UploadModule,
     S3Module,
-    // SesModule,
     SqsModule,
     SlackModule,
     FcmModule,
   ],
-  exports: [UserService], //? being used in auth.module.ts
+  exports: [UserRepository], //? being used in auth.module.ts
   providers: [
     UserNotificationListener, //? for event emitter
     UserService,
     UserOtpService,
+    UserRepository,
   ],
   controllers: [UserController, UserOtpController],
 })

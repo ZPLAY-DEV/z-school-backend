@@ -54,11 +54,6 @@ export const HttpErrorConstants = {
     message: '요청 코드와 일치하지 않습니다.',
   } as HttpErrorFormat,
 
-  INVALID_AUTH: {
-    error: 'UNAUTHORIZED',
-    message: '이메일 또는 비밀번호가 올바르지 않습니다.',
-  } as HttpErrorFormat,
-
   INVALID_TOKEN: {
     error: 'INVALID_TOKEN',
     message: '토큰 검증 실패',
@@ -84,8 +79,8 @@ export const HttpErrorConstants = {
     message: '토큰이 만료되었습니다.',
   } as HttpErrorFormat,
 
-  UNAUTHORIZED_INVALID_SIGNATURE: {
-    error: 'UNAUTHORIZED_INVALID',
+  INVALID_SIGNATURE: {
+    error: 'INVALID_SIGNATURE',
     message: '토큰의 시그니처가 불일치 합니다.',
   } as HttpErrorFormat,
 
@@ -124,6 +119,37 @@ export const HttpErrorConstants = {
     message: '가입된 유저가 아닙니다.',
   } as HttpErrorFormat,
 
+  INVALID_ROLE: {
+    error: 'INVALID_ROLE',
+    message: '가입 가능한 유형이 아닙니다.',
+  } as HttpErrorFormat,
+
+  ALREADY_REGISTERED: {
+    error: 'ALREADY_REGISTERED',
+    message: '이미 가입되었습니다.',
+  } as HttpErrorFormat,
+
+  NOT_FOUND_PHONE: {
+    error: 'NOT_FOUND_PHONE',
+    message: '일치하는 휴대폰번호를 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
+  ACCESS_DENIED: {
+    error: 'ACCESS_DENIED',
+    message: '접근이 불가한 유저입니다.',
+  } as HttpErrorFormat,
+
+  // ? 로직이 이상한데, 여쭤보기
+  NOT_FOUND_PASSWORD: {
+    error: 'NOT_FOUND_PASSWORD',
+    message: '비밀번호가 존재하지 않습니다.',
+  } as HttpErrorFormat,
+
+  INVALID_CREDENTIALS: {
+    error: 'INVALID_CREDENTIALS',
+    message: '인증정보가 불일치합니다.',
+  } as HttpErrorFormat,
+
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)
 };
 
@@ -132,5 +158,5 @@ HttpErrorConstants.COMMON_UNAUTHORIZED_TOKEN_ERROR = [
   HttpErrorConstants.INVALID_TOKEN,
   HttpErrorConstants.EXPIRED_TOKEN,
   HttpErrorConstants.INVALID_TOKEN_FORMAT,
-  HttpErrorConstants.UNAUTHORIZED_INVALID_SIGNATURE,
+  HttpErrorConstants.INVALID_SIGNATURE,
 ];

@@ -14,15 +14,17 @@ import { Tokens } from 'src/common/interfaces';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import { UserCredentialsDto } from 'src/domain/auth/dto/user-credentials.dto';
 import { User } from 'src/domain/user/entities/user.entity';
-import { UserService } from 'src/domain/user/user.service';
 import { SlackService } from 'src/services/slack/slack-service';
 import { DataSource } from 'typeorm';
-import { HttpErrorConstants } from './helper/http.error.object';
+import { UserRepository } from '../user/user.repository';
+import { AuthResponseDTO } from './dto/auth-response.dto';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly userService: UserService,
+    // private readonly userService: UserService,
+    private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
     private readonly slack: SlackService,
     private readonly dataSource: DataSource,
@@ -35,18 +37,21 @@ export class AuthService {
 
   // being used in auth/strategies/local.strategy
   async validateUser(dto: UserCredentialsDto): Promise<User> {
-    const user = await this.userService.findByUniqueKey({
+    const user = await this.userRepository.findByUniqueKey({
       where: { phone: dto.phone },
     });
     if (!user) {
-      throw new ForbiddenException('access denied');
+      throw new ForbiddenException(HttpErrorConstants.ACCESS_DENIED);
     }
+    /**
+     * @Todo  user 테이블에 애초에 패스워드가 없을 수 있는지..?
+     */
     if (!user.password) {
-      throw new ForbiddenException(`user has no password`);
+      throw new ForbiddenException(HttpErrorConstants.NOT_FOUND_PASSWORD);
     }
     const passwordMatches = await bcrypt.compare(dto.password, user.password);
     if (!passwordMatches) {
-      throw new ForbiddenException('invalid credentials');
+      throw new ForbiddenException(HttpErrorConstants.INVALID_CREDENTIALS);
     }
 
     return user;
@@ -57,11 +62,11 @@ export class AuthService {
   //? ----------------------------------------------------------------------- //
 
   // phone 가입 w/ Credentials
-  async register(dto: UserCredentialsDto): Promise<Tokens> {
+  async register(dto: UserCredentialsDto): Promise<AuthResponseDTO> {
     const { phone, password, role } = dto;
 
     // Find existing user or create new one
-    let user = await this.userService.findByUniqueKey({
+    let user = await this.userRepository.findByUniqueKey({
       where: { phone },
       relations: ['instructor', 'manager', 'parent'],
     });
@@ -95,11 +100,13 @@ export class AuthService {
       });
     } else {
       // Create new user
-      user = await this.userService.create({
-        phone,
-        password,
-        role,
-      });
+      user = await this.userRepository.save(
+        this.userRepository.create({
+          phone,
+          password,
+          role,
+        }),
+      );
 
       // create role entity
       await roleRepository.save({
@@ -110,7 +117,7 @@ export class AuthService {
 
     // Generate tokens and update user
     const tokens = await this._getTokens(user);
-    await this.userService.update(user.id, {
+    await this.userRepository.updateUser(user.id, {
       refreshTokenHash: tokens.refreshToken
         ? await bcrypt.hash(tokens.refreshToken, 10)
         : null,
@@ -129,13 +136,13 @@ export class AuthService {
   //? ----------------------------------------------------------------------- //
 
   // 로그인 w/ Credentials
-  async login(dto: UserCredentialsDto): Promise<Tokens> {
+  async login(dto: UserCredentialsDto): Promise<AuthResponseDTO> {
     const user = await this.validateUser(dto);
     const tokens = await this._getTokens(user);
     const refreshTokenHash = tokens.refreshToken
       ? await bcrypt.hash(tokens.refreshToken, 10)
       : null;
-    await this.userService.update(user.id, {
+    await this.userRepository.updateUser(user.id, {
       refreshTokenHash,
     });
 
@@ -148,7 +155,7 @@ export class AuthService {
   //? ----------------------------------------------------------------------- //
 
   async logout(id: number): Promise<void> {
-    await this.userService.update(id, {
+    await this.userRepository.updateUser(id, {
       refreshTokenHash: null,
     });
   }
@@ -158,30 +165,28 @@ export class AuthService {
   //? cookie 또는 bearer header 필요 (jwt auth guard 와 strategy 확인)
   //? ----------------------------------------------------------------------- //
 
-  async refreshToken(id: number, refreshToken: string | null): Promise<Tokens> {
-    const user = await this.userService.findById(id);
-    if (!user) {
-      throw new ForbiddenException('access denied');
-    }
-    if (!user.refreshTokenHash) {
-      throw new ForbiddenException('authentication required');
+  async refreshToken(
+    id: number,
+    refreshToken: string | null,
+  ): Promise<AuthResponseDTO> {
+    const user = await this.userRepository.findById(id);
+    if (!user || !user.refreshTokenHash) {
+      throw new ForbiddenException(HttpErrorConstants.ACCESS_DENIED);
     }
     const refreshTokenMatches = await bcrypt.compare(
       refreshToken,
       user.refreshTokenHash,
     );
     if (!refreshTokenMatches) {
-      throw new ForbiddenException('invalid refresh token');
+      throw new ForbiddenException(HttpErrorConstants.INVALID_SIGNATURE);
     }
-    const tokens = await this._getTokens(user);
-    const refreshTokenHash = tokens.refreshToken
-      ? await bcrypt.hash(tokens.refreshToken, 10)
-      : null;
-    await this.userService.update(user.id, {
-      refreshTokenHash,
-    });
 
-    return tokens;
+    const tokens = await this._getTokens(user);
+
+    return {
+      accessToken: tokens.accessToken,
+      expiresIn: tokens.expiresIn,
+    };
   }
 
   //? ----------------------------------------------------------------------- //
@@ -189,7 +194,7 @@ export class AuthService {
   //? ----------------------------------------------------------------------- //
 
   async resetPassword(dto: ResetPasswordDto): Promise<User> {
-    const user = await this.userService.findByUniqueKey({
+    const user = await this.userRepository.findByUniqueKey({
       where: { phone: dto.phone },
     });
     if (!user) {
@@ -204,7 +209,9 @@ export class AuthService {
     //   throw new BadRequestException('otp mismatched');
     // }
 
-    return await this.userService.update(user.id, { password: dto.password });
+    return await this.userRepository.updateUser(user.id, {
+      password: dto.password,
+    });
   }
 
   //? ----------------------------------------------------------------------- //
@@ -246,7 +253,6 @@ export class AuthService {
     ]);
     const expiresIn = Date.now() + TEN_MINS; //! 같이 수정할 것!
 
-    // const now = moment();
     return {
       accessToken,
       refreshToken,

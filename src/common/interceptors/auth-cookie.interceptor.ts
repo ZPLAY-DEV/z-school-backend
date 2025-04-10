@@ -2,7 +2,7 @@ import {
   CallHandler,
   ExecutionContext,
   Injectable,
-  NestInterceptor
+  NestInterceptor,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Observable, tap } from 'rxjs';
@@ -15,20 +15,21 @@ export class AuthCookieInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
       tap((data) => {
-        if (data && data.accessToken && data.refreshToken) {
+        const { result } = data;
+        if (result && result.accessToken && result.refreshToken) {
           const response = context.switchToHttp().getResponse();
 
-          response.cookie('access_token', data.accessToken, {
+          response.cookie('access_token', result.accessToken, {
             maxAge: ONE_HOUR,
             httpOnly: true,
-            secure: this.configService.get('nodeEnv') === 'production',
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
           });
 
-          response.cookie('refresh_token', data.refreshToken, {
+          response.cookie('refresh_token', result.refreshToken, {
             maxAge: THIRTY_DAYS,
             httpOnly: true,
-            secure: this.configService.get('nodeEnv') === 'production',
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
           });
         }

@@ -141,6 +141,7 @@ export class UserService {
 
   // User 갱신
   async update(id: number, dto: UpdateUserDto): Promise<User> {
+    // return await this.userRepository.updateUser
     const user = await this.userRepository.preload({ id, ...dto });
     if (!user) throw new NotFoundException('User not found');
     return await this.userRepository.save(user as DeepPartial<User>);
