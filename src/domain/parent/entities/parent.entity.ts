@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 import { PlatformType } from 'src/common/enums';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
@@ -41,6 +42,11 @@ export class Parent {
   @ApiProperty({ description: '🈳 마지막 로그인 기기 web, ios, or android' })
   @Column({ type: 'enum', enum: PlatformType, default: null })
   platform: PlatformType | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Exclude({ toPlainOnly: true })
+  @ApiProperty({ description: '🈳 pushToken' })
+  pushToken: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   @ApiProperty({ description: '🈳 내용' })

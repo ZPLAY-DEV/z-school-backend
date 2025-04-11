@@ -3,13 +3,15 @@ import { ConfigService } from '@nestjs/config/dist/config.service';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request as ExpressRequest } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { IRequestUser } from 'src/common/interfaces';
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
   constructor(configService: ConfigService) {
+    //? read from header first and fallback to cookies
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: ExpressRequest) => JwtRefreshStrategy.extractJwtFromCookies(req),
         ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req: ExpressRequest) => JwtRefreshStrategy.extractJwtFromCookies(req),
       ]),
       ignoreExpiration: false,
       secretOrKey: configService.get('jwt.refreshSecret'),
@@ -24,18 +26,18 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
     return null;
   }
 
-  validate(
-    req: ExpressRequest,
-    payload: any,
-  ): { id: string; email: string; refreshToken: string | undefined } {
-    //? read from cookies first and fallback to header
+  //? 이 함수에서 리턴되는 값이 request.user 에 설정된다.
+  //? - to be used in Guard, Controller
+  validate(req: ExpressRequest, payload: any): IRequestUser {
+    //? read from header first and fallback to cookies
     const authHeader = req.get('Authorization');
     const refreshToken =
       authHeader?.replace('Bearer', '').trim() ?? req.cookies?.refresh_token;
     // const user = await this.userService.findOneById(payload.sub)
     return {
       id: payload.sub,
-      email: payload.name,
+      username: payload.username,
+      role: payload.role,
       refreshToken,
     };
   }

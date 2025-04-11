@@ -1,5 +1,7 @@
 // import * as admin from 'firebase-admin';
 
+import { Role } from 'src/common/enums';
+
 export interface IDatabaseConfig {
   engine: string;
   host: string;
@@ -164,6 +166,12 @@ export interface IHistory {
     name: string;
   };
   description: string;
+}
+export interface IRequestUser {
+  id: number;
+  username: string;
+  role: Role;
+  refreshToken?: string;
 }
 
 //? ----------------------------------------------------------------------- //

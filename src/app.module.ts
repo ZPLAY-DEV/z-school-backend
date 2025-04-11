@@ -2,7 +2,7 @@ import KeyvRedis, { Keyv } from '@keyv/redis';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -12,9 +12,7 @@ import { join } from 'path';
 import { AppController } from 'src/app.controller';
 import { AppService } from 'src/app.service';
 import { configuration } from 'src/common/config/configuration';
-import { SentryCatchAllFilter } from 'src/common/filters/sentry-catch-all.filter';
 import { DuplicateEntryErrorInterceptor } from 'src/common/interceptors/duplicate-entry-error.interceptor';
-import { HttpCacheInterceptor } from 'src/common/interceptors/http-cache.interceptor';
 import { AuthModule } from 'src/domain/auth/auth.module';
 import { JwtAuthGuard } from 'src/domain/auth/guards/jwt-auth.guard';
 import { CalendarModule } from 'src/domain/calendar/calendar.module';
@@ -36,9 +34,9 @@ import { UserModule } from 'src/domain/user/user.module';
 import { RedisModule } from 'src/services/redis/redis.module';
 import { SlackModule } from 'src/services/slack/slack-module';
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { UploadModule } from './services/upload/upload.module';
 import { OrmConfig } from './database/orm-config';
 import { HealthModule } from './services/health/health.module';
+import { UploadModule } from './services/upload/upload.module';
 
 @Module({
   imports: [
@@ -134,14 +132,14 @@ import { HealthModule } from './services/health/health.module';
       provide: APP_INTERCEPTOR,
       useClass: DuplicateEntryErrorInterceptor, // 중복입력은 400으로 전환
     },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: HttpCacheInterceptor,
-    },
-    {
-      provide: APP_FILTER,
-      useClass: SentryCatchAllFilter, // 500 이상이면 Sentry로 보고
-    },
+    // {
+    //   provide: APP_INTERCEPTOR,
+    //   useClass: HttpCacheInterceptor,
+    // },
+    // {
+    //   provide: APP_FILTER,
+    //   useClass: SentryCatchAllFilter, // 500 이상이면 Sentry로 보고
+    // },
     AppService,
   ],
 })

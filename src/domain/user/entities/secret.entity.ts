@@ -17,6 +17,12 @@ export class Secret {
   @Column({ type: 'varchar', length: 8, nullable: true })
   otp: string | null;
 
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  entityName: string | null;
+
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  entityId: string | null;
+
   // ------------------------------------------------------------------------ //
 
   @CreateDateColumn()

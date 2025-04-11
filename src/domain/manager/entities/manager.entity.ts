@@ -38,7 +38,7 @@ export class Manager {
   @Column({ type: 'varchar', length: 16, nullable: true })
   name: string | null;
 
-  @ApiProperty({ description: '🈵 매니저 전화번호 (숫자만 입력)' })
+  @ApiProperty({ description: '🈳 매니저 전화번호 (숫자만 입력)' })
   @Column({ type: 'varchar', length: 16, nullable: true })
   phone: string | null;
 

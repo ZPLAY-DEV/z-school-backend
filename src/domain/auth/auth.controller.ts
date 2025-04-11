@@ -11,15 +11,19 @@ import { ApiTags } from '@nestjs/swagger';
 import { CurrentRefreshToken } from 'src/common/decorators/current-refresh-token.decorator';
 import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
+import { Role } from 'src/common/enums';
 import { AuthCookieInterceptor } from 'src/common/interceptors/auth-cookie.interceptor';
+import { IRequestUser } from 'src/common/interfaces';
 import { HttpResponse } from 'src/core/http/http-response';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AuthService } from 'src/domain/auth/auth.service';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
-import { UserCredentialsDto } from 'src/domain/auth/dto/user-credentials.dto';
+import {
+  UserCredentialsDto,
+  UserCredentialsDtoWithPhone,
+} from 'src/domain/auth/dto/user-credentials.dto';
 import { JwtRefreshGuard } from 'src/domain/auth/guards/jwt-refresh.guard';
 import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
-
 import {
   LoginDocs,
   LogOutDocs,
@@ -39,11 +43,21 @@ export class AuthController {
   //? Public) 가입, 이메일인증, 비번재설정
   //? ----------------------------------------------------------------------- //
 
-  @RegisterDocs()
+  //  @RegisterDocs()
   @Public()
   @Post('register')
-  async register(@Body(HashPasswordPipe) dto: UserCredentialsDto) {
+  async register(@Body() dto: UserCredentialsDtoWithPhone) {
     const tokens = await this.authService.register(dto);
+
+    return HttpResponse.created(tokens);
+  }
+
+  @RegisterDocs()
+  @Public()
+  @Post('register/manager')
+  async registerManager(@Body() dto: UserCredentialsDto) {
+    const tokens = await this.authService.registerManager(dto);
+
     return HttpResponse.created(tokens);
   }
 
@@ -54,6 +68,7 @@ export class AuthController {
     @Body(HashPasswordPipe) dto: ResetPasswordDto,
   ): Promise<HttpResponse> {
     await this.authService.resetPassword(dto);
+
     return HttpResponse.ok();
   }
 
@@ -67,6 +82,7 @@ export class AuthController {
   @Post('login')
   async login(@Body() dto: UserCredentialsDto) {
     const tokens = await this.authService.login(dto);
+
     return HttpResponse.created(tokens);
   }
 
@@ -79,11 +95,14 @@ export class AuthController {
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   async refresh(
-    @CurrentUserId() id: number,
-    @CurrentRefreshToken() token: string,
+    @CurrentRefreshToken() user: IRequestUser,
   ): Promise<HttpResponse> {
-    console.log('refresh token', token);
-    const tokens = await this.authService.refreshToken(id, token);
+    const tokens = await this.authService.refreshToken(
+      +user.id,
+      user.refreshToken ?? '',
+      user.role,
+    );
+
     return HttpResponse.created(tokens);
   }
 
@@ -93,8 +112,9 @@ export class AuthController {
 
   @LogOutDocs()
   @Post('logout')
-  async logout(@CurrentUserId() id: number): Promise<HttpResponse> {
-    await this.authService.logout(id);
+  async logout(@CurrentUserId() id: number, role: Role): Promise<HttpResponse> {
+    await this.authService.logout(id, role);
+
     return HttpResponse.ok();
   }
 }
