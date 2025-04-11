@@ -8,13 +8,12 @@ z-school backend application
 $ git clone https://github.com/ZPLAY-DEV/z-school-backend.git  # clone repo
 $ cd z-school-backend # move repo
 $ pnpm install # dependency install 
-$ touch .env.development .env.production # create environment
-# Look at the .env setup file written on the note  
-[notion wiki] (https://www.notion.so/v3-Enviroment-Setup-1d24351cd47a80a7963fd12488874d4f)
-
+$ touch .env.development .env.production # create environment  => https://www.notion.so/v3-Enviroment-Setup-1d24351cd47a80a7963fd12488874d4f
 $ docker compose up 
 $ pnpm start:dev # start dev mode 
 ```
+- Look at the .env setup file written on the note  
+[notion wiki] (https://www.notion.so/v3-Enviroment-Setup-1d24351cd47a80a7963fd12488874d4f)
 
 ## Compile and run the project
 
