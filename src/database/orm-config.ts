@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
 import { getAwsDatabaseConfig } from 'src/common/config/aws-database';
 import { IAwsConfig, IDatabaseConfig } from 'src/common/interfaces';
-import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 @Injectable()
 export class OrmConfig implements TypeOrmOptionsFactory {
@@ -42,7 +41,6 @@ export class OrmConfig implements TypeOrmOptionsFactory {
       bigNumberStrings: true,
       supportBigNumbers: true,
       logging: !isProduction,
-      namingStrategy: new SnakeNamingStrategy(),
       // migrations: ['dist/migrations/**/*{.ts,.js}'],
       // cli: {
       //   migrationsDir: 'dist/migrations',

@@ -15,14 +15,17 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
-  Unique,
+  // Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 //? TransferHistory (수업이동) 대신 student_group 사용
 @Entity('students')
-@Unique(['name', 'parentId'])
+// @Unique(['name', 'parent_id'])
 export class Student {
+  @ApiProperty({
+    description: 'student id',
+  })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 
@@ -100,11 +103,11 @@ export class Student {
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
   @ManyToOne(() => Parent, (parent) => parent.students)
-  @JoinColumn({ name: 'parentId' })
+  @JoinColumn({ name: 'parent_id' })
   parent: Parent;
 
   @ManyToOne(() => School, (school) => school.students)
-  @JoinColumn({ name: 'schoolId' })
+  @JoinColumn({ name: 'school_id' })
   school: School;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
