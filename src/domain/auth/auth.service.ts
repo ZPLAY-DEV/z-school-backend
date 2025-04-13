@@ -25,7 +25,6 @@ import { SlackService } from 'src/services/slack/slack-service';
 import { DataSource, MoreThan } from 'typeorm';
 import * as uuid from 'uuid';
 import { AuthResponseDTO } from './dto/auth-response.dto';
-
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -212,7 +211,9 @@ export class AuthService {
   //? ----------------------------------------------------------------------- //
 
   // 로그인 w/ Credentials
-  async login(dto: UserCredentialsDto): Promise<AuthResponseDTO> {
+  async login(
+    dto: UserCredentialsDto,
+  ): Promise<AuthResponseDTO & { refreshToken: string }> {
     const user = await this.validateUser(dto);
 
     const payload = {
@@ -230,8 +231,9 @@ export class AuthService {
     );
 
     // Refresh Token 생성 및 저장
-    const refreshToken = uuid.v4();
-    const partialToken = refreshToken.slice(0, 18);
+    const refreshToken = `👍-${user.id}-${dto.role.toLowerCase()}-${uuid.v4()}`;
+    const partialToken = refreshToken.slice(0, 36);
+
     const hashedToken = await bcrypt.hash(refreshToken, 10);
     const expiresAt = new Date(Date.now() + THIRTY_DAYS);
 
@@ -248,6 +250,14 @@ export class AuthService {
     );
 
     return {
+      user: new User({
+        id: user.id,
+        username: user.username,
+        avatar: user.avatar,
+        phone: user.phone,
+        email: user.email,
+      }),
+      role: dto.role,
       accessToken,
       refreshToken,
       expiresIn: Date.now() + ONE_HOUR,
@@ -297,6 +307,30 @@ export class AuthService {
   //? cookie 또는 bearer header 필요 (jwt auth guard 와 strategy 확인)
   //? ----------------------------------------------------------------------- //
 
+  async validateRefreshToken(
+    userId: number,
+    refreshToken: string,
+    role: Role,
+  ): Promise<User | null> {
+    const tokenRepository = this.dataSource.getRepository<Token>('Token');
+    const tokenRecord = await tokenRepository.findOne({
+      where: {
+        userId: userId,
+        role: role,
+        partialToken: refreshToken.slice(0, 18),
+        expiresAt: MoreThan(new Date()),
+      },
+      relations: ['user', 'user.instructor', 'user.parent', 'user.manager'],
+    });
+    if (
+      !tokenRecord ||
+      !(await bcrypt.compare(refreshToken, tokenRecord.hashedToken))
+    ) {
+      throw new ForbiddenException(HttpErrorConstants.INVALID_TOKEN);
+    }
+    return tokenRecord.user;
+  }
+
   async refreshToken(
     userId: number,
     refreshToken: string,
@@ -307,7 +341,7 @@ export class AuthService {
       where: {
         userId: userId,
         role: role,
-        partialToken: refreshToken.slice(0, 18),
+        partialToken: refreshToken.slice(0, 36),
         expiresAt: MoreThan(new Date()),
       },
       relations: ['user', 'user.instructor', 'user.parent', 'user.manager'],
@@ -344,6 +378,14 @@ export class AuthService {
     );
 
     return {
+      user: new User({
+        id: user.id,
+        username: user.username,
+        avatar: user.avatar,
+        phone: user.phone,
+        email: user.email,
+      }),
+      role: role,
       accessToken,
       expiresIn: Date.now() + ONE_HOUR,
     };
@@ -386,16 +428,5 @@ export class AuthService {
   //   } catch (e) {
   //     throw new NotFoundException('entity not found');
   //   }
-  // }
-
-  // storeTokensInCookie(res: ExpressResponse, authToken: Tokens) {
-  //   res.cookie('access_token', authToken.accessToken, {
-  //     maxAge: ONE_HOUR,
-  //     httpOnly: true,
-  //   });
-  //   res.cookie('refresh_token', authToken.refreshToken, {
-  //     maxAge: THIRTY_DAYS,
-  //     httpOnly: true,
-  //   });
   // }
 }

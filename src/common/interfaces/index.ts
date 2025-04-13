@@ -222,7 +222,7 @@ export interface IS3Urls {
 
 export type Tokens = {
   accessToken: string;
-  refreshToken: string;
+  // refreshToken: string;
   expiresIn: number;
   // refreshTokenExpiry: number;
 };

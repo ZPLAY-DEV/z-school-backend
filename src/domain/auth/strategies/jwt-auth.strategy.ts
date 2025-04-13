@@ -18,8 +18,8 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'auth') {
   }
 
   private static extractJwtFromCookies(req: ExpressRequest): string | null {
-    if (req.cookies && 'access_token' in req.cookies) {
-      return req.cookies.access_token as string;
+    if (req.cookies && 'accessToken' in req.cookies) {
+      return req.cookies.accessToken as string;
     }
     return null;
   }
@@ -30,7 +30,7 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'auth') {
     // payload 는 JWT 에 들어있는 claim 정보
     return {
       id: payload.sub,
-      username: payload.name,
+      username: payload.username,
       role: payload.role,
     };
   }

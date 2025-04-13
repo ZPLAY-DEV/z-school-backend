@@ -1,5 +1,5 @@
-import './instrument'; // import this first!
 import { loadEnvConfig } from './common/config/env.config';
+import './instrument'; // import this first!
 
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -53,7 +53,11 @@ async function bootstrap() {
     defaultVersion: '1',
   });
   app.enableCors({
-    origin: '*',
+    origin: [
+      'http://localhost:3000',
+      'https://zschool.com',
+      'https://zschool.kr',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // 허용할 HTTP 메서드
     credentials: true, // 쿠키를 포함한 요청을 허용하려면 true로 설정
   });

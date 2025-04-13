@@ -96,12 +96,9 @@ export class UserController {
   @Get('mine')
   async getMine(@CurrentUserId() id: number): Promise<any> {
     const user = await this.userService.findById(id, [
-      'profile',
-      'orders',
-      'destinations',
-      'supports',
-      'inviters',
-      'invitees',
+      'parent',
+      'instructor',
+      'manager',
     ]);
 
     // user 객체를 복사하고 age, code 값을 추가합니다
@@ -120,8 +117,9 @@ export class UserController {
     @Query('extra') extra: string[],
   ): Promise<User> {
     const defaultRelations = [
-      'profile',
-      'orders',
+      'manager',
+      'parent',
+      'instructor',
       // 'followings',
       // 'followers',
     ];

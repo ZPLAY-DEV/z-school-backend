@@ -8,7 +8,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from 'typeorm';
 
 //! 같은 role 로 다중 디바이스 로그인 허용하기 때문에 테이블 크기가 커질 수 있음
@@ -31,12 +31,12 @@ export class Token {
   })
   role: Role;
 
-  @ApiProperty({ description: '🈵 refresh token' })
-  @Column({ type: 'varchar', length: 80 })
+  @ApiProperty({ description: '🈵 Hashed refresh token' })
+  @Column({ type: 'varchar', length: 64 })
   hashedToken: string;
 
-  @ApiProperty({ description: 'Partial refresh token (first 18 chars)' })
-  @Column({ type: 'varchar', length: 18 })
+  @ApiProperty({ description: 'Partial refresh token' })
+  @Column({ type: 'varchar', length: 64 })
   partialToken: string;
 
   // ------------------------------------------------------------------------ //

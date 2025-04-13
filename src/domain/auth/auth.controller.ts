@@ -2,18 +2,20 @@ import {
   Body,
   ClassSerializerInterceptor,
   Controller,
+  ForbiddenException,
   Patch,
   Post,
-  UseGuards,
+  Request,
+  Res,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { CurrentRefreshToken } from 'src/common/decorators/current-refresh-token.decorator';
+import { Request as ExpressRequest, Response } from 'express';
+import { THIRTY_DAYS } from 'src/common/constants';
 import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Role } from 'src/common/enums';
-import { AuthCookieInterceptor } from 'src/common/interceptors/auth-cookie.interceptor';
-import { IRequestUser } from 'src/common/interfaces';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { HttpResponse } from 'src/core/http/http-response';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AuthService } from 'src/domain/auth/auth.service';
@@ -22,7 +24,6 @@ import {
   UserCredentialsDto,
   UserCredentialsDtoWithPhone,
 } from 'src/domain/auth/dto/user-credentials.dto';
-import { JwtRefreshGuard } from 'src/domain/auth/guards/jwt-refresh.guard';
 import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
 import {
   LoginDocs,
@@ -78,10 +79,21 @@ export class AuthController {
 
   @LoginDocs()
   @Public()
-  @UseInterceptors(AuthCookieInterceptor)
   @Post('login')
-  async login(@Body() dto: UserCredentialsDto) {
-    const tokens = await this.authService.login(dto);
+  async login(
+    @Body() dto: UserCredentialsDto,
+    @Request() req: ExpressRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { refreshToken, ...tokens } = await this.authService.login(dto);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: THIRTY_DAYS,
+    });
 
     return HttpResponse.created(tokens);
   }
@@ -91,16 +103,19 @@ export class AuthController {
   //? ----------------------------------------------------------------------- //
 
   @RefreshDocs()
-  @UseInterceptors(AuthCookieInterceptor)
-  @UseGuards(JwtRefreshGuard)
   @Post('refresh')
-  async refresh(
-    @CurrentRefreshToken() user: IRequestUser,
-  ): Promise<HttpResponse> {
+  async refresh(@Request() req: ExpressRequest): Promise<HttpResponse> {
+    const refreshToken = req.cookies?.refreshToken as string;
+    const [, userId, role] = refreshToken.split('-');
+
+    if (!refreshToken) {
+      throw new ForbiddenException(HttpErrorConstants.INVALID_TOKEN);
+    }
+
     const tokens = await this.authService.refreshToken(
-      +user.id,
-      user.refreshToken ?? '',
-      user.role,
+      +userId,
+      refreshToken,
+      role.toUpperCase() as Role,
     );
 
     return HttpResponse.created(tokens);
