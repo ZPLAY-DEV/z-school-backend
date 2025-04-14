@@ -2,13 +2,13 @@ import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { HttpResponse } from 'src/core/http/http-response';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { UserCredentialsDto } from '../dto/user-credentials.dto';
-import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
-import { HttpResponse } from 'src/core/http/http-response';
-import { AuthResponseDTO } from '../dto/auth-response.dto';
+import { AuthResponseDto } from '../dto/auth-response.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
+import { UserCredentialsDto } from '../dto/user-credentials.dto';
 
 //? ----------------------------------------------------------------------- //
 //? Public) 가입, 이메일인증, 비번재설정 Docs
@@ -26,7 +26,7 @@ export const RegisterDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: '회원가입',
-      type: AuthResponseDTO,
+      type: AuthResponseDto,
     }),
     ApiErrorResponseTemplate([
       {
@@ -79,7 +79,7 @@ export const LoginDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: '로그인 성공',
-      type: AuthResponseDTO,
+      type: AuthResponseDto,
     }),
     ApiErrorResponseTemplate([
       {
@@ -117,7 +117,7 @@ export const RefreshDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: ' Access Token 재발급 성공 ',
-      type: AuthResponseDTO,
+      type: AuthResponseDto,
     }),
     ApiErrorResponseTemplate([
       {

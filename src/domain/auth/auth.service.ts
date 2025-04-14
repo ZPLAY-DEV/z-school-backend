@@ -24,7 +24,7 @@ import { User } from 'src/domain/user/entities/user.entity';
 import { SlackService } from 'src/services/slack/slack-service';
 import { DataSource, MoreThan } from 'typeorm';
 import * as uuid from 'uuid';
-import { AuthResponseDTO } from './dto/auth-response.dto';
+import { AuthResponseDto } from './dto/auth-response.dto';
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -78,7 +78,7 @@ export class AuthService {
   //? ----------------------------------------------------------------------- //
 
   // phone 가입 w/ Credentials
-  async register(dto: UserCredentialsDtoWithPhone): Promise<AuthResponseDTO> {
+  async register(dto: UserCredentialsDtoWithPhone): Promise<AuthResponseDto> {
     let user: User | null;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -153,7 +153,7 @@ export class AuthService {
   //? ----------------------------------------------------------------------- //
 
   //! manager 는 username 과 password 만 필요 (phone 없음)
-  async registerManager(dto: UserCredentialsDto): Promise<AuthResponseDTO> {
+  async registerManager(dto: UserCredentialsDto): Promise<AuthResponseDto> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -213,7 +213,7 @@ export class AuthService {
   // 로그인 w/ Credentials
   async login(
     dto: UserCredentialsDto,
-  ): Promise<AuthResponseDTO & { refreshToken: string }> {
+  ): Promise<AuthResponseDto & { refreshToken: string }> {
     const user = await this.validateUser(dto);
 
     const payload = {
@@ -335,7 +335,7 @@ export class AuthService {
     userId: number,
     refreshToken: string,
     role: Role,
-  ): Promise<AuthResponseDTO> {
+  ): Promise<AuthResponseDto> {
     const tokenRepository = this.dataSource.getRepository<Token>('Token');
     const tokenRecord = await tokenRepository.findOne({
       where: {
