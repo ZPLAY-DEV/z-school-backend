@@ -1,12 +1,12 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -21,9 +21,9 @@ import { ParentService } from './parent.service';
 export class ParentController {
   constructor(private readonly parentService: ParentService) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Create
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: '주문 생성' })
   @Post()
@@ -31,9 +31,9 @@ export class ParentController {
     return this.parentService.create(dto);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Read
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'paginated 주문 리스트' })
   @PaginateQueryOptions()
@@ -58,9 +58,9 @@ export class ParentController {
     ]);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Update
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: '주문 수정' })
   @Patch(':id')
@@ -71,9 +71,9 @@ export class ParentController {
     return this.parentService.update(id, dto);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Delete
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: '주문 삭제' })
   @Delete(':id')

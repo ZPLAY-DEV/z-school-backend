@@ -1,7 +1,11 @@
 import { loadEnvConfig } from './common/config/env.config';
 import './instrument'; // import this first!
 
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  BadRequestException,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -10,6 +14,7 @@ import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import helmet from 'helmet';
 import { AppModule } from 'src/app.module';
 import { RedisIoAdapter } from 'src/common/adapters/redis-io-adapter';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { initSwagger } from './core/swagger/swagger-config';
 
 // import { ConfigService } from '@nestjs/config';
@@ -39,6 +44,9 @@ async function bootstrap() {
       transform: true,
       whitelist: true,
       forbidNonWhitelisted: true, // 정의되지 않은 속성 금지
+      exceptionFactory: (_) => {
+        return new BadRequestException(HttpErrorConstants.VALIDATE_ERROR);
+      },
     }),
   );
 
@@ -75,7 +83,6 @@ async function bootstrap() {
   // const port = configService.getOrThrow<number>('appPort', 3001);
   const port = Number(process.env.APP_PORT) || 3001;
   await app.listen(port, () => {
-    // console.log(`running on ${port}`);
     console.log(`Application is running on port ${port} in ${env} mode`);
   });
 }

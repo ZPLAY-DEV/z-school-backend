@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -8,9 +9,11 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { plainToClass } from 'class-transformer';
 import { ONE_HOUR, THIRTY_DAYS } from 'src/common/constants';
 import { Role } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { RefreshResponseDto } from 'src/domain/auth/dto/refresh-response.dto';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
   UserCredentialsDto,
@@ -35,9 +38,9 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Passport local strategy
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   // being used in auth/strategies/local.strategy
   async validateUser(dto: UserCredentialsDto): Promise<User> {
@@ -52,7 +55,7 @@ export class AuthService {
     });
 
     if (!userRecord) {
-      throw new ForbiddenException(HttpErrorConstants.ACCESS_DENIED);
+      throw new ForbiddenException(HttpErrorConstants.NOT_FOUND_USER);
     }
 
     let hasRole = false;
@@ -62,9 +65,6 @@ export class AuthService {
     if (!hasRole) {
       throw new BadRequestException(HttpErrorConstants.INVALID_ROLE);
     }
-    // if (!user.password) { // 소셜로그인으로 password 없는 경우
-    //   throw new ForbiddenException(HttpErrorConstants.NOT_FOUND_PASSWORD);
-    // }
     const passwordMatches = await bcrypt.compare(password, userRecord.password);
     if (!passwordMatches) {
       throw new ForbiddenException(HttpErrorConstants.INVALID_CREDENTIALS);
@@ -73,12 +73,14 @@ export class AuthService {
     return userRecord;
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Public) 전화번호 있는 부모/강사 App용 회원가입
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   // phone 가입 w/ Credentials
-  async register(dto: UserCredentialsDtoWithPhone): Promise<AuthResponseDto> {
+  async register(
+    dto: UserCredentialsDtoWithPhone,
+  ): Promise<AuthResponseDto & { refreshToken: string }> {
     let user: User | null;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -92,13 +94,17 @@ export class AuthService {
       });
 
       const hashedPassword = await bcrypt.hash(dto.password, 10);
-      if (user) {
-        // 중복 가입 방지: 어떤 role이든 이미 등록된 경우
-        if (user.instructor || user.parent || user.manager) {
-          throw new BadRequestException(HttpErrorConstants.ALREADY_REGISTERED);
-        }
 
-        // 비밀번호 업데이트
+      if (user) {
+        // 동일한 role 로 중복가입하는 것은 방지
+        if (
+          (dto.role === Role.INSTRUCTOR && user.instructor) ||
+          (dto.role === Role.PARENT && user.parent)
+        ) {
+          throw new ConflictException();
+        }
+        //! 이미 부모회원으로 가입한 사람이 강사회원으로 가입하는 시나리오에서
+        //! 사용자 비밀번호는 나중에 가입하려는 비밀번호로 업데이트가 된다.
         user.password = hashedPassword;
         await queryRunner.manager.save(User, user);
       } else {
@@ -134,31 +140,37 @@ export class AuthService {
       });
 
       // Slack notify
-      await this.slack.sendMessage({
-        text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${user.id}|${user.username ?? dto.role}>`,
-      });
+      // await this.slack.sendMessage({
+      //   text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${user.id}|${user.username ?? dto.role}>`,
+      // });
 
       return tokens;
     } catch (err) {
       await queryRunner.rollbackTransaction();
       this.logger.error(err);
+      if (err instanceof ConflictException) {
+        throw new BadRequestException(HttpErrorConstants.ALREADY_REGISTERED);
+      }
       throw new BadRequestException(HttpErrorConstants.INTERNAL_DATABASE_ERROR);
     } finally {
       await queryRunner.release();
     }
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Public) 전화번호 없는 매니저 가입
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   //! manager 는 username 과 password 만 필요 (phone 없음)
-  async registerManager(dto: UserCredentialsDto): Promise<AuthResponseDto> {
+  async registerManager(
+    dto: UserCredentialsDto,
+  ): Promise<AuthResponseDto & { refreshToken: string }> {
+    let user: User | null;
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
-    let user: User | null;
     try {
       user = await queryRunner.manager.findOne(User, {
         where: { username: dto.username },
@@ -168,7 +180,7 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(dto.password, 10);
 
       if (user) {
-        throw new BadRequestException(HttpErrorConstants.ALREADY_REGISTERED);
+        throw new ConflictException();
       } else {
         // 유저 새로 생성
         const newUser = queryRunner.manager.create(User, {
@@ -200,15 +212,18 @@ export class AuthService {
     } catch (err) {
       await queryRunner.rollbackTransaction();
       this.logger.error(err);
+      if (err instanceof ConflictException) {
+        throw new BadRequestException(HttpErrorConstants.ALREADY_REGISTERED);
+      }
       throw new BadRequestException(HttpErrorConstants.INTERNAL_DATABASE_ERROR);
     } finally {
       await queryRunner.release();
     }
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Public) 로그인
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   // 로그인 w/ Credentials
   async login(
@@ -231,9 +246,8 @@ export class AuthService {
     );
 
     // Refresh Token 생성 및 저장
-    const refreshToken = `👍-${user.id}-${dto.role.toLowerCase()}-${uuid.v4()}`;
+    const refreshToken = `XYZ-${user.id}-${dto.role.toLowerCase()}-${uuid.v4()}`;
     const partialToken = refreshToken.slice(0, 36);
-
     const hashedToken = await bcrypt.hash(refreshToken, 10);
     const expiresAt = new Date(Date.now() + THIRTY_DAYS);
 
@@ -250,25 +264,19 @@ export class AuthService {
     );
 
     return {
-      user: new User({
-        id: user.id,
-        username: user.username,
-        avatar: user.avatar,
-        phone: user.phone,
-        email: user.email,
-      }),
+      user: plainToClass(User, user),
       role: dto.role,
       accessToken,
-      refreshToken,
-      expiresIn: Date.now() + ONE_HOUR,
+      expiresAt: Date.now() + ONE_HOUR,
+      refreshToken, // controller 에서 쿠키에 저장용
     };
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? 로그아웃
   //? client 에서 refreshToken 을 갖고 있다면, 특정 connection 만 로그아웃 가능
   //? 아니면 해당 사용자 모든 connection 로그아웃
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async logout(
     userId: number,
@@ -278,12 +286,12 @@ export class AuthService {
     const tokenRepository = this.dataSource.getRepository<Token>('Token');
 
     if (refreshToken) {
-      const partialToken = refreshToken.slice(0, 18);
+      const partialToken = refreshToken.slice(0, 36);
       const tokenRecord = await tokenRepository.findOne({
         where: {
           userId,
           role,
-          partialToken: partialToken,
+          partialToken,
         },
       });
       if (
@@ -302,40 +310,16 @@ export class AuthService {
     await tokenRepository.delete({ userId });
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? access 토큰 refresh
   //? cookie 또는 bearer header 필요 (jwt auth guard 와 strategy 확인)
-  //? ----------------------------------------------------------------------- //
-
-  async validateRefreshToken(
-    userId: number,
-    refreshToken: string,
-    role: Role,
-  ): Promise<User | null> {
-    const tokenRepository = this.dataSource.getRepository<Token>('Token');
-    const tokenRecord = await tokenRepository.findOne({
-      where: {
-        userId: userId,
-        role: role,
-        partialToken: refreshToken.slice(0, 18),
-        expiresAt: MoreThan(new Date()),
-      },
-      relations: ['user', 'user.instructor', 'user.parent', 'user.manager'],
-    });
-    if (
-      !tokenRecord ||
-      !(await bcrypt.compare(refreshToken, tokenRecord.hashedToken))
-    ) {
-      throw new ForbiddenException(HttpErrorConstants.INVALID_TOKEN);
-    }
-    return tokenRecord.user;
-  }
+  //? ---------------------------------------------------------------------- ?//
 
   async refreshToken(
     userId: number,
-    refreshToken: string,
     role: Role,
-  ): Promise<AuthResponseDto> {
+    refreshToken: string,
+  ): Promise<RefreshResponseDto> {
     const tokenRepository = this.dataSource.getRepository<Token>('Token');
     const tokenRecord = await tokenRepository.findOne({
       where: {
@@ -378,22 +362,14 @@ export class AuthService {
     );
 
     return {
-      user: new User({
-        id: user.id,
-        username: user.username,
-        avatar: user.avatar,
-        phone: user.phone,
-        email: user.email,
-      }),
-      role: role,
       accessToken,
-      expiresIn: Date.now() + ONE_HOUR,
+      expiresAt: Date.now() + ONE_HOUR,
     };
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Public) 이메일 확인코드 확인 후 비밀번호 갱신
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async resetPassword(dto: ResetPasswordDto): Promise<User> {
     const userRepository = this.dataSource.getRepository<User>('User');
@@ -401,7 +377,7 @@ export class AuthService {
       where: { phone: dto.phone },
     });
     if (!user) {
-      throw new NotFoundException('phone not found');
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_PHONE);
     }
 
     // const key = `${this.env}:user:${user.id}:otp`;
@@ -417,7 +393,7 @@ export class AuthService {
       password: dto.password,
     });
     if (!updatedUser) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_USER);
     }
     return await userRepository.save(updatedUser);
   }

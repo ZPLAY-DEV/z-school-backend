@@ -1,15 +1,15 @@
 import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  Post,
-  Query,
-  UseGuards,
-  UseInterceptors,
+    Body,
+    ClassSerializerInterceptor,
+    Controller,
+    HttpCode,
+    HttpStatus,
+    Param,
+    Patch,
+    Post,
+    Query,
+    UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -24,9 +24,9 @@ import { UserOtpService } from 'src/domain/user/user-otp.service';
 export class UserOtpController {
   constructor(private readonly userOtpService: UserOtpService) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? 본인인증 OTP 발송 (1분에 최대 2번)
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'non-existing key(phone/email) OTP 발급' })
   @UseGuards(ThrottlerBehindProxyGuard)

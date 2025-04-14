@@ -1,20 +1,20 @@
 import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-  UnprocessableEntityException,
+    BadRequestException,
+    ForbiddenException,
+    Injectable,
+    Logger,
+    NotFoundException,
+    UnprocessableEntityException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import {
-  FilterOperator,
-  PaginateConfig,
-  PaginateQuery,
-  Paginated,
-  paginate,
+    FilterOperator,
+    PaginateConfig,
+    PaginateQuery,
+    Paginated,
+    paginate,
 } from 'nestjs-paginate';
 import * as random from 'randomstring';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
@@ -49,18 +49,18 @@ export class UserService {
     private eventEmitter: EventEmitter2,
   ) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? CREATE
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   // User 생성
   async create(dto: CreateUserDto): Promise<User> {
     return await this.userRepository.save(this.userRepository.create(dto));
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? READ
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   // User 리스트 (paginated)
   async findAll(query: PaginateQuery): Promise<Paginated<User>> {
@@ -135,9 +135,9 @@ export class UserService {
     return await this.userRepository.findOne(params);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? UPDATE
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   // User 갱신
   async update(id: number, dto: UpdateUserDto): Promise<User> {
@@ -198,9 +198,9 @@ export class UserService {
     return await this.userRepository.save(user);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? DELETE
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async softRemove(id: number): Promise<User> {
     const user = await this.findById(id);

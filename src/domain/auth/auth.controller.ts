@@ -11,8 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Request as ExpressRequest, Response } from 'express';
-import { THIRTY_DAYS } from 'src/common/constants';
-import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
+import { ONE_HOUR, THIRTY_DAYS } from 'src/common/constants';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Role } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
@@ -30,6 +29,7 @@ import {
   LogOutDocs,
   RefreshDocs,
   RegisterDocs,
+  RegisterManagerDocs,
   ResetPasswordDocs,
 } from './swagger/rest-swagger.decorator';
 
@@ -40,20 +40,38 @@ import {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Public) 가입, 이메일인증, 비번재설정
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
-  //  @RegisterDocs()
+  @RegisterDocs()
   @Public()
   @Post('register')
-  async register(@Body() dto: UserCredentialsDtoWithPhone) {
-    const tokens = await this.authService.register(dto);
+  async register(
+    @Body() dto: UserCredentialsDtoWithPhone,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { refreshToken, ...tokens } = await this.authService.register(dto);
+
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: ONE_HOUR,
+    });
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: THIRTY_DAYS,
+    });
 
     return HttpResponse.created(tokens);
   }
 
-  @RegisterDocs()
+  @RegisterManagerDocs()
   @Public()
   @Post('register/manager')
   async registerManager(@Body() dto: UserCredentialsDto) {
@@ -73,24 +91,30 @@ export class AuthController {
     return HttpResponse.ok();
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Public) 로그인
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @LoginDocs()
   @Public()
   @Post('login')
   async login(
     @Body() dto: UserCredentialsDto,
-    @Request() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
     const { refreshToken, ...tokens } = await this.authService.login(dto);
 
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: ONE_HOUR,
+    });
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       path: '/',
       maxAge: THIRTY_DAYS,
     });
@@ -98,9 +122,9 @@ export class AuthController {
     return HttpResponse.created(tokens);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Public) 토큰 refresh
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @RefreshDocs()
   @Post('refresh')
@@ -114,21 +138,44 @@ export class AuthController {
 
     const tokens = await this.authService.refreshToken(
       +userId,
-      refreshToken,
       role.toUpperCase() as Role,
+      refreshToken,
     );
 
     return HttpResponse.created(tokens);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? 로그아웃
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @LogOutDocs()
   @Post('logout')
-  async logout(@CurrentUserId() id: number, role: Role): Promise<HttpResponse> {
-    await this.authService.logout(id, role);
+  async logout(
+    @Request() req: ExpressRequest,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<HttpResponse> {
+    const refreshToken = req.cookies?.refreshToken as string;
+    const [, userId, role] = refreshToken.split('-');
+
+    await this.authService.logout(
+      +userId,
+      role.toUpperCase() as Role,
+      refreshToken,
+    );
+
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
 
     return HttpResponse.ok();
   }

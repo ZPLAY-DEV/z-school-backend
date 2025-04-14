@@ -30,7 +30,7 @@ export class User {
   @ApiProperty({ description: '🈵 username' })
   username: string;
 
-  @Column({ type: 'varchar', length: 32, unique: true })
+  @Column({ type: 'varchar', length: 32, unique: true, nullable: true })
   @ApiProperty({ description: '🈳 phone' })
   phone: string | null;
 
@@ -39,6 +39,7 @@ export class User {
   email: string | null;
 
   @Column({ type: 'varchar', length: 64, nullable: true })
+  @Exclude()
   @ApiProperty({ description: '🈵 password' })
   password: string;
 
@@ -67,25 +68,30 @@ export class User {
   createdAt: Date;
 
   @UpdateDateColumn()
+  @Exclude()
   @ApiProperty({ description: '🈵 updatedAt' })
   updatedAt: Date;
 
   @DeleteDateColumn()
+  @Exclude()
   @ApiProperty({ description: '🈳 deletedAt' })
   deletedAt: Date | null;
 
   //* 1-to-1 hasOne -------------------------------------------------------- *//
 
+  @Exclude()
   @OneToOne(() => Instructor, (instructor) => instructor.user, {
     cascade: ['insert', 'update'],
   })
   instructor?: Instructor;
 
+  @Exclude()
   @OneToOne(() => Manager, (manager) => manager.user, {
     cascade: ['insert', 'update'],
   })
   manager?: Manager;
 
+  @Exclude()
   @OneToOne(() => Parent, (parent) => parent.user, {
     cascade: ['insert', 'update'],
   })
@@ -93,26 +99,31 @@ export class User {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
+  @Exclude()
   @OneToMany(() => Token, (token) => token.user, {
     cascade: ['insert', 'update'],
   })
   tokens: Token[];
 
+  @Exclude()
   @OneToMany(() => Provider, (provider) => provider.user, {
     cascade: ['insert', 'update'],
   })
   providers: Provider[];
 
+  @Exclude()
   @OneToMany(() => Post, (post) => post.user, {
     cascade: ['insert', 'update'],
   })
   posts: Post[];
 
+  @Exclude()
   @OneToMany(() => Comment, (comment) => comment.user, {
     cascade: ['insert', 'update'],
   })
   comments: Comment[];
 
+  @Exclude()
   @OneToMany(() => Withdrawal, (withdrawal) => withdrawal.user)
   withdrawals: Withdrawal[];
 

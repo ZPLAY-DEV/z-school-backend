@@ -8,9 +8,8 @@ import * as bcrypt from 'bcrypt';
 @Injectable()
 export class HashPasswordPipe implements PipeTransform {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async transform(value: any, _metadata: ArgumentMetadata) {
-    if (value.hasOwnProperty('password')) {
-      // similar to ('password' in value)
+  async transform(value: { password?: string }, _metadata: ArgumentMetadata) {
+    if ('password' in value && typeof value.password === 'string') {
       const rule =
         /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/;
       if (!rule.test(value.password)) {

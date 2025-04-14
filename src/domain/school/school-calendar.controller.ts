@@ -5,9 +5,9 @@ import { SchoolCalendarService } from 'src/domain/school/school-calendar.service
 export class SchoolCalendarController {
   constructor(private readonly schoolCalendarService: SchoolCalendarService) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Create
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @Post(':schoolId/calendars')
   async create(
@@ -16,7 +16,7 @@ export class SchoolCalendarController {
     return await this.schoolCalendarService.create(schoolId);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Read
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 }

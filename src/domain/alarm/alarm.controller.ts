@@ -1,14 +1,14 @@
 import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Query,
-  UseInterceptors,
+    Body,
+    ClassSerializerInterceptor,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    Patch,
+    Post,
+    Query,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
@@ -21,9 +21,9 @@ import { IAlarm, IAlarmKey } from 'src/domain/alarm/entities/alarm.interface';
 export class AlarmController {
   constructor(private readonly alarmsService: AlarmService) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? CREATE
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'Alarm 생성' })
   @Post()
@@ -38,9 +38,9 @@ export class AlarmController {
     return await this.alarmsService.create(dto);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? READ
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'Alarm 리스트' })
   @Get()
@@ -79,9 +79,9 @@ export class AlarmController {
     } as IAlarmKey);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? UPDATE
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @Patch(':id/read')
   async markAsRead(
@@ -94,9 +94,9 @@ export class AlarmController {
     };
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? DELETE
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'Alarm 삭제' })
   @Delete(':id')
