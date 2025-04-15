@@ -23,6 +23,8 @@ export const RegisterDocs = () => {
       summary: '부모/강사 회원가입',
       description: `
       - 회원가입 유형중 PARENT, INSTRUCTOR 로 가입 API, 최초 가입된 사용자는 user entity에 적재되고, 그 이후 user 정보에서 role이 upsert 됨.
+      - httpOnly쿠키로 accessToken 과 refreshToken 을 반환한다.
+      - Response 에도 accessToken 과 refreshToken 을 반환한다. (변동가능)
       `,
     }),
     ApiBody({
@@ -54,6 +56,8 @@ export const RegisterManagerDocs = () => {
       summary: '매니저 회원가입',
       description: `
       - 회원가입 유형 중 MANAGER 전용 가입 API, 최초 가입된 사용자는 user entity에 적재되고, 그 이후 user 정보에서 role이 upsert 됨.
+      - httpOnly쿠키로 accessToken 과 refreshToken 을 반환한다.
+      - Response 에도 accessToken 과 refreshToken 을 반환한다. (변동가능)
       `,
     }),
     ApiBody({
@@ -113,6 +117,8 @@ export const LoginDocs = () => {
       summary: '로그인',
       description: ` 
       - username, password, 그리고 role 을 제공하여 로그인
+      - httpOnly쿠키로 accessToken 과 refreshToken 을 반환한다.
+      - Response 에도 accessToken 과 refreshToken 을 반환한다.
       `,
     }),
     ApiBody({
@@ -147,8 +153,8 @@ export const RefreshDocs = () => {
     ApiOperation({
       summary: 'AccessToken 갱신',
       description: `
-      - Cookie 에 refreshToken 이 있는 경우 아무 인자없이 Post 호출한다.
-      - production 환경에서만 Secure 옵션을 true로 활성화한다.
+      - Cookie 에 refreshToken 이 있는 경우나 Authorization 헤더가 존재하는 경우 아무 인자없이 Post 호출가능
+      - 둘다 없이 호출하면 예외 발생
       `,
     }),
     ApiCreatedResponseTemplate({
@@ -175,7 +181,8 @@ export const LogOutDocs = () => {
     ApiOperation({
       summary: '사용자 로그아웃',
       description: `
-      - Cookie 에 refreshToken 이 있는 경우 아무 인자없이 Post 호출한다.
+      - Cookie 에 refreshToken 이 있는 경우나 Authorization 헤더가 존재하는 경우 아무 인자없이 Post 호출가능
+      - 둘다 없이 호출하면 예외 발생
       `,
     }),
     ApiOkResponseTemplate({

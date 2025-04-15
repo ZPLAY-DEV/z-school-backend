@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Patch,
   Post,
+  Req,
   Request,
   Res,
   UseInterceptors,
@@ -102,7 +103,7 @@ export class AuthController {
     @Body() dto: UserCredentialsDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { refreshToken, ...tokens } = await this.authService.login(dto);
+    const tokens = await this.authService.login(dto);
 
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
@@ -111,7 +112,7 @@ export class AuthController {
       path: '/',
       maxAge: ONE_HOUR,
     });
-    res.cookie('refreshToken', refreshToken, {
+    res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -126,20 +127,31 @@ export class AuthController {
   //? Public) 토큰 refresh
   //? ---------------------------------------------------------------------- ?//
 
+  @Public()
   @RefreshDocs()
   @Post('refresh')
-  async refresh(@Request() req: ExpressRequest): Promise<HttpResponse> {
-    const refreshToken = req.cookies?.refreshToken as string;
-    const [, userId, role] = refreshToken.split('-');
+  async refresh(@Req() req: ExpressRequest): Promise<HttpResponse> {
+    const authHeader = req.get('Authorization');
+    const refreshToken =
+      req.cookies?.refreshToken ||
+      (authHeader?.startsWith('Bearer ')
+        ? authHeader.replace(/^Bearer\s/, '').trim()
+        : null);
 
     if (!refreshToken) {
+      throw new ForbiddenException(HttpErrorConstants.INVALID_TOKEN);
+    }
+
+    const [, userId, role] = refreshToken.split('-') ?? [];
+
+    if (!userId || !role) {
       throw new ForbiddenException(HttpErrorConstants.INVALID_TOKEN);
     }
 
     const tokens = await this.authService.refreshToken(
       +userId,
       role.toUpperCase() as Role,
-      refreshToken,
+      refreshToken as string,
     );
 
     return HttpResponse.created(tokens);
@@ -155,27 +167,39 @@ export class AuthController {
     @Request() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<HttpResponse> {
-    const refreshToken = req.cookies?.refreshToken as string;
-    const [, userId, role] = refreshToken.split('-');
+    const authHeader = req.get('Authorization');
+    const refreshToken =
+      req.cookies?.refreshToken ||
+      (authHeader?.startsWith('Bearer ')
+        ? authHeader.replace(/^Bearer\s/, '').trim()
+        : null);
+
+    if (!refreshToken) {
+      throw new ForbiddenException(HttpErrorConstants.INVALID_TOKEN);
+    }
+
+    const [, userId, role] = refreshToken.split('-') ?? [];
+
+    if (!userId || !role) {
+      throw new ForbiddenException(HttpErrorConstants.INVALID_TOKEN);
+    }
 
     await this.authService.logout(
       +userId,
       role.toUpperCase() as Role,
-      refreshToken,
+      refreshToken as string,
     );
 
-    res.clearCookie('accessToken', {
+    // Clear cookies
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'lax' as const,
       path: '/',
-    });
-    res.clearCookie('refreshToken', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-    });
+    };
+
+    res.clearCookie('accessToken', cookieOptions);
+    res.clearCookie('refreshToken', cookieOptions);
 
     return HttpResponse.ok();
   }
