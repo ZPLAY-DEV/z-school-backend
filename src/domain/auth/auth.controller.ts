@@ -2,12 +2,12 @@ import {
   Body,
   ClassSerializerInterceptor,
   Controller,
-  ForbiddenException,
   Patch,
   Post,
   Req,
   Request,
   Res,
+  UnauthorizedException,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -139,13 +139,13 @@ export class AuthController {
         : null);
 
     if (!refreshToken) {
-      throw new ForbiddenException(HttpErrorConstants.INVALID_TOKEN);
+      throw new UnauthorizedException(HttpErrorConstants.INVALID_TOKEN);
     }
 
     const [, userId, role] = refreshToken.split('-') ?? [];
 
     if (!userId || !role) {
-      throw new ForbiddenException(HttpErrorConstants.INVALID_TOKEN);
+      throw new UnauthorizedException(HttpErrorConstants.INVALID_TOKEN);
     }
 
     const tokens = await this.authService.refreshToken(
@@ -175,13 +175,13 @@ export class AuthController {
         : null);
 
     if (!refreshToken) {
-      throw new ForbiddenException(HttpErrorConstants.INVALID_TOKEN);
+      throw new UnauthorizedException(HttpErrorConstants.INVALID_TOKEN);
     }
 
     const [, userId, role] = refreshToken.split('-') ?? [];
 
     if (!userId || !role) {
-      throw new ForbiddenException(HttpErrorConstants.INVALID_TOKEN);
+      throw new UnauthorizedException(HttpErrorConstants.INVALID_TOKEN);
     }
 
     await this.authService.logout(

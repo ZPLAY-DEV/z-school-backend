@@ -153,8 +153,10 @@ export const RefreshDocs = () => {
     ApiOperation({
       summary: 'AccessToken 갱신',
       description: `
-      - Cookie 에 refreshToken 이 있는 경우나 Authorization 헤더가 존재하는 경우 아무 인자없이 Post 호출가능
-      - 둘다 없이 호출하면 예외 발생
+      - Cookie 에 refreshToken 이 있거나
+        Bearer Token 형식의 Authorization 헤더 안에 refreshToken 이 존재해야한다.
+      - Post 호출.
+      - Body 는 null.
       `,
     }),
     ApiCreatedResponseTemplate({
@@ -181,7 +183,9 @@ export const LogOutDocs = () => {
     ApiOperation({
       summary: '사용자 로그아웃',
       description: `
-      - Cookie 에 refreshToken 이 있는 경우나 Authorization 헤더가 존재하는 경우 아무 인자없이 Post 호출가능
+      - Authorization 헤더가 존재하는 경우 아무 인자없이 Post 호출가능
+      - Body 에 refreshToken 을 포함하는 경우, 특정 사용자만 로그아웃 가능
+      - Body 에 refreshToken 을 포함하지 않는 경우, 모든 사용자 로그아웃
       - 둘다 없이 호출하면 예외 발생
       `,
     }),

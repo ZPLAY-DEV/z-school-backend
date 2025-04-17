@@ -1,20 +1,20 @@
 import {
-    BadRequestException,
-    ForbiddenException,
-    Injectable,
-    Logger,
-    NotFoundException,
-    UnprocessableEntityException,
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import {
-    FilterOperator,
-    PaginateConfig,
-    PaginateQuery,
-    Paginated,
-    paginate,
+  FilterOperator,
+  PaginateConfig,
+  PaginateQuery,
+  Paginated,
+  paginate,
 } from 'nestjs-paginate';
 import * as random from 'randomstring';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
@@ -110,6 +110,10 @@ export class UserService {
       this.logger.error(error);
       throw new NotFoundException('user not found');
     }
+  }
+
+  async list(): Promise<User[]> {
+    return await this.userRepository.find();
   }
 
   // User 상세보기 (w/ providerId)

@@ -80,15 +80,11 @@ export class UserController {
     return this.userService.findAll(query);
   }
 
-  @ApiOperation({ description: 'User 리스트 (paginated)' })
-  @UseInterceptors(AvatarInterceptor)
-  // @UsePipes(new ValidationPipe({ transform: true }))
+  @ApiOperation({ description: 'User 리스트 (User[])' })
   @PaginateQueryOptions()
-  @Get('paginated/admin')
-  async findAllAdmin(
-    @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<User>> {
-    return this.userService.findAll(query);
+  @Get()
+  async list(): Promise<User[]> {
+    return this.userService.list();
   }
 
   //! without ClassSerializerInterceptor, it will spit out all the user props.

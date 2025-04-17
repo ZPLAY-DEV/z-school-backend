@@ -16,8 +16,8 @@ export class RefreshResponseDto {
   // })
   // refreshToken?: string;
 
-  @ApiProperty({ description: '액세스 토큰 만료 시간(초)', example: 3600 })
-  expiresAt: number;
+  // @ApiProperty({ description: '액세스 토큰 만료 시간(초)', example: 3600 })
+  // expiresAt: number;
 
   constructor(data: Partial<RefreshResponseDto>) {
     Object.assign(this, data);

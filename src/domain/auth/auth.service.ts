@@ -5,12 +5,13 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { plainToClass } from 'class-transformer';
-import { ONE_HOUR, THIRTY_DAYS } from 'src/common/constants';
+import { THIRTY_DAYS } from 'src/common/constants';
 import { Role } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { RefreshResponseDto } from 'src/domain/auth/dto/refresh-response.dto';
@@ -78,9 +79,7 @@ export class AuthService {
   //? ---------------------------------------------------------------------- ?//
 
   // phone 가입 w/ Credentials
-  async register(
-    dto: UserCredentialsDtoWithPhone,
-  ): Promise<AuthResponseDto & { refreshToken: string }> {
+  async register(dto: UserCredentialsDtoWithPhone): Promise<AuthResponseDto> {
     let user: User | null;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -162,9 +161,7 @@ export class AuthService {
   //? ---------------------------------------------------------------------- ?//
 
   //! manager 는 username 과 password 만 필요 (phone 없음)
-  async registerManager(
-    dto: UserCredentialsDto,
-  ): Promise<AuthResponseDto & { refreshToken: string }> {
+  async registerManager(dto: UserCredentialsDto): Promise<AuthResponseDto> {
     let user: User | null;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -226,9 +223,7 @@ export class AuthService {
   //? ---------------------------------------------------------------------- ?//
 
   // 로그인 w/ Credentials
-  async login(
-    dto: UserCredentialsDto,
-  ): Promise<AuthResponseDto & { refreshToken: string }> {
+  async login(dto: UserCredentialsDto): Promise<AuthResponseDto> {
     const user = await this.validateUser(dto);
 
     const payload = {
@@ -238,7 +233,7 @@ export class AuthService {
     };
     const accessTokenOptions = {
       secret: this.configService.get('jwt.authSecret'),
-      expiresIn: '1h', // ONE_HOUR
+      expiresIn: '1m', // ONE_MIN
     };
     const accessToken = await this.jwtService.signAsync(
       payload,
@@ -267,7 +262,6 @@ export class AuthService {
       user: plainToClass(User, user),
       role: dto.role,
       accessToken,
-      expiresAt: Date.now() + ONE_HOUR,
       refreshToken, // controller 에서 쿠키에 저장용
     };
   }
@@ -335,7 +329,7 @@ export class AuthService {
       !tokenRecord ||
       !(await bcrypt.compare(refreshToken, tokenRecord.hashedToken))
     ) {
-      throw new ForbiddenException(HttpErrorConstants.INVALID_TOKEN);
+      throw new UnauthorizedException(HttpErrorConstants.INVALID_TOKEN);
     }
 
     const user = tokenRecord.user;
@@ -344,7 +338,7 @@ export class AuthService {
     else if (tokenRecord.role === Role.PARENT && user.parent) hasRole = true;
     else if (tokenRecord.role === Role.MANAGER && user.manager) hasRole = true;
     if (!hasRole) {
-      throw new ForbiddenException(HttpErrorConstants.ACCESS_DENIED);
+      throw new UnauthorizedException(HttpErrorConstants.ACCESS_DENIED);
     }
 
     const payload = {
@@ -354,16 +348,26 @@ export class AuthService {
     };
     const accessTokenOptions = {
       secret: this.configService.get('jwt.authSecret'),
-      expiresIn: '1h', // ONE_HOUR
+      expiresIn: '1m', // ONE_MIN
     };
     const accessToken = await this.jwtService.signAsync(
       payload,
       accessTokenOptions,
     );
+    // 토큰 디코딩하여 확인
+    const decoded = this.jwtService.decode(accessToken);
+    console.log('🐶 Token:', accessToken);
+    console.log('🐶 Decoded Token:', decoded);
+    console.log('🐶 Expiration Duration (seconds):', decoded.exp - decoded.iat);
+    console.log(
+      '🐶 Expires At (KST):',
+      new Date(decoded.exp * 1000).toLocaleString('ko-KR', {
+        timeZone: 'Asia/Seoul',
+      }),
+    );
 
     return {
       accessToken,
-      expiresAt: Date.now() + ONE_HOUR,
     };
   }
 
