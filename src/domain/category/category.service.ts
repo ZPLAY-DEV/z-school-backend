@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-  FilterOperator,
-  paginate,
-  Paginated,
-  PaginateQuery,
+    FilterOperator,
+    paginate,
+    Paginated,
+    PaginateQuery,
 } from 'nestjs-paginate';
 import { Category as CategoryEnum, CategoryLabels } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
@@ -17,9 +17,9 @@ export class CategoryService {
     private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? READ
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async list(slug: CategoryEnum | undefined): Promise<Category[]> {
     if (!slug) {
@@ -69,9 +69,9 @@ export class CategoryService {
     return items;
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? SEED
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async seed(): Promise<void> {
     const items = [

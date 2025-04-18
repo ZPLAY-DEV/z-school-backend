@@ -1,19 +1,34 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, Length } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 import { DEFAULT_AVATAR_URL } from 'src/common/constants';
-import { UserCredentialsDto } from 'src/domain/auth/dto/user-credentials.dto';
 
-export class CreateUserDto extends UserCredentialsDto {
-  @ApiPropertyOptional({ description: '🈳 username' })
-  @IsOptional()
+export class CreateUserDto {
+  @ApiProperty({ description: '🈵 username' })
+  @IsNotEmpty()
   @IsString()
-  @Length(1, 32)
-  username?: string;
+  username: string;
 
   @ApiPropertyOptional({ description: '🈳 phone' })
+  @IsString()
+  @IsOptional()
+  phone?: string | null;
+
+  @ApiPropertyOptional({ description: '🈳 email' })
   @IsEmail()
   @IsOptional()
   email?: string | null;
+
+  @ApiProperty({ description: '🈵 password' })
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(4)
+  password: string;
 
   @ApiPropertyOptional({
     description: '🈳 avatar',
@@ -27,9 +42,4 @@ export class CreateUserDto extends UserCredentialsDto {
   @IsOptional()
   @IsString()
   pushToken?: string | null;
-
-  @ApiPropertyOptional({ description: '🈳 refreshTokenHash' })
-  @IsOptional()
-  @IsString()
-  refreshTokenHash?: string | null;
 }

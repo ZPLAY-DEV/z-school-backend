@@ -11,7 +11,7 @@ export class CronService {
     @Inject(REDIS_MESSAGE_CLIENT) private readonly redisClient: ClientProxy,
   ) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? EVERY 5 MINTUES
   @Cron(CronExpression.EVERY_5_MINUTES)
   async handleTenSeconds() {

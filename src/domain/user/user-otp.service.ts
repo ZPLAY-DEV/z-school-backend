@@ -1,11 +1,11 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  Logger,
-  NotFoundException,
-  UnprocessableEntityException,
+    BadRequestException,
+    Inject,
+    Injectable,
+    Logger,
+    NotFoundException,
+    UnprocessableEntityException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -38,9 +38,9 @@ export class UserOtpService {
     this.env = this.configService.get('nodeEnv');
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? 본인인증 OTP 발송 (전화번호 또는 이메일로 전송)
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async sendOtpForNonExistingUser(val: string, cache = false): Promise<void> {
     const phone = val.includes('@') ? null : val.replace(/-/gi, '');
@@ -79,9 +79,9 @@ export class UserOtpService {
     }
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? 본인인증 OTP 검사 후, User 업데이트
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async updateUserIfOtpMatches(
     val: string,
@@ -149,9 +149,9 @@ export class UserOtpService {
     return await this.userRepository.save(user as DeepPartial<User>);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? 기존회원 본인인증정보 수정) 전화번호/이메일 확인 후 OTP 전송
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async sendOtpForExistingUser(val: string, cache = false): Promise<string> {
     const phone = val.includes('@') ? null : val;
@@ -184,9 +184,9 @@ export class UserOtpService {
     return val;
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? privates
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   _getCacheKey(key: string): string {
     return `${this.env}:user:${key}:key`;

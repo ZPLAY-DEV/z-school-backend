@@ -1,16 +1,16 @@
 import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Put,
-  Query,
-  UseInterceptors,
+    Body,
+    ClassSerializerInterceptor,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
+    Put,
+    Query,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -32,9 +32,9 @@ export class SchoolController {
     private readonly uploadService: UploadService,
   ) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Create
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @Post()
   async create(@Body() createSchoolDto: CreateSchoolDto): Promise<School> {
@@ -56,9 +56,9 @@ export class SchoolController {
     return await this.schoolService.deleteImages(url);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Read
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @Public()
   @ApiOperation({ description: '학교 리스트 w/ Pagination' })
@@ -93,9 +93,9 @@ export class SchoolController {
     ]);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Update
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'update school' })
   @Patch(':id')
@@ -116,9 +116,9 @@ export class SchoolController {
     return await this.schoolService.update(id, dto);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Delete
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'remove school' })
   @Delete(':id')

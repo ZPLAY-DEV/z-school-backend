@@ -1,22 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsEnum,
-  IsNotEmpty,
-  IsString,
-  Length,
-  Matches,
-  MinLength,
-} from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { Role } from 'src/common/enums';
 export class UserCredentialsDto {
-  @ApiProperty({ description: '🈵 전화번호' })
+  @ApiProperty({ description: '🈵 username' })
   @IsNotEmpty()
   @IsString()
-  @Length(11, 11)
-  @Matches(/^\d{11}$/, { message: '11-digit numeric string' })
-  phone: string;
+  username: string;
 
-  @ApiProperty({ description: '🈵 비밀번호' })
+  @ApiProperty({ description: '🈵 password' })
   @IsNotEmpty()
   @IsString()
   @MinLength(4)
@@ -28,4 +19,11 @@ export class UserCredentialsDto {
   @IsNotEmpty()
   @IsEnum(Role)
   role: Role;
+}
+
+export class UserCredentialsDtoWithPhone extends UserCredentialsDto {
+  @ApiProperty({ description: '🈵 phone' })
+  @IsNotEmpty()
+  @IsString()
+  phone: string;
 }

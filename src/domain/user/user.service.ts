@@ -49,18 +49,18 @@ export class UserService {
     private eventEmitter: EventEmitter2,
   ) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? CREATE
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   // User 생성
   async create(dto: CreateUserDto): Promise<User> {
     return await this.userRepository.save(this.userRepository.create(dto));
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? READ
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   // User 리스트 (paginated)
   async findAll(query: PaginateQuery): Promise<Paginated<User>> {
@@ -112,6 +112,10 @@ export class UserService {
     }
   }
 
+  async list(): Promise<User[]> {
+    return await this.userRepository.find();
+  }
+
   // User 상세보기 (w/ providerId)
   async findByProviderId(providerId: string): Promise<User> {
     try {
@@ -135,9 +139,9 @@ export class UserService {
     return await this.userRepository.findOne(params);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? UPDATE
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   // User 갱신
   async update(id: number, dto: UpdateUserDto): Promise<User> {
@@ -198,9 +202,9 @@ export class UserService {
     return await this.userRepository.save(user);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? DELETE
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async softRemove(id: number): Promise<User> {
     const user = await this.findById(id);

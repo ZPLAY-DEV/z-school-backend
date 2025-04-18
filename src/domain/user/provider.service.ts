@@ -1,10 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-  FilterOperator,
-  PaginateQuery,
-  Paginated,
-  paginate,
+    FilterOperator,
+    PaginateQuery,
+    Paginated,
+    paginate,
 } from 'nestjs-paginate';
 import { CreateProviderDto } from 'src/domain/user/dto/create-provider.dto';
 import { UpdateProviderDto } from 'src/domain/user/dto/update-provider.dto';
@@ -19,18 +19,18 @@ export class ProviderService {
     private readonly repository: Repository<Provider>,
   ) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? CREATE
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateProviderDto): Promise<Provider> {
     const provider = this.repository.create(dto);
     return await this.repository.save(provider);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? READ
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async findAll(query: PaginateQuery): Promise<Paginated<Provider>> {
     return await paginate(query, this.repository, {
@@ -65,9 +65,9 @@ export class ProviderService {
     return provider;
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? UPDATE
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateProviderDto): Promise<Provider> {
     const provider = await this.repository.preload({ id, ...dto });
@@ -77,9 +77,9 @@ export class ProviderService {
     return await this.repository.save(provider);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? DELETE
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async remove(id: number): Promise<Provider> {
     const provider = await this.findById(id);

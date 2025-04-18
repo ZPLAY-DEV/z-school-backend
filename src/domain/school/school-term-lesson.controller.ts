@@ -1,13 +1,13 @@
 import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Get,
-  HttpCode,
-  Param,
-  ParseIntPipe,
-  Post,
-  UseInterceptors,
+    Body,
+    ClassSerializerInterceptor,
+    Controller,
+    Get,
+    HttpCode,
+    Param,
+    ParseIntPipe,
+    Post,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -23,9 +23,9 @@ export class SchoolTermLessonController {
     private readonly schoolTermLessonService: SchoolTermLessonService,
   ) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Create
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'Lesson 생성' })
   @Post(':schoolId/terms/:termId/lessons')
@@ -59,9 +59,9 @@ export class SchoolTermLessonController {
     return await this.schoolTermLessonService.createBulk(createLessonDtos);
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Read
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @Public()
   @ApiOperation({ description: 'Lesson 리스트 w/ Pagination' })

@@ -1,204 +1,387 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { Response as ExpressResponse } from 'express';
-import { ONE_HOUR, TEN_MINS, THIRTY_DAYS } from 'src/common/constants';
+import { plainToClass } from 'class-transformer';
+import { THIRTY_DAYS } from 'src/common/constants';
 import { Role } from 'src/common/enums';
-import { Tokens } from 'src/common/interfaces';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { RefreshResponseDto } from 'src/domain/auth/dto/refresh-response.dto';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
-import { UserCredentialsDto } from 'src/domain/auth/dto/user-credentials.dto';
+import {
+  UserCredentialsDto,
+  UserCredentialsDtoWithPhone,
+} from 'src/domain/auth/dto/user-credentials.dto';
+import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Manager } from 'src/domain/manager/entities/manager.entity';
+import { Parent } from 'src/domain/parent/entities/parent.entity';
+import { Token } from 'src/domain/user/entities/token.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { SlackService } from 'src/services/slack/slack-service';
-import { DataSource } from 'typeorm';
-import { UserRepository } from '../user/user.repository';
-import { AuthResponseDTO } from './dto/auth-response.dto';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-
+import { DataSource, MoreThan } from 'typeorm';
+import * as uuid from 'uuid';
+import { AuthResponseDto } from './dto/auth-response.dto';
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
-    // private readonly userService: UserService,
-    private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
     private readonly slack: SlackService,
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
   ) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Passport local strategy
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   // being used in auth/strategies/local.strategy
   async validateUser(dto: UserCredentialsDto): Promise<User> {
-    const user = await this.userRepository.findByUniqueKey({
-      where: { phone: dto.phone },
+    const { username, password, role } = dto;
+
+    const userRepository = this.dataSource.getRepository<User>('User');
+    const userRecord = await userRepository.findOne({
+      where: {
+        username,
+      },
+      relations: ['tokens', 'instructor', 'parent', 'manager'],
     });
-    if (!user) {
-      throw new ForbiddenException(HttpErrorConstants.ACCESS_DENIED);
+
+    if (!userRecord) {
+      throw new ForbiddenException(HttpErrorConstants.NOT_FOUND_USER);
     }
-    /**
-     * @Todo  user 테이블에 애초에 패스워드가 없을 수 있는지..?
-     */
-    if (!user.password) {
-      throw new ForbiddenException(HttpErrorConstants.NOT_FOUND_PASSWORD);
+
+    let hasRole = false;
+    if (role === Role.INSTRUCTOR && userRecord.instructor) hasRole = true;
+    else if (role === Role.PARENT && userRecord.parent) hasRole = true;
+    else if (role === Role.MANAGER && userRecord.manager) hasRole = true;
+    if (!hasRole) {
+      throw new BadRequestException(HttpErrorConstants.INVALID_ROLE);
     }
-    const passwordMatches = await bcrypt.compare(dto.password, user.password);
+    const passwordMatches = await bcrypt.compare(password, userRecord.password);
     if (!passwordMatches) {
       throw new ForbiddenException(HttpErrorConstants.INVALID_CREDENTIALS);
     }
 
-    return user;
+    return userRecord;
   }
 
-  //? ----------------------------------------------------------------------- //
-  //? Public) phone (가입/비번)
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
+  //? Public) 전화번호 있는 부모/강사 App용 회원가입
+  //? ---------------------------------------------------------------------- ?//
 
   // phone 가입 w/ Credentials
-  async register(dto: UserCredentialsDto): Promise<AuthResponseDTO> {
-    const { phone, password, role } = dto;
+  async register(dto: UserCredentialsDtoWithPhone): Promise<AuthResponseDto> {
+    let user: User | null;
 
-    // Find existing user or create new one
-    let user = await this.userRepository.findByUniqueKey({
-      where: { phone },
-      relations: ['instructor', 'manager', 'parent'],
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // Get the correct repository based on role
-    let roleRepository;
-    if (role === Role.PARENT) {
-      roleRepository = this.dataSource.getRepository('Parent');
-    } else if (role === Role.INSTRUCTOR) {
-      roleRepository = this.dataSource.getRepository('Instructor');
-    } else if (role === Role.MANAGER) {
-      roleRepository = this.dataSource.getRepository('Manager');
-    } else {
-      throw new BadRequestException(HttpErrorConstants.INVALID_ROLE);
-    }
+    try {
+      user = await queryRunner.manager.findOne(User, {
+        where: { phone: dto.phone },
+        relations: ['instructor', 'parent', 'tokens'],
+      });
 
-    if (user) {
-      // Check if user already has this role
-      if (
-        (role === Role.PARENT && user.parent) ||
-        (role === Role.INSTRUCTOR && user.instructor) ||
-        (role === Role.MANAGER && user.manager)
-      ) {
-        throw new BadRequestException(HttpErrorConstants.ALREADY_REGISTERED);
+      const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+      if (user) {
+        // 동일한 role 로 중복가입하는 것은 방지
+        if (
+          (dto.role === Role.INSTRUCTOR && user.instructor) ||
+          (dto.role === Role.PARENT && user.parent)
+        ) {
+          throw new ConflictException();
+        }
+        //! 이미 부모회원으로 가입한 사람이 강사회원으로 가입하는 시나리오에서
+        //! 사용자 비밀번호는 나중에 가입하려는 비밀번호로 업데이트가 된다.
+        user.password = hashedPassword;
+        await queryRunner.manager.save(User, user);
+      } else {
+        // 유저 새로 생성
+        const newUser = queryRunner.manager.create(User, {
+          username: dto.username,
+          phone: dto.phone,
+          password: hashedPassword,
+          role: dto.role,
+        });
+        user = await queryRunner.manager.save(User, newUser);
       }
 
-      // Create role entity for existing user
-      await roleRepository.save({
-        userId: user.id,
-        phone: phone,
-      });
-    } else {
-      // Create new user
-      user = await this.userRepository.save(
-        this.userRepository.create({
-          phone,
-          password,
-          role,
-        }),
-      );
+      // Role-specific entity 생성
+      if (dto.role === Role.INSTRUCTOR) {
+        await queryRunner.manager.save(Instructor, {
+          userId: user.id,
+          phone: dto.phone,
+        });
+      } else if (dto.role === Role.PARENT) {
+        await queryRunner.manager.save(Parent, {
+          userId: user.id,
+          phone: dto.phone,
+        });
+      }
 
-      // create role entity
-      await roleRepository.save({
-        userId: user.id,
-        phone,
+      await queryRunner.commitTransaction();
+
+      const tokens = await this.login({
+        username: dto.username,
+        password: dto.password,
+        role: dto.role,
       });
+
+      // Slack notify
+      // await this.slack.sendMessage({
+      //   text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${user.id}|${user.username ?? dto.role}>`,
+      // });
+
+      return tokens;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(err);
+      if (err instanceof ConflictException) {
+        throw new BadRequestException(HttpErrorConstants.ALREADY_REGISTERED);
+      }
+      throw new BadRequestException(HttpErrorConstants.INTERNAL_DATABASE_ERROR);
+    } finally {
+      await queryRunner.release();
     }
-
-    // Generate tokens and update user
-    const tokens = await this._getTokens(user);
-    await this.userRepository.updateUser(user.id, {
-      refreshTokenHash: tokens.refreshToken
-        ? await bcrypt.hash(tokens.refreshToken, 10)
-        : null,
-      role,
-    });
-
-    // Notify
-    await this.slack.sendMessage({
-      text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${user.id}|${role}>`,
-    });
-
-    return tokens;
   }
-  //? ----------------------------------------------------------------------- //
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Public) 전화번호 없는 매니저 가입
+  //? ---------------------------------------------------------------------- ?//
+
+  //! manager 는 username 과 password 만 필요 (phone 없음)
+  async registerManager(dto: UserCredentialsDto): Promise<AuthResponseDto> {
+    let user: User | null;
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      user = await queryRunner.manager.findOne(User, {
+        where: { username: dto.username },
+        relations: ['manager', 'tokens'],
+      });
+
+      const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+      if (user) {
+        throw new ConflictException();
+      } else {
+        // 유저 새로 생성
+        const newUser = queryRunner.manager.create(User, {
+          username: dto.username,
+          password: hashedPassword,
+          role: dto.role,
+        });
+        user = await queryRunner.manager.save(User, newUser);
+      }
+
+      await queryRunner.manager.save(Manager, {
+        userId: user.id,
+      });
+
+      await queryRunner.commitTransaction();
+
+      const tokens = await this.login({
+        username: dto.username,
+        password: dto.password,
+        role: dto.role,
+      });
+
+      // Slack notify
+      await this.slack.sendMessage({
+        text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${user.id}|${user.username ?? dto.role}>`,
+      });
+
+      return tokens;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(err);
+      if (err instanceof ConflictException) {
+        throw new BadRequestException(HttpErrorConstants.ALREADY_REGISTERED);
+      }
+      throw new BadRequestException(HttpErrorConstants.INTERNAL_DATABASE_ERROR);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  //? ---------------------------------------------------------------------- ?//
   //? Public) 로그인
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   // 로그인 w/ Credentials
-  async login(dto: UserCredentialsDto): Promise<AuthResponseDTO> {
+  async login(dto: UserCredentialsDto): Promise<AuthResponseDto> {
     const user = await this.validateUser(dto);
-    const tokens = await this._getTokens(user);
-    const refreshTokenHash = tokens.refreshToken
-      ? await bcrypt.hash(tokens.refreshToken, 10)
-      : null;
-    await this.userRepository.updateUser(user.id, {
-      refreshTokenHash,
-    });
 
-    return tokens;
-  }
-
-  //? ----------------------------------------------------------------------- //
-  //? Private) 로그아웃
-  //? 로그아웃하면 refreshTokenHash 삭제
-  //? ----------------------------------------------------------------------- //
-
-  async logout(id: number): Promise<void> {
-    await this.userRepository.updateUser(id, {
-      refreshTokenHash: null,
-    });
-  }
-
-  //? ----------------------------------------------------------------------- //
-  //? Public) 토큰 refresh
-  //? cookie 또는 bearer header 필요 (jwt auth guard 와 strategy 확인)
-  //? ----------------------------------------------------------------------- //
-
-  async refreshToken(
-    id: number,
-    refreshToken: string | null,
-  ): Promise<AuthResponseDTO> {
-    const user = await this.userRepository.findById(id);
-    if (!user || !user.refreshTokenHash) {
-      throw new ForbiddenException(HttpErrorConstants.ACCESS_DENIED);
-    }
-    const refreshTokenMatches = await bcrypt.compare(
-      refreshToken,
-      user.refreshTokenHash,
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      role: dto.role,
+    };
+    const accessTokenOptions = {
+      secret: this.configService.get('jwt.authSecret'),
+      expiresIn: '1m', // ONE_MIN
+    };
+    const accessToken = await this.jwtService.signAsync(
+      payload,
+      accessTokenOptions,
     );
-    if (!refreshTokenMatches) {
-      throw new ForbiddenException(HttpErrorConstants.INVALID_SIGNATURE);
-    }
 
-    const tokens = await this._getTokens(user);
+    // Refresh Token 생성 및 저장
+    const refreshToken = `XYZ-${user.id}-${dto.role.toLowerCase()}-${uuid.v4()}`;
+    const partialToken = refreshToken.slice(0, 36);
+    const hashedToken = await bcrypt.hash(refreshToken, 10);
+    const expiresAt = new Date(Date.now() + THIRTY_DAYS);
+
+    const tokenRepository = this.dataSource.getRepository<Token>('Token');
+    await tokenRepository.upsert(
+      {
+        userId: user.id,
+        role: dto.role,
+        partialToken,
+        hashedToken,
+        expiresAt,
+      },
+      ['userId', 'role', 'partialToken'],
+    );
 
     return {
-      accessToken: tokens.accessToken,
-      expiresIn: tokens.expiresIn,
+      user: plainToClass(User, user),
+      role: dto.role,
+      accessToken,
+      refreshToken, // controller 에서 쿠키에 저장용
     };
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
+  //? 로그아웃
+  //? client 에서 refreshToken 을 갖고 있다면, 특정 connection 만 로그아웃 가능
+  //? 아니면 해당 사용자 모든 connection 로그아웃
+  //? ---------------------------------------------------------------------- ?//
+
+  async logout(
+    userId: number,
+    role: Role,
+    refreshToken?: string,
+  ): Promise<void> {
+    const tokenRepository = this.dataSource.getRepository<Token>('Token');
+
+    if (refreshToken) {
+      const partialToken = refreshToken.slice(0, 36);
+      const tokenRecord = await tokenRepository.findOne({
+        where: {
+          userId,
+          role,
+          partialToken,
+        },
+      });
+      if (
+        tokenRecord &&
+        (await bcrypt.compare(refreshToken, tokenRecord.hashedToken))
+      ) {
+        await tokenRepository.delete(tokenRecord.id);
+      }
+    } else {
+      await tokenRepository.delete({ userId, role });
+    }
+  }
+
+  async logoutAll(userId: number) {
+    const tokenRepository = this.dataSource.getRepository<Token>('Token');
+    await tokenRepository.delete({ userId });
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? access 토큰 refresh
+  //? cookie 또는 bearer header 필요 (jwt auth guard 와 strategy 확인)
+  //? ---------------------------------------------------------------------- ?//
+
+  async refreshToken(
+    userId: number,
+    role: Role,
+    refreshToken: string,
+  ): Promise<RefreshResponseDto> {
+    const tokenRepository = this.dataSource.getRepository<Token>('Token');
+    const tokenRecord = await tokenRepository.findOne({
+      where: {
+        userId: userId,
+        role: role,
+        partialToken: refreshToken.slice(0, 36),
+        expiresAt: MoreThan(new Date()),
+      },
+      relations: ['user', 'user.instructor', 'user.parent', 'user.manager'],
+    });
+
+    if (
+      !tokenRecord ||
+      !(await bcrypt.compare(refreshToken, tokenRecord.hashedToken))
+    ) {
+      throw new UnauthorizedException(HttpErrorConstants.INVALID_TOKEN);
+    }
+
+    const user = tokenRecord.user;
+    let hasRole = false;
+    if (tokenRecord.role === Role.INSTRUCTOR && user.instructor) hasRole = true;
+    else if (tokenRecord.role === Role.PARENT && user.parent) hasRole = true;
+    else if (tokenRecord.role === Role.MANAGER && user.manager) hasRole = true;
+    if (!hasRole) {
+      throw new UnauthorizedException(HttpErrorConstants.ACCESS_DENIED);
+    }
+
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      role,
+    };
+    const accessTokenOptions = {
+      secret: this.configService.get('jwt.authSecret'),
+      expiresIn: '1m', // ONE_MIN
+    };
+    const accessToken = await this.jwtService.signAsync(
+      payload,
+      accessTokenOptions,
+    );
+    // 토큰 디코딩하여 확인
+    const decoded = this.jwtService.decode(accessToken);
+    console.log('🐶 Token:', accessToken);
+    console.log('🐶 Decoded Token:', decoded);
+    console.log('🐶 Expiration Duration (seconds):', decoded.exp - decoded.iat);
+    console.log(
+      '🐶 Expires At (KST):',
+      new Date(decoded.exp * 1000).toLocaleString('ko-KR', {
+        timeZone: 'Asia/Seoul',
+      }),
+    );
+
+    return {
+      accessToken,
+    };
+  }
+
+  //? ---------------------------------------------------------------------- ?//
   //? Public) 이메일 확인코드 확인 후 비밀번호 갱신
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   async resetPassword(dto: ResetPasswordDto): Promise<User> {
-    const user = await this.userRepository.findByUniqueKey({
+    const userRepository = this.dataSource.getRepository<User>('User');
+    const user = await userRepository.findOne({
       where: { phone: dto.phone },
     });
     if (!user) {
-      throw new NotFoundException('phone not found');
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_PHONE);
     }
 
     // const key = `${this.env}:user:${user.id}:otp`;
@@ -209,55 +392,14 @@ export class AuthService {
     //   throw new BadRequestException('otp mismatched');
     // }
 
-    return await this.userRepository.updateUser(user.id, {
+    const updatedUser = await userRepository.preload({
+      id: user.id,
       password: dto.password,
     });
-  }
-
-  //? ----------------------------------------------------------------------- //
-  //? Cookies (deprecated in favor of auth-cookie.interceptor.ts)
-  //? ----------------------------------------------------------------------- //
-
-  storeTokensInCookie(res: ExpressResponse, authToken: Tokens) {
-    // const ONE_MIN = 1000 * 60;
-    res.cookie('access_token', authToken.accessToken, {
-      maxAge: ONE_HOUR,
-      httpOnly: true,
-    });
-    res.cookie('refresh_token', authToken.refreshToken, {
-      maxAge: THIRTY_DAYS,
-      httpOnly: true,
-    });
-  }
-
-  //? ----------------------------------------------------------------------- //
-  //? Privates
-  //? ----------------------------------------------------------------------- //
-
-  async _getTokens(user: User): Promise<Tokens> {
-    const payload = {
-      name: user.email,
-      sub: user.id,
-    };
-    const accessTokenOptions = {
-      secret: this.configService.get('jwt.authSecret'),
-      expiresIn: '1h', // change this window to '1h' if you want
-    };
-    const refreshTokenOptions = {
-      secret: this.configService.get('jwt.refreshSecret'),
-      expiresIn: '30d',
-    };
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, accessTokenOptions),
-      this.jwtService.signAsync(payload, refreshTokenOptions),
-    ]);
-    const expiresIn = Date.now() + TEN_MINS; //! 같이 수정할 것!
-
-    return {
-      accessToken,
-      refreshToken,
-      expiresIn,
-    };
+    if (!updatedUser) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_USER);
+    }
+    return await userRepository.save(updatedUser);
   }
 
   // async forgotPassword(email: string): Promise<void> {

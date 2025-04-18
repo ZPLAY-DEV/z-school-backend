@@ -1,12 +1,12 @@
 import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Post,
-  UseInterceptors,
+    Body,
+    ClassSerializerInterceptor,
+    Controller,
+    Get,
+    Param,
+    ParseIntPipe,
+    Post,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -20,9 +20,9 @@ import { Term } from 'src/domain/term/entities/term.entity';
 export class SchoolTermController {
   constructor(private readonly schoolTermService: SchoolTermService) {}
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Create
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'Term 생성' })
   @Post(':schoolId/terms')
@@ -34,9 +34,9 @@ export class SchoolTermController {
     return await this.schoolTermService.create({ ...dto, schoolId });
   }
 
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
   //? Read
-  //? ----------------------------------------------------------------------- //
+  //? ---------------------------------------------------------------------- ?//
 
   @Public()
   @ApiOperation({ description: 'Term 리스트 w/ Pagination' })

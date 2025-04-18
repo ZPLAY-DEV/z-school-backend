@@ -1,5 +1,7 @@
 // import * as admin from 'firebase-admin';
 
+import { Role } from 'src/common/enums';
+
 export interface IDatabaseConfig {
   engine: string;
   host: string;
@@ -165,10 +167,16 @@ export interface IHistory {
   };
   description: string;
 }
+export interface IRequestUser {
+  id: number;
+  username: string;
+  role: Role;
+  refreshToken?: string;
+}
 
-//? ----------------------------------------------------------------------- //
+//? ---------------------------------------------------------------------- ?//
 //? Refactor By Types -> Interface
-//? ----------------------------------------------------------------------- //
+//? ---------------------------------------------------------------------- ?//
 
 export type FanItem = {
   username: string;
@@ -214,7 +222,7 @@ export interface IS3Urls {
 
 export type Tokens = {
   accessToken: string;
-  refreshToken: string;
+  // refreshToken: string;
   expiresIn: number;
   // refreshTokenExpiry: number;
 };

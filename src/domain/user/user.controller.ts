@@ -80,15 +80,11 @@ export class UserController {
     return this.userService.findAll(query);
   }
 
-  @ApiOperation({ description: 'User 리스트 (paginated)' })
-  @UseInterceptors(AvatarInterceptor)
-  // @UsePipes(new ValidationPipe({ transform: true }))
+  @ApiOperation({ description: 'User 리스트 (User[])' })
   @PaginateQueryOptions()
-  @Get('paginated/admin')
-  async findAllAdmin(
-    @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<User>> {
-    return this.userService.findAll(query);
+  @Get()
+  async list(): Promise<User[]> {
+    return this.userService.list();
   }
 
   //! without ClassSerializerInterceptor, it will spit out all the user props.
@@ -96,12 +92,9 @@ export class UserController {
   @Get('mine')
   async getMine(@CurrentUserId() id: number): Promise<any> {
     const user = await this.userService.findById(id, [
-      'profile',
-      'orders',
-      'destinations',
-      'supports',
-      'inviters',
-      'invitees',
+      'parent',
+      'instructor',
+      'manager',
     ]);
 
     // user 객체를 복사하고 age, code 값을 추가합니다
@@ -120,8 +113,9 @@ export class UserController {
     @Query('extra') extra: string[],
   ): Promise<User> {
     const defaultRelations = [
-      'profile',
-      'orders',
+      'manager',
+      'parent',
+      'instructor',
       // 'followings',
       // 'followers',
     ];

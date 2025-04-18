@@ -8,13 +8,7 @@ export class JwtAuthGuard extends AuthGuard('auth') {
   }
 
   canActivate(context: ExecutionContext) {
-    //? just for your information,
-    //? check if this request is invoking public() method in the controllers
-    //? to avoid any attepmts to include user payload in the context.request.
-    //? this makes sense since the user payload comes from a valid JWT Token.
-    //? which also means only id (userId) and primary key (email) will be
-    //? available within the context.request for all the protected methods.
-    //?
+    //? Public() 이면, auth 관계없이 무조건 pass 되어 controller 실행
     const isPublic = this.reflector.getAllAndOverride('isPublic', [
       context.getHandler(),
       context.getClass(),

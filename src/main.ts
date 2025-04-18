@@ -1,7 +1,8 @@
-import './instrument'; // import this first!
-import { loadEnvConfig } from './common/config/env.config';
-
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  BadRequestException,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -10,8 +11,10 @@ import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import helmet from 'helmet';
 import { AppModule } from 'src/app.module';
 import { RedisIoAdapter } from 'src/common/adapters/redis-io-adapter';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { loadEnvConfig } from './common/config/env.config';
 import { initSwagger } from './core/swagger/swagger-config';
-
+import './instrument'; // import this first!
 // import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
@@ -39,6 +42,9 @@ async function bootstrap() {
       transform: true,
       whitelist: true,
       forbidNonWhitelisted: true, // 정의되지 않은 속성 금지
+      exceptionFactory: (_) => {
+        return new BadRequestException(HttpErrorConstants.VALIDATE_ERROR);
+      },
     }),
   );
 
@@ -53,9 +59,13 @@ async function bootstrap() {
     defaultVersion: '1',
   });
   app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // 허용할 HTTP 메서드
+    origin: [
+      'http://localhost:3000',
+      'https://zschool.com',
+      'https://zschool.kr',
+    ],
     credentials: true, // 쿠키를 포함한 요청을 허용하려면 true로 설정
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // 허용할 HTTP 메서드
   });
   app.use(helmet());
   app.use(helmet.hidePoweredBy());
@@ -68,10 +78,8 @@ async function bootstrap() {
     initSwagger(app);
   }
 
-  // const port = configService.getOrThrow<number>('appPort', 3001);
   const port = Number(process.env.APP_PORT) || 3001;
   await app.listen(port, () => {
-    // console.log(`running on ${port}`);
     console.log(`Application is running on port ${port} in ${env} mode`);
   });
 }
