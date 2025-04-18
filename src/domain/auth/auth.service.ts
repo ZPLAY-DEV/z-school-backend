@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -56,7 +55,7 @@ export class AuthService {
     });
 
     if (!userRecord) {
-      throw new ForbiddenException(HttpErrorConstants.NOT_FOUND_USER);
+      throw new UnauthorizedException(HttpErrorConstants.NOT_FOUND_USER);
     }
 
     let hasRole = false;
@@ -64,11 +63,11 @@ export class AuthService {
     else if (role === Role.PARENT && userRecord.parent) hasRole = true;
     else if (role === Role.MANAGER && userRecord.manager) hasRole = true;
     if (!hasRole) {
-      throw new BadRequestException(HttpErrorConstants.INVALID_ROLE);
+      throw new UnauthorizedException(HttpErrorConstants.INVALID_ROLE);
     }
     const passwordMatches = await bcrypt.compare(password, userRecord.password);
     if (!passwordMatches) {
-      throw new ForbiddenException(HttpErrorConstants.INVALID_CREDENTIALS);
+      throw new UnauthorizedException(HttpErrorConstants.INVALID_CREDENTIALS);
     }
 
     return userRecord;
@@ -95,15 +94,13 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(dto.password, 10);
 
       if (user) {
-        // 동일한 role 로 중복가입하는 것은 방지
         if (
           (dto.role === Role.INSTRUCTOR && user.instructor) ||
           (dto.role === Role.PARENT && user.parent)
         ) {
           throw new ConflictException();
         }
-        //! 이미 부모회원으로 가입한 사람이 강사회원으로 가입하는 시나리오에서
-        //! 사용자 비밀번호는 나중에 가입하려는 비밀번호로 업데이트가 된다.
+        //! 부모회원 가입회원이 강사회원으로 가입시, 사용자 비밀번호가 업데이트가 된다.
         user.password = hashedPassword;
         await queryRunner.manager.save(User, user);
       } else {
@@ -119,10 +116,13 @@ export class AuthService {
 
       // Role-specific entity 생성
       if (dto.role === Role.INSTRUCTOR) {
-        await queryRunner.manager.save(Instructor, {
-          userId: user.id,
-          phone: dto.phone,
-        });
+        await queryRunner.manager.save(
+          dto.role === Role.INSTRUCTOR ? Instructor : Role.PARENT,
+          {
+            userId: user.id,
+            phone: dto.phone,
+          },
+        );
       } else if (dto.role === Role.PARENT) {
         await queryRunner.manager.save(Parent, {
           userId: user.id,
@@ -131,17 +131,15 @@ export class AuthService {
       }
 
       await queryRunner.commitTransaction();
-
       const tokens = await this.login({
         username: dto.username,
         password: dto.password,
         role: dto.role,
       });
 
-      // Slack notify
-      // await this.slack.sendMessage({
-      //   text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${user.id}|${user.username ?? dto.role}>`,
-      // });
+      await this.slack.sendMessage({
+        text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${user.id}|${user.username ?? dto.role}>`,
+      });
 
       return tokens;
     } catch (err) {
@@ -200,7 +198,6 @@ export class AuthService {
         role: dto.role,
       });
 
-      // Slack notify
       await this.slack.sendMessage({
         text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${user.id}|${user.username ?? dto.role}>`,
       });
@@ -354,17 +351,18 @@ export class AuthService {
       payload,
       accessTokenOptions,
     );
-    // 토큰 디코딩하여 확인
-    const decoded = this.jwtService.decode(accessToken);
-    console.log('🐶 Token:', accessToken);
-    console.log('🐶 Decoded Token:', decoded);
-    console.log('🐶 Expiration Duration (seconds):', decoded.exp - decoded.iat);
-    console.log(
-      '🐶 Expires At (KST):',
-      new Date(decoded.exp * 1000).toLocaleString('ko-KR', {
-        timeZone: 'Asia/Seoul',
-      }),
-    );
+
+    // 토큰내용 디버깅
+    // const decoded = this.jwtService.decode(accessToken);
+    // console.log('🐶 Token:', accessToken);
+    // console.log('🐶 Decoded Token:', decoded);
+    // console.log('🐶 Expiration Duration (seconds):', decoded.exp - decoded.iat);
+    // console.log(
+    //   '🐶 Expires At (KST):',
+    //   new Date(decoded.exp * 1000).toLocaleString('ko-KR', {
+    //     timeZone: 'Asia/Seoul',
+    //   }),
+    // );
 
     return {
       accessToken,

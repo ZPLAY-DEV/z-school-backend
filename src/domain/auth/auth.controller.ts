@@ -5,7 +5,6 @@ import {
   Patch,
   Post,
   Req,
-  Request,
   Res,
   UnauthorizedException,
   UseInterceptors,
@@ -13,12 +12,14 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Request as ExpressRequest, Response } from 'express';
 import { ONE_HOUR, THIRTY_DAYS } from 'src/common/constants';
+import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Role } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { HttpResponse } from 'src/core/http/http-response';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AuthService } from 'src/domain/auth/auth.service';
+import { LogoutDto } from 'src/domain/auth/dto/logout.dto';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
   UserCredentialsDto,
@@ -164,31 +165,11 @@ export class AuthController {
   @LogOutDocs()
   @Post('logout')
   async logout(
-    @Request() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
+    @CurrentUserIdAndRole() { userId, role }: { userId: number; role: Role },
+    @Body() dto: LogoutDto,
   ): Promise<HttpResponse> {
-    const authHeader = req.get('Authorization');
-    const refreshToken =
-      req.cookies?.refreshToken ||
-      (authHeader?.startsWith('Bearer ')
-        ? authHeader.replace(/^Bearer\s/, '').trim()
-        : null);
-
-    if (!refreshToken) {
-      throw new UnauthorizedException(HttpErrorConstants.INVALID_TOKEN);
-    }
-
-    const [, userId, role] = refreshToken.split('-') ?? [];
-
-    if (!userId || !role) {
-      throw new UnauthorizedException(HttpErrorConstants.INVALID_TOKEN);
-    }
-
-    await this.authService.logout(
-      +userId,
-      role.toUpperCase() as Role,
-      refreshToken as string,
-    );
+    await this.authService.logout(userId, role, dto.refreshToken);
 
     // Clear cookies
     const cookieOptions = {

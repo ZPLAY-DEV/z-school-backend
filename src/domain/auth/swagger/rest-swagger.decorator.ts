@@ -6,6 +6,7 @@ import { HttpResponse } from 'src/core/http/http-response';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { LogoutDto } from 'src/domain/auth/dto/logout.dto';
 import { RefreshResponseDto } from 'src/domain/auth/dto/refresh-response.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
@@ -22,9 +23,10 @@ export const RegisterDocs = () => {
     ApiOperation({
       summary: '부모/강사 회원가입',
       description: `
-      - 회원가입 유형중 PARENT, INSTRUCTOR 로 가입 API, 최초 가입된 사용자는 user entity에 적재되고, 그 이후 user 정보에서 role이 upsert 됨.
-      - httpOnly쿠키로 accessToken 과 refreshToken 을 반환한다.
-      - Response 에도 accessToken 과 refreshToken 을 반환한다. (변동가능)
+      - App 에서 사용하는 부모 또는 강사 회원가입용.
+      - 같은 Role 로 중복가입시 오류 발생.
+      - 가입 후 바로 로그인 처리됨.
+      - httpOnly 쿠키 및 Response 로 accessToken 과 refreshToken 을 반환.
       `,
     }),
     ApiBody({
@@ -55,9 +57,10 @@ export const RegisterManagerDocs = () => {
     ApiOperation({
       summary: '매니저 회원가입',
       description: `
-      - 회원가입 유형 중 MANAGER 전용 가입 API, 최초 가입된 사용자는 user entity에 적재되고, 그 이후 user 정보에서 role이 upsert 됨.
-      - httpOnly쿠키로 accessToken 과 refreshToken 을 반환한다.
-      - Response 에도 accessToken 과 refreshToken 을 반환한다. (변동가능)
+      - Web 에서 사용하는 매니저 회원가입용.
+      - 같은 Role 로 중복가입시 오류 발생.
+      - 가입 후 바로 로그인 처리됨.
+      - httpOnly 쿠키 및 Response 로 accessToken 과 refreshToken 을 반환.
       `,
     }),
     ApiBody({
@@ -101,7 +104,10 @@ export const ResetPasswordDocs = () => {
     ApiErrorResponseTemplate([
       {
         status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_PHONE],
+        errorFormatList: [
+          HttpErrorConstants.NOT_FOUND_PHONE,
+          HttpErrorConstants.NOT_FOUND_USER,
+        ],
       },
       {},
     ]),
@@ -116,13 +122,11 @@ export const LoginDocs = () => {
     ApiOperation({
       summary: '로그인',
       description: ` 
-      - username, password, 그리고 role 을 제공하여 로그인
-      - httpOnly쿠키로 accessToken 과 refreshToken 을 반환한다.
-      - Response 에도 accessToken 과 refreshToken 을 반환한다.
+      - httpOnly 쿠키 및 Response 로 accessToken 과 refreshToken 을 반환.
       `,
     }),
     ApiBody({
-      type: ResetPasswordDto,
+      type: UserCredentialsDto,
     }),
     ApiCreatedResponseTemplate({
       description: '로그인 성공',
@@ -134,7 +138,7 @@ export const LoginDocs = () => {
         errorFormatList: [HttpErrorConstants.NOT_FOUND_PHONE],
       },
       {
-        status: StatusCodes.FORBIDDEN,
+        status: StatusCodes.UNAUTHORIZED,
         errorFormatList: [
           HttpErrorConstants.ACCESS_DENIED,
           HttpErrorConstants.NOT_FOUND_PASSWORD,
@@ -153,9 +157,7 @@ export const RefreshDocs = () => {
     ApiOperation({
       summary: 'AccessToken 갱신',
       description: `
-      - Cookie 에 refreshToken 이 있거나
-        Bearer Token 형식의 Authorization 헤더 안에 refreshToken 이 존재해야한다.
-      - Post 호출.
+      - Bearer Token 형식의 헤더 또는 Cookie 에 refreshToken 이 존재해야한다.
       - Body 는 null.
       `,
     }),
@@ -165,7 +167,7 @@ export const RefreshDocs = () => {
     }),
     ApiErrorResponseTemplate([
       {
-        status: StatusCodes.FORBIDDEN,
+        status: StatusCodes.UNAUTHORIZED,
         errorFormatList: [
           HttpErrorConstants.ACCESS_DENIED,
           HttpErrorConstants.INVALID_SIGNATURE,
@@ -183,11 +185,12 @@ export const LogOutDocs = () => {
     ApiOperation({
       summary: '사용자 로그아웃',
       description: `
-      - Authorization 헤더가 존재하는 경우 아무 인자없이 Post 호출가능
-      - Body 에 refreshToken 을 포함하는 경우, 특정 사용자만 로그아웃 가능
-      - Body 에 refreshToken 을 포함하지 않는 경우, 모든 사용자 로그아웃
-      - 둘다 없이 호출하면 예외 발생
+      - Body 에 refreshToken 을 제공하면, 특정 사용자의 디바이스만 로그아웃
+      - Body 에 refreshToken 을 제공하지 않으면, 사용자의 모든 디바이스 로그아웃
       `,
+    }),
+    ApiBody({
+      type: LogoutDto,
     }),
     ApiOkResponseTemplate({
       description: '로그아웃 성공',
