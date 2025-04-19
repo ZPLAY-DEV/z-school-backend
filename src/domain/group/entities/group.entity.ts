@@ -43,13 +43,9 @@ export class Group {
   @Column({ type: 'tinyint', unsigned: true, nullable: true })
   classSize: number;
 
-  @ApiProperty({ description: '🈳 min grade' })
-  @Column({ type: 'tinyint', unsigned: true, nullable: true })
-  minGrade: number;
-
-  @ApiProperty({ description: '🈳 max grade' })
-  @Column({ type: 'tinyint', unsigned: true, nullable: true })
-  maxGrade: number;
+  @ApiProperty({ description: '🈳 allowed grades' })
+  @Column({ type: 'json', default: [] })
+  allowedGrades: number[];
 
   @ApiProperty({ description: '🈵 요일' })
   @Column({ type: 'enum', enum: Weekday })

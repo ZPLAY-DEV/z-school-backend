@@ -9,8 +9,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { DocumentType, Permission, Region } from 'src/common/enums';
-import { EnrollmentRule } from 'src/common/enums/enrollment-rule';
+import { Permission, Region } from 'src/common/enums';
 
 export class CreateSchoolDto {
   @ApiProperty({
@@ -24,20 +23,20 @@ export class CreateSchoolDto {
   name?: string;
 
   @ApiProperty({
-    description: '🈵 Unique school authority code',
-    maxLength: 16,
-  })
-  @IsString()
-  @Length(1, 16)
-  authorityCode?: string;
-
-  @ApiProperty({
     description: '🈵 Unique school code',
     maxLength: 16,
   })
   @IsString()
   @Length(1, 16)
   schoolCode?: string;
+
+  @ApiProperty({
+    description: '🈵 Unique school authority code',
+    maxLength: 16,
+  })
+  @IsString()
+  @Length(1, 16)
+  authorityCode?: string;
 
   @ApiProperty({
     description: '🈳 Region',
@@ -69,15 +68,6 @@ export class CreateSchoolDto {
   phone?: string;
 
   @ApiProperty({
-    description: '🈳 Enrollment rule',
-    enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST_COME,
-  })
-  @IsEnum(EnrollmentRule)
-  @IsOptional()
-  enrollmentRule?: EnrollmentRule;
-
-  @ApiProperty({
     description:
       '🈳 Operation fee rule (CO: same cost without changes, MC/MF: calculated by ratio)',
     default: 'CO-1000',
@@ -97,14 +87,6 @@ export class CreateSchoolDto {
   @Max(100)
   @IsOptional()
   payoutRate?: number;
-
-  @ApiProperty({
-    description: '🈳 Required documents',
-  })
-  @IsArray()
-  @IsEnum(DocumentType, { each: true })
-  @IsOptional()
-  requiredDocuments?: DocumentType[];
 
   @ApiProperty({
     description: '🈳 Allowed permissions',

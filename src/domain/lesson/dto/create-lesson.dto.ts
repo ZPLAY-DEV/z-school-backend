@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -12,7 +13,11 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
-import { Category as CategoryEnum, DocumentType } from 'src/common/enums';
+import {
+  Category as CategoryEnum,
+  DocumentType,
+  EnrollmentRule,
+} from 'src/common/enums';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
 import { Column } from 'typeorm';
@@ -30,12 +35,6 @@ export class CreateLessonDto {
   @MaxLength(20) // '홍익대학교 사범대학 부속 초등학교'
   schoolName?: string | null;
 
-  @ApiProperty({ description: '🈵 늘봄학교학기 ID', required: true })
-  @IsNotEmpty()
-  @IsInt()
-  @IsPositive()
-  termId: number;
-
   @ApiProperty({
     description: '🈵 같은 학기중 과목명은 유니크',
     required: false,
@@ -49,6 +48,16 @@ export class CreateLessonDto {
   @IsString()
   @MaxLength(255)
   description?: string | null;
+
+  @ApiProperty({ description: '🈳 수업수/term', required: false, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  termlyLessonCount?: number;
+
+  @ApiProperty({ description: '🈳 수업수/week', required: false, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  weeklyLessonCount?: number;
 
   @ApiProperty({
     description: '🈳 수업료 합계 (A -D)',
@@ -104,6 +113,25 @@ export class CreateLessonDto {
   @IsString()
   @MaxLength(16)
   operationFeeRule?: string | null;
+
+  @ApiProperty({
+    description: '🈳 수강신청시 시간 겹쳐도 okay?',
+    required: false,
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @IsNotEmpty()
+  allowTimeOverlap?: boolean;
+
+  @ApiProperty({
+    description: '🈳 Enrollment rule',
+    enum: EnrollmentRule,
+    default: EnrollmentRule.FIRST_COME,
+  })
+  @IsEnum(EnrollmentRule)
+  @IsOptional()
+  enrollmentRule?: EnrollmentRule;
 
   @ApiProperty({ description: '🈳 필요한 문서의 Key 값들', required: false })
   @IsOptional()

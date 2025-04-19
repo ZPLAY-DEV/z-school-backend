@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsEnum, IsString } from 'class-validator';
-import { DocumentType, Permission, Region } from 'src/common/enums';
-import { EnrollmentRule } from 'src/common/enums/enrollment-rule';
+import { Permission, Region } from 'src/common/enums';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
@@ -52,14 +51,6 @@ export class School {
   @Column({ type: 'varchar', length: 16, nullable: true })
   phone: string;
 
-  @ApiProperty({ description: '🈵 분류' })
-  @Column({
-    type: 'enum',
-    enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST_COME,
-  })
-  enrollmentRule: EnrollmentRule;
-
   @ApiProperty({
     description: '🈵 CO 변경없이 동일비용 적용, MC/MF 비율로 계산',
   })
@@ -69,15 +60,6 @@ export class School {
   @ApiProperty({ description: '🈵 percentage' })
   @Column({ type: 'tinyint', unsigned: true, default: 100 })
   payoutRate: number;
-
-  @ApiProperty({
-    description: '🈵 학교에서 허용하는 강사가 등록해야 하는 default문서 리스트',
-    example: [DocumentType.RESUME],
-  })
-  @Column('json')
-  @IsArray()
-  @IsEnum(DocumentType, { each: true })
-  requiredDocuments: DocumentType[];
 
   @ApiProperty({
     description:

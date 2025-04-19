@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
@@ -34,17 +35,15 @@ export class CreateGroupDto {
   @IsOptional()
   classSize?: number;
 
-  @ApiPropertyOptional({ description: 'min grade' })
-  @IsInt()
-  @Min(0)
+  @ApiPropertyOptional({
+    description: 'Lesson IDs to associate with this category',
+    type: [Number],
+    isArray: true,
+  })
+  @IsInt({ each: true })
   @IsOptional()
-  minGrade?: number;
-
-  @ApiPropertyOptional({ description: 'max grade' })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  maxGrade?: number;
+  @Type(() => Number)
+  allowedGrades?: number[];
 
   @ApiProperty({ description: '요일' })
   @IsEnum(Weekday)
