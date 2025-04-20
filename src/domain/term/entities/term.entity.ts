@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
-import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import {
   Column,
@@ -68,9 +67,6 @@ export class Term {
   school: School;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
-
-  @OneToMany(() => Offering, (offering) => offering.term)
-  offerings: Offering[];
 
   @OneToMany(() => Lesson, (lesson) => lesson.term)
   lessons: Lesson[];

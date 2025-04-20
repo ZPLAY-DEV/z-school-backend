@@ -6,9 +6,9 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { CreateOfferingDto } from 'src/domain/term/dto/create-term.dto';
-import { UpdateOfferingDto } from 'src/domain/term/dto/update-term.dto';
-import { Offering } from 'src/domain/term/entities/term.entity';
+import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
+import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { S3Service } from 'src/services/aws/s3.service';
 import { Repository } from 'typeorm';
 
@@ -16,7 +16,7 @@ import { Repository } from 'typeorm';
 export class OfferingService {
   constructor(
     @InjectRepository(Offering)
-    private readonly termRepository: Repository<Offering>,
+    private readonly offeringRepository: Repository<Offering>,
     private readonly s3Service: S3Service,
   ) {}
 
@@ -25,8 +25,8 @@ export class OfferingService {
   //?-------------------------------------------------------------------------//
 
   async create(dto: CreateOfferingDto): Promise<Offering> {
-    const item = this.termRepository.create(dto);
-    return await this.termRepository.save(item);
+    const item = this.offeringRepository.create(dto);
+    return await this.offeringRepository.save(item);
   }
 
   //?-------------------------------------------------------------------------//
@@ -34,22 +34,22 @@ export class OfferingService {
   //?-------------------------------------------------------------------------//
 
   async findAll(query: PaginateQuery): Promise<Paginated<Offering>> {
-    const queryBuilder = this.termRepository.createQueryBuilder('term');
+    const queryBuilder = this.offeringRepository.createQueryBuilder('offering');
     return await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'name'],
-      searchableColumns: ['name'],
+      sortableColumns: ['id', 'schoolName', 'lessonName', 'groupName'],
+      searchableColumns: ['schoolName', 'lessonName', 'groupName'],
       defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
         isActive: [FilterOperator.EQ],
-        termType: [FilterOperator.EQ],
+        offeringType: [FilterOperator.EQ],
       },
     });
   }
 
   async findActive(): Promise<Offering[]> {
-    return await this.termRepository
-      .createQueryBuilder('term')
-      .orderBy('term.id', 'DESC')
+    return await this.offeringRepository
+      .createQueryBuilder('offering')
+      .orderBy('offering.id', 'DESC')
       .where({ isActive: true })
       .getMany();
   }
@@ -57,11 +57,11 @@ export class OfferingService {
   async findById(id: number, relations: string[] = []): Promise<Offering> {
     try {
       return relations.length > 0
-        ? await this.termRepository.findOneOrFail({
+        ? await this.offeringRepository.findOneOrFail({
             where: { id },
             relations,
           })
-        : await this.termRepository.findOneOrFail({
+        : await this.offeringRepository.findOneOrFail({
             where: { id },
           });
     } catch (error) {
@@ -75,11 +75,11 @@ export class OfferingService {
   //?-------------------------------------------------------------------------//
 
   async update(id: number, dto: UpdateOfferingDto): Promise<Offering> {
-    const term = await this.termRepository.preload({ id, ...dto });
-    if (!term) {
+    const offering = await this.offeringRepository.preload({ id, ...dto });
+    if (!offering) {
       throw new NotFoundException(`entity not found`);
     }
-    return await this.termRepository.save(term);
+    return await this.offeringRepository.save(offering);
   }
 
   //?-------------------------------------------------------------------------//
@@ -88,7 +88,7 @@ export class OfferingService {
 
   // note that this is hard-delete
   async remove(id: number): Promise<Offering> {
-    const term = await this.findById(id);
-    return await this.termRepository.remove(term);
+    const offering = await this.findById(id);
+    return await this.offeringRepository.remove(offering);
   }
 }

@@ -13,17 +13,17 @@ import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
-import { CreateOfferingDto } from 'src/domain/term/dto/create-term.dto';
-import { UpdateOfferingDto } from 'src/domain/term/dto/update-term.dto';
-import { Offering } from 'src/domain/term/entities/term.entity';
-import { OfferingService } from 'src/domain/term/term.service';
+import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
+import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { OfferingService } from 'src/domain/offering/offering.service';
 import { UploadService } from 'src/services/upload/upload.service';
 
 @UseInterceptors(ClassSerializerInterceptor)
-@Controller('terms')
+@Controller('offerings')
 export class OfferingController {
   constructor(
-    private readonly termService: OfferingService,
+    private readonly offeringService: OfferingService,
     private readonly uploadService: UploadService,
   ) {}
 
@@ -34,7 +34,7 @@ export class OfferingController {
   @ApiOperation({ description: 'Offering 생성' })
   @Post()
   async create(@Body() createOfferingDto: CreateOfferingDto) {
-    return this.termService.create(createOfferingDto);
+    return this.offeringService.create(createOfferingDto);
   }
 
   //?-------------------------------------------------------------------------//
@@ -48,7 +48,7 @@ export class OfferingController {
   async getAdminOfferings(
     @Paginate() query: PaginateQuery,
   ): Promise<Paginated<Offering>> {
-    return await this.termService.findAll(query);
+    return await this.offeringService.findAll(query);
   }
 
   @ApiOperation({ description: 'Offering 리스트 w/ Pagination' })
@@ -64,21 +64,21 @@ export class OfferingController {
         isActive: '1',
       },
     };
-    return await this.termService.findAll(activeQuery);
+    return await this.offeringService.findAll(activeQuery);
   }
 
   @ApiOperation({ description: '모든 active 배너 리스트' })
   @Public()
   @Get('active')
   async getActiveOfferings(): Promise<Offering[]> {
-    return await this.termService.findActive();
+    return await this.offeringService.findActive();
   }
 
   @ApiOperation({ description: 'Offering 상세보기' })
   @Public()
   @Get(':id')
   async getOfferingById(@Param('id') id: number): Promise<Offering> {
-    return await this.termService.findById(id, [
+    return await this.offeringService.findById(id, [
       'lessons',
       'lessons.groups',
       'lessons.groups.instructor',
@@ -95,7 +95,7 @@ export class OfferingController {
     @Param('id') id: number,
     @Body() dto: UpdateOfferingDto,
   ): Promise<Offering> {
-    return await this.termService.update(id, dto);
+    return await this.offeringService.update(id, dto);
   }
 
   //?-------------------------------------------------------------------------//
@@ -105,6 +105,6 @@ export class OfferingController {
   @ApiOperation({ description: 'Offering 삭제' })
   @Delete(':id')
   async remove(@Param('id') id: number): Promise<Offering> {
-    return await this.termService.remove(id);
+    return await this.offeringService.remove(id);
   }
 }

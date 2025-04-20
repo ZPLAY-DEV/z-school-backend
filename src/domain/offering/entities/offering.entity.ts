@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { EnrollmentRule, Weekday } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { School } from 'src/domain/school/entities/school.entity';
-import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
   CreateDateColumn,
@@ -92,10 +91,6 @@ export class Offering {
   @ManyToOne(() => School, (school) => school.offerings)
   @JoinColumn({ name: 'schoolId' })
   school: School;
-
-  @ManyToOne(() => Term, (term) => term.offerings)
-  @JoinColumn({ name: 'termId' })
-  term: Term;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
