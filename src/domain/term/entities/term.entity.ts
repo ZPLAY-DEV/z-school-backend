@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import {
   Column,
@@ -27,7 +28,7 @@ export class Term {
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '학교명' })
-  @Column({ type: 'varchar', length: 16, nullable: true })
+  @Column({ type: 'varchar', length: 32, nullable: true })
   schoolName: string | null; // 관리자 편의를 위한 column
 
   @ApiProperty({ description: '학사년도' })
@@ -67,6 +68,9 @@ export class Term {
   school: School;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @OneToMany(() => Offering, (offering) => offering.term)
+  offerings: Offering[];
 
   @OneToMany(() => Lesson, (lesson) => lesson.term)
   lessons: Lesson[];
