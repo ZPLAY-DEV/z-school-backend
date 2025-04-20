@@ -1,13 +1,13 @@
 import {
-    Body,
-    ClassSerializerInterceptor,
-    Controller,
-    Get,
-    HttpCode,
-    Param,
-    ParseIntPipe,
-    Post,
-    UseInterceptors,
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseIntPipe,
+  Post,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';

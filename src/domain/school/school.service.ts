@@ -42,7 +42,6 @@ export class SchoolService {
 
     const school = this.schoolRepository.create({
       ...dto,
-      requiredDocuments: dto.requiredDocuments,
       allowedPermissions: dto.allowedPermissions,
     });
     return await this.schoolRepository.save(school);

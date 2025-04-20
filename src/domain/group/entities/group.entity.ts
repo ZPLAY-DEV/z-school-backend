@@ -44,7 +44,7 @@ export class Group {
   classSize: number;
 
   @ApiProperty({ description: '🈳 allowed grades' })
-  @Column({ type: 'json', default: [] })
+  @Column({ type: 'json' })
   allowedGrades: number[];
 
   @ApiProperty({ description: '🈵 요일' })

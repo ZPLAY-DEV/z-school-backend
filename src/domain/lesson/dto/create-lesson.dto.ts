@@ -23,6 +23,12 @@ import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
 import { Column } from 'typeorm';
 
 export class CreateLessonDto {
+  @ApiProperty({ description: '🈵 Term ID', required: true })
+  @IsNotEmpty()
+  @IsInt()
+  @IsPositive()
+  termId: number;
+
   @ApiProperty({ description: '🈵 School ID', required: true })
   @IsNotEmpty()
   @IsInt()

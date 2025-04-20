@@ -125,7 +125,6 @@ export class School {
 
   constructor(partial: Partial<School>) {
     Object.assign(this, partial);
-    this.requiredDocuments = partial?.requiredDocuments || [];
     this.allowedPermissions = partial?.allowedPermissions || [];
     this.promos = partial?.promos || [];
   }

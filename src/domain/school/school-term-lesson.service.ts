@@ -50,19 +50,13 @@ export class SchoolTermLessonService {
             ...dto,
             schoolName: school.name,
             operationFeeRule: school.operationFeeRule,
-            requiredDocuments: [
-              ...(school.requiredDocuments || []),
-              ...(dto.requiredDocuments || []),
-            ],
+            requiredDocuments: dto.requiredDocuments || [],
           })
         : await manager.save(Lesson, {
             ...dto,
             schoolName: school.name,
             operationFeeRule: school.operationFeeRule,
-            requiredDocuments: [
-              ...(school.requiredDocuments || []),
-              ...(dto.requiredDocuments || []),
-            ],
+            requiredDocuments: dto.requiredDocuments || [],
           });
 
       //? 3. Handle instructor relationships
@@ -181,10 +175,7 @@ export class SchoolTermLessonService {
           ...(existingLesson ? { ...existingLesson, ...dto } : dto),
           schoolName: school.name,
           operationFeeRule: school.operationFeeRule,
-          requiredDocuments: [
-            ...(school.requiredDocuments || []),
-            ...(dto.requiredDocuments || []),
-          ],
+          requiredDocuments: dto.requiredDocuments || [],
         };
       });
 

@@ -272,7 +272,7 @@ export class AuthService {
   async logout(
     userId: number,
     role: Role,
-    refreshToken?: string,
+    refreshToken?: string | null,
   ): Promise<void> {
     const tokenRepository = this.dataSource.getRepository<Token>('Token');
 
