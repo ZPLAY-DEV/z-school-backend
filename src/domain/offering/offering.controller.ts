@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   UseInterceptors,
@@ -67,22 +68,20 @@ export class OfferingController {
     return await this.offeringService.findAll(activeQuery);
   }
 
-  @ApiOperation({ description: '모든 active 배너 리스트' })
+  @ApiOperation({ description: '모든 offering 리스트' })
   @Public()
-  @Get('active')
-  async getActiveOfferings(): Promise<Offering[]> {
-    return await this.offeringService.findActive();
+  @Get()
+  async getActiveOfferings(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+  ): Promise<Offering[]> {
+    return await this.offeringService.findBySchoolId(schoolId);
   }
 
   @ApiOperation({ description: 'Offering 상세보기' })
   @Public()
   @Get(':id')
   async getOfferingById(@Param('id') id: number): Promise<Offering> {
-    return await this.offeringService.findById(id, [
-      'lessons',
-      'lessons.groups',
-      'lessons.groups.instructor',
-    ]);
+    return await this.offeringService.findById(id, ['bookings']);
   }
 
   //?-------------------------------------------------------------------------//

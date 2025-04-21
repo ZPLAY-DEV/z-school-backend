@@ -10,23 +10,28 @@ export class CreateBookingDto {
   @IsInt()
   studentId: number;
 
+  // ------------------------------------------------------------------------ //
+
   @ApiProperty({
-    description: 'Preferred booking status',
+    description:
+      'Check if this student has taken the lesson in the previous term',
     default: false,
     required: false,
   })
   @IsOptional()
   @IsBoolean()
-  isPreferred?: boolean;
+  isFormerStudent?: boolean;
 
   @ApiProperty({
-    description: 'Enrollment confirmation status',
+    description: 'Whether or not this student is allowed to enroll',
     default: false,
     required: false,
   })
   @IsOptional()
   @IsBoolean()
   isEnrolled?: boolean;
+
+  //? Constructor ---------------------------------------------------------- ?//
 
   constructor(partial: Partial<CreateBookingDto>) {
     Object.assign(this, partial);

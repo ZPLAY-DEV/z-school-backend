@@ -29,7 +29,7 @@ export class Booking {
 
   @ApiProperty({ description: '같은 조건일때 우선 선정' })
   @Column({ default: false })
-  isPreferred: boolean;
+  isFormerStudent: boolean;
 
   @ApiProperty({ description: '수강확정 여부' })
   @Column({ default: false })

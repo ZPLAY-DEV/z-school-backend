@@ -46,11 +46,11 @@ export class OfferingService {
     });
   }
 
-  async findActive(): Promise<Offering[]> {
+  async findBySchoolId(schoolId: number): Promise<Offering[]> {
     return await this.offeringRepository
       .createQueryBuilder('offering')
       .orderBy('offering.id', 'DESC')
-      .where({ isActive: true })
+      .where({ schoolId })
       .getMany();
   }
 
