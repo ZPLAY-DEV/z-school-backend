@@ -5,7 +5,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-@Entity()
+@Entity('secrets')
 export class Secret {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;

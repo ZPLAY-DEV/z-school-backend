@@ -12,7 +12,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity()
+@Entity('bookings')
 export class Booking {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;

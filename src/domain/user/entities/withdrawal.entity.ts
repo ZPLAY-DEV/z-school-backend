@@ -9,7 +9,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-@Entity()
+@Entity('withdrawals')
 export class Withdrawal {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
