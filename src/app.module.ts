@@ -15,6 +15,7 @@ import { configuration } from 'src/common/config/configuration';
 import { DuplicateEntryErrorInterceptor } from 'src/common/interceptors/duplicate-entry-error.interceptor';
 import { AuthModule } from 'src/domain/auth/auth.module';
 import { JwtAuthGuard } from 'src/domain/auth/guards/jwt-auth.guard';
+import { BookingModule } from 'src/domain/booking/booking.module';
 import { CalendarModule } from 'src/domain/calendar/calendar.module';
 import { CategoryModule } from 'src/domain/category/category.module';
 import { DocumentModule } from 'src/domain/document/document.module';
@@ -23,6 +24,7 @@ import { InstructorModule } from 'src/domain/instructor/instructor.module';
 import { LedgerModule } from 'src/domain/ledger/ledger.module';
 import { LessonModule } from 'src/domain/lesson/lesson.module';
 import { ManagerModule } from 'src/domain/manager/manager.module';
+import { OfferingModule } from 'src/domain/offering/offering.module';
 import { ParentModule } from 'src/domain/parent/parent.module';
 import { PayoutModule } from 'src/domain/payout/payout.module';
 import { SchoolModule } from 'src/domain/school/school.module';
@@ -102,6 +104,7 @@ import { UploadModule } from './services/upload/upload.module';
     }),
     RedisModule,
     AuthModule,
+    BookingModule,
     CalendarModule,
     CategoryModule,
     DocumentModule,
@@ -110,6 +113,7 @@ import { UploadModule } from './services/upload/upload.module';
     LedgerModule,
     LessonModule,
     ManagerModule,
+    OfferingModule,
     ParentModule,
     PayoutModule,
     SchoolModule,

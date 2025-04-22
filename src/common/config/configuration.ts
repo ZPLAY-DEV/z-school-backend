@@ -23,16 +23,26 @@ export const configuration = () => ({
       : 6379,
     password: process.env.REDIS_CACHE_PASSWORD,
   },
-  redisMessage: {
-    host: process.env.REDIS_MESSAGE_HOST ?? 'localhost',
-    port: process.env.REDIS_MESSAGE_PORT
-      ? Number(process.env.REDIS_MESSAGE_PORT)
+  redisCache: {
+    host: process.env.REDIS_CACHE_HOST ?? 'localhost',
+    port: process.env.REDIS_CACHE_PORT
+      ? Number(process.env.REDIS_CACHE_PORT)
       : 6379,
-    password: process.env.REDIS_MESSAGE_PASSWORD,
+    password: process.env.REDIS_CACHE_PASSWORD,
   },
-  bullmq: {
-    host: process.env.BULLMQ_HOST ?? 'localhost',
-    port: process.env.BULLMQ_PORT ? Number(process.env.BULLMQ_PORT) : 6379,
+  redisPubSub: {
+    host: process.env.REDIS_PUBSUB_HOST ?? 'localhost',
+    port: process.env.REDIS_PUBSUB_PORT
+      ? Number(process.env.REDIS_PUBSUB_PORT)
+      : 6379,
+    password: process.env.REDIS_PUBSUB_PASSWORD,
+  },
+  redisBooking: {
+    host: process.env.REDIS_BOOKING_HOST ?? 'localhost',
+    port: process.env.REDIS_BOOKING_PORT
+      ? Number(process.env.REDIS_BOOKING_PORT)
+      : 6379,
+    password: process.env.REDIS_BOOKING_PASSWORD,
   },
   jwt: {
     authSecret: process.env.AUTH_TOKEN_SECRET,
@@ -52,6 +62,7 @@ export const configuration = () => ({
     bucketName: process.env.AWS_BUCKET_NAME,
     cloudFrontUrl: process.env.AWS_CLOUDFRONT_URL,
     dbSecretsArn: process.env.MYSQL_SECRETS_ARN,
+    sqsQueueUrl: process.env.AWS_SQS_QUEUE_URL,
   },
   naver: {
     accessKey: process.env.NAVER_ACCESS_KEY,

@@ -34,8 +34,15 @@ export class OfferingController {
 
   @ApiOperation({ description: 'Offering 생성' })
   @Post()
-  async create(@Body() createOfferingDto: CreateOfferingDto) {
-    return this.offeringService.create(createOfferingDto);
+  async create(@Body() dto: CreateOfferingDto): Promise<Offering> {
+    return this.offeringService.create(dto);
+  }
+
+  @Public()
+  @ApiOperation({ description: 'Offering seed 생성' })
+  @Post('seed')
+  async seed(): Promise<Offering[]> {
+    return this.offeringService.seed();
   }
 
   //?-------------------------------------------------------------------------//
@@ -56,16 +63,8 @@ export class OfferingController {
   @PaginateQueryOptions()
   @Public()
   @Get()
-  async getOfferings(
-    @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<Offering>> {
-    const activeQuery = {
-      ...query,
-      filter: {
-        isActive: '1',
-      },
-    };
-    return await this.offeringService.findAll(activeQuery);
+  async getOfferings(): Promise<Offering[]> {
+    return await this.offeringService.list();
   }
 
   @ApiOperation({ description: '모든 offering 리스트' })

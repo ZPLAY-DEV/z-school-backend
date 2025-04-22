@@ -94,7 +94,7 @@ export class Lesson {
   @Column({
     type: 'enum',
     enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST_COME,
+    default: EnrollmentRule.FIRST,
   })
   enrollmentRule: EnrollmentRule;
 

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   IsArray,
@@ -7,9 +8,11 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  Length
+  Length,
+  ValidateNested,
 } from 'class-validator';
-import { EnrollmentRule, Weekday } from 'src/common/enums';
+import { EnrollmentRule } from 'src/common/enums';
+import { ClassTimeDto } from 'src/domain/offering/dto/class-time.dto';
 
 export class CreateOfferingDto {
   @ApiProperty({ description: '🈳 DB의 학교ID' })
@@ -32,19 +35,14 @@ export class CreateOfferingDto {
   @Length(1, 16)
   groupName: string;
 
-  @ApiProperty({ description: '🈵 요일', enum: Weekday })
-  @IsEnum(Weekday)
-  weekday: Weekday;
-
-  @ApiProperty({ description: '🈵 시작시각 (HH:mm)' })
-  @IsString()
-  @Length(4, 5)
-  started: string;
-
-  @ApiProperty({ description: '🈵 종료시각 (HH:mm)' })
-  @IsString()
-  @Length(4, 5)
-  ended: string;
+  @ApiProperty({
+    description: '요일별 수업 시간 목록',
+    type: [ClassTimeDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ClassTimeDto)
+  times: ClassTimeDto[];
 
   @ApiProperty({ description: 'bitmasks (간단 배열)', type: [Number] })
   @IsArray()
@@ -64,7 +62,7 @@ export class CreateOfferingDto {
   @ApiProperty({
     description: '수강신청 방식',
     enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST_COME,
+    default: EnrollmentRule.FIRST,
   })
   @IsEnum(EnrollmentRule)
   enrollmentRule: EnrollmentRule;

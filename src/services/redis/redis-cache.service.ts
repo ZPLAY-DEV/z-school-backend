@@ -1,11 +1,11 @@
 // src/services/redis/redis-cache.service.ts
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { Redis } from 'ioredis';
+import { createClient } from 'redis';
 import { REDIS_CACHE_OPTIONS } from 'src/common/constants';
 
 @Injectable()
 export class RedisCacheService implements OnModuleInit {
-  private readonly redisClient: Redis;
+  private readonly redisClient: ReturnType<typeof createClient>;
 
   constructor(
     @Inject(REDIS_CACHE_OPTIONS)
@@ -17,12 +17,18 @@ export class RedisCacheService implements OnModuleInit {
       db?: number;
     },
   ) {
-    this.redisClient = new Redis({
-      host: redisOptions.host,
-      port: redisOptions.port,
+    this.redisClient = createClient({
+      socket: {
+        host: redisOptions.host,
+        port: redisOptions.port,
+      },
       password: redisOptions.password,
-      keyPrefix: redisOptions.keyPrefix,
-      db: redisOptions.db,
+      database: redisOptions.db,
+    });
+
+    // Connect to Redis when service is instantiated
+    this.redisClient.connect().catch((error) => {
+      console.error('❌ Failed to connect to Redis cache:', error);
     });
   }
 
@@ -41,27 +47,31 @@ export class RedisCacheService implements OnModuleInit {
   // 캐시 설정
   async set(key: string, value: any, ttl?: number): Promise<void> {
     const serializedValue = JSON.stringify(value);
+    const prefixedKey = this.getPrefixedKey(key);
+
     if (ttl) {
-      await this.redisClient.setex(key, ttl, serializedValue);
+      await this.redisClient.setEx(prefixedKey, ttl, serializedValue);
     } else {
-      await this.redisClient.set(key, serializedValue);
+      await this.redisClient.set(prefixedKey, serializedValue);
     }
   }
 
   // 캐시 조회
   async get<T>(key: string): Promise<T | null> {
-    const value = await this.redisClient.get(key);
+    const prefixedKey = this.getPrefixedKey(key);
+    const value = await this.redisClient.get(prefixedKey);
     return value ? (JSON.parse(value) as T) : null;
   }
 
   // 캐시 삭제
   async del(key: string): Promise<void> {
-    await this.redisClient.del(key);
+    const prefixedKey = this.getPrefixedKey(key);
+    await this.redisClient.del(prefixedKey);
   }
 
   // 캐시 전체 초기화
   async flush(): Promise<void> {
-    await this.redisClient.flushdb();
+    await this.redisClient.flushDb();
   }
 
   // 클라이언트 상태 확인
@@ -70,7 +80,14 @@ export class RedisCacheService implements OnModuleInit {
   }
 
   // Redis 클라이언트 반환 (필요 시 저수준 작업용)
-  getClient(): Redis {
+  getClient(): ReturnType<typeof createClient> {
     return this.redisClient;
+  }
+
+  // Add key prefix manually
+  private getPrefixedKey(key: string): string {
+    return this.redisOptions.keyPrefix
+      ? `${this.redisOptions.keyPrefix}${key}`
+      : key;
   }
 }

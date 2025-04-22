@@ -12,6 +12,10 @@ export class CreateBookingDto {
 
   // ------------------------------------------------------------------------ //
 
+  @ApiProperty({ description: '수강생정원' })
+  @IsInt()
+  capacity: number;
+
   @ApiProperty({
     description:
       'Check if this student has taken the lesson in the previous term',

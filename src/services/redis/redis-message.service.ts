@@ -5,14 +5,14 @@ import {
   ClientProxyFactory,
   Transport,
 } from '@nestjs/microservices';
-import { Redis } from 'ioredis';
+import { createClient } from 'redis';
 import { lastValueFrom } from 'rxjs';
 import { REDIS_MESSAGE_OPTIONS } from 'src/common/constants';
 
 @Injectable()
 export class RedisMessageService {
-  private readonly redisClient: Redis; // Pub/Sub용 클라이언트
-  private readonly redisSubClient: Redis; // 구독 전용 클라이언트
+  private readonly redisClient: ReturnType<typeof createClient>; // Pub/Sub용 클라이언트
+  private readonly redisSubClient: ReturnType<typeof createClient>; // 구독 전용 클라이언트
   private readonly redisMessageClient: ClientProxy; // Microservice 클라이언트
 
   constructor(
@@ -27,17 +27,34 @@ export class RedisMessageService {
     },
   ) {
     // 발행용 클라이언트
-    this.redisClient = new Redis({
-      host: redisOptions.host,
-      port: redisOptions.port,
+    this.redisClient = createClient({
+      socket: {
+        host: redisOptions.host,
+        port: redisOptions.port,
+      },
       password: redisOptions.password,
-      keyPrefix: redisOptions.keyPrefix,
-      db: redisOptions.db,
-      retryStrategy: redisOptions.retryStrategy,
+      database: redisOptions.db,
+    });
+
+    // Connect immediately
+    this.redisClient.connect().catch((error) => {
+      console.error('❌ Failed to connect to Redis messaging service:', error);
     });
 
     // 구독용 클라이언트 (별도 연결)
-    this.redisSubClient = this.redisClient.duplicate();
+    this.redisSubClient = createClient({
+      socket: {
+        host: redisOptions.host,
+        port: redisOptions.port,
+      },
+      password: redisOptions.password,
+      database: redisOptions.db,
+    });
+
+    // Connect the subscriber client
+    this.redisSubClient.connect().catch((error) => {
+      console.error('❌ Failed to connect Redis subscriber client:', error);
+    });
 
     // Microservice 클라이언트 초기화
     this.redisMessageClient = ClientProxyFactory.create({
@@ -52,29 +69,37 @@ export class RedisMessageService {
 
   // 메시지 발행 (Pub/Sub)
   async publish(channel: string, message: any): Promise<void> {
+    const prefixedChannel = this.getPrefixedKey(channel);
     const serializedMessage = JSON.stringify(message);
-    await this.redisClient.publish(channel, serializedMessage);
+    await this.redisClient.publish(prefixedChannel, serializedMessage);
   }
 
   // 메시지 구독 (Pub/Sub)
-  subscribe(channel: string, callback: (message: any) => void): void {
-    // void 타입은 subscribe 메서드가 promise를 처리하지 않는다고 명시적으로 나타냄
-    void this.redisSubClient.subscribe(channel);
-    this.redisSubClient.on('message', (subChannel, message) => {
-      if (subChannel === channel) {
+  async subscribe(
+    channel: string,
+    callback: (message: any) => void,
+  ): Promise<void> {
+    const prefixedChannel = this.getPrefixedKey(channel);
+
+    // In redis v4, we need to use the subscribe method and set up message handlers differently
+    await this.redisSubClient.subscribe(prefixedChannel, (message) => {
+      try {
         callback(JSON.parse(message));
+      } catch (error) {
+        console.error('Failed to parse Redis pub/sub message:', error);
       }
     });
   }
 
   // 구독 해제
   async unsubscribe(channel: string): Promise<void> {
-    await this.redisSubClient.unsubscribe(channel);
+    const prefixedChannel = this.getPrefixedKey(channel);
+    await this.redisSubClient.unsubscribe(prefixedChannel);
   }
 
   // Microservice 패턴으로 이벤트 발행
   async emitEvent(pattern: string, data: any): Promise<void> {
-    await this.redisMessageClient.emit(pattern, data).toPromise();
+    await lastValueFrom(this.redisMessageClient.emit(pattern, data));
   }
 
   // Microservice 패턴으로 메시지 전송 (응답 기대)
@@ -84,21 +109,18 @@ export class RedisMessageService {
     )) as T;
   }
 
-  // 클라이언트 상태 확인
-  async ping(): Promise<string> {
-    return await this.redisClient.ping();
-  }
-
-  // Redis 클라이언트 반환 (저수준 작업용)
-  getClient(): Redis {
-    return this.redisClient;
-  }
-
-  getSubClient(): Redis {
+  getSubClient(): ReturnType<typeof createClient> {
     return this.redisSubClient;
   }
 
   getMessageClient(): ClientProxy {
     return this.redisMessageClient;
+  }
+
+  // Add key prefix manually
+  private getPrefixedKey(key: string): string {
+    return this.redisOptions.keyPrefix
+      ? `${this.redisOptions.keyPrefix}${key}`
+      : key;
   }
 }

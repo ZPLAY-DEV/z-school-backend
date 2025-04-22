@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { EnrollmentRule, Weekday } from 'src/common/enums';
+import { EnrollmentRule } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { ClassTimeDto } from 'src/domain/offering/dto/class-time.dto';
 import { School } from 'src/domain/school/entities/school.entity';
 import {
   Column,
@@ -41,17 +42,17 @@ export class Offering {
   @Column({ type: 'varchar', length: 16 })
   groupName: string;
 
-  @ApiProperty({ description: '🈵 요일' })
-  @Column({ type: 'enum', enum: Weekday })
-  weekday: Weekday;
+  @ApiProperty({ description: '수강 정원' })
+  @Column({ type: 'int', unsigned: true, default: 20 })
+  capacity: number;
 
-  @ApiProperty({ description: '🈵 시작시각' })
-  @Column({ type: 'varchar', length: 5 }) // MySQL TIME 타입
-  started: string;
-
-  @ApiProperty({ description: '🈵 종료시각' })
-  @Column({ type: 'varchar', length: 5 }) // MySQL TIME 타입
-  ended: string;
+  @ApiProperty({
+    description: '요일별 수업 시간 정보',
+    type: 'array',
+    isArray: true,
+  })
+  @Column({ type: 'json' })
+  times: ClassTimeDto[];
 
   @Column('simple-array')
   bitmasks: number[];
@@ -65,7 +66,7 @@ export class Offering {
   @Column({
     type: 'enum',
     enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST_COME,
+    default: EnrollmentRule.FIRST,
   })
   enrollmentRule: EnrollmentRule;
 
