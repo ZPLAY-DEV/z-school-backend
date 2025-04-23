@@ -1,47 +1,57 @@
+import { Body, Controller, Delete, Post } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { BookingStatus } from 'src/common/enums';
+import { HttpResponse } from 'src/core/http/http-response';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+import { BookingResponseDto } from 'src/domain/booking/dto/booking-response.dto';
 import {
-  Body,
-  Controller,
-  Delete,
-  HttpCode,
-  HttpStatus,
-  Post,
-} from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+  CancelWithDbSwagger,
+  CancelWithRedisSwagger,
+  CreateWithDbSwagger,
+  CreateWithRedisSwagger
+} from 'src/domain/booking/swagger/rest-swagger.decorator';
 import { BookingService } from './booking.service';
-import { BookingResponseDto } from './dto/booking-response.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
 @ApiTags('수강신청')
+@ApiCommonErrorResponseTemplate()
 @Controller('bookings')
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
-  @Post()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '수강 신청' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: '수강 신청 결과',
-    type: BookingResponseDto,
-  })
-  async create(
-    @Body() createBookingDto: CreateBookingDto,
-  ): Promise<BookingResponseDto> {
-    return this.bookingService.create(createBookingDto);
+  @Post('db')
+  @CreateWithDbSwagger()
+  async createWithDb(@Body() dto: CreateBookingDto): Promise<HttpResponse> {
+    await this.bookingService.createWithDb(dto);
+
+    return HttpResponse.created(
+      new BookingResponseDto({
+        status: BookingStatus.PENDING,
+        message: '수강신청했거든요.',
+      }),
+    );
   }
 
-  @Delete()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '수강 신청 취소' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: '수강 신청 취소 결과',
-    type: BookingResponseDto,
-  })
-  async cancel(
-    @Body() cancelBookingDto: CancelBookingDto,
-  ): Promise<BookingResponseDto> {
-    return this.bookingService.cancel(cancelBookingDto);
+  @Post('redis')
+  @CreateWithRedisSwagger()
+  async createWithRedis(@Body() dto: CreateBookingDto): Promise<HttpResponse> {
+    const result = await this.bookingService.createWithRedis(dto);
+
+    return HttpResponse.created(result);
+  }
+
+  @Delete('db')
+  @CancelWithDbSwagger()
+  async cancelWithDb(@Body() dto: CancelBookingDto): Promise<HttpResponse> {
+    await this.bookingService.cancelWithDb(dto);
+    return HttpResponse.ok();
+  }
+
+  @Delete('redis')
+  @CancelWithRedisSwagger()
+  async cancelWithRedis(@Body() dto: CancelBookingDto): Promise<HttpResponse> {
+    await this.bookingService.cancelWithRedis(dto);
+    return HttpResponse.ok();
   }
 }

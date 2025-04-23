@@ -1,7 +1,6 @@
-import { HttpErrorFormat } from './../../http/http-error-objects';
-import { ApiResponse, ApiResponseOptions } from '@nestjs/swagger';
-
 import { applyDecorators } from '@nestjs/common';
+import { ApiResponse, ApiResponseOptions } from '@nestjs/swagger';
+import { HttpErrorFormat } from 'src/core/http/http-error-objects';
 
 /**
  * Swagger API Error Response Template
