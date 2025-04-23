@@ -47,6 +47,7 @@ export class RedisBookingService implements OnModuleInit {
       : key;
   }
 
+  //! 수강신청
   async executeBookingScript(
     offeringId: number,
     studentId: number,
@@ -64,8 +65,8 @@ export class RedisBookingService implements OnModuleInit {
       local pending_key = offering_id .. ":pending"
       local applicants_key = offering_id .. ":applicants"
 
-      local already_applied = redis.call("ZSCORE", applicants_key, student_id)
-      if already_applied then
+      local already_booked = redis.call("ZSCORE", applicants_key, student_id)
+      if already_booked then
         return "ERR_BOOKED"
       end
 
@@ -106,10 +107,11 @@ export class RedisBookingService implements OnModuleInit {
     return { err: 'UNKNOWN' };
   }
 
+  //! 취소후 대기자 승급까지 처리
   async executeCancelScript(
     offeringId: number,
     studentId: number,
-  ): Promise<{ ok?: string }> {
+  ): Promise<{ ok?: string; err?: string }> {
     const script = `
       local offering_id = KEYS[1]
       local student_id = ARGV[1]
@@ -119,8 +121,16 @@ export class RedisBookingService implements OnModuleInit {
       local applicants_key = offering_id .. ":applicants"
 
       redis.call("ZREM", applicants_key, student_id)
-      redis.call("LREM", enrolled_key, 0, student_id)
+      local removed_from_enrolled = redis.call("LREM", enrolled_key, 0, student_id)
       redis.call("LREM", pending_key, 0, student_id)
+
+      -- 만약 수강자에서 제거가 일어났고, 대기자가 존재한다면 한 명 승급
+      if removed_from_enrolled > 0 then
+        local next_waiting = redis.call("LPOP", pending_key)
+        if next_waiting then
+          redis.call("RPUSH", enrolled_key, next_waiting)
+        end
+      end
 
       return "OK_CANCELED"
     `;
@@ -131,7 +141,11 @@ export class RedisBookingService implements OnModuleInit {
       arguments: [studentId.toString()],
     });
 
-    return { ok: result === 'OK_CANCELED' ? 'CANCELED' : undefined };
+    if (typeof result === 'string') {
+      if (result.startsWith('OK_')) return { ok: result.replace('OK_', '') };
+    }
+
+    return { err: 'UNKNOWN' };
   }
 
   async getWaitingPosition(

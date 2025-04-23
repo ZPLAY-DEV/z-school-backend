@@ -124,6 +124,11 @@ export const HttpErrorConstants = {
     message: '가입 가능한 유형이 아닙니다.',
   } as HttpErrorFormat,
 
+  ALREADY_BOOKED: {
+    error: 'ALREADY_BOOKED',
+    message: '이미 수강신청 접수 중입니다.',
+  } as HttpErrorFormat,
+
   ALREADY_REGISTERED: {
     error: 'ALREADY_REGISTERED',
     message: '이미 가입되었습니다.',
@@ -143,6 +148,11 @@ export const HttpErrorConstants = {
   NOT_FOUND_PASSWORD: {
     error: 'NOT_FOUND_PASSWORD',
     message: '비밀번호가 존재하지 않습니다.',
+  } as HttpErrorFormat,
+
+  NOT_AVAILABLE: {
+    error: 'NOT_AVAILABLE',
+    message: '더 이상 수강신청이 불가능합니다.',
   } as HttpErrorFormat,
 
   INVALID_CREDENTIALS: {
