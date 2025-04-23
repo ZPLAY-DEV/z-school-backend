@@ -27,7 +27,7 @@ export class Term {
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '학교명' })
-  @Column({ type: 'varchar', length: 16, nullable: true })
+  @Column({ type: 'varchar', length: 32, nullable: true })
   schoolName: string | null; // 관리자 편의를 위한 column
 
   @ApiProperty({ description: '학사년도' })

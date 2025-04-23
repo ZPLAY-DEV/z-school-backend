@@ -9,6 +9,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { Cache } from 'cache-manager';
 import { Observable } from 'rxjs';
+import { KEYV_REDIS } from 'src/common/constants';
 import {
   getAllEntitiesFromUrl,
   getBaseEntityFromUrl,
@@ -18,7 +19,7 @@ import {
 export class HttpCacheInterceptor extends CacheInterceptor {
   constructor(
     @Inject(CACHE_MANAGER) cacheManager: Cache,
-    @Inject('KEYV_REDIS') private readonly keyvRedis: KeyvRedis<string>,
+    @Inject(KEYV_REDIS) private readonly keyvRedis: KeyvRedis<string>,
     reflector: Reflector,
   ) {
     super(cacheManager, reflector);

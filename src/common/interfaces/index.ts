@@ -1,6 +1,6 @@
 // import * as admin from 'firebase-admin';
 
-import { Role } from 'src/common/enums';
+import { Role, Weekday } from 'src/common/enums';
 
 export interface IDatabaseConfig {
   engine: string;
@@ -227,7 +227,8 @@ export type Tokens = {
   // refreshTokenExpiry: number;
 };
 
-// export type DateRange = {
-//   start: Date;
-//   end: Date;
-// };
+export type IClassTime = {
+  weekday: Weekday;
+  start: string;
+  end: string;
+};

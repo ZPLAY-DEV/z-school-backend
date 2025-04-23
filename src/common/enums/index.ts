@@ -1,4 +1,5 @@
 export * from './alarm-type';
+export * from './booking-status';
 export * from './calendar-type';
 export * from './category';
 export * from './document-type';

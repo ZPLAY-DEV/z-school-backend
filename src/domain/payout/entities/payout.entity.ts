@@ -10,7 +10,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity()
+@Entity('payouts')
 export class Payout {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;

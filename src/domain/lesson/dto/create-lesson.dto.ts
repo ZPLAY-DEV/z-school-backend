@@ -133,7 +133,7 @@ export class CreateLessonDto {
   @ApiProperty({
     description: '🈳 Enrollment rule',
     enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST_COME,
+    default: EnrollmentRule.FIRST,
   })
   @IsEnum(EnrollmentRule)
   @IsOptional()

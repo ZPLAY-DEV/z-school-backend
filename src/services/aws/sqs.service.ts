@@ -1,31 +1,39 @@
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
-import { Inject, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { AWS_SQS_OPTIONS } from 'src/common/constants';
 
 @Injectable()
-export class SqsService {
+export class SqsService implements OnModuleInit {
   private readonly sqsClient: SQSClient;
   private readonly queueUrl: string;
 
-  constructor(@Inject(ConfigService) private configService: ConfigService) {
-    const region = this.configService.get<string>('aws.defaultRegion');
-    const accessKeyId = this.configService.get<string>('aws.accessKey');
-    const secretAccessKey = this.configService.get<string>(
-      'aws.secretAccessKey',
-    );
-
-    if (!region || !accessKeyId || !secretAccessKey) {
-      throw new Error('Missing AWS credentials or region');
-    }
-
+  constructor(
+    @Inject(AWS_SQS_OPTIONS)
+    private readonly sqsOptions: {
+      region: string;
+      accessKeyId: string;
+      secretAccessKey: string;
+      queueUrl: string;
+    },
+  ) {
     this.sqsClient = new SQSClient({
-      region,
+      region: sqsOptions.region,
       credentials: {
-        accessKeyId,
-        secretAccessKey,
+        accessKeyId: sqsOptions.accessKeyId,
+        secretAccessKey: sqsOptions.secretAccessKey,
       },
     });
-    this.queueUrl = this.configService.get<string>('AWS_SQS_QUEUE_URL') ?? '';
+    this.queueUrl = sqsOptions.queueUrl;
+  }
+
+  onModuleInit() {
+    try {
+      console.log(
+        `✅ AWS SQS service initialized for region: ${this.sqsOptions.region}`,
+      );
+    } catch (error) {
+      console.error('❌ Failed to initialize AWS SQS service:', error);
+    }
   }
 
   async sendMessage(payload: any): Promise<void> {

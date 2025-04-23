@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { StudentStatus } from 'src/common/enums';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
@@ -111,6 +112,9 @@ export class Student {
   school: School;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @OneToMany(() => Booking, (booking) => booking.student)
+  bookings: Booking[];
 
   @OneToMany(() => Subsidy, (subsidy) => subsidy.student)
   subsidies: Subsidy[];
