@@ -85,19 +85,42 @@ export class BookingService {
           });
         }
 
-        // Send message to SQS for async processing
-        await this.sqsService.sendMessage({
-          event: 'CREATE_BOOKING',
-          data: {
-            offeringId,
-            studentId,
-            lessonName: dto.lessonName,
-            timestamp,
-            status: response.status,
-            waitingPosition: response.waitingPosition,
-            isFormerStudent,
-          },
-        });
+        try {
+          this.sqsService
+            .sendMessage({
+              event: 'CREATE_BOOKING',
+              data: {
+                offeringId,
+                studentId,
+                lessonName,
+                timestamp,
+                status: response.status,
+                waitingPosition: response.waitingPosition ?? null,
+                isFormerStudent: isFormerStudent ?? false,
+              },
+            })
+            .catch((e) => {
+              this.logger.error('SQS 전송 실패', e.stack);
+              // 옵션: 실패 시 재시도 큐 혹은 로그 남기기
+            });
+        } catch (e) {
+          this.logger.error('SQS 전송 실패', e.stack);
+          // 옵션: 실패 시 재시도 큐 혹은 로그 남기기
+        }
+
+        // 큐에 payload 를 넣고 기다리는건 너무 길다.
+        // await this.sqsService.sendMessage({
+        //   event: 'CREATE_BOOKING',
+        //   data: {
+        //     offeringId,
+        //     studentId,
+        //     lessonName: dto.lessonName,
+        //     timestamp,
+        //     status: response.status,
+        //     waitingPosition: response.waitingPosition,
+        //     isFormerStudent,
+        //   },
+        // });
 
         return response;
       } else {

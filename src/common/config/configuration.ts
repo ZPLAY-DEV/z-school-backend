@@ -56,13 +56,15 @@ export const configuration = () => ({
     process.env.GOOGLE_APPLICATION_CREDENTIALS ??
     './fb-admin-gogi.account-key.json',
   aws: {
+    defaultRegion: process.env.AWS_DEFAULT_REGION,
     accessKey: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    defaultRegion: process.env.AWS_DEFAULT_REGION,
     bucketName: process.env.AWS_BUCKET_NAME,
     cloudFrontUrl: process.env.AWS_CLOUDFRONT_URL,
-    dbSecretsArn: process.env.MYSQL_SECRETS_ARN,
-    sqsQueueUrl: process.env.AWS_SQS_QUEUE_URL,
+    dbSecretsArn: process.env.AWS_DB_SECRETS_ARN,
+    sqsEndpoint: process.env.AWS_SQS_ENDPOINT,
+    sqsPrimaryUrl: process.env.AWS_SQS_PQ_URL,
+    sqsDeadLetterUrl: process.env.AWS_SQS_DLQ_URL,
   },
   naver: {
     accessKey: process.env.NAVER_ACCESS_KEY,

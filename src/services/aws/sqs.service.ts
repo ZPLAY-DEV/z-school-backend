@@ -13,11 +13,15 @@ export class SqsService implements OnModuleInit {
       region: string;
       accessKeyId: string;
       secretAccessKey: string;
+      sqsEndpoint: string;
       queueUrl: string;
     },
   ) {
+    console.log(`🟢🟢🟢🟢`, sqsOptions);
+
     this.sqsClient = new SQSClient({
       region: sqsOptions.region,
+      endpoint: sqsOptions.sqsEndpoint,
       credentials: {
         accessKeyId: sqsOptions.accessKeyId,
         secretAccessKey: sqsOptions.secretAccessKey,

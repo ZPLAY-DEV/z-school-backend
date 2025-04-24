@@ -25,6 +25,7 @@ export class OfferingService {
   //? CREATE
   //?-------------------------------------------------------------------------//
 
+  //! 5분간격 bitmasks 로직으로 변경
   async create(dto: CreateOfferingDto): Promise<Offering> {
     const item = this.offeringRepository.create(dto);
     return await this.offeringRepository.save(item);
