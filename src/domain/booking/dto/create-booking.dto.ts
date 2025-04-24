@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsOptional } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class CreateBookingDto {
   @ApiProperty({ description: 'ID of the offering' })
@@ -11,6 +11,11 @@ export class CreateBookingDto {
   studentId: number;
 
   // ------------------------------------------------------------------------ //
+
+  @ApiProperty({ description: '수강신청 과목명' })
+  @IsString()
+  @IsOptional()
+  lessonName?: string;
 
   @ApiProperty({ description: '수강생정원' })
   @IsInt()

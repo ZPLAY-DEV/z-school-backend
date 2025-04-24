@@ -29,7 +29,15 @@ export class Booking {
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '같은 조건일때 우선 선정' })
+  @ApiProperty({ description: '수강신청 과목명' })
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  lessonName: string | null;
+
+  @ApiProperty({ description: '최대 50위 까지의 대기순서' })
+  @Column({ type: 'tinyint', unsigned: true, nullable: true })
+  waitingPosition: number;
+
+  @ApiProperty({ description: '우선 선정기준인 재수강생 여부' })
   @Column({ default: false })
   isFormerStudent: boolean;
 

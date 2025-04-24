@@ -230,7 +230,7 @@ export class AuthService {
     };
     const accessTokenOptions = {
       secret: this.configService.get('jwt.authSecret'),
-      expiresIn: '1m', // ONE_MIN
+      expiresIn: '1h', // ONE_HOUR
     };
     const accessToken = await this.jwtService.signAsync(
       payload,
@@ -345,7 +345,7 @@ export class AuthService {
     };
     const accessTokenOptions = {
       secret: this.configService.get('jwt.authSecret'),
-      expiresIn: '1m', // ONE_MIN
+      expiresIn: '1h', // ONE_HOUR
     };
     const accessToken = await this.jwtService.signAsync(
       payload,

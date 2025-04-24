@@ -27,13 +27,14 @@ export class BookingService {
   ) {}
 
   async createWithDb(dto: CreateBookingDto): Promise<Booking> {
-    const { offeringId, studentId, isFormerStudent } = dto;
+    const { offeringId, studentId, lessonName, isFormerStudent } = dto;
 
     try {
       const booking = await this.bookingRepository.save(
         this.bookingRepository.create({
           offeringId,
           studentId,
+          lessonName,
           isFormerStudent,
         }),
       );
@@ -51,7 +52,8 @@ export class BookingService {
   }
 
   async createWithRedis(dto: CreateBookingDto): Promise<BookingResponseDto> {
-    const { offeringId, studentId, capacity, isFormerStudent } = dto;
+    const { offeringId, studentId, lessonName, capacity, isFormerStudent } =
+      dto;
     const timestamp = Date.now();
 
     try {
@@ -68,7 +70,7 @@ export class BookingService {
         if (result.ok === 'ENROLLED') {
           response = new BookingResponseDto({
             status: BookingStatus.ENROLLED,
-            message: '수강신청 결과 수강이 확정되었습니다.',
+            message: `수강신청결과 ${lessonName} 수강이 확정되었습니다.`,
           });
         } else {
           const waitingPosition =
@@ -79,16 +81,17 @@ export class BookingService {
           response = new BookingResponseDto({
             status: BookingStatus.PENDING,
             waitingPosition,
-            message: `수강신청 결과 대기순서 ${waitingPosition}번 입니다.`,
+            message: `수강결과 ${lessonName} 대기 ${waitingPosition}번 입니다.`,
           });
         }
 
         // Send message to SQS for async processing
         await this.sqsService.sendMessage({
           event: 'CREATE_BOOKING',
-          payload: {
+          data: {
             offeringId,
             studentId,
+            lessonName: dto.lessonName,
             timestamp,
             status: response.status,
             waitingPosition: response.waitingPosition,
@@ -140,9 +143,9 @@ export class BookingService {
     }
   }
 
-  // todo. 굳이 queue 를 사용해야 하나? 고민.
+  // todo. queue 를 사용해야 하는지 고민해 볼 것.
   async cancelWithRedis(cancelBookingDto: CancelBookingDto): Promise<void> {
-    const { offeringId, studentId } = cancelBookingDto;
+    const { offeringId, studentId, lessonName } = cancelBookingDto;
 
     try {
       // Execute Redis Lua script for cancellation
@@ -154,10 +157,11 @@ export class BookingService {
       if (result.ok === 'CANCELED') {
         // Send message to SQS for async processing (DB update, notification, etc.)
         await this.sqsService.sendMessage({
-          event: 'DELETE_BOOKING',
-          payload: {
+          event: 'CANCEL_BOOKING',
+          data: {
             offeringId,
             studentId,
+            lessonName,
           },
         });
       } else {
