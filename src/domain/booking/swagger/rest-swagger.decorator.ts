@@ -33,10 +33,6 @@ export const CreateWithDbSwagger = () => {
         errorFormatList: [HttpErrorConstants.ALREADY_BOOKED],
       },
       {
-        status: StatusCodes.UNPROCESSABLE_ENTITY,
-        errorFormatList: [HttpErrorConstants.NOT_AVAILABLE],
-      },
-      {
         status: StatusCodes.INTERNAL_SERVER_ERROR,
         errorFormatList: [HttpErrorConstants.INTERNAL_DATABASE_ERROR],
       },
@@ -67,10 +63,10 @@ export const CreateWithRedisSwagger = () => {
         status: StatusCodes.UNPROCESSABLE_ENTITY,
         errorFormatList: [HttpErrorConstants.ALREADY_BOOKED],
       },
-      {
-        status: StatusCodes.UNPROCESSABLE_ENTITY,
-        errorFormatList: [HttpErrorConstants.NOT_AVAILABLE],
-      },
+      // {
+      //   status: StatusCodes.UNPROCESSABLE_ENTITY,
+      //   errorFormatList: [HttpErrorConstants.NOT_AVAILABLE],
+      // },
       {
         status: StatusCodes.INTERNAL_SERVER_ERROR,
         errorFormatList: [HttpErrorConstants.INTERNAL_DATABASE_ERROR],

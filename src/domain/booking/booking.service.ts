@@ -65,14 +65,15 @@ export class BookingService {
         capacity,
       );
 
+      let response: BookingResponseDto;
       if (result.ok) {
-        let response: BookingResponseDto;
         if (result.ok === 'ENROLLED') {
           response = new BookingResponseDto({
             status: BookingStatus.ENROLLED,
+            waitingPosition: null,
             message: `수강신청결과 ${lessonName} 수강이 확정되었습니다.`,
           });
-        } else {
+        } else if (result.ok === 'PENDING') {
           const waitingPosition =
             await this.redisBookingService.getWaitingPosition(
               offeringId,
@@ -83,44 +84,32 @@ export class BookingService {
             waitingPosition,
             message: `수강결과 ${lessonName} 대기 ${waitingPosition}번 입니다.`,
           });
+        } else {
+          // ☠️ result.ok === 'FULL'
+          response = new BookingResponseDto({
+            status: BookingStatus.PENDING,
+            waitingPosition: 666, // ☠️ 대기도 불가능한 사람한테 부여하는 불길한 숫자
+            message: `수강신청이 완전히 마감되었습니다.`,
+          });
         }
-
-        try {
-          this.sqsService
-            .sendMessage({
-              event: 'CREATE_BOOKING',
-              data: {
-                offeringId,
-                studentId,
-                lessonName,
-                timestamp,
-                status: response.status,
-                waitingPosition: response.waitingPosition ?? null,
-                isFormerStudent: isFormerStudent ?? false,
-              },
-            })
-            .catch((e) => {
-              this.logger.error('SQS 전송 실패', e.stack);
-              // 옵션: 실패 시 재시도 큐 혹은 로그 남기기
-            });
-        } catch (e) {
-          this.logger.error('SQS 전송 실패', e.stack);
-          // 옵션: 실패 시 재시도 큐 혹은 로그 남기기
-        }
-
-        // 큐에 payload 를 넣고 기다리는건 너무 길다.
-        // await this.sqsService.sendMessage({
-        //   event: 'CREATE_BOOKING',
-        //   data: {
-        //     offeringId,
-        //     studentId,
-        //     lessonName: dto.lessonName,
-        //     timestamp,
-        //     status: response.status,
-        //     waitingPosition: response.waitingPosition,
-        //     isFormerStudent,
-        //   },
-        // });
+        // 💡 intentionally avoided "await" for SQS to not block the main thread
+        this.sqsService
+          .sendMessage({
+            event: 'CREATE_BOOKING',
+            data: {
+              offeringId,
+              studentId,
+              lessonName,
+              timestamp,
+              waitingPosition: response.waitingPosition,
+              isFormerStudent: isFormerStudent ?? false,
+              isEnrolled: response.status === BookingStatus.ENROLLED,
+            },
+          })
+          .catch((e) => {
+            this.logger.error('SQS 전송 실패', e.stack);
+            // 옵션: 실패 시 재시도 큐 혹은 로그 남기기
+          });
 
         return response;
       } else {
@@ -136,11 +125,11 @@ export class BookingService {
           HttpErrorConstants.ALREADY_BOOKED,
         );
       }
-      if (error instanceof Error && error.message === 'FULL') {
-        throw new UnprocessableEntityException(
-          HttpErrorConstants.NOT_AVAILABLE,
-        );
-      }
+      // if (error instanceof Error && error.message === 'FULL') {
+      //   throw new UnprocessableEntityException(
+      //     HttpErrorConstants.NOT_AVAILABLE,
+      //   );
+      // }
       throw new InternalServerErrorException(
         HttpErrorConstants.INTERNAL_DATABASE_ERROR,
       );

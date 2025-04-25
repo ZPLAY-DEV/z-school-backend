@@ -83,8 +83,7 @@ export class RedisBookingService implements OnModuleInit {
           redis.call("RPUSH", pending_key, student_id)
           return "OK_PENDING"
         else
-          redis.call("ZREM", all_key, student_id)
-          return "ERR_FULL"
+          return "OK_FULL"
         end
       end
     `;

@@ -7,12 +7,11 @@ export class BookingResponseDto {
 
   @ApiProperty({
     description: 'Position in the waiting list (if bookingStatus is PENDING)',
-    required: false,
   })
-  waitingPosition?: number;
+  waitingPosition: number | null;
 
-  @ApiProperty({ description: 'message if any', required: false })
-  message?: string;
+  @ApiProperty({ description: 'message if any' })
+  message: string | null;
 
   constructor(partial: Partial<BookingResponseDto>) {
     Object.assign(this, partial);
