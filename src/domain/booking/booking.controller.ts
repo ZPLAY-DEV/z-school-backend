@@ -8,7 +8,7 @@ import {
   CancelWithDbSwagger,
   CancelWithRedisSwagger,
   CreateWithDbSwagger,
-  CreateWithRedisSwagger
+  CreateWithRedisSwagger,
 } from 'src/domain/booking/swagger/rest-swagger.decorator';
 import { BookingService } from './booking.service';
 import { CancelBookingDto } from './dto/cancel-booking.dto';

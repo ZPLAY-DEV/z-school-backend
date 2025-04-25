@@ -3,18 +3,18 @@ services:
     image: localstack/localstack:latest
     container_name: localstack
     ports:
-      - "4566:4566"          # LocalStack Gateway
+      - "4566:4566"            # LocalStack Gateway (DynamoDB 포함)
       - "4510-4559:4510-4559"  # 외부 서비스 포트 범위
     environment:
       DEFAULT_REGION: us-east-1
-      SERVICES: "sqs,lambda,dynamodb"
+      SERVICES: "sqs,lambda,dynamodb,logs"
       DEBUG: "1"
-      DATA_DIR: /var/lib/localstack/data
+      PERSISTENCE: "1"
       DOCKER_HOST: unix:///var/run/docker.sock
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
     volumes:
-      - /Users/Shared/docker/localstack-data:/var/lib/localstack/data
+      - /Users/Shared/docker/localstack-data:/var/lib/localstack"
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - app-network

@@ -1,10 +1,12 @@
 import {
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { AWS_SQS_CLIENT, REDIS_BOOKING_CLIENT } from 'src/common/constants';
 import { BookingStatus } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { SqsService } from 'src/services/aws/sqs.service';
@@ -22,8 +24,10 @@ export class BookingService {
   constructor(
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
+    @Inject(AWS_SQS_CLIENT)
+    private readonly sqsClient: SqsService,
+    @Inject(REDIS_BOOKING_CLIENT)
     private readonly redisBookingService: RedisBookingService,
-    private readonly sqsService: SqsService,
   ) {}
 
   async createWithDb(dto: CreateBookingDto): Promise<Booking> {
@@ -56,6 +60,14 @@ export class BookingService {
       dto;
     const timestamp = Date.now();
 
+    console.log(
+      '🚀 Redis booking payload',
+      offeringId,
+      studentId,
+      timestamp,
+      capacity,
+    );
+
     try {
       // Execute Redis Lua script for atomic booking
       const result = await this.redisBookingService.executeBookingScript(
@@ -64,6 +76,8 @@ export class BookingService {
         timestamp,
         capacity,
       );
+
+      console.log('🚀 Redis booking result:', result);
 
       let response: BookingResponseDto;
       if (result.ok) {
@@ -87,15 +101,15 @@ export class BookingService {
         } else {
           // ☠️ result.ok === 'FULL'
           response = new BookingResponseDto({
-            status: BookingStatus.PENDING,
+            status: BookingStatus.PENDING, // ☠️ 대기도 불가능한 사람도 상태는 PENDING
             waitingPosition: 666, // ☠️ 대기도 불가능한 사람한테 부여하는 불길한 숫자
             message: `수강신청이 완전히 마감되었습니다.`,
           });
         }
         // 💡 intentionally avoided "await" for SQS to not block the main thread
-        this.sqsService
+        this.sqsClient
           .sendMessage({
-            event: 'CREATE_BOOKING',
+            type: 'CREATE_BOOKING',
             data: {
               offeringId,
               studentId,
@@ -107,7 +121,7 @@ export class BookingService {
             },
           })
           .catch((e) => {
-            this.logger.error('SQS 전송 실패', e.stack);
+            this.logger.error('🔴 SQS 전송 실패', e.stack);
             // 옵션: 실패 시 재시도 큐 혹은 로그 남기기
           });
 
@@ -117,7 +131,7 @@ export class BookingService {
       }
     } catch (error) {
       this.logger.error(
-        `Failed to create booking: ${error.message}`,
+        `🔴 Failed to create booking: ${error.message}`,
         error.stack,
       );
       if (error instanceof Error && error.message === 'BOOKED') {
@@ -141,7 +155,7 @@ export class BookingService {
       });
     } catch (error) {
       this.logger.error(
-        `Failed to cancel booking: ${error.message}`,
+        `🔴 Failed to cancel booking: ${error.message}`,
         error.stack,
       );
       throw new InternalServerErrorException(
@@ -163,8 +177,8 @@ export class BookingService {
 
       if (result.ok === 'CANCELED') {
         // Send message to SQS for async processing (DB update, notification, etc.)
-        await this.sqsService.sendMessage({
-          event: 'CANCEL_BOOKING',
+        await this.sqsClient.sendMessage({
+          type: 'CANCEL_BOOKING',
           data: {
             offeringId,
             studentId,
@@ -176,7 +190,7 @@ export class BookingService {
       }
     } catch (error) {
       this.logger.error(
-        `Failed to cancel booking: ${error.message}`,
+        `🔴 Failed to cancel booking: ${error.message}`,
         error.stack,
       );
       throw new InternalServerErrorException(

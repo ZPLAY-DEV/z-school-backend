@@ -6,13 +6,13 @@ export class CancelBookingDto {
   @IsInt()
   offeringId: number;
 
-  @ApiProperty({ description: '수강신청 과목명' })
-  @IsString()
-  lessonName: string;
-
   @ApiProperty({ description: 'ID of the student' })
   @IsInt()
   studentId: number;
+
+  @ApiProperty({ description: '수강신청 과목명' })
+  @IsString()
+  lessonName: string;
 
   constructor(partial: Partial<CancelBookingDto>) {
     Object.assign(this, partial);

@@ -36,7 +36,6 @@ import { RedisMessageService } from './redis-message.service';
         port: configService.get<number>('redis.port', 6379),
         password: configService.get<string>('redis.password', ''),
         db: configService.get<number>('redis.bookingDb', 1),
-        keyPrefix: 'booking:',
       }),
       inject: [ConfigService],
     },

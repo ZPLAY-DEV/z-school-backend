@@ -6,7 +6,6 @@ interface RedisBookingOptions {
   host: string;
   port: number;
   password?: string;
-  keyPrefix?: string;
   db?: number;
 }
 
@@ -41,12 +40,6 @@ export class RedisBookingService implements OnModuleInit {
     );
   }
 
-  private getKey(key: string): string {
-    return this.redisOptions.keyPrefix
-      ? `${this.redisOptions.keyPrefix}${key}`
-      : key;
-  }
-
   //! 수강신청
   async executeBookingScript(
     offeringId: number,
@@ -61,9 +54,9 @@ export class RedisBookingService implements OnModuleInit {
       local capacity = tonumber(ARGV[3])
       local max_pending = 50
 
-      local all_key = offering_id .. ":all"
       local enrolled_key = offering_id .. ":enrolled"
       local pending_key = offering_id .. ":pending"
+      local all_key = offering_id .. ":all"
 
       local already_booked = redis.call("ZSCORE", all_key, student_id)
       if already_booked then
@@ -88,7 +81,7 @@ export class RedisBookingService implements OnModuleInit {
       end
     `;
 
-    const keyPrefix = this.getKey(`offering:${offeringId}`);
+    const keyPrefix = `offering:${offeringId}`;
     const result = await this.redisClient.eval(script, {
       keys: [keyPrefix],
       arguments: [
@@ -134,7 +127,7 @@ export class RedisBookingService implements OnModuleInit {
       return "OK_CANCELED"
     `;
 
-    const keyPrefix = this.getKey(`offering:${offeringId}`);
+    const keyPrefix = `offering:${offeringId}`;
     const result = await this.redisClient.eval(script, {
       keys: [keyPrefix],
       arguments: [studentId.toString()],
@@ -151,7 +144,7 @@ export class RedisBookingService implements OnModuleInit {
     offeringId: number,
     studentId: number,
   ): Promise<number> {
-    const pendingKey = this.getKey(`offering:${offeringId}:pending`);
+    const pendingKey = `offering:${offeringId}:pending`;
     const list = await this.redisClient.lRange(pendingKey, 0, -1);
     const position = list.findIndex((id) => id === studentId.toString());
     return position !== -1 ? position + 1 : 0;
