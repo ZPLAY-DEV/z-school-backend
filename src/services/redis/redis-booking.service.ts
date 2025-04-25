@@ -63,14 +63,14 @@ export class RedisBookingService implements OnModuleInit {
 
       local enrolled_key = offering_id .. ":enrolled"
       local pending_key = offering_id .. ":pending"
-      local applicants_key = offering_id .. ":applicants"
+      local all_key = offering_id .. ":all"
 
-      local already_booked = redis.call("ZSCORE", applicants_key, student_id)
+      local already_booked = redis.call("ZSCORE", all_key, student_id)
       if already_booked then
         return "ERR_BOOKED"
       end
 
-      redis.call("ZADD", applicants_key, timestamp, student_id)
+      redis.call("ZADD", all_key, timestamp, student_id)
 
       local enrolled_count = redis.call("LLEN", enrolled_key)
 
@@ -83,7 +83,7 @@ export class RedisBookingService implements OnModuleInit {
           redis.call("RPUSH", pending_key, student_id)
           return "OK_PENDING"
         else
-          redis.call("ZREM", applicants_key, student_id)
+          redis.call("ZREM", all_key, student_id)
           return "ERR_FULL"
         end
       end
@@ -118,9 +118,9 @@ export class RedisBookingService implements OnModuleInit {
 
       local enrolled_key = offering_id .. ":enrolled"
       local pending_key = offering_id .. ":pending"
-      local applicants_key = offering_id .. ":applicants"
+      local all_key = offering_id .. ":all"
 
-      redis.call("ZREM", applicants_key, student_id)
+      redis.call("ZREM", all_key, student_id)
       local removed_from_enrolled = redis.call("LREM", enrolled_key, 0, student_id)
       redis.call("LREM", pending_key, 0, student_id)
 
