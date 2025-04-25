@@ -101,7 +101,7 @@ export class BookingService {
               studentId,
               lessonName,
               timestamp,
-              waitingPosition: response.waitingPosition,
+              waitingPosition: response.waitingPosition ?? null,
               isFormerStudent: isFormerStudent ?? false,
               isEnrolled: response.status === BookingStatus.ENROLLED,
             },
@@ -125,11 +125,6 @@ export class BookingService {
           HttpErrorConstants.ALREADY_BOOKED,
         );
       }
-      // if (error instanceof Error && error.message === 'FULL') {
-      //   throw new UnprocessableEntityException(
-      //     HttpErrorConstants.NOT_AVAILABLE,
-      //   );
-      // }
       throw new InternalServerErrorException(
         HttpErrorConstants.INTERNAL_DATABASE_ERROR,
       );

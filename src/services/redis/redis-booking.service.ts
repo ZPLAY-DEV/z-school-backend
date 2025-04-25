@@ -61,9 +61,9 @@ export class RedisBookingService implements OnModuleInit {
       local capacity = tonumber(ARGV[3])
       local max_pending = 50
 
+      local all_key = offering_id .. ":all"
       local enrolled_key = offering_id .. ":enrolled"
       local pending_key = offering_id .. ":pending"
-      local all_key = offering_id .. ":all"
 
       local already_booked = redis.call("ZSCORE", all_key, student_id)
       if already_booked then
