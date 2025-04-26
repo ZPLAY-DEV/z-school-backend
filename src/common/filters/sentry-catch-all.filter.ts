@@ -7,7 +7,10 @@ import {
 import { BaseExceptionFilter } from '@nestjs/core';
 import { SentryExceptionCaptured } from '@sentry/nestjs';
 import * as Sentry from '@sentry/node';
+import { KnownBlock } from '@slack/types';
 import { SlackService } from 'src/services/slack/slack-service';
+
+// todo. Sentry DSN 를 v3 용으로 Sentry 콘솔에서 발급하고 변경이 필요. (무료 사용중?)
 @Catch()
 export class SentryCatchAllFilter extends BaseExceptionFilter {
   constructor(private readonly slack: SlackService) {
@@ -23,6 +26,7 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
+    //! local 환경의 경우, slack 메시지 보내지 않도록 했으니깐 참고!
     if (httpStatus >= 500 && process.env.NODE_ENV !== 'local') {
       // 이 오류에 대한 상세 context 추가
       Sentry.captureException(exception, (scope) => {
@@ -47,7 +51,10 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
 
         return scope;
       });
-      this.notifySlack(exception);
+      // 💥 fire and forget. to not block the main thread
+      this.notifySlack(exception).catch((e) =>
+        console.error('🔴 Slack 전송 실패', e.stack),
+      );
     }
 
     super.catch(exception, host);
@@ -69,20 +76,35 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
       message = exception.message;
     }
 
-    await this.slack.sendMessage({
+    const payload = {
       channel: 'error',
-      text: `[${process.env.NODE_ENV}환경] 🆘 500 오류`,
-      attachments: [
+      blocks: [
         {
-          color: 'danger',
-          text: `오류정보`,
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `*🔴 ${process.env.NODE_ENV} 환경에서 500 오류 발생*`,
+          },
+        },
+        {
+          type: 'section',
           fields: [
-            { title: `Query`, value: query, short: false },
-            { title: `Params`, value: params, short: false },
-            { title: `Message`, value: message, short: true },
+            {
+              type: 'mrkdwn',
+              text: `*Query:*\n${query}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `*Params:*\n${params}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `*Message:*\n${message}`,
+            },
           ],
         },
-      ],
-    });
+      ] as KnownBlock[],
+    };
+    await this.slack.sendMessage(payload);
   }
 }

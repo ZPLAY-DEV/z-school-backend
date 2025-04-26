@@ -1,43 +1,53 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { MessageAttachment, WebClient } from '@slack/web-api';
-
-interface SlackMessageOptions {
-  channel?: 'activity' | 'error';
-  text?: string;
-  attachments?: MessageAttachment[];
-}
+import {
+  ChatPostMessageArguments,
+  WebClient as SlackClient,
+} from '@slack/web-api';
 
 @Injectable()
 export class SlackService {
-  private slack: WebClient;
+  private slack: SlackClient;
 
   constructor(private configService: ConfigService) {
-    this.slack = new WebClient(this.configService.get<string>('slack.token'));
+    this.slack = new SlackClient(this.configService.get<string>('slack.token'));
   }
 
-  private getChannelId(channel: string = 'default'): string {
-    switch (channel) {
-      case 'error':
-        return this.configService.get<string>('slack.errorChannel') ?? '';
-      default:
-        return this.configService.get<string>('slack.activityChannel') ?? '';
-    }
-  }
-
-  async sendMessage(options: SlackMessageOptions) {
+  async sendMessage(
+    options: Partial<ChatPostMessageArguments> & { blocks?: any },
+  ) {
     try {
-      const channelId = this.getChannelId(options.channel);
+      const channelId = this.getChannelId(options.channel ?? 'activity');
+      console.log('😀 Slack 전송 시도', {
+        channel: channelId,
+        text: options.text,
+        blocks: options.blocks,
+      });
       await this.slack.chat.postMessage({
         channel: channelId,
         text: options.text,
-        attachments: options.attachments ?? [],
+        blocks: options.blocks,
       });
     } catch (error) {
       console.error(
-        `Error sending Slack message to ${options.channel} channel:`,
+        `🔴 Error sending Slack message to ${options.channel} channel:`,
         error,
       );
     }
+  }
+
+  private getChannelId(channel: string): string {
+    const channelId =
+      channel === 'error'
+        ? this.configService.get<string>('slack.errorChannel')
+        : this.configService.get<string>('slack.activityChannel');
+
+    if (!channelId) {
+      throw new Error(
+        `Channel ID for ${channel} not found! Check your config.`,
+      );
+    }
+
+    return channelId;
   }
 }

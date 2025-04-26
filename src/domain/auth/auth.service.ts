@@ -138,6 +138,7 @@ export class AuthService {
       });
 
       await this.slack.sendMessage({
+        channel: 'activity',
         text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${user.id}|${user.username ?? dto.role}>`,
       });
 
@@ -199,6 +200,7 @@ export class AuthService {
       });
 
       await this.slack.sendMessage({
+        channel: 'activity',
         text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${user.id}|${user.username ?? dto.role}>`,
       });
 

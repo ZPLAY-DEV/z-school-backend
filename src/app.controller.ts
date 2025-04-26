@@ -18,6 +18,12 @@ export class AppController {
   bust(): string {
     return this.appService.cacheBust();
   }
+
+  @Public()
+  @Get('sentry')
+  getError() {
+    throw new Error('My first Sentry error for testing!');
+  }
 }
 
 // redis 테스트용 컨트롤러

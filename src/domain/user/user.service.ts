@@ -257,6 +257,7 @@ export class UserService {
     }
 
     await this.slack.sendMessage({
+      channel: 'activity',
       text: `다음 사용자가 탈퇴했습니다.\n- 아이디:${id}\n- 이름:${user.username}\n- 전화:${user.phone}\n- 이메일:${user.email}`,
     });
   }
