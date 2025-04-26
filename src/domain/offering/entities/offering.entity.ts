@@ -42,12 +42,15 @@ export class Offering {
   @Column({ type: 'varchar', length: 16 })
   groupName: string;
 
-  @ApiProperty({ description: '수강 정원' })
+  @ApiProperty({ description: 'class size' })
   @Column({ type: 'int', unsigned: true, default: 20 })
   capacity: number;
 
+  @Column('simple-array')
+  allowedGrades: number[];
+
   @ApiProperty({
-    description: '요일별 수업 시간 정보',
+    description: '수업 시간 정보 (could be multiple)',
     type: 'array',
     isArray: true,
   })
@@ -56,9 +59,6 @@ export class Offering {
 
   @Column('simple-array')
   bitmasks: number[];
-
-  @Column('simple-array')
-  allowedGrades: number[];
 
   @Column('simple-array')
   formerStudentIds: number[];

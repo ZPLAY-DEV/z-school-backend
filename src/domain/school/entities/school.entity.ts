@@ -63,14 +63,13 @@ export class School {
   payoutRate: number;
 
   @ApiProperty({
-    description:
-      '🈵 학교에서 허용하는 강사가 사용할 수 있는 default 권한 리스트',
-    example: [Permission.ADD_ENROLL],
+    description: '🈵 학교에서 허용하는 기본 권한 리스트',
+    example: [Permission.ALLOW_INSTRUCTOR_ADD_STUDENT],
   })
   @Column('json')
   @IsArray()
   @IsEnum(Permission, { each: true })
-  allowedPermissions: Permission[];
+  permissions: Permission[];
 
   @ApiProperty({ description: '🈵 promo video urls' })
   @Column('json')
@@ -131,7 +130,7 @@ export class School {
 
   constructor(partial: Partial<School>) {
     Object.assign(this, partial);
-    this.allowedPermissions = partial?.allowedPermissions || [];
+    this.permissions = partial?.permissions || [];
     this.promos = partial?.promos || [];
   }
 }

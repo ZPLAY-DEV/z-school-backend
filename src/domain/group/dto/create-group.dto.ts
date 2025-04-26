@@ -21,19 +21,19 @@ export class CreateGroupDto {
   @IsString()
   @MaxLength(16)
   @IsOptional()
-  className?: string;
+  lessonName?: string;
 
   @ApiPropertyOptional()
   @IsString()
   @MaxLength(16)
   @IsOptional()
-  classLocation?: string;
+  location?: string;
 
   @ApiPropertyOptional({ description: 'class size' })
   @IsInt()
   @Min(0)
   @IsOptional()
-  classSize?: number;
+  capacity?: number;
 
   @ApiPropertyOptional({
     description: 'Lesson IDs to associate with this category',
@@ -44,6 +44,14 @@ export class CreateGroupDto {
   @IsOptional()
   @Type(() => Number)
   allowedGrades?: number[];
+
+  @ApiPropertyOptional({
+    description: 'Lesson IDs to associate with this category',
+    type: String,
+  })
+  @IsString()
+  @IsOptional()
+  allowedGradesInString?: string;
 
   @ApiProperty({ description: '요일' })
   @IsEnum(Weekday)

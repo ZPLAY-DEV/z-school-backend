@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { GroupStatus, Weekday } from 'src/common/enums';
+import { GroupStatus } from 'src/common/enums';
+import { ITimeRange } from 'src/common/interfaces';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { StudentGroup } from 'src/domain/student/entities/student-group.entity';
@@ -34,34 +35,26 @@ export class Group {
 
   @ApiProperty({ description: '🈳 반이름' })
   @Column({ type: 'varchar', length: 16, nullable: true })
-  className: string | null;
+  lessonName: string | null;
 
-  @Column({ type: 'varchar', length: 16, nullable: true })
-  classLocation: string | null;
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  location: string | null;
 
   @ApiProperty({ description: '🈳 class size' })
   @Column({ type: 'tinyint', unsigned: true, nullable: true })
-  classSize: number;
+  capacity: number;
 
   @ApiProperty({ description: '🈳 allowed grades' })
-  @Column({ type: 'json' })
+  @Column('simple-array')
   allowedGrades: number[];
 
-  @ApiProperty({ description: '🈵 요일' })
-  @Column({ type: 'enum', enum: Weekday })
-  weekday: Weekday;
-
-  @ApiProperty({ description: '🈵 시작시각' })
-  @Column({ type: 'varchar', length: 5 }) // MySQL TIME 타입
-  started: string;
-
-  @ApiProperty({ description: '🈵 종료시각' })
-  @Column({ type: 'varchar', length: 5 }) // MySQL TIME 타입
-  ended: string;
-
-  // @ApiProperty({ description: '' })
-  // @Column({ type: 'json', nullable: true })
-  // classTimes: string[];
+  @ApiProperty({
+    description: '수업 시간 정보 (could be multiple)',
+    type: 'array',
+    isArray: true,
+  })
+  @Column({ type: 'json' })
+  times: ITimeRange[];
 
   @ApiProperty({ description: '🈵 상태' })
   @Column({

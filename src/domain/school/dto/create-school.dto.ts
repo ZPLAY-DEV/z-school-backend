@@ -94,7 +94,7 @@ export class CreateSchoolDto {
   @IsArray()
   @IsEnum(Permission, { each: true })
   @IsOptional()
-  allowedPermissions?: Permission[];
+  permissions?: Permission[];
 
   @ApiProperty({
     description: '🈳 Promotional video URLs',
