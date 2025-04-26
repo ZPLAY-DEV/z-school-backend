@@ -2,7 +2,7 @@ import KeyvRedis, { Keyv } from '@keyv/redis';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -12,6 +12,7 @@ import { join } from 'path';
 import { AppController } from 'src/app.controller';
 import { AppService } from 'src/app.service';
 import { configuration } from 'src/common/config/configuration';
+import { SentryCatchAllFilter } from 'src/common/filters/sentry-catch-all.filter';
 import { DuplicateEntryErrorInterceptor } from 'src/common/interceptors/duplicate-entry-error.interceptor';
 import { AuthModule } from 'src/domain/auth/auth.module';
 import { JwtAuthGuard } from 'src/domain/auth/guards/jwt-auth.guard';
@@ -140,10 +141,10 @@ import { UploadModule } from './services/upload/upload.module';
     //   provide: APP_INTERCEPTOR,
     //   useClass: HttpCacheInterceptor,
     // },
-    // {
-    //   provide: APP_FILTER,
-    //   useClass: SentryCatchAllFilter, // 500 이상이면 Sentry로 보고
-    // },
+    {
+      provide: APP_FILTER,
+      useClass: SentryCatchAllFilter, // 500 이상오류, Sentry/Slack 보고
+    },
     AppService,
   ],
 })

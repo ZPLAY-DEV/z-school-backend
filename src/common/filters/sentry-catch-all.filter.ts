@@ -5,6 +5,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
+import { SentryExceptionCaptured } from '@sentry/nestjs';
 import * as Sentry from '@sentry/node';
 import { SlackService } from 'src/services/slack/slack-service';
 @Catch()
@@ -13,15 +14,40 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
     super();
   }
 
+  @SentryExceptionCaptured() // Sentry 대쉬보드에 오류정보 추가
   catch(exception: unknown, host: ArgumentsHost): void {
+    const ctx = host.switchToHttp();
+    const req = ctx.getRequest();
     const httpStatus =
       exception instanceof HttpException
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
     if (httpStatus >= 500 && process.env.NODE_ENV !== 'local') {
-      Sentry.captureException(exception);
-      this.notifySlack(exception as any);
+      // 이 오류에 대한 상세 context 추가
+      Sentry.captureException(exception, (scope) => {
+        scope.setTag('apiVersion', 'v1');
+        scope.setTag('env', process.env.NODE_ENV);
+
+        // 유저 정보
+        if (req.user) {
+          scope.setUser({
+            id: req.user.id,
+            email: req.user.email,
+          });
+        }
+
+        // 요청 관련 정보
+        scope.setExtra('method', req.method);
+        scope.setExtra('url', req.originalUrl);
+        scope.setExtra('query', req.query);
+        scope.setExtra('params', req.params);
+        scope.setExtra('body', req.body);
+        scope.setExtra('headers', req.headers);
+
+        return scope;
+      });
+      this.notifySlack(exception);
     }
 
     super.catch(exception, host);
