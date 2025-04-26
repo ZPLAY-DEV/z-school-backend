@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { EnrollmentRule } from 'src/common/enums';
+import { ITimeRange } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
-import { ClassTimeDto } from 'src/domain/offering/dto/class-time.dto';
 import { School } from 'src/domain/school/entities/school.entity';
 import {
   Column,
@@ -52,7 +52,7 @@ export class Offering {
     isArray: true,
   })
   @Column({ type: 'json' })
-  times: ClassTimeDto[];
+  times: ITimeRange[];
 
   @Column('simple-array')
   bitmasks: number[];

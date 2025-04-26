@@ -227,7 +227,7 @@ export type Tokens = {
   // refreshTokenExpiry: number;
 };
 
-export type IClassTime = {
+export type ITimeRange = {
   weekday: Weekday;
   start: string;
   end: string;

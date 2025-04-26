@@ -46,7 +46,9 @@ export const CreateWithRedisSwagger = () => {
       summary: '선착순 수강신청 (high traffic) with realtime feedback',
       description: ` 
       - 매우 경합적인 선착순 수강신청 트래픽이 발생하는 경우 사용
-      - 레디스(redis)와 큐(sqs)를 통해 수강신청, end result 는 이전과 동일
+      - 레디스(redis)와 큐(sqs)를 통해 수강신청, end result 는 [POST] /v1/bookings/db 와 동일
+      - 레디스로 atomic, race condition free 수강신청 처리
+      - 큐(sqs)로 수강신청 트래픽 분산 처리
       `,
     }),
     ApiBody({
@@ -106,8 +108,9 @@ export const CancelWithRedisSwagger = () => {
     ApiOperation({
       summary: '선착순 수강신청취소 (high traffic)',
       description: ` 
+      - 레디스(redis)를 통해 수강신청한 경우 수강신청취소 처리
       - 매우 경합적인 선착순 수강신청취소 트래픽이 발생하는 경우 사용
-      - 레디스(redis)를 통해 atomic 수강신청취소
+      - end result 는 [DEL] /v1/bookings/db 와 동일
       `,
     }),
     ApiBody({
