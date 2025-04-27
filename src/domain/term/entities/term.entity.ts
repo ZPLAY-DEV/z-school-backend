@@ -15,7 +15,7 @@ import {
 } from 'typeorm';
 
 @Entity('terms')
-@Unique(['schoolId', 'schoolYear', 'name'])
+@Unique(['schoolId', 'schoolYear', 'termName'])
 export class Term {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -36,15 +36,15 @@ export class Term {
 
   @ApiProperty({ description: '늘봄학교 수강기간명' })
   @Column({ type: 'varchar', length: 16 })
-  name: string;
+  termName: string;
 
   @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
   @Column({ type: 'varchar', length: 10 })
-  started: string;
+  start: string;
 
   @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
   @Column({ type: 'varchar', length: 10 })
-  ended: string;
+  end: string;
 
   // ------------------------------------------------------------------------ //
 
@@ -73,12 +73,12 @@ export class Term {
 
   //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
 
-  get startedAsDate(): Date {
-    return new Date(`${this.started}T09:00:00+09:00`); // UTC +9 시간대로 변환
+  get startDate(): Date {
+    return new Date(`${this.start}T09:00:00+09:00`); // UTC +9 시간대로 변환
   }
 
-  get endedAsDate(): Date {
-    return new Date(`${this.ended}T09:00:00+09:00`); // UTC +9 시간대로 변환
+  get endDate(): Date {
+    return new Date(`${this.end}T09:00:00+09:00`); // UTC +9 시간대로 변환
   }
 
   //? Constructor ---------------------------------------------------------- ?//

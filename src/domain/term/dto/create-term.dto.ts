@@ -29,15 +29,15 @@ export class CreateTermDto {
   @ApiProperty({ description: '🈵 학기명' })
   @IsString()
   @MaxLength(16)
-  name: string;
+  termName: string;
 
   @ApiProperty({ description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
   @IsString()
   @Length(10)
-  started: string;
+  start: string;
 
   @ApiProperty({ description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
   @IsString()
   @Length(10)
-  ended: string;
+  end: string;
 }

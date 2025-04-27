@@ -36,8 +36,8 @@ export class TermService {
   async findAll(query: PaginateQuery): Promise<Paginated<Term>> {
     const queryBuilder = this.termRepository.createQueryBuilder('term');
     return await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'name'],
-      searchableColumns: ['name'],
+      sortableColumns: ['id', 'termName'],
+      searchableColumns: ['termName'],
       defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
         isActive: [FilterOperator.EQ],

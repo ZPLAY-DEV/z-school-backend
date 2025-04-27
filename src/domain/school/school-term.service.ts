@@ -36,7 +36,7 @@ export class SchoolTermService {
 
     const existingTerm = await this.termRepository.findOne({
       where: {
-        name: dto.name,
+        termName: dto.termName,
         schoolId: dto.schoolId,
         schoolYear: dto.schoolYear,
       },
@@ -74,8 +74,8 @@ export class SchoolTermService {
         school: true,
         lessons: true,
       },
-      sortableColumns: ['id', 'name', 'schoolYear', 'started', 'ended'],
-      searchableColumns: ['name', 'schoolName'],
+      sortableColumns: ['id', 'schoolName', 'schoolYear', 'start', 'end'],
+      searchableColumns: ['schoolName', 'termName'],
       defaultSortBy: [
         ['schoolYear', 'DESC'],
         ['id', 'DESC'],

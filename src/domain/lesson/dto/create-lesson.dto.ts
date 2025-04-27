@@ -10,6 +10,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  Length,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -61,6 +62,16 @@ export class CreateLessonDto {
   @IsOptional()
   @IsNumber()
   weeklyLessonCount?: number;
+
+  @ApiProperty({ description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @IsString()
+  @Length(10)
+  start: string;
+
+  @ApiProperty({ description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @IsString()
+  @Length(10)
+  end: string;
 
   @ApiProperty({
     description: '🈳 수업료 합계 (A -D)',

@@ -57,6 +57,18 @@ export class Lesson {
   @Column({ type: 'int', unsigned: true, default: 0 })
   weeklyLessonCount: number;
 
+  @ApiProperty({ description: '🈳 비고' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  note: string | null;
+
+  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @Column({ type: 'varchar', length: 10 })
+  start: string;
+
+  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @Column({ type: 'varchar', length: 10 })
+  end: string;
+
   // todo: 어떻게 finalizing 할 지 나중에 결정할 것
   @ApiProperty({ description: '🈵 수업료 합계 (A+B+C+D)' })
   @Column({ type: 'int', unsigned: true, default: 0 })
@@ -104,10 +116,6 @@ export class Lesson {
   @IsOptional()
   requiredDocuments: DocumentType[] | null;
 
-  @ApiProperty({ description: '🈳 비고' })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  note: string | null;
-
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈵 createdAt' })
@@ -148,6 +156,16 @@ export class Lesson {
 
   @ManyToMany(() => Category, (category) => category.lessons)
   categories: Category[];
+
+  //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
+
+  get startDate(): Date {
+    return new Date(`${this.start}T09:00:00+09:00`); // UTC +9 시간대로 변환
+  }
+
+  get endDate(): Date {
+    return new Date(`${this.end}T09:00:00+09:00`); // UTC +9 시간대로 변환
+  }
 
   //? Constructor ---------------------------------------------------------- ?//
 

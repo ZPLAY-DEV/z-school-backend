@@ -17,8 +17,6 @@ export class SqsService implements OnModuleInit {
       queueUrl: string;
     },
   ) {
-    console.log(`🟢🟢🟢🟢`, sqsOptions);
-
     this.sqsClient = new SQSClient({
       region: sqsOptions.region,
       endpoint: sqsOptions.sqsEndpoint,
