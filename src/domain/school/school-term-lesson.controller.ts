@@ -50,7 +50,6 @@ export class SchoolTermLessonController {
     @Param('termId', ParseIntPipe) termId: number,
     @Body() dtos: CreateLessonRequestDto[],
   ): Promise<any> {
-    // todo. 🔴🔴🔴🔴🔴 allowedGradesInString 처리
     const createLessonDtos = dtos.map((dto) => ({
       ...dto,
       schoolId,

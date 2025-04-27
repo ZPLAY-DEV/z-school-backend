@@ -41,13 +41,10 @@ export class CreateLessonDto {
   @MaxLength(20) // '홍익대학교 사범대학 부속 초등학교'
   schoolName?: string | null;
 
-  @ApiProperty({
-    description: '🈵 같은 학기중 과목명은 유니크',
-    required: false,
-  })
+  @ApiProperty({ description: '🈵 같은 학기중 과목명은 유니크' })
   @IsString()
   @MaxLength(16)
-  name: string;
+  lessonName: string;
 
   @ApiProperty({ description: '🈳 과목설명', required: false })
   @IsOptional()

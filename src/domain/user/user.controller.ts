@@ -26,8 +26,6 @@ import { AvatarInterceptor } from 'src/domain/user/interceptors/avatar-intercept
 import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
 import { UniqueKeysPipe } from 'src/domain/user/pipes/unique-keys.pipe';
 import { ValidateUsernamePipe } from 'src/domain/user/pipes/validate-username.pipe';
-import { koreanToPhone, phoneToKorean } from 'src/helpers/korean';
-// import { initialUsername } from 'src/helpers/random-username';
 import { UploadService } from 'src/services/upload/upload.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -97,12 +95,7 @@ export class UserController {
       'manager',
     ]);
 
-    // user 객체를 복사하고 age, code 값을 추가합니다
-    const userWithAge = {
-      ...user,
-      code: phoneToKorean(user.phone),
-    };
-    return userWithAge;
+    return user;
   }
 
   @ApiOperation({ description: 'User 상세보기' })
@@ -147,15 +140,6 @@ export class UserController {
     if (!user) return true;
     if (user.id === id) return true;
     return false;
-  }
-
-  @ApiOperation({ description: 'find user by code' })
-  @Public()
-  @Get(':code/code')
-  @UseInterceptors(ClassSerializerInterceptor)
-  async findUserByCode(@Param('code') code: string): Promise<User | null> {
-    const phone = koreanToPhone(code);
-    return await this.findUserByPhone(phone);
   }
 
   @ApiOperation({ description: 'find user by providerId' })

@@ -10,6 +10,7 @@ import { InstructorLesson } from 'src/domain/instructor/entities/instructor-less
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
+import { parseRangeToArray } from 'src/helpers/parse';
 import { DataSource, In, IsNull } from 'typeorm';
 
 @Injectable()
@@ -40,7 +41,7 @@ export class SchoolTermLessonService {
         where: {
           termId: dto.termId,
           schoolId: dto.schoolId,
-          name: dto.name,
+          lessonName: dto.lessonName,
         },
       });
 
@@ -143,7 +144,7 @@ export class SchoolTermLessonService {
       // const termId = dtos[0].termId;
       const lessons: Lesson[] = [];
 
-      //? 1. Find school
+      //? 1단계) Find school
       const school = await manager.findOne(School, {
         where: {
           id: schoolId,
@@ -154,23 +155,32 @@ export class SchoolTermLessonService {
         throw new NotFoundException('School not found');
       }
 
-      //? 2. Find or create lessons in bulk
+      //? 2단계) 같은 이름의 기존 강좌가 존재하면 업데이트, 없으면 생성
       const lessonConditions = dtos.map((dto) => ({
         termId: dto.termId,
         schoolId: dto.schoolId,
-        name: dto.name,
+        lessonName: dto.lessonName,
       }));
       const existingLessons = await manager.find(Lesson, {
         where: lessonConditions,
       });
       const existingLessonMap = new Map(
-        existingLessons.map((l) => [`${l.schoolId}-${l.termId}-${l.name}`, l]),
+        existingLessons.map((l) => [
+          `${l.schoolId}-${l.termId}-${l.lessonName}`,
+          l,
+        ]),
       );
-
+      // 여기서 cascade 로 group 도 같이 저장됨. 따라서, allowedGrades 를 처리를 위한 좋은 타이밍
       const lessonsToSave = dtos.map((dto) => {
-        const key = `${dto.schoolId}-${dto.termId}-${dto.name}`;
+        const key = `${dto.schoolId}-${dto.termId}-${dto.lessonName}`;
         const existingLesson = existingLessonMap.get(key);
-
+        dto.groups.forEach((group) => {
+          if (group.allowedGradesInString) {
+            group.allowedGrades = parseRangeToArray(
+              group.allowedGradesInString,
+            );
+          }
+        });
         return {
           ...(existingLesson ? { ...existingLesson, ...dto } : dto),
           schoolName: school.name,
@@ -178,13 +188,13 @@ export class SchoolTermLessonService {
           requiredDocuments: dto.requiredDocuments || [],
         };
       });
-
+      // 몽땅 저장 후 배열에 넣어둠
       const savedLessons = await manager.save(Lesson, lessonsToSave, {
         chunk: 100,
       });
       lessons.push(...savedLessons);
 
-      //? 3. Handle instructor relationships in bulk
+      //? 3단계) 강사 관계 처리
       const instructorData = dtos
         .filter((dto) => dto.groups?.length)
         .flatMap((dto, index) =>
@@ -224,14 +234,14 @@ export class SchoolTermLessonService {
           instructors.map((i) => [`${i.name}-${i.phone}`, i.id]),
         );
 
-        // Soft delete existing instructor-lesson relationships
+        // 기존 instructor-lesson relationships 모두 soft delete
         await manager.update(
           InstructorLesson,
           { lessonId: In(savedLessons.map((l) => l.id)), deletedAt: IsNull() },
           { deletedAt: new Date() },
         );
 
-        // Bulk insert instructor-lesson relationships
+        // 새로운 instructor-lesson relationships 몽땅 다시 추가
         const instructorLessonValues = instructorData.map((data) => [
           instructorMap.get(`${data.name}-${data.phone}`),
           data.lessonId,
@@ -243,7 +253,7 @@ export class SchoolTermLessonService {
           instructorLessonValues.flat(),
         );
 
-        // Bulk insert school-instructor relationships
+        // school-instructor 관계도 모두 upsert
         const schoolInstructorValues = instructorData.map((data) => [
           instructorMap.get(`${data.name}-${data.phone}`),
           data.schoolId,
@@ -256,7 +266,7 @@ export class SchoolTermLessonService {
         );
       }
 
-      //? 4. Handle category relationships in bulk
+      //? 4단계) 카테고리 관계 처리
       const categoryData = dtos
         .filter((dto) => dto.category)
         .map((dto, index) => ({
@@ -316,15 +326,15 @@ export class SchoolTermLessonService {
         groups: true,
         categories: true,
       },
-      sortableColumns: ['id', 'name', 'termId'],
-      searchableColumns: ['name', 'schoolName'],
+      sortableColumns: ['id', 'lessonName', 'termId'],
+      searchableColumns: ['schoolName', 'lessonName'],
       defaultSortBy: [
         ['schoolId', 'DESC'],
         ['id', 'DESC'],
       ],
       filterableColumns: {
         schoolName: [FilterOperator.EQ, FilterOperator.ILIKE],
-        name: [FilterOperator.EQ, FilterOperator.ILIKE],
+        lessonName: [FilterOperator.EQ, FilterOperator.ILIKE],
       },
     });
   }

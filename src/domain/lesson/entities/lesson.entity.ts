@@ -21,9 +21,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-// todo: need to come up with a finalizing strategy for the lesson entity
 @Entity('lessons')
-@Unique(['termId', 'schoolId', 'name'])
+@Unique(['termId', 'schoolId', 'lessonName'])
 export class Lesson {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -42,9 +41,9 @@ export class Lesson {
   @Column({ type: 'varchar', length: 24, nullable: true })
   schoolName: string | null; // 관리자 편의를 위한 Column.
 
-  @ApiProperty({ description: '🈳 과목명' })
-  @Column({ type: 'varchar', length: 16, nullable: true })
-  name: string | null;
+  @ApiProperty({ description: '🈵 과목명' })
+  @Column({ type: 'varchar', length: 16 })
+  lessonName: string;
 
   @ApiProperty({ description: '🈳 과목설명' })
   @Column({ type: 'varchar', length: 255, nullable: true })
