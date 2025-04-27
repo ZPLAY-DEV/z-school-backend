@@ -34,14 +34,14 @@ export class Group {
   //* ---------------------------------------------------------------------- *//
 
   @ApiProperty({ description: '🈳 반이름' })
-  @Column({ type: 'varchar', length: 16, nullable: true })
+  @Column({ type: 'varchar', length: 24, nullable: true })
   lessonName: string | null;
 
   @Column({ type: 'varchar', length: 32, nullable: true })
   location: string | null;
 
   @ApiProperty({ description: '🈳 class size' })
-  @Column({ type: 'tinyint', unsigned: true, nullable: true })
+  @Column({ type: 'int', unsigned: true, default: 20 })
   capacity: number;
 
   @ApiProperty({ description: '🈳 allowed grades' })

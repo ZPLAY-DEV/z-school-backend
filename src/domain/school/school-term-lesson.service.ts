@@ -25,7 +25,7 @@ export class SchoolTermLessonService {
 
   async create(dto: CreateLessonDto): Promise<Lesson> {
     return await this.dataSource.transaction(async (manager) => {
-      //? 1. Find school
+      //? 1단계) Find school
       const school = await manager.findOne(School, {
         where: {
           id: dto.schoolId,
@@ -36,7 +36,7 @@ export class SchoolTermLessonService {
         throw new NotFoundException('School not found');
       }
 
-      //? 2. Find or create lesson using unique constraint
+      //? 2단계) 같은 이름의 기존 강좌가 존재하면 업데이트, 없으면 생성
       const existingLesson = await manager.findOne(Lesson, {
         where: {
           termId: dto.termId,
@@ -139,6 +139,8 @@ export class SchoolTermLessonService {
   //! precondition: all the DTOs have the same schoolId and termId
   //! precondition: name (강좌명) is unique in the same term
   async createBulk(dtos: CreateLessonDto[]): Promise<Lesson[]> {
+    const year = new Date().getFullYear();
+
     return await this.dataSource.transaction(async (manager) => {
       const schoolId = dtos[0].schoolId;
       // const termId = dtos[0].termId;
@@ -149,11 +151,18 @@ export class SchoolTermLessonService {
         where: {
           id: schoolId,
         },
+        relations: {
+          terms: true,
+        },
       });
 
       if (!school) {
         throw new NotFoundException('School not found');
       }
+
+      const term = school.terms.reduce((prev, curr) => {
+        return !prev || curr.id > prev.id ? curr : prev;
+      }, school.terms[0] || null);
 
       //? 2단계) 같은 이름의 기존 강좌가 존재하면 업데이트, 없으면 생성
       const lessonConditions = dtos.map((dto) => ({
@@ -183,6 +192,8 @@ export class SchoolTermLessonService {
         });
         return {
           ...(existingLesson ? { ...existingLesson, ...dto } : dto),
+          start: dto.start || term?.start || `${year}-01-01`,
+          end: dto.end || term?.end || `${year}-12-31`,
           schoolName: school.name,
           operationFeeRule: school.operationFeeRule,
           requiredDocuments: dto.requiredDocuments || [],

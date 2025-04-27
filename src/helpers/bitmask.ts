@@ -15,12 +15,35 @@ const weekdayOrder: Record<Weekday, number> = {
   [Weekday.SUNDAY]: 6,
 };
 
+// 시간을 24시간 형식으로 변환하는 함수
+const parseTime = (time: string): [number, number] => {
+  const isPM = /pm$/i.test(time);
+  const isAM = /am$/i.test(time);
+  const timeValues = time
+    .replace(/(am|pm)/i, '')
+    .split(':')
+    .map(Number);
+  let hour = timeValues[0];
+  const minute = timeValues[1];
+
+  // 12시인 경우, AM이면 00시, PM이면 12시로 변환
+  if (hour === 12) {
+    hour = isAM ? 0 : 12;
+  } else if (isPM) {
+    hour += 12;
+  }
+
+  return [hour, minute];
+};
+
 const timeToSlotIndex = (weekday: Weekday, time: string): number => {
-  const [hour, minute] = time.split(':').map(Number);
+  const [hour, minute] = parseTime(time);
   const minutesSince8am = (hour - 8) * 60 + minute;
+
   if (minutesSince8am < 0 || minutesSince8am >= 12 * 60) {
     throw new Error(`시간은 08:00 ~ 20:00 사이여야 합니다: ${time}`);
   }
+
   const slotInDay = Math.floor(minutesSince8am / SLOT_MINUTES);
   const weekdayIndex = weekdayOrder[weekday];
   if (weekdayIndex === undefined) {

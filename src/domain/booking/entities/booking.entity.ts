@@ -30,7 +30,7 @@ export class Booking {
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '수강신청 과목명' })
-  @Column({ type: 'varchar', length: 16, nullable: true })
+  @Column({ type: 'varchar', length: 24, nullable: true })
   lessonName: string | null;
 
   @ApiProperty({ description: '최대 50위 까지의 대기순서' })

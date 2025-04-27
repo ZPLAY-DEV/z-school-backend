@@ -42,7 +42,7 @@ export class Lesson {
   schoolName: string | null; // 관리자 편의를 위한 Column.
 
   @ApiProperty({ description: '🈵 과목명' })
-  @Column({ type: 'varchar', length: 16 })
+  @Column({ type: 'varchar', length: 24 })
   lessonName: string;
 
   @ApiProperty({ description: '🈳 과목설명' })
@@ -56,10 +56,6 @@ export class Lesson {
   @ApiProperty({ description: '🈵 수업수/week' })
   @Column({ type: 'int', unsigned: true, default: 0 })
   weeklyLessonCount: number;
-
-  @ApiProperty({ description: '🈳 비고' })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  note: string | null;
 
   @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
   @Column({ type: 'varchar', length: 10 })
@@ -115,6 +111,10 @@ export class Lesson {
   @IsEnum(DocumentType, { each: true }) // ✅ Ensures each item is a valid DocumentType
   @IsOptional()
   requiredDocuments: DocumentType[] | null;
+
+  @ApiProperty({ description: '🈳 비고' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  note: string | null;
 
   // ------------------------------------------------------------------------ //
 
