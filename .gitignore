@@ -66,10 +66,12 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # firebase service account key for FCM
 *.fb-admin-key.json
 
+# docker-compose
+docker-compose.yml
+
 # db mount
 dynamodb
 mysql
 redis-data
 mysql-data
 localstack-data
-
