@@ -38,7 +38,7 @@ export class GroupService {
       sortableColumns: ['createdAt'],
       nullSort: 'last',
       defaultSortBy: [['id', 'DESC']],
-      searchableColumns: ['lessonName', 'location'],
+      searchableColumns: ['groupName', 'location'],
       filterableColumns: {
         instructorId: [FilterOperator.EQ],
       },
