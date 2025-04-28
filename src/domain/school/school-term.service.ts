@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -6,15 +11,16 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { School } from 'src/domain/school/entities/school.entity';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
 import { Term } from 'src/domain/term/entities/term.entity';
+import { validateDateRange } from 'src/helpers/date';
 import { Repository } from 'typeorm';
 
 @Injectable()
 export class SchoolTermService {
   private readonly logger = new Logger(SchoolTermService.name);
-
   constructor(
     @InjectRepository(School)
     private readonly schoolRepository: Repository<School>,
@@ -27,34 +33,39 @@ export class SchoolTermService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateTermDto): Promise<Term> {
+    // 1. 학교 존재 여부 조회
     const school = await this.schoolRepository.findOne({
       where: { id: dto.schoolId },
     });
+
     if (!school) {
-      throw new NotFoundException('School not found');
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
     }
 
+    // 2. 날짜 범위 검증
+    if (!validateDateRange(dto.start, dto.end)) {
+      throw new BadRequestException(HttpErrorConstants.INVALID_DATE_RANGE);
+    }
+
+    // 3. 학기 중복 여부 조회
     const existingTerm = await this.termRepository.findOne({
       where: {
-        termName: dto.termName,
         schoolId: dto.schoolId,
+        termName: dto.termName,
         schoolYear: dto.schoolYear,
       },
     });
 
     if (existingTerm) {
-      const updatedTerm = this.termRepository.merge(existingTerm, {
-        ...dto,
-        schoolName: dto.schoolName ?? school.name,
-      });
-      return this.termRepository.save(updatedTerm);
-    } else {
-      const newTerm = this.termRepository.create({
-        ...dto,
-        schoolName: dto.schoolName ?? school.name,
-      });
-      return this.termRepository.save(newTerm);
+      throw new BadRequestException(HttpErrorConstants.DUPLICATE_TERM);
     }
+
+    // 4. 생성
+    const newTerm = this.termRepository.create({
+      ...dto,
+      schoolName: dto.schoolName ?? school.name,
+    });
+    return this.termRepository.save(newTerm);
   }
 
   //? ---------------------------------------------------------------------- ?//

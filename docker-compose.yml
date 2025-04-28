@@ -14,7 +14,7 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
     volumes:
-      - /Users/Shared/docker/localstack-data:/var/lib/localstack"
+      - ./localstack-data:/var/lib/localstack"
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - app-network
@@ -26,7 +26,7 @@ services:
       - "6379:6379"
     command: redis-server --appendonly yes
     volumes:
-      - /Users/Shared/docker/redis-data:/data
+      - ./redis-data:/data
     networks:
       - app-network
 
@@ -41,39 +41,39 @@ services:
       MYSQL_USER: mysql
       MYSQL_PASSWORD: secret
     volumes:
-      - /Users/Shared/docker/mysql-data:/var/lib/mysql
+      - ./mysql-data:/var/lib/mysql
     networks:
       - app-network
 
-  mariadb:
-    image: mariadb:10.11
-    container_name: mariadb
-    ports:
-      - "2306:3306"  # 호스트의 2306 포트를 컨테이너의 3306 포트에 매핑
-    environment:
-      MARIADB_ROOT_PASSWORD: secret
-      MARIADB_DATABASE: v2
-      MARIADB_USER: maria
-      MARIADB_PASSWORD: secret
-    volumes:
-      - /Users/Shared/docker/mariadb-data:/var/lib/mysql
-    networks:
-      - app-network
+  # mariadb:
+  #   image: mariadb:10.11
+  #   container_name: mariadb
+  #   ports:
+  #     - "2306:3306"  # 호스트의 2306 포트를 컨테이너의 3306 포트에 매핑
+  #   environment:
+  #     MARIADB_ROOT_PASSWORD: secret
+  #     MARIADB_DATABASE: v2
+  #     MARIADB_USER: maria
+  #     MARIADB_PASSWORD: secret
+  #   volumes:
+  #     - /Users/Shared/docker/mariadb-data:/var/lib/mysql
+  #   networks:
+  #     - app-network
 
-  postgres:
-    image: postgres:16
-    container_name: postgres
-    volumes:
-      - /Users/Shared/docker/postgres-data:/var/lib/postgresql/data
-    ports:
-      - 5432:5432
-    environment:
-      - POSTGRES_DB=strapi
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=secret
-      - TZ=UTC
-    networks:
-      - app-network
+  # postgres:
+  #   image: postgres:16
+  #   container_name: postgres
+  #   volumes:
+  #     - /Users/Shared/docker/postgres-data:/var/lib/postgresql/data
+  #   ports:
+  #     - 5432:5432
+  #   environment:
+  #     - POSTGRES_DB=strapi
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=secret
+  #     - TZ=UTC
+  #   networks:
+  #     - app-network
 
 networks:
   app-network:

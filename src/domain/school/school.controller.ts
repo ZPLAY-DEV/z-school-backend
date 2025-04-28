@@ -36,6 +36,7 @@ export class SchoolController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @Public()
   @Post()
   async create(@Body() createSchoolDto: CreateSchoolDto): Promise<School> {
     return await this.schoolService.create(createSchoolDto);

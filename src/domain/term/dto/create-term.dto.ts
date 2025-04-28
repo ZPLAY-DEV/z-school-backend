@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsPositive,
   IsString,
@@ -11,7 +12,7 @@ import {
 export class CreateTermDto {
   @ApiProperty({ description: '🈳 DB의 학교ID' })
   @IsInt()
-  @IsOptional()
+  @IsNotEmpty()
   @IsPositive()
   schoolId: number;
 
