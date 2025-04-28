@@ -20,7 +20,7 @@ export const CreateTermDocs = () => {
       description: `
       - 학교에 귀속된 운영기간관리를 생성.
       - 날짜 형식은 YYYY-MM-DD 형식으로 입력.
-      - 기간 시작일이 종료일 보다 앞서야 함.
+      - 기간 시작일이 종료일 보다 앞서야 함 -> 시작일보다 종료일이 앞설 경우 400 Validation Error 발생.
       `,
     }),
     ApiBody({
@@ -39,7 +39,6 @@ export const CreateTermDocs = () => {
         status: StatusCodes.BAD_REQUEST,
         errorFormatList: [
           HttpErrorConstants.VALIDATE_ERROR,
-          HttpErrorConstants.INVALID_DATE_RANGE,
           HttpErrorConstants.DUPLICATE_TERM,
         ],
       },

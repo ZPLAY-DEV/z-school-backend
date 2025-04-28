@@ -8,6 +8,7 @@ import {
   Length,
   MaxLength,
 } from 'class-validator';
+import { IsValidDateRange } from '../validator/date-range.validator';
 
 export class CreateTermDto {
   @ApiProperty({ description: '🈳 DB의 학교ID' })
@@ -40,5 +41,8 @@ export class CreateTermDto {
   @ApiProperty({ description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
   @IsString()
   @Length(10)
+  @IsValidDateRange('start', {
+    message: 'end date must be a valid YYYY-MM-DD and not before start date',
+  })
   end: string;
 }

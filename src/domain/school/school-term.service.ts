@@ -15,8 +15,8 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { School } from 'src/domain/school/entities/school.entity';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
 import { Term } from 'src/domain/term/entities/term.entity';
-import { validateDateRange } from 'src/helpers/date';
 import { Repository } from 'typeorm';
+import { UpdateTermDto } from '../term/dto/update-term.dto';
 
 @Injectable()
 export class SchoolTermService {
@@ -42,12 +42,7 @@ export class SchoolTermService {
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
     }
 
-    // 2. 날짜 범위 검증
-    if (!validateDateRange(dto.start, dto.end)) {
-      throw new BadRequestException(HttpErrorConstants.INVALID_DATE_RANGE);
-    }
-
-    // 3. 학기 중복 여부 조회
+    // 2. 학기 중복 여부 조회
     const existingTerm = await this.termRepository.findOne({
       where: {
         schoolId: dto.schoolId,
@@ -60,12 +55,41 @@ export class SchoolTermService {
       throw new BadRequestException(HttpErrorConstants.DUPLICATE_TERM);
     }
 
-    // 4. 생성
+    // 3. 생성
     const newTerm = this.termRepository.create({
       ...dto,
       schoolName: dto.schoolName ?? school.name,
     });
     return this.termRepository.save(newTerm);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
+  async update(id: number, dto: UpdateTermDto) {
+    // const term = await this.termRepository.findOne({
+    //   where: { id },
+    // });
+    // if (!term) {
+    //   throw new NotFoundException(HttpErrorConstants.NOT_FOUND_TERM);
+    // }
+    // // 2. 학기 중복 여부 조회
+    // const existingTerm = await this.termRepository.findOne({
+    //   where: {
+    //     schoolId: dto.schoolId,
+    //     termName: dto.termName,
+    //     schoolYear: dto.schoolYear,
+    //   },
+    // });
+    // if (existingTerm) {
+    //   throw new BadRequestException(HttpErrorConstants.DUPLICATE_TERM);
+    // }
+    // // 3. 업데이트
+    // return this.termRepository.save({
+    //   ...term,
+    //   ...dto,
+    // });
   }
 
   //? ---------------------------------------------------------------------- ?//

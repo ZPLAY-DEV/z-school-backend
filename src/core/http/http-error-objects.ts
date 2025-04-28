@@ -149,14 +149,14 @@ export const HttpErrorConstants = {
     message: '이미 존재하는 학기입니다.',
   } as HttpErrorFormat,
 
-  INVALID_DATE_RANGE: {
-    error: 'INVALID_DATE_RANGE',
-    message: '날짜 범위가 유효하지 않습니다. 다시 확인해주세요.',
-  } as HttpErrorFormat,
-
   NOT_FOUND_SCHOOL: {
     error: 'NOT_FOUND_SCHOOL',
     message: '학교를 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
+  NOT_FOUND_TERM: {
+    error: 'NOT_FOUND_TERM',
+    message: '학기를 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
   // ? 로직이 이상한데, 여쭤보기

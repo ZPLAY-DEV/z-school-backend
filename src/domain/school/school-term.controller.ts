@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   UseInterceptors,
 } from '@nestjs/common';
@@ -18,6 +19,7 @@ import { Term } from 'src/domain/term/entities/term.entity';
 import { CreateTermDocs } from '../term/swagger/rest-swagger.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { HttpResponse } from 'src/core/http/http-response';
+import { UpdateTermDto } from '../term/dto/update-term.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('Schools - Terms ( 운영기간관리 )')
@@ -35,6 +37,18 @@ export class SchoolTermController {
   async create(@Body() dto: CreateTermDto) {
     const term = await this.schoolTermService.create(dto);
     return HttpResponse.created(term);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+  @Patch(':id')
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateTermDto,
+  ) {
+    const term = await this.schoolTermService.update(id, dto);
+    return HttpResponse.ok(term);
   }
 
   //? ---------------------------------------------------------------------- ?//
