@@ -9,9 +9,10 @@ import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-create
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { CreateTermDto } from '../dto/create-term.dto';
 import { TermResponseDto } from '../dto/term-response.dto';
+import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학기 생성
+//? Private) Term 생성
 //? ---------------------------------------------------------------------- ?//
 export const CreateTermDocs = () => {
   return applyDecorators(
@@ -43,5 +44,24 @@ export const CreateTermDocs = () => {
         ],
       },
     ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Private) 학교별 Term 조회
+//? ---------------------------------------------------------------------- ?//
+export const ListTermDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '학교별 운영기간 조회',
+      description: `
+      - 학교에 귀속된 운영기간을 조회
+      `,
+    }),
+    ApiOkResponseTemplate({
+      description: 'Term 조회 완료',
+      type: TermResponseDto,
+      isArray: true,
+    }),
   );
 };

@@ -67,30 +67,30 @@ export class SchoolTermService {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  async update(id: number, dto: UpdateTermDto) {
-    // const term = await this.termRepository.findOne({
-    //   where: { id },
-    // });
-    // if (!term) {
-    //   throw new NotFoundException(HttpErrorConstants.NOT_FOUND_TERM);
-    // }
-    // // 2. 학기 중복 여부 조회
-    // const existingTerm = await this.termRepository.findOne({
-    //   where: {
-    //     schoolId: dto.schoolId,
-    //     termName: dto.termName,
-    //     schoolYear: dto.schoolYear,
-    //   },
-    // });
-    // if (existingTerm) {
-    //   throw new BadRequestException(HttpErrorConstants.DUPLICATE_TERM);
-    // }
-    // // 3. 업데이트
-    // return this.termRepository.save({
-    //   ...term,
-    //   ...dto,
-    // });
-  }
+  // async update(id: number, dto: UpdateTermDto) {
+  //   const term = await this.termRepository.findOne({
+  //     where: { id },
+  //   });
+  //   if (!term) {
+  //     throw new NotFoundException(HttpErrorConstants.NOT_FOUND_TERM);
+  //   }
+  //   // 2. 학기 중복 여부 조회
+  //   const existingTerm = await this.termRepository.findOne({
+  //     where: {
+  //       schoolId: dto.schoolId,
+  //       termName: dto.termName,
+  //       schoolYear: dto.schoolYear,
+  //     },
+  //   });
+  //   if (existingTerm) {
+  //     throw new BadRequestException(HttpErrorConstants.DUPLICATE_TERM);
+  //   }
+  //   // 3. 업데이트
+  //   return this.termRepository.save({
+  //     ...term,
+  //     ...dto,
+  //   });
+  // }
 
   //? ---------------------------------------------------------------------- ?//
   //? Read
@@ -125,7 +125,7 @@ export class SchoolTermService {
   async list(schoolId: number): Promise<Term[]> {
     const queryBuilder = this.termRepository
       .createQueryBuilder('term')
-      .leftJoinAndSelect('term.lessons', 'lessons')
+      // .leftJoinAndSelect('term.lessons', 'lessons') //?
       .where('term.schoolId = :schoolId', { schoolId })
       .orderBy('term.schoolYear', 'DESC')
       .addOrderBy('term.id', 'DESC');
