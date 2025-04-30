@@ -144,6 +144,21 @@ export const HttpErrorConstants = {
     message: '접근이 불가한 유저입니다.',
   } as HttpErrorFormat,
 
+  DUPLICATE_TERM: {
+    error: 'DUPLICATE_TERM',
+    message: '이미 존재하는 학기입니다.',
+  } as HttpErrorFormat,
+
+  NOT_FOUND_SCHOOL: {
+    error: 'NOT_FOUND_SCHOOL',
+    message: '학교를 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
+  NOT_FOUND_TERM: {
+    error: 'NOT_FOUND_TERM',
+    message: '학기를 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
   // ? 로직이 이상한데, 여쭤보기
   NOT_FOUND_PASSWORD: {
     error: 'NOT_FOUND_PASSWORD',

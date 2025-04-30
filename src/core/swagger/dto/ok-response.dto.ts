@@ -7,7 +7,7 @@ export class ResponseDto<T> {
   })
   status: number;
   @ApiProperty({
-    default: 'SUCCESS',
+    default: 'OK',
   })
   message: string;
 }

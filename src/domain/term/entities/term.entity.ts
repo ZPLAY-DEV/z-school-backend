@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import {
@@ -54,10 +55,12 @@ export class Term {
 
   @ApiProperty({ description: 'updatedAt' })
   @UpdateDateColumn()
+  @Exclude()
   updatedAt: Date;
 
   @ApiProperty({ description: 'deletedAt' })
   @DeleteDateColumn()
+  @Exclude()
   deletedAt: Date | null;
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
