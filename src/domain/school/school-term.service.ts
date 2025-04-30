@@ -16,7 +16,7 @@ import { School } from 'src/domain/school/entities/school.entity';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { Repository } from 'typeorm';
-import { UpdateTermDto } from '../term/dto/update-term.dto';
+// import { UpdateTermDto } from '../term/dto/update-term.dto';
 
 @Injectable()
 export class SchoolTermService {
@@ -105,10 +105,6 @@ export class SchoolTermService {
       .where('term.schoolId = :schoolId', { schoolId });
 
     return await paginate(query, queryBuilder, {
-      relations: {
-        school: true,
-        lessons: true,
-      },
       sortableColumns: ['id', 'schoolName', 'schoolYear', 'start', 'end'],
       searchableColumns: ['schoolName', 'termName'],
       defaultSortBy: [
@@ -125,7 +121,6 @@ export class SchoolTermService {
   async list(schoolId: number): Promise<Term[]> {
     const queryBuilder = this.termRepository
       .createQueryBuilder('term')
-      // .leftJoinAndSelect('term.lessons', 'lessons') //?
       .where('term.schoolId = :schoolId', { schoolId })
       .orderBy('term.schoolYear', 'DESC')
       .addOrderBy('term.id', 'DESC');

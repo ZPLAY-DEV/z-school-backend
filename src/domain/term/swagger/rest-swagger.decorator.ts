@@ -10,6 +10,8 @@ import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.re
 import { CreateTermDto } from '../dto/create-term.dto';
 import { TermResponseDto } from '../dto/term-response.dto';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
+import { ApiPaginatedResponseTemplate } from 'src/core/swagger/response/api-paginated-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) Term 생성
@@ -62,6 +64,22 @@ export const ListTermDocs = () => {
       description: 'Term 조회 완료',
       type: TermResponseDto,
       isArray: true,
+    }),
+  );
+};
+
+export const PaginatedTermDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '학교별 운영기간 조회 (Pagination)',
+      description: `
+      - 학교에 귀속된 운영기간을 페이지네이션 기반으로 조회
+      `,
+    }),
+    PaginateQueryOptions(),
+    ApiPaginatedResponseTemplate({
+      description: 'Term 조회 완료',
+      type: TermResponseDto,
     }),
   );
 };
