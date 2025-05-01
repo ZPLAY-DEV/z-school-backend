@@ -261,7 +261,7 @@ export class AuthService {
       user: plainToClass(User, user),
       role: dto.role,
       accessToken,
-      refreshToken, // controller 에서 쿠키에 저장용
+      refreshToken,
     };
   }
 
@@ -353,18 +353,6 @@ export class AuthService {
       payload,
       accessTokenOptions,
     );
-
-    // 토큰내용 디버깅
-    // const decoded = this.jwtService.decode(accessToken);
-    // console.log('🐶 Token:', accessToken);
-    // console.log('🐶 Decoded Token:', decoded);
-    // console.log('🐶 Expiration Duration (seconds):', decoded.exp - decoded.iat);
-    // console.log(
-    //   '🐶 Expires At (KST):',
-    //   new Date(decoded.exp * 1000).toLocaleString('ko-KR', {
-    //     timeZone: 'Asia/Seoul',
-    //   }),
-    // );
 
     return {
       accessToken,

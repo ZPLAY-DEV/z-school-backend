@@ -131,7 +131,10 @@ export class AuthController {
   @Public()
   @RefreshDocs()
   @Post('refresh')
-  async refresh(@Req() req: ExpressRequest): Promise<HttpResponse> {
+  async refresh(
+    @Req() req: ExpressRequest,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<HttpResponse> {
     const authHeader = req.get('Authorization');
     const refreshToken =
       req.cookies?.refreshToken ||
@@ -154,6 +157,15 @@ export class AuthController {
       role.toUpperCase() as Role,
       refreshToken as string,
     );
+
+    // Update accessToken cookie only
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: ONE_HOUR,
+    });
 
     return HttpResponse.created(tokens);
   }
