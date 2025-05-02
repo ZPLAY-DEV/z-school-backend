@@ -5,6 +5,7 @@ import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { Phone } from 'src/domain/phone/entities/phone.entity';
 import { Statement } from 'src/domain/statement/entities/statement.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -48,9 +49,9 @@ export class School {
   @Column({ type: 'varchar', length: 64, nullable: true })
   address: string | null;
 
-  @ApiProperty({ description: '🈳 문자메시지 발송번호 (숫자만 입력)' })
-  @Column({ type: 'varchar', length: 16, nullable: true })
-  phone: string;
+  // @ApiProperty({ description: '🈳 문자메시지 발송번호 (숫자만 입력)' })
+  // @Column({ type: 'varchar', length: 16, nullable: true })
+  // phone: string;
 
   @ApiProperty({
     description: '🈵 CO 변경없이 동일비용 적용, MC/MF 비율로 계산',
@@ -120,6 +121,9 @@ export class School {
 
   @OneToMany(() => Calendar, (calendar) => calendar.school)
   public calendars: Calendar[];
+
+  @OneToMany(() => Phone, (phone) => phone.school)
+  public phones: Phone[];
 
   //* N-to-M belongsToMany ------------------------------------------------- *//
 

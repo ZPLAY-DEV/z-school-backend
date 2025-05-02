@@ -170,6 +170,11 @@ export const HttpErrorConstants = {
     message: '인증정보가 불일치합니다.',
   } as HttpErrorFormat,
 
+  DUPLICATE_PHONE: {
+    error: 'DUPLICATE_PHONE',
+    message: '이미 존재하는 휴대폰번호입니다.',
+  } as HttpErrorFormat,
+
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)
 };
 

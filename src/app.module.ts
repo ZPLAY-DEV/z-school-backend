@@ -40,6 +40,7 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 import { OrmConfig } from './database/orm-config';
 import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
+import { PhoneModule } from './domain/phone/phone.module';
 
 @Module({
   imports: [
@@ -126,6 +127,7 @@ import { UploadModule } from './services/upload/upload.module';
     UserModule,
     UploadModule,
     HealthModule,
+    PhoneModule,
   ],
   controllers: [AppController],
   providers: [
