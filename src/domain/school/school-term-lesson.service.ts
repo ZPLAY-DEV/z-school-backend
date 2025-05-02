@@ -14,7 +14,11 @@ import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
-import { parseTime } from 'src/helpers/bitmask';
+import {
+  parseRangeFormat,
+  parseTime,
+  parseTimeFormat,
+} from 'src/helpers/parse';
 import {
   DataSource,
   DeepPartial,
@@ -195,6 +199,7 @@ export class SchoolTermLessonService {
     dto: CreateLessonDto | UpdateLessonDto,
     manager: EntityManager,
   ): Promise<void> {
+    console.log(`😱`, dto);
     // Get or create instructors first
     const instructorPromises =
       dto.groups?.map(async (groupDto) => {
@@ -230,10 +235,15 @@ export class SchoolTermLessonService {
 
     // Upsert groups with both lessonId and instructorId
     for (const { instructorId, groupData } of instructorsWithGroupData) {
+      console.log(`⚠️`, groupData);
       // 수업 시작 시간과 종료 시간을 24시간 형식으로 변환
-      const groupStart = parseTime(groupData.start).join(':');
-      const groupEnd = parseTime(groupData.end).join(':');
-      const groupAllowedGrades = groupData.allowedGrades || [1, 2, 3, 4, 5, 6];
+      const groupStart = parseTimeFormat(parseTime(groupData.start));
+      const groupEnd = parseTimeFormat(parseTime(groupData.end));
+      const groupAllowedGrades = parseRangeFormat(groupData.allowedGrades).join(
+        ',',
+      );
+
+      console.log(`🤨`, groupStart, groupEnd, groupAllowedGrades);
 
       // 타입 안전한 방식으로 upsert 데이터 생성
       const upsertData: DeepPartial<Group> = {

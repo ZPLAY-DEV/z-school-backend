@@ -10,7 +10,7 @@ import { EnrollmentRule, Weekday } from 'src/common/enums';
 import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
-import { getBitmasks } from 'src/helpers/bitmask';
+import { getBitmasks } from 'src/helpers/parse';
 import { S3Service } from 'src/services/aws/s3.service';
 import { Repository } from 'typeorm';
 

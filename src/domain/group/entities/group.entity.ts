@@ -44,17 +44,9 @@ export class Group {
   @Column({ type: 'int', unsigned: true, default: 20 })
   capacity: number;
 
-  @ApiProperty({ description: '🈳 allowed grades' })
-  @Column('simple-array')
-  allowedGrades: number[];
-
-  // @ApiProperty({
-  //   description: '수업 시간 정보 (could be multiple)',
-  //   type: 'array',
-  //   isArray: true,
-  // })
-  // @Column({ type: 'json' })
-  // times: ITimeRange[];
+  @ApiProperty({ description: '🈳 a comma separated string format' })
+  @Column({ type: 'varchar', length: 16 })
+  allowedGrades: string;
 
   @ApiProperty({
     description: '수업 요일',

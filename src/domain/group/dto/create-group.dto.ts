@@ -1,5 +1,4 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
@@ -10,8 +9,6 @@ import {
   Min,
 } from 'class-validator';
 import { GroupStatus, Weekday } from 'src/common/enums';
-import { parseTime } from 'src/helpers/bitmask';
-import { parseRangeToArray } from 'src/helpers/parse';
 
 //! 수업(Lesson)의 최소 단위로 반(Group)을 설정
 //! - 영어 수업이 1주에 2번 있는 경우, 영어수업A 와 영어수업B 처럼 2개 반을 생성.
@@ -38,17 +35,11 @@ export class CreateGroupDto {
   capacity?: number;
 
   @ApiPropertyOptional({
-    description: '허용 학년 (예: [1,2,3,4,5,6] 또는 "1-6" 문자열)',
-    type: [Number],
-    isArray: true,
+    description: '허용 학년 (예: 1,2,3,4,5,6 또는 "1-6" 문자열)',
   })
+  @IsString()
   @IsOptional()
-  @Transform(({ value }) => {
-    return typeof value === 'string'
-      ? parseRangeToArray(value)
-      : (value as number[]);
-  })
-  allowedGrades?: number[];
+  allowedGrades?: string;
 
   @ApiPropertyOptional({ description: '수업 요일' })
   @IsEnum(Weekday)
@@ -56,34 +47,10 @@ export class CreateGroupDto {
 
   @ApiPropertyOptional({ description: '수업 시작 시간' })
   @IsString()
-  @Transform(({ value }) => {
-    try {
-      if (typeof value === 'string') {
-        // am/pm이 포함된 경우 또는 기타 유효한 시간 형식
-        return parseTime(value).join(':');
-      }
-      return value as string;
-    } catch {
-      // 오류 발생 시 기본값 반환
-      return '00:00';
-    }
-  })
   start: string;
 
   @ApiPropertyOptional({ description: '수업 종료 시간' })
   @IsString()
-  @Transform(({ value }) => {
-    try {
-      if (typeof value === 'string') {
-        // am/pm이 포함된 경우 또는 기타 유효한 시간 형식
-        return parseTime(value).join(':');
-      }
-      return value as string;
-    } catch {
-      // 오류 발생 시 기본값 반환
-      return '00:00';
-    }
-  })
   end: string;
 
   @ApiPropertyOptional({
