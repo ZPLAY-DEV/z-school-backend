@@ -1,10 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { GroupStatus } from 'src/common/enums';
-import { ITimeRange } from 'src/common/interfaces';
+import { GroupStatus, Weekday } from 'src/common/enums';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { StudentGroup } from 'src/domain/student/entities/student-group.entity';
-import { Student } from 'src/domain/student/entities/student.entity';
 import {
   Column,
   CreateDateColumn,
@@ -14,11 +12,13 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 // Group 보단 Class 가 더 적합하겠지만, Class 는 reserved keyword 이므로 탈락
 @Entity('groups')
+@Unique(['lessonId', 'groupName'])
 export class Group {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -27,15 +27,15 @@ export class Group {
   @Column({ type: 'int', unsigned: true, nullable: true })
   instructorId: number;
 
-  @ApiProperty({ description: '🈳 exclusively exists in lesson' })
-  @Column({ type: 'int', unsigned: true, nullable: true })
+  @ApiProperty({ description: '🈵 exclusively exists in lesson' })
+  @Column({ type: 'int', unsigned: true })
   lessonId: number;
 
   //* ---------------------------------------------------------------------- *//
 
-  @ApiProperty({ description: '🈳 반이름' })
-  @Column({ type: 'varchar', length: 24, nullable: true })
-  lessonName: string | null;
+  @ApiProperty({ description: '🈵 반이름' })
+  @Column({ type: 'varchar', length: 24 })
+  groupName: string | null;
 
   @Column({ type: 'varchar', length: 32, nullable: true })
   location: string | null;
@@ -44,17 +44,25 @@ export class Group {
   @Column({ type: 'int', unsigned: true, default: 20 })
   capacity: number;
 
-  @ApiProperty({ description: '🈳 allowed grades' })
-  @Column('simple-array')
-  allowedGrades: number[];
+  @ApiProperty({ description: '🈳 a comma separated string format' })
+  @Column({ type: 'varchar', length: 16 })
+  allowedGrades: string;
 
   @ApiProperty({
-    description: '수업 시간 정보 (could be multiple)',
-    type: 'array',
-    isArray: true,
+    description: '수업 요일',
+    enum: Weekday,
+    example: Weekday.MONDAY,
   })
-  @Column({ type: 'json' })
-  times: ITimeRange[];
+  @Column({ type: 'enum', enum: Weekday })
+  weekday: Weekday;
+
+  @ApiProperty({ description: '수업 시작 시간 (HH:mm)', example: '14:40' })
+  @Column({ type: 'varchar', length: 5 })
+  start: string;
+
+  @ApiProperty({ description: '수업 종료 시간 (HH:mm)', example: '15:20' })
+  @Column({ type: 'varchar', length: 5 })
+  end: string;
 
   @ApiProperty({ description: '🈵 상태' })
   @Column({
@@ -84,22 +92,18 @@ export class Group {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Instructor, (instructor) => instructor.groups, {
-    onDelete: 'SET NULL',
-  })
+  @ManyToOne(() => Instructor, (instructor) => instructor.groups)
   @JoinColumn({ name: 'instructorId' })
   instructor: Instructor;
 
-  @ManyToOne(() => Lesson, (lesson) => lesson.groups, {
-    onDelete: 'SET NULL',
-  })
+  @ManyToOne(() => Lesson, (lesson) => lesson.groups)
   @JoinColumn({ name: 'lessonId' })
   lesson: Lesson;
 
   //* N-to-M belongsToMany with custom props using 1-to-M ------------------ *//
 
   @OneToMany(() => StudentGroup, (stdGrp) => stdGrp.group)
-  studentGroups: Student[];
+  studentGroups: StudentGroup[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

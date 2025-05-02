@@ -27,13 +27,15 @@ export const RegisterDocs = () => {
       - 같은 Role 로 중복가입시 오류 발생.
       - 가입 후 바로 로그인 처리됨.
       - httpOnly 쿠키 및 Response 로 accessToken 과 refreshToken 을 반환.
+      - refreshToken 은 쿠키에 저장되고, accessToken만 응답 값으로 반환됨.
+      - 필수 정보: username, password, role, phone
       `,
     }),
     ApiBody({
       type: UserCredentialsDtoWithPhone,
     }),
     ApiCreatedResponseTemplate({
-      description: '부모/강사 회원가입',
+      description: '부모/강사 회원가입 성공',
       type: AuthResponseDto,
     }),
     ApiErrorResponseTemplate([
@@ -109,7 +111,6 @@ export const ResetPasswordDocs = () => {
           HttpErrorConstants.NOT_FOUND_USER,
         ],
       },
-      {},
     ]),
   );
 };

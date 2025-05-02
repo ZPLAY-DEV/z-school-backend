@@ -81,12 +81,14 @@ export class AuthService {
   async register(dto: UserCredentialsDtoWithPhone): Promise<AuthResponseDto> {
     let user: User | null;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
     try {
-      user = await queryRunner.manager.findOne(User, {
+      // Use repositories directly instead of queryRunner
+      const userRepository = this.dataSource.getRepository(User);
+      const instructorRepository = this.dataSource.getRepository(Instructor);
+      const parentRepository = this.dataSource.getRepository(Parent);
+
+      // Check if user exists
+      user = await userRepository.findOne({
         where: { phone: dto.phone },
         relations: ['instructor', 'parent', 'tokens'],
       });
@@ -98,60 +100,125 @@ export class AuthService {
           (dto.role === Role.INSTRUCTOR && user.instructor) ||
           (dto.role === Role.PARENT && user.parent)
         ) {
-          throw new ConflictException();
+          throw new ConflictException(HttpErrorConstants.ALREADY_REGISTERED);
         }
         //! 부모회원 가입회원이 강사회원으로 가입시, 사용자 비밀번호가 업데이트가 된다.
-        user.password = hashedPassword;
-        await queryRunner.manager.save(User, user);
+        await userRepository.update(user.id, {
+          password: hashedPassword,
+        });
+        // Refresh user data
+        user = await userRepository.findOne({
+          where: { id: user.id },
+          relations: ['instructor', 'parent', 'tokens'],
+        });
       } else {
         // 유저 새로 생성
-        const newUser = queryRunner.manager.create(User, {
+        const newUser = new User({
           username: dto.username,
           phone: dto.phone,
           password: hashedPassword,
-          role: dto.role,
         });
-        user = await queryRunner.manager.save(User, newUser);
+
+        user = await userRepository.save(newUser);
       }
+
+      // Ensure user exists at this point (for TypeScript)
+      if (!user) {
+        throw new BadRequestException(
+          HttpErrorConstants.INTERNAL_DATABASE_ERROR,
+        );
+      }
+
+      console.log('🔴 dto', dto);
 
       // Role-specific entity 생성
       if (dto.role === Role.INSTRUCTOR) {
-        await queryRunner.manager.save(
-          dto.role === Role.INSTRUCTOR ? Instructor : Role.PARENT,
-          {
-            userId: user.id,
-            phone: dto.phone,
-          },
-        );
-      } else if (dto.role === Role.PARENT) {
-        await queryRunner.manager.save(Parent, {
+        console.log('🔴 1', dto.role);
+
+        const instructor = new Instructor({
           userId: user.id,
           phone: dto.phone,
         });
+        await instructorRepository.save(instructor);
+      } else if (dto.role === Role.PARENT) {
+        console.log('🔴 2', dto.role);
+        const parent = new Parent({
+          userId: user.id,
+          phone: dto.phone,
+        });
+        await parentRepository.save(parent);
+      } else {
+        console.log('🔴 3', dto.role);
+        // If not a recognized role, throw error
+        throw new BadRequestException(HttpErrorConstants.INVALID_ROLE);
       }
 
-      await queryRunner.commitTransaction();
-      const tokens = await this.login({
-        username: dto.username,
-        password: dto.password,
+      // Reload user with updated relations after creating role-specific entity
+      if (user && user.id) {
+        const updatedUser = await userRepository.findOne({
+          where: { id: user.id },
+          relations: ['instructor', 'parent', 'tokens', 'manager'],
+        });
+
+        if (updatedUser) {
+          user = updatedUser;
+        }
+      }
+
+      // Instead of calling login, which validates the user again, create tokens directly
+      const payload = {
+        sub: user.id,
+        username: user.username,
         role: dto.role,
-      });
+      };
+      const accessTokenOptions = {
+        secret: this.configService.get('jwt.authSecret'),
+        expiresIn: '1h', // ONE_HOUR
+      };
+      const accessToken = await this.jwtService.signAsync(
+        payload,
+        accessTokenOptions,
+      );
 
-      await this.slack.sendMessage({
-        channel: 'activity',
-        text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${user.id}|${user.username ?? dto.role}>`,
-      });
+      // Refresh Token 생성 및 저장
+      const refreshToken = `XYZ-${user.id}-${dto.role.toLowerCase()}-${uuid.v4()}`;
+      const partialToken = refreshToken.slice(0, 36);
+      const hashedToken = await bcrypt.hash(refreshToken, 10);
+      const expiresAt = new Date(Date.now() + THIRTY_DAYS);
 
-      return tokens;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      this.logger.error(err);
-      if (err instanceof ConflictException) {
-        throw new BadRequestException(HttpErrorConstants.ALREADY_REGISTERED);
+      const tokenRepository = this.dataSource.getRepository<Token>('Token');
+      await tokenRepository.upsert(
+        {
+          userId: user.id,
+          role: dto.role,
+          partialToken,
+          hashedToken,
+          expiresAt,
+        },
+        ['userId', 'role', 'partialToken'],
+      );
+
+      // Non-critical operation - don't fail if Slack notification fails
+      try {
+        const userId = user.id;
+        const username = user.username ?? dto.role;
+        await this.slack.sendMessage({
+          channel: 'activity',
+          text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${userId}|${username}>`,
+        });
+      } catch (slackError) {
+        this.logger.warn('Failed to send Slack notification', slackError);
       }
-      throw new BadRequestException(HttpErrorConstants.INTERNAL_DATABASE_ERROR);
-    } finally {
-      await queryRunner.release();
+
+      return {
+        user: plainToClass(User, user),
+        role: dto.role,
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      this.logger.error('Registration error', error);
+      throw error;
     }
   }
 
@@ -163,12 +230,13 @@ export class AuthService {
   async registerManager(dto: UserCredentialsDto): Promise<AuthResponseDto> {
     let user: User | null;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
     try {
-      user = await queryRunner.manager.findOne(User, {
+      // Use repositories directly instead of queryRunner
+      const userRepository = this.dataSource.getRepository(User);
+      const managerRepository = this.dataSource.getRepository(Manager);
+
+      // Check if user exists
+      user = await userRepository.findOne({
         where: { username: dto.username },
         relations: ['manager', 'tokens'],
       });
@@ -176,44 +244,121 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(dto.password, 10);
 
       if (user) {
-        throw new ConflictException();
+        if (user.manager) {
+          throw new ConflictException(HttpErrorConstants.ALREADY_REGISTERED);
+        }
+        // Update existing user
+        await userRepository.update(user.id, {
+          password: hashedPassword,
+        });
+        // Refresh user data
+        user = await userRepository.findOne({
+          where: { id: user.id },
+          relations: ['manager', 'tokens'],
+        });
       } else {
         // 유저 새로 생성
-        const newUser = queryRunner.manager.create(User, {
+        const newUser = new User({
           username: dto.username,
           password: hashedPassword,
-          role: dto.role,
         });
-        user = await queryRunner.manager.save(User, newUser);
+        user = await userRepository.save(newUser);
       }
 
-      await queryRunner.manager.save(Manager, {
+      // Validate manager role
+      if (dto.role !== Role.MANAGER) {
+        throw new BadRequestException(HttpErrorConstants.INVALID_ROLE);
+      }
+
+      // Ensure user exists at this point (for TypeScript)
+      if (!user) {
+        throw new BadRequestException(
+          HttpErrorConstants.INTERNAL_DATABASE_ERROR,
+        );
+      }
+
+      // Create manager entity
+      const manager = new Manager({
         userId: user.id,
       });
+      await managerRepository.save(manager);
 
-      await queryRunner.commitTransaction();
+      // Reload user with updated relations
+      if (user && user.id) {
+        const updatedUser = await userRepository.findOne({
+          where: { id: user.id },
+          relations: ['manager', 'tokens', 'instructor', 'parent'],
+        });
 
-      const tokens = await this.login({
-        username: dto.username,
-        password: dto.password,
-        role: dto.role,
-      });
-
-      await this.slack.sendMessage({
-        channel: 'activity',
-        text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${user.id}|${user.username ?? dto.role}>`,
-      });
-
-      return tokens;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      this.logger.error(err);
-      if (err instanceof ConflictException) {
-        throw new BadRequestException(HttpErrorConstants.ALREADY_REGISTERED);
+        if (updatedUser) {
+          user = updatedUser;
+        }
       }
+
+      // Instead of calling login, which validates the user again, create tokens directly
+      const payload = {
+        sub: user.id,
+        username: user.username,
+        role: dto.role,
+      };
+      const accessTokenOptions = {
+        secret: this.configService.get('jwt.authSecret'),
+        expiresIn: '1h', // ONE_HOUR
+      };
+      const accessToken = await this.jwtService.signAsync(
+        payload,
+        accessTokenOptions,
+      );
+
+      // Refresh Token 생성 및 저장
+      const refreshToken = `XYZ-${user.id}-${dto.role.toLowerCase()}-${uuid.v4()}`;
+      const partialToken = refreshToken.slice(0, 36);
+      const hashedToken = await bcrypt.hash(refreshToken, 10);
+      const expiresAt = new Date(Date.now() + THIRTY_DAYS);
+
+      const tokenRepository = this.dataSource.getRepository<Token>('Token');
+      await tokenRepository.upsert(
+        {
+          userId: user.id,
+          role: dto.role,
+          partialToken,
+          hashedToken,
+          expiresAt,
+        },
+        ['userId', 'role', 'partialToken'],
+      );
+
+      // Non-critical operation - don't fail if Slack notification fails
+      try {
+        const userId = user.id;
+        const username = user.username ?? dto.role;
+        await this.slack.sendMessage({
+          channel: 'activity',
+          text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${userId}|${username}>`,
+        });
+      } catch (slackError) {
+        this.logger.warn('Failed to send Slack notification', slackError);
+      }
+
+      return {
+        user: plainToClass(User, user),
+        role: dto.role,
+        accessToken,
+        refreshToken,
+      };
+    } catch (err) {
+      this.logger.error(`🔴 Manager registration error:`, err);
+
+      if (err instanceof ConflictException) {
+        throw err; // Pass through the already properly formatted conflict exception
+      } else if (err instanceof BadRequestException) {
+        throw err; // Pass through already formatted bad request exceptions
+      } else if (err instanceof UnauthorizedException) {
+        throw err; // Pass through unauthorized exceptions (e.g. from login)
+      }
+
+      // For any other errors, throw a generic database error
       throw new BadRequestException(HttpErrorConstants.INTERNAL_DATABASE_ERROR);
-    } finally {
-      await queryRunner.release();
     }
   }
 

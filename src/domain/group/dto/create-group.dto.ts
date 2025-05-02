@@ -1,5 +1,4 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
@@ -21,7 +20,7 @@ export class CreateGroupDto {
   @IsString()
   @MaxLength(16)
   @IsOptional()
-  lessonName?: string;
+  groupName?: string;
 
   @ApiPropertyOptional()
   @IsString()
@@ -36,40 +35,23 @@ export class CreateGroupDto {
   capacity?: number;
 
   @ApiPropertyOptional({
-    description: 'Lesson IDs to associate with this category',
-    type: [Number],
-    isArray: true,
-  })
-  @IsInt({ each: true })
-  @IsOptional()
-  @Type(() => Number)
-  allowedGrades?: number[];
-
-  @ApiPropertyOptional({
-    description: 'Lesson IDs to associate with this category',
-    type: String,
+    description: '허용 학년 (예: 1,2,3,4,5,6 또는 "1-6" 문자열)',
   })
   @IsString()
   @IsOptional()
-  allowedGradesInString?: string;
+  allowedGrades?: string;
 
-  @ApiProperty({ description: '요일' })
+  @ApiPropertyOptional({ description: '수업 요일' })
   @IsEnum(Weekday)
   weekday: Weekday;
 
-  @ApiProperty({ description: 'Class start time (HH:MM)' })
+  @ApiPropertyOptional({ description: '수업 시작 시간' })
   @IsString()
-  started: string;
+  start: string;
 
-  @ApiProperty({ description: 'Class end time (HH:MM)' })
+  @ApiPropertyOptional({ description: '수업 종료 시간' })
   @IsString()
-  ended: string;
-
-  // @ApiPropertyOptional({ description: 'Class times as array' })
-  // @IsArray()
-  // @IsString({ each: true })
-  // @IsOptional()
-  // classTimes?: string[];
+  end: string;
 
   @ApiPropertyOptional({
     description: '상태',

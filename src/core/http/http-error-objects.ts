@@ -164,6 +164,11 @@ export const HttpErrorConstants = {
     message: '학기를 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
+  NOT_FOUND_LESSON: {
+    error: 'NOT_FOUND_LESSON',
+    message: '과목을 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
   // ? 로직이 이상한데, 여쭤보기
   NOT_FOUND_PASSWORD: {
     error: 'NOT_FOUND_PASSWORD',

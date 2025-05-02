@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -15,6 +16,9 @@ import {
 export class Document {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
+
+  @Column({ type: 'int', unsigned: true })
+  instructorId: number;
 
   // ------------------------------------------------------------------------ //
 
@@ -44,9 +48,8 @@ export class Document {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Instructor, (instructor) => instructor.documents, {
-    onDelete: 'SET NULL',
-  })
+  @ManyToOne(() => Instructor, (instructor) => instructor.documents)
+  @JoinColumn({ name: 'instructorId' })
   instructor: Instructor;
 
   //? Constructor ---------------------------------------------------------- ?//

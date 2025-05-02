@@ -140,10 +140,10 @@ export class Lesson {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @OneToMany(() => Group, (group) => group.lesson, { cascade: true })
+  @OneToMany(() => Group, (group) => group.lesson)
   public groups: Group[];
 
-  @OneToMany(() => Ledger, (ledger) => ledger.lesson, { cascade: true })
+  @OneToMany(() => Ledger, (ledger) => ledger.lesson)
   public ledgers: Ledger[];
 
   //* N-to-M belongsToMany using 1-to-M ------------------------------------ *//
