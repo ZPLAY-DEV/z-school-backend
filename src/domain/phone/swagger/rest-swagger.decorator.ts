@@ -127,3 +127,32 @@ export const SchoolIsActivePhoneUpdateDocs = () => {
     ]),
   );
 };
+
+//? ---------------------------------------------------------------------- ?//
+//? Private) 학교의 활성화된 발송번호 삭제
+//? ---------------------------------------------------------------------- ?//
+export const SchoolPhoneDeleteDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: ' 학교의 등록된 발송번호 삭제 ',
+      description: `
+      - 학교에 등록된 발송번호를 삭제한다.
+      - 학교에 등록된 발송번호가 여러 개일 때, 활성화된 번호는 삭제 할 수 없다. ( 비활성화 번호만 제거 가능 )
+      - 단,학교에 등록된 발송번호가 1개일 경우에는 해당 번호가 활성화 되어있어도 삭제가 가능하다.
+      `,
+    }),
+    ApiOkResponseTemplate({
+      description: '학교의 발송번호 삭제 완료',
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [HttpErrorConstants.NOT_FOUND_PHONE_IN_SCHOOL],
+      },
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.CANNOT_DELETE_ACTIVE_PHONE],
+      },
+    ]),
+  );
+};

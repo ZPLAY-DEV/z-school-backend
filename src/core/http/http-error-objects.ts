@@ -180,6 +180,12 @@ export const HttpErrorConstants = {
     message: '이미 존재하는 휴대폰번호입니다.',
   } as HttpErrorFormat,
 
+  CANNOT_DELETE_ACTIVE_PHONE: {
+    error: 'CANNOT_DELETE_ACTIVE_PHONE',
+    message:
+      '대표번호는 삭제할 수 없습니다. 다른 번호를 대표번호로 설정 후 삭제해 주세요.',
+  } as HttpErrorFormat,
+
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)
 };
 

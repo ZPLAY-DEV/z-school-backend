@@ -1,11 +1,12 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository, UpdateResult } from 'typeorm';
+import { DataSource, DeleteResult, Repository, UpdateResult } from 'typeorm';
 import { Phone } from '../phone/entities/phone.entity';
 import { CreatePhoneDto } from '../phone/dto/create-phone.dto';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
@@ -160,5 +161,32 @@ export class SchoolPhoneService {
       .where('schoolId = :schoolId', { schoolId: schoolId })
       .setParameter('phoneId', phoneId)
       .execute();
+  }
+
+  //?-------------------------------------------------------------------------//
+  //? Delete
+  //?-------------------------------------------------------------------------//
+
+  //? 학교 발신번호 삭제
+  async delete(schoolId: number, phoneId: number): Promise<DeleteResult> {
+    const phone = await this.phoneRepository.findOne({
+      where: { id: phoneId, school: { id: schoolId } },
+    });
+
+    if (!phone) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_PHONE_IN_SCHOOL);
+    }
+
+    const phones = await this.phoneRepository.find({
+      where: { school: { id: schoolId } },
+    });
+
+    if (phones.length > 1 && phone.isActive) {
+      throw new BadRequestException(
+        HttpErrorConstants.CANNOT_DELETE_ACTIVE_PHONE,
+      );
+    }
+
+    return await this.phoneRepository.delete(phoneId);
   }
 }

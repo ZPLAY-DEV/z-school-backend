@@ -2,6 +2,7 @@ import {
   Body,
   ClassSerializerInterceptor,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -18,6 +19,7 @@ import {
   CreateSchoolPhoneDocs,
   SchoolIsActivePhoneDocs,
   SchoolIsActivePhoneUpdateDocs,
+  SchoolPhoneDeleteDocs,
   SchoolPhoneListDocs,
   SchoolPhoneListPaginatedDocs,
 } from '../phone/swagger/rest-swagger.decorator';
@@ -90,4 +92,13 @@ export class SchoolPhoneController {
   //? ---------------------------------------------------------------------- ?//
   //? Delete
   //? ---------------------------------------------------------------------- ?//
+  @SchoolPhoneDeleteDocs()
+  @Delete(':schoolId/phone/:phoneId')
+  async delete(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('phoneId', ParseIntPipe) phoneId: number,
+  ) {
+    await this.schoolPhoneService.delete(schoolId, phoneId);
+    return HttpResponse.ok();
+  }
 }
