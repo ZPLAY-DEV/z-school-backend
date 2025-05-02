@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { SchoolCalendarController } from 'src/domain/school/school-calendar.controller';
@@ -16,19 +17,20 @@ import { S3Module } from 'src/services/aws/s3.module';
 import { NeisModule } from 'src/services/neis/neis-module';
 import { SlackModule } from 'src/services/slack/slack-module';
 import { UploadModule } from 'src/services/upload/upload.module';
+import { Phone } from '../phone/entities/phone.entity';
 import { SchoolCalendarService } from './school-calendar.service';
+import { SchoolPhoneController } from './school-phone.controller';
+import { SchoolPhoneService } from './school-phone.service';
 import { SchoolStudentController } from './school-student.controller';
 import { SchoolStudentService } from './school-student.service';
 import { SchoolController } from './school.controller';
 import { SchoolService } from './school.service';
-import { SchoolPhoneController } from './school-phone.controller';
-import { SchoolPhoneService } from './school-phone.service';
-import { Phone } from '../phone/entities/phone.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       School,
       Student,
+      Lesson,
       Term,
       Parent,
       Instructor,

@@ -9,7 +9,6 @@ import { Student } from 'src/domain/student/entities/student.entity';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
 import { Provider } from 'src/domain/user/entities/provider.entity';
 import { Secret } from 'src/domain/user/entities/secret.entity';
-import { Token } from 'src/domain/user/entities/token.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { UserNotificationListener } from 'src/domain/user/listeners/user-notification.listener';
 import { UserOtpController } from 'src/domain/user/user-otp.controller';
@@ -31,7 +30,6 @@ import { UserRepository } from './user.repository';
       Provider,
       Secret,
       User,
-      Token,
       Parent,
       Student,
       Instructor,
@@ -49,7 +47,6 @@ import { UserRepository } from './user.repository';
     SlackModule,
     FcmModule,
   ],
-  exports: [UserRepository], //? being used in auth.module.ts
   providers: [
     UserNotificationListener, //? for event emitter
     UserService,

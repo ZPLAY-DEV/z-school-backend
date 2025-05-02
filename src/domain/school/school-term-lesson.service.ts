@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
   paginate,
@@ -25,13 +26,18 @@ import {
   EntityManager,
   FindOptionsWhere,
   IsNull,
+  Repository,
 } from 'typeorm';
 
 @Injectable()
 export class SchoolTermLessonService {
   private readonly logger = new Logger(SchoolTermLessonService.name);
 
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectRepository(Lesson)
+    private readonly lessonRepository: Repository<Lesson>,
+    private readonly dataSource: DataSource,
+  ) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? Create
@@ -199,7 +205,6 @@ export class SchoolTermLessonService {
     dto: CreateLessonDto | UpdateLessonDto,
     manager: EntityManager,
   ): Promise<void> {
-    console.log(`😱`, dto);
     // Get or create instructors first
     const instructorPromises =
       dto.groups?.map(async (groupDto) => {
@@ -235,15 +240,12 @@ export class SchoolTermLessonService {
 
     // Upsert groups with both lessonId and instructorId
     for (const { instructorId, groupData } of instructorsWithGroupData) {
-      console.log(`⚠️`, groupData);
       // 수업 시작 시간과 종료 시간을 24시간 형식으로 변환
       const groupStart = parseTimeFormat(parseTime(groupData.start));
       const groupEnd = parseTimeFormat(parseTime(groupData.end));
       const groupAllowedGrades = parseRangeFormat(groupData.allowedGrades).join(
         ',',
       );
-
-      console.log(`🤨`, groupStart, groupEnd, groupAllowedGrades);
 
       // 타입 안전한 방식으로 upsert 데이터 생성
       const upsertData: DeepPartial<Group> = {
@@ -291,6 +293,7 @@ export class SchoolTermLessonService {
     // ---------------------------------------------------------------------- //
     // instructor_lesson 관계 업데이트 (무조건 soft delete 후 재생성)
     // ---------------------------------------------------------------------- //
+
     await manager.update(
       InstructorLesson,
       { lessonId: lesson.id, deletedAt: IsNull() },
@@ -312,6 +315,7 @@ export class SchoolTermLessonService {
     // ---------------------------------------------------------------------- //
     // instructor_school 관계 업데이트 (todo. 삭제관련 처리 필요할지도)
     // ---------------------------------------------------------------------- //
+
     await Promise.all(
       instructorIds.map((instructorId) =>
         manager.query(
@@ -448,8 +452,7 @@ export class SchoolTermLessonService {
     termId: number,
     query: PaginateQuery,
   ): Promise<Paginated<Lesson>> {
-    const queryBuilder = this.dataSource
-      .getRepository(Lesson)
+    const queryBuilder = this.lessonRepository
       .createQueryBuilder('lesson')
       .where('lesson.schoolId = :schoolId', { schoolId })
       .andWhere('lesson.termId = :termId', { termId });
@@ -474,8 +477,7 @@ export class SchoolTermLessonService {
   }
 
   async list(schoolId: number, termId: number): Promise<Lesson[]> {
-    const queryBuilder = this.dataSource
-      .getRepository(Lesson)
+    const queryBuilder = this.lessonRepository
       .createQueryBuilder('lesson')
       .leftJoinAndSelect('lesson.groups', 'group')
       .where('lesson.schoolId = :schoolId', { schoolId })
