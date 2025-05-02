@@ -139,6 +139,11 @@ export const HttpErrorConstants = {
     message: '일치하는 휴대폰번호를 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
+  NOT_FOUND_PHONE_IN_SCHOOL: {
+    error: 'NOT_FOUND_PHONE_IN_SCHOOL',
+    message: '학교에 속한 번호를 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
   ACCESS_DENIED: {
     error: 'ACCESS_DENIED',
     message: '접근이 불가한 유저입니다.',
@@ -168,6 +173,17 @@ export const HttpErrorConstants = {
   INVALID_CREDENTIALS: {
     error: 'INVALID_CREDENTIALS',
     message: '인증정보가 불일치합니다.',
+  } as HttpErrorFormat,
+
+  DUPLICATE_PHONE: {
+    error: 'DUPLICATE_PHONE',
+    message: '이미 존재하는 휴대폰번호입니다.',
+  } as HttpErrorFormat,
+
+  CANNOT_DELETE_ACTIVE_PHONE: {
+    error: 'CANNOT_DELETE_ACTIVE_PHONE',
+    message:
+      '대표번호는 삭제할 수 없습니다. 다른 번호를 대표번호로 설정 후 삭제해 주세요.',
   } as HttpErrorFormat,
 
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)

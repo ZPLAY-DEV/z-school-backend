@@ -21,9 +21,19 @@ import { SchoolStudentController } from './school-student.controller';
 import { SchoolStudentService } from './school-student.service';
 import { SchoolController } from './school.controller';
 import { SchoolService } from './school.service';
+import { SchoolPhoneController } from './school-phone.controller';
+import { SchoolPhoneService } from './school-phone.service';
+import { Phone } from '../phone/entities/phone.entity';
 @Module({
   imports: [
-    TypeOrmModule.forFeature([School, Student, Term, Parent, Instructor]),
+    TypeOrmModule.forFeature([
+      School,
+      Student,
+      Term,
+      Parent,
+      Instructor,
+      Phone,
+    ]),
     UploadModule,
     SlackModule,
     S3Module,
@@ -36,6 +46,7 @@ import { SchoolService } from './school.service';
     SchoolStudentController,
     SchoolTermController,
     SchoolTermLessonController,
+    SchoolPhoneController,
   ],
   providers: [
     SchoolService,
@@ -44,6 +55,7 @@ import { SchoolService } from './school.service';
     SchoolStudentService,
     SchoolTermService,
     SchoolTermLessonService,
+    SchoolPhoneService,
   ],
 })
 export class SchoolModule {}

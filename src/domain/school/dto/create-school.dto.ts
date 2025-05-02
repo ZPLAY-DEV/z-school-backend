@@ -57,15 +57,15 @@ export class CreateSchoolDto {
   @IsOptional()
   address?: string;
 
-  @ApiProperty({
-    description: '🈳 Phone number',
-    required: false,
-    maxLength: 16,
-  })
-  @IsString()
-  @Length(1, 16)
-  @IsOptional()
-  phone?: string;
+  // @ApiProperty({
+  //   description: '🈳 Phone number',
+  //   required: false,
+  //   maxLength: 16,
+  // })
+  // @IsString()
+  // @Length(1, 16)
+  // @IsOptional()
+  // phone?: string;
 
   @ApiProperty({
     description:
