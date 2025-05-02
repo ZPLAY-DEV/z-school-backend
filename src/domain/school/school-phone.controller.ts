@@ -79,7 +79,7 @@ export class SchoolPhoneController {
   //? 학교 발신번호 활성화/비활성화
   @SchoolIsActivePhoneUpdateDocs()
   @Patch(':schoolId/phone/:phoneId')
-  async update(
+  async updateIsActive(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('phoneId', ParseIntPipe) phoneId: number,
   ) {
