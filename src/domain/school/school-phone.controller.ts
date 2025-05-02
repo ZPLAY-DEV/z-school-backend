@@ -19,6 +19,7 @@ import {
   CreateSchoolPhoneDocs,
   SchoolIsActivePhoneDocs,
   SchoolIsActivePhoneUpdateDocs,
+  SchoolPhoneDeleteAllDocs,
   SchoolPhoneDeleteDocs,
   SchoolPhoneListDocs,
   SchoolPhoneListPaginatedDocs,
@@ -92,6 +93,8 @@ export class SchoolPhoneController {
   //? ---------------------------------------------------------------------- ?//
   //? Delete
   //? ---------------------------------------------------------------------- ?//
+
+  //? 학교 발신번호 삭제
   @SchoolPhoneDeleteDocs()
   @Delete(':schoolId/phone/:phoneId')
   async delete(
@@ -99,6 +102,14 @@ export class SchoolPhoneController {
     @Param('phoneId', ParseIntPipe) phoneId: number,
   ) {
     await this.schoolPhoneService.delete(schoolId, phoneId);
+    return HttpResponse.ok();
+  }
+
+  //? 학교 발신번호 전체 삭제
+  @SchoolPhoneDeleteAllDocs()
+  @Delete(':schoolId/phone')
+  async deleteAll(@Param('schoolId', ParseIntPipe) schoolId: number) {
+    await this.schoolPhoneService.deleteAll(schoolId);
     return HttpResponse.ok();
   }
 }

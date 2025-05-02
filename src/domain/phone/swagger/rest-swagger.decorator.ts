@@ -156,3 +156,21 @@ export const SchoolPhoneDeleteDocs = () => {
     ]),
   );
 };
+
+//? ---------------------------------------------------------------------- ?//
+//? Private) 학교의 활성화된 발송번호 삭제
+//? ---------------------------------------------------------------------- ?//
+export const SchoolPhoneDeleteAllDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '학교의 모든 발송번호 삭제',
+      description: `
+      - 학교에 등록된 모든 발송번호를 삭제한다.
+      - 활성화된 발송번호가 없으면 로직단에서 Default로 회사번호로 발송되도록 처리.
+      `,
+    }),
+    ApiOkResponseTemplate({
+      description: '학교의 모든 발송번호 삭제 완료',
+    }),
+  );
+};

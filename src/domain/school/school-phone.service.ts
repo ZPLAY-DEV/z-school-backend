@@ -189,4 +189,9 @@ export class SchoolPhoneService {
 
     return await this.phoneRepository.delete(phoneId);
   }
+
+  //? 학교 발신번호 전체 삭제
+  async deleteAll(schoolId: number): Promise<DeleteResult> {
+    return await this.phoneRepository.delete({ school: { id: schoolId } });
+  }
 }
