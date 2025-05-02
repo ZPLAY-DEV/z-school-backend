@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, UpdateResult } from 'typeorm';
 import { Phone } from '../phone/entities/phone.entity';
 import { CreatePhoneDto } from '../phone/dto/create-phone.dto';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
@@ -138,17 +138,27 @@ export class SchoolPhoneService {
   //? Update
   //?-------------------------------------------------------------------------//
 
-  // //? 학교 발신번호 활성화/비활성화
-  // async update(phoneId: number): Promise<Phone> {
-  //   const phone = await this.phoneRepository.findOne({
-  //     where: { id: phoneId },
-  //   });
+  //? 학교 발신번호 활성화/비활성화
+  async updateIsActive(
+    schoolId: number,
+    phoneId: number,
+  ): Promise<UpdateResult> {
+    const phone = await this.phoneRepository.findOne({
+      where: { id: phoneId, school: { id: schoolId } },
+    });
 
-  //   if (!phone) {
-  //     throw new NotFoundException(HttpErrorConstants.NOT_FOUND_PHONE);
-  //   }
+    if (!phone) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_PHONE_IN_SCHOOL);
+    }
 
-  //   phone.isActive = !phone.isActive;
-  //   return await this.phoneRepository.save(phone);
-  // }
+    return await this.phoneRepository
+      .createQueryBuilder()
+      .update(Phone)
+      .set({
+        isActive: () => `CASE WHEN id = :phoneId THEN TRUE ELSE FALSE END`,
+      })
+      .where('schoolId = :schoolId', { schoolId: schoolId })
+      .setParameter('phoneId', phoneId)
+      .execute();
+  }
 }

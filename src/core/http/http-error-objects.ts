@@ -139,6 +139,11 @@ export const HttpErrorConstants = {
     message: '일치하는 휴대폰번호를 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
+  NOT_FOUND_PHONE_IN_SCHOOL: {
+    error: 'NOT_FOUND_PHONE_IN_SCHOOL',
+    message: '학교에 속한 번호를 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
   ACCESS_DENIED: {
     error: 'ACCESS_DENIED',
     message: '접근이 불가한 유저입니다.',

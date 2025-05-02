@@ -104,3 +104,26 @@ export const SchoolIsActivePhoneDocs = () => {
     }),
   );
 };
+
+//? ---------------------------------------------------------------------- ?//
+//? Private) 학교의 활성화된 발송번호 활성화/비활성화
+//? ---------------------------------------------------------------------- ?//
+export const SchoolIsActivePhoneUpdateDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '학교에 등록된 발송번호 활성화/비활성화',
+      description: `
+      - 학교에 등록된 발송번호를 활성화/비활성화 한다.
+      `,
+    }),
+    ApiOkResponseTemplate({
+      description: '학교의 활성화된 발송번호 활성화/비활성화 완료',
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [HttpErrorConstants.NOT_FOUND_PHONE_IN_SCHOOL],
+      },
+    ]),
+  );
+};

@@ -5,7 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  // Patch,
+  Patch,
   Post,
   UseInterceptors,
 } from '@nestjs/common';
@@ -17,6 +17,7 @@ import { HttpResponse } from 'src/core/http/http-response';
 import {
   CreateSchoolPhoneDocs,
   SchoolIsActivePhoneDocs,
+  SchoolIsActivePhoneUpdateDocs,
   SchoolPhoneListDocs,
   SchoolPhoneListPaginatedDocs,
 } from '../phone/swagger/rest-swagger.decorator';
@@ -75,12 +76,16 @@ export class SchoolPhoneController {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  // //? 학교 발신번호 활성화/비활성화
-  // @Patch('phone/:phoneId')
-  // async update(@Param('phoneId', ParseIntPipe) phoneId: number) {
-  //   await this.schoolPhoneService.update(phoneId);
-  //   return HttpResponse.ok();
-  // }
+  //? 학교 발신번호 활성화/비활성화
+  @SchoolIsActivePhoneUpdateDocs()
+  @Patch(':schoolId/phone/:phoneId')
+  async update(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('phoneId', ParseIntPipe) phoneId: number,
+  ) {
+    await this.schoolPhoneService.updateIsActive(schoolId, phoneId);
+    return HttpResponse.ok();
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Delete
