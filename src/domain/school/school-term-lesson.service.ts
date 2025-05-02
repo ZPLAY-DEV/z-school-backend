@@ -10,6 +10,7 @@ import { Category } from 'src/domain/category/entities/category.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
+import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -32,6 +33,7 @@ export class SchoolTermLessonService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  //! precondition: name (강좌명) is unique in the same term
   async create(dto: CreateLessonDto): Promise<Lesson> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       //? 1단계) Find school
@@ -105,7 +107,7 @@ export class SchoolTermLessonService {
 
   async update(
     id: number,
-    dto: CreateLessonDto,
+    dto: UpdateLessonDto,
     manager?: EntityManager,
   ): Promise<Lesson> {
     // manager가 제공되지 않은 경우(직접 호출) 새로운 트랜잭션 시작
@@ -190,38 +192,39 @@ export class SchoolTermLessonService {
 
   private async processGroups(
     lesson: Lesson,
-    dto: CreateLessonDto,
+    dto: CreateLessonDto | UpdateLessonDto,
     manager: EntityManager,
   ): Promise<void> {
     // Get or create instructors first
-    const instructorPromises = dto.groups.map(async (groupDto) => {
-      // Upsert instructor using ON DUPLICATE KEY UPDATE
-      await manager.query(
-        `INSERT INTO instructors
+    const instructorPromises =
+      dto.groups?.map(async (groupDto) => {
+        // Upsert instructor using ON DUPLICATE KEY UPDATE
+        await manager.query(
+          `INSERT INTO instructors
           (name, phone)
           VALUES (?, ?)
           ON DUPLICATE KEY UPDATE updatedAt = CURRENT_TIMESTAMP`,
-        [groupDto.instructorName, groupDto.instructorPhone],
-      );
+          [groupDto.instructorName, groupDto.instructorPhone],
+        );
 
-      // Get the instructor ID
-      const [instructor] = await manager.query<{ id: number }[]>(
-        `SELECT id FROM instructors WHERE name = ? AND phone = ?`,
-        [groupDto.instructorName, groupDto.instructorPhone],
-      );
+        // Get the instructor ID
+        const [instructor] = await manager.query<{ id: number }[]>(
+          `SELECT id FROM instructors WHERE name = ? AND phone = ?`,
+          [groupDto.instructorName, groupDto.instructorPhone],
+        );
 
-      return {
-        lessonId: lesson.id,
-        instructorId: instructor.id,
-        instructorName: groupDto.instructorName,
-        instructorPhone: groupDto.instructorPhone,
-        groupData: {
-          ...groupDto,
-          instructorId: instructor.id,
+        return {
           lessonId: lesson.id,
-        },
-      };
-    });
+          instructorId: instructor.id,
+          instructorName: groupDto.instructorName,
+          instructorPhone: groupDto.instructorPhone,
+          groupData: {
+            ...groupDto,
+            instructorId: instructor.id,
+            lessonId: lesson.id,
+          },
+        };
+      }) || [];
 
     const instructorsWithGroupData = await Promise.all(instructorPromises);
 
@@ -262,7 +265,7 @@ export class SchoolTermLessonService {
     });
 
     if (existingLesson && existingLesson.groups.length > 0) {
-      const newGroupNames = dto.groups.map((g) => g.groupName || '');
+      const newGroupNames = dto.groups?.map((g) => g.groupName || '') || [];
       const groupsToDelete = existingLesson.groups.filter(
         (g) => !newGroupNames.includes(g.groupName || ''),
       );
@@ -276,10 +279,8 @@ export class SchoolTermLessonService {
     }
 
     // ---------------------------------------------------------------------- //
-    // instructor_lesson 관계 업데이트
+    // instructor_lesson 관계 업데이트 (무조건 soft delete 후 재생성)
     // ---------------------------------------------------------------------- //
-
-    // 어떤것이 겹치는지 따지지않고 무조건 soft delete 후 재생성
     await manager.update(
       InstructorLesson,
       { lessonId: lesson.id, deletedAt: IsNull() },
@@ -299,9 +300,8 @@ export class SchoolTermLessonService {
     await Promise.all(instructorLessonPromises);
 
     // ---------------------------------------------------------------------- //
-    // instructor_school 관계 업데이트
+    // instructor_school 관계 업데이트 (todo. 삭제관련 처리 필요할지도)
     // ---------------------------------------------------------------------- //
-    // todo. 삭제관련 처리 필요할지도
     await Promise.all(
       instructorIds.map((instructorId) =>
         manager.query(
@@ -345,18 +345,77 @@ export class SchoolTermLessonService {
     );
   }
 
-  //! precondition: all the DTOs have the same schoolId and termId
-  //! precondition: name (강좌명) is unique in the same term
   async createBulk(dtos: CreateLessonDto[]): Promise<Lesson[]> {
-    // Use transaction to ensure all operations are atomic
-    return await this.dataSource.transaction(async () => {
-      // Create a new instance of the service to use the transaction manager
-      const self = new SchoolTermLessonService(this.dataSource);
-
-      // Process each dto using the improved create method
+    return await this.dataSource.transaction(async (manager: EntityManager) => {
       const lessonPromises = dtos.map(async (dto) => {
         try {
-          return await self.create(dto);
+          //? 1단계) Find school
+          const school = await manager.findOne(School, {
+            where: { id: dto.schoolId },
+          });
+          if (!school) {
+            throw new NotFoundException('School not found');
+          }
+
+          //? 2단계) Find term to use start/end dates
+          const term = await manager.findOne(Term, {
+            where: { id: dto.termId },
+          });
+          if (!term) {
+            throw new NotFoundException('Term not found');
+          }
+
+          //? 3단계) 같은 이름의 기존 강좌가 있는지 확인
+          const existingLesson = await manager.findOne(Lesson, {
+            where: {
+              termId: dto.termId,
+              schoolId: dto.schoolId,
+              lessonName: dto.lessonName,
+            },
+          });
+
+          if (existingLesson) {
+            // Convert CreateLessonDto to UpdateLessonDto for update
+            return this.update(
+              existingLesson.id,
+              dto as unknown as UpdateLessonDto,
+              manager,
+            );
+          }
+
+          //? 4단계) 새로운 강좌 생성
+          const lesson = await manager.save(Lesson, {
+            ...dto,
+            start: dto.start ?? term.start,
+            end: dto.end ?? term.end,
+            schoolName: school.name,
+            operationFeeRule: school.operationFeeRule,
+            requiredDocuments: dto.requiredDocuments || [],
+          });
+
+          //? 5단계) 그룹 및 강사 정보 처리
+          if (dto.groups?.length) {
+            await this.processGroups(lesson, dto, manager);
+          }
+
+          //? 6단계) 카테고리 관계 설정
+          if (dto.category) {
+            await this.processCategory(lesson, dto.category, manager);
+          }
+
+          // 최종 데이터를 다시 로드하여 변환된 값을 반환
+          const savedLesson = await manager.findOne(Lesson, {
+            where: { id: lesson.id },
+            relations: { groups: true, categories: true },
+          });
+
+          if (!savedLesson) {
+            throw new NotFoundException(
+              `Cannot find saved lesson with ID ${lesson.id}`,
+            );
+          }
+
+          return savedLesson;
         } catch (error) {
           this.logger.error(
             `Failed to create lesson: ${dto.lessonName}`,

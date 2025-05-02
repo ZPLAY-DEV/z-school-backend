@@ -6,18 +6,30 @@ import {
   HttpCode,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { CreateLessonRequestDto } from 'src/domain/lesson/dto/create-lesson.dto';
+import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import {
+  CreateSchoolTermLessonBulkDocs,
+  CreateSchoolTermLessonDocs,
+  SchoolTermLessonListDocs,
+  SchoolTermLessonListPaginatedDocs,
+  UpdateSchoolTermLessonDocs,
+} from 'src/domain/lesson/swagger/rest-swagger.decorator';
 import { SchoolTermLessonService } from 'src/domain/school/school-term-lesson.service';
 
 @Controller('schools')
+@ApiTags('Schools - Term Lessons ( 학교 학기별 과목 관리 )')
+@ApiCommonErrorResponseTemplate()
+@UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermLessonController {
   constructor(
     private readonly schoolTermLessonService: SchoolTermLessonService,
@@ -27,7 +39,7 @@ export class SchoolTermLessonController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Lesson 생성' })
+  @CreateSchoolTermLessonDocs()
   @Post(':schoolId/terms/:termId/lessons')
   async create(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -42,7 +54,7 @@ export class SchoolTermLessonController {
   }
 
   @Public()
-  @ApiOperation({ description: 'Lessons 생성' })
+  @CreateSchoolTermLessonBulkDocs()
   @Post(':schoolId/terms/:termId/lessons/bulk')
   @HttpCode(200)
   async createBulk(
@@ -60,12 +72,30 @@ export class SchoolTermLessonController {
   }
 
   //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
+  @UpdateSchoolTermLessonDocs()
+  @Patch(':schoolId/terms/:termId/lessons/:lessonId')
+  async update(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+    @Param('lessonId', ParseIntPipe) lessonId: number,
+    @Body() dto: UpdateLessonDto,
+  ): Promise<Lesson> {
+    return await this.schoolTermLessonService.update(lessonId, {
+      ...dto,
+      schoolId,
+      termId,
+    });
+  }
+
+  //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
   @Public()
-  @ApiOperation({ description: 'Lesson 리스트 w/ Pagination' })
-  @PaginateQueryOptions()
+  @SchoolTermLessonListPaginatedDocs()
   @Get(':schoolId/terms/:termId/lessons/paginated')
   @UseInterceptors(ClassSerializerInterceptor)
   async infiniteList(
@@ -81,7 +111,7 @@ export class SchoolTermLessonController {
   }
 
   @Public()
-  @ApiOperation({ description: 'Lesson 리스트 (all)' })
+  @SchoolTermLessonListDocs()
   @Get(':schoolId/terms/:termId/lessons')
   @UseInterceptors(ClassSerializerInterceptor)
   async list(

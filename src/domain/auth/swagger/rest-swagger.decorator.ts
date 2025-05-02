@@ -109,7 +109,6 @@ export const ResetPasswordDocs = () => {
           HttpErrorConstants.NOT_FOUND_USER,
         ],
       },
-      {},
     ]),
   );
 };
