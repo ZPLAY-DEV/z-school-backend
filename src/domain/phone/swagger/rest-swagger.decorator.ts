@@ -85,3 +85,22 @@ export const SchoolPhoneListPaginatedDocs = () => {
     }),
   );
 };
+
+//? ---------------------------------------------------------------------- ?//
+//? Private) 학교의 활성화된 발송번호 조회
+//? ---------------------------------------------------------------------- ?//
+export const SchoolIsActivePhoneDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '학교의 활성화된 발송번호 조회',
+      description: `
+      - 학교당 활성화된 발송번호는 1개이고 해당 정보를 조회한다.
+      - 만약 등록되지 않은 학교ID를 첨부해서 요청을 보낼 경우 Error Handling을 하지 않고 status 200, result null로 반환한다.
+      `,
+    }),
+    ApiOkResponseTemplate({
+      description: '학교의 활성화된 발송번호 조회 완료',
+      type: PhoneResponseDto,
+    }),
+  );
+};

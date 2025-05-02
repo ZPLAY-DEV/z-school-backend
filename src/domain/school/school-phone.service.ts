@@ -32,6 +32,7 @@ export class SchoolPhoneService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  //? 학교 발신번호 등록
   async create(dto: CreatePhoneDto): Promise<Phone> {
     // 1) 학교 존재 여부 확인
     const school = await this.schoolRepository.exists({
@@ -82,6 +83,7 @@ export class SchoolPhoneService {
   //? READ
   //?-------------------------------------------------------------------------//
 
+  //? 학교 발신번호 전체 조회
   async findAll(schoolId: number): Promise<Phone[]> {
     return await this.phoneRepository.find({
       select: {
@@ -96,6 +98,7 @@ export class SchoolPhoneService {
     });
   }
 
+  //? 학교 발신번호 페이징 조회
   async infiniteList(
     schoolId: number,
     query: PaginateQuery,
@@ -114,4 +117,38 @@ export class SchoolPhoneService {
       },
     });
   }
+
+  //? 학교의 활성화된 발송번호 조회
+  async findActivePhone(schoolId: number): Promise<Phone | null> {
+    return await this.phoneRepository.findOne({
+      select: {
+        id: true,
+        phone: true,
+        isActive: true,
+        createdAt: true,
+      },
+      where: {
+        school: { id: schoolId },
+        isActive: true,
+      },
+    });
+  }
+
+  //?-------------------------------------------------------------------------//
+  //? Update
+  //?-------------------------------------------------------------------------//
+
+  // //? 학교 발신번호 활성화/비활성화
+  // async update(phoneId: number): Promise<Phone> {
+  //   const phone = await this.phoneRepository.findOne({
+  //     where: { id: phoneId },
+  //   });
+
+  //   if (!phone) {
+  //     throw new NotFoundException(HttpErrorConstants.NOT_FOUND_PHONE);
+  //   }
+
+  //   phone.isActive = !phone.isActive;
+  //   return await this.phoneRepository.save(phone);
+  // }
 }

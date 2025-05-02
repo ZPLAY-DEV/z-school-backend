@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  // Patch,
   Post,
   UseInterceptors,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import { CreatePhoneDto } from '../phone/dto/create-phone.dto';
 import { HttpResponse } from 'src/core/http/http-response';
 import {
   CreateSchoolPhoneDocs,
+  SchoolIsActivePhoneDocs,
   SchoolPhoneListDocs,
   SchoolPhoneListPaginatedDocs,
 } from '../phone/swagger/rest-swagger.decorator';
@@ -41,6 +43,8 @@ export class SchoolPhoneController {
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
+
+  //? 전체 학교 발신번호 리스트 조회 ( 페이징 X )
   @SchoolPhoneListDocs()
   @Get(':schoolId/phone')
   async findAll(@Param('schoolId', ParseIntPipe) schoolId: number) {
@@ -48,6 +52,7 @@ export class SchoolPhoneController {
     return HttpResponse.ok(phones);
   }
 
+  //? 전체 학교 발신번호 리스트 조회 ( 페이징 O )
   @SchoolPhoneListPaginatedDocs()
   @Get(':schoolId/phone/paginated')
   async infiniteList(
@@ -57,4 +62,27 @@ export class SchoolPhoneController {
     const phones = await this.schoolPhoneService.infiniteList(schoolId, query);
     return HttpResponse.ok(phones);
   }
+
+  //? 학교의 활성화된 발송번호 조회
+  @SchoolIsActivePhoneDocs()
+  @Get(':schoolId/phone/active')
+  async findActivePhone(@Param('schoolId', ParseIntPipe) schoolId: number) {
+    const phone = await this.schoolPhoneService.findActivePhone(schoolId);
+    return HttpResponse.ok(phone);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
+  // //? 학교 발신번호 활성화/비활성화
+  // @Patch('phone/:phoneId')
+  // async update(@Param('phoneId', ParseIntPipe) phoneId: number) {
+  //   await this.schoolPhoneService.update(phoneId);
+  //   return HttpResponse.ok();
+  // }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Delete
+  //? ---------------------------------------------------------------------- ?//
 }
