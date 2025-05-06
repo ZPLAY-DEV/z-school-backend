@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Category as CategoryEnum } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
@@ -24,7 +23,7 @@ export class CategoryController {
 
   @Public()
   @ApiOperation({ description: 'return paginated list' })
-  @PaginateQueryOptions()
+  
   @Get('paginated')
   async infiniteList(
     @Paginate() query: PaginateQuery,

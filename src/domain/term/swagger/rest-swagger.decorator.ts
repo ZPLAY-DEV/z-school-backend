@@ -4,14 +4,14 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
+import { ApiOkPaginatedResponse } from 'nestjs-paginate';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
+import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ApiPaginatedResponseTemplate } from 'src/core/swagger/response/api-paginated-response.dto';
 import { CreateTermDto } from '../dto/create-term.dto';
 import { TermResponseDto } from '../dto/term-response.dto';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
-import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
-import { ApiPaginatedResponseTemplate } from 'src/core/swagger/response/api-paginated-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) Term 생성
@@ -76,7 +76,10 @@ export const PaginatedTermDocs = () => {
       - 학교에 귀속된 운영기간을 페이지네이션 기반으로 조회
       `,
     }),
-    PaginateQueryOptions(),
+    ApiOkPaginatedResponse(TermResponseDto, {
+      sortableColumns: ['id', 'schoolYear', 'termName'],
+      defaultSortBy: [['id', 'DESC']],
+    }),
     ApiPaginatedResponseTemplate({
       description: 'Term 조회 완료',
       type: TermResponseDto,

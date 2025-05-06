@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
@@ -50,7 +49,6 @@ export class OfferingController {
   //?-------------------------------------------------------------------------//
 
   @ApiOperation({ description: 'Offering 리스트 w/ Pagination' })
-  @PaginateQueryOptions()
   @Public()
   @Get('paginated')
   async getAdminOfferings(
@@ -60,7 +58,6 @@ export class OfferingController {
   }
 
   @ApiOperation({ description: 'Offering 리스트 w/ Pagination' })
-  @PaginateQueryOptions()
   @Public()
   @Get()
   async getOfferings(): Promise<Offering[]> {

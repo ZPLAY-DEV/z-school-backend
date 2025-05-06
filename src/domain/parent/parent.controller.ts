@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { CreateParentDto } from './dto/create-parent.dto';
@@ -36,7 +35,7 @@ export class ParentController {
   //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'paginated 주문 리스트' })
-  @PaginateQueryOptions()
+  
   @Get('paginated')
   async findAll(@Paginate() query: PaginateQuery): Promise<Paginated<Parent>> {
     return this.parentService.findAll(query);

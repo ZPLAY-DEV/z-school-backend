@@ -40,7 +40,7 @@ export class SchoolInstructorController {
 
   // @Public()
   // @ApiOperation({ description: 'Instructor 리스트 w/ Pagination' })
-  // @PaginateQueryOptions()
+  // 
   // @Get(':schoolId/instructors/paginated')
   // @UseInterceptors(ClassSerializerInterceptor)
   // async list(
@@ -52,7 +52,7 @@ export class SchoolInstructorController {
 
   // @Public()
   // @ApiOperation({ description: 'Instructor 리스트 (all)' })
-  // @PaginateQueryOptions()
+  // 
   // @Get(':schoolId/instructors')
   // @UseInterceptors(ClassSerializerInterceptor)
   // async infiniteList(

@@ -1,20 +1,19 @@
 import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Put,
-  Query,
-  UseInterceptors,
+    Body,
+    ClassSerializerInterceptor,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
+    Put,
+    Query,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Region } from 'src/common/enums';
 // import { S3Urls } from 'src/common/types';
@@ -63,7 +62,7 @@ export class SchoolController {
 
   @Public()
   @ApiOperation({ description: '학교 리스트 w/ Pagination' })
-  @PaginateQueryOptions()
+  
   @Get('paginated')
   @UseInterceptors(ClassSerializerInterceptor)
   async infiniteList(

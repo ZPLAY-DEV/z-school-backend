@@ -3,15 +3,14 @@
 
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
-import { CreatePhoneDto } from '../dto/create-phone.dto';
-import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { PhoneResponseDto } from '../dto/phone-response.dto';
+import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
+import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
 import { ApiPaginatedResponseTemplate } from 'src/core/swagger/response/api-paginated-response.dto';
-import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
+import { CreatePhoneDto } from '../dto/create-phone.dto';
+import { PhoneResponseDto } from '../dto/phone-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학교의 발신번호 등록
@@ -78,7 +77,7 @@ export const SchoolPhoneListPaginatedDocs = () => {
       - 학교에 귀속된 발신번호 리스트를 조회
       `,
     }),
-    PaginateQueryOptions(),
+    // ApiPaginationQuery,
     ApiPaginatedResponseTemplate({
       description: '학교별 발신번호 조회 완료',
       type: PhoneResponseDto,

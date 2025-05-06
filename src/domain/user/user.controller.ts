@@ -1,21 +1,20 @@
 import {
-  BadRequestException,
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-  UseInterceptors,
+    BadRequestException,
+    Body,
+    ClassSerializerInterceptor,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
+    Query,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
-import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { IS3Urls } from 'src/common/interfaces';
 import { ChangePasswordDto } from 'src/domain/user/dto/change-password.dto';
@@ -71,7 +70,7 @@ export class UserController {
   @ApiOperation({ description: 'User 리스트 (paginated)' })
   @UseInterceptors(AvatarInterceptor)
   // @UsePipes(new ValidationPipe({ transform: true }))
-  @PaginateQueryOptions()
+  
   @Get('paginated')
   @UseInterceptors(ClassSerializerInterceptor)
   async findAll(@Paginate() query: PaginateQuery): Promise<Paginated<User>> {
@@ -79,7 +78,7 @@ export class UserController {
   }
 
   @ApiOperation({ description: 'User 리스트 (User[])' })
-  @PaginateQueryOptions()
+  
   @Get()
   async list(): Promise<User[]> {
     return this.userService.list();

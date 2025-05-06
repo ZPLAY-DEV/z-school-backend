@@ -1,13 +1,12 @@
-import {
-  ArgumentsHost,
-  Catch,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, HttpException } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { SentryExceptionCaptured } from '@sentry/nestjs';
 import * as Sentry from '@sentry/node';
 import { KnownBlock } from '@slack/types';
+import {
+  HttpErrorConstants,
+  HttpErrorFormat,
+} from 'src/core/http/http-error-objects';
 import { SlackService } from 'src/services/slack/slack-service';
 
 // todo. Sentry DSN 를 v3 용으로 Sentry 콘솔에서 발급하고 변경이 필요. (무료 사용중?)
@@ -21,10 +20,51 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const req = ctx.getRequest();
-    const httpStatus =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const res = ctx.getResponse();
+
+    let httpStatus: number;
+    let errorResponse: HttpErrorFormat;
+
+    if (exception instanceof HttpException) {
+      const response = exception.getResponse();
+      httpStatus = exception.getStatus();
+
+      if (
+        typeof response === 'object' &&
+        'error' in response &&
+        'message' in response
+      ) {
+        errorResponse = {
+          error: response['error'] as string,
+          message: response['message'] as string,
+          description: (response['description'] as string) ?? req.url,
+        };
+      } else {
+        errorResponse = {
+          ...HttpErrorConstants.UNEXPECTED_HTTP_EXCEPTION,
+          description: req.url,
+        };
+
+        if (typeof response === 'string') {
+          errorResponse.message = response;
+        }
+      }
+    } else {
+      // 일반 오류 처리
+      httpStatus = 500;
+      errorResponse = {
+        ...HttpErrorConstants.INTERNAL_SERVER_ERROR,
+        description: req.url,
+      };
+
+      // 오류 메시지가 있는 경우 덮어쓰기
+      if (exception instanceof Error && exception.message) {
+        errorResponse.message = exception.message;
+      }
+    }
+
+    // 표준화된 응답 형식으로 설정
+    res.status(httpStatus).json(errorResponse);
 
     //! local 환경의 경우, slack 메시지 보내지 않도록 했으니깐 참고!
     if (httpStatus >= 500 && process.env.NODE_ENV !== 'local') {
@@ -48,22 +88,22 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
         scope.setExtra('params', req.params);
         scope.setExtra('body', req.body);
         scope.setExtra('headers', req.headers);
+        scope.setExtra('errorResponse', errorResponse);
 
         return scope;
       });
       // 💥 fire and forget. to not block the main thread
-      this.notifySlack(exception).catch((e) =>
+      this.notifySlack(exception, errorResponse).catch((e) =>
         console.error('🔴 Slack 전송 실패', e.stack),
       );
     }
 
-    super.catch(exception, host);
+    // super.catch 호출을 제거하고 직접 응답 처리
   }
 
-  async notifySlack(exception: unknown) {
+  async notifySlack(exception: unknown, errorResponse: HttpErrorFormat) {
     let query = 'n/a';
     let params = 'n/a';
-    let message = 'Unknown error';
 
     if (exception instanceof HttpException) {
       const response = exception.getResponse();
@@ -71,9 +111,6 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
         query = (response as any)?.query ?? 'n/a';
         params = (response as any)?.parameters?.join(',') ?? 'n/a';
       }
-      message = exception.message;
-    } else if (exception instanceof Error) {
-      message = exception.message;
     }
 
     const payload = {
@@ -83,7 +120,7 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `*🔴 ${process.env.NODE_ENV} 환경에서 500 오류 발생*`,
+            text: `*🔴 ${process.env.NODE_ENV} 환경에서 오류 발생*`,
           },
         },
         {
@@ -91,15 +128,23 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
           fields: [
             {
               type: 'mrkdwn',
+              text: `*Error:*\n${errorResponse.error}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `*Message:*\n${errorResponse.message}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `*URL:*\n${errorResponse.description}`,
+            },
+            {
+              type: 'mrkdwn',
               text: `*Query:*\n${query}`,
             },
             {
               type: 'mrkdwn',
               text: `*Params:*\n${params}`,
-            },
-            {
-              type: 'mrkdwn',
-              text: `*Message:*\n${message}`,
             },
           ],
         },

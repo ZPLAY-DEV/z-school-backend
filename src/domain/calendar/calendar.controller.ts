@@ -1,16 +1,15 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
 import { UpdateCalendarDto } from 'src/domain/calendar/dto/update-calendar.dto';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { CalendarService } from './calendar.service';
@@ -34,7 +33,7 @@ export class CalendarController {
   //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'Calendar 리스트 w/ Pagination' })
-  @PaginateQueryOptions()
+  
   @Get()
   async findCalendars(
     @Paginate() query: PaginateQuery,

@@ -36,7 +36,11 @@ export class CreateLessonDto {
   @IsPositive()
   schoolId: number;
 
-  @ApiProperty({ description: '🈳 관리자 편의를 위한 학교명', required: false })
+  @ApiProperty({
+    description: '🈳 관리자 편의를 위한 학교명',
+    required: false,
+    nullable: true,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(20) // '홍익대학교 사범대학 부속 초등학교'
@@ -47,7 +51,7 @@ export class CreateLessonDto {
   @MaxLength(16)
   lessonName: string;
 
-  @ApiProperty({ description: '🈳 과목설명', required: false })
+  @ApiProperty({ description: '🈳 과목설명', required: false, nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(255)

@@ -1,18 +1,17 @@
 import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  UseInterceptors,
+    Body,
+    ClassSerializerInterceptor,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { IS3Urls } from 'src/common/interfaces';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
@@ -52,7 +51,7 @@ export class StudentController {
   //?-------------------------------------------------------------------------//
 
   @ApiOperation({ description: 'Student 리스트 w/ Pagination' })
-  @PaginateQueryOptions()
+  
   @Public()
   @Get('paginated')
   async getAdminStudent(
@@ -62,7 +61,7 @@ export class StudentController {
   }
 
   @ApiOperation({ description: 'Student 리스트 w/ Pagination' })
-  @PaginateQueryOptions()
+  
   @Public()
   @Get()
   async getStudent(

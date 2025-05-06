@@ -1,18 +1,17 @@
 import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  UseInterceptors,
+    Body,
+    ClassSerializerInterceptor,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    Patch,
+    Post,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
-import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CreateManagerDto } from 'src/domain/manager/dto/create-manager.dto';
 import { UpdateManagerDto } from 'src/domain/manager/dto/update-manager.dto';
@@ -46,7 +45,7 @@ export class ManagerController {
   //?-------------------------------------------------------------------------//
 
   @ApiOperation({ description: 'Manager 리스트 w/ Pagination' })
-  @PaginateQueryOptions()
+  
   @Public()
   @Get('paginated')
   async getAdminManager(

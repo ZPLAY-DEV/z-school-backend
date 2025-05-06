@@ -121,7 +121,7 @@ export class AuthController {
       maxAge: THIRTY_DAYS,
     });
 
-    return HttpResponse.created(tokens);
+    return tokens;
   }
 
   //? ---------------------------------------------------------------------- ?//

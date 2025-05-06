@@ -29,6 +29,11 @@ export const HttpErrorConstants = {
     message: '알 수 없는 오류가 발생하였습니다.',
   } as HttpErrorFormat,
 
+  UNEXPECTED_HTTP_EXCEPTION: {
+    error: 'UNEXPECTED_HTTP_EXCEPTION',
+    message: '예상치 못한 오류입니다.',
+  } as HttpErrorFormat,
+
   INTERNAL_DATABASE_ERROR: {
     error: 'INTERNAL_DATABASE_ERROR',
     message: '트랜잭션 수행중 에러가 발생하였습니다.',

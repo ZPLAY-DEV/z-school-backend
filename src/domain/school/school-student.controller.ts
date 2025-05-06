@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { PaginateQueryOptions } from 'src/common/decorators/paginate-query-options.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -58,7 +57,7 @@ export class SchoolStudentController {
 
   @Public()
   @ApiOperation({ description: 'Student 리스트 w/ Pagination' })
-  @PaginateQueryOptions()
+  
   @Get(':schoolId/students/paginated')
   @UseInterceptors(ClassSerializerInterceptor)
   async list(
@@ -70,7 +69,7 @@ export class SchoolStudentController {
 
   @Public()
   @ApiOperation({ description: 'Student 리스트 (all)' })
-  @PaginateQueryOptions()
+  
   @Get(':schoolId/students')
   @UseInterceptors(ClassSerializerInterceptor)
   async infiniteList(
