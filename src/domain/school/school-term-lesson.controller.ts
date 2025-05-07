@@ -20,7 +20,6 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
-import { HttpResponse } from 'src/core/http/http-response';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { CreateLessonResponseDto } from 'src/domain/lesson/dto/create-lesson-response.dto';
 import { CreateLessonRequestDto } from 'src/domain/lesson/dto/create-lesson.dto';
@@ -63,13 +62,12 @@ export class SchoolTermLessonController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
     @Body() dto: CreateLessonRequestDto,
-  ): Promise<HttpResponse> {
-    const lesson = await this.schoolTermLessonService.create({
+  ): Promise<Lesson> {
+    return await this.schoolTermLessonService.create({
       ...dto,
       schoolId,
       termId,
     });
-    return HttpResponse.created(lesson);
   }
 
   @Public()
@@ -80,16 +78,14 @@ export class SchoolTermLessonController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
     @Body() dtos: CreateLessonRequestDto[],
-  ): Promise<HttpResponse> {
+  ): Promise<Lesson[]> {
     const createLessonDtos = dtos.map((dto) => ({
       ...dto,
       schoolId,
       termId,
     }));
 
-    const lessons =
-      await this.schoolTermLessonService.createBulk(createLessonDtos);
-    return HttpResponse.created(lessons);
+    return await this.schoolTermLessonService.createBulk(createLessonDtos);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -103,13 +99,12 @@ export class SchoolTermLessonController {
     @Param('termId', ParseIntPipe) termId: number,
     @Param('lessonId', ParseIntPipe) lessonId: number,
     @Body() dto: UpdateLessonDto,
-  ): Promise<HttpResponse> {
-    const lesson = await this.schoolTermLessonService.update(lessonId, {
+  ): Promise<Lesson> {
+    return await this.schoolTermLessonService.update(lessonId, {
       ...dto,
       schoolId,
       termId,
     });
-    return HttpResponse.ok(lesson);
   }
 
   //? ---------------------------------------------------------------------- ?//

@@ -14,13 +14,13 @@ import { Paginate, PaginateQuery } from 'nestjs-paginate';
 import { SchoolTermService } from 'src/domain/school/school-term.service';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
 
+import { HttpResponse } from 'src/core/http/http-response';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import {
   CreateTermDocs,
   ListTermDocs,
   PaginatedTermDocs,
 } from '../term/swagger/rest-swagger.decorator';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { HttpResponse } from 'src/core/http/http-response';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('Schools - Terms ( 운영기간관리 )')
