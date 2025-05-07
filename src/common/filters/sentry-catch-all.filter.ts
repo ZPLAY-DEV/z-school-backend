@@ -9,7 +9,7 @@ import {
 } from 'src/core/http/http-error-objects';
 import { SlackService } from 'src/services/slack/slack-service';
 
-// todo. Sentry DSN 를 v3 용으로 Sentry 콘솔에서 발급하고 변경이 필요. (무료 사용중?)
+// todo. Sentry DSN 를 v3 용으로 Sentry 콘솔에서 새로 발급하는 게 좋을듯.
 @Catch()
 export class SentryCatchAllFilter extends BaseExceptionFilter {
   constructor(private readonly slack: SlackService) {
@@ -63,10 +63,10 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
       }
     }
 
-    // 표준화된 응답 형식으로 설정
+    //! HttpErrorFormat 로 리턴하기 위해 super.catch 없이 직접 응답처리
     res.status(httpStatus).json(errorResponse);
 
-    //! local 환경의 경우, slack 메시지 보내지 않도록 했으니깐 참고!
+    //! local 환경의 경우, slack 메시지 보내지 않음.
     if (httpStatus >= 500 && process.env.NODE_ENV !== 'local') {
       // 이 오류에 대한 상세 context 추가
       Sentry.captureException(exception, (scope) => {
@@ -97,8 +97,6 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
         console.error('🔴 Slack 전송 실패', e.stack),
       );
     }
-
-    // super.catch 호출을 제거하고 직접 응답 처리
   }
 
   async notifySlack(exception: unknown, errorResponse: HttpErrorFormat) {

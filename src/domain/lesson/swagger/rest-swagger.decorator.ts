@@ -1,7 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
@@ -20,9 +19,9 @@ export const CreateSchoolTermLessonDocs = () => {
     ApiOperation({
       summary: '학교의 특정 학기에 과목 생성',
       description: `
+      - upsert 방식으로 동작하기 때문에, 안심하고 덮어쓰기 가능.
       - 1개 과목 생성 또는 업데이트
-      - 학교 아이디, 학기 아이디, 과목명 조합은 반드시 유니크 하다.
-      - upsert 방식으로 동작하기 때문에, 안심하고 덮어쓰면 됨.
+      - 학교 아이디, 학기 아이디, 과목명 조합은 반드시 유니크 해야함.
       `,
     }),
     ApiBody({
@@ -56,9 +55,9 @@ export const CreateSchoolTermLessonBulkDocs = () => {
     ApiOperation({
       summary: '학교의 특정 학기에 과목 일괄 bulk 로 생성',
       description: `
-      - 여러개 과목 생성 또는 업데이트 (CSV 로 전달시 사용)
-      - 학교 아이디, 학기 아이디, 과목명 조합은 반드시 유니크 하다.
       - upsert 방식으로 동작하기 때문에, 안심하고 덮어쓰면 됨.
+      - 여러개 과목 생성 또는 업데이트 (CSV 로 전달시 사용)
+      - 학교 아이디, 학기 아이디, 과목명 조합은 반드시 유니크 해야함.
       `,
     }),
     ApiBody({
@@ -95,7 +94,15 @@ export const UpdateSchoolTermLessonDocs = () => {
       summary: '학교의 특정 학기의 과목 업데이트',
       description: `
       - 학교의 특정 학기에 속한 과목을 업데이트
-      - 입력 DTO 는 PartialType(CreateLessonDto) 로 작성
+      - Request 의 UpdateLessonDto 는 PartialType(CreateLessonDto) 로 변경 원하는 필드만 작성
+        {
+          "lessonName": "과목명",
+          "schoolId": 1,
+          "termId": 1,
+          "lessonType": "과목",
+          "lessonCategory": "과목",
+          "lessonGroup": "과목"
+        }
       `,
     }),
     ApiBody({
