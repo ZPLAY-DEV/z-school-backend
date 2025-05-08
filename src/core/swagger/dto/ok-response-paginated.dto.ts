@@ -63,11 +63,11 @@ export class PaginationResponseDto<T> {
 }
 
 export class ApiResponseDto<T> {
-  @ApiProperty({ description: 'HTTP 상태 코드', example: 200 })
-  statusCode: number;
+  // @ApiProperty({ description: 'HTTP 상태 코드', example: 200 })
+  // statusCode: number;
 
-  @ApiProperty({ description: '응답 메시지', example: 'OK' })
-  message: string;
+  // @ApiProperty({ description: '응답 메시지', example: 'OK' })
+  // message: string;
 
   @ApiProperty({ description: '응답 결과', type: () => PaginationResponseDto })
   result: PaginationResponseDto<T>;
