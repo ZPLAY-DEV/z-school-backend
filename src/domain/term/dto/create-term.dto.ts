@@ -11,7 +11,7 @@ import {
 import { IsValidDateRange } from '../validator/date-range.validator';
 
 export class CreateTermDto {
-  @ApiProperty({ description: '🈳 DB의 학교ID', example: 1 })
+  @ApiProperty({ description: '🈳 DB의 학교ID', example: 1, required: true })
   @IsInt()
   @IsNotEmpty()
   @IsPositive()
@@ -27,12 +27,12 @@ export class CreateTermDto {
   @MaxLength(16)
   schoolName?: string | null;
 
-  @ApiProperty({ description: '🈵 학사년도', example: 2025 })
+  @ApiProperty({ description: '🈵 학사년도', example: 2025, required: true })
   @IsInt()
   @IsPositive()
   schoolYear: number;
 
-  @ApiProperty({ description: '🈵 학기명', example: '1학기' })
+  @ApiProperty({ description: '🈵 학기명', example: '1학기', required: true })
   @IsString()
   @MaxLength(16)
   termName: string;
@@ -40,6 +40,7 @@ export class CreateTermDto {
   @ApiProperty({
     description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
     example: '2025-03-01',
+    required: true,
   })
   @IsString()
   @Length(10)
@@ -48,6 +49,7 @@ export class CreateTermDto {
   @ApiProperty({
     description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
     example: '2025-09-04',
+    required: true,
   })
   @IsString()
   @Length(10)
