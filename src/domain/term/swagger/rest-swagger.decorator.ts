@@ -4,12 +4,11 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-import { ApiOkPaginatedResponse } from 'nestjs-paginate';
+import { ApiOkPaginatedResponse, ApiPaginationQuery } from 'nestjs-paginate';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
-import { ApiPaginatedResponseTemplate } from 'src/core/swagger/response/api-paginated-response.dto';
 import { CreateTermDto } from '../dto/create-term.dto';
 import { TermResponseDto } from '../dto/term-response.dto';
 
@@ -79,10 +78,20 @@ export const PaginatedTermDocs = () => {
     ApiOkPaginatedResponse(TermResponseDto, {
       sortableColumns: ['id', 'schoolYear', 'termName'],
       defaultSortBy: [['id', 'DESC']],
+      searchableColumns: ['schoolName', 'termName'],
+      filterableColumns: {
+        schoolName: true,
+        termName: true,
+      },
     }),
-    ApiPaginatedResponseTemplate({
-      description: 'Term 조회 완료',
-      type: TermResponseDto,
+    ApiPaginationQuery({
+      sortableColumns: ['id', 'schoolYear', 'termName'],
+      defaultSortBy: [['id', 'DESC']],
+      searchableColumns: ['schoolName', 'termName'],
+      filterableColumns: {
+        schoolName: true,
+        termName: true,
+      },
     }),
   );
 };

@@ -10,17 +10,16 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Paginate, PaginateQuery } from 'nestjs-paginate';
+import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { SchoolTermService } from 'src/domain/school/school-term.service';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
-
-import { HttpResponse } from 'src/core/http/http-response';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import {
   CreateTermDocs,
   ListTermDocs,
   PaginatedTermDocs,
 } from '../term/swagger/rest-swagger.decorator';
+import { Term } from '../term/entities/term.entity';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('Schools - Terms ( 운영기간관리 )')
@@ -35,9 +34,8 @@ export class SchoolTermController {
 
   @CreateTermDocs()
   @Post('/terms')
-  async create(@Body() dto: CreateTermDto) {
-    const term = await this.schoolTermService.create(dto);
-    return HttpResponse.created(term);
+  async create(@Body() dto: CreateTermDto): Promise<Term> {
+    return await this.schoolTermService.create(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -61,17 +59,15 @@ export class SchoolTermController {
   async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Paginate() query: PaginateQuery,
-  ): Promise<HttpResponse> {
-    const terms = await this.schoolTermService.infiniteList(schoolId, query);
-    return HttpResponse.ok(terms);
+  ): Promise<Paginated<Term>> {
+    return await this.schoolTermService.infiniteList(schoolId, query);
   }
 
   @ListTermDocs()
   @Get(':schoolId/terms')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
-  ): Promise<HttpResponse> {
-    const terms = await this.schoolTermService.list(schoolId);
-    return HttpResponse.ok(terms);
+  ): Promise<Term[]> {
+    return await this.schoolTermService.list(schoolId);
   }
 }
