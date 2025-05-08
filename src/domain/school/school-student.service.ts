@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -10,6 +10,8 @@ import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { DataSource, Repository } from 'typeorm';
+import { School } from './entities/school.entity';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 
 @Injectable()
 export class SchoolStudentService {
@@ -45,8 +47,11 @@ export class SchoolStudentService {
 
     const existingStudent = await this.studentRepository.findOne({
       where: {
-        name: studentDto.name,
-        parentId: parentId,
+        schoolId: studentDto.schoolId,
+        grade: studentDto.grade,
+        class: studentDto.class,
+        studentCode: studentDto.studentCode,
+        // parentId: parentId,
       },
     });
 
@@ -76,8 +81,17 @@ export class SchoolStudentService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      // Step 1: Upsert Parents
+      // Step 1:  Find school
+      const school = await queryRunner.manager.findOne(School, {
+        where: { id: schoolId },
+      });
+      if (!school) {
+        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+      }
+
+      // Step 2: Upsert Parents
       const parents = dtos.map((v) => v.parent);
+
       const parentValues = parents
         .map((parent) => {
           return `(
@@ -97,16 +111,18 @@ export class SchoolStudentService {
           note = VALUES(note);
       `);
 
-      // Step 2: Fetch Parent Ids
+      // Step 3: Fetch Parent Ids
       const parentPhoneNumbers = parents.map((p) => p.phone);
+
       const parentRecords = (await queryRunner.query(`
         SELECT phone, id FROM parents WHERE phone IN (${parentPhoneNumbers.join(',')})
       `)) as Array<{ phone: string; id: number }>;
+
       const parentMap = Object.fromEntries(
         parentRecords.map((v) => [v.phone, v.id] as [string, number]),
       );
 
-      // Step 3: Bulk Upsert Students
+      // Step 4: Bulk Upsert Students
       const studentValues = dtos
         .map(
           (dto) => `(
@@ -124,6 +140,7 @@ export class SchoolStudentService {
           )`,
         )
         .join(',');
+
       await queryRunner.query(`
         INSERT INTO students (
           name,
@@ -143,6 +160,8 @@ export class SchoolStudentService {
           schoolId = VALUES(schoolId),
           grade = VALUES(grade),
           class = VALUES(class),
+          name = VALUES(name),
+          parentId = VALUES(parentId),
           studentCode = VALUES(studentCode),
           phone = VALUES(phone),
           escortPhone = VALUES(escortPhone),
@@ -204,5 +223,18 @@ export class SchoolStudentService {
       .orderBy('student.id', 'DESC');
 
     return await queryBuilder.getMany();
+  }
+
+  async getStudentById(schoolId: number, studentId: number): Promise<Student> {
+    const student = await this.studentRepository.findOne({
+      where: { id: studentId, school: { id: schoolId } },
+      relations: {
+        parent: true,
+      },
+    });
+    if (!student) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_STUDENT);
+    }
+    return student;
   }
 }

@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
@@ -19,15 +20,15 @@ export class CreateStudentDto {
   @Min(1)
   parentId: number;
 
-  @ApiProperty({ description: 'School ID', required: false })
-  @IsOptional()
+  @ApiProperty({ description: 'School ID', required: true })
+  @IsNotEmpty()
   @IsInt()
   @Min(1)
   schoolId: number;
 
   @ApiProperty({
     description: '학년 (up to 8 characters)',
-    required: false,
+    required: true,
   })
   @IsString()
   @MaxLength(8)
@@ -37,9 +38,10 @@ export class CreateStudentDto {
     description: '반 (up to 8 characters)',
     required: false,
   })
+  @IsOptional()
   @IsString()
   @MaxLength(8)
-  class: string;
+  class?: string;
 
   @ApiProperty({
     description: '학번/번호 (up to 16 characters)',
