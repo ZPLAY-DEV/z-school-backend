@@ -68,6 +68,7 @@ export class Parent {
 
   @ApiProperty({ description: '🈳 deletedAt' })
   @DeleteDateColumn()
+  @Exclude()
   deletedAt: Date | null;
 
   //* 1-to-1 belongsTo ----------------------------------------------------- *//

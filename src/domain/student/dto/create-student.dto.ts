@@ -14,13 +14,13 @@ import { StudentStatus } from 'src/common/enums';
 import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
 
 export class CreateStudentDto {
-  @ApiProperty({ description: 'Parent ID', required: false })
+  @ApiProperty({ description: 'Parent ID (number)', required: false })
   @IsOptional()
   @IsInt()
   @Min(1)
   parentId: number;
 
-  @ApiProperty({ description: 'School ID', required: true })
+  @ApiProperty({ description: 'School ID (number)', required: true })
   @IsNotEmpty()
   @IsInt()
   @Min(1)
@@ -44,16 +44,16 @@ export class CreateStudentDto {
   class?: string;
 
   @ApiProperty({
-    description: '학번/번호 (up to 16 characters)',
+    description: '학번/번호 ( number )',
     required: false,
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(16)
-  studentCode?: string;
+  @IsInt()
+  @Type(() => Number)
+  studentCode?: number;
 
   @ApiProperty({
-    description: 'Student name (up to 16 characters)',
+    description: '학생 이름 (up to 16 characters)',
     required: false,
   })
   @IsOptional()
@@ -62,7 +62,7 @@ export class CreateStudentDto {
   name?: string;
 
   @ApiProperty({
-    description: 'Phone number (up to 16 characters)',
+    description: '학생 전화번호 (up to 16 characters)',
     required: false,
   })
   @IsOptional()
@@ -71,7 +71,7 @@ export class CreateStudentDto {
   phone?: string;
 
   @ApiProperty({
-    description: 'Escort phone number (up to 16 characters)',
+    description: '귀가 동행인 전화번호 (up to 16 characters)',
     required: false,
   })
   @IsOptional()
@@ -80,7 +80,7 @@ export class CreateStudentDto {
   escortPhone?: string;
 
   @ApiProperty({
-    description: 'Home transit (up to 32 characters)',
+    description: '하교 방벙 (up to 32 characters)',
     required: false,
   })
   @IsOptional()
@@ -89,7 +89,7 @@ export class CreateStudentDto {
   homeTransit?: string;
 
   @ApiProperty({
-    description: 'Next stop (up to 32 characters)',
+    description: '하교후 가는 곳 (up to 32 characters)',
     required: false,
   })
   @IsOptional()
@@ -98,20 +98,21 @@ export class CreateStudentDto {
   nextStop?: string;
 
   @ApiProperty({
-    description: 'Student status',
+    description: '학생 상태 (enum default: ATTENDING)',
     enum: StudentStatus,
     default: StudentStatus.ATTENDING,
+    required: false,
   })
   @IsEnum(StudentStatus)
   status: StudentStatus = StudentStatus.ATTENDING;
 
-  @ApiProperty({ description: 'Note (up to 255 characters)', required: false })
+  @ApiProperty({ description: '비고 (up to 255 characters)', required: false })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   note?: string;
 
-  @ApiProperty({ description: 'Parent information', required: true })
+  @ApiProperty({ description: '보호자 정보', required: true })
   @ValidateNested()
   @Type(() => CreateParentDto)
   parent: CreateParentDto = {} as CreateParentDto;

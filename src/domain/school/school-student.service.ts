@@ -12,6 +12,7 @@ import { Student } from 'src/domain/student/entities/student.entity';
 import { DataSource, Repository } from 'typeorm';
 import { School } from './entities/school.entity';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { UpdateStudentStatusDto } from '../student/dto/update-student-status.dto';
 
 @Injectable()
 export class SchoolStudentService {
@@ -29,10 +30,19 @@ export class SchoolStudentService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  async create(dto: CreateStudentDto): Promise<Student> {
+  async create(dto: CreateStudentDto, schoolId: number): Promise<Student> {
     const { parent: parentDto, ...studentDto } = dto;
 
     let parentId: number | undefined;
+
+    const school = await this.dataSource.createEntityManager().findOne(School, {
+      where: { id: schoolId },
+    });
+
+    if (!school) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+    }
+
     if (parentDto?.phone) {
       let parent = await this.parentRepository.findOne({
         where: { phone: parentDto.phone },
@@ -201,15 +211,19 @@ export class SchoolStudentService {
       relations: {
         parent: true,
       },
-      sortableColumns: ['id', 'grade', 'class', 'studentCode', 'name'],
-      searchableColumns: ['name', 'phone', 'escortPhone'],
-      defaultSortBy: [['id', 'DESC']],
+      sortableColumns: ['grade', 'class', 'studentCode'],
+      searchableColumns: ['name', 'parent.phone', 'escortPhone'],
+      defaultSortBy: [
+        ['grade', 'ASC'],
+        ['class', 'ASC'],
+        ['studentCode', 'ASC'],
+      ],
       filterableColumns: {
         grade: [FilterOperator.EQ],
         class: [FilterOperator.EQ],
+        studentCode: [FilterOperator.EQ],
         name: [FilterOperator.EQ, FilterOperator.ILIKE],
         status: [FilterOperator.EQ, FilterOperator.IN],
-        'parent.phone': [FilterOperator.EQ],
       },
     });
   }
@@ -220,7 +234,9 @@ export class SchoolStudentService {
       .leftJoinAndSelect('student.parent', 'parent')
       .where('student.schoolId = :schoolId', { schoolId })
       // .andWhere('student.isActive = :isActive', { isActive: true })
-      .orderBy('student.id', 'DESC');
+      .orderBy('student.grade', 'ASC')
+      .addOrderBy('student.class', 'ASC')
+      .addOrderBy('student.studentCode', 'ASC');
 
     return await queryBuilder.getMany();
   }
@@ -236,5 +252,25 @@ export class SchoolStudentService {
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_STUDENT);
     }
     return student;
+  }
+
+  //?-------------------------------------------------------------------------//
+  //? Update
+  //?-------------------------------------------------------------------------//
+
+  async updateStudentStatus(
+    schoolId: number,
+    studentId: number,
+    dto: UpdateStudentStatusDto,
+  ): Promise<Student> {
+    const student = await this.getStudentById(schoolId, studentId);
+    if (!student) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_STUDENT);
+    }
+    await this.studentRepository.update(student.id, {
+      ...dto,
+    });
+
+    return await this.getStudentById(schoolId, studentId);
   }
 }

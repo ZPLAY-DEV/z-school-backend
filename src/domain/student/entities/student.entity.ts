@@ -18,6 +18,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   Unique,
+  // Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
@@ -60,8 +61,8 @@ export class Student {
   class: string | null;
 
   @ApiProperty({ description: '학번/번호' })
-  @Column({ type: 'varchar', length: 16, nullable: true, comment: '학번/번호' })
-  studentCode: string | null;
+  @Column({ type: 'int', nullable: true, comment: '학번/번호' })
+  studentCode: number | null;
 
   @ApiProperty({ description: 'up to 16 characters' })
   @Column({ type: 'varchar', length: 16, nullable: true, comment: '이름' })

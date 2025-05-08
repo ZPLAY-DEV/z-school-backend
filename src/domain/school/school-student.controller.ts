@@ -5,10 +5,11 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -20,7 +21,10 @@ import {
   CreateStudentDocs,
   StudentDetailDocs,
   StudentListDocs,
+  StudentListPaginatedDocs,
+  StudentStatusUpdateDocs,
 } from '../student/swagger/rest-swagger.decorator';
+import { UpdateStudentStatusDto } from '../student/dto/update-student-status.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('Schools - Students ( 학생관리 )')
@@ -42,10 +46,7 @@ export class SchoolStudentController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Body() dto: CreateStudentDto,
   ): Promise<Student> {
-    return await this.schoolStudentService.create({
-      ...dto,
-      schoolId,
-    });
+    return await this.schoolStudentService.create(dto, schoolId);
   }
 
   @CreateStudentBulkDocs()
@@ -61,7 +62,7 @@ export class SchoolStudentController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Student 리스트 w/ Pagination' })
+  @StudentListPaginatedDocs()
   @Get(':schoolId/students/paginated')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -78,9 +79,6 @@ export class SchoolStudentController {
     return await this.schoolStudentService.list(schoolId);
   }
 
-  /**
-   * @todo Swagger에서 Relation 정보 표시 방법 필요
-   */
   @StudentDetailDocs()
   @Get(':schoolId/students/:studentId')
   async getStudentById(
@@ -88,5 +86,22 @@ export class SchoolStudentController {
     @Param('studentId', ParseIntPipe) studentId: number,
   ): Promise<Student> {
     return await this.schoolStudentService.getStudentById(schoolId, studentId);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+  @StudentStatusUpdateDocs()
+  @Patch(':schoolId/students/:studentId/status')
+  async updateStudentStatus(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Body() dto: UpdateStudentStatusDto,
+  ): Promise<Student> {
+    return await this.schoolStudentService.updateStudentStatus(
+      schoolId,
+      studentId,
+      dto,
+    );
   }
 }
