@@ -166,8 +166,6 @@ export class AuthService {
         },
       );
 
-      console.log('🚀🚀updatedUser', updatedUser);
-
       // Return response
       return {
         user: plainToClass(UserDto, updatedUser, {
@@ -480,7 +478,7 @@ export class AuthService {
   private async generateAccessToken(payload: TokenPayload): Promise<string> {
     const accessTokenOptions = {
       secret: this.configService.get('jwt.authSecret'),
-      expiresIn: '1m', //? ONE_HOUR,
+      expiresIn: '1h', //? ONE_HOUR,
     };
 
     return this.jwtService.signAsync(payload, accessTokenOptions);
@@ -532,9 +530,9 @@ export class AuthService {
   ): Promise<void> {
     const userId = user.id;
     const username = user.username ?? role;
-    // await this.slack.sendMessage({
-    //   channel: 'activity',
-    //   text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${userId}|${username}>`,
-    // });
+    await this.slack.sendMessage({
+      channel: 'activity',
+      text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${userId}|${username}>`,
+    });
   }
 }

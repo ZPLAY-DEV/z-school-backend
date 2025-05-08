@@ -12,11 +12,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Request as ExpressRequest, Response } from 'express';
-import { ONE_MIN, THIRTY_DAYS } from 'src/common/constants';
+import { ONE_HOUR, THIRTY_DAYS } from 'src/common/constants';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Role } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { HttpResponse } from 'src/core/http/http-response';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AuthService } from 'src/domain/auth/auth.service';
 import { AuthTokenDto } from 'src/domain/auth/dto/auth-token.dto';
@@ -58,16 +57,16 @@ export class AuthController {
     if (!dto.username) {
       dto.username = dto.phone;
     }
-    const { refreshToken, ...tokens } = await this.authService.register(dto);
+    const tokens = await this.authService.register(dto);
 
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: ONE_MIN, //ONE_HOUR,
+      maxAge: ONE_HOUR,
     });
-    res.cookie('refreshToken', refreshToken, {
+    res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -81,10 +80,28 @@ export class AuthController {
   @RegisterManagerDocs()
   @Public()
   @Post('register/manager')
-  async registerManager(@Body() dto: UserCredentialsDto) {
+  async registerManager(
+    @Body() dto: UserCredentialsDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthUserDto> {
     const tokens = await this.authService.registerManager(dto);
 
-    return HttpResponse.created(tokens);
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: ONE_HOUR,
+    });
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: THIRTY_DAYS,
+    });
+
+    return tokens;
   }
 
   @ResetPasswordDocs()
@@ -107,7 +124,7 @@ export class AuthController {
   async login(
     @Body() dto: UserCredentialsDto,
     @Res({ passthrough: true }) res: Response,
-  ) {
+  ): Promise<AuthUserDto> {
     const tokens = await this.authService.login(dto);
 
     res.cookie('accessToken', tokens.accessToken, {
@@ -115,7 +132,7 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: ONE_MIN, // ONE_HOUR,
+      maxAge: ONE_HOUR,
     });
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
@@ -169,7 +186,7 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: ONE_MIN, // ONE_HOUR,
+      maxAge: ONE_HOUR,
     });
 
     return tokens;
