@@ -6,7 +6,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-  Min
+  Min,
 } from 'class-validator';
 import { PlatformType } from 'src/common/enums';
 
@@ -34,6 +34,16 @@ export class CreateInstructorDto {
   @IsEnum(PlatformType)
   @IsOptional()
   platform?: PlatformType = PlatformType.WEB;
+
+  @ApiProperty({
+    description: '🈳 pushToken',
+    example: 'wxyz...',
+    required: false,
+  })
+  @IsString()
+  @MaxLength(255)
+  @IsOptional()
+  pushToken?: string | null;
 
   @ApiProperty({
     description: '🈳 내용',

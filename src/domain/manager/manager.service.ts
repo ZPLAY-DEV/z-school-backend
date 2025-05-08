@@ -42,7 +42,7 @@ export class ManagerService {
       .orderBy('manager.id', 'DESC');
 
     return await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'name', 'phone', 'platform', 'note'],
+      sortableColumns: ['id', 'name', 'phone', 'note'],
       searchableColumns: ['name'],
       defaultSortBy: [['id', 'DESC']],
       filterableColumns: {

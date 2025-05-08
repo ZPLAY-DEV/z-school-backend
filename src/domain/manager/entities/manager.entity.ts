@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PlatformType } from 'src/common/enums';
 import { School } from 'src/domain/school/entities/school.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
@@ -34,6 +33,10 @@ export class Manager {
 
   // ------------------------------------------------------------------------ //
 
+  @ApiProperty({ description: '🈳 학교 이름' })
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  schoolName: string | null;
+
   @ApiProperty({ description: '🈳 매니저 이름' })
   @Column({ type: 'varchar', length: 16, nullable: true })
   name: string | null;
@@ -41,10 +44,6 @@ export class Manager {
   @ApiProperty({ description: '🈳 매니저 전화번호 (숫자만 입력)' })
   @Column({ type: 'varchar', length: 16, nullable: true })
   phone: string | null;
-
-  @ApiProperty({ description: '🈳 마지막 로그인 기기 web, ios, or android' })
-  @Column({ type: 'enum', enum: PlatformType, default: null })
-  platform: PlatformType | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   @ApiProperty({ description: '🈳 내용' })
