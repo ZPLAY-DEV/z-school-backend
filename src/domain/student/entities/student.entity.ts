@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 import { StudentStatus } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -16,13 +17,14 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Unique,
   // Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 //? TransferHistory (수업이동) 대신 student_group 사용
 @Entity('students')
-// @Unique(['name', 'parent_id'])
+@Unique(['schoolId', 'grade', 'class', 'studentCode'])
 export class Student {
   @ApiProperty({
     description: 'student id',
@@ -38,7 +40,7 @@ export class Student {
   parentId: number;
 
   @ApiProperty({ description: 'exclusively exists in school' })
-  @Column({ type: 'int', unsigned: true, nullable: true })
+  @Column({ type: 'int', unsigned: true })
   schoolId: number;
 
   // ------------------------------------------------------------------------ //
@@ -47,20 +49,27 @@ export class Student {
   @Column({ type: 'varchar', length: 8, default: `1학년` })
   grade: string;
 
-  @ApiProperty({ description: '반' })
-  @Column({ type: 'varchar', length: 8, default: `1반` })
-  class: string;
+  @ApiProperty({
+    description: '반',
+  })
+  @Column({
+    type: 'varchar',
+    length: 8,
+    comment: '반은 다양한 형태로 생성될 수 있음 (1반, 2반, 기쁨반 ..)',
+    nullable: true,
+  })
+  class: string | null;
 
   @ApiProperty({ description: '학번/번호' })
-  @Column({ type: 'varchar', length: 16, nullable: true })
-  studentCode: string | null;
+  @Column({ type: 'int', nullable: true, comment: '학번/번호' })
+  studentCode: number | null;
 
   @ApiProperty({ description: 'up to 16 characters' })
-  @Column({ type: 'varchar', length: 16, nullable: true })
+  @Column({ type: 'varchar', length: 16, nullable: true, comment: '이름' })
   name: string | null;
 
   @ApiProperty({ description: '전화번호 (숫자만 입력)' })
-  @Column({ type: 'varchar', length: 16, nullable: true })
+  @Column({ type: 'varchar', length: 16, nullable: true, comment: '학생번호' })
   phone: string | null;
 
   @ApiProperty({ description: '전화번호 (숫자만 입력)' })
@@ -68,11 +77,16 @@ export class Student {
   escortPhone: string | null;
 
   @ApiProperty({ description: 'up to 32 characters' })
-  @Column({ type: 'varchar', length: 32, nullable: true })
+  @Column({ type: 'varchar', length: 32, nullable: true, comment: '하교방법' })
   homeTransit: string | null;
 
   @ApiProperty({ description: '' })
-  @Column({ type: 'varchar', length: 32, nullable: true })
+  @Column({
+    type: 'varchar',
+    length: 32,
+    nullable: true,
+    comment: '하교후 목적지',
+  })
   nextStop: string | null;
 
   @ApiProperty({ description: '' })
@@ -97,6 +111,7 @@ export class Student {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Exclude()
   @ApiProperty({ description: 'deletedAt' })
   @DeleteDateColumn()
   deletedAt: Date | null;
@@ -104,11 +119,11 @@ export class Student {
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
   @ManyToOne(() => Parent, (parent) => parent.students)
-  @JoinColumn({ name: 'parent_id' })
+  @JoinColumn({ name: 'parentId' })
   parent: Parent;
 
   @ManyToOne(() => School, (school) => school.students)
-  @JoinColumn({ name: 'school_id' })
+  @JoinColumn({ name: 'schoolId' })
   school: School;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
