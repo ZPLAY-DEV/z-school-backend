@@ -6,7 +6,6 @@ import { Document } from 'src/domain/document/entities/document.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
 import { Payout } from 'src/domain/payout/entities/payout.entity';
-import { School } from 'src/domain/school/entities/school.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
   Column,
@@ -14,14 +13,13 @@ import {
   DeleteDateColumn,
   Entity,
   JoinColumn,
-  JoinTable,
-  ManyToMany,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
+import { InstructorSchool } from './instructor-school.entity';
 
 @Entity('instructors')
 @Unique(['name', 'phone'])
@@ -59,6 +57,24 @@ export class Instructor {
 
   // ------------------------------------------------------------------------ //
 
+  @Column({
+    type: 'boolean',
+    default: false,
+    comment: '교재/재료비 수정 권한 여부',
+  })
+  @ApiProperty({ description: '🈳 교재/재료비 수정 권한 여부' })
+  editFeePermission: boolean;
+
+  @Column({
+    type: 'boolean',
+    default: false,
+    comment: '수강 추가/취소 권한 여부',
+  })
+  @ApiProperty({ description: '🈳 수강 추가/취소 권한 여부' })
+  editEnrollmentPermission: boolean;
+
+  // ------------------------------------------------------------------------ //
+
   @ApiProperty({ description: '🈵 aggregated 평가점수 100점 만점' })
   @Column({ type: 'tinyint', unsigned: true, default: 0 })
   score: number;
@@ -83,6 +99,7 @@ export class Instructor {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Exclude()
   @ApiProperty({ description: '🈳 deletedAt' })
   @DeleteDateColumn()
   deletedAt: Date | null;
@@ -106,21 +123,27 @@ export class Instructor {
   @OneToMany(() => Payout, (payout) => payout.instructor)
   payouts: Payout[];
 
+  @OneToMany(
+    () => InstructorSchool,
+    (instructorSchool) => instructorSchool.instructor,
+  )
+  instructorSchools: InstructorSchool[];
+
   //* N-to-M belongsToMany ------------------------------------------------- *//
 
-  @ManyToMany(() => School, (school) => school.instructors)
-  @JoinTable({
-    name: 'instructor_school',
-    joinColumn: {
-      name: 'instructorId',
-      referencedColumnName: 'id',
-    },
-    inverseJoinColumn: {
-      name: 'schoolId',
-      referencedColumnName: 'id',
-    },
-  })
-  schools: School[];
+  // @ManyToMany(() => School, (school) => school.instructors)
+  // @JoinTable({
+  //   name: 'instructor_school',
+  //   joinColumn: {
+  //     name: 'instructorId',
+  //     referencedColumnName: 'id',
+  //   },
+  //   inverseJoinColumn: {
+  //     name: 'schoolId',
+  //     referencedColumnName: 'id',
+  //   },
+  // })
+  // schools: School[];
 
   @OneToMany(
     () => InstructorLesson,
