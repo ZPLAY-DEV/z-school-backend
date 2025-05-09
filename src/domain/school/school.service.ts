@@ -73,7 +73,7 @@ export class SchoolService {
       relations: {
         terms: true,
         statements: true,
-        instructors: true,
+        // instructorSchools: true,
       },
       sortableColumns: ['id', 'name'],
       searchableColumns: ['name'],

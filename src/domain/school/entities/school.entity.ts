@@ -2,7 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
-import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { InstructorSchool } from 'src/domain/instructor/entities/instructor-school.entity';
+// import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Phone } from 'src/domain/phone/entities/phone.entity';
@@ -14,7 +15,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  ManyToMany,
+  // ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -125,10 +126,16 @@ export class School {
   @OneToMany(() => Phone, (phone) => phone.school)
   public phones: Phone[];
 
+  @OneToMany(
+    () => InstructorSchool,
+    (instructorSchool) => instructorSchool.school,
+  )
+  public instructorSchools: InstructorSchool[];
+
   //* N-to-M belongsToMany ------------------------------------------------- *//
 
-  @ManyToMany(() => Instructor, (instructor) => instructor.schools)
-  instructors: Instructor[];
+  // @ManyToMany(() => Instructor, (instructor) => instructor.schools)
+  // instructors: Instructor[];
 
   //? Constructor ---------------------------------------------------------- ?//
 
