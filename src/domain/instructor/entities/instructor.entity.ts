@@ -123,27 +123,13 @@ export class Instructor {
   @OneToMany(() => Payout, (payout) => payout.instructor)
   payouts: Payout[];
 
+  //* N-to-M belongsToMany using OneToMany --------------------------------- *//
+
   @OneToMany(
     () => InstructorSchool,
     (instructorSchool) => instructorSchool.instructor,
   )
   instructorSchools: InstructorSchool[];
-
-  //* N-to-M belongsToMany ------------------------------------------------- *//
-
-  // @ManyToMany(() => School, (school) => school.instructors)
-  // @JoinTable({
-  //   name: 'instructor_school',
-  //   joinColumn: {
-  //     name: 'instructorId',
-  //     referencedColumnName: 'id',
-  //   },
-  //   inverseJoinColumn: {
-  //     name: 'schoolId',
-  //     referencedColumnName: 'id',
-  //   },
-  // })
-  // schools: School[];
 
   @OneToMany(
     () => InstructorLesson,

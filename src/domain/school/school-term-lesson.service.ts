@@ -10,6 +10,7 @@ import { Category as CategoryEnum } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
+import { InstructorSchool } from 'src/domain/instructor/entities/instructor-school.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -297,27 +298,35 @@ export class SchoolTermLessonService {
     // instructor_lesson 관계 업데이트 (무조건 soft delete 후 재생성)
     // ---------------------------------------------------------------------- //
 
+    const instructorIds = instructorsWithGroupData.map(
+      (item) => item.instructorId,
+    );
     await manager.update(
       InstructorLesson,
       { lessonId: lesson.id, deletedAt: IsNull() },
       { deletedAt: new Date() },
     );
-    const instructorIds = instructorsWithGroupData.map(
-      (item) => item.instructorId,
-    );
-    const instructorLessonPromises = instructorIds.map((instructorId) =>
-      manager.query(
-        `INSERT INTO instructor_lesson
+
+    await Promise.all(
+      instructorIds.map((instructorId) =>
+        manager.query(
+          `INSERT INTO instructor_lesson
           (instructorId, lessonId)
           VALUES (?, ?)`,
-        [instructorId, lesson.id],
+          [instructorId, lesson.id],
+        ),
       ),
     );
-    await Promise.all(instructorLessonPromises);
 
     // ---------------------------------------------------------------------- //
-    // instructor_school 관계 업데이트 (todo. 삭제관련 처리 필요할지도)
+    // instructor_school 관계 업데이트 (무조건 soft delete 후 재생성)
     // ---------------------------------------------------------------------- //
+
+    await manager.update(
+      InstructorSchool,
+      { schoolId: lesson.schoolId, deletedAt: IsNull() },
+      { deletedAt: new Date() },
+    );
 
     await Promise.all(
       instructorIds.map((instructorId) =>

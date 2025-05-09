@@ -1,16 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { School } from 'src/domain/school/entities/school.entity';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Instructor } from './instructor.entity';
-import { School } from 'src/domain/school/entities/school.entity';
 
 @Entity('instructor_school')
 export class InstructorSchool {
@@ -75,9 +76,11 @@ export class InstructorSchool {
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
   @ManyToOne(() => Instructor, (instructor) => instructor.instructorSchools)
+  @JoinColumn({ name: 'instructorId' })
   instructor: Instructor;
 
   @ManyToOne(() => School, (school) => school.instructorSchools)
+  @JoinColumn({ name: 'schoolId' })
   school: School;
 
   //? Constructor ---------------------------------------------------------- ?//

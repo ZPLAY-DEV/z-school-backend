@@ -19,6 +19,7 @@ import {
   DocumentType,
   EnrollmentRule,
 } from 'src/common/enums';
+import { LessonStatus } from 'src/common/enums/lesson-status';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
 import { Column } from 'typeorm';
@@ -162,6 +163,15 @@ export class CreateLessonDto {
   @IsString()
   @MaxLength(255)
   note?: string | null;
+
+  @ApiProperty({
+    description: '🈳 상태',
+    enum: LessonStatus,
+    default: LessonStatus.ACTIVE,
+  })
+  @IsEnum(LessonStatus)
+  @IsOptional()
+  status?: LessonStatus;
 
   @ApiProperty({ description: '🈵 강사 정보 목록' })
   @IsArray()

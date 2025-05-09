@@ -126,16 +126,13 @@ export class School {
   @OneToMany(() => Phone, (phone) => phone.school)
   public phones: Phone[];
 
+  //* N-to-M belongsToMany using 1-to-M ------------------------------------ *//
+
   @OneToMany(
     () => InstructorSchool,
     (instructorSchool) => instructorSchool.school,
   )
   public instructorSchools: InstructorSchool[];
-
-  //* N-to-M belongsToMany ------------------------------------------------- *//
-
-  // @ManyToMany(() => Instructor, (instructor) => instructor.schools)
-  // instructors: Instructor[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

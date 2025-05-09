@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsEnum, IsOptional } from 'class-validator';
 import { DocumentType, EnrollmentRule } from 'src/common/enums';
+import { LessonStatus } from 'src/common/enums/lesson-status';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
@@ -108,13 +109,17 @@ export class Lesson {
   @ApiProperty({ description: '🈳 필요한 문서의 Key 값들; Source of Truth' })
   @Column('json', { nullable: true })
   @IsArray()
-  @IsEnum(DocumentType, { each: true }) // ✅ Ensures each item is a valid DocumentType
+  @IsEnum(DocumentType, { each: true })
   @IsOptional()
   requiredDocuments: DocumentType[] | null;
 
   @ApiProperty({ description: '🈳 비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
+
+  @ApiProperty({ description: '🈵 상태' })
+  @Column({ type: 'enum', enum: LessonStatus, default: LessonStatus.ACTIVE })
+  status: LessonStatus;
 
   // ------------------------------------------------------------------------ //
 
