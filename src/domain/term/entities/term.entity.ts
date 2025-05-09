@@ -47,6 +47,14 @@ export class Term {
   @Column({ type: 'varchar', length: 10 })
   end: string;
 
+  @ApiProperty({ description: '수강신청 시작일시 (ISO 8601)' })
+  @Column({ type: 'timestamp', nullable: true, comment: '수강신청 시작일시' })
+  bookingStart: Date | null;
+
+  @ApiProperty({ description: '수강신청 종료일시 (ISO 8601)' })
+  @Column({ type: 'timestamp', nullable: true, comment: '수강신청 종료일시' })
+  bookingEnd: Date | null;
+
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: 'createdAt' })

@@ -23,6 +23,8 @@ export const CreateTermDocs = () => {
       - 학교에 귀속된 운영기간관리를 생성.
       - 날짜 형식은 YYYY-MM-DD 형식으로 입력.
       - 기간 시작일이 종료일 보다 앞서야 함 -> 시작일보다 종료일이 앞설 경우 400 Validation Error 발생.
+      - 수강신청 시작일이 종료일 보다 앞서야 함 -> 수강신청 시작일이 종료일 보다 앞설 경우 400 Validation Error 발생.
+      - 수강신청 시작일과 종료일이 학기 시작일과 종료일 사이에 있어야 함 -> 수강신청 시작일과 종료일이 학기 시작일과 종료일 사이에 있지 않을 경우 400 Validation Error 발생.
       `,
     }),
     ApiBody({
@@ -57,6 +59,7 @@ export const ListTermDocs = () => {
       summary: '학교별 운영기간 조회',
       description: `
       - 학교에 귀속된 운영기간을 조회
+      - 정렬은 Year, Start 순으로 정렬되어서 반환.
       `,
     }),
     ApiOkResponseTemplate({
@@ -70,26 +73,40 @@ export const ListTermDocs = () => {
 export const PaginatedTermDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교별 운영기간 조회 (Pagination)',
+      summary: '학교별 운영기간을 일괄로 조회 & 검색 & 필터 (페이징)',
       description: `
-      - 학교에 귀속된 운영기간을 페이지네이션 기반으로 조회
+      - 해당 엔드포인트로 페이징 기반의 학기 전체조회, 학기 검색, 필터가 가능함.
+      - 기본 정렬은 Year, Start 순으로 정렬되어서 반환.
+      - 검색 조건: schoolYear(학사년도), start(시작일)
+        - 검색시 QueryString에 search 키워드를 통해 검색 조건을 입력할 수 있음. EX) ?search=2025-03-02 ?search=2025 ...
+      - 필터 조건: schoolYear(학사년도), name(운영기간 명)
+        - 필터시 QueryString에 filter.schoolYear, filter.name .. 키워드를 통해 필터 조건을 입력할 수 있음. EX) ?filter.schoolYear=2025&filter.name=2025-1분기 ...
+      - 정렬은 기본적으로 Year, Start 순으로 정렬됨.
+      - 정렬 조건: schoolYear(학사년도), start(시작일)
+        - 정렬시 QueryString에 sortBy 키워드를 통해 정렬 조건을 입력할 수 있음. EX) ?sortBy=schoolYear:ASC&sortBy=start:ASC ...
       `,
     }),
     ApiOkPaginatedResponse(TermResponseDto, {
-      sortableColumns: ['id', 'schoolYear', 'termName'],
-      defaultSortBy: [['id', 'DESC']],
-      searchableColumns: ['schoolName', 'termName'],
+      sortableColumns: ['schoolYear', 'start'],
+      defaultSortBy: [
+        ['schoolYear', 'ASC'],
+        ['start', 'ASC'],
+      ],
+      searchableColumns: ['schoolYear', 'termName'],
       filterableColumns: {
-        schoolName: true,
+        schoolYear: true,
         termName: true,
       },
     }),
     ApiPaginationQuery({
-      sortableColumns: ['id', 'schoolYear', 'termName'],
-      defaultSortBy: [['id', 'DESC']],
-      searchableColumns: ['schoolName', 'termName'],
+      sortableColumns: ['schoolYear', 'start'],
+      defaultSortBy: [
+        ['schoolYear', 'ASC'],
+        ['start', 'ASC'],
+      ],
+      searchableColumns: ['schoolYear', 'termName'],
       filterableColumns: {
-        schoolName: true,
+        schoolYear: true,
         termName: true,
       },
     }),

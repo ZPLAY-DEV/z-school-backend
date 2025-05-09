@@ -8,7 +8,12 @@ import {
   Length,
   MaxLength,
 } from 'class-validator';
-import { IsValidDateRange } from '../validator/date-range.validator';
+import { Type } from 'class-transformer';
+import {
+  IsValidDateRange,
+  IsValidDateTimeRange,
+  IsDateTimeWithinRange,
+} from '../validator/date-range.validator';
 
 export class CreateTermDto {
   @ApiProperty({ description: '🈳 DB의 학교ID', example: 1, required: true })
@@ -21,6 +26,7 @@ export class CreateTermDto {
     description: '🈳 학교명',
     required: false,
     example: '홍익대학교 사범대학 부속 초등학교',
+    maxLength: 16,
   })
   @IsOptional()
   @IsString()
@@ -32,7 +38,12 @@ export class CreateTermDto {
   @IsPositive()
   schoolYear: number;
 
-  @ApiProperty({ description: '🈵 학기명', example: '1학기', required: true })
+  @ApiProperty({
+    description: '🈵 학기명',
+    example: '1학기',
+    required: true,
+    maxLength: 16,
+  })
   @IsString()
   @MaxLength(16)
   termName: string;
@@ -57,4 +68,33 @@ export class CreateTermDto {
     message: 'end date must be a valid YYYY-MM-DD and not before start date',
   })
   end: string;
+
+  @ApiProperty({
+    description: '🈵 수강신청 시작일시 (ISO 8601)',
+    example: '2025-03-01T00:00:00Z',
+    required: false,
+    type: Date,
+  })
+  @IsOptional()
+  @Type(() => Date)
+  @IsDateTimeWithinRange('start', 'end', {
+    message: 'bookingStart must be within start and end date range',
+  })
+  bookingStart?: Date;
+
+  @ApiProperty({
+    description: '🈵 수강신청 종료일시 (ISO 8601)',
+    example: '2025-09-04T00:00:00Z',
+    required: false,
+    type: Date,
+  })
+  @IsOptional()
+  @Type(() => Date)
+  @IsValidDateTimeRange('bookingStart', {
+    message: 'bookingEnd must be a valid date-time and not before bookingStart',
+  })
+  @IsDateTimeWithinRange('start', 'end', {
+    message: 'bookingEnd must be within start and end date range',
+  })
+  bookingEnd?: Date;
 }

@@ -105,11 +105,11 @@ export class SchoolTermService {
       .where('term.schoolId = :schoolId', { schoolId });
 
     return await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'schoolName', 'schoolYear', 'start', 'end'],
-      searchableColumns: ['schoolName', 'termName'],
+      sortableColumns: ['schoolYear', 'start'],
+      searchableColumns: ['schoolYear', 'termName'],
       defaultSortBy: [
-        ['schoolYear', 'DESC'],
-        ['id', 'DESC'],
+        ['schoolYear', 'ASC'],
+        ['start', 'ASC'],
       ],
       filterableColumns: {
         schoolYear: [FilterOperator.EQ],
@@ -122,8 +122,8 @@ export class SchoolTermService {
     const queryBuilder = this.termRepository
       .createQueryBuilder('term')
       .where('term.schoolId = :schoolId', { schoolId })
-      .orderBy('term.schoolYear', 'DESC')
-      .addOrderBy('term.id', 'DESC');
+      .orderBy('term.schoolYear', 'ASC')
+      .addOrderBy('term.start', 'ASC');
 
     return await queryBuilder.getMany();
   }

@@ -31,6 +31,20 @@ export class TermResponseDto {
   end: string;
 
   @ApiProperty({
+    description: '수강신청 시작일시 (ISO 8601)',
+    type: Date,
+    example: '2025-03-01 00:00:00',
+  })
+  bookingStart: Date;
+
+  @ApiProperty({
+    description: '수강신청 종료일시 (ISO 8601)',
+    type: Date,
+    example: '2025-09-04 00:00:00',
+  })
+  bookingEnd: Date;
+
+  @ApiProperty({
     description: '생성된 시기 (ISO 형식의 날짜 문자열)',
     type: Date,
     example: '2025-04-29T05:08:56.706Z',
