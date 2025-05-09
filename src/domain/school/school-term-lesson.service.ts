@@ -207,7 +207,9 @@ export class SchoolTermLessonService {
   ): Promise<void> {
     // Get or create instructors first
     const instructorPromises =
-      dto.groups?.map(async (groupDto) => {
+      dto.groups?.map(async (groupDto, index) => {
+        const postfix = String.fromCharCode(65 + index); // 65 is ASCII for 'A'
+
         // Upsert instructor using ON DUPLICATE KEY UPDATE
         await manager.query(
           `INSERT INTO instructors
@@ -230,6 +232,7 @@ export class SchoolTermLessonService {
           instructorPhone: groupDto.instructorPhone,
           groupData: {
             ...groupDto,
+            groupName: groupDto.groupName || `${lesson.lessonName} ${postfix}`,
             instructorId: instructor.id,
             lessonId: lesson.id,
           },

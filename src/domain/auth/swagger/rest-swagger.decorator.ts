@@ -2,13 +2,12 @@ import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { HttpResponse } from 'src/core/http/http-response';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { AuthTokenDto } from 'src/domain/auth/dto/auth-token.dto';
 import { LogoutDto } from 'src/domain/auth/dto/logout.dto';
-import { RefreshResponseDto } from 'src/domain/auth/dto/refresh-response.dto';
-import { AuthResponseDto } from '../dto/auth-response.dto';
+import { AuthUserDto } from '../dto/auth-user.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import {
   UserCredentialsDto,
@@ -28,7 +27,9 @@ export const RegisterDocs = () => {
       - 가입 후 바로 로그인 처리됨.
       - httpOnly 쿠키 및 Response 로 accessToken 과 refreshToken 을 반환.
       - refreshToken 은 쿠키에 저장되고, accessToken만 응답 값으로 반환됨.
-      - 필수 정보: username, password, role, phone
+      - 필수 정보: phone, password, role
+      - username 은 선택 사항이며, 생략한 경우, phone 값을 사용.
+      - phone 은 11자리 숫자로 입력.
       `,
     }),
     ApiBody({
@@ -36,7 +37,7 @@ export const RegisterDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: '부모/강사 회원가입 성공',
-      type: AuthResponseDto,
+      type: AuthUserDto,
     }),
     ApiErrorResponseTemplate([
       {
@@ -62,6 +63,7 @@ export const RegisterManagerDocs = () => {
       - Web 에서 사용하는 매니저 회원가입용.
       - 같은 Role 로 중복가입시 오류 발생.
       - 가입 후 바로 로그인 처리됨.
+      - 필수 정보: username, password, role 3개
       - httpOnly 쿠키 및 Response 로 accessToken 과 refreshToken 을 반환.
       `,
     }),
@@ -70,7 +72,7 @@ export const RegisterManagerDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: '매니저 회원가입',
-      type: AuthResponseDto,
+      type: AuthUserDto,
     }),
     ApiErrorResponseTemplate([
       {
@@ -94,14 +96,11 @@ export const ResetPasswordDocs = () => {
       summary: '비밀번호 재설정',
       description: `
       - 부모/강사 회원만 사용가능.
+      - return Promise<void> statusCode 200
       `,
     }),
     ApiBody({
       type: ResetPasswordDto,
-    }),
-    ApiOkResponseTemplate({
-      description: '비밀번호 재설정',
-      type: HttpResponse,
     }),
     ApiErrorResponseTemplate([
       {
@@ -131,7 +130,7 @@ export const LoginDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: '로그인 성공',
-      type: AuthResponseDto,
+      type: AuthUserDto,
     }),
     ApiErrorResponseTemplate([
       {
@@ -164,7 +163,7 @@ export const RefreshDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: ' Access Token 재발급 성공 ',
-      type: RefreshResponseDto,
+      type: AuthTokenDto,
     }),
     ApiErrorResponseTemplate([
       {
@@ -188,6 +187,7 @@ export const LogOutDocs = () => {
       description: `
       - Body 에 refreshToken 을 제공하면, 특정 사용자의 디바이스만 로그아웃
       - Body 에 refreshToken 을 제공하지 않으면, 사용자의 모든 디바이스 로그아웃
+      - return Promise<void> statusCode 200
       `,
     }),
     ApiBody({
@@ -195,7 +195,7 @@ export const LogOutDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '로그아웃 성공',
-      type: HttpResponse,
+      type: AuthTokenDto,
     }),
     ApiErrorResponseTemplate([
       {

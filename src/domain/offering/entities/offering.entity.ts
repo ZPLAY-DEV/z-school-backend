@@ -31,7 +31,7 @@ export class Offering {
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '학교명' })
-  @Column({ type: 'varchar', length: 32 })
+  @Column({ type: 'varchar', length: 24 })
   schoolName: string;
 
   @ApiProperty({ description: '과목이름' })

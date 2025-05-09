@@ -126,7 +126,7 @@ export const HttpErrorConstants = {
 
   INVALID_ROLE: {
     error: 'INVALID_ROLE',
-    message: '가입 가능한 유형이 아닙니다.',
+    message: '사용자 유형이 잘못 지정되었습니다.',
   } as HttpErrorFormat,
 
   ALREADY_BOOKED: {

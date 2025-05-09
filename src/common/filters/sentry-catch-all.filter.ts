@@ -40,10 +40,17 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
           description: (response['description'] as string) ?? req.url,
         };
       } else {
-        errorResponse = {
-          ...HttpErrorConstants.UNEXPECTED_HTTP_EXCEPTION,
-          description: req.url,
-        };
+        if (httpStatus === 401) {
+          errorResponse = {
+            ...HttpErrorConstants.UNAUTHORIZED,
+            description: req.url,
+          };
+        } else {
+          errorResponse = {
+            ...HttpErrorConstants.UNEXPECTED_HTTP_EXCEPTION,
+            description: req.url,
+          };
+        }
 
         if (typeof response === 'string') {
           errorResponse.message = response;

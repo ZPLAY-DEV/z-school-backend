@@ -10,15 +10,16 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { plainToClass } from 'class-transformer';
-import { ONE_HOUR, THIRTY_DAYS } from 'src/common/constants';
+import { THIRTY_DAYS } from 'src/common/constants';
 import { Role } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { RefreshResponseDto } from 'src/domain/auth/dto/refresh-response.dto';
+import { AuthTokenDto } from 'src/domain/auth/dto/auth-token.dto';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
   UserCredentialsDto,
   UserCredentialsDtoWithPhone,
 } from 'src/domain/auth/dto/user-credentials.dto';
+import { UserDto } from 'src/domain/auth/dto/user.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
@@ -27,7 +28,7 @@ import { User } from 'src/domain/user/entities/user.entity';
 import { SlackService } from 'src/services/slack/slack-service';
 import { DataSource, MoreThan, Repository } from 'typeorm';
 import * as uuid from 'uuid';
-import { AuthResponseDto } from './dto/auth-response.dto';
+import { AuthUserDto } from './dto/auth-user.dto';
 
 type TokenPayload = {
   sub: number;
@@ -69,32 +70,32 @@ export class AuthService {
   async validateUser(dto: UserCredentialsDto): Promise<User> {
     const { username, password, role } = dto;
 
-    const userRecord = await this.userRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { username },
-      relations: ['tokens', 'instructor', 'parent', 'manager'],
+      relations: ['instructor', 'parent', 'manager'],
     });
 
-    if (!userRecord) {
+    if (!user) {
       throw new UnauthorizedException(HttpErrorConstants.NOT_FOUND_USER);
     }
 
-    const hasRole = this.checkUserHasRole(userRecord, role);
+    const hasRole = this.checkUserHasRole(user, role);
     if (!hasRole) {
       throw new UnauthorizedException(HttpErrorConstants.INVALID_ROLE);
     }
 
-    const passwordMatches = await bcrypt.compare(password, userRecord.password);
+    const passwordMatches = await bcrypt.compare(password, user.password);
     if (!passwordMatches) {
       throw new UnauthorizedException(HttpErrorConstants.INVALID_CREDENTIALS);
     }
 
-    return userRecord;
+    return user;
   }
 
   /**
    * Register a parent or instructor user with phone number
    */
-  async register(dto: UserCredentialsDtoWithPhone): Promise<AuthResponseDto> {
+  async register(dto: UserCredentialsDtoWithPhone): Promise<AuthUserDto> {
     try {
       // Check if user exists and create/update as needed
       const user = await this.findOrCreateUserWithPhone(dto);
@@ -111,7 +112,7 @@ export class AuthService {
         dto.role,
       );
 
-      // Send notification (non-critical)
+      // Fire and Forget. Send notification
       this.sendRegistrationNotification(updatedUser, dto.role).catch(
         (error) => {
           this.logger.warn('Failed to send Slack notification', error);
@@ -120,7 +121,9 @@ export class AuthService {
 
       // Return response
       return {
-        user: plainToClass(User, updatedUser),
+        user: plainToClass(UserDto, updatedUser, {
+          excludeExtraneousValues: true,
+        }),
         role: dto.role,
         accessToken,
         refreshToken,
@@ -134,7 +137,7 @@ export class AuthService {
   /**
    * Register a manager (without phone number)
    */
-  async registerManager(dto: UserCredentialsDto): Promise<AuthResponseDto> {
+  async registerManager(dto: UserCredentialsDto): Promise<AuthUserDto> {
     try {
       // Validate manager role
       if (dto.role !== Role.MANAGER) {
@@ -156,7 +159,7 @@ export class AuthService {
         dto.role,
       );
 
-      // Send notification (non-critical)
+      // Fire and Forget. Send notification
       this.sendRegistrationNotification(updatedUser, dto.role).catch(
         (error) => {
           this.logger.warn('Failed to send Slack notification', error);
@@ -165,7 +168,9 @@ export class AuthService {
 
       // Return response
       return {
-        user: plainToClass(User, updatedUser),
+        user: plainToClass(UserDto, updatedUser, {
+          excludeExtraneousValues: true,
+        }),
         role: dto.role,
         accessToken,
         refreshToken,
@@ -189,15 +194,14 @@ export class AuthService {
   /**
    * Log in a user and generate auth tokens
    */
-  async login(dto: UserCredentialsDto): Promise<AuthResponseDto> {
+  async login(dto: UserCredentialsDto): Promise<AuthUserDto> {
     const user = await this.validateUser(dto);
     const { accessToken, refreshToken } = await this.generateTokens(
       user,
       dto.role,
     );
-
     return {
-      user: plainToClass(User, user),
+      user: plainToClass(UserDto, user, { excludeExtraneousValues: true }),
       role: dto.role,
       accessToken,
       refreshToken,
@@ -245,7 +249,7 @@ export class AuthService {
     userId: number,
     role: Role,
     refreshToken: string,
-  ): Promise<RefreshResponseDto> {
+  ): Promise<AuthTokenDto> {
     const tokenRecord = await this.tokenRepository.findOne({
       where: {
         userId,
@@ -333,7 +337,7 @@ export class AuthService {
   ): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { phone: dto.phone },
-      relations: ['instructor', 'parent', 'tokens'],
+      relations: ['instructor', 'parent', 'manager'],
     });
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -353,7 +357,7 @@ export class AuthService {
       // Return refreshed user data
       const updatedUser = await this.userRepository.findOne({
         where: { id: user.id },
-        relations: ['instructor', 'parent', 'tokens'],
+        relations: ['instructor', 'parent', 'manager'],
       });
 
       if (!updatedUser) {
@@ -381,7 +385,7 @@ export class AuthService {
   private async findOrCreateManager(dto: UserCredentialsDto): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { username: dto.username },
-      relations: ['manager', 'tokens'],
+      relations: ['instructor', 'parent', 'manager'],
     });
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -397,7 +401,7 @@ export class AuthService {
       // Return refreshed user data
       const updatedUser = await this.userRepository.findOne({
         where: { id: user.id },
-        relations: ['manager', 'tokens'],
+        relations: ['instructor', 'parent', 'manager'],
       });
 
       if (!updatedUser) {
@@ -458,7 +462,7 @@ export class AuthService {
   private async reloadUserWithRelations(userId: number): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['instructor', 'parent', 'manager', 'tokens'],
+      relations: ['instructor', 'parent', 'manager'],
     });
 
     if (!user) {
@@ -474,7 +478,7 @@ export class AuthService {
   private async generateAccessToken(payload: TokenPayload): Promise<string> {
     const accessTokenOptions = {
       secret: this.configService.get('jwt.authSecret'),
-      expiresIn: ONE_HOUR,
+      expiresIn: '1h', //? ONE_HOUR,
     };
 
     return this.jwtService.signAsync(payload, accessTokenOptions);

@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { IsArray, IsEnum } from 'class-validator';
-import { DocumentType, PlatformType } from 'src/common/enums';
+import { DocumentType } from 'src/common/enums';
 import { Document } from 'src/domain/document/entities/document.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
@@ -47,10 +47,6 @@ export class Instructor {
   @ApiProperty({ description: '🈵 강사 전화번호 (숫자만 입력)' })
   @Column({ type: 'varchar', length: 16 })
   phone: string;
-
-  @ApiProperty({ description: '🈳 마지막 로그인 기기 web, ios, or android' })
-  @Column({ type: 'enum', enum: PlatformType, default: null })
-  platform: PlatformType | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   @Exclude({ toPlainOnly: true })

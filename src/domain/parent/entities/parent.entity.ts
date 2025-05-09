@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { PlatformType } from 'src/common/enums';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
@@ -38,10 +37,6 @@ export class Parent {
   @ApiProperty({ description: '🈵 전화번호 (숫자만)' })
   @Column({ type: 'varchar', unique: true, length: 16 })
   phone: string;
-
-  @ApiProperty({ description: '🈳 마지막 로그인 기기 web, ios, or android' })
-  @Column({ type: 'enum', enum: PlatformType, default: null })
-  platform: PlatformType | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   @Exclude({ toPlainOnly: true })
