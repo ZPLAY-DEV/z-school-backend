@@ -33,8 +33,8 @@ export class SchoolInstructorService {
     let instructor = await this.instructorRepository.findOne({
       where: [
         {
-          name: dto.name!,
-          phone: dto.phone!,
+          name: dto.name,
+          phone: dto.phone,
         },
       ],
     });
@@ -46,8 +46,8 @@ export class SchoolInstructorService {
         { id: instructor.id },
         {
           userId: dto.userId,
-          platform: dto.platform,
           note: dto.note,
+          pushToken: dto.pushToken,
         },
       );
 
@@ -62,7 +62,6 @@ export class SchoolInstructorService {
           userId: dto.userId,
           name: dto.name,
           phone: dto.phone,
-          platform: dto.platform,
           note: dto.note,
         }),
       );

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class RefreshResponseDto {
+export class AuthTokenDto {
   @ApiProperty({
     description: '액세스 토큰',
     example: 'eyJhbGciOiJIUzI1NiIs...',
@@ -23,7 +23,7 @@ export class RefreshResponseDto {
   // })
   // refreshToken?: string;
 
-  constructor(data: Partial<RefreshResponseDto>) {
+  constructor(data: Partial<AuthTokenDto>) {
     Object.assign(this, data);
   }
 }

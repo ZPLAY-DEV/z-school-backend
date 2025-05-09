@@ -2,6 +2,7 @@ import {
   Body,
   ClassSerializerInterceptor,
   Controller,
+  HttpCode,
   Patch,
   Post,
   Req,
@@ -12,13 +13,13 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Request as ExpressRequest, Response } from 'express';
 import { ONE_HOUR, THIRTY_DAYS } from 'src/common/constants';
-import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Role } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { HttpResponse } from 'src/core/http/http-response';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AuthService } from 'src/domain/auth/auth.service';
+import { AuthTokenDto } from 'src/domain/auth/dto/auth-token.dto';
+import { AuthUserDto } from 'src/domain/auth/dto/auth-user.dto';
 import { LogoutDto } from 'src/domain/auth/dto/logout.dto';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
@@ -36,7 +37,7 @@ import {
 } from './swagger/rest-swagger.decorator';
 
 @UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('Auth(인증)')
+@ApiTags('✅ Auth(인증)')
 @ApiCommonErrorResponseTemplate()
 @Controller('auth')
 export class AuthController {
@@ -52,8 +53,11 @@ export class AuthController {
   async register(
     @Body() dto: UserCredentialsDtoWithPhone,
     @Res({ passthrough: true }) res: Response,
-  ) {
-    const { refreshToken, ...tokens } = await this.authService.register(dto);
+  ): Promise<AuthUserDto> {
+    if (!dto.username) {
+      dto.username = dto.phone;
+    }
+    const tokens = await this.authService.register(dto);
 
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
@@ -62,7 +66,7 @@ export class AuthController {
       path: '/',
       maxAge: ONE_HOUR,
     });
-    res.cookie('refreshToken', refreshToken, {
+    res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -70,16 +74,34 @@ export class AuthController {
       maxAge: THIRTY_DAYS,
     });
 
-    return HttpResponse.created(tokens);
+    return tokens;
   }
 
   @RegisterManagerDocs()
   @Public()
   @Post('register/manager')
-  async registerManager(@Body() dto: UserCredentialsDto) {
+  async registerManager(
+    @Body() dto: UserCredentialsDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthUserDto> {
     const tokens = await this.authService.registerManager(dto);
 
-    return HttpResponse.created(tokens);
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: ONE_HOUR,
+    });
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: THIRTY_DAYS,
+    });
+
+    return tokens;
   }
 
   @ResetPasswordDocs()
@@ -87,10 +109,8 @@ export class AuthController {
   @Patch('reset')
   async resetPassword(
     @Body(HashPasswordPipe) dto: ResetPasswordDto,
-  ): Promise<HttpResponse> {
+  ): Promise<void> {
     await this.authService.resetPassword(dto);
-
-    return HttpResponse.ok();
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -98,12 +118,13 @@ export class AuthController {
   //? ---------------------------------------------------------------------- ?//
 
   @LoginDocs()
+  @HttpCode(200)
   @Public()
   @Post('login')
   async login(
     @Body() dto: UserCredentialsDto,
     @Res({ passthrough: true }) res: Response,
-  ) {
+  ): Promise<AuthUserDto> {
     const tokens = await this.authService.login(dto);
 
     res.cookie('accessToken', tokens.accessToken, {
@@ -128,13 +149,14 @@ export class AuthController {
   //? Public) 토큰 refresh
   //? ---------------------------------------------------------------------- ?//
 
-  @Public()
   @RefreshDocs()
+  @Public()
+  @HttpCode(200)
   @Post('refresh')
   async refresh(
     @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<HttpResponse> {
+  ): Promise<AuthTokenDto> {
     const authHeader = req.get('Authorization');
     const refreshToken =
       req.cookies?.refreshToken ||
@@ -167,7 +189,7 @@ export class AuthController {
       maxAge: ONE_HOUR,
     });
 
-    return HttpResponse.created(tokens);
+    return tokens;
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -175,15 +197,34 @@ export class AuthController {
   //? ---------------------------------------------------------------------- ?//
 
   @LogOutDocs()
+  @HttpCode(200)
+  @Public()
   @Post('logout')
   async logout(
+    @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
-    @CurrentUserIdAndRole() { userId, role }: { userId: number; role: Role },
     @Body() dto: LogoutDto,
-  ): Promise<HttpResponse> {
-    await this.authService.logout(userId, role, dto.refreshToken);
+  ): Promise<void> {
+    // Extract refresh token from cookie or auth header
+    const refreshToken = dto.refreshToken || req.cookies?.refreshToken;
 
-    // Clear cookies
+    if (refreshToken) {
+      try {
+        const [, userId, role] = refreshToken.split('-') ?? [];
+
+        if (userId && role) {
+          await this.authService.logout(
+            +userId,
+            role.toUpperCase() as Role,
+            refreshToken as string,
+          );
+        }
+      } catch {
+        // Silently ignore errors during logout
+      }
+    }
+
+    // Clear cookies regardless of token status
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -193,7 +234,5 @@ export class AuthController {
 
     res.clearCookie('accessToken', cookieOptions);
     res.clearCookie('refreshToken', cookieOptions);
-
-    return HttpResponse.ok();
   }
 }

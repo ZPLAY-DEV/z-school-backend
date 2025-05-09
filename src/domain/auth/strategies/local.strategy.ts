@@ -7,7 +7,7 @@ import { UserCredentialsDto } from 'src/domain/auth/dto/user-credentials.dto';
 export class LocalStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
     super({
-      usernameField: 'email',
+      usernameField: 'username',
       passwordField: 'password',
     });
   }

@@ -1,13 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from 'src/domain/user/entities/user.entity';
+import { UserDto } from 'src/domain/auth/dto/user.dto';
 
-export class AuthResponseDto {
+export class AuthUserDto {
   @ApiProperty({
     description: '사용자 정보',
-    example: '{ "id": 1, "username": "tester", ... }',
-    type: User,
+    // example: '{ "id": 1, "username": "tester", ... }',
+    type: UserDto,
   })
-  user: User;
+  user: UserDto;
 
   @ApiProperty({
     description: '사용자 역할',
@@ -37,7 +37,7 @@ export class AuthResponseDto {
   // })
   // expiresAt: number;
 
-  constructor(data: Partial<AuthResponseDto>) {
+  constructor(data: Partial<AuthUserDto>) {
     Object.assign(this, data);
   }
 }
