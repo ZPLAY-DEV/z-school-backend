@@ -22,7 +22,7 @@ export class CreateOfferingDto {
 
   @ApiProperty({ description: '학교명' })
   @IsString()
-  @Length(1, 32)
+  @Length(1, 24)
   schoolName: string;
 
   @ApiProperty({ description: '과목이름' })

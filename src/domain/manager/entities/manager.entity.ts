@@ -34,7 +34,7 @@ export class Manager {
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈳 학교 이름' })
-  @Column({ type: 'varchar', length: 32, nullable: true })
+  @Column({ type: 'varchar', length: 24, nullable: true })
   schoolName: string | null;
 
   @ApiProperty({ description: '🈳 매니저 이름' })

@@ -20,6 +20,16 @@ export class CreateManagerDto {
   schoolId?: number;
 
   @ApiPropertyOptional({
+    description: '학교 이름',
+    example: '홍익대학교 사범대학 부속 초등학교',
+    maxLength: 32,
+  })
+  @IsString()
+  @MaxLength(24)
+  @IsOptional()
+  schoolName?: string;
+
+  @ApiPropertyOptional({
     description: '성함',
     example: '홍길동',
     maxLength: 16,

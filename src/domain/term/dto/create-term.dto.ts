@@ -24,7 +24,7 @@ export class CreateTermDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(16)
+  @MaxLength(24)
   schoolName?: string | null;
 
   @ApiProperty({ description: '🈵 학사년도', example: 2025, required: true })
