@@ -1,6 +1,3 @@
-//? ---------------------------------------------------------------------- ?//
-//? Public) 부모/강사 회원가입
-
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
