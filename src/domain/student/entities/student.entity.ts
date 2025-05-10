@@ -60,8 +60,13 @@ export class Student {
   })
   class: string | null;
 
-  @ApiProperty({ description: '학번/번호' })
-  @Column({ type: 'int', nullable: true, comment: '학번/번호' })
+  @ApiProperty({ description: '학번/번호', example: 10 })
+  @Column({
+    type: 'tinyint',
+    unsigned: true,
+    nullable: true,
+    comment: '학번/번호',
+  })
   studentCode: number | null;
 
   @ApiProperty({ description: 'up to 16 characters' })

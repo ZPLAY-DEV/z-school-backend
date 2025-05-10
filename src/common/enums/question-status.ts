@@ -1,4 +1,4 @@
 export enum QuestionStatus {
-  WAITING = 'WAITING',
-  ANSWERED = 'ANSWERED',
+  WAITING = 'waiting',
+  ANSWERED = 'answered',
 }

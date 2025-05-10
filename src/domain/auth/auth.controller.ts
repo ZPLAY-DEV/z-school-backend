@@ -37,7 +37,7 @@ import {
 } from './swagger/rest-swagger.decorator';
 
 @UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('✅ Auth(인증)')
+@ApiTags('✅ Auth ( 인증 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('auth')
 export class AuthController {

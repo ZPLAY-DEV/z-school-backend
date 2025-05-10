@@ -1,5 +1,5 @@
 export enum StudentStatus {
-  ATTENDING = 'ATTENDING',
-  TRANSFERRED = 'TRANSFERRED',
-  GRADUATED = 'GRADUATED',
+  ATTENDING = 'attending',
+  TRANSFERRED = 'transferred',
+  GRADUATED = 'graduated',
 }

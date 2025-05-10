@@ -124,6 +124,11 @@ export const HttpErrorConstants = {
     message: '데이터 제약조건 위반 (중복된 이름 등)',
   } as HttpErrorFormat,
 
+  CONDITION_NOT_MET: {
+    error: 'CONDITION_NOT_MET',
+    message: '처리 조건을 충족하지 않습니다.',
+  } as HttpErrorFormat,
+
   ALREADY_BOOKED: {
     error: 'ALREADY_BOOKED',
     message: '이미 수강신청 접수 중입니다.',
@@ -187,6 +192,11 @@ export const HttpErrorConstants = {
   NOT_FOUND_STUDENT: {
     error: 'NOT_FOUND_STUDENT',
     message: '학생을 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
+  NOT_FOUND_ENTITY: {
+    error: 'NOT_FOUND_ENTITY',
+    message: '존재하지 않는 엔터티입니다.',
   } as HttpErrorFormat,
 
   CANNOT_DELETE_ACTIVE_PHONE: {

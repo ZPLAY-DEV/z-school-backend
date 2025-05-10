@@ -1,5 +1,5 @@
 export enum PlatformType {
-  ANDROID = 'ANDROID',
-  IOS = 'IOS',
-  WEB = 'WEB',
+  ANDROID = 'android',
+  IOS = 'ios',
+  WEB = 'web',
 }

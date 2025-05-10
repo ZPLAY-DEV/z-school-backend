@@ -101,7 +101,30 @@ export class Group {
   lesson: Lesson;
 
   //* N-to-M belongsToMany with custom props using 1-to-M ------------------ *//
-
+  @ApiProperty({
+    description: '🈳 연결된 학생 목록',
+    example: [
+      {
+        id: 1,
+        studentId: 1,
+        groupId: 1,
+        bookFee: 10000,
+        materialFee: 10000,
+        student: {
+          id: 1,
+          name: '홍길동',
+          phone: null,
+          grade: 'hong@gmail.com',
+          class: '1-1',
+          studentCode: 1,
+          profileImage: null,
+          createdAt: '2021-01-01 00:00:00',
+          updatedAt: '2021-01-01 00:00:00',
+          deletedAt: null,
+        },
+      },
+    ],
+  })
   @OneToMany(() => StudentGroup, (stdGrp) => stdGrp.group)
   studentGroups: StudentGroup[];
 

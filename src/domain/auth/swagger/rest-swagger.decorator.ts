@@ -6,17 +6,18 @@ import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-create
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
 import { AuthTokenDto } from 'src/domain/auth/dto/auth-token.dto';
+import { AuthUserDto } from 'src/domain/auth/dto/auth-user.dto';
 import { LogoutDto } from 'src/domain/auth/dto/logout.dto';
-import { AuthUserDto } from '../dto/auth-user.dto';
-import { ResetPasswordDto } from '../dto/reset-password.dto';
+import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
   UserCredentialsDto,
   UserCredentialsDtoWithPhone,
-} from '../dto/user-credentials.dto';
+} from 'src/domain/auth/dto/user-credentials.dto';
 
 //? ---------------------------------------------------------------------- ?//
-//? Public) 부모/강사 회원가입
+//? Register
 //? ---------------------------------------------------------------------- ?//
+
 export const RegisterDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -53,8 +54,9 @@ export const RegisterDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Public) 매니저 회원 가입
+//? RegisterManager
 //? ---------------------------------------------------------------------- ?//
+
 export const RegisterManagerDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -88,8 +90,9 @@ export const RegisterManagerDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Public) 비밀번호 재설정
+//? Reset Password
 //? ---------------------------------------------------------------------- ?//
+
 export const ResetPasswordDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -115,8 +118,9 @@ export const ResetPasswordDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Public) 로그인 Docs
+//? Login
 //? ---------------------------------------------------------------------- ?//
+
 export const LoginDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -150,8 +154,9 @@ export const LoginDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//?  토큰 refresh Docs
+//? Refresh
 //? ---------------------------------------------------------------------- ?//
+
 export const RefreshDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -178,8 +183,9 @@ export const RefreshDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? 로그아웃 Docs
+//? LogOut
 //? ---------------------------------------------------------------------- ?//
+
 export const LogOutDocs = () => {
   return applyDecorators(
     ApiOperation({

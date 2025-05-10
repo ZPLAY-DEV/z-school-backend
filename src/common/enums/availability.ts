@@ -1,6 +1,6 @@
 export enum Availability {
-  AVAILABLE = 'AVAILABLE',
-  SOLD = 'SOLD',
-  PROCESSING = 'PROCESSING',
-  UNKNOWN = 'UNKNOWN',
+  AVAILABLE = 'available',
+  SOLD = 'sold',
+  PROCESSING = 'processing',
+  UNKNOWN = 'unknown',
 }

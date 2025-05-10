@@ -5,15 +5,15 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
-import { ApiPaginatedResponseTemplate } from 'src/core/swagger/response/api-paginated-response.dto';
 import { CreateLessonResponseDto } from 'src/domain/lesson/dto/create-lesson-response.dto';
 import { CreateLessonDto } from '../dto/create-lesson.dto';
 import { UpdateLessonDto } from '../dto/update-lesson.dto';
 import { Lesson } from '../entities/lesson.entity';
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학교의 특정 학기에 과목 생성
+//? Create School > Term > Lesson
 //? ---------------------------------------------------------------------- ?//
+
 export const CreateSchoolTermLessonDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -48,8 +48,9 @@ export const CreateSchoolTermLessonDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학교의 특정 학기에 여러 과목 일괄 생성
+//? Create School > Term > Lesson Bulk
 //? ---------------------------------------------------------------------- ?//
+
 export const CreateSchoolTermLessonBulkDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -86,8 +87,9 @@ export const CreateSchoolTermLessonBulkDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학교의 특정 학기의 과목 업데이트
+//? Update School > Term > Lesson
 //? ---------------------------------------------------------------------- ?//
+
 export const UpdateSchoolTermLessonDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -130,36 +132,9 @@ export const UpdateSchoolTermLessonDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학교의 특정 학기의 과목 리스트 조회 (페이징 O)
+//? List School > Term > Lesson
 //? ---------------------------------------------------------------------- ?//
-export const SchoolTermLessonListPaginatedDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '학교의 특정 학기의 과목 리스트 조회 (페이징 O)',
-      description: `
-      - 학교의 특정 학기에 속한 과목 리스트를 페이징하여 조회합니다
-      `,
-    }),
-    //ApiPaginationQuery,
-    ApiPaginatedResponseTemplate({
-      description: '과목 리스트 페이징 조회 완료',
-      type: Lesson,
-    }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [
-          HttpErrorConstants.NOT_FOUND_SCHOOL,
-          HttpErrorConstants.NOT_FOUND_TERM,
-        ],
-      },
-    ]),
-  );
-};
 
-//? ---------------------------------------------------------------------- ?//
-//? Private) 학교의 특정 학기의 과목 리스트 조회 (전체)
-//? ---------------------------------------------------------------------- ?//
 export const SchoolTermLessonListDocs = () => {
   return applyDecorators(
     ApiOperation({
