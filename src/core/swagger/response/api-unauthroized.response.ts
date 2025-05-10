@@ -22,14 +22,6 @@ export const ApiUnauthorizedErrorResponse = () => {
               },
             },
             case_2: {
-              summary: '전달받은 토큰의 타입이 엑세스토큰이 아님.',
-              value: {
-                status: StatusCodes.UNAUTHORIZED,
-                message: HttpErrorConstants.NOT_COLLETED_ACCESS_TYPE.message,
-                error: HttpErrorConstants.NOT_COLLETED_ACCESS_TYPE.error,
-              },
-            },
-            case_3: {
               summary: '토큰을 찾을 수 없음.',
               value: {
                 status: StatusCodes.UNAUTHORIZED,

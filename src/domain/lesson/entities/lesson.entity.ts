@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsEnum, IsOptional } from 'class-validator';
-import { DocumentType, EnrollmentRule } from 'src/common/enums';
-import { LessonStatus } from 'src/common/enums/lesson-status';
+import { ClassStatus, DocumentType, EnrollmentRule } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
@@ -118,8 +117,8 @@ export class Lesson {
   note: string | null;
 
   @ApiProperty({ description: '🈵 상태' })
-  @Column({ type: 'enum', enum: LessonStatus, default: LessonStatus.ACTIVE })
-  status: LessonStatus;
+  @Column({ type: 'enum', enum: ClassStatus, default: ClassStatus.PENDING })
+  status: ClassStatus;
 
   // ------------------------------------------------------------------------ //
 

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { GroupStatus, Weekday } from 'src/common/enums';
+import { ClassStatus, Weekday } from 'src/common/enums';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { StudentGroup } from 'src/domain/student/entities/student-group.entity';
@@ -67,10 +67,10 @@ export class Group {
   @ApiProperty({ description: '🈵 상태' })
   @Column({
     type: 'enum',
-    enum: GroupStatus,
-    default: GroupStatus.ACTIVE,
+    enum: ClassStatus,
+    default: ClassStatus.PENDING,
   })
-  groupStatus: GroupStatus;
+  status: ClassStatus;
 
   @ApiProperty({ description: '🈳 비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })

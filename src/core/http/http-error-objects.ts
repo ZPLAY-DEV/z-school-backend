@@ -99,19 +99,9 @@ export const HttpErrorConstants = {
     message: '잘못된 토큰 타입입니다.',
   } as HttpErrorFormat,
 
-  NOT_COLLETED_ACCESS_TYPE: {
-    error: 'NOT_COLLETED_ACCESS_TYPE',
-    message: '엑세스 토큰이 아닙니다.',
-  } as HttpErrorFormat,
-
   TIMEOUT_EXCEPTION: {
     error: 'TIMEOUT_EXCEPTION',
     message: '요청에 대한 응답시간이 초과되었습니다.',
-  } as HttpErrorFormat,
-
-  NOT_COLLETED_REFRESH_TYPE: {
-    error: 'NOT_COLLETED_REFRESH_TYPE',
-    message: '리프레시 토큰이 아닙니다.',
   } as HttpErrorFormat,
 
   NOT_FOUND_USER: {
@@ -127,6 +117,11 @@ export const HttpErrorConstants = {
   INVALID_ROLE: {
     error: 'INVALID_ROLE',
     message: '사용자 유형이 잘못 지정되었습니다.',
+  } as HttpErrorFormat,
+
+  INVALID_CONSTRAINT: {
+    error: 'INVALID_CONSTRAINT',
+    message: '데이터 제약조건 위반 (중복된 이름 등)',
   } as HttpErrorFormat,
 
   ALREADY_BOOKED: {
@@ -174,7 +169,6 @@ export const HttpErrorConstants = {
     message: '과목을 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
-  // ? 로직이 이상한데, 여쭤보기
   NOT_FOUND_PASSWORD: {
     error: 'NOT_FOUND_PASSWORD',
     message: '비밀번호가 존재하지 않습니다.',
