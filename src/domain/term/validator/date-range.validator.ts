@@ -1,9 +1,9 @@
 import {
   registerDecorator,
-  ValidationOptions,
   ValidationArguments,
+  ValidationOptions,
 } from 'class-validator';
-import { isValid, parse, isAfter, isBefore, set } from 'date-fns';
+import { isAfter, isBefore, isValid, parse, set } from 'date-fns';
 
 /**
  * start와 end 필드의 날짜 범위를 검증하는 커스텀 데코레이터
@@ -184,6 +184,56 @@ export function IsDateTimeWithinRange(
         defaultMessage(args: ValidationArguments) {
           const [startPropertyName, endPropertyName] = args.constraints;
           return `${args.property} must be within the range of ${startPropertyName} and ${endPropertyName}`;
+        },
+      },
+    });
+  };
+}
+
+/**
+ * bookingStart와 bookingEnd가 start 날짜 이전인지 검증하는 커스텀 데코레이터
+ * @param startProperty 시작 날짜 필드 (예: 'start')
+ * @param validationOptions class-validator 옵션
+ */
+export function IsDateTimePriorToDate(
+  startProperty: string,
+  validationOptions?: ValidationOptions,
+) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: 'isDateTimePriorToDate',
+      target: object.constructor,
+      propertyName: propertyName,
+      constraints: [startProperty],
+      options: validationOptions,
+      validator: {
+        validate(value: unknown, args: ValidationArguments) {
+          const [startPropertyName] = args.constraints;
+          const obj = args.object as Record<string, unknown>;
+          const startValue = obj[startPropertyName] as string;
+
+          // 값이 없으면 검증 생략
+          if (value === undefined) return true;
+
+          // start가 YYYY-MM-DD 형식인지 확인
+          const dateFormatRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (!dateFormatRegex.test(startValue)) return false;
+
+          // start를 Date 객체로 파싱
+          const startDate = parse(startValue, 'yyyy-MM-dd', new Date());
+          if (!isValid(startDate)) return false;
+
+          // value(bookingStart 또는 bookingEnd)가 유효한 Date인지 확인
+          const date =
+            value instanceof Date ? value : new Date(value as string);
+          if (!isValid(date)) return false;
+
+          // bookingStart 또는 bookingEnd가 startDate 이전인지 확인
+          return isBefore(date, startDate);
+        },
+        defaultMessage(args: ValidationArguments) {
+          const [startPropertyName] = args.constraints;
+          return `${args.property} must be prior to ${startPropertyName}`;
         },
       },
     });

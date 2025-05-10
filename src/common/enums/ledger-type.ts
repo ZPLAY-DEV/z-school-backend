@@ -1,4 +1,4 @@
 export enum LedgerType {
-  DEBIT = 'debit',
-  CREDIT = 'credit',
+  DEBIT = 'DEBIT',
+  CREDIT = 'CREDIT',
 }

@@ -16,7 +16,6 @@ export * from './role';
 export * from './student-status';
 export * from './subsidy-status';
 export * from './subsidy-type';
-export * from './support-status';
 export * from './time-unit';
 export * from './weekday';
 

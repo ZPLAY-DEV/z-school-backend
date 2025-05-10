@@ -1,6 +1,6 @@
 export enum ButtonType {
-  INFO = 'info',
-  SUCCESS = 'success',
-  ERROR = 'error',
-  WARN = 'warn',
+  INFO = 'INFO',
+  SUCCESS = 'SUCCESS',
+  ERROR = 'ERROR',
+  WARN = 'WARN',
 }

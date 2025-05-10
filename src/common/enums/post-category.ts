@@ -1,5 +1,5 @@
 export enum PostCategory {
-  NEWS = 'news',
-  QUESTION = 'question',
-  REQUEST = 'request',
+  NEWS = 'NEWS',
+  QUESTION = 'QUESTION',
+  REQUEST = 'REQUEST',
 }

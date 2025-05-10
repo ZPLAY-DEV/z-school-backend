@@ -62,6 +62,18 @@ export class SchoolTermService {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  async list(schoolId: number): Promise<Term[]> {
+    const queryBuilder = this.termRepository
+      .createQueryBuilder('term')
+      .where('term.schoolId = :schoolId', { schoolId })
+      .orderBy('term.schoolYear', 'ASC')
+      .addOrderBy('term.start', 'ASC')
+      // .orderBy('start', 'DESC') // todo. 근데, 최신순으로 보여주는 것이 필요할 것 아닌가?
+      .take(10); // todo. 학년 종료후 매년 reset 한다고 했으니까 학기의 갯수는 10개로 충분?
+
+    return await queryBuilder.getMany();
+  }
+
   // async infiniteList(
   //   schoolId: number,
   //   query: PaginateQuery,
@@ -83,16 +95,6 @@ export class SchoolTermService {
   //     },
   //   });
   // }
-
-  async list(schoolId: number): Promise<Term[]> {
-    const queryBuilder = this.termRepository
-      .createQueryBuilder('term')
-      .where('term.schoolId = :schoolId', { schoolId })
-      .orderBy('term.schoolYear', 'ASC')
-      .addOrderBy('term.start', 'ASC');
-
-    return await queryBuilder.getMany();
-  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Update

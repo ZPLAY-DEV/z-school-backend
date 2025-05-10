@@ -21,21 +21,21 @@ export class Term {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '' })
+  @ApiProperty({ description: '', example: 20 })
   @Column({ type: 'int', unsigned: true })
   schoolId: number;
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '학교명' })
+  @ApiProperty({ description: '학교명', example: '삼척 초등학교' })
   @Column({ type: 'varchar', length: 24, nullable: true })
   schoolName: string | null; // 관리자 편의를 위한 column
 
-  @ApiProperty({ description: '학사년도' })
+  @ApiProperty({ description: '학사년도', example: 2025 })
   @Column({ type: 'int', unsigned: true })
   schoolYear: number; // 학사년도
 
-  @ApiProperty({ description: '늘봄학교 수강기간명' })
+  @ApiProperty({ description: '늘봄학교 수강기간명', example: '2025-1학기' })
   @Column({ type: 'varchar', length: 16 })
   termName: string;
 
@@ -47,18 +47,25 @@ export class Term {
   @Column({ type: 'varchar', length: 10 })
   end: string;
 
-  @ApiProperty({ description: '수강신청 시작일시 (ISO 8601)' })
+  @ApiProperty({
+    description: '수강신청 시작일시 (ISO 8601)',
+    example: '2025-03-06 00:00:00',
+  })
   @Column({ type: 'timestamp', nullable: true, comment: '수강신청 시작일시' })
   bookingStart: Date | null;
 
-  @ApiProperty({ description: '수강신청 종료일시 (ISO 8601)' })
+  @ApiProperty({
+    description: '수강신청 종료일시 (ISO 8601)',
+    example: '2025-03-10 00:00:00',
+  })
   @Column({ type: 'timestamp', nullable: true, comment: '수강신청 종료일시' })
   bookingEnd: Date | null;
 
-  @ApiProperty({ description: '🈳 수강신청 준비 상태' })
+  @ApiProperty({ description: '🈳 수강신청 준비 상태', default: false })
   @Column({
     type: 'boolean',
     default: false,
+    comment: '수강신청 준비 상태. [null => 날짜] 지정시 자동으로 true',
   })
   isBookingReady: boolean;
 

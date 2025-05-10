@@ -48,7 +48,15 @@ export class SchoolTermController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  // pagination 을 할 정도로 데이터가 많지 않음.
+  @ListTermDocs()
+  @Get(':schoolId/terms')
+  async list(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+  ): Promise<Term[]> {
+    return await this.schoolTermService.list(schoolId);
+  }
+
+  // pagination 을 할 정도로 데이터가 많지 않아서 제공 보류
   //
   // @PaginatedTermDocs()
   // @Get(':schoolId/terms/paginated')
@@ -58,14 +66,6 @@ export class SchoolTermController {
   // ): Promise<Paginated<Term>> {
   //   return await this.schoolTermService.infiniteList(schoolId, query);
   // }
-
-  @ListTermDocs()
-  @Get(':schoolId/terms')
-  async list(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-  ): Promise<Term[]> {
-    return await this.schoolTermService.list(schoolId);
-  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Update

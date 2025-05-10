@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { SlackService } from 'src/services/slack/slack-service';
-import { DataSource, EntitySubscriberInterface, UpdateEvent } from 'typeorm';
+import {
+  DataSource,
+  EntitySubscriberInterface,
+  InsertEvent,
+  UpdateEvent,
+} from 'typeorm';
 
 @Injectable()
 export class TermSubscriber implements EntitySubscriberInterface<Term> {
@@ -22,25 +27,47 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
   //! you need to use the same entityManager instance because of transactions.
   //! which means event.manager. not event.connection.manager.
 
+  async afterInsert(event: InsertEvent<Term>) {
+    const term = event.entity;
+
+    // bookingStart 가 처음 설정될 때 해야할 일
+    // 1. 모든 Term > Lesson > Group 에 대해서 Offering 생성
+    // 2. set isBookingReady to true
+    // 3. Slack 알림 발송
+    if (term && term.bookingStart && term.bookingEnd) {
+      // todo. offerings 생성하기
+      await this.makeOfferings(term, event.manager);
+      await event.manager
+        .createQueryBuilder()
+        .update('Term')
+        .set({
+          isBookingReady: true,
+        })
+        .where('id = :termId', { termId: term.id })
+        .execute();
+
+      // 💥 fire and forget) 1. Slack notification
+      this.sendTermRegistrationNotification(term).catch((error) => {
+        this.logger.warn('Failed to send Slack notification', error);
+      });
+
+      // 💥 fire and forget) 2. 고객에게 확인 이메일
+      // await this.ses.sendOrderConfirmationEmail(order.user.email, order);
+    }
+  }
+
   async afterUpdate(event: UpdateEvent<Term>) {
     const term = event.entity as Term;
     const oldStatus = event.databaseEntity?.bookingStart;
     const newStatus = term?.bookingStart;
 
     // bookingStart 가 처음 설정될 때 해야할 일
-    // 1. set isBookingReady to true
     // 1. 모든 Term > Lesson > Group 에 대해서 Offering 생성
-    // 2. 해당 이벤트에 대하여 알림발송 어딘가에 등록
-
+    // 2. set isBookingReady to true
+    // 3. Slack 알림 발송
     if (term && oldStatus === null && newStatus !== null) {
       // todo. offerings 생성하기
-      // const lessons = await event.manager
-      //   .createQueryBuilder('Lesson', 'lesson')
-      //   .leftJoinAndSelect('lesson.groups', 'group')
-      //   .leftJoinAndSelect('group.instructor', 'instructor')
-      //   .where('order.id = :orderId', { orderId: term.orderId })
-      //   .getOne();
-
+      await this.makeOfferings(term, event.manager);
       await event.manager
         .createQueryBuilder()
         .update('Term')
@@ -63,6 +90,18 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
   //? ---------------------------------------------------------------------- ?//
   //? Helpers
   //? ---------------------------------------------------------------------- ?//
+
+  private async makeOfferings(term: Term, manager): Promise<void> {
+    // todo. offerings 생성하기
+    // const lessons = await event.manager
+    //   .createQueryBuilder('Lesson', 'lesson')
+    //   .leftJoinAndSelect('lesson.groups', 'group')
+    //   .leftJoinAndSelect('group.instructor', 'instructor')
+    //   .where('order.id = :orderId', { orderId: term.orderId })
+    //   .getOne();
+    await manager.save(term);
+    console.log('makeOfferings', term);
+  }
 
   /**
    * Send term registration notification to Slack

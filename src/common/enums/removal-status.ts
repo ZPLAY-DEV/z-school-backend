@@ -1,5 +1,5 @@
 export enum RemovalStatus {
-  DELETED = 'deleted',
-  CANCELED = 'canceled',
-  SOFT_DELETED = 'soft_deleted',
+  DELETED = 'DELETED',
+  CANCELED = 'CANCELED',
+  SOFT_DELETED = 'SOFT_DELETED',
 }

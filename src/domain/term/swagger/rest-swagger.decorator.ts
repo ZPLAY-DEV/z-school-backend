@@ -6,6 +6,7 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { Term } from 'src/domain/term/entities/term.entity';
 import { CreateTermDto } from '../dto/create-term.dto';
 import { TermResponseDto } from '../dto/term-response.dto';
 
@@ -22,10 +23,22 @@ export const CreateTermDocs = () => {
       - 기간 시작일이 종료일 보다 앞서야 함 -> 시작일보다 종료일이 앞설 경우 400 Validation Error 발생.
       - 수강신청 시작일이 종료일 보다 앞서야 함 -> 수강신청 시작일이 종료일 보다 앞설 경우 400 Validation Error 발생.
       - 수강신청 시작일과 종료일이 학기 시작일과 종료일 사이에 있어야 함 -> 수강신청 시작일과 종료일이 학기 시작일과 종료일 사이에 있지 않을 경우 400 Validation Error 발생.
+      - 수강신청 시작일과 종료일은 학기 시작 전에 있어야 함. (!)
       `,
     }),
     ApiBody({
       type: CreateTermDto,
+      examples: {
+        example1: {
+          value: {
+            schoolYear: 2025,
+            schoolName: '홍익대학교 사범대학 부속 초등학교',
+            termName: '1학기',
+            start: '2025-03-01',
+            end: '2025-09-04',
+          },
+        },
+      },
     }),
     ApiCreatedResponseTemplate({
       description: 'Term 생성 완료',
@@ -62,7 +75,7 @@ export const ListTermDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: 'Term 조회 완료',
-      type: TermResponseDto,
+      type: Term,
       isArray: true,
     }),
   );
@@ -121,8 +134,13 @@ export const UpdateTermDocs = () => {
       summary: '학교 > 학기 의 수정',
       description: `
       - 학교에 귀속된 학기 정보 수정
-      - 만일 bookingStart 를 처음 입력한 경우, offerings 가 생성된다.
+      - bookingStart 속성값을 최초 입력시, 수강신청과목 (offerings) 테이블이 생성되고, isBookingReady 가 true 로 변경됨.
       `,
+    }),
+    ApiOkResponseTemplate({
+      description: 'Term 수정 완료',
+      type: Term,
+      isArray: false,
     }),
   );
 };

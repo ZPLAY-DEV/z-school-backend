@@ -9,12 +9,13 @@ import {
   MaxLength,
 } from 'class-validator';
 import {
+  IsDateTimePriorToDate,
   IsValidDateRange,
   IsValidDateTimeRange,
 } from 'src/domain/term/validator/date-range.validator';
 
 export class CreateTermDto {
-  @ApiProperty({ description: '🈳 DB의 학교ID', example: 1, required: true })
+  @ApiProperty({ description: '🈳 DB의 학교ID', required: false })
   @IsInt()
   @IsOptional()
   @IsPositive()
@@ -75,6 +76,9 @@ export class CreateTermDto {
   })
   @IsOptional()
   @Type(() => Date)
+  @IsDateTimePriorToDate('start', {
+    message: 'bookingStart must be prior to start date',
+  })
   // @IsDateTimeWithinRange('start', 'end', {
   //   message: 'bookingStart must be within start and end date range',
   // })
@@ -90,6 +94,9 @@ export class CreateTermDto {
   @Type(() => Date)
   @IsValidDateTimeRange('bookingStart', {
     message: 'bookingEnd must be a valid date-time and not before bookingStart',
+  })
+  @IsDateTimePriorToDate('start', {
+    message: 'bookingEnd must be prior to start date',
   })
   // @IsDateTimeWithinRange('start', 'end', {
   //   message: 'bookingEnd must be within start and end date range',
