@@ -1,0 +1,80 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { Term } from 'src/domain/term/entities/term.entity';
+import { SlackService } from 'src/services/slack/slack-service';
+import { DataSource, EntitySubscriberInterface, UpdateEvent } from 'typeorm';
+
+@Injectable()
+export class TermSubscriber implements EntitySubscriberInterface<Term> {
+  private readonly logger = new Logger(TermSubscriber.name);
+
+  constructor(
+    dataSource: DataSource,
+    private readonly slack: SlackService,
+  ) {
+    dataSource.subscribers.push(this);
+  }
+
+  listenTo(): any {
+    return Term;
+  }
+
+  //! https://github.com/typeorm/typeorm/issues/3563
+  //! you need to use the same entityManager instance because of transactions.
+  //! which means event.manager. not event.connection.manager.
+
+  async afterUpdate(event: UpdateEvent<Term>) {
+    const term = event.entity as Term;
+    const oldStatus = event.databaseEntity?.bookingStart;
+    const newStatus = term?.bookingStart;
+
+    // bookingStart 가 처음 설정될 때 해야할 일
+    // 1. set isBookingReady to true
+    // 1. 모든 Term > Lesson > Group 에 대해서 Offering 생성
+    // 2. 해당 이벤트에 대하여 알림발송 어딘가에 등록
+
+    if (term && oldStatus === null && newStatus !== null) {
+      // todo. offerings 생성하기
+      // const lessons = await event.manager
+      //   .createQueryBuilder('Lesson', 'lesson')
+      //   .leftJoinAndSelect('lesson.groups', 'group')
+      //   .leftJoinAndSelect('group.instructor', 'instructor')
+      //   .where('order.id = :orderId', { orderId: term.orderId })
+      //   .getOne();
+
+      await event.manager
+        .createQueryBuilder()
+        .update('Term')
+        .set({
+          isBookingReady: true,
+        })
+        .where('id = :termId', { termId: term.id })
+        .execute();
+
+      // 💥 fire and forget) 1. Slack notification
+      this.sendTermRegistrationNotification(term).catch((error) => {
+        this.logger.warn('Failed to send Slack notification', error);
+      });
+
+      // 💥 fire and forget) 2. 고객에게 확인 이메일
+      // await this.ses.sendOrderConfirmationEmail(order.user.email, order);
+    }
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Helpers
+  //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * Send term registration notification to Slack
+   */
+  private async sendTermRegistrationNotification(term: Term): Promise<void> {
+    //if (process.env.NODE_ENV !== 'development') {
+    const termId = term.id;
+    const termName = term.termName;
+    await this.slack.sendMessage({
+      channel: 'activity',
+      text: `[${process.env.NODE_ENV}-api] 🥳 Term 수강신청일 등록 : <${process.env.APP_URL}/terms/${termId}|${termName}>`,
+    });
+    //}
+  }
+}

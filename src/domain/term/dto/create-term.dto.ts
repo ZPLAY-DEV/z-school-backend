@@ -1,26 +1,24 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsPositive,
   IsString,
   Length,
   MaxLength,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 import {
   IsValidDateRange,
   IsValidDateTimeRange,
-  IsDateTimeWithinRange,
-} from '../validator/date-range.validator';
+} from 'src/domain/term/validator/date-range.validator';
 
 export class CreateTermDto {
   @ApiProperty({ description: '🈳 DB의 학교ID', example: 1, required: true })
   @IsInt()
-  @IsNotEmpty()
+  @IsOptional()
   @IsPositive()
-  schoolId: number;
+  schoolId?: number;
 
   @ApiProperty({
     description: '🈳 학교명',
@@ -70,20 +68,20 @@ export class CreateTermDto {
   end: string;
 
   @ApiProperty({
-    description: '🈵 수강신청 시작일시 (ISO 8601)',
+    description: '🈳 수강신청 시작일시 (ISO 8601)',
     example: '2025-03-01T00:00:00Z',
     required: false,
     type: Date,
   })
   @IsOptional()
   @Type(() => Date)
-  @IsDateTimeWithinRange('start', 'end', {
-    message: 'bookingStart must be within start and end date range',
-  })
+  // @IsDateTimeWithinRange('start', 'end', {
+  //   message: 'bookingStart must be within start and end date range',
+  // })
   bookingStart?: Date;
 
   @ApiProperty({
-    description: '🈵 수강신청 종료일시 (ISO 8601)',
+    description: '🈳 수강신청 종료일시 (ISO 8601)',
     example: '2025-09-04T00:00:00Z',
     required: false,
     type: Date,
@@ -93,8 +91,8 @@ export class CreateTermDto {
   @IsValidDateTimeRange('bookingStart', {
     message: 'bookingEnd must be a valid date-time and not before bookingStart',
   })
-  @IsDateTimeWithinRange('start', 'end', {
-    message: 'bookingEnd must be within start and end date range',
-  })
+  // @IsDateTimeWithinRange('start', 'end', {
+  //   message: 'bookingEnd must be within start and end date range',
+  // })
   bookingEnd?: Date;
 }

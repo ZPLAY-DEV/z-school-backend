@@ -55,6 +55,13 @@ export class Term {
   @Column({ type: 'timestamp', nullable: true, comment: '수강신청 종료일시' })
   bookingEnd: Date | null;
 
+  @ApiProperty({ description: '🈳 수강신청 준비 상태' })
+  @Column({
+    type: 'boolean',
+    default: false,
+  })
+  isBookingReady: boolean;
+
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: 'createdAt' })

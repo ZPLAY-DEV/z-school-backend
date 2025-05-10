@@ -42,7 +42,7 @@ export const USER_PAGINATION_CONFIG: PaginateConfig<Lesson> = {
 };
 
 @Controller('schools')
-@ApiTags('✅ Schools > Term > Lessons ( 학교 > 학기 > 과목 )')
+@ApiTags('✅ Schools > Terms > Lessons ( 학교 > 학기 > 과목 )')
 @ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermLessonController {

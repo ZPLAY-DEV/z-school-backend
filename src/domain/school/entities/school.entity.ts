@@ -27,15 +27,26 @@ export class School {
   id: number;
 
   @ApiProperty({ description: '🈳 학교 이름' })
-  @Column({ type: 'varchar', length: 32, nullable: true })
+  @Column({ type: 'varchar', length: 32, nullable: true, comment: '학교 이름' })
+  @IsString()
   name: string | null;
 
   @ApiProperty({ description: '🈵 학교 코드' })
-  @Column({ type: 'varchar', length: 16, unique: true })
+  @Column({
+    type: 'varchar',
+    length: 16,
+    unique: true,
+    comment: '학교 코드',
+  })
   schoolCode: string;
 
-  @ApiProperty({ description: '🈵 관할 교육청' })
-  @Column({ type: 'varchar', length: 16, unique: true })
+  @ApiProperty({ description: '🈵 관할 교육청 코드' })
+  @Column({
+    type: 'varchar',
+    length: 16,
+    unique: true,
+    comment: '관할 교육청 코드',
+  })
   authorityCode: string;
 
   @ApiProperty({ description: '🈵 지역' })
@@ -57,7 +68,12 @@ export class School {
   @ApiProperty({
     description: '🈵 CO 변경없이 동일비용 적용, MC/MF 비율로 계산',
   })
-  @Column({ type: 'varchar', length: 16, default: 'CO-1000' })
+  @Column({
+    type: 'varchar',
+    length: 16,
+    default: 'CO-1000',
+    comment: 'CO 변경없이 동일비용 적용, MC/MF 비율로 계산',
+  })
   operationFeeRule: string | null;
 
   @ApiProperty({ description: '🈵 percentage' })
@@ -68,7 +84,7 @@ export class School {
     description: '🈵 학교에서 허용하는 기본 권한 리스트',
     example: [Permission.ALLOW_INSTRUCTOR_ADD_STUDENT],
   })
-  @Column('json')
+  @Column({ type: 'json', comment: '학교에서 허용하는 기본 권한 리스트' })
   @IsArray()
   @IsEnum(Permission, { each: true })
   permissions: Permission[];

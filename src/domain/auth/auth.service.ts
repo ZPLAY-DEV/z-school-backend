@@ -112,7 +112,7 @@ export class AuthService {
         dto.role,
       );
 
-      // Fire and Forget. Send notification
+      // 💥 fire and forget) Send Slack notification
       this.sendRegistrationNotification(updatedUser, dto.role).catch(
         (error) => {
           this.logger.warn('Failed to send Slack notification', error);
@@ -159,7 +159,7 @@ export class AuthService {
         dto.role,
       );
 
-      // Fire and Forget. Send notification
+      // 💥 fire and forget) Send Slack notification
       this.sendRegistrationNotification(updatedUser, dto.role).catch(
         (error) => {
           this.logger.warn('Failed to send Slack notification', error);
@@ -528,11 +528,13 @@ export class AuthService {
     user: User,
     role: Role,
   ): Promise<void> {
-    const userId = user.id;
-    const username = user.username ?? role;
-    await this.slack.sendMessage({
-      channel: 'activity',
-      text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${userId}|${username}>`,
-    });
+    if (this.configService.get('env') !== 'development') {
+      const userId = user.id;
+      const username = user.username ?? role;
+      await this.slack.sendMessage({
+        channel: 'activity',
+        text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${userId}|${username}>`,
+      });
+    }
   }
 }
