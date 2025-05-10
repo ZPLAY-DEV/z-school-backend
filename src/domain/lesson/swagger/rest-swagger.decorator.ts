@@ -97,18 +97,18 @@ export const UpdateSchoolTermLessonDocs = () => {
       description: `
       - 학교의 특정 학기에 속한 과목을 업데이트
       - Request 의 UpdateLessonDto 는 PartialType(CreateLessonDto) 로 변경 원하는 필드만 작성
-        {
-          "lessonName": "과목명",
-          "schoolId": 1,
-          "termId": 1,
-          "lessonType": "과목",
-          "lessonCategory": "과목",
-          "lessonGroup": "과목"
-        }
       `,
     }),
     ApiBody({
       type: UpdateLessonDto,
+      examples: {
+        example1: {
+          value: {
+            lessonName: '과목명',
+            requiredDocuments: ['경력증명서'],
+          },
+        },
+      },
     }),
     ApiOkResponseTemplate({
       description: '과목 업데이트 완료',

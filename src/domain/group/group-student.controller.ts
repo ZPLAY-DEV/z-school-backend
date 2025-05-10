@@ -18,10 +18,9 @@ import { GroupService } from 'src/domain/group/group.service';
 import {
   DeleteGroupDocs,
   FindGroupDocs,
-  UpdateGroupDocs,
 } from 'src/domain/group/swagger/rest-swagger.decorator';
 @UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('✅ Group ( 반 )')
+@ApiTags('Group ( 반 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('groups')
 export class GroupController {
@@ -45,7 +44,6 @@ export class GroupController {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  @UpdateGroupDocs()
   @ApiOperation({ description: '반(Group) 수정' })
   @Patch(':id')
   async update(

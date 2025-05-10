@@ -92,9 +92,16 @@ export class GroupService {
   async remove(id: number, dto: DeleteGroupDto): Promise<RemovalStatus> {
     const group = await this.findById(id);
 
-    if (group.status === ClassStatus.PENDING) {
-      await this.groupRepository.remove(group);
-      return RemovalStatus.DELETED;
+    try {
+      if (group.status === ClassStatus.PENDING) {
+        await this.groupRepository.remove(group);
+        return RemovalStatus.DELETED;
+      }
+    } catch (error) {
+      this.logger.error(error);
+      throw new UnprocessableEntityException(
+        HttpErrorConstants.CONDITION_NOT_MET,
+      );
     }
 
     if (group.status === ClassStatus.ACTIVE) {
