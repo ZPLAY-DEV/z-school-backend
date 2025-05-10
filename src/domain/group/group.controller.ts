@@ -35,8 +35,8 @@ export class GroupController {
   @Get(':id')
   async findById(@Param('id') id: number): Promise<Group> {
     return await this.groupService.findById(id, [
-      'studentGroups',
-      'studentGroups.student',
+      'groupStudents',
+      'groupStudents.student',
     ]);
   }
 

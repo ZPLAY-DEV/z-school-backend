@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ClassStatus, Weekday } from 'src/common/enums';
+import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
-import { StudentGroup } from 'src/domain/student/entities/student-group.entity';
 import {
   Column,
   CreateDateColumn,
@@ -112,21 +112,22 @@ export class Group {
         materialFee: 10000,
         student: {
           id: 1,
+          grade: '1학년',
+          class: '1반',
+          studentCode: 1,
           name: '홍길동',
           phone: null,
-          grade: 'hong@gmail.com',
-          class: '1-1',
-          studentCode: 1,
-          profileImage: null,
-          createdAt: '2021-01-01 00:00:00',
-          updatedAt: '2021-01-01 00:00:00',
-          deletedAt: null,
+          escortPhone: null,
+          homeTransit: null,
+          nextStop: null,
+          status: 'attending',
+          note: null,
         },
       },
     ],
   })
-  @OneToMany(() => StudentGroup, (stdGrp) => stdGrp.group)
-  studentGroups: StudentGroup[];
+  @OneToMany(() => GroupStudent, (gs) => gs.group)
+  groupStudents: GroupStudent[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

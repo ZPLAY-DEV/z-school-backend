@@ -2,11 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { StudentStatus } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
-import { Group } from 'src/domain/group/entities/group.entity';
+import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
 import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { School } from 'src/domain/school/entities/school.entity';
-import { StudentGroup } from 'src/domain/student/entities/student-group.entity';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
 import {
   Column,
@@ -18,7 +17,6 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   Unique,
-  // Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
@@ -144,8 +142,8 @@ export class Student {
 
   //* N-to-M belongsToMany with custom props using 1-to-M ------------------ *//
 
-  @OneToMany(() => StudentGroup, (stdGrp) => stdGrp.student)
-  studentGroups: Group[];
+  @OneToMany(() => GroupStudent, (gs) => gs.student)
+  groupStudents: GroupStudent[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

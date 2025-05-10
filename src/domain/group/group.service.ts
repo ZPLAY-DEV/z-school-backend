@@ -105,7 +105,7 @@ export class GroupService {
       return RemovalStatus.CANCELED;
     }
 
-    if (group.studentGroups.length > 0) {
+    if (group.groupStudents.length > 0) {
       throw new UnprocessableEntityException(
         HttpErrorConstants.CONDITION_NOT_MET,
       );
