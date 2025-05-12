@@ -25,6 +25,7 @@ import { SchoolStudentController } from './school-student.controller';
 import { SchoolStudentService } from './school-student.service';
 import { SchoolController } from './school.controller';
 import { SchoolService } from './school.service';
+import { InstructorSchool } from '../instructor/entities/instructor-school.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -34,6 +35,7 @@ import { SchoolService } from './school.service';
       Term,
       Parent,
       Instructor,
+      InstructorSchool,
       Phone,
     ]),
     UploadModule,

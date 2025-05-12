@@ -20,6 +20,16 @@ export class Document {
   @Column({ type: 'int', unsigned: true })
   instructorId: number;
 
+  @Column({
+    type: 'int',
+    unsigned: true,
+    default: null,
+    nullable: true,
+    comment:
+      '학교 ID - 강사가 학교에 제출하는 서류를 관리하기 위해서 schoolId를 관계 맵핑 없이 nullable로 지정',
+  })
+  schoolId: number;
+
   // ------------------------------------------------------------------------ //
 
   @Column({

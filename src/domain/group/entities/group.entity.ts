@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 import { ClassStatus, Weekday } from 'src/common/enums';
 import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
@@ -86,6 +87,7 @@ export class Group {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Exclude()
   @ApiProperty({ description: '🈳 deletedAt' })
   @DeleteDateColumn()
   deletedAt: Date | null;

@@ -194,6 +194,11 @@ export const HttpErrorConstants = {
     message: '학생을 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
+  NOT_FOUND_INSTRUCTOR_SCHOOL: {
+    error: 'NOT_FOUND_INSTRUCTOR_SCHOOL',
+    message: '학교에 속한 강사를 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
   NOT_FOUND_ENTITY: {
     error: 'NOT_FOUND_ENTITY',
     message: '존재하지 않는 엔터티입니다.',
