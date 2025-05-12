@@ -1,13 +1,13 @@
 import {
-    Body,
-    ClassSerializerInterceptor,
-    Controller,
-    Delete,
-    Get,
-    Param,
-    Patch,
-    Post,
-    UseInterceptors,
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -36,12 +36,17 @@ export class TermController {
     return this.termService.create(createTermDto);
   }
 
+  @ApiOperation({ description: 'Term > Offerings 생성' })
+  @Post(':termId/offerings')
+  async createOfferings(@Param('termId') termId: number) {
+    return this.termService.createOfferings(termId);
+  }
+
   //?-------------------------------------------------------------------------//
   //? READ
   //?-------------------------------------------------------------------------//
 
   @ApiOperation({ description: 'Term 리스트 w/ Pagination' })
-  
   @Public()
   @Get('paginated')
   async getAdminTerms(
@@ -51,7 +56,6 @@ export class TermController {
   }
 
   @ApiOperation({ description: 'Term 리스트 w/ Pagination' })
-  
   @Public()
   @Get()
   async getTerms(@Paginate() query: PaginateQuery): Promise<Paginated<Term>> {

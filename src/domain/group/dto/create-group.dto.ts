@@ -42,6 +42,18 @@ export class CreateGroupDto {
   allowedGrades?: string;
 
   @ApiPropertyOptional({ description: '수업 요일' })
+  // @Transform(({ value }) => {
+  //   if (!isNaN(Number(value))) return Number(value);
+  //   if (value.length === 1 && typeof value === 'string') {
+  //     for (const [key, label] of Object.entries(WeekdayLabels)) {
+  //       if (label === value) {
+  //         return Number(key);
+  //       }
+  //     }
+  //   }
+  //   const enumKey = (value as string).toUpperCase();
+  //   return Weekday[enumKey as keyof typeof Weekday];
+  // })
   @IsEnum(Weekday)
   weekday: Weekday;
 

@@ -12,7 +12,7 @@ import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { getBitmasks } from 'src/helpers/parse';
 import { S3Service } from 'src/services/aws/s3.service';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 @Injectable()
 export class OfferingService {
@@ -20,6 +20,7 @@ export class OfferingService {
     @InjectRepository(Offering)
     private readonly offeringRepository: Repository<Offering>,
     private readonly s3Service: S3Service,
+    private readonly dataSource: DataSource,
   ) {}
 
   //?-------------------------------------------------------------------------//

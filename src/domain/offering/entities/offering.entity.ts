@@ -39,7 +39,7 @@ export class Offering {
   lessonName: string;
 
   @ApiProperty({ description: '반이름' })
-  @Column({ type: 'varchar', length: 16 })
+  @Column({ type: 'varchar', length: 50 })
   groupName: string;
 
   @ApiProperty({ description: 'class size' })
@@ -54,7 +54,7 @@ export class Offering {
     type: 'array',
     isArray: true,
   })
-  @Column({ type: 'json' })
+  @Column({ type: 'json', comment: '수업 시간 정보 (could be multiple)' })
   times: ITimeRange[];
 
   @Column('simple-array')

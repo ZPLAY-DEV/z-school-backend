@@ -1,3 +1,6 @@
+import { Weekday, WeekdayOrder } from 'src/common/enums';
+import { ITimeRange } from 'src/common/interfaces';
+
 export function parseRangeFormat(input?: string): number[] {
   if (!input) {
     return [1, 2, 3, 4, 5, 6];
@@ -30,22 +33,31 @@ export function parseRangeFormat(input?: string): number[] {
   return [1, 2, 3, 4, 5, 6]; // you can do better than this.
 }
 
-import { Weekday } from 'src/common/enums';
-import { ITimeRange } from 'src/common/interfaces';
+export function compressRangeFormat(input: string): string {
+  const numbers = input
+    .split(',')
+    .map((v) => parseInt(v.trim(), 10))
+    .filter((n) => !isNaN(n))
+    .sort((a, b) => a - b);
+
+  if (numbers.length === 0) return '';
+  if (numbers.length === 1) return numbers[0].toString();
+
+  const isConsecutive = numbers.every((num, index, arr) => {
+    if (index === 0) return true;
+    return num === arr[index - 1] + 1;
+  });
+
+  if (isConsecutive) {
+    return `${numbers[0]}~${numbers[numbers.length - 1]}`;
+  } else {
+    return input; // 연속되지 않은 경우는 원본 문자열 반환
+  }
+}
 
 const SLOT_MINUTES = 5;
 const SLOTS_PER_DAY = (12 * 60) / SLOT_MINUTES; // 144
 // const TOTAL_SLOTS = SLOTS_PER_DAY * 6; // 월~토
-
-const weekdayOrder: Record<Weekday, number> = {
-  [Weekday.MONDAY]: 0,
-  [Weekday.TUESDAY]: 1,
-  [Weekday.WEDNESDAY]: 2,
-  [Weekday.THURSDAY]: 3,
-  [Weekday.FRIDAY]: 4,
-  [Weekday.SATURDAY]: 5,
-  [Weekday.SUNDAY]: 6,
-};
 
 // 시간을 24시간 형식으로 변환하는 함수
 export const parseTime = (time: string): [number, number] => {
@@ -101,9 +113,21 @@ const _timeToSlotIndex = (weekday: Weekday, time: string): number => {
   }
 
   const slotInDay = Math.floor(minutesSince8am / SLOT_MINUTES);
-  const weekdayIndex = weekdayOrder[weekday];
-  if (weekdayIndex === undefined) {
-    throw new Error(`지원하지 않는 요일입니다: ${weekday}`);
-  }
+  const weekdayIndex = WeekdayOrder[weekday] - 1;
   return weekdayIndex * SLOTS_PER_DAY + slotInDay;
 };
+
+export function getSortedWeekdays(days: string[]): string {
+  const weekdayOrder = ['일', '월', '화', '수', '목', '금', '토'];
+
+  const sorted = [...new Set(days)] // 중복 제거
+    .filter((day) => weekdayOrder.includes(day)) // 유효한 요일만
+    .sort((a, b) => weekdayOrder.indexOf(a) - weekdayOrder.indexOf(b));
+
+  console.log(`>>>>`, sorted);
+
+  if (sorted.length === 0) return ``;
+  if (sorted.length === 1) return sorted[0];
+
+  return sorted.join('·');
+}
