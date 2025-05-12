@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { GroupStatus, Weekday } from 'src/common/enums';
+import { ClassStatus, Weekday } from 'src/common/enums';
+import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
-import { StudentGroup } from 'src/domain/student/entities/student-group.entity';
 import {
   Column,
   CreateDateColumn,
@@ -67,10 +67,10 @@ export class Group {
   @ApiProperty({ description: '🈵 상태' })
   @Column({
     type: 'enum',
-    enum: GroupStatus,
-    default: GroupStatus.ACTIVE,
+    enum: ClassStatus,
+    default: ClassStatus.PENDING,
   })
-  groupStatus: GroupStatus;
+  status: ClassStatus;
 
   @ApiProperty({ description: '🈳 비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -101,9 +101,11 @@ export class Group {
   lesson: Lesson;
 
   //* N-to-M belongsToMany with custom props using 1-to-M ------------------ *//
-
-  @OneToMany(() => StudentGroup, (stdGrp) => stdGrp.group)
-  studentGroups: StudentGroup[];
+  @ApiProperty({
+    description: '🈳 연결된 학생 목록',
+  })
+  @OneToMany(() => GroupStudent, (gs) => gs.group)
+  groupStudents: GroupStudent[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

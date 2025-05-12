@@ -1,4 +1,4 @@
-export enum LessonStatus {
+export enum ClassStatus {
   ACTIVE = 'ACTIVE',
   PENDING = 'PENDING',
   CANCELED = 'CANCELED',

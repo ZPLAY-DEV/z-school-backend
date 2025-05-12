@@ -8,7 +8,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { GroupStatus, Weekday } from 'src/common/enums';
+import { ClassStatus, Weekday } from 'src/common/enums';
 
 //! 수업(Lesson)의 최소 단위로 반(Group)을 설정
 //! - 영어 수업이 1주에 2번 있는 경우, 영어수업A 와 영어수업B 처럼 2개 반을 생성.
@@ -55,12 +55,12 @@ export class CreateGroupDto {
 
   @ApiPropertyOptional({
     description: '상태',
-    enum: GroupStatus,
-    default: GroupStatus.ACTIVE,
+    enum: ClassStatus,
+    default: ClassStatus.PENDING,
   })
-  @IsEnum(GroupStatus)
+  @IsEnum(ClassStatus)
   @IsOptional()
-  groupStatus?: GroupStatus = GroupStatus.ACTIVE;
+  status?: ClassStatus;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsString()
@@ -104,4 +104,9 @@ export class CreateGroupWithInstructorDto extends CreateGroupDto {
   @IsString()
   @MaxLength(16)
   declare instructorPhone: string;
+
+  @ApiPropertyOptional({ description: 'Group ID' })
+  @IsInt()
+  @IsOptional()
+  id?: number;
 }

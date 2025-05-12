@@ -5,5 +5,5 @@ export enum BookingStatus {
   // err
   BOOKED = 'BOOKED', // 이미 신청했음
   FULL = 'FULL', // 마감
-  ERROR = 'ERROR', // 500 오류 (DB, Redis 등)
+  ERROR = 'ERROR', // 500 오류 (DB, REDIS 등)
 }

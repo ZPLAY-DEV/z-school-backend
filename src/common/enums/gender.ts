@@ -1,10 +1,10 @@
 export enum Gender {
-  FEMALE = 'female',
-  MALE = 'male',
+  FEMALE = 'FEMALE',
+  MALE = 'MALE',
 }
 
 export enum TargetGender {
-  FEMALE = 'female',
-  MALE = 'male',
-  ALL = 'all',
+  FEMALE = 'FEMALE',
+  MALE = 'MALE',
+  ALL = 'ALL',
 }

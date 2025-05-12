@@ -1,6 +1,6 @@
 export enum CouponTarget {
-  PACK = 'PACK',
-  AUCTION = 'AUCTION',
-  TRAINER = 'TRAINER',
-  USER = 'USER',
+  PACK = 'pack',
+  AUCTION = 'auction',
+  TRAINER = 'trainer',
+  USER = 'user',
 }

@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -6,7 +11,11 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { ClassStatus } from 'src/common/enums';
+import { RemovalStatus } from 'src/common/enums/removal-status';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
+import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Repository } from 'typeorm';
 import { UpdateGroupDto } from './dto/update-group.dto';
@@ -80,8 +89,38 @@ export class GroupService {
   //? DELETE
   //?-------------------------------------------------------------------------//
 
-  async remove(id: number): Promise<Group> {
+  async remove(id: number, dto: DeleteGroupDto): Promise<RemovalStatus> {
     const group = await this.findById(id);
-    return await this.groupRepository.remove(group);
+
+    try {
+      if (group.status === ClassStatus.PENDING) {
+        await this.groupRepository.remove(group);
+        return RemovalStatus.DELETED;
+      }
+    } catch (error) {
+      this.logger.error(error);
+      throw new UnprocessableEntityException(
+        HttpErrorConstants.CONDITION_NOT_MET,
+      );
+    }
+
+    if (group.status === ClassStatus.ACTIVE) {
+      await this.groupRepository.update(id, {
+        status: ClassStatus.CANCELED,
+        note: dto.note,
+      });
+      return RemovalStatus.CANCELED;
+    }
+
+    if (group.groupStudents.length > 0) {
+      throw new UnprocessableEntityException(
+        HttpErrorConstants.CONDITION_NOT_MET,
+      );
+    }
+    await this.groupRepository.update(id, {
+      note: dto.note,
+      deletedAt: new Date(),
+    });
+    return RemovalStatus.SOFT_DELETED;
   }
 }

@@ -1,23 +1,25 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
+import { ApiOkPaginatedResponse, ApiPaginationQuery } from 'nestjs-paginate';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
-import { ApiPaginatedResponseTemplate } from 'src/core/swagger/response/api-paginated-response.dto';
 import { CreateLessonResponseDto } from 'src/domain/lesson/dto/create-lesson-response.dto';
+import { USER_PAGINATION_CONFIG } from 'src/domain/school/school-term-lesson.controller';
 import { CreateLessonDto } from '../dto/create-lesson.dto';
 import { UpdateLessonDto } from '../dto/update-lesson.dto';
 import { Lesson } from '../entities/lesson.entity';
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학교의 특정 학기에 과목 생성
+//? Create School > Term > Lesson
 //? ---------------------------------------------------------------------- ?//
+
 export const CreateSchoolTermLessonDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교의 특정 학기에 과목 생성',
+      summary: '학교 > 학기 > 과목 의 생성',
       description: `
       - upsert 방식으로 동작하기 때문에, 안심하고 덮어쓰기 가능.
       - 1개 과목 생성 또는 업데이트
@@ -48,12 +50,13 @@ export const CreateSchoolTermLessonDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학교의 특정 학기에 여러 과목 일괄 생성
+//? Create School > Term > Lesson Bulk
 //? ---------------------------------------------------------------------- ?//
+
 export const CreateSchoolTermLessonBulkDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교의 특정 학기에 과목 일괄 bulk 로 생성',
+      summary: '학교 > 학기 > 과목 의 bulk 생성',
       description: `
       - upsert 방식으로 동작하기 때문에, 안심하고 덮어쓰면 됨.
       - 여러개 과목 생성 또는 업데이트 (CSV 로 전달시 사용)
@@ -86,27 +89,28 @@ export const CreateSchoolTermLessonBulkDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학교의 특정 학기의 과목 업데이트
+//? Update School > Term > Lesson
 //? ---------------------------------------------------------------------- ?//
+
 export const UpdateSchoolTermLessonDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교의 특정 학기의 과목 업데이트',
+      summary: '학교 > 학기 > 과목 의 업데이트',
       description: `
       - 학교의 특정 학기에 속한 과목을 업데이트
       - Request 의 UpdateLessonDto 는 PartialType(CreateLessonDto) 로 변경 원하는 필드만 작성
-        {
-          "lessonName": "과목명",
-          "schoolId": 1,
-          "termId": 1,
-          "lessonType": "과목",
-          "lessonCategory": "과목",
-          "lessonGroup": "과목"
-        }
       `,
     }),
     ApiBody({
       type: UpdateLessonDto,
+      examples: {
+        example1: {
+          value: {
+            lessonName: '과목명',
+            requiredDocuments: ['경력증명서'],
+          },
+        },
+      },
     }),
     ApiOkResponseTemplate({
       description: '과목 업데이트 완료',
@@ -130,20 +134,21 @@ export const UpdateSchoolTermLessonDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학교의 특정 학기의 과목 리스트 조회 (페이징 O)
+//? List School > Term > Lesson
 //? ---------------------------------------------------------------------- ?//
-export const SchoolTermLessonListPaginatedDocs = () => {
+
+export const SchoolTermLessonListDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교의 특정 학기의 과목 리스트 조회 (페이징 O)',
+      summary: '학교 > 학기 > 과목 의 전체 리스트',
       description: `
-      - 학교의 특정 학기에 속한 과목 리스트를 페이징하여 조회합니다
+      - 학교의 특정 학기에 속한 모든 과목 전체 리스트
       `,
     }),
-    //ApiPaginationQuery,
-    ApiPaginatedResponseTemplate({
-      description: '과목 리스트 페이징 조회 완료',
+    ApiOkResponseTemplate({
+      description: '과목 리스트 조회 완료',
       type: Lesson,
+      isArray: true,
     }),
     ApiErrorResponseTemplate([
       {
@@ -157,22 +162,16 @@ export const SchoolTermLessonListPaginatedDocs = () => {
   );
 };
 
-//? ---------------------------------------------------------------------- ?//
-//? Private) 학교의 특정 학기의 과목 리스트 조회 (전체)
-//? ---------------------------------------------------------------------- ?//
-export const SchoolTermLessonListDocs = () => {
+export const SchoolTermLessonInfiniteListDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교의 특정 학기의 과목 리스트 조회 (전체)',
+      summary: '학교 > 학기 > 과목 의 paginated list',
       description: `
-      - 학교의 특정 학기에 속한 모든 과목 리스트를 조회합니다
+      - 학교의 특정 학기에 속한 모든 과목의 paginated list
       `,
     }),
-    ApiOkResponseTemplate({
-      description: '과목 리스트 조회 완료',
-      type: Lesson,
-      isArray: true,
-    }),
+    ApiPaginationQuery(USER_PAGINATION_CONFIG),
+    ApiOkPaginatedResponse(CreateLessonResponseDto, USER_PAGINATION_CONFIG),
     ApiErrorResponseTemplate([
       {
         status: StatusCodes.NOT_FOUND,

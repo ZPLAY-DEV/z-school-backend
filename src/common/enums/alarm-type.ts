@@ -1,8 +1,8 @@
 export enum AlarmType {
-  GENERAL = 'general',
-  MEETUP = 'event',
-  FEED = 'feed',
-  CHAT = 'chat',
-  ACTIVITY = 'activity',
-  SETTING = 'setting',
+  GENERAL = 'GENERAL',
+  MEETUP = 'EVENT',
+  FEED = 'FEED',
+  CHAT = 'CHAT',
+  ACTIVITY = 'ACTIVITY',
+  SETTING = 'SETTING',
 }

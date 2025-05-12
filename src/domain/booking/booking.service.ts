@@ -106,7 +106,7 @@ export class BookingService {
             message: `수강신청이 완전히 마감되었습니다.`,
           });
         }
-        // 💥 fire and forget. to not block the main thread
+        // 💥 fire and forget) to not block the main thread
         this.sqsClient
           .sendMessage({
             type: 'CREATE_BOOKING',
