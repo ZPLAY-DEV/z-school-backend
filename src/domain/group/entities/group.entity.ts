@@ -35,7 +35,7 @@ export class Group {
   //* ---------------------------------------------------------------------- *//
 
   @ApiProperty({ description: '🈵 반이름' })
-  @Column({ type: 'varchar', length: 24 })
+  @Column({ type: 'varchar', length: 32 })
   groupName: string | null;
 
   @Column({ type: 'varchar', length: 32, nullable: true })
