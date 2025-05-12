@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import {
   Column,
@@ -95,6 +96,11 @@ export class Term {
 
   @OneToMany(() => Lesson, (lesson) => lesson.term)
   lessons: Lesson[];
+
+  @OneToMany(() => Offering, (offering) => offering.term, {
+    cascade: ['insert', 'update'],
+  })
+  public offerings: Offering[];
 
   //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
 

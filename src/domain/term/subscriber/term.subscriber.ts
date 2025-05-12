@@ -138,6 +138,7 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
 
         const offering = new Offering({
           schoolId: lesson.schoolId,
+          termId: term.id,
           schoolName: lesson.schoolName || `학교 #${lesson.schoolId}`,
           lessonName: lesson.lessonName || `과목 #${lesson.id}`,
           groupName: group.groupName || `반 #${group.id}`,

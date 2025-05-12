@@ -21,10 +21,10 @@ import {
   UpdateTermDocs,
 } from 'src/domain/term/swagger/rest-swagger.decorator';
 
-@UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Schools > Terms ( 학교 > 학기 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('schools')
+@UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermController {
   constructor(private readonly schoolTermService: SchoolTermService) {}
 

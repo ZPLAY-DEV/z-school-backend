@@ -1,7 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
+import { ApiHeader } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { AppService } from './app.service';
 
+@ApiHeader({
+  name: 'Authorization',
+  description: 'JWT Token',
+})
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}

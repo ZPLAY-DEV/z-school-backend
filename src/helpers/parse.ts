@@ -113,8 +113,13 @@ const _timeToSlotIndex = (weekday: Weekday, time: string): number => {
   }
 
   const slotInDay = Math.floor(minutesSince8am / SLOT_MINUTES);
-  const weekdayIndex = WeekdayOrder[weekday] - 1;
-  return weekdayIndex * SLOTS_PER_DAY + slotInDay;
+  const weekdayOrder = WeekdayOrder[weekday];
+  if (weekdayOrder < 1 || weekdayOrder > 6) {
+    throw new Error(`요일은 월요일부터 토요일까지만 유효합니다: ${weekday}`);
+  }
+
+  const bitmaskDayIndex = weekdayOrder - 1; // 월: 0, 화: 1, ..., 토: 5
+  return bitmaskDayIndex * SLOTS_PER_DAY + slotInDay;
 };
 
 export function getSortedWeekdays(days: string[]): string {

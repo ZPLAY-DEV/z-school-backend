@@ -11,12 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import {
-  Paginate,
-  PaginateConfig,
-  Paginated,
-  PaginateQuery,
-} from 'nestjs-paginate';
+import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { CreateLessonRequestDto } from 'src/domain/lesson/dto/create-lesson.dto';
@@ -31,19 +26,9 @@ import {
 } from 'src/domain/lesson/swagger/rest-swagger.decorator';
 import { SchoolTermLessonService } from 'src/domain/school/school-term-lesson.service';
 
-export const USER_PAGINATION_CONFIG: PaginateConfig<Lesson> = {
-  sortableColumns: ['id', 'lessonName', 'termId'],
-  defaultSortBy: [['id', 'DESC']],
-  searchableColumns: ['schoolName', 'lessonName'],
-  filterableColumns: {
-    schoolName: true,
-    lessonName: true,
-  },
-};
-
-@Controller('schools')
-@ApiTags('✅ Schools > Terms > Lessons ( 학교 > 학기 > 과목 )')
+@ApiTags('✅ Schools > Terms > Lessons ( 학교 > 학기 > 과목 )', 'nestjs')
 @ApiCommonErrorResponseTemplate()
+@Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermLessonController {
   constructor(

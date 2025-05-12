@@ -25,7 +25,7 @@ import { GroupStudent } from '../entities/group-student.entity';
 export const FindGroupDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 상세 조회',
+      summary: '반 👈 상세 조회',
       description: `
       - 반 상세 조회
       `,
@@ -69,7 +69,7 @@ export const FindGroupDocs = () => {
 export const UpdateGroupDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 정보 업데이트',
+      summary: '반 정보 👈 수정',
       description: `
       - 반 id 만을 가지고 정보를 업데이트.
       - Request 의 UpdateGroupDto 는 PartialType(CreateGroupDto) 로 변경 원하는 필드만 작성
@@ -112,7 +112,7 @@ export const UpdateGroupDocs = () => {
 export const DeleteGroupDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 삭제',
+      summary: '반 👈 삭제',
       description: `
       - 반을 삭제합니다.
       - note 에 삭제하는 사유를 남겨야만 처리 가능합니다.
