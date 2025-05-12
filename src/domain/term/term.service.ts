@@ -65,13 +65,11 @@ export class TermService {
         // 반에 대한 고유키 관리
         const uniqueKey = `${lesson.id}-${group.allowedGrades}`;
         if (uniqueCombinations.has(uniqueKey)) {
-          // Find the existing offering with the same uniqueKey
           const existingOffering = offerings.find(
             (o) =>
               o.lessonName === (lesson.lessonName || `과목 #${lesson.id}`) &&
               o.allowedGrades.join(',') === group.allowedGrades,
           );
-          // Add the timeRange to the existing offering's times array
           if (existingOffering) {
             existingOffering.times.push(timeRange);
           }

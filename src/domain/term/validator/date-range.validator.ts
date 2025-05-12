@@ -210,18 +210,21 @@ export function IsDateTimePriorToDate(
         validate(value: unknown, args: ValidationArguments) {
           const [startPropertyName] = args.constraints;
           const obj = args.object as Record<string, unknown>;
-          const startValue = obj[startPropertyName] as string;
+          const startValue = obj[startPropertyName] as string | undefined;
 
           // 값이 없으면 검증 생략
           if (value === undefined) return true;
 
-          // start가 YYYY-MM-DD 형식인지 확인
+          // start가 문자열이 아니거나 없으면 검증 생략
+          if (typeof startValue !== 'string') return true;
+
+          // YYYY-MM-DD 형식이 아니면 검증 생략
           const dateFormatRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (!dateFormatRegex.test(startValue)) return false;
+          if (!dateFormatRegex.test(startValue)) return true;
 
           // start를 Date 객체로 파싱
           const startDate = parse(startValue, 'yyyy-MM-dd', new Date());
-          if (!isValid(startDate)) return false;
+          if (!isValid(startDate)) return true;
 
           // value(bookingStart 또는 bookingEnd)가 유효한 Date인지 확인
           const date =
