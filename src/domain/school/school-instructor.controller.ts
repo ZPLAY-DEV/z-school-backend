@@ -18,13 +18,14 @@ import { UploadService } from 'src/services/upload/upload.service';
 import {
   CreateInstructorDocs,
   CreateInstructorDocsBulkDocs,
+  InstructorDocumentsListDocs,
   InstructorListDocs,
   InstructorListPaginatedDocs,
   SoftDeleteInstructorSchoolDocs,
 } from '../instructor/swagger/rest-swagger.decorator';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { DeleteInstructorSchoolDto } from '../instructor/dto/delete-instructor-school.dto';
-
+import { Document } from 'src/domain/document/entities/document.entity';
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('Schools > Instructors ( 학교 > 강사 )')
 @ApiCommonErrorResponseTemplate()
@@ -74,6 +75,18 @@ export class SchoolInstructorController {
     @Paginate() query: PaginateQuery,
   ): Promise<Paginated<Instructor>> {
     return await this.schoolInstructorService.infiniteList(schoolId, query);
+  }
+
+  @InstructorDocumentsListDocs()
+  @Get(':schoolId/instructors/:instructorId/documents')
+  async getDocuments(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('instructorId', ParseIntPipe) instructorId: number,
+  ): Promise<Document[]> {
+    return await this.schoolInstructorService.getDocuments(
+      schoolId,
+      instructorId,
+    );
   }
 
   //? ---------------------------------------------------------------------- ?//

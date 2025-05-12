@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 import { DocumentType } from 'src/common/enums';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import {
@@ -52,6 +53,7 @@ export class Document {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Exclude()
   @ApiProperty({ description: '🈳 deletedAt' })
   @DeleteDateColumn()
   deletedAt: Date | null;

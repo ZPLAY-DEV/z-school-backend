@@ -9,7 +9,7 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { FilterOperator, paginate } from 'nestjs-paginate';
 import { Paginated, PaginateQuery } from 'nestjs-paginate';
 import { DeleteInstructorSchoolDto } from '../instructor/dto/delete-instructor-school.dto';
-
+import { Document } from 'src/domain/document/entities/document.entity';
 @Injectable()
 export class SchoolInstructorService {
   private readonly logger = new Logger(SchoolInstructorService.name);
@@ -286,6 +286,22 @@ export class SchoolInstructorService {
         `Failed to fetch instructors for school ${schoolId}`,
         error.stack,
       );
+      throw error;
+    }
+  }
+
+  async getDocuments(
+    schoolId: number,
+    instructorId: number,
+  ): Promise<Document[]> {
+    try {
+      return await this.dataSource
+        .createQueryBuilder(Document, 'document')
+        .where('document.instructorId = :instructorId', { instructorId })
+        .andWhere('document.schoolId = :schoolId', { schoolId })
+        .getMany();
+    } catch (error) {
+      console.error(error);
       throw error;
     }
   }

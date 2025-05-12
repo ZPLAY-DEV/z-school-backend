@@ -14,6 +14,7 @@ import {
   FilterOperator,
 } from 'nestjs-paginate';
 import { DeleteInstructorSchoolDto } from '../dto/delete-instructor-school.dto';
+import { DocumentResponseDto } from 'src/domain/document/dto/document-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create School > Instructor
@@ -154,6 +155,35 @@ export const InstructorListPaginatedDocs = () => {
         'instructorSchools.editFeePermission': [FilterOperator.EQ],
         'instructorSchools.editEnrollmentPermission': [FilterOperator.EQ],
       },
+    }),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Read School > Instructor > Documents
+//? ---------------------------------------------------------------------- ?//
+export const InstructorDocumentsListDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '학교 > 강사 > 문서 리스트',
+      description: `
+      - 학교에 속한 강사의 문서 리스트를 조회한다.
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+    }),
+    ApiParam({
+      name: 'instructorId',
+      type: Number,
+      description: '강사 ID',
+    }),
+    ApiOkResponseTemplate({
+      description: '문서 리스트 조회 완료',
+      type: DocumentResponseDto,
+      isArray: true,
     }),
   );
 };
