@@ -8,33 +8,32 @@ import {
   Patch,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { RemovalStatus } from 'src/common/enums';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { GroupService } from 'src/domain/group/group.service';
+import { GroupStudentService } from 'src/domain/group/group-student.service';
 import {
   DeleteGroupDocs,
   FindGroupDocs,
 } from 'src/domain/group/swagger/rest-swagger.decorator';
-@UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('Group ( 반 )')
+@ApiTags('✅ Groups > Students ( 반 > 수강생 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('groups')
-export class GroupController {
-  constructor(private readonly groupService: GroupService) {}
+@UseInterceptors(ClassSerializerInterceptor)
+export class GroupStudentController {
+  constructor(private readonly groupStudentService: GroupStudentService) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
   @FindGroupDocs()
-  @ApiOperation({ description: '반(Group) 조회' })
-  @Get(':id')
+  @Get(':groupId/students')
   async findById(@Param('id') id: number): Promise<Group> {
-    return await this.groupService.findById(id, [
+    return await this.groupStudentService.findById(id, [
       'groupStudents',
       'groupStudents.student',
     ]);
@@ -44,13 +43,12 @@ export class GroupController {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: '반(Group) 수정' })
-  @Patch(':id')
+  @Patch(':groupId/students/:studentId')
   async update(
     @Param('id') id: number,
     @Body() dto: UpdateGroupDto,
   ): Promise<Group> {
-    return await this.groupService.update(id, dto);
+    return await this.groupStudentService.update(id, dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -58,12 +56,11 @@ export class GroupController {
   //? ---------------------------------------------------------------------- ?//
 
   @DeleteGroupDocs()
-  @ApiOperation({ description: '반(Group) 삭제' })
-  @Delete(':id')
+  @Delete(':groupId/students/:studentId')
   async remove(
     @Param('id') id: number,
     @Body() dto: DeleteGroupDto,
   ): Promise<RemovalStatus> {
-    return await this.groupService.remove(id, dto);
+    return await this.groupStudentService.remove(id, dto);
   }
 }

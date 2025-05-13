@@ -4,9 +4,9 @@ import {
   IsInt,
   IsNotEmpty,
   IsOptional,
+  IsPositive,
   IsString,
   MaxLength,
-  Min,
 } from 'class-validator';
 import { ClassStatus, Weekday } from 'src/common/enums';
 
@@ -18,19 +18,17 @@ import { ClassStatus, Weekday } from 'src/common/enums';
 export class CreateGroupDto {
   @ApiPropertyOptional({ description: '반이름' })
   @IsString()
-  @MaxLength(16)
   @IsOptional()
   groupName?: string;
 
   @ApiPropertyOptional()
   @IsString()
-  @MaxLength(16)
   @IsOptional()
   location?: string;
 
   @ApiPropertyOptional({ description: 'class size' })
   @IsInt()
-  @Min(0)
+  @IsPositive()
   @IsOptional()
   capacity?: number;
 
@@ -42,18 +40,6 @@ export class CreateGroupDto {
   allowedGrades?: string;
 
   @ApiPropertyOptional({ description: '수업 요일' })
-  // @Transform(({ value }) => {
-  //   if (!isNaN(Number(value))) return Number(value);
-  //   if (value.length === 1 && typeof value === 'string') {
-  //     for (const [key, label] of Object.entries(WeekdayLabels)) {
-  //       if (label === value) {
-  //         return Number(key);
-  //       }
-  //     }
-  //   }
-  //   const enumKey = (value as string).toUpperCase();
-  //   return Weekday[enumKey as keyof typeof Weekday];
-  // })
   @IsEnum(Weekday)
   weekday: Weekday;
 

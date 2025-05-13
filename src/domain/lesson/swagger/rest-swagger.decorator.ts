@@ -1,5 +1,10 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBody, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+} from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
   ApiOkPaginatedResponse,
@@ -23,6 +28,140 @@ const SCHOOL_TERM_LESSON_CONFIG: PaginateConfig<Lesson> = {
     schoolName: true,
     lessonName: true,
   },
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Create Lesson
+//? ---------------------------------------------------------------------- ?//
+
+export const CreateLessonDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '과목 👈 생성',
+      description: `
+      - 과목 생성(upsert)
+      `,
+    }),
+    ApiBody({
+      type: CreateLessonDto,
+    }),
+    ApiCreatedResponseTemplate({
+      description: '과목 등록 완료',
+      type: Lesson,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Get Lesson by ID
+//? ---------------------------------------------------------------------- ?//
+
+export const GetLessonByIdDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '과목 👈 상세 조회',
+      description: `
+      - 과목 ID로 상세 정보 조회
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '과목 ID',
+    }),
+    ApiOkResponseTemplate({
+      description: '과목 상세 조회 완료',
+      type: Lesson,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Update Lesson
+//? ---------------------------------------------------------------------- ?//
+
+export const UpdateLessonDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '과목 👈 수정',
+      description: `
+      - 과목 업데이트
+      - Request의 UpdateLessonDto는 PartialType(CreateLessonDto)로 변경 원하는 필드만 작성
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '과목 ID',
+    }),
+    ApiBody({
+      type: UpdateLessonDto,
+      examples: {
+        example1: {
+          value: {
+            lessonName: '과목명',
+            requiredDocuments: ['경력증명서'],
+          },
+        },
+      },
+    }),
+    ApiOkResponseTemplate({
+      description: '과목 업데이트 완료',
+      type: Lesson,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
+      },
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Remove Lesson
+//? ---------------------------------------------------------------------- ?//
+
+export const RemoveLessonDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '과목 👈 삭제',
+      description: `
+      - 과목 삭제
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '과목 ID',
+    }),
+    ApiOkResponseTemplate({
+      description: '과목 삭제 완료',
+      type: Lesson,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
+      },
+    ]),
+  );
 };
 
 //? ---------------------------------------------------------------------- ?//
@@ -185,6 +324,39 @@ export const SchoolTermLessonInfiniteListDocs = () => {
     }),
     ApiPaginationQuery(SCHOOL_TERM_LESSON_CONFIG),
     ApiOkPaginatedResponse(CreateLessonResponseDto, SCHOOL_TERM_LESSON_CONFIG),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [
+          HttpErrorConstants.NOT_FOUND_SCHOOL,
+          HttpErrorConstants.NOT_FOUND_TERM,
+        ],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Delete All School > Term > Lessons
+//? ---------------------------------------------------------------------- ?//
+
+export const DeleteAllSchoolTermLessonsDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '학교 > 학기 > 과목 👈 bulk 삭제',
+      description: `
+      - 학교의 특정 학기에 속한 모든 과목 삭제
+      - 삭제된 과목의 수를 반환
+      `,
+    }),
+    ApiOkResponse({
+      description: '과목 전체 삭제 완료',
+      schema: {
+        type: 'number',
+        example: 42,
+        description: '삭제된 과목의 수',
+      },
+    }),
     ApiErrorResponseTemplate([
       {
         status: StatusCodes.NOT_FOUND,

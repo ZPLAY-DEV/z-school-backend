@@ -6,26 +6,40 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RemovalStatus } from 'src/common/enums';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { GroupService } from 'src/domain/group/group.service';
 import {
+  CreateGroupDocs,
   DeleteGroupDocs,
   FindGroupDocs,
   UpdateGroupDocs,
 } from 'src/domain/group/swagger/rest-swagger.decorator';
-@UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('✅ Group ( 반 )')
+@ApiTags('✅ Groups ( 반 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('groups')
+@UseInterceptors(ClassSerializerInterceptor)
 export class GroupController {
   constructor(private readonly groupService: GroupService) {}
+
+  //?-------------------------------------------------------------------------//
+  //? Create
+  //?-------------------------------------------------------------------------//
+
+  @CreateGroupDocs()
+  @ApiOperation({ description: '반(Group) 생성' })
+  @Post()
+  async create(@Body() dto: CreateGroupDto): Promise<Group> {
+    return this.groupService.create(dto);
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Read

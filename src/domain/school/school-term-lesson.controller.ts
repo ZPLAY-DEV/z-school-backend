@@ -18,6 +18,7 @@ import { CreateLessonRequestDto } from 'src/domain/lesson/dto/create-lesson.dto'
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import {
   CreateSchoolTermLessonBulkDocs,
+  DeleteAllSchoolTermLessonsDocs,
   SchoolTermLessonInfiniteListDocs,
   SchoolTermLessonListDocs,
 } from 'src/domain/lesson/swagger/rest-swagger.decorator';
@@ -89,6 +90,7 @@ export class SchoolTermLessonController {
   //? DELETE
   //?-------------------------------------------------------------------------//
 
+  @DeleteAllSchoolTermLessonsDocs()
   @Delete(':schoolId/terms/:termId/lessons')
   async deleteAll(
     @Param('schoolId', ParseIntPipe) schoolId: number,

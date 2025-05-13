@@ -10,7 +10,6 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  Length,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -58,25 +57,27 @@ export class CreateLessonDto {
   @MaxLength(255)
   description?: string | null;
 
+  // todo) need to address this!
   @ApiProperty({ description: '🈳 수업수/term', required: false, default: 0 })
   @IsOptional()
   @IsNumber()
   termlyLessonCount?: number;
 
+  // todo) need to address this!
   @ApiProperty({ description: '🈳 수업수/week', required: false, default: 0 })
   @IsOptional()
   @IsNumber()
   weeklyLessonCount?: number;
 
   @ApiProperty({ description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @IsOptional()
   @IsString()
-  @Length(10)
-  start: string;
+  start?: string;
 
   @ApiProperty({ description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @IsOptional()
   @IsString()
-  @Length(10)
-  end: string;
+  end?: string;
 
   @ApiProperty({
     description: '🈳 수업료 합계 (A -D)',
@@ -140,7 +141,6 @@ export class CreateLessonDto {
   })
   @IsOptional()
   @IsBoolean()
-  @IsNotEmpty()
   allowTimeOverlap?: boolean;
 
   @ApiProperty({
@@ -185,6 +185,7 @@ export class CreateLessonDto {
     enum: CategoryEnum,
     default: CategoryEnum.FREE_CUSTOM,
   })
+  @IsEnum(CategoryEnum)
   category: CategoryEnum;
 }
 

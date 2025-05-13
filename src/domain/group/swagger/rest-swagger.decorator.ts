@@ -10,13 +10,43 @@ import {
 import { StatusCodes } from 'http-status-codes';
 import { RemovalStatus } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiEnumResponseTemplate } from 'src/core/swagger/response/api-enum.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { GroupStudent } from '../entities/group-student.entity';
+
+//? ---------------------------------------------------------------------- ?//
+//? Create Group
+//? ---------------------------------------------------------------------- ?//
+
+export const CreateGroupDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '반 👈 생성',
+      description: `
+      - 반 생성
+      `,
+    }),
+    ApiBody({
+      type: CreateGroupDto,
+    }),
+    ApiCreatedResponseTemplate({
+      description: '반 등록 완료',
+      type: Group,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
+      },
+    ]),
+  );
+};
 
 //? ---------------------------------------------------------------------- ?//
 //? Find Group
