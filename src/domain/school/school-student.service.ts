@@ -210,6 +210,7 @@ export class SchoolStudentService {
     return await paginate<Student>(query, queryBuilder, {
       relations: {
         parent: true,
+        groupStudents: true,
       },
       sortableColumns: ['grade', 'class', 'studentCode'],
       searchableColumns: ['name', 'parent.phone', 'escortPhone'],
@@ -232,6 +233,7 @@ export class SchoolStudentService {
     const queryBuilder = this.studentRepository
       .createQueryBuilder('student')
       .leftJoinAndSelect('student.parent', 'parent')
+      .leftJoinAndSelect('student.groupStudents', 'groupStudents')
       .where('student.schoolId = :schoolId', { schoolId })
       // .andWhere('student.isActive = :isActive', { isActive: true })
       .orderBy('student.grade', 'ASC')
@@ -246,6 +248,7 @@ export class SchoolStudentService {
       where: { id: studentId, school: { id: schoolId } },
       relations: {
         parent: true,
+        groupStudents: true,
       },
     });
     if (!student) {
