@@ -60,9 +60,11 @@ export class GroupService {
         ? await this.groupRepository.findOneOrFail({
             where: { id },
             relations,
+            // withDeleted: true,
           })
         : await this.groupRepository.findOneOrFail({
             where: { id },
+            // withDeleted: true,
           });
     } catch (error) {
       this.logger.error(error);
@@ -89,7 +91,7 @@ export class GroupService {
   //? DELETE
   //?-------------------------------------------------------------------------//
 
-  async remove(id: number, dto: DeleteGroupDto): Promise<RemovalStatus> {
+  async removeWithDto(id: number, dto: DeleteGroupDto): Promise<RemovalStatus> {
     const group = await this.findById(id);
 
     try {
@@ -107,6 +109,7 @@ export class GroupService {
     if (group.status === ClassStatus.ACTIVE) {
       await this.groupRepository.update(id, {
         status: ClassStatus.CANCELED,
+        deletedBy: dto.role,
         note: dto.note,
       });
       return RemovalStatus.CANCELED;
@@ -119,6 +122,7 @@ export class GroupService {
     }
     await this.groupRepository.update(id, {
       note: dto.note,
+      deletedBy: dto.role,
       deletedAt: new Date(),
     });
     return RemovalStatus.SOFT_DELETED;

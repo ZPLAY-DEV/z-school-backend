@@ -5,12 +5,14 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { RemovalStatus } from 'src/common/enums';
+import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
+import { Actor, RemovalStatus } from 'src/common/enums';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
@@ -77,9 +79,16 @@ export class GroupController {
   @ApiOperation({ description: '반(Group) 삭제 w/ 취소 사유' })
   @Delete(':id')
   async remove(
-    @Param('id') id: number,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: DeleteGroupDto,
+    @CurrentUserIdAndRole() user: { id: number; role: string },
   ): Promise<RemovalStatus> {
-    return await this.groupService.remove(id, dto);
+    const role =
+      user.role === 'MANAGER'
+        ? Actor.MANAGER
+        : user.role === 'INSTRUCTOR'
+          ? Actor.INSTRUCTOR
+          : Actor.OTHER;
+    return await this.groupService.removeWithDto(id, { ...dto, role });
   }
 }

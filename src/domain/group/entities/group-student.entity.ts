@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { EnrollmentStatus } from 'src/common/enums/enrollment-status';
+import { Actor } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import {
@@ -37,16 +37,16 @@ export class GroupStudent {
   materialFee: number;
 
   @ApiProperty({
-    description: '🈵 반에 어떻게 들어왔는지',
-    default: EnrollmentStatus.REGISTRATION,
+    description: '🈵 어떻게 반에 들어왔나?',
+    default: Actor.SYSTEM,
   })
   @Column({
     type: 'enum',
-    enum: EnrollmentStatus,
-    default: EnrollmentStatus.REGISTRATION,
+    enum: Actor,
+    default: Actor.SYSTEM,
     comment: '어떻게 반에 들어왔나?',
   })
-  status: EnrollmentStatus;
+  enrolledBy: Actor;
 
   @ApiProperty({ description: '🈳 비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
