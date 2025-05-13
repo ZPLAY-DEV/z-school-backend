@@ -9,13 +9,18 @@ import {
   Post,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { LessonService } from 'src/domain/lesson/lesson.service';
+
+//! 단일 Lesson 엔터티 작업
+@ApiTags('✅ Lessons ( 과목 ) - 단수')
+@ApiCommonErrorResponseTemplate()
+@Controller('lessons')
 @UseInterceptors(ClassSerializerInterceptor)
-@Controller('deliveries')
 export class LessonController {
   constructor(private readonly lessonService: LessonService) {}
 

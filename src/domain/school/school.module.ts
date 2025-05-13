@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { LessonModule } from 'src/domain/lesson/lesson.module';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { School } from 'src/domain/school/entities/school.entity';
@@ -46,6 +47,7 @@ import { InstructorSchool } from '../instructor/entities/instructor-school.entit
     SlackModule,
     S3Module,
     NeisModule,
+    LessonModule,
   ],
   controllers: [
     SchoolController,

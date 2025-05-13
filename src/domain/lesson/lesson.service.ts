@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -10,6 +10,7 @@ import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Repository } from 'typeorm';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
+import { LessonCoreService } from './lesson-core.service';
 
 @Injectable()
 export class LessonService {
@@ -18,6 +19,7 @@ export class LessonService {
   constructor(
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
+    private readonly lessonCoreService: LessonCoreService,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -25,8 +27,8 @@ export class LessonService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateLessonDto): Promise<Lesson> {
-    const lesson = this.lessonRepository.create(dto);
-    return await this.lessonRepository.save(lesson);
+    // Delegate to the core service for consistent implementation
+    return await this.lessonCoreService.create(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -46,19 +48,7 @@ export class LessonService {
   }
 
   async findById(id: number, relations: string[] = []): Promise<Lesson> {
-    try {
-      return relations.length > 0
-        ? await this.lessonRepository.findOneOrFail({
-            where: { id },
-            relations,
-          })
-        : await this.lessonRepository.findOneOrFail({
-            where: { id },
-          });
-    } catch (error) {
-      this.logger.error(error);
-      throw new NotFoundException('entity not found');
-    }
+    return await this.lessonCoreService.findById(id, relations);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -66,14 +56,8 @@ export class LessonService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateLessonDto): Promise<Lesson> {
-    const lesson = await this.lessonRepository.preload({
-      id,
-      ...dto,
-    });
-    if (!lesson) {
-      throw new NotFoundException(`entity not found`);
-    }
-    return await this.lessonRepository.save(lesson);
+    // Delegate to the core service for consistent implementation
+    return await this.lessonCoreService.update(id, dto);
   }
 
   //?-------------------------------------------------------------------------//
@@ -81,7 +65,6 @@ export class LessonService {
   //?-------------------------------------------------------------------------//
 
   async remove(id: number): Promise<Lesson> {
-    const lesson = await this.findById(id);
-    return await this.lessonRepository.remove(lesson);
+    return await this.lessonCoreService.remove(id);
   }
 }
