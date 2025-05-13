@@ -1,6 +1,6 @@
 // import * as admin from 'firebase-admin';
 
-import { Role, Weekday } from 'src/common/enums';
+import { BoardTarget, Role, Weekday } from 'src/common/enums';
 
 export interface IDatabaseConfig {
   engine: string;
@@ -198,6 +198,13 @@ export interface IUploadedFile {
 export interface IS3Urls {
   uploadUrl: string;
   imageUrl: string;
+}
+
+export interface IBoardTarget {
+  type: BoardTarget;
+  groupId?: number;
+  grade?: string;
+  class?: string;
 }
 
 // export type FirebaseUser = admin.auth.DecodedIdToken;

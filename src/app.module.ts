@@ -41,6 +41,7 @@ import { OrmConfig } from './database/orm-config';
 import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
 import { PhoneModule } from './domain/phone/phone.module';
+import { BoardModule } from './domain/board/board.module';
 
 @Module({
   imports: [
@@ -128,6 +129,7 @@ import { PhoneModule } from './domain/phone/phone.module';
     UploadModule,
     HealthModule,
     PhoneModule,
+    BoardModule,
   ],
   controllers: [AppController],
   providers: [

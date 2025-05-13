@@ -164,6 +164,11 @@ export const HttpErrorConstants = {
     message: '학교를 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
+  NOT_FOUND_GROUP: {
+    error: 'NOT_FOUND_GROUP',
+    message: '그룹을 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
   NOT_FOUND_TERM: {
     error: 'NOT_FOUND_TERM',
     message: '학기를 찾을 수 없습니다.',

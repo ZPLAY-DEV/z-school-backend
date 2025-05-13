@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { ClassStatus, Weekday } from 'src/common/enums';
+import { Board } from 'src/domain/board/entities/board.entity';
 import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -108,6 +109,9 @@ export class Group {
   })
   @OneToMany(() => GroupStudent, (gs) => gs.group)
   groupStudents: GroupStudent[];
+
+  @OneToMany(() => Board, (board) => board.group)
+  boards: Board[];
 
   //? Constructor ---------------------------------------------------------- ?//
 
