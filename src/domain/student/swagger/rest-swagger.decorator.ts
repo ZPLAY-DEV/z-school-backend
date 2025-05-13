@@ -102,6 +102,8 @@ export const StudentListDocs = () => {
       - 학생 일괄 조회
       - 학생은 학년, 반, 학번/번호 순으로 정렬됨.
       - 페이징 X
+      - 반환되는 parent 객체에 userId 값이 null인 경우 앱 미사용 학부모, null이 아닌경우 앱 사용 유저라고 프론트에서 핸들링 
+      - 반환되는 groupStudents 객체 배열에 맞춰서 수강중인 강좌를 프론트에서 핸들링
       `,
     }),
     ApiParam({
@@ -168,6 +170,8 @@ export const StudentListPaginatedDocs = () => {
       - 정렬은 기본적으로 학교에 속한 학생들을 기준으로 grade ( 학년 ), class ( 반 ), studentCode ( 학번/번호 ) 순으로 정렬됨.
       - 정렬 조건: grade(학년), class(반), studentCode(학번/번호)
         - 정렬시 QueryString에 sortBy 키워드를 통해 정렬 조건을 입력할 수 있음. EX) ?sortBy=grade:ASC&sortBy=class:ASC&sortBy=studentCode:ASC ...
+      - 반환되는 parent 객체에 userId 값이 null인 경우 앱 미사용 학부모, null이 아닌경우 앱 사용 유저라고 프론트에서 핸들링 
+      - 반환되는 groupStudents 객체 배열에 맞춰서 수강중인 강좌를 프론트에서 핸들링
       `,
     }),
     ApiOkPaginatedResponse(StudentResponseDto, {
