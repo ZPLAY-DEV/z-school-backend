@@ -1,13 +1,13 @@
 import {
-    Body,
-    ClassSerializerInterceptor,
-    Controller,
-    Delete,
-    Get,
-    Param,
-    Patch,
-    Post,
-    UseInterceptors,
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -54,7 +54,6 @@ export class PostController {
   //?-------------------------------------------------------------------------//
 
   @ApiOperation({ description: 'Post 리스트 w/ Pagination' })
-  
   @Public()
   @Get('paginated')
   async getAdminPost(

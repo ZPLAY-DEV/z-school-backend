@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -11,11 +6,11 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { ClassStatus } from 'src/common/enums';
-import { RemovalStatus } from 'src/common/enums/removal-status';
+import { Actor } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
-import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
+import { CreateGroupStudentDto } from 'src/domain/group/dto/create-group-student.dto';
+import { UpdateGroupStudentDto } from 'src/domain/group/dto/update-group-student.dto';
+import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Repository } from 'typeorm';
 import { UpdateGroupDto } from './dto/update-group.dto';
@@ -25,6 +20,8 @@ export class GroupStudentService {
   private readonly logger = new Logger(GroupStudentService.name);
 
   constructor(
+    @InjectRepository(GroupStudent)
+    private readonly groupStudentRepository: Repository<GroupStudent>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
   ) {}
@@ -33,94 +30,117 @@ export class GroupStudentService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  async create(dto: CreateGroupDto): Promise<Group> {
-    const group = this.groupRepository.create(dto);
-    return await this.groupRepository.save(group);
+  // 학생 개별등록 w/ note and enrolledBy
+  async create(dto: CreateGroupStudentDto): Promise<GroupStudent> {
+    const groupStudent = this.groupStudentRepository.create(dto);
+    return await this.groupStudentRepository.save(groupStudent);
+  }
+
+  async createBulk(
+    groupId: number,
+    studentIds: number[],
+  ): Promise<GroupStudent[]> {
+    const groupStudents: GroupStudent[] = [];
+    for (const studentId of studentIds) {
+      const groupStudent = this.groupStudentRepository.create({
+        groupId,
+        studentId,
+        enrolledBy: Actor.SYSTEM,
+      });
+      groupStudents.push(groupStudent);
+    }
+    return await this.groupStudentRepository.save(groupStudents);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  async findAll(query: PaginateQuery): Promise<Paginated<Group>> {
-    return await paginate(query, this.groupRepository, {
-      sortableColumns: ['createdAt'],
-      nullSort: 'last',
+  async list(groupId: number): Promise<GroupStudent[]> {
+    return await this.groupStudentRepository.find({
+      where: { groupId },
+      relations: ['student', 'student.parent'],
+    });
+  }
+
+  async infiniteList(
+    groupId: number,
+    query: PaginateQuery,
+  ): Promise<Paginated<GroupStudent>> {
+    const queryBuilder = this.groupStudentRepository
+      .createQueryBuilder('groupStudent')
+      .where('groupStudent.groupId = :groupId', { groupId });
+
+    return await paginate(query, queryBuilder, {
+      relations: {
+        student: {
+          parent: true,
+        },
+      },
+      sortableColumns: ['id'],
+      searchableColumns: ['note'],
       defaultSortBy: [['id', 'DESC']],
-      searchableColumns: ['groupName', 'location'],
       filterableColumns: {
-        instructorId: [FilterOperator.EQ],
+        enrolledBy: [FilterOperator.EQ],
+        deletedBy: [FilterOperator.EQ],
       },
     });
   }
 
-  async findById(id: number, relations: string[] = []): Promise<Group> {
-    try {
-      return relations.length > 0
-        ? await this.groupRepository.findOneOrFail({
-            where: { id },
-            relations,
-          })
-        : await this.groupRepository.findOneOrFail({
-            where: { id },
-          });
-    } catch (error) {
-      this.logger.error(error);
-      throw new NotFoundException('entity not found');
-    }
-  }
+  // no reason to use this at this moment
+  // async findByUniqueIds(
+  //   groupId: number,
+  //   studentId: number,
+  //   relations: string[] = [],
+  // ): Promise<GroupStudent> {
+  //   try {
+  //     return relations.length > 0
+  //       ? await this.groupStudentRepository.findOneOrFail({
+  //           where: { groupId, studentId },
+  //           relations,
+  //         })
+  //       : await this.groupStudentRepository.findOneOrFail({
+  //           where: { groupId, studentId },
+  //         });
+  //   } catch (error) {
+  //     this.logger.error(error);
+  //     throw new NotFoundException('entity not found');
+  //   }
+  // }
 
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
 
-  async update(id: number, dto: UpdateGroupDto): Promise<Group> {
-    const group = await this.groupRepository.preload({
-      id,
+  async update(
+    groupId: number,
+    studentId: number,
+    dto: UpdateGroupDto,
+  ): Promise<GroupStudent> {
+    const group = await this.groupStudentRepository.preload({
+      groupId,
+      studentId,
       ...dto,
     });
     if (!group) {
-      throw new NotFoundException(`entity not found`);
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
-    return await this.groupRepository.save(group);
+    return await this.groupStudentRepository.save(group);
   }
 
   //?-------------------------------------------------------------------------//
   //? DELETE
   //?-------------------------------------------------------------------------//
 
-  async remove(id: number, dto: DeleteGroupDto): Promise<RemovalStatus> {
-    const group = await this.findById(id);
+  async remove(dto: UpdateGroupStudentDto): Promise<void> {
+    const groupStudent = await this.groupStudentRepository.findOneOrFail({
+      where: { groupId: dto.groupId, studentId: dto.studentId },
+    });
 
-    try {
-      if (group.status === ClassStatus.PENDING) {
-        await this.groupRepository.remove(group);
-        return RemovalStatus.DELETED;
-      }
-    } catch (error) {
-      this.logger.error(error);
-      throw new UnprocessableEntityException(
-        HttpErrorConstants.CONDITION_NOT_MET,
-      );
-    }
-
-    if (group.status === ClassStatus.ACTIVE) {
-      await this.groupRepository.update(id, {
-        status: ClassStatus.CANCELED,
-        note: dto.note,
-      });
-      return RemovalStatus.CANCELED;
-    }
-
-    if (group.groupStudents.length > 0) {
-      throw new UnprocessableEntityException(
-        HttpErrorConstants.CONDITION_NOT_MET,
-      );
-    }
-    await this.groupRepository.update(id, {
+    await this.groupStudentRepository.update(groupStudent.id, {
       note: dto.note,
+      deletedBy: dto.deletedBy,
       deletedAt: new Date(),
     });
-    return RemovalStatus.SOFT_DELETED;
   }
 }

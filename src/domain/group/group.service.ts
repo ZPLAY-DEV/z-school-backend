@@ -15,7 +15,7 @@ import { ClassStatus } from 'src/common/enums';
 import { RemovalStatus } from 'src/common/enums/removal-status';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
-import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
+import { TraceableNoteDto } from 'src/domain/group/dto/delete-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Repository } from 'typeorm';
 import { UpdateGroupDto } from './dto/update-group.dto';
@@ -91,7 +91,10 @@ export class GroupService {
   //? DELETE
   //?-------------------------------------------------------------------------//
 
-  async removeWithDto(id: number, dto: DeleteGroupDto): Promise<RemovalStatus> {
+  async removeWithDto(
+    id: number,
+    dto: TraceableNoteDto,
+  ): Promise<RemovalStatus> {
     const group = await this.findById(id);
 
     try {

@@ -45,6 +45,11 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
             ...HttpErrorConstants.UNAUTHORIZED,
             description: req.url,
           };
+        } else if (httpStatus === 404) {
+          errorResponse = {
+            ...HttpErrorConstants.NOT_FOUND_ENTITY,
+            description: req.url,
+          };
         } else {
           errorResponse = {
             ...HttpErrorConstants.UNEXPECTED_HTTP_EXCEPTION,
