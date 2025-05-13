@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -6,6 +6,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Repository } from 'typeorm';
@@ -27,7 +28,6 @@ export class LessonService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateLessonDto): Promise<Lesson> {
-    // Delegate to the core service for consistent implementation
     return await this.lessonCoreService.create(dto);
   }
 
@@ -47,8 +47,24 @@ export class LessonService {
     });
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? FIND
+  //? ---------------------------------------------------------------------- ?//
+
   async findById(id: number, relations: string[] = []): Promise<Lesson> {
-    return await this.lessonCoreService.findById(id, relations);
+    try {
+      return relations.length > 0
+        ? await this.lessonRepository.findOneOrFail({
+            where: { id },
+            relations,
+          })
+        : await this.lessonRepository.findOneOrFail({
+            where: { id },
+          });
+    } catch (error) {
+      this.logger.error(error);
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
+    }
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -56,15 +72,15 @@ export class LessonService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateLessonDto): Promise<Lesson> {
-    // Delegate to the core service for consistent implementation
     return await this.lessonCoreService.update(id, dto);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? DELETE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   async remove(id: number): Promise<Lesson> {
-    return await this.lessonCoreService.remove(id);
+    const lesson = await this.findById(id);
+    return await this.lessonRepository.remove(lesson);
   }
 }

@@ -92,7 +92,7 @@ export class SchoolTermLessonService {
   //? DELETE
   //?-------------------------------------------------------------------------//
 
-  async removeAll(schoolId: number, termId: number): Promise<number> {
+  async deleteAll(schoolId: number, termId: number): Promise<number> {
     try {
       const result = await this.lessonRepository.manager.transaction(
         async (transactionalEntityManager) => {

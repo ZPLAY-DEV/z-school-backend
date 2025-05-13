@@ -393,33 +393,4 @@ export class LessonCoreService {
       );
     }
   }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? FIND
-  //? ---------------------------------------------------------------------- ?//
-
-  async findById(id: number, relations: string[] = []): Promise<Lesson> {
-    try {
-      return relations.length > 0
-        ? await this.lessonRepository.findOneOrFail({
-            where: { id },
-            relations,
-          })
-        : await this.lessonRepository.findOneOrFail({
-            where: { id },
-          });
-    } catch (error) {
-      this.logger.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
-    }
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? DELETE
-  //? ---------------------------------------------------------------------- ?//
-
-  async remove(id: number): Promise<Lesson> {
-    const lesson = await this.findById(id);
-    return await this.lessonRepository.remove(lesson);
-  }
 }
