@@ -5,8 +5,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinTable,
-  ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -41,20 +40,9 @@ export class Category {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  //* N-to-M belongsToMany ------------------------------------------------- *//
+  //* 1-to-M hasMany ------------------------------------------------------ *//
 
-  @ManyToMany(() => Lesson, (lesson) => lesson.categories)
-  @JoinTable({
-    name: 'category_lesson',
-    joinColumn: {
-      name: 'categoryId',
-      referencedColumnName: 'id',
-    },
-    inverseJoinColumn: {
-      name: 'lessonId',
-      referencedColumnName: 'id',
-    },
-  })
+  @OneToMany(() => Lesson, (lesson) => lesson.category)
   public lessons: Lesson[];
 
   //? Constructor ---------------------------------------------------------- ?//

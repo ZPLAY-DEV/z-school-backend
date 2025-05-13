@@ -38,7 +38,6 @@ export class LessonController {
   @CreateLessonDocs()
   @Post()
   async create(@Body() dto: CreateLessonDto): Promise<Lesson> {
-    console.log(`✅✅✅✅✅✅✅✅✅`, dto);
     return await this.lessonService.create(dto);
   }
 
@@ -49,7 +48,11 @@ export class LessonController {
   @GetLessonByIdDocs()
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Lesson> {
-    return await this.lessonService.findById(id);
+    return await this.lessonService.findById(id, [
+      'groups',
+      'groups.instructor',
+      'category',
+    ]);
   }
 
   //? ---------------------------------------------------------------------- ?//

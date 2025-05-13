@@ -221,7 +221,7 @@ export const CreateSchoolTermLessonBulkDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '여러 과목 일괄 등록 완료',
-      type: CreateLessonResponseDto,
+      type: Lesson,
       isArray: true,
     }),
     ApiErrorResponseTemplate([

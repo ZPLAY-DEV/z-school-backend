@@ -9,6 +9,9 @@ export class CreateLessonResponseDto {
   @ApiProperty({ description: '🈵 학기 ID', example: 1 })
   termId: number;
 
+  @ApiProperty({ description: '🈵 분류 ID', example: 1 })
+  categoryId: number;
+
   @ApiProperty({ description: '🈵 학교 ID', example: 1 })
   schoolId: number;
 

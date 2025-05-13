@@ -74,7 +74,7 @@ export class GroupController {
   //? ---------------------------------------------------------------------- ?//
 
   @DeleteGroupDocs()
-  @ApiOperation({ description: '반(Group) 삭제' })
+  @ApiOperation({ description: '반(Group) 삭제 w/ 취소 사유' })
   @Delete(':id')
   async remove(
     @Param('id') id: number,

@@ -13,24 +13,24 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
-import {
-  Category as CategoryEnum,
-  ClassStatus,
-  DocumentType,
-  EnrollmentRule,
-} from 'src/common/enums';
+import { ClassStatus, DocumentType, EnrollmentRule } from 'src/common/enums';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
-import { Column } from 'typeorm';
 
 export class CreateLessonDto {
-  @ApiProperty({ description: '🈵 Term ID', required: true })
+  @ApiProperty({ description: '🈵 Term ID', required: true, example: 1 })
   @IsNotEmpty()
   @IsInt()
   @IsPositive()
   termId: number;
 
-  @ApiProperty({ description: '🈵 School ID', required: true })
+  @ApiProperty({ description: '🈵 분류 ID', required: true, example: 1 })
+  @IsNotEmpty()
+  @IsInt()
+  @IsPositive()
+  categoryId: number;
+
+  @ApiProperty({ description: '🈵 School ID', required: true, example: 1 })
   @IsNotEmpty()
   @IsInt()
   @IsPositive()
@@ -179,14 +179,14 @@ export class CreateLessonDto {
   @Type(() => CreateGroupWithInstructorDto)
   groups: CreateGroupWithInstructorDto[];
 
-  @ApiProperty({ description: '🈵 분류' })
-  @Column({
-    type: 'enum',
-    enum: CategoryEnum,
-    default: CategoryEnum.FREE_CUSTOM,
-  })
-  @IsEnum(CategoryEnum)
-  category: CategoryEnum;
+  // @ApiProperty({ description: '🈵 분류' })
+  // @Column({
+  //   type: 'enum',
+  //   enum: CategoryEnum,
+  //   default: CategoryEnum.FREE_CUSTOM,
+  // })
+  // @IsEnum(CategoryEnum)
+  // category: CategoryEnum;
 }
 
 // Controller에서 사용할 타입 (Param 제외)

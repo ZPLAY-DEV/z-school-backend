@@ -52,9 +52,8 @@ export class SchoolTermLessonService {
 
     return await paginate(query, queryBuilder, {
       relations: {
-        term: true,
-        groups: true,
-        categories: true,
+        groups: { instructor: true },
+        category: true,
       },
       sortableColumns: ['id', 'lessonName', 'termId'],
       searchableColumns: ['schoolName', 'lessonName'],
@@ -72,7 +71,9 @@ export class SchoolTermLessonService {
   async list(schoolId: number, termId: number): Promise<Lesson[]> {
     const queryBuilder = this.lessonRepository
       .createQueryBuilder('lesson')
+      .leftJoinAndSelect('lesson.category', 'category')
       .leftJoinAndSelect('lesson.groups', 'group')
+      .leftJoinAndSelect('group.instructor', 'instructor')
       .where('lesson.schoolId = :schoolId', { schoolId })
       .andWhere('lesson.termId = :termId', { termId })
       .orderBy('lesson.id', 'DESC');

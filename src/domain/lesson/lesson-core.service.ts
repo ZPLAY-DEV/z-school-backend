@@ -5,9 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Category as CategoryEnum } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { Category } from 'src/domain/category/entities/category.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
@@ -88,15 +86,10 @@ export class LessonCoreService {
         await this.processGroups(lesson, dto, manager);
       }
 
-      //? 6단계) 카테고리 관계 설정
-      if (dto.category) {
-        await this.processCategory(lesson, dto.category, manager);
-      }
-
       // 최종 데이터를 다시 로드하여 변환된 값을 반환
       const savedLesson = await manager.findOne(Lesson, {
         where: { id: lesson.id },
-        relations: { groups: true, categories: true },
+        relations: { groups: true, category: true },
       });
 
       if (!savedLesson) {
@@ -221,15 +214,10 @@ export class LessonCoreService {
       await this.processGroups(updatedLesson, dto, manager);
     }
 
-    //? 7단계) 카테고리 관계 설정
-    if (dto.category) {
-      await this.processCategory(updatedLesson, dto.category, manager);
-    }
-
     // 최종 데이터를 다시 로드하여 변환된 값을 반환
     const finalLesson = await manager.findOne(Lesson, {
       where: { id },
-      relations: { groups: true, categories: true },
+      relations: { groups: true, category: true },
     });
 
     if (!finalLesson) {
@@ -372,25 +360,5 @@ export class LessonCoreService {
     lesson.groups = await manager.find(Group, {
       where: { lessonId: lesson.id, deletedAt: IsNull() },
     });
-  }
-
-  private async processCategory(
-    lesson: Lesson,
-    categoryType: CategoryEnum,
-    manager: EntityManager,
-  ): Promise<void> {
-    // 카테고리 정보 찾기 (필드명이 slug임)
-    const category = await manager.findOne(Category, {
-      where: { slug: categoryType },
-    });
-
-    if (category) {
-      await manager.query(
-        `INSERT IGNORE INTO category_lesson 
-              (categoryId, lessonId) 
-              VALUES (?, ?)`,
-        [category.id, lesson.id],
-      );
-    }
   }
 }
