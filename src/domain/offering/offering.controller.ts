@@ -22,7 +22,7 @@ import {
   GetOfferingByIdDocs,
   RemoveOfferingDocs,
   UpdateOfferingDocs,
-} from 'src/domain/offering/swagger/rest-swagger.decorator';
+} from 'src/domain/offering/swagger/offering-swagger.decorator';
 
 //! 단일 Offering 엔터티 작업
 @ApiTags('✅ Offerings ( 수강신청과목 ) - 단수')

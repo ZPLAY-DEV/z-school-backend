@@ -150,6 +150,7 @@ export const DeleteGroupDocs = () => {
       - active 상태에서는 삭제하지 않고 상태만 폐강처리 합니다. (canceled)
       - canceled 상태에서는 soft 삭제됩니다. (soft_deleted) 단, 연결된 학생이 있는 경우 422 에러 발생
       - RemovalStatus (deleted, canceled, soft_deleted) 를 리턴합니다.
+      - deletedBy는 API 호출하는 사람의 role 에 따란 자동으로 매니져|강사|기타 중 하나로 설정됩니다.
       `,
     }),
     ApiBody({

@@ -21,7 +21,7 @@ import {
   GetLessonByIdDocs,
   RemoveLessonDocs,
   UpdateLessonDocs,
-} from 'src/domain/lesson/swagger/rest-swagger.decorator';
+} from 'src/domain/lesson/swagger/lesson-swagger.decorator';
 
 //! 단일 Lesson 엔터티 작업
 @ApiTags('✅ Lessons ( 과목 ) - 단수')

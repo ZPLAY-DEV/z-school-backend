@@ -40,7 +40,7 @@ export const CreateGroupStudentDocs = () => {
       description: `
       - 개별 학생을 반에 등록합니다.
       - note에 등록 사유를 남길 수 있습니다.
-      - enrolledBy는 요청자 역할에 따라 자동으로 설정됩니다.
+      - enrolledBy는 API 호출하는 사람의 role 에 따란 자동으로 매니져|강사|기타 중 하나로 설정됩니다.
       `,
     }),
     ApiParam({
@@ -80,7 +80,7 @@ export const CreateGroupStudentDocs = () => {
 export const CreateGroupStudentBulkDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 > 수강생 👈 일괄 등록',
+      summary: '반 > 수강생 👈 bulk 등록',
       description: `
       - 여러 학생을 한 번에 반에 등록합니다.
       - 시스템에 의한 일괄 등록으로 처리됩니다.
@@ -125,7 +125,7 @@ export const CreateGroupStudentBulkDocs = () => {
 export const ListGroupStudentsDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 > 수강생 👈 목록 조회',
+      summary: '반 > 수강생 👈 리스트 (all)',
       description: `
       - 특정 반에 등록된 모든 학생 목록을 조회합니다.
       - 학생 및 학부모 정보를 포함합니다.
@@ -157,7 +157,7 @@ export const ListGroupStudentsDocs = () => {
 export const PaginatedListGroupStudentsDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 > 수강생 👈 페이지네이션 목록 조회',
+      summary: '반 > 수강생 👈 리스트 (paginated)',
       description: `
       - 특정 반에 등록된 학생 목록을 페이지네이션으로 조회합니다.
       - 검색, 정렬, 필터링 기능을 지원합니다.
@@ -186,7 +186,7 @@ export const PaginatedListGroupStudentsDocs = () => {
 export const UpdateGroupStudentDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 > 수강생 👈 정보 수정',
+      summary: '반 > 수강생 👈 수정',
       description: `
       - 반에 등록된 특정 학생의 정보를 수정합니다.
       - 수정하고자 하는 필드만 요청에 포함합니다.
@@ -229,7 +229,7 @@ export const DeleteGroupStudentDocs = () => {
       description: `
       - 반에서 특정 학생을 삭제합니다.
       - note에 삭제 사유를 남겨야 합니다.
-      - deletedBy는 요청자 역할에 따라 자동으로 설정됩니다.
+      - deletedBy는 API 호출하는 사람의 role 에 따란 자동으로 매니져|강사|기타 중 하나로 설정됩니다.
       `,
     }),
     ApiParam({

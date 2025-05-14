@@ -24,7 +24,7 @@ import {
   DeleteGroupDocs,
   FindGroupDocs,
   UpdateGroupDocs,
-} from 'src/domain/group/swagger/rest-swagger.decorator';
+} from 'src/domain/group/swagger/group-swagger.decorator';
 @ApiTags('✅ Groups ( 반 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('groups')

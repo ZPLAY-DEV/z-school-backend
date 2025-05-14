@@ -34,7 +34,7 @@ import {
   RegisterDocs,
   RegisterManagerDocs,
   ResetPasswordDocs,
-} from './swagger/rest-swagger.decorator';
+} from './swagger/auth-swagger.decorator';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Auth ( 인증 )')

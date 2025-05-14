@@ -18,7 +18,7 @@ import {
   DeleteAllSchoolTermOfferingsDocs,
   SchoolTermOfferingListDocs,
   SchoolTermOfferingPaginatedListDocs,
-} from 'src/domain/offering/swagger/rest-swagger.decorator';
+} from 'src/domain/offering/swagger/school-term-offering-swagger.decorator';
 import { SchoolTermOfferingService } from 'src/domain/school/school-term-offering.service';
 
 @Controller('schools')
