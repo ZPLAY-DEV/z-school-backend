@@ -1,5 +1,4 @@
 import {
-  Body,
   ClassSerializerInterceptor,
   Controller,
   Get,
@@ -7,7 +6,6 @@ import {
   ParseArrayPipe,
   ParseEnumPipe,
   ParseIntPipe,
-  Post,
   Query,
   UseInterceptors,
 } from '@nestjs/common';
@@ -15,12 +13,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { SchoolBoardService } from './school-board.service';
-import {
-  CurrentUserId,
-  CurrentUserIdAndRole,
-} from 'src/common/decorators/current-user-id.decorator';
-import { IRequestUserWithIdAndRole } from 'src/common/interfaces';
-import { CreateBoardDto } from '../board/dto/create-board.dto';
+import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
 import { BoardTarget } from 'src/common/enums';
 import { Board } from '../board/entities/board.entity';
 
@@ -35,29 +28,15 @@ export class SchoolBoardController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @Post(':schoolId/boards')
-  async create(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-    @CurrentUserIdAndRole() user: IRequestUserWithIdAndRole,
-    @Body() dto: CreateBoardDto,
-  ): Promise<Board> {
-    return await this.schoolBoardService.create({
-      ...dto,
-      schoolId: schoolId,
-      userId: user.userId,
-      userRole: user.role,
-    });
-  }
-
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
   @Get(':schoolId/boards/mine')
-  async list(
+  async listByMine(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @CurrentUserId() userId: number,
   ): Promise<Board[]> {
-    return await this.schoolBoardService.list(schoolId, userId);
+    return await this.schoolBoardService.listByMine(schoolId, userId);
   }
 
   @Get(':schoolId/boards/by-target')

@@ -15,6 +15,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { BoardTarget, Role } from 'src/common/enums';
+import { IsArray } from 'class-validator';
 
 @Entity('boards')
 export class Board {
@@ -44,8 +45,9 @@ export class Board {
   body: string | null;
 
   @ApiProperty({ description: '🈳 첨부 파일 URL', nullable: true })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  fileUrl: string | null;
+  @Column('json', { nullable: true })
+  @IsArray()
+  images: string[] | null;
 
   @ApiProperty({ description: '🈵 작성자 유형', enum: Role })
   @Column({ type: 'enum', enum: Role })

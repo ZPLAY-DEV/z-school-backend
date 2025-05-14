@@ -8,9 +8,9 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  JoinColumn,
+  // JoinColumn,
   ManyToOne,
-  OneToMany,
+  // OneToMany,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
@@ -30,9 +30,9 @@ export class Comment {
   @Column({ type: 'int', unsigned: true })
   boardId: number;
 
-  @ApiProperty({ description: '🈳 부모 댓글 ID (답글인 경우)', nullable: true })
-  @Column({ type: 'int', unsigned: true, nullable: true })
-  parentId: number | null;
+  // @ApiProperty({ description: '🈳 부모 댓글 ID (답글인 경우)', nullable: true })
+  // @Column({ type: 'int', unsigned: true, nullable: true })
+  // parentId: number | null;
 
   //* ---------------------------------------------------------------------- *//
 
@@ -67,16 +67,16 @@ export class Comment {
   @ManyToOne(() => User, (user) => user.comments)
   user: User;
 
-  @ManyToOne(() => Comment, (Comment) => Comment.children, {
-    onDelete: 'SET NULL',
-  })
-  @JoinColumn({ name: 'parentId' })
-  parent: Comment;
+  // @ManyToOne(() => Comment, (Comment) => Comment.children, {
+  //   onDelete: 'SET NULL',
+  // })
+  // @JoinColumn({ name: 'parentId' })
+  // parent: Comment;
 
-  //* 1-to-M hasMany ------------------------------------------------------- *//
+  // //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @OneToMany(() => Comment, (opinion) => opinion.parent)
-  children: Comment[];
+  // @OneToMany(() => Comment, (opinion) => opinion.parent)
+  // children: Comment[];
 
   // ------------------------------------------------------------------------ //
 

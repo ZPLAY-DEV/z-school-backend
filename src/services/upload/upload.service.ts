@@ -40,6 +40,10 @@ export class UploadService {
     return this.generateImageUrls([`news`, `${id}`], [`news`, mimeType]);
   }
 
+  async generateBoardImageUrls(id: number, mimeType: string): Promise<IS3Urls> {
+    return this.generateImageUrls([`boards`, `${id}`], [`boards`, mimeType]);
+  }
+
   async generateUserAvatarUrls(
     userId: number,
     mimeType: string,

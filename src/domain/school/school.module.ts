@@ -32,7 +32,7 @@ import { SchoolService } from './school.service';
 import { InstructorSchool } from '../instructor/entities/instructor-school.entity';
 import { Board } from '../board/entities/board.entity';
 import { Comment } from '../board/entities/comment.entity';
-import { SchoolBoardController } from './schoo-board.controller';
+import { SchoolBoardController } from './school-board.controller';
 import { SchoolBoardService } from './school-board.service';
 @Module({
   imports: [

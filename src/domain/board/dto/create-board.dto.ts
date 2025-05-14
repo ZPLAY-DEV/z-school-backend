@@ -69,7 +69,8 @@ export class CreateBoardDto {
   body?: string;
 
   @ApiProperty({
-    description: '🈵 작성자의 User 유형( MANAGER, INSTRUCTOR ) 2 case만 요청  ',
+    description:
+      '🈵 게시글 작성자의 User 유형( MANAGER, INSTRUCTOR ) 2 case만 요청  ',
     example: Role.MANAGER,
     enum: Role,
     required: true,
