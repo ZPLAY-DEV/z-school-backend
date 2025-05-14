@@ -6,6 +6,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateManagerDto } from 'src/domain/manager/dto/create-manager.dto';
 import { UpdateManagerDto } from 'src/domain/manager/dto/update-manager.dto';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
@@ -71,7 +72,7 @@ export class ManagerService {
           });
     } catch (error) {
       console.error(error);
-      throw new NotFoundException('entity not found');
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
   }
 

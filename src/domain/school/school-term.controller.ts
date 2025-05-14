@@ -15,11 +15,7 @@ import { SchoolTermService } from 'src/domain/school/school-term.service';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
 import { UpdateTermDto } from 'src/domain/term/dto/update-term.dto';
 import { Term } from 'src/domain/term/entities/term.entity';
-import {
-  CreateTermDocs,
-  ListTermDocs,
-  UpdateTermDocs,
-} from 'src/domain/term/swagger/rest-swagger.decorator';
+import { ListTermDocs } from 'src/domain/term/swagger/shool-term-swagger.decorator';
 
 @ApiTags('✅ Schools > Terms ( 학교 > 학기 )')
 @ApiCommonErrorResponseTemplate()
@@ -28,11 +24,10 @@ import {
 export class SchoolTermController {
   constructor(private readonly schoolTermService: SchoolTermService) {}
 
-  //? ---------------------------------------------------------------------- ?//
-  //? Create
-  //? ---------------------------------------------------------------------- ?//
+  //! ---------------------------------------------------------------------- ?//
+  //! todo. (프론트 개발자에게 통보후 삭제)
+  //! ---------------------------------------------------------------------- ?//
 
-  @CreateTermDocs()
   @Post(':schoolId/terms')
   async create(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -67,11 +62,10 @@ export class SchoolTermController {
   //   return await this.schoolTermService.infiniteList(schoolId, query);
   // }
 
-  //? ---------------------------------------------------------------------- ?//
-  //? Update
-  //? ---------------------------------------------------------------------- ?//
+  //! ---------------------------------------------------------------------- ?//
+  //! todo (프론트 개발자에게 통보후 삭제)
+  //! ---------------------------------------------------------------------- ?//
 
-  @UpdateTermDocs()
   @Patch(':schoolId/terms/:termId')
   async update(
     @Param('schoolId', ParseIntPipe) schoolId: number,

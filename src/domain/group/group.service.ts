@@ -68,7 +68,7 @@ export class GroupService {
           });
     } catch (error) {
       this.logger.error(error);
-      throw new NotFoundException('entity not found');
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
   }
 
@@ -82,7 +82,7 @@ export class GroupService {
       ...dto,
     });
     if (!group) {
-      throw new NotFoundException(`entity not found`);
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
     return await this.groupRepository.save(group);
   }

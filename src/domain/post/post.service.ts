@@ -6,6 +6,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreatePostDto } from 'src/domain/post/dto/create-post.dto';
 import { UpdatePostDto } from 'src/domain/post/dto/update-post.dto';
 import { Comment } from 'src/domain/post/entities/comment.entity';
@@ -114,7 +115,7 @@ export class PostService {
           });
     } catch (error) {
       console.error(error);
-      throw new NotFoundException('entity not found');
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
   }
 

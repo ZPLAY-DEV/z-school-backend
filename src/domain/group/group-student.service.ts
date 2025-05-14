@@ -1,10 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-  FilterOperator,
-  paginate,
-  Paginated,
-  PaginateQuery,
+    FilterOperator,
+    paginate,
+    Paginated,
+    PaginateQuery,
 } from 'nestjs-paginate';
 import { Actor } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
@@ -104,7 +104,7 @@ export class GroupStudentService {
   //         });
   //   } catch (error) {
   //     this.logger.error(error);
-  //     throw new NotFoundException('entity not found');
+  //     throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
   //   }
   // }
 
