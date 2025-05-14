@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Patch,
@@ -18,6 +19,7 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { LessonService } from 'src/domain/lesson/lesson.service';
 import {
   CreateLessonDocs,
+  CreateLessonDryRunDocs,
   GetLessonByIdDocs,
   RemoveLessonDocs,
   UpdateLessonDocs,
@@ -39,6 +41,13 @@ export class LessonController {
   @Post()
   async create(@Body() dto: CreateLessonDto): Promise<Lesson> {
     return await this.lessonService.create(dto);
+  }
+
+  @CreateLessonDryRunDocs()
+  @Post('dryrun')
+  @HttpCode(200)
+  async createDryRun(@Body() dto: CreateLessonDto): Promise<Lesson | null> {
+    return await this.lessonService.dryRun(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//

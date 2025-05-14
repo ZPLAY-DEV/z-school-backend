@@ -27,13 +27,57 @@ export class SchoolTermLessonService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  async createBulk(dtos: CreateLessonDto[]): Promise<Lesson[]> {
+  async createBulk(
+    dtos: CreateLessonDto[],
+    dryrun: boolean = false,
+  ): Promise<Lesson[]> {
+    if (dryrun) {
+      return await this.checkExistingLessons(dtos);
+    }
+
     const lessons: Lesson[] = [];
     for (const dto of dtos) {
       const lesson = await this.lessonCoreService.create(dto);
       lessons.push(lesson);
     }
     return lessons;
+  }
+
+  /**
+   * Check for existing lessons that would be overwritten based on the compound unique key
+   * (termId, schoolId, lessonName)
+   */
+  private async checkExistingLessons(
+    dtos: CreateLessonDto[],
+  ): Promise<Lesson[]> {
+    // Extract unique key combinations from DTOs
+    const uniqueKeyCombinations = dtos.map((dto) => ({
+      termId: dto.termId,
+      schoolId: dto.schoolId,
+      lessonName: dto.lessonName,
+    }));
+
+    // Find existing lessons that match any of these combinations
+    const existingLessons = await this.lessonRepository.find({
+      where: uniqueKeyCombinations.map((combo) => ({
+        termId: combo.termId,
+        schoolId: combo.schoolId,
+        lessonName: combo.lessonName,
+      })),
+      relations: {
+        category: true,
+        groups: {
+          instructor: true,
+        },
+      },
+    });
+
+    // No existing lessons found means no records will be overwritten
+    if (existingLessons.length === 0) {
+      return [];
+    }
+
+    return existingLessons;
   }
 
   //? ---------------------------------------------------------------------- ?//

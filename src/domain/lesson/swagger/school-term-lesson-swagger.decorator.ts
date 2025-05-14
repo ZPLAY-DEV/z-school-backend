@@ -63,6 +63,45 @@ export const CreateSchoolTermLessonBulkDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
+//? Create School > Term > Lesson Bulk (DryRun)
+//? ---------------------------------------------------------------------- ?//
+
+export const CreateSchoolTermLessonBulkDryRunDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '학교 > 학기 > 과목 👈 bulk 생성 (dryrun)',
+      description: `
+      - 실제 데이터를 생성하지 않고 덮어쓰여질 레코드들만 확인합니다.
+      - 복합 유니크 키인 (termId, schoolId, lessonName) 조합으로 DB를 조회하여 덮어쓰여질 레코드를 반환합니다.
+      - 안전하게 데이터를 upsert 하기 전, 어떤 데이터가 영향을 받을지 미리 확인할 수 있습니다.
+      `,
+    }),
+    ApiBody({
+      type: CreateLessonDto,
+      isArray: true,
+    }),
+    ApiOkResponseTemplate({
+      description: '덮어쓰여질 레코드 목록',
+      type: Lesson,
+      isArray: true,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
+      },
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [
+          HttpErrorConstants.NOT_FOUND_SCHOOL,
+          HttpErrorConstants.NOT_FOUND_TERM,
+        ],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
 //? List School > Term > Lesson
 //? ---------------------------------------------------------------------- ?//
 

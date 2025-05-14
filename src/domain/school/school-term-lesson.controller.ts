@@ -18,6 +18,7 @@ import { CreateLessonRequestDto } from 'src/domain/lesson/dto/create-lesson.dto'
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import {
   CreateSchoolTermLessonBulkDocs,
+  CreateSchoolTermLessonBulkDryRunDocs,
   DeleteAllSchoolTermLessonsDocs,
   SchoolTermLessonInfiniteListDocs,
   SchoolTermLessonListDocs,
@@ -53,6 +54,27 @@ export class SchoolTermLessonController {
     }));
 
     return await this.schoolTermLessonService.createBulk(createLessonDtos);
+  }
+
+  @Public()
+  @CreateSchoolTermLessonBulkDryRunDocs()
+  @Post(':schoolId/terms/:termId/lessons/bulk/dryrun')
+  @HttpCode(200)
+  async createBulkDryRun(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+    @Body() dtos: CreateLessonRequestDto[],
+  ): Promise<Lesson[]> {
+    const createLessonDtos = dtos.map((dto) => ({
+      ...dto,
+      schoolId,
+      termId,
+    }));
+
+    return await this.schoolTermLessonService.createBulk(
+      createLessonDtos,
+      true,
+    );
   }
 
   //? ---------------------------------------------------------------------- ?//

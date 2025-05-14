@@ -67,11 +67,8 @@ export class LessonCoreService {
         },
         relations: { groups: true },
       });
-
       if (existingLesson) {
-        throw new UnprocessableEntityException(
-          HttpErrorConstants.DUPLICATE_LESSON,
-        );
+        return this.update(existingLesson.id, dto, manager);
       }
 
       //? 4단계) 새로운 강좌 생성

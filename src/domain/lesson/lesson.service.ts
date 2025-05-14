@@ -31,6 +31,19 @@ export class LessonService {
     return await this.lessonCoreService.create(dto);
   }
 
+  async dryRun(dto: CreateLessonDto): Promise<Lesson | null> {
+    // In dryRun mode, we check if the lesson exists but don't create it
+    const existingLesson = await this.lessonRepository.findOne({
+      where: {
+        termId: dto.termId,
+        schoolId: dto.schoolId,
+        lessonName: dto.lessonName,
+      },
+    });
+
+    return existingLesson ? existingLesson : null;
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//

@@ -38,6 +38,35 @@ export const CreateLessonDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
+//? Create Lesson (dryrun)
+//? ---------------------------------------------------------------------- ?//
+
+export const CreateLessonDryRunDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '과목 👈 생성 (dryrun)',
+      description: `
+      - 과목 생성 Dryrun 모드
+      - 실제로 데이터를 생성하지 않고 어떤 데이터가 생성될지 미리 확인
+      `,
+    }),
+    ApiBody({
+      type: CreateLessonDto,
+    }),
+    ApiOkResponseTemplate({
+      description: '과목 등록 시뮬레이션 결과',
+      type: Lesson,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
 //? Get Lesson by ID
 //? ---------------------------------------------------------------------- ?//
 
