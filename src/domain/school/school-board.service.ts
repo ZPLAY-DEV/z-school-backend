@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { S3Service } from 'src/services/aws/s3.service';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { SchoolService } from './school.service';
 import { CreateBoardDto } from '../board/dto/create-board.dto';
 import { Board } from '../board/entities/board.entity';
@@ -9,6 +9,7 @@ import { School } from './entities/school.entity';
 import { Comment } from '../board/entities/comment.entity';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Group } from '../group/entities/group.entity';
+import { BoardTarget } from 'src/common/enums';
 
 @Injectable()
 export class SchoolBoardService {
@@ -29,6 +30,7 @@ export class SchoolBoardService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
   async create(dto: CreateBoardDto): Promise<Board> {
+    console.log(dto);
     // 1) 학교 조회
     const school = await this.schoolRepository.findOne({
       where: { id: dto.schoolId },
@@ -62,6 +64,29 @@ export class SchoolBoardService {
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
+
+  async list(schoolId: number, userId: number): Promise<Board[]> {
+    return await this.boardRepository.find({
+      where: {
+        schoolId,
+        userId,
+      },
+    });
+  }
+
+  async listByTarget(
+    schoolId: number,
+    target: BoardTarget,
+    groupIds: number[],
+  ): Promise<Board[]> {
+    return await this.boardRepository.find({
+      where: {
+        schoolId,
+        target,
+        groupId: groupIds.length > 0 ? In(groupIds) : undefined,
+      },
+    });
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? DELETE

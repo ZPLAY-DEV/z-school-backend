@@ -1,14 +1,14 @@
 import {
-    Body,
-    ClassSerializerInterceptor,
-    Controller,
-    Delete,
-    Get,
-    Param,
-    ParseIntPipe,
-    Patch,
-    Post,
-    UseInterceptors,
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -51,7 +51,6 @@ export class StudentController {
   //?-------------------------------------------------------------------------//
 
   @ApiOperation({ description: 'Student 리스트 w/ Pagination' })
-  
   @Public()
   @Get('paginated')
   async getAdminStudent(
@@ -61,7 +60,6 @@ export class StudentController {
   }
 
   @ApiOperation({ description: 'Student 리스트 w/ Pagination' })
-  
   @Public()
   @Get()
   async getStudent(

@@ -16,7 +16,7 @@ import { TermResponseDto } from '../dto/term-response.dto';
 export const CreateTermDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 학기 의 생성',
+      summary: '학교 > 학기 👈 생성',
       description: `
       - 학교에 귀속된 운영기간관리를 생성.
       - 날짜 형식은 YYYY-MM-DD 형식으로 입력.
@@ -67,7 +67,7 @@ export const CreateTermDocs = () => {
 export const ListTermDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 학기 의 조회',
+      summary: '학교 > 학기 👈 리스트 (all)',
       description: `
       - 학교에 귀속된 운영기간을 조회
       - 정렬은 Year, Start 순으로 정렬되어서 반환.
@@ -131,7 +131,7 @@ export const PaginatedTermDocs = () => {
 export const UpdateTermDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 학기 의 수정',
+      summary: '학교 > 학기 👈 수정',
       description: `
       - 학교에 귀속된 학기 정보 수정
       - bookingStart 속성값을 최초 입력시, 수강신청과목 (offerings) 테이블이 생성되고, isBookingReady 가 true 로 변경됨.

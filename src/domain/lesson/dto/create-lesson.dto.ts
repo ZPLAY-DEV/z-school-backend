@@ -10,28 +10,27 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  Length,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
-import {
-  Category as CategoryEnum,
-  ClassStatus,
-  DocumentType,
-  EnrollmentRule,
-} from 'src/common/enums';
+import { ClassStatus, DocumentType, EnrollmentRule } from 'src/common/enums';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
-import { Column } from 'typeorm';
 
 export class CreateLessonDto {
-  @ApiProperty({ description: '🈵 Term ID', required: true })
+  @ApiProperty({ description: '🈵 Term ID', required: true, example: 1 })
   @IsNotEmpty()
   @IsInt()
   @IsPositive()
   termId: number;
 
-  @ApiProperty({ description: '🈵 School ID', required: true })
+  @ApiProperty({ description: '🈵 분류 ID', required: true, example: 1 })
+  @IsNotEmpty()
+  @IsInt()
+  @IsPositive()
+  categoryId: number;
+
+  @ApiProperty({ description: '🈵 School ID', required: true, example: 1 })
   @IsNotEmpty()
   @IsInt()
   @IsPositive()
@@ -58,25 +57,27 @@ export class CreateLessonDto {
   @MaxLength(255)
   description?: string | null;
 
+  // todo) need to address this!
   @ApiProperty({ description: '🈳 수업수/term', required: false, default: 0 })
   @IsOptional()
   @IsNumber()
   termlyLessonCount?: number;
 
+  // todo) need to address this!
   @ApiProperty({ description: '🈳 수업수/week', required: false, default: 0 })
   @IsOptional()
   @IsNumber()
   weeklyLessonCount?: number;
 
   @ApiProperty({ description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @IsOptional()
   @IsString()
-  @Length(10)
-  start: string;
+  start?: string;
 
   @ApiProperty({ description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @IsOptional()
   @IsString()
-  @Length(10)
-  end: string;
+  end?: string;
 
   @ApiProperty({
     description: '🈳 수업료 합계 (A -D)',
@@ -140,7 +141,6 @@ export class CreateLessonDto {
   })
   @IsOptional()
   @IsBoolean()
-  @IsNotEmpty()
   allowTimeOverlap?: boolean;
 
   @ApiProperty({
@@ -179,13 +179,14 @@ export class CreateLessonDto {
   @Type(() => CreateGroupWithInstructorDto)
   groups: CreateGroupWithInstructorDto[];
 
-  @ApiProperty({ description: '🈵 분류' })
-  @Column({
-    type: 'enum',
-    enum: CategoryEnum,
-    default: CategoryEnum.FREE_CUSTOM,
-  })
-  category: CategoryEnum;
+  // @ApiProperty({ description: '🈵 분류' })
+  // @Column({
+  //   type: 'enum',
+  //   enum: CategoryEnum,
+  //   default: CategoryEnum.FREE_CUSTOM,
+  // })
+  // @IsEnum(CategoryEnum)
+  // category: CategoryEnum;
 }
 
 // Controller에서 사용할 타입 (Param 제외)

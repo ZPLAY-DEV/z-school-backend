@@ -13,7 +13,6 @@ import {
   DeleteDateColumn,
   Entity,
   JoinColumn,
-  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -30,6 +29,10 @@ export class Lesson {
   @ApiProperty({ description: '🈵 학기ID' })
   @Column({ type: 'int', unsigned: true })
   termId: number;
+
+  @ApiProperty({ description: '🈵 분류ID' })
+  @Column({ type: 'int', unsigned: true })
+  categoryId: number;
 
   // ------------------------------------------------------------------------ //
 
@@ -142,6 +145,12 @@ export class Lesson {
   @JoinColumn({ name: 'termId' })
   term: Term;
 
+  @ManyToOne(() => Category, (category) => category.lessons, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'categoryId' })
+  category: Category;
+
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
   @OneToMany(() => Group, (group) => group.lesson)
@@ -157,9 +166,6 @@ export class Lesson {
     (instructorLesson: InstructorLesson) => instructorLesson.lesson,
   )
   instructorLessons: InstructorLesson[];
-
-  @ManyToMany(() => Category, (category) => category.lessons)
-  categories: Category[];
 
   //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
 

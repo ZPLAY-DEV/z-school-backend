@@ -10,13 +10,43 @@ import {
 import { StatusCodes } from 'http-status-codes';
 import { RemovalStatus } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiEnumResponseTemplate } from 'src/core/swagger/response/api-enum.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
-import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
+import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
+import { TraceableNoteDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { GroupStudent } from '../entities/group-student.entity';
+
+//? ---------------------------------------------------------------------- ?//
+//? Create Group
+//? ---------------------------------------------------------------------- ?//
+
+export const CreateGroupDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '반 👈 생성',
+      description: `
+      - 반 생성
+      `,
+    }),
+    ApiBody({
+      type: CreateGroupDto,
+    }),
+    ApiCreatedResponseTemplate({
+      description: '반 등록 완료',
+      type: Group,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
+      },
+    ]),
+  );
+};
 
 //? ---------------------------------------------------------------------- ?//
 //? Find Group
@@ -25,7 +55,7 @@ import { GroupStudent } from '../entities/group-student.entity';
 export const FindGroupDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 상세 조회',
+      summary: '반 👈 상세 조회',
       description: `
       - 반 상세 조회
       `,
@@ -69,7 +99,7 @@ export const FindGroupDocs = () => {
 export const UpdateGroupDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 정보 업데이트',
+      summary: '반 정보 👈 수정',
       description: `
       - 반 id 만을 가지고 정보를 업데이트.
       - Request 의 UpdateGroupDto 는 PartialType(CreateGroupDto) 로 변경 원하는 필드만 작성
@@ -112,7 +142,7 @@ export const UpdateGroupDocs = () => {
 export const DeleteGroupDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 삭제',
+      summary: '반 👈 삭제',
       description: `
       - 반을 삭제합니다.
       - note 에 삭제하는 사유를 남겨야만 처리 가능합니다.
@@ -120,10 +150,11 @@ export const DeleteGroupDocs = () => {
       - active 상태에서는 삭제하지 않고 상태만 폐강처리 합니다. (canceled)
       - canceled 상태에서는 soft 삭제됩니다. (soft_deleted) 단, 연결된 학생이 있는 경우 422 에러 발생
       - RemovalStatus (deleted, canceled, soft_deleted) 를 리턴합니다.
+      - deletedBy는 API 호출하는 사람의 role 에 따란 자동으로 매니져|강사|기타 중 하나로 설정됩니다.
       `,
     }),
     ApiBody({
-      type: DeleteGroupDto,
+      type: TraceableNoteDto,
     }),
     ApiEnumResponseTemplate({
       description: '상태 리턴',

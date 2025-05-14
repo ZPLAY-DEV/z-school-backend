@@ -174,6 +174,11 @@ export interface IRequestUser {
   refreshToken?: string;
 }
 
+export interface IRequestUserWithIdAndRole {
+  userId: number;
+  role: Role;
+}
+
 //? ---------------------------------------------------------------------- ?//
 //? Refactor By Types -> Interface
 //? ---------------------------------------------------------------------- ?//

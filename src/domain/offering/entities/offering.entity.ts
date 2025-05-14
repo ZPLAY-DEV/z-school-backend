@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { EnrollmentRule } from 'src/common/enums';
 import { ITimeRange } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
-import { School } from 'src/domain/school/entities/school.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
   CreateDateColumn,
@@ -24,11 +24,15 @@ export class Offering {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: 'v2 에는 schoolId 가 없음' })
-  @Column({ type: 'int', unsigned: true, nullable: true })
-  schoolId: number | null;
+  @ApiProperty({ description: '🈵 학기ID' })
+  @Column({ type: 'int', unsigned: true })
+  termId: number;
 
   // ------------------------------------------------------------------------ //
+
+  @ApiProperty({ description: '🈵 학교ID (relation용 아님)' })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  schoolId: number | null;
 
   @ApiProperty({ description: '학교명' })
   @Column({ type: 'varchar', length: 24 })
@@ -39,7 +43,7 @@ export class Offering {
   lessonName: string;
 
   @ApiProperty({ description: '반이름' })
-  @Column({ type: 'varchar', length: 16 })
+  @Column({ type: 'varchar', length: 32 })
   groupName: string;
 
   @ApiProperty({ description: 'class size' })
@@ -54,7 +58,7 @@ export class Offering {
     type: 'array',
     isArray: true,
   })
-  @Column({ type: 'json' })
+  @Column({ type: 'json', comment: '수업 시간 정보 (could be multiple)' })
   times: ITimeRange[];
 
   @Column('simple-array')
@@ -89,9 +93,9 @@ export class Offering {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => School, (school) => school.offerings)
-  @JoinColumn({ name: 'schoolId' })
-  school: School;
+  @ManyToOne(() => Term, (term) => term.offerings)
+  @JoinColumn({ name: 'termId' })
+  term: Term;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 

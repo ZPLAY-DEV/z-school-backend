@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { EnrollmentStatus } from 'src/common/enums/enrollment-status';
+import { Actor } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import {
@@ -10,10 +10,12 @@ import {
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('group_student')
+@Unique(['groupId', 'studentId'])
 export class GroupStudent {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
@@ -37,16 +39,28 @@ export class GroupStudent {
   materialFee: number;
 
   @ApiProperty({
-    description: '🈵 반에 어떻게 들어왔는지',
-    default: EnrollmentStatus.REGISTRATION,
+    description: '🈵 누가 등록했나?',
+    default: Actor.SYSTEM,
   })
   @Column({
     type: 'enum',
-    enum: EnrollmentStatus,
-    default: EnrollmentStatus.REGISTRATION,
-    comment: '어떻게 반에 들어왔나?',
+    enum: Actor,
+    default: Actor.SYSTEM,
+    comment: '누가 등록했나?',
   })
-  status: EnrollmentStatus;
+  enrolledBy: Actor;
+
+  @ApiProperty({
+    description: '🈵 누가 삭제했나?',
+    default: Actor.SYSTEM,
+  })
+  @Column({
+    type: 'enum',
+    enum: Actor,
+    default: Actor.SYSTEM,
+    comment: '누가 삭제했나?',
+  })
+  deletedBy: Actor;
 
   @ApiProperty({ description: '🈳 비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })

@@ -7,6 +7,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateStatementDto } from 'src/domain/statement/dto/create-statement.dto';
 import { UpdateStatementDto } from 'src/domain/statement/dto/update-statement.dto';
 import { DataSource, Repository } from 'typeorm';
@@ -69,7 +70,7 @@ export class StatementService {
           });
     } catch (error) {
       console.error(error);
-      throw new NotFoundException('entity not found');
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
   }
 

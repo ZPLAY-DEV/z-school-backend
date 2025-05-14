@@ -6,10 +6,12 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Repository } from 'typeorm';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
+import { LessonCoreService } from './lesson-core.service';
 
 @Injectable()
 export class LessonService {
@@ -18,6 +20,7 @@ export class LessonService {
   constructor(
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
+    private readonly lessonCoreService: LessonCoreService,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -25,8 +28,7 @@ export class LessonService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateLessonDto): Promise<Lesson> {
-    const lesson = this.lessonRepository.create(dto);
-    return await this.lessonRepository.save(lesson);
+    return await this.lessonCoreService.create(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -45,6 +47,10 @@ export class LessonService {
     });
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? FIND
+  //? ---------------------------------------------------------------------- ?//
+
   async findById(id: number, relations: string[] = []): Promise<Lesson> {
     try {
       return relations.length > 0
@@ -57,7 +63,7 @@ export class LessonService {
           });
     } catch (error) {
       this.logger.error(error);
-      throw new NotFoundException('entity not found');
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
     }
   }
 
@@ -66,19 +72,12 @@ export class LessonService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateLessonDto): Promise<Lesson> {
-    const lesson = await this.lessonRepository.preload({
-      id,
-      ...dto,
-    });
-    if (!lesson) {
-      throw new NotFoundException(`entity not found`);
-    }
-    return await this.lessonRepository.save(lesson);
+    return await this.lessonCoreService.update(id, dto);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? DELETE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   async remove(id: number): Promise<Lesson> {
     const lesson = await this.findById(id);

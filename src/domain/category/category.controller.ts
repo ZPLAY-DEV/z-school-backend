@@ -23,7 +23,6 @@ export class CategoryController {
 
   @Public()
   @ApiOperation({ description: 'return paginated list' })
-  
   @Get('paginated')
   async infiniteList(
     @Paginate() query: PaginateQuery,

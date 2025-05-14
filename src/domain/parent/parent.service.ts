@@ -8,6 +8,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { DataSource, Repository } from 'typeorm';
 import { CreateParentDto } from './dto/create-parent.dto';
@@ -75,7 +76,7 @@ export class ParentService {
           });
     } catch (error) {
       this.logger.error(error);
-      throw new NotFoundException('entity not found');
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
   }
 

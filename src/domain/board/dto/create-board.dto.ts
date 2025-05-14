@@ -4,24 +4,25 @@ import {
   IsInt,
   IsNotEmpty,
   IsNumber,
-  IsObject,
   IsOptional,
   IsString,
   Min,
+  Validate,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { BoardTarget, Role } from 'src/common/enums';
+import { GroupIdForManagerConstraint } from '../validator/group-id-for-manager.validator';
 
 export class CreateBoardDto {
   @ApiProperty({
-    description: '🈵 작성자의 User ID',
+    description: '🈳 작성자의 User ID',
     example: 1,
     type: Number,
-    required: true,
+    required: false,
   })
   @IsNumber()
-  @IsNotEmpty()
-  userId: number;
+  @IsOptional()
+  userId?: number;
 
   @ApiProperty({
     description: '🈳 작성자의 Group ID',
@@ -32,6 +33,7 @@ export class CreateBoardDto {
   @IsNumber()
   @Type(() => Number)
   @IsOptional()
+  @Validate(GroupIdForManagerConstraint)
   groupId?: number;
 
   @ApiProperty({
@@ -67,27 +69,22 @@ export class CreateBoardDto {
   body?: string;
 
   @ApiProperty({
-    description: '🈵 작성자의 User 유형',
+    description: '🈵 작성자의 User 유형( MANAGER, INSTRUCTOR ) 2 case만 요청  ',
     example: Role.MANAGER,
     enum: Role,
     required: true,
   })
-  @IsNotEmpty()
   @IsEnum(Role)
+  @IsNotEmpty()
   userRole: Role;
 
   @ApiProperty({
     description: '🈵 게시글 대상 (JSON)',
-    example: {
-      type: BoardTarget.INSTRUCTOR,
-      groupId: 1,
-      grade: '1학년',
-      class: '1반',
-    },
-    type: Object,
+    example: BoardTarget.PARENT,
+    enum: BoardTarget,
     required: true,
   })
-  @IsObject()
   @IsNotEmpty()
+  @IsEnum(BoardTarget)
   target: BoardTarget;
 }

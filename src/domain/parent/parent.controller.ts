@@ -1,12 +1,12 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    Param,
-    ParseIntPipe,
-    Patch,
-    Post,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -35,7 +35,6 @@ export class ParentController {
   //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'paginated 주문 리스트' })
-  
   @Get('paginated')
   async findAll(@Paginate() query: PaginateQuery): Promise<Paginated<Parent>> {
     return this.parentService.findAll(query);

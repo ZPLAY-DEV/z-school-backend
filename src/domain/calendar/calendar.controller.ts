@@ -1,12 +1,12 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    Param,
-    ParseIntPipe,
-    Patch,
-    Post,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -33,7 +33,6 @@ export class CalendarController {
   //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'Calendar 리스트 w/ Pagination' })
-  
   @Get()
   async findCalendars(
     @Paginate() query: PaginateQuery,

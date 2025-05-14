@@ -1,16 +1,16 @@
 import {
-    BadRequestException,
-    Body,
-    ClassSerializerInterceptor,
-    Controller,
-    Delete,
-    Get,
-    Param,
-    ParseIntPipe,
-    Patch,
-    Post,
-    Query,
-    UseInterceptors,
+  BadRequestException,
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -70,7 +70,6 @@ export class UserController {
   @ApiOperation({ description: 'User 리스트 (paginated)' })
   @UseInterceptors(AvatarInterceptor)
   // @UsePipes(new ValidationPipe({ transform: true }))
-  
   @Get('paginated')
   @UseInterceptors(ClassSerializerInterceptor)
   async findAll(@Paginate() query: PaginateQuery): Promise<Paginated<User>> {
@@ -78,7 +77,6 @@ export class UserController {
   }
 
   @ApiOperation({ description: 'User 리스트 (User[])' })
-  
   @Get()
   async list(): Promise<User[]> {
     return this.userService.list();

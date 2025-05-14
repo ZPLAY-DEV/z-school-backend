@@ -1,3 +1,4 @@
+export * from './actor';
 export * from './alarm-type';
 export * from './booking-status';
 export * from './calendar-type';

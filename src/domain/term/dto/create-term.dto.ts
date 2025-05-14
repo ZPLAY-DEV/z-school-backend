@@ -79,9 +79,6 @@ export class CreateTermDto {
   @IsDateTimePriorToDate('start', {
     message: 'bookingStart must be prior to start date',
   })
-  // @IsDateTimeWithinRange('start', 'end', {
-  //   message: 'bookingStart must be within start and end date range',
-  // })
   bookingStart?: Date;
 
   @ApiProperty({
@@ -98,8 +95,5 @@ export class CreateTermDto {
   @IsDateTimePriorToDate('start', {
     message: 'bookingEnd must be prior to start date',
   })
-  // @IsDateTimeWithinRange('start', 'end', {
-  //   message: 'bookingEnd must be within start and end date range',
-  // })
   bookingEnd?: Date;
 }

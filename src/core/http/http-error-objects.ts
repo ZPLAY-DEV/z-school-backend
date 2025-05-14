@@ -166,7 +166,7 @@ export const HttpErrorConstants = {
 
   NOT_FOUND_GROUP: {
     error: 'NOT_FOUND_GROUP',
-    message: '그룹을 찾을 수 없습니다.',
+    message: '그룹(수업)을 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
   NOT_FOUND_TERM: {

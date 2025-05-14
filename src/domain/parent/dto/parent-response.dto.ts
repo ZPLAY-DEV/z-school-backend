@@ -3,6 +3,8 @@ import { ApiProperty } from '@nestjs/swagger';
 export class ParentResponseDto {
   @ApiProperty({ description: '학부모 ID', example: 8, type: Number })
   id: number;
+  @ApiProperty({ description: '학부모 User ID', example: 1, type: Number })
+  userId: number | null;
   @ApiProperty({ description: '학부모 이름', example: '홍길동', type: String })
   name: string;
   @ApiProperty({
