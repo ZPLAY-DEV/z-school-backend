@@ -43,7 +43,6 @@ export class School {
   @Column({
     type: 'varchar',
     length: 16,
-    unique: true,
     comment: '관할 교육청 코드',
   })
   authorityCode: string;
