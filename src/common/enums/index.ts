@@ -1,3 +1,4 @@
+export * from './actor';
 export * from './alarm-type';
 export * from './booking-status';
 export * from './calendar-type';
@@ -18,4 +19,3 @@ export * from './subsidy-status';
 export * from './subsidy-type';
 export * from './time-unit';
 export * from './weekday';
-

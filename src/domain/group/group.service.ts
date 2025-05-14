@@ -15,7 +15,7 @@ import { ClassStatus } from 'src/common/enums';
 import { RemovalStatus } from 'src/common/enums/removal-status';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
-import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
+import { TraceableNoteDto } from 'src/domain/group/dto/delete-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Repository } from 'typeorm';
 import { UpdateGroupDto } from './dto/update-group.dto';
@@ -60,13 +60,15 @@ export class GroupService {
         ? await this.groupRepository.findOneOrFail({
             where: { id },
             relations,
+            // withDeleted: true,
           })
         : await this.groupRepository.findOneOrFail({
             where: { id },
+            // withDeleted: true,
           });
     } catch (error) {
       this.logger.error(error);
-      throw new NotFoundException('entity not found');
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
   }
 
@@ -80,7 +82,7 @@ export class GroupService {
       ...dto,
     });
     if (!group) {
-      throw new NotFoundException(`entity not found`);
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
     return await this.groupRepository.save(group);
   }
@@ -89,7 +91,10 @@ export class GroupService {
   //? DELETE
   //?-------------------------------------------------------------------------//
 
-  async remove(id: number, dto: DeleteGroupDto): Promise<RemovalStatus> {
+  async removeWithDto(
+    id: number,
+    dto: TraceableNoteDto,
+  ): Promise<RemovalStatus> {
     const group = await this.findById(id);
 
     try {
@@ -107,18 +112,20 @@ export class GroupService {
     if (group.status === ClassStatus.ACTIVE) {
       await this.groupRepository.update(id, {
         status: ClassStatus.CANCELED,
+        deletedBy: dto.role,
         note: dto.note,
       });
       return RemovalStatus.CANCELED;
     }
 
-    if (group.groupStudents.length > 0) {
+    if (group.groupStudents?.length > 0) {
       throw new UnprocessableEntityException(
         HttpErrorConstants.CONDITION_NOT_MET,
       );
     }
     await this.groupRepository.update(id, {
       note: dto.note,
+      deletedBy: dto.role,
       deletedAt: new Date(),
     });
     return RemovalStatus.SOFT_DELETED;

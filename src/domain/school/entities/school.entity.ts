@@ -5,7 +5,6 @@ import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { InstructorSchool } from 'src/domain/instructor/entities/instructor-school.entity';
 // import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
-import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Phone } from 'src/domain/phone/entities/phone.entity';
 import { Statement } from 'src/domain/statement/entities/statement.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -110,11 +109,6 @@ export class School {
   deletedAt: Date | null;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
-
-  @OneToMany(() => Offering, (offering) => offering.school, {
-    cascade: ['insert', 'update'],
-  })
-  public offerings: Offering[];
 
   @OneToMany(() => Term, (term) => term.school, {
     cascade: ['insert', 'update'],

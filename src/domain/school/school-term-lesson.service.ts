@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -11,30 +6,12 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { Category as CategoryEnum } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { Category } from 'src/domain/category/entities/category.entity';
-import { Group } from 'src/domain/group/entities/group.entity';
-import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
-import { InstructorSchool } from 'src/domain/instructor/entities/instructor-school.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
-import { School } from 'src/domain/school/entities/school.entity';
-import { Term } from 'src/domain/term/entities/term.entity';
-import {
-  parseRangeFormat,
-  parseTime,
-  parseTimeFormat,
-} from 'src/helpers/parse';
-import {
-  DataSource,
-  DeepPartial,
-  EntityManager,
-  FindOptionsWhere,
-  IsNull,
-  Repository,
-} from 'typeorm';
+import { LessonCoreService } from 'src/domain/lesson/lesson-core.service';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class SchoolTermLessonService {
@@ -43,489 +20,20 @@ export class SchoolTermLessonService {
   constructor(
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
-    private readonly dataSource: DataSource,
+    private readonly lessonCoreService: LessonCoreService,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  //! preconditions:
-  //! 1) 강좌명 is unique in the same 학기
-  //! 2) 반이름 is unique in the same 강좌
-  async create(dto: CreateLessonDto): Promise<Lesson> {
-    return await this.dataSource.transaction(async (manager: EntityManager) => {
-      //? 1단계) Find school
-      const school = await manager.findOne(School, {
-        where: { id: dto.schoolId },
-      });
-      if (!school) {
-        throw new NotFoundException('School not found');
-      }
-
-      //? 2단계) Find term to use start/end dates
-      const term = await manager.findOne(Term, {
-        where: { id: dto.termId },
-      });
-      if (!term) {
-        throw new NotFoundException('Term not found');
-      }
-
-      //? 3단계) 같은 이름의 기존 강좌가 있는지 확인
-      const existingLesson = await manager.findOne(Lesson, {
-        where: {
-          termId: dto.termId,
-          schoolId: dto.schoolId,
-          lessonName: dto.lessonName,
-        },
-        relations: { groups: true },
-      });
-
-      if (existingLesson) {
-        return this.update(existingLesson.id, dto, manager);
-      }
-
-      //? 4단계) 새로운 강좌 생성
-      const lesson = await manager.save(Lesson, {
-        ...dto,
-        start: dto.start ?? term.start,
-        end: dto.end ?? term.end,
-        schoolName: school.name,
-        operationFeeRule: school.operationFeeRule,
-        requiredDocuments: dto.requiredDocuments || [],
-      });
-
-      //? 5단계) 그룹 및 강사 정보 처리
-      if (dto.groups?.length) {
-        await this.processGroups(lesson, dto, manager);
-      }
-
-      //? 6단계) 카테고리 관계 설정
-      if (dto.category) {
-        await this.processCategory(lesson, dto.category, manager);
-      }
-
-      // 최종 데이터를 다시 로드하여 변환된 값을 반환
-      const savedLesson = await manager.findOne(Lesson, {
-        where: { id: lesson.id },
-        relations: { groups: true, categories: true },
-      });
-
-      if (!savedLesson) {
-        throw new NotFoundException(
-          `Cannot find saved lesson with ID ${lesson.id}`,
-        );
-      }
-
-      return savedLesson;
-    });
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Update
-  //? ---------------------------------------------------------------------- ?//
-
-  //! 1) 반 이름을 변경한 경우, 기존 반 삭제후 무조건 새로운 반 생성하지 않고, 요일 및 시간을
-  //!    추가로 비교하여 그 값들이 같다면, 반 이름만 변경하는 시도로 판단하여 업데이트 진행.
-  //! 2) 반 이름과 요일 및 시간을 동시에 변경한 경우, 기존 반 삭제 후 새로운 반 생성.
-  async update(
-    id: number,
-    dto: UpdateLessonDto,
-    manager?: EntityManager,
-  ): Promise<Lesson> {
-    // manager가 제공되지 않은 경우(직접 호출) 새로운 트랜잭션 시작
-    if (!manager) {
-      return this.dataSource.transaction(
-        async (transactionManager: EntityManager) => {
-          return this.update(id, dto, transactionManager);
-        },
-      );
-    }
-
-    //? 1단계) 업데이트할 강좌 찾기
-    const existingLesson = await manager.findOne(Lesson, {
-      where: { id },
-      relations: {
-        groups: true,
-      },
-    });
-
-    if (!existingLesson) {
-      throw new NotFoundException(`Lesson with ID ${id} not found`);
-    }
-
-    //? 2단계) 학교 정보 확인
-    const school = await manager.findOne(School, {
-      where: { id: dto.schoolId },
-    });
-    if (!school) {
-      throw new NotFoundException('School not found');
-    }
-
-    //? 3단계) 기존 그룹 ID 매핑
-    if (dto.groups?.length) {
-      // 기존 GroupId 를 보존하도록 매핑
-      dto.groups = dto.groups.map((groupDto) => {
-        // Try to find matching group first by name
-        let existingGroup = existingLesson.groups.find(
-          (g) => g.groupName === groupDto.groupName,
-        );
-
-        // If not found by name, try to find by weekday, start and end time
-        if (!existingGroup) {
-          const dtoStart = parseTimeFormat(parseTime(groupDto.start));
-          const dtoEnd = parseTimeFormat(parseTime(groupDto.end));
-
-          existingGroup = existingLesson.groups.find(
-            (g) =>
-              g.weekday === groupDto.weekday &&
-              (g.start === dtoStart || g.start === groupDto.start) &&
-              (g.end === dtoEnd || g.end === groupDto.end),
-          );
-        }
-
-        return existingGroup
-          ? { ...groupDto, lessonId: existingLesson.id, id: existingGroup.id }
-          : { ...groupDto, lessonId: existingLesson.id };
-      });
-
-      // 매핑되지 않은 기존 그룹을 찾아서 삭제
-      const newGroupIds = dto.groups
-        .filter((g) => g.id !== undefined)
-        .map((g) => g.id);
-
-      const groupsToDelete = existingLesson.groups.filter(
-        (group) => !newGroupIds.includes(group.id),
-      );
-
-      if (groupsToDelete.length > 0) {
-        await manager.softDelete(
-          Group,
-          groupsToDelete.map((g) => g.id),
-        );
-      }
-    }
-
-    //? 4단계) 강좌 업데이트
-    const updatedLesson = await manager
-      .save(Lesson, {
-        ...existingLesson,
-        ...dto,
-        schoolName: school.name,
-        operationFeeRule: school.operationFeeRule,
-        requiredDocuments: dto.requiredDocuments || [],
-      })
-      .catch((error) => {
-        console.log(`🔴 허용하지 않는 입력 조합 오류`, error);
-        throw new UnprocessableEntityException(
-          HttpErrorConstants.INVALID_CONSTRAINT,
-        );
-      });
-
-    //? 5단계) 그룹 및 강사 정보 처리
-    if (dto.groups?.length) {
-      await this.processGroups(updatedLesson, dto, manager);
-    }
-
-    //? 6단계) 카테고리 관계 설정
-    if (dto.category) {
-      await this.processCategory(updatedLesson, dto.category, manager);
-    }
-
-    // 최종 데이터를 다시 로드하여 변환된 값을 반환
-    const finalLesson = await manager.findOne(Lesson, {
-      where: { id: updatedLesson.id },
-      relations: { groups: true, categories: true },
-    });
-
-    if (!finalLesson) {
-      throw new NotFoundException(
-        `Cannot find updated lesson with ID ${updatedLesson.id}`,
-      );
-    }
-
-    return finalLesson;
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? 헬퍼 메서드 - 그룹 처리
-  //? ---------------------------------------------------------------------- ?//
-
-  private async processGroups(
-    lesson: Lesson,
-    dto: CreateLessonDto | UpdateLessonDto,
-    manager: EntityManager,
-  ): Promise<void> {
-    // Get existing groups first to handle name changes
-    const existingGroups = await manager.find(Group, {
-      where: { lessonId: lesson.id, deletedAt: IsNull() },
-    });
-
-    // Get or create instructors first
-    const instructorPromises =
-      dto.groups?.map(async (groupDto, index) => {
-        const postfix = String.fromCharCode(65 + index); // 65 is ASCII for 'A'
-
-        // Upsert instructor using ON DUPLICATE KEY UPDATE
-        await manager.query(
-          `INSERT INTO instructors
-          (name, phone)
-          VALUES (?, ?)
-          ON DUPLICATE KEY UPDATE updatedAt = CURRENT_TIMESTAMP`,
-          [groupDto.instructorName, groupDto.instructorPhone],
-        );
-
-        // Get the instructor ID
-        const [instructor] = await manager.query<{ id: number }[]>(
-          `SELECT id FROM instructors WHERE name = ? AND phone = ?`,
-          [groupDto.instructorName, groupDto.instructorPhone],
-        );
-
-        // Check if this is an existing group with a name change
-        const dtoStart = parseTimeFormat(parseTime(groupDto.start));
-        const dtoEnd = parseTimeFormat(parseTime(groupDto.end));
-
-        // Try to find matching group first by name
-        let existingGroup = existingGroups.find(
-          (g) => g.groupName === groupDto.groupName,
-        );
-
-        // If not found by name, try to find by weekday, start and end time
-        if (!existingGroup) {
-          existingGroup = existingGroups.find(
-            (g) =>
-              g.weekday === groupDto.weekday &&
-              (g.start === dtoStart || g.start === groupDto.start) &&
-              (g.end === dtoEnd || g.end === groupDto.end),
-          );
-        }
-
-        return {
-          lessonId: lesson.id,
-          instructorId: instructor.id,
-          instructorName: groupDto.instructorName,
-          instructorPhone: groupDto.instructorPhone,
-          groupData: {
-            ...groupDto,
-            groupName: groupDto.groupName || `${lesson.lessonName} ${postfix}`,
-            instructorId: instructor.id,
-            lessonId: lesson.id,
-            id: existingGroup?.id, // Use existing ID if found
-          },
-        };
-      }) || [];
-
-    const instructorsWithGroupData = await Promise.all(instructorPromises);
-
-    // Upsert groups with both lessonId and instructorId
-    for (const { instructorId, groupData } of instructorsWithGroupData) {
-      // 수업 시작 시간과 종료 시간을 24시간 형식으로 변환
-      const groupStart = parseTimeFormat(parseTime(groupData.start));
-      const groupEnd = parseTimeFormat(parseTime(groupData.end));
-      const groupAllowedGrades = parseRangeFormat(groupData.allowedGrades).join(
-        ',',
-      );
-
-      // 타입 안전한 방식으로 upsert 데이터 생성
-      const upsertData: DeepPartial<Group> = {
-        lessonId: lesson.id,
-        groupName: groupData.groupName,
-        instructorId,
-        location: groupData.location,
-        capacity: groupData.capacity,
-        allowedGrades: groupAllowedGrades,
-        weekday: groupData.weekday,
-        start: groupStart,
-        end: groupEnd,
-      };
-
-      // If we have an ID (from existing group), use it
-      if (groupData.id) {
-        upsertData.id = Number(groupData.id);
-        await manager.update(Group, { id: upsertData.id }, upsertData);
-      } else {
-        // Otherwise insert new group
-        await manager.save(Group, upsertData);
-      }
-    }
-
-    // 전달된 DTO에 없는 기존 그룹 찾아서 삭제하기
-    const newGroupIds = instructorsWithGroupData
-      .map((item) => item.groupData.id)
-      .filter((id) => id !== undefined);
-
-    // Delete groups that aren't in the DTO
-    const groupsToDelete = existingGroups.filter(
-      (g) => !newGroupIds.includes(g.id),
-    );
-
-    if (groupsToDelete.length > 0) {
-      await manager.softDelete(
-        Group,
-        groupsToDelete.map((g) => g.id),
-      );
-    }
-
-    // ---------------------------------------------------------------------- //
-    // instructor_lesson 관계 업데이트 (무조건 soft delete 후 재생성)
-    // ---------------------------------------------------------------------- //
-
-    const instructorIds = instructorsWithGroupData.map(
-      (item) => item.instructorId,
-    );
-    await manager.update(
-      InstructorLesson,
-      { lessonId: lesson.id, deletedAt: IsNull() },
-      { deletedAt: new Date() },
-    );
-
-    await Promise.all(
-      instructorIds.map((instructorId) =>
-        manager.query(
-          `INSERT INTO instructor_lesson
-          (instructorId, lessonId)
-          VALUES (?, ?)`,
-          [instructorId, lesson.id],
-        ),
-      ),
-    );
-
-    // ---------------------------------------------------------------------- //
-    // instructor_school 관계 업데이트 (무조건 soft delete 후 재생성)
-    // ---------------------------------------------------------------------- //
-
-    await manager.update(
-      InstructorSchool,
-      { schoolId: lesson.schoolId, deletedAt: IsNull() },
-      { deletedAt: new Date() },
-    );
-
-    await Promise.all(
-      instructorIds.map((instructorId) =>
-        manager.query(
-          'INSERT IGNORE INTO `instructor_school` (instructorId, schoolId) VALUES (?, ?)',
-          [instructorId, dto.schoolId],
-        ),
-      ),
-    );
-
-    // 저장된 groups 데이터를 lesson 객체에 다시 로드하여 반환값이 transform된 데이터가 되도록 함
-    lesson.groups = await manager.find(Group, {
-      where: { lessonId: lesson.id, deletedAt: IsNull() },
-    });
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? 헬퍼 메서드 - 카테고리 처리
-  //? ---------------------------------------------------------------------- ?//
-
-  private async processCategory(
-    lesson: Lesson,
-    categorySlug: CategoryEnum,
-    manager: EntityManager,
-  ): Promise<void> {
-    const whereCondition: FindOptionsWhere<Category> = { slug: categorySlug };
-    const category = await manager.findOne(Category, {
-      where: whereCondition,
-    });
-
-    if (!category) {
-      throw new NotFoundException(
-        `Category with slug '${categorySlug}' not found`,
-      );
-    }
-
-    await manager.query(
-      `INSERT IGNORE INTO category_lesson 
-        (categoryId, lessonId) 
-        VALUES (?, ?)`,
-      [category.id, lesson.id],
-    );
-  }
-
   async createBulk(dtos: CreateLessonDto[]): Promise<Lesson[]> {
-    return await this.dataSource.transaction(async (manager: EntityManager) => {
-      const lessonPromises = dtos.map(async (dto) => {
-        try {
-          //? 1단계) Find school
-          const school = await manager.findOne(School, {
-            where: { id: dto.schoolId },
-          });
-          if (!school) {
-            throw new NotFoundException('School not found');
-          }
-
-          //? 2단계) Find term to use start/end dates
-          const term = await manager.findOne(Term, {
-            where: { id: dto.termId },
-          });
-          if (!term) {
-            throw new NotFoundException('Term not found');
-          }
-
-          //? 3단계) 같은 이름의 기존 강좌가 있는지 확인
-          const existingLesson = await manager.findOne(Lesson, {
-            where: {
-              termId: dto.termId,
-              schoolId: dto.schoolId,
-              lessonName: dto.lessonName,
-            },
-            relations: { groups: true },
-          });
-
-          if (existingLesson) {
-            // Convert CreateLessonDto to UpdateLessonDto for update
-            return this.update(
-              existingLesson.id,
-              dto as unknown as UpdateLessonDto,
-              manager,
-            );
-          }
-
-          //? 4단계) 새로운 강좌 생성
-          const lesson = await manager.save(Lesson, {
-            ...dto,
-            start: dto.start ?? term.start,
-            end: dto.end ?? term.end,
-            schoolName: school.name,
-            operationFeeRule: school.operationFeeRule,
-            requiredDocuments: dto.requiredDocuments || [],
-          });
-
-          //? 5단계) 그룹 및 강사 정보 처리
-          if (dto.groups?.length) {
-            await this.processGroups(lesson, dto, manager);
-          }
-
-          //? 6단계) 카테고리 관계 설정
-          if (dto.category) {
-            await this.processCategory(lesson, dto.category, manager);
-          }
-
-          // 최종 데이터를 다시 로드하여 변환된 값을 반환
-          const savedLesson = await manager.findOne(Lesson, {
-            where: { id: lesson.id },
-            relations: { groups: true, categories: true },
-          });
-
-          if (!savedLesson) {
-            throw new NotFoundException(
-              `Cannot find saved lesson with ID ${lesson.id}`,
-            );
-          }
-
-          return savedLesson;
-        } catch (error) {
-          this.logger.error(
-            `Failed to create lesson: ${dto.lessonName}`,
-            error.stack,
-          );
-          throw error;
-        }
-      });
-
-      return await Promise.all(lessonPromises);
-    });
+    const lessons: Lesson[] = [];
+    for (const dto of dtos) {
+      const lesson = await this.lessonCoreService.create(dto);
+      lessons.push(lesson);
+    }
+    return lessons;
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -544,9 +52,8 @@ export class SchoolTermLessonService {
 
     return await paginate(query, queryBuilder, {
       relations: {
-        term: true,
-        groups: true,
-        categories: true,
+        groups: { instructor: true },
+        category: true,
       },
       sortableColumns: ['id', 'lessonName', 'termId'],
       searchableColumns: ['schoolName', 'lessonName'],
@@ -564,11 +71,50 @@ export class SchoolTermLessonService {
   async list(schoolId: number, termId: number): Promise<Lesson[]> {
     const queryBuilder = this.lessonRepository
       .createQueryBuilder('lesson')
+      .leftJoinAndSelect('lesson.category', 'category')
       .leftJoinAndSelect('lesson.groups', 'group')
+      .leftJoinAndSelect('group.instructor', 'instructor')
       .where('lesson.schoolId = :schoolId', { schoolId })
       .andWhere('lesson.termId = :termId', { termId })
       .orderBy('lesson.id', 'DESC');
 
     return await queryBuilder.getMany();
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
+  async update(id: number, dto: UpdateLessonDto): Promise<Lesson> {
+    return await this.lessonCoreService.update(id, dto);
+  }
+
+  //?-------------------------------------------------------------------------//
+  //? DELETE
+  //?-------------------------------------------------------------------------//
+
+  async deleteAll(schoolId: number, termId: number): Promise<number> {
+    try {
+      const result = await this.lessonRepository.manager.transaction(
+        async (transactionalEntityManager) => {
+          const result = await transactionalEntityManager
+            .createQueryBuilder()
+            .delete()
+            .from(Lesson)
+            .where('schoolId = :schoolId AND termId = :termId', {
+              schoolId,
+              termId,
+            })
+            .execute();
+
+          return result.affected;
+        },
+      );
+
+      return result || 0;
+    } catch (error) {
+      this.logger?.error(error);
+      throw new BadRequestException(HttpErrorConstants.CONDITION_NOT_MET);
+    }
   }
 }

@@ -45,6 +45,11 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
             ...HttpErrorConstants.UNAUTHORIZED,
             description: req.url,
           };
+        } else if (httpStatus === 404) {
+          errorResponse = {
+            ...HttpErrorConstants.NOT_FOUND_ENTITY,
+            description: req.url,
+          };
         } else {
           errorResponse = {
             ...HttpErrorConstants.UNEXPECTED_HTTP_EXCEPTION,
@@ -72,6 +77,7 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
 
     //! HttpErrorFormat 로 리턴하기 위해 super.catch 없이 직접 응답처리
     res.status(httpStatus).json(errorResponse);
+    // super.catch(exception, host);
 
     //! development 환경의 경우, slack 메시지 보내지 않음.
     if (httpStatus >= 500 && process.env.NODE_ENV !== 'development') {

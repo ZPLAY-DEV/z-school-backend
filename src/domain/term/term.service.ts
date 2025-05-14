@@ -1,15 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import {
-  FilterOperator,
-  paginate,
-  Paginated,
-  PaginateQuery,
-} from 'nestjs-paginate';
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { School } from 'src/domain/school/entities/school.entity';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
 import { UpdateTermDto } from 'src/domain/term/dto/update-term.dto';
 import { Term } from 'src/domain/term/entities/term.entity';
-import { S3Service } from 'src/services/aws/s3.service';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -17,42 +16,48 @@ export class TermService {
   constructor(
     @InjectRepository(Term)
     private readonly termRepository: Repository<Term>,
-    private readonly s3Service: S3Service,
+    @InjectRepository(School)
+    private readonly schoolRepository: Repository<School>,
   ) {}
 
-  //?-------------------------------------------------------------------------//
-  //? CREATE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
+  //? Create
+  //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateTermDto): Promise<Term> {
-    const item = this.termRepository.create(dto);
-    return await this.termRepository.save(item);
-  }
+    // 1. 학교 존재 여부 조회
+    const school = await this.schoolRepository.findOne({
+      where: { id: dto.schoolId },
+    });
 
-  //?-------------------------------------------------------------------------//
-  //? READ
-  //?-------------------------------------------------------------------------//
+    if (!school) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+    }
 
-  async findAll(query: PaginateQuery): Promise<Paginated<Term>> {
-    const queryBuilder = this.termRepository.createQueryBuilder('term');
-    return await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'termName'],
-      searchableColumns: ['termName'],
-      defaultSortBy: [['id', 'DESC']],
-      filterableColumns: {
-        isActive: [FilterOperator.EQ],
-        termType: [FilterOperator.EQ],
+    // 2. 학기 중복 여부 조회
+    const existingTerm = await this.termRepository.findOne({
+      where: {
+        schoolId: dto.schoolId,
+        termName: dto.termName,
+        schoolYear: dto.schoolYear,
       },
     });
+
+    if (existingTerm) {
+      throw new BadRequestException(HttpErrorConstants.DUPLICATE_TERM);
+    }
+
+    // 3. 생성
+    const newTerm = this.termRepository.create({
+      ...dto,
+      schoolName: dto.schoolName ?? school.name,
+    });
+    return this.termRepository.save(newTerm);
   }
 
-  async findActive(): Promise<Term[]> {
-    return await this.termRepository
-      .createQueryBuilder('term')
-      .orderBy('term.id', 'DESC')
-      .where({ isActive: true })
-      .getMany();
-  }
+  //?-------------------------------------------------------------------------//
+  //? Read
+  //?-------------------------------------------------------------------------//
 
   async findById(id: number, relations: string[] = []): Promise<Term> {
     try {
@@ -66,29 +71,32 @@ export class TermService {
           });
     } catch (error) {
       console.error(error);
-      throw new NotFoundException('entity not found');
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
   }
 
-  //?-------------------------------------------------------------------------//
-  //? UPDATE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateTermDto): Promise<Term> {
-    const term = await this.termRepository.preload({ id, ...dto });
+    const term = await this.termRepository.preload({
+      id,
+      ...dto,
+    });
     if (!term) {
-      throw new NotFoundException(`entity not found`);
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_TERM);
     }
-    return await this.termRepository.save(term);
+    // 업데이트
+    return this.termRepository.save(term);
   }
 
   //?-------------------------------------------------------------------------//
-  //? DELETE
+  //? Delete
   //?-------------------------------------------------------------------------//
 
-  // note that this is hard-delete
-  async remove(id: number): Promise<Term> {
+  async softRemove(id: number): Promise<Term> {
     const term = await this.findById(id);
-    return await this.termRepository.remove(term);
+    return await this.termRepository.softRemove(term);
   }
 }

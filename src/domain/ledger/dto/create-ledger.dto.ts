@@ -8,7 +8,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  MaxLength
+  MaxLength,
 } from 'class-validator';
 import { LedgerType } from 'src/common/enums';
 

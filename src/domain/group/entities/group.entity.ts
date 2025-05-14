@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { ClassStatus, Weekday } from 'src/common/enums';
+import { Actor, ClassStatus, Weekday } from 'src/common/enums';
 import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -35,7 +35,7 @@ export class Group {
   //* ---------------------------------------------------------------------- *//
 
   @ApiProperty({ description: '🈵 반이름' })
-  @Column({ type: 'varchar', length: 24 })
+  @Column({ type: 'varchar', length: 32 })
   groupName: string | null;
 
   @Column({ type: 'varchar', length: 32, nullable: true })
@@ -72,6 +72,15 @@ export class Group {
     default: ClassStatus.PENDING,
   })
   status: ClassStatus;
+
+  @ApiProperty({ description: '🈳 누가 삭제했나?' })
+  @Column({
+    type: 'enum',
+    enum: Actor,
+    default: Actor.SYSTEM,
+    comment: '누가 삭제했나?',
+  })
+  deletedBy: string | null;
 
   @ApiProperty({ description: '🈳 비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })

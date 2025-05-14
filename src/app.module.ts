@@ -38,9 +38,9 @@ import { RedisModule } from 'src/services/redis/redis.module';
 import { SlackModule } from 'src/services/slack/slack-module';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { OrmConfig } from './database/orm-config';
+import { PhoneModule } from './domain/phone/phone.module';
 import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
-import { PhoneModule } from './domain/phone/phone.module';
 
 @Module({
   imports: [
@@ -139,6 +139,10 @@ import { PhoneModule } from './domain/phone/phone.module';
       provide: APP_INTERCEPTOR,
       useClass: DuplicateEntryErrorInterceptor, // 중복입력은 400으로 전환
     },
+    // {
+    //   provide: APP_FILTER,
+    //   useClass: ValidationCatchAllFilter, // 디버깅 편리하도록 validation 오류 로깅
+    // },
     // {
     //   provide: APP_INTERCEPTOR,
     //   useClass: HttpCacheInterceptor,

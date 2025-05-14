@@ -10,7 +10,7 @@ import {
  */
 export const swaggerConfig = new DocumentBuilder()
   .setTitle('Scoollink Rest API Docs')
-  .setDescription('scoollink rest api docs')
+  .setDescription('V3 API built on top of NestJS 11.x')
   .setVersion('3.0')
   .addBearerAuth({
     type: 'http',

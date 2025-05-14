@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { LessonModule } from 'src/domain/lesson/lesson.module';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { SchoolCalendarController } from 'src/domain/school/school-calendar.controller';
@@ -9,6 +11,8 @@ import { SchoolInstructorController } from 'src/domain/school/school-instructor.
 import { SchoolInstructorService } from 'src/domain/school/school-instructor.service';
 import { SchoolTermLessonController } from 'src/domain/school/school-term-lesson.controller';
 import { SchoolTermLessonService } from 'src/domain/school/school-term-lesson.service';
+import { SchoolTermOfferingController } from 'src/domain/school/school-term-offering.controller';
+import { SchoolTermOfferingService } from 'src/domain/school/school-term-offering.service';
 import { SchoolTermController } from 'src/domain/school/school-term.controller';
 import { SchoolTermService } from 'src/domain/school/school-term.service';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -33,6 +37,7 @@ import { InstructorSchool } from '../instructor/entities/instructor-school.entit
       Student,
       Lesson,
       Term,
+      Offering,
       Parent,
       Instructor,
       InstructorSchool,
@@ -42,6 +47,7 @@ import { InstructorSchool } from '../instructor/entities/instructor-school.entit
     SlackModule,
     S3Module,
     NeisModule,
+    LessonModule,
   ],
   controllers: [
     SchoolController,
@@ -50,6 +56,7 @@ import { InstructorSchool } from '../instructor/entities/instructor-school.entit
     SchoolStudentController,
     SchoolTermController,
     SchoolTermLessonController,
+    SchoolTermOfferingController,
     SchoolPhoneController,
   ],
   providers: [
@@ -59,6 +66,7 @@ import { InstructorSchool } from '../instructor/entities/instructor-school.entit
     SchoolStudentService,
     SchoolTermService,
     SchoolTermLessonService,
+    SchoolTermOfferingService,
     SchoolPhoneService,
   ],
 })
