@@ -36,7 +36,7 @@ const GROUP_STUDENT_PAGINATE_CONFIG: PaginateConfig<GroupStudent> = {
 export const CreateGroupStudentDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 > 수강생 👈 등록',
+      summary: '반 > 수강생 👈 등록 (수강신청 이후 사유와 함께 개별적 등록)',
       description: `
       - 개별 학생을 반에 등록합니다.
       - note에 등록 사유를 남길 수 있습니다.
@@ -80,7 +80,8 @@ export const CreateGroupStudentDocs = () => {
 export const CreateGroupStudentBulkDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 > 수강생 👈 bulk 등록',
+      summary:
+        '반 > 수강생 👈 bulk 등록 (정상적인 수강신청을 통해 선별한 학생들을 반에 일괄 등록시)',
       description: `
       - 여러 학생을 한 번에 반에 등록합니다.
       - 시스템에 의한 일괄 등록으로 처리됩니다.
@@ -186,7 +187,8 @@ export const PaginatedListGroupStudentsDocs = () => {
 export const UpdateGroupStudentDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 > 수강생 👈 수정',
+      summary:
+        '반 > 수강생 👈 수정 (해당 소속된 반에 관련된 정보를 수정. 교재비 10,000원 등)',
       description: `
       - 반에 등록된 특정 학생의 정보를 수정합니다.
       - 수정하고자 하는 필드만 요청에 포함합니다.
@@ -225,7 +227,7 @@ export const UpdateGroupStudentDocs = () => {
 export const DeleteGroupStudentDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반 > 수강생 👈 삭제',
+      summary: '반 > 수강생 👈 삭제 (사유와 함께 개별적 반에서 강퇴)',
       description: `
       - 반에서 특정 학생을 삭제합니다.
       - note에 삭제 사유를 남겨야 합니다.
