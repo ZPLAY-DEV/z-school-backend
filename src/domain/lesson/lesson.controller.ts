@@ -24,7 +24,7 @@ import {
 } from 'src/domain/lesson/swagger/lesson-swagger.decorator';
 
 //! 단일 Lesson 엔터티 작업
-@ApiTags('✅ Lessons ( 과목 ) - 단수')
+@ApiTags('✅ Lessons ( 과목 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('lessons')
 @UseInterceptors(ClassSerializerInterceptor)

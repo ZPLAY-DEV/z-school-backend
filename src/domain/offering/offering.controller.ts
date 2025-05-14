@@ -25,7 +25,7 @@ import {
 } from 'src/domain/offering/swagger/offering-swagger.decorator';
 
 //! 단일 Offering 엔터티 작업
-@ApiTags('✅ Offerings ( 수강신청과목 ) - 단수')
+@ApiTags('✅ Offerings ( 수강신청과목 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('offerings')
 @UseInterceptors(ClassSerializerInterceptor)
