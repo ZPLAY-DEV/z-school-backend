@@ -12,9 +12,9 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisBookingService } from 'src/services/redis/redis-booking.service';
 import { Repository } from 'typeorm';
-import { BookingResponseDto } from './dto/booking-response.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { ResponseBookingDto } from './dto/response-booking.dto';
 import { Booking } from './entities/booking.entity';
 
 @Injectable()
@@ -30,11 +30,11 @@ export class BookingService {
     private readonly redisBookingService: RedisBookingService,
   ) {}
 
-  async createWithDb(dto: CreateBookingDto): Promise<Booking> {
+  async createWithDb(dto: CreateBookingDto): Promise<ResponseBookingDto> {
     const { offeringId, studentId, lessonName, isFormerStudent } = dto;
 
     try {
-      const booking = await this.bookingRepository.save(
+      await this.bookingRepository.save(
         this.bookingRepository.create({
           offeringId,
           studentId,
@@ -43,24 +43,24 @@ export class BookingService {
         }),
       );
 
-      return booking;
+      return new ResponseBookingDto({
+        status: BookingStatus.PENDING,
+        message: `🔵 ${lessonName} 수강신청 했습니다. (신청기간이후 결과발표예정)`,
+      });
     } catch (error) {
-      this.logger.error(
-        `Failed to create booking: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`❌ Booking 실패`, error.stack);
       throw new InternalServerErrorException(
         HttpErrorConstants.INTERNAL_DATABASE_ERROR,
       );
     }
   }
 
-  async createWithRedis(dto: CreateBookingDto): Promise<BookingResponseDto> {
+  async createWithRedis(dto: CreateBookingDto): Promise<ResponseBookingDto> {
     const { offeringId, studentId, lessonName, capacity, isFormerStudent } =
       dto;
     const timestamp = Date.now();
 
-    console.log(
+    this.logger.log(
       '🚀 Redis booking payload',
       offeringId,
       studentId,
@@ -77,15 +77,12 @@ export class BookingService {
         capacity,
       );
 
-      console.log('🚀 Redis booking result:', result);
-
-      let response: BookingResponseDto;
+      let response: ResponseBookingDto;
       if (result.ok) {
         if (result.ok === 'ENROLLED') {
-          response = new BookingResponseDto({
+          response = new ResponseBookingDto({
             status: BookingStatus.ENROLLED,
-            waitingPosition: null,
-            message: `수강신청결과 ${lessonName} 수강이 확정되었습니다.`,
+            message: `🟢 수강신청결과 ${lessonName} 수강이 확정되었습니다.`,
           });
         } else if (result.ok === 'PENDING') {
           const waitingPosition =
@@ -93,17 +90,17 @@ export class BookingService {
               offeringId,
               studentId,
             );
-          response = new BookingResponseDto({
+          response = new ResponseBookingDto({
             status: BookingStatus.PENDING,
-            waitingPosition,
-            message: `수강결과 ${lessonName} 대기 ${waitingPosition}번 입니다.`,
+            waitingPosition: waitingPosition,
+            message: `🟡 수강신청결과 ${lessonName} 수강이 대기상태입니다. (대기 ${waitingPosition}번)`,
           });
         } else {
           // ☠️ result.ok === 'FULL'
-          response = new BookingResponseDto({
-            status: BookingStatus.PENDING, // ☠️ 대기도 불가능한 사람도 상태는 PENDING
-            waitingPosition: 666, // ☠️ 대기도 불가능한 사람한테 부여하는 불길한 숫자
-            message: `수강신청이 완전히 마감되었습니다.`,
+          response = new ResponseBookingDto({
+            status: BookingStatus.PENDING, // ☠️ 대기자도 아닌 사람도 상태는 PENDING
+            waitingPosition: 666, // ☠️ 대기자도 아닌 사람한테 부여하는 불길한 숫자
+            message: `🔴 수강신청결과 ${lessonName} 수강이 불가합니다.`,
           });
         }
         // 💥 fire and forget) to not block the main thread
@@ -121,19 +118,24 @@ export class BookingService {
             },
           })
           .catch((e) => {
-            this.logger.error('🔴 SQS 전송 실패', e.stack);
-            // 옵션: 실패 시 재시도 큐 혹은 로그 남기기
+            this.logger.error('❌ Booking SQS 전송 실패', e.stack);
           });
 
         return response;
-      } else {
-        throw new Error(result.err);
+      } else if (result.err) {
+        // Log the error from result and throw appropriate exception
+        this.logger.error(`❌ Booking 실패: ${result.err}`);
+        throw new InternalServerErrorException(
+          HttpErrorConstants.INTERNAL_DATABASE_ERROR,
+        );
       }
-    } catch (error) {
-      this.logger.error(
-        `🔴 Failed to create booking: ${error.message}`,
-        error.stack,
+
+      // This should not happen, but to satisfy TypeScript return type
+      throw new InternalServerErrorException(
+        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
       );
+    } catch (error) {
+      this.logger.error(`❌ Booking 실패`, error.stack);
       if (error instanceof Error && error.message === 'BOOKED') {
         throw new UnprocessableEntityException(
           HttpErrorConstants.ALREADY_BOOKED,
@@ -154,17 +156,16 @@ export class BookingService {
         studentId,
       });
     } catch (error) {
-      this.logger.error(
-        `🔴 Failed to cancel booking: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`❌ Booking 취소 실패`, error.stack);
       throw new InternalServerErrorException(
         HttpErrorConstants.INTERNAL_DATABASE_ERROR,
       );
     }
   }
 
-  // todo. queue 를 사용해야 하는지 고민해 볼 것.
+  // todo. 왜 queue 를 사용해야 하는지 고민해 볼 것.
+  //? 1. db 삭제
+  //? 2. ~~ 학부모에게 FCM 푸시알림 전송 (안하기로) ~~
   async cancelWithRedis(cancelBookingDto: CancelBookingDto): Promise<void> {
     const { offeringId, studentId, lessonName } = cancelBookingDto;
 
@@ -185,14 +186,15 @@ export class BookingService {
             lessonName,
           },
         });
-      } else {
-        throw new Error(result.err);
+      } else if (result.err) {
+        // Log the error from result and throw appropriate exception
+        this.logger.error(`❌ Booking 취소 실패: ${result.err}`);
+        throw new InternalServerErrorException(
+          HttpErrorConstants.INTERNAL_DATABASE_ERROR,
+        );
       }
     } catch (error) {
-      this.logger.error(
-        `🔴 Failed to cancel booking: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`❌ Booking 취소 실패`, error.stack);
       throw new InternalServerErrorException(
         HttpErrorConstants.INTERNAL_DATABASE_ERROR,
       );

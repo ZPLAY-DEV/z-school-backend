@@ -22,8 +22,7 @@ export class CreateBookingDto {
   capacity: number;
 
   @ApiProperty({
-    description:
-      'Check if this student has taken the lesson in the previous term',
+    description: '재수강생 여부 (!)',
     default: false,
     required: false,
   })
@@ -32,7 +31,7 @@ export class CreateBookingDto {
   isFormerStudent?: boolean;
 
   @ApiProperty({
-    description: 'Whether or not this student is allowed to enroll',
+    description: '수강확정 여부',
     default: false,
     required: false,
   })
