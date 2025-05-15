@@ -58,8 +58,7 @@ export class SchoolTermLessonController {
 
   @Public()
   @CreateSchoolTermLessonBulkDryRunDocs()
-  @Post(':schoolId/terms/:termId/lessons/bulk/dryrun')
-  @HttpCode(200)
+  @Get(':schoolId/terms/:termId/lessons/bulk/dryrun')
   async createBulkDryRun(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,

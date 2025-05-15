@@ -29,7 +29,7 @@ export class SchoolTermLessonService {
 
   async createBulk(
     dtos: CreateLessonDto[],
-    dryrun: boolean = false,
+    dryrun: boolean = false, // 덮어쓰진 않고, 덮어쓰여질 레코드 목록만 반환
   ): Promise<Lesson[]> {
     if (dryrun) {
       return await this.checkExistingLessons(dtos);
