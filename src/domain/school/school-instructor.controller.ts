@@ -2,8 +2,8 @@ import {
   Body,
   ClassSerializerInterceptor,
   Controller,
-  Delete,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Post,
@@ -16,18 +16,18 @@ import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { SchoolInstructorService } from 'src/domain/school/school-instructor.service';
 import { UploadService } from 'src/services/upload/upload.service';
 import {
-  CreateInstructorDocs,
-  CreateInstructorDocsBulkDocs,
-  InstructorDocumentsListDocs,
-  InstructorListDocs,
-  InstructorListPaginatedDocs,
-  SoftDeleteInstructorSchoolDocs,
-} from '../instructor/swagger/rest-swagger.decorator';
+  CreateSchoolInstructorBulkDocs,
+  CreateSchoolInstructorsBulkDryRunDocs,
+  SchoolInstructorDocumentsListDocs,
+  SchoolInstructorListDocs,
+  SchoolInstructorListPaginatedDocs,
+} from '../instructor/swagger/school-instructor.swagger.decorator';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { DeleteInstructorSchoolDto } from '../instructor/dto/delete-instructor-school.dto';
 import { Document } from 'src/domain/document/entities/document.entity';
+import { StatusCodes } from 'http-status-codes';
+
 @UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('Schools > Instructors ( 학교 > 강사 )')
+@ApiTags('✅ Schools > Instructors ( 학교 > 강사 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('schools')
 export class SchoolInstructorController {
@@ -39,16 +39,8 @@ export class SchoolInstructorController {
   //? ---------------------------------------------------------------------- ?//
   //? Create
   //? ---------------------------------------------------------------------- ?//
-  @CreateInstructorDocs()
-  @Post(':schoolId/instructors')
-  async create(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Body() dto: CreateInstructorDto,
-  ): Promise<Instructor> {
-    return await this.schoolInstructorService.create(schoolId, dto);
-  }
 
-  @CreateInstructorDocsBulkDocs()
+  @CreateSchoolInstructorBulkDocs()
   @Post(':schoolId/instructors/bulk')
   async createBulk(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -60,7 +52,18 @@ export class SchoolInstructorController {
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
-  @InstructorListDocs()
+
+  @HttpCode(StatusCodes.OK)
+  @CreateSchoolInstructorsBulkDryRunDocs()
+  @Post(':schoolId/instructors/bulk/dryrun')
+  async bulkDryRun(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Body() dtos: CreateInstructorDto[],
+  ): Promise<Instructor[]> {
+    return await this.schoolInstructorService.createBulk(schoolId, dtos, true);
+  }
+
+  @SchoolInstructorListDocs()
   @Get(':schoolId/instructors')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -68,7 +71,7 @@ export class SchoolInstructorController {
     return await this.schoolInstructorService.list(schoolId);
   }
 
-  @InstructorListPaginatedDocs()
+  @SchoolInstructorListPaginatedDocs()
   @Get(':schoolId/instructors/paginated')
   async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -77,7 +80,7 @@ export class SchoolInstructorController {
     return await this.schoolInstructorService.infiniteList(schoolId, query);
   }
 
-  @InstructorDocumentsListDocs()
+  @SchoolInstructorDocumentsListDocs()
   @Get(':schoolId/instructors/:instructorId/documents')
   async getDocuments(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -86,23 +89,6 @@ export class SchoolInstructorController {
     return await this.schoolInstructorService.getDocuments(
       schoolId,
       instructorId,
-    );
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Delete
-  //? ---------------------------------------------------------------------- ?//
-  @SoftDeleteInstructorSchoolDocs()
-  @Delete(':schoolId/instructors/:instructorId')
-  async delete(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Param('instructorId', ParseIntPipe) instructorId: number,
-    @Body() dto: DeleteInstructorSchoolDto,
-  ): Promise<void> {
-    return await this.schoolInstructorService.softDelete(
-      schoolId,
-      instructorId,
-      dto,
     );
   }
 }

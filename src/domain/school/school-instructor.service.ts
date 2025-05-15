@@ -27,100 +27,16 @@ export class SchoolInstructorService {
   //? ---------------------------------------------------------------------- ?//
   //? Create
   //? ---------------------------------------------------------------------- ?//
-  async create(
-    schoolId: number,
-    dto: CreateInstructorDto,
-  ): Promise<Instructor> {
-    return await this.dataSource.transaction(async (manager: EntityManager) => {
-      // 1. 학교 존재 여부 확인
-      const school = await manager.findOne(School, {
-        where: { id: schoolId },
-      });
-
-      if (!school) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
-      }
-
-      // 2. phone으로 강사 조회
-      let instructor = await manager.findOne(Instructor, {
-        where: { phone: dto.phone },
-      });
-
-      // 3. 강사 upsert 처리
-      if (instructor) {
-        // 기존 강사 정보 업데이트
-        await manager.update(
-          Instructor,
-          { id: instructor.id },
-          {
-            userId: dto.userId,
-            pushToken: dto.pushToken,
-            termsAgreedAt: dto.termsAgreedAt,
-            score: dto.score ?? instructor.score,
-          },
-        );
-
-        // 업데이트된 강사 정보 조회
-        instructor = await manager.findOneOrFail(Instructor, {
-          where: { id: instructor.id },
-        });
-      } else {
-        // 새 강사 생성
-        instructor = this.instructorRepository.create({
-          userId: dto.userId,
-          name: dto.name,
-          phone: dto.phone,
-          pushToken: dto.pushToken,
-          termsAgreedAt: dto.termsAgreedAt,
-          score: dto.score,
-        });
-        instructor = await manager.save(Instructor, instructor);
-      }
-      // 4. InstructorSchool 관계 upsert (동일 phone 기준)
-      let instructorSchool = await manager
-        .createQueryBuilder(InstructorSchool, 'instructorSchool')
-        .innerJoin('instructorSchool.instructor', 'instructor')
-        .where('instructorSchool.schoolId = :schoolId', { schoolId })
-        .andWhere('instructor.phone = :phone', { phone: dto.phone })
-        .getOne();
-
-      if (instructorSchool) {
-        // 기존 관계 업데이트
-        await manager.update(
-          InstructorSchool,
-          { id: instructorSchool.id },
-          {
-            instructorId: instructor.id, // phone이 동일하더라도 최신 instructor.id로 업데이트 되도록 처리
-            alias: dto.name,
-            editFeePermission: dto.editFeePermission,
-            editEnrollmentPermission: dto.editEnrollmentPermission,
-            note: dto.note,
-          },
-        );
-      } else {
-        // 새 관계 생성
-        instructorSchool = this.instructorSchoolRepository.create({
-          instructorId: instructor.id,
-          schoolId,
-          alias: dto.name,
-          editFeePermission: dto.editFeePermission,
-          editEnrollmentPermission: dto.editEnrollmentPermission,
-          note: dto.note,
-        });
-        await manager.save(InstructorSchool, instructorSchool);
-      }
-
-      return await manager.findOneOrFail(Instructor, {
-        where: { id: instructor.id, instructorSchools: { schoolId } },
-        relations: ['instructorSchools'],
-      });
-    });
-  }
 
   async createBulk(
     schoolId: number,
     dtos: CreateInstructorDto[],
+    dryrun: boolean = false, // 덮어쓰진 않고, 덮어쓰여질 레코드 목록만 반환
   ): Promise<Instructor[]> {
+    if (dryrun) {
+      return await this.checkExistingInstructors(dtos, schoolId);
+    }
+
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       // 1. 학교 존재 여부 확인
       const school = await manager.findOne(School, {
@@ -238,6 +154,26 @@ export class SchoolInstructorService {
       });
       return await Promise.all(instructorPromises);
     });
+  }
+
+  private async checkExistingInstructors(
+    dtos: CreateInstructorDto[],
+    schoolId: number,
+  ): Promise<Instructor[]> {
+    const phoneNumbers = dtos.map((dto) => dto.phone);
+    const existingInstructors = await this.instructorRepository
+      .createQueryBuilder('instructor')
+      .innerJoin(
+        InstructorSchool,
+        'instructorSchool',
+        'instructorSchool.instructorId = instructor.id',
+      )
+      .where('instructorSchool.schoolId = :schoolId', {
+        schoolId,
+      })
+      .andWhere('instructor.phone IN (:...phones)', { phones: phoneNumbers })
+      .getMany();
+    return existingInstructors;
   }
 
   //? ---------------------------------------------------------------------- ?//
