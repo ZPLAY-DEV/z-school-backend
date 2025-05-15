@@ -4,21 +4,32 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
   Post,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
-import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
-import { IS3Urls } from 'src/common/interfaces';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { StudentService } from 'src/domain/student/student.service';
 import { UploadService } from 'src/services/upload/upload.service';
+import {
+  CreateStudentDocs,
+  StudentDryRunDocs,
+  StudentStatusUpdateDocs,
+  StudentUpdateDocs,
+} from './swagger/student.swagger.decorator';
+import { CreateStudentDto } from './dto/create-student.dto';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 
+@ApiTags('✅ Students ( 학생 )')
+@ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('students')
 export class StudentController {
@@ -31,54 +42,22 @@ export class StudentController {
   //? CREATE
   //?-------------------------------------------------------------------------//
 
-  @ApiOperation({ description: '이미지 URL 생성' })
-  @Post(':id/s3urls')
-  async generateS3Urls(
-    @Param('id', ParseIntPipe) id: number,
-    @Body('mime') mime: string,
-  ): Promise<IS3Urls> {
-    return await this.uploadService.generateStudentImageUrls(id, mime);
-  }
-
-  @ApiOperation({ description: 'Student 이미지 삭제' })
-  @Post('/image/delete')
-  async deleteImages(@Body('url') url: string): Promise<void> {
-    return await this.studentService.deleteImages(url);
+  @CreateStudentDocs()
+  @ApiOperation({ description: 'Student 생성' })
+  @Post()
+  async create(@Body() dto: CreateStudentDto): Promise<Student> {
+    return await this.studentService.create(dto);
   }
 
   //?-------------------------------------------------------------------------//
   //? READ
   //?-------------------------------------------------------------------------//
 
-  @ApiOperation({ description: 'Student 리스트 w/ Pagination' })
-  @Public()
-  @Get('paginated')
-  async getAdminStudent(
-    @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<Student>> {
-    return await this.studentService.findAll(query);
-  }
-
-  @ApiOperation({ description: 'Student 리스트 w/ Pagination' })
-  @Public()
-  @Get()
-  async getStudent(
-    @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<Student>> {
-    const activeQuery = {
-      ...query,
-      filter: {
-        isActive: '1',
-      },
-    };
-    return await this.studentService.findAll(activeQuery);
-  }
-
-  @ApiOperation({ description: '모든 active 배너 리스트' })
-  @Public()
-  @Get('active')
-  async getActiveStudent(): Promise<Student[]> {
-    return await this.studentService.findActive();
+  @StudentDryRunDocs()
+  @HttpCode(HttpStatus.OK)
+  @Post('dryrun')
+  async dryRun(@Body() dto: CreateStudentDto): Promise<Student | null> {
+    return await this.studentService.dryRun(dto);
   }
 
   @ApiOperation({ description: 'Student 상세보기' })
@@ -91,15 +70,28 @@ export class StudentController {
   //?-------------------------------------------------------------------------//
   //? UPDATE
   //?-------------------------------------------------------------------------//
-
+  @StudentUpdateDocs()
   @ApiOperation({ description: 'Student 수정' })
   @Patch(':id')
   async update(
     @Param('id') id: number,
     @Body() dto: UpdateStudentDto,
   ): Promise<Student> {
-    console.log(dto);
     return await this.studentService.update(id, dto);
+  }
+
+  @StudentStatusUpdateDocs()
+  @Patch(':schoolId/students/:studentId/status')
+  async updateStudentStatus(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Body() dto: UpdateStudentStatusDto,
+  ): Promise<Student> {
+    return await this.studentService.updateStudentStatus(
+      schoolId,
+      studentId,
+      dto,
+    );
   }
 
   //?-------------------------------------------------------------------------//
@@ -111,4 +103,54 @@ export class StudentController {
   async remove(@Param('id') id: number): Promise<Student> {
     return await this.studentService.remove(id);
   }
+
+  //?-------------------------------------------------------------------------//
+  //? NOT USED
+  //?-------------------------------------------------------------------------//
+
+  // @ApiOperation({ description: '이미지 URL 생성' })
+  // @Post(':id/s3urls')
+  // async generateS3Urls(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Body('mime') mime: string,
+  // ): Promise<IS3Urls> {
+  //   return await this.uploadService.generateStudentImageUrls(id, mime);
+  // }
+
+  // @ApiOperation({ description: 'Student 이미지 삭제' })
+  // @Post('/image/delete')
+  // async deleteImages(@Body('url') url: string): Promise<void> {
+  //   return await this.studentService.deleteImages(url);
+  // }
+
+  // @ApiOperation({ description: 'Student 리스트 w/ Pagination' })
+  // @Public()
+  // @Get('paginated')
+  // async getAdminStudent(
+  //   @Paginate() query: PaginateQuery,
+  // ): Promise<Paginated<Student>> {
+  //   return await this.studentService.findAll(query);
+  // }
+
+  // @ApiOperation({ description: 'Student 리스트 w/ Pagination' })
+  // @Public()
+  // @Get()
+  // async getStudent(
+  //   @Paginate() query: PaginateQuery,
+  // ): Promise<Paginated<Student>> {
+  //   const activeQuery = {
+  //     ...query,
+  //     filter: {
+  //       isActive: '1',
+  //     },
+  //   };
+  //   return await this.studentService.findAll(activeQuery);
+  // }
+
+  // @ApiOperation({ description: '모든 active 배너 리스트' })
+  // @Public()
+  // @Get('active')
+  // async getActiveStudent(): Promise<Student[]> {
+  //   return await this.studentService.findActive();
+  // }
 }

@@ -16,7 +16,6 @@ import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Region } from 'src/common/enums';
-// import { S3Urls } from 'src/common/types';
 import { IS3Urls } from 'src/common/interfaces';
 import { School } from 'src/domain/school/entities/school.entity';
 import { UploadService } from 'src/services/upload/upload.service';

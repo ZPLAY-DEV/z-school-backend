@@ -12,7 +12,6 @@ import { Student } from 'src/domain/student/entities/student.entity';
 import { DataSource, Repository } from 'typeorm';
 import { School } from './entities/school.entity';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { UpdateStudentStatusDto } from '../student/dto/update-student-status.dto';
 
 @Injectable()
 export class SchoolStudentService {
@@ -83,7 +82,12 @@ export class SchoolStudentService {
   async createBulk(
     schoolId: number,
     dtos: CreateStudentDto[],
-  ): Promise<number> {
+    dryrun: boolean = false, // 덮어쓰진 않고, 덮어쓰여질 레코드 목록만 반환
+  ): Promise<number | Student[]> {
+    if (dryrun) {
+      return await this.checkExistingStudents(dtos);
+    }
+
     if (!dtos.length) {
       return 0;
     }
@@ -243,37 +247,40 @@ export class SchoolStudentService {
     return await queryBuilder.getMany();
   }
 
-  async getStudentById(schoolId: number, studentId: number): Promise<Student> {
-    const student = await this.studentRepository.findOne({
-      where: { id: studentId, school: { id: schoolId } },
-      relations: {
-        parent: true,
-        groupStudents: true,
-      },
+  /**
+   * Check for existing Students that would be overwritten based on the compound unique key
+   * (schoolId, grade, class, studentCode)
+   */
+  private async checkExistingStudents(
+    dtos: CreateStudentDto[],
+  ): Promise<Student[]> {
+    // Extract unique key combinations from DTOs
+    const uniqueKeyCombinations = dtos.map((dto) => ({
+      schoolId: dto.schoolId,
+      grade: dto.grade,
+      class: dto.class,
+      studentCode: dto.studentCode,
+    }));
+
+    // Find existing lessons that match any of these combinations
+    const existingStudents = await this.studentRepository.find({
+      where: uniqueKeyCombinations.map((combo) => ({
+        schoolId: combo.schoolId,
+        grade: combo.grade,
+        class: combo.class,
+        studentCode: combo.studentCode,
+      })),
     });
-    if (!student) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_STUDENT);
+
+    // No existing lessons found means no records will be overwritten
+    if (existingStudents.length === 0) {
+      return [];
     }
-    return student;
+
+    return existingStudents;
   }
 
   //?-------------------------------------------------------------------------//
   //? Update
   //?-------------------------------------------------------------------------//
-
-  async updateStudentStatus(
-    schoolId: number,
-    studentId: number,
-    dto: UpdateStudentStatusDto,
-  ): Promise<Student> {
-    const student = await this.getStudentById(schoolId, studentId);
-    if (!student) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_STUDENT);
-    }
-    await this.studentRepository.update(student.id, {
-      ...dto,
-    });
-
-    return await this.getStudentById(schoolId, studentId);
-  }
 }
