@@ -17,6 +17,11 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { TraceableNoteDto } from 'src/domain/group/dto/delete-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
+import {
+  parseRangeFormat,
+  parseTime,
+  parseTimeFormat,
+} from 'src/helpers/parse';
 import { Repository } from 'typeorm';
 import { UpdateGroupDto } from './dto/update-group.dto';
 
@@ -34,6 +39,15 @@ export class GroupService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateGroupDto): Promise<Group> {
+    if (dto.start) {
+      dto.start = parseTimeFormat(parseTime(dto.start));
+    }
+    if (dto.end) {
+      dto.end = parseTimeFormat(parseTime(dto.end));
+    }
+    if (dto.allowedGrades) {
+      dto.allowedGrades = parseRangeFormat(dto.allowedGrades).join(',');
+    }
     const group = this.groupRepository.create(dto);
     return await this.groupRepository.save(group);
   }
@@ -77,6 +91,15 @@ export class GroupService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateGroupDto): Promise<Group> {
+    if (dto.start) {
+      dto.start = parseTimeFormat(parseTime(dto.start));
+    }
+    if (dto.end) {
+      dto.end = parseTimeFormat(parseTime(dto.end));
+    }
+    if (dto.allowedGrades) {
+      dto.allowedGrades = parseRangeFormat(dto.allowedGrades).join(',');
+    }
     const group = await this.groupRepository.preload({
       id,
       ...dto,

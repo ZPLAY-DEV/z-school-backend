@@ -8,7 +8,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
@@ -18,13 +18,14 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { LessonService } from 'src/domain/lesson/lesson.service';
 import {
   CreateLessonDocs,
+  CreateLessonDryRunDocs,
   GetLessonByIdDocs,
   RemoveLessonDocs,
   UpdateLessonDocs,
 } from 'src/domain/lesson/swagger/lesson-swagger.decorator';
 
 //! 단일 Lesson 엔터티 작업
-@ApiTags('✅ Lessons ( 과목 ) - 단수')
+@ApiTags('✅ Lessons ( 과목 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('lessons')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -39,6 +40,12 @@ export class LessonController {
   @Post()
   async create(@Body() dto: CreateLessonDto): Promise<Lesson> {
     return await this.lessonService.create(dto);
+  }
+
+  @CreateLessonDryRunDocs()
+  @Get('dryrun')
+  async createDryRun(@Body() dto: CreateLessonDto): Promise<Lesson | null> {
+    return await this.lessonService.dryRun(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
