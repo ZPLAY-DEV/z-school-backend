@@ -90,7 +90,7 @@ export const StudentDryRunDocs = () => {
     ApiOperation({
       summary: '✅ 학생 dryRun 체크',
       description: `
-      - 학생(단일) 생성 Dryrun 모드
+      - 학생(단일) 생성 dryrun 체크 -> dryrun은 실제로 데이터를 등록할 때, 데이터를 덮어쓰는 여부를 판별하는 엔드포인트
       - 실제로 데이터를 생성하지 않고 어떤 데이터가 생성될지 미리 확인 ( 해당 엔드포인트로 Upsert 여부를 결정 )
       - 반환되는 값이 존재할 경우 schoolId - grade - class - studentCode 로 중복 여부를 판단
       - 반환되는 값이 존재 하지 않을 경우, 중첩되는 학생이 없음을 의미

@@ -17,12 +17,13 @@ import { SchoolStudentService } from './school-student.service';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import {
   CreateSchoolStudentBulkDocs,
+  CreateSchoolStudentsBulkDryRunDocs,
   SchoolStudentListDocs,
   SchoolStudentListPaginatedDocs,
 } from '../student/swagger/school-student.swagger.decorator';
 // import { UpdateStudentStatusDto } from '../student/dto/update-student-status.dto';
 
-@ApiTags('✅ Schools - Students ( 학생관리 )')
+@ApiTags('✅ Schools > Students ( 학생관리 )')
 @ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schools')
@@ -35,28 +36,26 @@ export class SchoolStudentController {
   //? ---------------------------------------------------------------------- ?//
   //? Create
   //? ---------------------------------------------------------------------- ?//
-
-  // @CreateStudentDocs()
-  // @Post(':schoolId/students')
-  // async create(
-  //   @Param('schoolId', ParseIntPipe) schoolId: number,
-  //   @Body() dto: CreateStudentDto,
-  // ): Promise<Student> {
-  //   return await this.schoolStudentService.create(dto, schoolId);
-  // }
-
   @CreateSchoolStudentBulkDocs()
   @Post(':schoolId/students/bulk')
   async createBulk(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Body() dtos: CreateStudentDto[],
-  ): Promise<number> {
+  ): Promise<number | Student[]> {
     return await this.schoolStudentService.createBulk(schoolId, dtos);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
+  @CreateSchoolStudentsBulkDryRunDocs()
+  @Post(':schoolId/students/bulk/dryrun')
+  async bulkDryRun(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Body() dtos: CreateStudentDto[],
+  ): Promise<number | Student[]> {
+    return await this.schoolStudentService.createBulk(schoolId, dtos, true);
+  }
 
   @SchoolStudentListPaginatedDocs()
   @Get(':schoolId/students/paginated')
