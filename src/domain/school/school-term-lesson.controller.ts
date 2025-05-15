@@ -18,13 +18,14 @@ import { CreateLessonRequestDto } from 'src/domain/lesson/dto/create-lesson.dto'
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import {
   CreateSchoolTermLessonBulkDocs,
+  CreateSchoolTermLessonBulkDryRunDocs,
   DeleteAllSchoolTermLessonsDocs,
   SchoolTermLessonInfiniteListDocs,
   SchoolTermLessonListDocs,
 } from 'src/domain/lesson/swagger/school-term-lesson-swagger.decorator';
 import { SchoolTermLessonService } from 'src/domain/school/school-term-lesson.service';
 
-@ApiTags('✅ Schools > Terms > Lessons ( 학교 > 학기 > 과목 ) - 복수')
+@ApiTags('✅ Schools > Terms > Lessons ( 학교 > 학기 > 과목 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -53,6 +54,26 @@ export class SchoolTermLessonController {
     }));
 
     return await this.schoolTermLessonService.createBulk(createLessonDtos);
+  }
+
+  @Public()
+  @CreateSchoolTermLessonBulkDryRunDocs()
+  @Get(':schoolId/terms/:termId/lessons/bulk/dryrun')
+  async createBulkDryRun(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+    @Body() dtos: CreateLessonRequestDto[],
+  ): Promise<Lesson[]> {
+    const createLessonDtos = dtos.map((dto) => ({
+      ...dto,
+      schoolId,
+      termId,
+    }));
+
+    return await this.schoolTermLessonService.createBulk(
+      createLessonDtos,
+      true,
+    );
   }
 
   //? ---------------------------------------------------------------------- ?//

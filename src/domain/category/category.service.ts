@@ -1,11 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  FilterOperator,
-  paginate,
-  Paginated,
-  PaginateQuery,
-} from 'nestjs-paginate';
 import { Category as CategoryEnum, CategoryLabels } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { In, Repository } from 'typeorm';
@@ -29,20 +23,6 @@ export class CategoryService {
     return await this.categoryRepository.find({
       where: {
         slug,
-      },
-    });
-  }
-
-  async infiniteList(query: PaginateQuery): Promise<Paginated<Category>> {
-    const queryBuilder = this.categoryRepository.createQueryBuilder('category');
-
-    return await paginate(query, queryBuilder, {
-      sortableColumns: ['id'],
-      searchableColumns: ['name'],
-      defaultSortBy: [['id', 'ASC']],
-      filterableColumns: {
-        slug: [FilterOperator.EQ],
-        id: [FilterOperator.IN],
       },
     });
   }

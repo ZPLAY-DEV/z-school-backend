@@ -194,6 +194,11 @@ export const HttpErrorConstants = {
     message: '이미 존재하는 휴대폰번호입니다.',
   } as HttpErrorFormat,
 
+  DUPLICATE_LESSON: {
+    error: 'DUPLICATE_LESSON',
+    message: '이미 존재하는 과목입니다.',
+  } as HttpErrorFormat,
+
   NOT_FOUND_STUDENT: {
     error: 'NOT_FOUND_STUDENT',
     message: '학생을 찾을 수 없습니다.',
