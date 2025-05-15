@@ -10,56 +10,18 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
 import { CreateStudentDto } from '../dto/create-student.dto';
-import { CreateStudentResponseDto } from '../dto/create-student-response.dto';
+
 import {
   ApiOkPaginatedResponse,
   ApiPaginationQuery,
   FilterOperator,
 } from 'nestjs-paginate';
 import { StudentResponseDto } from '../dto/student-response.dto';
-import { UpdateStudentStatusDto } from '../dto/update-student-status.dto';
-import { UpdateStudentDto } from '../dto/update-student.dto';
-
-//? ---------------------------------------------------------------------- ?//
-//? Private) 학생 생성
-//? ---------------------------------------------------------------------- ?//
-export const CreateStudentDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '학생 정보 생성',
-      description: `
-      - 학교에 속한 학생을 생성한다.
-      - 동일한 학교에 같은 학년, 반, 번호를 가진 학생이 중첩으로 존재할 수 없기 때문에, 동일한 학교에 같은 학년, 반, 번호를 가진 학생이 있으면 Conflict  에러를 반환한다.
-      `,
-    }),
-    ApiBody({
-      type: CreateStudentDto,
-    }),
-    ApiCreatedResponse({
-      description: '학생 생성 완료',
-      type: CreateStudentResponseDto,
-    }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_SCHOOL],
-      },
-      {
-        status: StatusCodes.CONFLICT,
-        errorFormatList: [HttpErrorConstants.CONFLICT_STUDENT],
-      },
-    ]),
-  );
-};
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학생 일괄 생성
 //? ---------------------------------------------------------------------- ?//
-export const CreateStudentBulkDocs = () => {
+export const CreateSchoolStudentBulkDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '학생 일괄 생성',
@@ -93,7 +55,7 @@ export const CreateStudentBulkDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학생 일괄 조회
 //? ---------------------------------------------------------------------- ?//
-export const StudentListDocs = () => {
+export const SchoolStudentListDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '학생 일괄 조회',
@@ -119,43 +81,9 @@ export const StudentListDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학생 상세 조회
-//? ---------------------------------------------------------------------- ?//
-export const StudentDetailDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '학생 상세 조회',
-      description: `
-      - 학생 상세 조회
-      `,
-    }),
-    ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID',
-    }),
-    ApiParam({
-      name: 'studentId',
-      type: Number,
-      description: '학생 ID',
-    }),
-    ApiOkResponseTemplate({
-      description: '학생 상세 조회 완료',
-      type: StudentResponseDto,
-    }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_STUDENT],
-      },
-    ]),
-  );
-};
-
-//? ---------------------------------------------------------------------- ?//
 //? Private) 학생 일괄 조회 (페이징)
 //? ---------------------------------------------------------------------- ?//
-export const StudentListPaginatedDocs = () => {
+export const SchoolStudentListPaginatedDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '학생 일괄 조회 & 검색 & 필터 (페이징)',
@@ -204,83 +132,5 @@ export const StudentListPaginatedDocs = () => {
         status: [FilterOperator.EQ, FilterOperator.IN],
       },
     }),
-  );
-};
-
-//? ---------------------------------------------------------------------- ?//
-//? Private) 학생 재학 상태 업데이트
-//? ---------------------------------------------------------------------- ?//
-export const StudentStatusUpdateDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '학생 상태 업데이트',
-      description: `
-      - 학생 상태 업데이트
-      - 학생의 재학 상태 (status)값을 요청 보내는 유형에 맞춰서 변경 (status -> ATTENDING(재학), TRANSFERRED(전학), GRADUATED(졸업))
-      `,
-    }),
-    ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID',
-    }),
-    ApiParam({
-      name: 'studentId',
-      type: Number,
-      description: '학생 ID',
-    }),
-    ApiBody({
-      type: UpdateStudentStatusDto,
-    }),
-    ApiOkResponseTemplate({
-      description: '학생 상태 업데이트 완료',
-      type: StudentResponseDto,
-    }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_STUDENT],
-      },
-    ]),
-  );
-};
-
-//? ---------------------------------------------------------------------- ?//
-//? Private) 학생 정보 수정
-//? ---------------------------------------------------------------------- ?//
-export const StudentUpdateDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '학생 정보 수정',
-      description: `
-      - 학생 정보 수정
-      - 학교-학년-반-번호는 UNIQUE 하기 때문에, 다른 학생의 정보와 중복되는 경우 Conflict 에러를 반환.
-      `,
-    }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: '학생 ID',
-    }),
-    ApiBody({
-      type: UpdateStudentDto,
-    }),
-    ApiOkResponseTemplate({
-      description: '학생 정보 수정 완료',
-      type: CreateStudentResponseDto,
-    }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [
-          HttpErrorConstants.NOT_FOUND_STUDENT,
-          HttpErrorConstants.NOT_FOUND_SCHOOL,
-        ],
-      },
-      {
-        status: StatusCodes.CONFLICT,
-        errorFormatList: [HttpErrorConstants.CONFLICT_STUDENT],
-      },
-    ]),
   );
 };

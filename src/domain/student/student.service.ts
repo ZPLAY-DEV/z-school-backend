@@ -18,6 +18,7 @@ import { S3Service } from 'src/services/aws/s3.service';
 import { DataSource, Not, Repository } from 'typeorm';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { School } from '../school/entities/school.entity';
+import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 
 @Injectable()
 export class StudentService {
@@ -47,21 +48,7 @@ export class StudentService {
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
     }
 
-    // 2. 학생 존재 여부 확인
-    const existingStudent = await this.studentRepository.findOne({
-      where: {
-        schoolId: studentDto.schoolId,
-        grade: studentDto.grade,
-        class: studentDto.class,
-        studentCode: studentDto.studentCode,
-      },
-    });
-
-    if (existingStudent) {
-      throw new ConflictException(HttpErrorConstants.CONFLICT_STUDENT);
-    }
-
-    // 3. 보호자 존재 여부 확인 ( 학부모는 Upsert 가능 ! )
+    // 2. 보호자 존재 여부 확인 ( upsert )
     if (parentDto?.phone) {
       let parent = await this.parentRepository.findOne({
         where: { phone: parentDto.phone },
@@ -74,17 +61,29 @@ export class StudentService {
       parentId = parent.id;
     }
 
-    // 4. 학생 생성
-    const student = this.studentRepository.create({
-      ...studentDto,
-      parentId,
+    // 3. 학생 존재 여부 확인
+    const existingStudent = await this.studentRepository.findOne({
+      where: {
+        schoolId: studentDto.schoolId,
+        grade: studentDto.grade,
+        class: studentDto.class,
+        studentCode: studentDto.studentCode,
+      },
     });
-    await this.studentRepository.save(student);
 
-    return await this.studentRepository.findOneOrFail({
-      where: { id: student.id },
-      relations: ['parent'],
-    });
+    if (existingStudent) {
+      const updatedStudent = this.studentRepository.merge(existingStudent, {
+        ...studentDto,
+        parentId,
+      });
+      return this.studentRepository.save(updatedStudent);
+    } else {
+      const newStudent = this.studentRepository.create({
+        ...studentDto,
+        parentId,
+      });
+      return this.studentRepository.save(newStudent);
+    }
   }
 
   //?-------------------------------------------------------------------------//
@@ -112,20 +111,34 @@ export class StudentService {
       .getMany();
   }
 
-  async findById(id: number, relations: string[] = []): Promise<Student> {
-    try {
-      return relations.length > 0
-        ? await this.studentRepository.findOneOrFail({
-            where: { id },
-            relations,
-          })
-        : await this.studentRepository.findOneOrFail({
-            where: { id },
-          });
-    } catch (error) {
-      console.error(error);
+  async findById(id: number): Promise<Student> {
+    const student = await this.studentRepository
+      .createQueryBuilder('student')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .leftJoinAndSelect('student.groupStudents', 'groupStudents')
+      .leftJoinAndSelect('groupStudents.group', 'group')
+      .where('student.id = :id', { id })
+      .getOne();
+
+    if (!student) {
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
+
+    return student;
+  }
+
+  async dryRun(dto: CreateStudentDto): Promise<Student | null> {
+    // In dryRun mode, we check if the student exists but don't create it
+    const existingStudent = await this.studentRepository.findOne({
+      where: {
+        schoolId: dto.schoolId,
+        grade: dto.grade,
+        class: dto.class,
+        studentCode: dto.studentCode,
+      },
+    });
+
+    return existingStudent ? existingStudent : null;
   }
 
   //?-------------------------------------------------------------------------//
@@ -157,11 +170,46 @@ export class StudentService {
     }
 
     const student = await this.studentRepository.preload({ id, ...dto });
+
     if (!student) {
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
 
     return await this.studentRepository.save(student);
+  }
+
+  async updateStudentStatus(
+    schoolId: number,
+    studentId: number,
+    dto: UpdateStudentStatusDto,
+  ): Promise<Student> {
+    // 1. 학교 존재 여부 확인
+    const school = await this.dataSource.createEntityManager().findOne(School, {
+      where: { id: schoolId },
+    });
+
+    if (!school) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+    }
+
+    // 2. 학생 존재 여부 확인
+    const student = await this.studentRepository.findOne({
+      where: { id: studentId },
+    });
+
+    if (!student) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_STUDENT);
+    }
+
+    // 3. 학생 상태 업데이트
+    await this.studentRepository.save({
+      ...student,
+      status: dto.status,
+    });
+
+    return await this.studentRepository.findOneOrFail({
+      where: { id: studentId },
+    });
   }
 
   //?-------------------------------------------------------------------------//
