@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -23,6 +24,18 @@ export class CreateInstructorDto {
   @IsInt()
   @Min(1)
   userId?: number;
+
+  @ApiProperty({
+    description: '🈵 School ID (number)',
+    required: true,
+    type: Number,
+    example: 1,
+  })
+  @IsNotEmpty()
+  @IsInt()
+  @Type(() => Number)
+  @Min(1)
+  schoolId: number;
 
   @ApiProperty({
     description: '🈵 강사 이름',

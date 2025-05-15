@@ -134,6 +134,11 @@ export const HttpErrorConstants = {
     message: '이미 수강신청 접수 중입니다.',
   } as HttpErrorFormat,
 
+  CONFLICT_STUDENT: {
+    error: 'CONFLICT_STUDENT',
+    message: '이미 학생 정보가 존재합니다.',
+  } as HttpErrorFormat,
+
   ALREADY_REGISTERED: {
     error: 'ALREADY_REGISTERED',
     message: '이미 가입되었습니다.',
@@ -192,6 +197,11 @@ export const HttpErrorConstants = {
   DUPLICATE_PHONE: {
     error: 'DUPLICATE_PHONE',
     message: '이미 존재하는 휴대폰번호입니다.',
+  } as HttpErrorFormat,
+
+  DUPLICATE_LESSON: {
+    error: 'DUPLICATE_LESSON',
+    message: '이미 존재하는 과목입니다.',
   } as HttpErrorFormat,
 
   NOT_FOUND_STUDENT: {

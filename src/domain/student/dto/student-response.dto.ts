@@ -1,6 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { GroupResponseDto } from 'src/domain/group/dto/group-response.dto';
-import { ParentResponseDto } from 'src/domain/parent/dto/parent-response.dto';
 
 export class StudentResponseDto {
   @ApiProperty({ description: '학생 ID', example: 103, type: Number })
@@ -63,14 +61,4 @@ export class StudentResponseDto {
     type: String,
   })
   updatedAt: Date;
-
-  @ApiProperty({ description: '학부모 정보', type: ParentResponseDto })
-  parent: ParentResponseDto;
-
-  @ApiProperty({
-    description: '수강중인 강좌 정보',
-    type: GroupResponseDto,
-    isArray: true,
-  })
-  groupStudents: GroupResponseDto[];
 }

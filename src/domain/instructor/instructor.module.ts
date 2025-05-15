@@ -5,9 +5,14 @@ import { SlackModule } from 'src/services/slack/slack-module';
 import { UploadModule } from 'src/services/upload/upload.module';
 import { InstructorController } from './instructor.controller';
 import { InstructorService } from './instructor.service';
+import { InstructorSchool } from './entities/instructor-school.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Instructor]), UploadModule, SlackModule],
+  imports: [
+    TypeOrmModule.forFeature([Instructor, InstructorSchool]),
+    UploadModule,
+    SlackModule,
+  ],
   controllers: [InstructorController],
   providers: [InstructorService],
 })

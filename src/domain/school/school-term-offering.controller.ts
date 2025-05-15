@@ -22,7 +22,7 @@ import {
 import { SchoolTermOfferingService } from 'src/domain/school/school-term-offering.service';
 
 @Controller('schools')
-@ApiTags('✅ Schools > Terms > Offerings ( 학교 > 학기 > 수강신청과목 ) - 복수')
+@ApiTags('✅ Schools > Terms > Offerings ( 학교 > 학기 > 수강신청과목 )')
 @ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermOfferingController {

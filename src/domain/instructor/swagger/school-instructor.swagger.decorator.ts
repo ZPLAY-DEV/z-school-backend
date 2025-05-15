@@ -13,53 +13,15 @@ import {
   ApiPaginationQuery,
   FilterOperator,
 } from 'nestjs-paginate';
-import { DeleteInstructorSchoolDto } from '../dto/delete-instructor-school.dto';
 import { DocumentResponseDto } from 'src/domain/document/dto/document-response.dto';
-
-//? ---------------------------------------------------------------------- ?//
-//? Create School > Instructor
-//? ---------------------------------------------------------------------- ?//
-export const CreateInstructorDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '학교 > 강사 생성',
-      description: `
-      - 학교에 귀속된 강사를 생성한다.
-      - 학교에 귀속된 강사의 정보와 강사의 정보가 이미 등록되어 있을 경우 Upsert 된다. ( 업데이트에서도 해당 엔드포인트로 처리 가능 )
-      `,
-    }),
-    ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID',
-    }),
-    ApiBody({
-      type: CreateInstructorDto,
-    }),
-    ApiCreatedResponseTemplate({
-      description: 'Term 생성 완료',
-      type: CreateInstructorResponseDto,
-    }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_SCHOOL],
-      },
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
-  );
-};
 
 //? ---------------------------------------------------------------------- ?//
 //? Create School > Instructor Bulk
 //? ---------------------------------------------------------------------- ?//
-export const CreateInstructorDocsBulkDocs = () => {
+export const CreateSchoolInstructorBulkDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 강사 > 강사 의 bulk 생성',
+      summary: '✅ 학교 > 강사 > 강사 의 bulk 생성',
       description: `
       - 학교에 속한 강사를 BULK 로 생성할 때, 사용 ( 강사 업로드시 사용)
       - upsert 방식으로 동작하기 때문에, 안심하고 덮어쓰면 됨.
@@ -96,10 +58,10 @@ export const CreateInstructorDocsBulkDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? Read School > Instructor
 //? ---------------------------------------------------------------------- ?//
-export const InstructorListDocs = () => {
+export const SchoolInstructorListDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 강사 리스트',
+      summary: '✅ 학교 > 강사 리스트 조회',
       description: `
       - 학교에 속한 강사 리스트를 조회한다.
       - 기본적으로 강사의 이름순으로 정렬되어 반환된다.
@@ -122,10 +84,10 @@ export const InstructorListDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? Read School > Instructor (Paginated)
 //? ---------------------------------------------------------------------- ?//
-export const InstructorListPaginatedDocs = () => {
+export const SchoolInstructorListPaginatedDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 강사 리스트 (페이징)',
+      summary: '✅ 학교 > 강사 리스트 (페이징)',
       description: `
       - 학교에 속한 강사 리스트를 페이징 조회한다.
       - 해당 엔드포인트로 페이징 기반 강사 전체조회, 강사 검색, 필터가 가능하다.
@@ -162,10 +124,10 @@ export const InstructorListPaginatedDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? Read School > Instructor > Documents
 //? ---------------------------------------------------------------------- ?//
-export const InstructorDocumentsListDocs = () => {
+export const SchoolInstructorDocumentsListDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 강사 > 문서 리스트',
+      summary: '✅ 학교 > 강사 > 문서 리스트',
       description: `
       - 학교에 속한 강사의 문서 리스트를 조회한다.
       `,
@@ -189,17 +151,17 @@ export const InstructorDocumentsListDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Soft Delete School > Instructor
+//? Create School > Instructor Bulk Dry Run
 //? ---------------------------------------------------------------------- ?//
-export const SoftDeleteInstructorSchoolDocs = () => {
+export const CreateSchoolInstructorsBulkDryRunDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 강사 삭제',
+      summary: '✅ 학교 > 강사 > 강사 의 bulk 생성 (Dry Run)',
       description: `
-      - 학교에 속한 강사를 소프트 삭제한다. (soft delete)
-      - note 필드에 삭제 사유를 입력할 수 있음. 
-      - 삭제 후 해당 강사는 학교에서 조회되지 않음.
-      - 해당 강사의 모든 정보는 삭제되지 않음.
+      - 학교에 속한 강사를 BULK 로 생성할 때, 사용 ( 강사 업로드시 사용)
+      - 실제로 데이터를 생성하지 않고 어떤 데이터가 생성될지 미리 확인 ( 해당 엔드포인트로 Upsert 여부를 결정 )
+      - 반환되는 값이 존재할 경우 schoolId - phone(강사의 휴대폰 번호)로 중복 여부를 판단
+      - 반환되는 값이 빈 배열일 경우, 중첩되는 강사가 없음을 의미 
       `,
     }),
     ApiParam({
@@ -207,22 +169,16 @@ export const SoftDeleteInstructorSchoolDocs = () => {
       type: Number,
       description: '학교 ID',
     }),
-    ApiParam({
-      name: 'instructorId',
-      type: Number,
-      description: '강사 ID',
-    }),
     ApiBody({
-      type: DeleteInstructorSchoolDto,
+      type: CreateInstructorDto,
+      isArray: true,
     }),
     ApiOkResponseTemplate({
-      description: '강사 삭제 완료',
+      description: '덮어쓰여질 레코드 목록',
+      type: InstructorResponseDto,
+      isArray: true,
     }),
     ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_INSTRUCTOR_SCHOOL],
-      },
       {
         status: StatusCodes.BAD_REQUEST,
         errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
