@@ -18,6 +18,7 @@ import {
 } from 'nestjs-paginate';
 import { StudentResponseDto } from '../dto/student-response.dto';
 import { UpdateStudentStatusDto } from '../dto/update-student-status.dto';
+import { UpdateStudentDto } from '../dto/update-student.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학생 생성
@@ -25,17 +26,11 @@ import { UpdateStudentStatusDto } from '../dto/update-student-status.dto';
 export const CreateStudentDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학생 정보 생성 및 업데이트',
+      summary: '학생 정보 생성',
       description: `
       - 학교에 속한 학생을 생성한다.
-      - 동일한 학교에 같은 학년, 반, 번호를 가진 학생이 중첩으로 존재할 수 없기 때문에, 동일한 schoolId, grade, class, studentCode 를 가진 학생이 존재하는 경우 해당 학생의 정보를 Upsert 한다.
-      - 학생 정보를 업데이트 할 경우에도 해당 엔드포인트로 처리가 가능하다. 
+      - 동일한 학교에 같은 학년, 반, 번호를 가진 학생이 중첩으로 존재할 수 없기 때문에, 동일한 학교에 같은 학년, 반, 번호를 가진 학생이 있으면 Conflict  에러를 반환한다.
       `,
-    }),
-    ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID',
     }),
     ApiBody({
       type: CreateStudentDto,
@@ -52,6 +47,10 @@ export const CreateStudentDocs = () => {
       {
         status: StatusCodes.NOT_FOUND,
         errorFormatList: [HttpErrorConstants.NOT_FOUND_SCHOOL],
+      },
+      {
+        status: StatusCodes.CONFLICT,
+        errorFormatList: [HttpErrorConstants.CONFLICT_STUDENT],
       },
     ]),
   );
@@ -241,6 +240,46 @@ export const StudentStatusUpdateDocs = () => {
       {
         status: StatusCodes.NOT_FOUND,
         errorFormatList: [HttpErrorConstants.NOT_FOUND_STUDENT],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Private) 학생 정보 수정
+//? ---------------------------------------------------------------------- ?//
+export const StudentUpdateDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '학생 정보 수정',
+      description: `
+      - 학생 정보 수정
+      - 학교-학년-반-번호는 UNIQUE 하기 때문에, 다른 학생의 정보와 중복되는 경우 Conflict 에러를 반환.
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '학생 ID',
+    }),
+    ApiBody({
+      type: UpdateStudentDto,
+    }),
+    ApiOkResponseTemplate({
+      description: '학생 정보 수정 완료',
+      type: CreateStudentResponseDto,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [
+          HttpErrorConstants.NOT_FOUND_STUDENT,
+          HttpErrorConstants.NOT_FOUND_SCHOOL,
+        ],
+      },
+      {
+        status: StatusCodes.CONFLICT,
+        errorFormatList: [HttpErrorConstants.CONFLICT_STUDENT],
       },
     ]),
   );

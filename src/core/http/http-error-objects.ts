@@ -134,6 +134,11 @@ export const HttpErrorConstants = {
     message: '이미 수강신청 접수 중입니다.',
   } as HttpErrorFormat,
 
+  CONFLICT_STUDENT: {
+    error: 'CONFLICT_STUDENT',
+    message: '이미 학생 정보가 존재합니다.',
+  } as HttpErrorFormat,
+
   ALREADY_REGISTERED: {
     error: 'ALREADY_REGISTERED',
     message: '이미 가입되었습니다.',

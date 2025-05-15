@@ -18,6 +18,11 @@ import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { StudentService } from 'src/domain/student/student.service';
 import { UploadService } from 'src/services/upload/upload.service';
+import {
+  CreateStudentDocs,
+  StudentUpdateDocs,
+} from './swagger/rest-swagger.decorator';
+import { CreateStudentDto } from './dto/create-student.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('students')
@@ -30,6 +35,13 @@ export class StudentController {
   //?-------------------------------------------------------------------------//
   //? CREATE
   //?-------------------------------------------------------------------------//
+
+  @CreateStudentDocs()
+  @ApiOperation({ description: 'Student 생성' })
+  @Post()
+  async create(@Body() dto: CreateStudentDto): Promise<Student> {
+    return await this.studentService.create(dto);
+  }
 
   @ApiOperation({ description: '이미지 URL 생성' })
   @Post(':id/s3urls')
@@ -91,14 +103,13 @@ export class StudentController {
   //?-------------------------------------------------------------------------//
   //? UPDATE
   //?-------------------------------------------------------------------------//
-
+  @StudentUpdateDocs()
   @ApiOperation({ description: 'Student 수정' })
   @Patch(':id')
   async update(
     @Param('id') id: number,
     @Body() dto: UpdateStudentDto,
   ): Promise<Student> {
-    console.log(dto);
     return await this.studentService.update(id, dto);
   }
 
