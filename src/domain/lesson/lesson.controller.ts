@@ -4,11 +4,12 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Patch,
   Post,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
@@ -43,7 +44,8 @@ export class LessonController {
   }
 
   @CreateLessonDryRunDocs()
-  @Get('dryrun')
+  @Post('dryrun')
+  @HttpCode(200)
   async createDryRun(@Body() dto: CreateLessonDto): Promise<Lesson | null> {
     return await this.lessonService.dryRun(dto);
   }
