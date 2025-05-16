@@ -55,6 +55,14 @@ export class OfferingController {
     return await this.offeringService.findById(id, ['bookings']);
   }
 
+  @Public()
+  @Get(':id/previous-term-id')
+  async findImmediatelyPreviousTermId(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<number> {
+    return await this.offeringService.findImmediatelyPreviousTermId(id);
+  }
+
   //?-------------------------------------------------------------------------//
   //? Update
   //?-------------------------------------------------------------------------//
@@ -68,12 +76,12 @@ export class OfferingController {
     return await this.offeringService.update(id, dto);
   }
 
-  @CreateOfferingDocs()
-  @Patch(':id/former')
+  @Patch(':id/former-student-ids')
   async updateFormerStudentIds(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<Offering> {
-    return await this.offeringService.updateFormerStudentIds(id);
+    @Body('offeringIds') offeringIds: number[],
+  ): Promise<void> {
+    return await this.offeringService.resetFormerStudentIds(id, offeringIds);
   }
 
   //?-------------------------------------------------------------------------//

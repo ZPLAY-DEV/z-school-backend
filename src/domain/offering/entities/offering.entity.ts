@@ -38,6 +38,10 @@ export class Offering {
   @Column({ type: 'varchar', length: 24 })
   schoolName: string;
 
+  @ApiProperty({ description: '🈵 과목ID (relation용 아님)' })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  lessonId: number | null;
+
   @ApiProperty({ description: '과목이름' })
   @Column({ type: 'varchar', length: 24 })
   lessonName: string;

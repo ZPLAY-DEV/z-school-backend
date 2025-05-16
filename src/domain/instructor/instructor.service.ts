@@ -24,11 +24,9 @@ export class InstructorService {
   constructor(
     @InjectRepository(Instructor)
     private readonly instructorRepository: Repository<Instructor>,
-    @InjectRepository(InstructorSchool)
-    private readonly instructorSchoolRepository: Repository<InstructorSchool>,
-    private readonly dataSource: DataSource,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    private readonly dataSource: DataSource,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//

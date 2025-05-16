@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { InstructorSchool } from 'src/domain/instructor/entities/instructor-school.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { InstructorGroupController } from 'src/domain/instructor/instructor-group.controller';
 import { InstructorGroupService } from 'src/domain/instructor/instructor-group.service';
@@ -11,7 +12,7 @@ import { InstructorService } from './instructor.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Instructor, Group]),
+    TypeOrmModule.forFeature([Instructor, Group, InstructorSchool]),
     UploadModule,
     SlackModule,
   ],
