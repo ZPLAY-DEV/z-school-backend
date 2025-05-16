@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -236,38 +236,78 @@ export class LessonCoreService {
     dto: CreateLessonDto | UpdateLessonDto,
     manager: EntityManager,
   ): Promise<void> {
-    // Get or create instructors first
-    const instructorPromises =
-      dto.groups?.map(async (groupDto) => {
-        // Upsert instructor using ON DUPLICATE KEY UPDATE
-        await manager.query(
-          `INSERT INTO instructors
-          (name, phone)
-          VALUES (?, ?)
-          ON DUPLICATE KEY UPDATE updatedAt = CURRENT_TIMESTAMP`,
-          [groupDto.instructorName, groupDto.instructorPhone],
-        );
+    type InstructorGroupData = {
+      lessonId: number;
+      instructorId: number;
+      instructorName: string;
+      instructorPhone: string;
+      groupData: CreateGroupWithInstructorDto & {
+        lessonId: number;
+        instructorId: number;
+      };
+    };
 
-        // Get the instructor ID
-        const [instructor] = await manager.query<{ id: number }[]>(
-          `SELECT id FROM instructors WHERE name = ? AND phone = ?`,
-          [groupDto.instructorName, groupDto.instructorPhone],
-        );
+    const uniqueInstructors = new Map<string, number>();
+    const instructorsWithGroupData: InstructorGroupData[] = [];
 
-        return {
+    // 각 강사를 순차적으로 처리 (Promise.all 대신 for...of 사용)
+    for (const groupDto of dto.groups || []) {
+      const instructorKey = `${groupDto.instructorName}-${groupDto.instructorPhone}`;
+
+      // 이미 처리한 강사인지 확인
+      if (uniqueInstructors.has(instructorKey)) {
+        const instructorId = uniqueInstructors.get(instructorKey)!;
+
+        instructorsWithGroupData.push({
           lessonId: lesson.id,
-          instructorId: instructor.id,
+          instructorId,
           instructorName: groupDto.instructorName,
           instructorPhone: groupDto.instructorPhone,
           groupData: {
             ...groupDto,
-            instructorId: instructor.id,
+            instructorId,
             lessonId: lesson.id,
           },
-        };
-      }) || [];
+        });
 
-    const instructorsWithGroupData = await Promise.all(instructorPromises);
+        continue;
+      }
+
+      // 기존 instructor 조회
+      const [existingInstructor] = await manager.query<{ id: number }[]>(
+        `SELECT id FROM instructors WHERE name = ? AND phone = ?`,
+        [groupDto.instructorName, groupDto.instructorPhone],
+      );
+
+      let instructorId: number;
+
+      if (existingInstructor) {
+        // 기존 instructor가 있으면 ID 사용
+        instructorId = existingInstructor.id;
+      } else {
+        // 기존 instructor가 없으면 새로 생성
+        const result = await manager.query(
+          `INSERT INTO instructors (name, phone) VALUES (?, ?)`,
+          [groupDto.instructorName, groupDto.instructorPhone],
+        );
+        instructorId = result.insertId;
+      }
+
+      // 처리된 강사 정보 저장
+      uniqueInstructors.set(instructorKey, instructorId);
+
+      instructorsWithGroupData.push({
+        lessonId: lesson.id,
+        instructorId,
+        instructorName: groupDto.instructorName,
+        instructorPhone: groupDto.instructorPhone,
+        groupData: {
+          ...groupDto,
+          instructorId,
+          lessonId: lesson.id,
+        },
+      });
+    }
 
     // Upsert groups with both lessonId and instructorId
     for (const { instructorId, groupData } of instructorsWithGroupData) {
@@ -322,39 +362,56 @@ export class LessonCoreService {
     }
 
     // ---------------------------------------------------------------------- //
-    // instructor_lesson 관계 업데이트 (무조건 soft delete 후 재생성)
+    // instructor_lesson 관계 업데이트 (존재 확인 후 필요한 경우만 삽입)
     // ---------------------------------------------------------------------- //
 
-    await manager.update(
-      InstructorLesson,
-      { lessonId: lesson.id, deletedAt: IsNull() },
-      { deletedAt: new Date() },
+    const instructorIds = Array.from(
+      new Set(instructorsWithGroupData.map((item) => item.instructorId)),
     );
-    const instructorIds = instructorsWithGroupData.map(
-      (item) => item.instructorId,
-    );
-    const instructorLessonPromises = instructorIds.map((instructorId) =>
-      manager.query(
-        `INSERT INTO instructor_lesson
-          (instructorId, lessonId)
-          VALUES (?, ?)`,
+
+    // 각 instructor에 대해 lesson 연결이 있는지 확인하고 없는 경우만 생성
+    for (const instructorId of instructorIds) {
+      // 기존 연결 확인
+      const [existingLessonRelation] = await manager.query<any[]>(
+        `SELECT id FROM instructor_lesson 
+         WHERE instructorId = ? AND lessonId = ? AND deletedAt IS NULL`,
         [instructorId, lesson.id],
-      ),
-    );
-    await Promise.all(instructorLessonPromises);
+      );
+
+      // 연결이 없는 경우에만 삽입
+      if (!existingLessonRelation) {
+        await manager.query(
+          `INSERT INTO instructor_lesson
+           (instructorId, lessonId)
+           VALUES (?, ?)`,
+          [instructorId, lesson.id],
+        );
+      }
+    }
 
     // ---------------------------------------------------------------------- //
-    // instructor_school 관계 업데이트 (todo. 삭제관련 처리 필요할지도)
+    // instructor_school 관계 업데이트 (존재 확인 후 필요한 경우만 삽입)
     // ---------------------------------------------------------------------- //
 
-    await Promise.all(
-      instructorIds.map((instructorId) =>
-        manager.query(
-          'INSERT IGNORE INTO `instructor_school` (instructorId, schoolId) VALUES (?, ?)',
-          [instructorId, dto.schoolId],
-        ),
-      ),
-    );
+    // 각 instructor에 대해 school 연결이 있는지 확인하고 없는 경우만 생성
+    for (const instructorId of instructorIds) {
+      // 기존 연결 확인
+      const [existingSchoolRelation] = await manager.query<any[]>(
+        `SELECT id FROM instructor_school 
+         WHERE instructorId = ? AND schoolId = ? AND deletedAt IS NULL`,
+        [instructorId, dto.schoolId],
+      );
+
+      // 연결이 없는 경우에만 삽입
+      if (!existingSchoolRelation) {
+        await manager.query(
+          `INSERT INTO instructor_school 
+           (instructorId, schoolId, alias) 
+           VALUES (?, ?, ?)`,
+          [instructorId, dto.schoolId, ''],
+        );
+      }
+    }
 
     // 저장된 groups 데이터를 lesson 객체에 다시 로드하여 반환값이 transform된 데이터가 되도록 함
     lesson.groups = await manager.find(Group, {

@@ -9,7 +9,6 @@ import {
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
-import { CreateLessonResponseDto } from 'src/domain/lesson/dto/create-lesson-response.dto';
 import { CreateLessonDto } from '../dto/create-lesson.dto';
 import { Lesson } from '../entities/lesson.entity';
 
@@ -143,7 +142,7 @@ export const SchoolTermLessonInfiniteListDocs = () => {
       `,
     }),
     ApiPaginationQuery(SCHOOL_TERM_LESSON_CONFIG),
-    ApiOkPaginatedResponse(CreateLessonResponseDto, SCHOOL_TERM_LESSON_CONFIG),
+    ApiOkPaginatedResponse(Lesson, SCHOOL_TERM_LESSON_CONFIG),
     ApiErrorResponseTemplate([
       {
         status: StatusCodes.NOT_FOUND,

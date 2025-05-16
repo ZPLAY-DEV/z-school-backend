@@ -25,11 +25,11 @@ import {
 } from 'src/domain/offering/swagger/offering-swagger.decorator';
 
 //! 단일 Offering 엔터티 작업
-@ApiTags('✅ Offerings ( 수강신청과목 )')
+@ApiTags('✅ Offerings > GroupStudents ( 수강신청과목 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('offerings')
 @UseInterceptors(ClassSerializerInterceptor)
-export class OfferingController {
+export class OfferingGroupStudentController {
   constructor(private readonly offeringService: OfferingService) {}
 
   //?-------------------------------------------------------------------------//
@@ -37,7 +37,7 @@ export class OfferingController {
   //?-------------------------------------------------------------------------//
 
   @CreateOfferingDocs()
-  @Post()
+  @Post(':offeringId/group-students')
   async create(@Body() dto: CreateOfferingDto): Promise<Offering> {
     return this.offeringService.create(dto);
   }
@@ -55,14 +55,6 @@ export class OfferingController {
     return await this.offeringService.findById(id, ['bookings']);
   }
 
-  @Public()
-  @Get(':id/previous-term-id')
-  async findImmediatelyPreviousTermId(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<number> {
-    return await this.offeringService.findImmediatelyPreviousTermId(id);
-  }
-
   //?-------------------------------------------------------------------------//
   //? Update
   //?-------------------------------------------------------------------------//
@@ -74,14 +66,6 @@ export class OfferingController {
     @Body() dto: UpdateOfferingDto,
   ): Promise<Offering> {
     return await this.offeringService.update(id, dto);
-  }
-
-  @Patch(':id/former-student-ids')
-  async updateFormerStudentIds(
-    @Param('id', ParseIntPipe) id: number,
-    @Body('offeringIds') offeringIds: number[],
-  ): Promise<void> {
-    return await this.offeringService.resetFormerStudentIds(id, offeringIds);
   }
 
   //?-------------------------------------------------------------------------//
