@@ -7,7 +7,7 @@ import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
-export class OfferingService {
+export class OfferingGroupStudentService {
   constructor(
     @InjectRepository(Offering)
     private readonly offeringRepository: Repository<Offering>,

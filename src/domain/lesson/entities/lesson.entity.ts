@@ -6,6 +6,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
 import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
 import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
@@ -143,6 +144,9 @@ export class Lesson {
 
   @OneToMany(() => Group, (group) => group.lesson)
   public groups: Group[];
+
+  @OneToMany(() => Offering, (offering) => offering.lesson)
+  public offerings: Offering[];
 
   @OneToMany(() => Ledger, (ledger) => ledger.lesson)
   public ledgers: Ledger[];

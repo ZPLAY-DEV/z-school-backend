@@ -96,19 +96,49 @@ export class OfferingService {
     return await this.offeringRepository.save(offering);
   }
 
-  async resetFormerStudentIds(
+  async setFormerStudentIds(
     id: number,
-    offeringIds: number[],
-  ): Promise<void> {
+    offeringIds: number[], // 이전학기 수강과목들의 ids
+  ): Promise<number[]> {
+    // 1. offerings 에서 lessonIds 추출
     const offerings = await this.offeringRepository.find({
       where: { id: In(offeringIds) },
     });
 
-    offerings.forEach((offering) => {
-      offering.formerStudentIds = [];
-    });
+    const lessonIds = offerings
+      .map((offering) => offering.lessonId)
+      .filter((id) => id !== null && id !== undefined);
 
-    await this.offeringRepository.save(offerings);
+    // 2. 이전학기에 이 과목들을 수강한 학생들의 ID를 직접 쿼리로 조회
+    const formerStudentIds: number[] = [];
+
+    // 이전 학기 수강생 데이터가 존재한다면 추가
+    if (lessonIds.length > 0) {
+      const query = `
+        SELECT DISTINCT gs."studentId"
+        FROM group_student gs
+        JOIN "groups" g ON gs."groupId" = g.id
+        WHERE g."lessonId" IN (${lessonIds.join(',')})
+        AND gs."deletedAt" IS NULL
+      `;
+
+      const studentIdsResult = await this.offeringRepository.query(query);
+
+      studentIdsResult.forEach((result: { studentId: number }) => {
+        if (result.studentId) {
+          formerStudentIds.push(result.studentId);
+        }
+      });
+    }
+
+    // 현재 offering에 이전 수강생 ID 배열 저장
+    const offering = await this.offeringRepository.findOneOrFail({
+      where: { id },
+    });
+    const studentIds = [...new Set(formerStudentIds)];
+    offering.formerStudentIds = studentIds;
+    await this.offeringRepository.save(offering);
+    return studentIds;
   }
 
   //?-------------------------------------------------------------------------//

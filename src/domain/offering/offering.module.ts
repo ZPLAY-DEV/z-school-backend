@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { OfferingGroupStudentController } from 'src/domain/offering/offering-group-student.controller';
+import { OfferingGroupStudentService } from 'src/domain/offering/offering-group-student.service';
 import { OfferingController } from 'src/domain/offering/offering.controller';
 import { OfferingService } from 'src/domain/offering/offering.service';
 import { School } from 'src/domain/school/entities/school.entity';
@@ -13,7 +15,7 @@ import { UploadModule } from 'src/services/upload/upload.module';
     UploadModule,
     S3Module,
   ],
-  providers: [OfferingService],
-  controllers: [OfferingController],
+  providers: [OfferingService, OfferingGroupStudentService],
+  controllers: [OfferingController, OfferingGroupStudentController],
 })
 export class OfferingModule {}

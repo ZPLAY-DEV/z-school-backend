@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { EnrollmentRule } from 'src/common/enums';
 import { ITimeRange } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
@@ -38,7 +39,7 @@ export class Offering {
   @Column({ type: 'varchar', length: 24 })
   schoolName: string;
 
-  @ApiProperty({ description: '🈵 과목ID (relation용 아님)' })
+  @ApiProperty({ description: '🈵 과목ID' })
   @Column({ type: 'int', unsigned: true, nullable: true })
   lessonId: number | null;
 
@@ -100,6 +101,10 @@ export class Offering {
   @ManyToOne(() => Term, (term) => term.offerings)
   @JoinColumn({ name: 'termId' })
   term: Term;
+
+  @ManyToOne(() => Lesson, (lesson) => lesson.offerings)
+  @JoinColumn({ name: 'lessonId' })
+  lesson: Lesson;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 

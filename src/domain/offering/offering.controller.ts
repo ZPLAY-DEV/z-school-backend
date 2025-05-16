@@ -19,8 +19,10 @@ import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { OfferingService } from 'src/domain/offering/offering.service';
 import {
   CreateOfferingDocs,
+  FindImmediatelyPreviousTermIdDocs,
   GetOfferingByIdDocs,
   RemoveOfferingDocs,
+  SetFormerStudentIdsDocs,
   UpdateOfferingDocs,
 } from 'src/domain/offering/swagger/offering-swagger.decorator';
 
@@ -55,6 +57,7 @@ export class OfferingController {
     return await this.offeringService.findById(id, ['bookings']);
   }
 
+  @FindImmediatelyPreviousTermIdDocs()
   @Public()
   @Get(':id/previous-term-id')
   async findImmediatelyPreviousTermId(
@@ -76,12 +79,13 @@ export class OfferingController {
     return await this.offeringService.update(id, dto);
   }
 
+  @SetFormerStudentIdsDocs()
   @Patch(':id/former-student-ids')
-  async updateFormerStudentIds(
+  async setFormerStudentIds(
     @Param('id', ParseIntPipe) id: number,
     @Body('offeringIds') offeringIds: number[],
-  ): Promise<void> {
-    return await this.offeringService.resetFormerStudentIds(id, offeringIds);
+  ): Promise<number[]> {
+    return await this.offeringService.setFormerStudentIds(id, offeringIds);
   }
 
   //?-------------------------------------------------------------------------//
