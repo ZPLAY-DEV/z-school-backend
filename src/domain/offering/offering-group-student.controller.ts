@@ -37,7 +37,7 @@ export class OfferingGroupStudentController {
   //?-------------------------------------------------------------------------//
 
   @CreateOfferingDocs()
-  @Post()
+  @Post(':offeringId/group-students')
   async create(@Body() dto: CreateOfferingDto): Promise<Offering> {
     return this.offeringService.create(dto);
   }

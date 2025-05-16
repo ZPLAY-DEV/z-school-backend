@@ -68,6 +68,14 @@ export class OfferingController {
     return await this.offeringService.update(id, dto);
   }
 
+  @CreateOfferingDocs()
+  @Patch(':id/former')
+  async updateFormerStudentIds(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Offering> {
+    return await this.offeringService.updateFormerStudentIds(id);
+  }
+
   //?-------------------------------------------------------------------------//
   //? Delete
   //?-------------------------------------------------------------------------//

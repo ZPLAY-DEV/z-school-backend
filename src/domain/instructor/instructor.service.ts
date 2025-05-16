@@ -8,13 +8,14 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { UpdateInstructorDto } from 'src/domain/instructor/dto/update-instructor.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { DataSource, EntityManager, Repository } from 'typeorm';
-import { CreateInstructorDto } from './dto/create-instructor.dto';
 import { School } from '../school/entities/school.entity';
-import { InstructorSchool } from './entities/instructor-school.entity';
+import { CreateInstructorDto } from './dto/create-instructor.dto';
 import { DeleteInstructorSchoolDto } from './dto/delete-instructor-school.dto';
+import { InstructorSchool } from './entities/instructor-school.entity';
 
 @Injectable()
 export class InstructorService {
@@ -26,6 +27,8 @@ export class InstructorService {
     @InjectRepository(InstructorSchool)
     private readonly instructorSchoolRepository: Repository<InstructorSchool>,
     private readonly dataSource: DataSource,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -200,6 +203,13 @@ export class InstructorService {
       this.logger.error(e);
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
+  }
+
+  async listGroups(instructorId: number): Promise<Group[]> {
+    return this.groupRepository.find({
+      where: { instructorId },
+      relations: ['lesson'],
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//

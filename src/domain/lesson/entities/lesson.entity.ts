@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsEnum, IsOptional } from 'class-validator';
-import { ClassStatus, DocumentType, EnrollmentRule } from 'src/common/enums';
+import { ClassStatus, DocumentType } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
@@ -95,18 +95,6 @@ export class Lesson {
   })
   @Column({ type: 'varchar', length: 16, default: 'CO-1000' })
   operationFeeRule: string | null; // 과목별로 다른 계산룰이 적용되는 경우를 위해 추가
-
-  @ApiProperty({ description: '🈵 수강신청시 시간 겹쳐도 okay?' })
-  @Column({ type: 'boolean', default: false })
-  allowTimeOverlap: boolean;
-
-  @ApiProperty({ description: '🈵 분류' })
-  @Column({
-    type: 'enum',
-    enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST,
-  })
-  enrollmentRule: EnrollmentRule;
 
   @ApiProperty({ description: '🈳 필요한 문서의 Key 값들; Source of Truth' })
   @Column('json', { nullable: true })

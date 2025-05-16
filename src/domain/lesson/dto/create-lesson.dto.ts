@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -11,9 +10,9 @@ import {
   IsPositive,
   IsString,
   MaxLength,
-  ValidateNested,
+  ValidateNested
 } from 'class-validator';
-import { ClassStatus, DocumentType, EnrollmentRule } from 'src/common/enums';
+import { ClassStatus, DocumentType } from 'src/common/enums';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
 
@@ -133,24 +132,6 @@ export class CreateLessonDto {
   @IsString()
   @MaxLength(16)
   operationFeeRule?: string | null;
-
-  @ApiProperty({
-    description: '🈳 수강신청시 시간 겹쳐도 okay?',
-    required: false,
-    default: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  allowTimeOverlap?: boolean;
-
-  @ApiProperty({
-    description: '🈳 Enrollment rule',
-    enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST,
-  })
-  @IsEnum(EnrollmentRule)
-  @IsOptional()
-  enrollmentRule?: EnrollmentRule;
 
   @ApiProperty({ description: '🈳 필요한 문서의 Key 값들', required: false })
   @IsOptional()
