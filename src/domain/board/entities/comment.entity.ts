@@ -8,16 +8,14 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  // JoinColumn,
   ManyToOne,
-  // OneToMany,
   PrimaryGeneratedColumn,
-  Unique,
+  // Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('comments')
-@Unique(['userId', 'boardId'])
+// @Unique(['userId', 'boardId'])
 export class Comment {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -29,6 +27,10 @@ export class Comment {
   @ApiProperty({ description: '🈵 연결된 게시글 ID' })
   @Column({ type: 'int', unsigned: true })
   boardId: number;
+
+  @ApiProperty({ description: '🈳 작성자 이름', nullable: true })
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  name: string | null;
 
   // @ApiProperty({ description: '🈳 부모 댓글 ID (답글인 경우)', nullable: true })
   // @Column({ type: 'int', unsigned: true, nullable: true })

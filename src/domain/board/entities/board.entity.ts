@@ -16,6 +16,7 @@ import {
 } from 'typeorm';
 import { BoardTarget, Role } from 'src/common/enums';
 import { IsArray } from 'class-validator';
+import { School } from 'src/domain/school/entities/school.entity';
 
 @Entity('boards')
 export class Board {
@@ -30,11 +31,11 @@ export class Board {
   @Column({ type: 'int', unsigned: true, nullable: true })
   groupId: number | null;
 
-  // ------------------------------------------------------------------------ //
-
   @ApiProperty({ description: '🈳 학교ID (relation용 아님)' })
-  @Column({ type: 'int', unsigned: true, nullable: true })
-  schoolId: number | null; // 관리자 편의를 위한 Column.
+  @Column({ type: 'int', unsigned: true })
+  schoolId: number;
+
+  // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈵 게시글 제목' })
   @Column({ type: 'varchar', length: 64 })
@@ -86,6 +87,10 @@ export class Board {
   })
   @JoinColumn({ name: 'groupId' })
   group: Group;
+
+  @ManyToOne(() => School, (school: School) => school.boards)
+  @JoinColumn({ name: 'schoolId' })
+  school: School;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 

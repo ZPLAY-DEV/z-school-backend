@@ -7,9 +7,14 @@ import { DataSource, Repository } from 'typeorm';
 import { School } from '../school/entities/school.entity';
 import { Group } from '../group/entities/group.entity';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { RemovalStatus } from 'src/common/enums';
+import { RemovalStatus, Role } from 'src/common/enums';
 import { Comment } from './entities/comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { InstructorSchool } from '../instructor/entities/instructor-school.entity';
+import { Instructor } from '../instructor/entities/instructor.entity';
+import { Parent } from '../parent/entities/parent.entity';
+import { Student } from '../student/entities/student.entity';
+
 @Injectable()
 export class BoardService {
   constructor(
@@ -25,7 +30,7 @@ export class BoardService {
   //? ---------------------------------------------------------------------- ?//
   //? Create
   //? ---------------------------------------------------------------------- ?//
-  async create(dto: CreateBoardDto): Promise<Board> {
+  async createBoard(dto: CreateBoardDto): Promise<Board> {
     // 1) 학교 조회
     const school = await this.schoolRepository.findOne({
       where: { id: dto.schoolId },
@@ -52,7 +57,58 @@ export class BoardService {
     return await this.boardRepository.save(board);
   }
 
-  async createComment(dto: CreateCommentDto) {}
+  async createComment(dto: CreateCommentDto): Promise<void> {
+    const board = await this.boardRepository.findOne({
+      where: { id: dto.boardId },
+      relations: ['school'],
+    });
+
+    if (!board) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_BOARD);
+    }
+
+    let name: string | null;
+
+    if (dto.userRole === Role.MANAGER) {
+      name = board.school.name ? `${board.school.name} 관리자` : '학교 관리자';
+      console.log('name', name);
+    } else if (dto.userRole === Role.INSTRUCTOR) {
+      const schoolInstructor = await this.dataSource.manager
+        .createQueryBuilder(InstructorSchool, 'instructorSchool')
+        .innerJoin(
+          Instructor,
+          'instructor',
+          'instructorSchool.instructorId = instructor.id',
+        )
+        .select(['instructorSchool.alias'])
+        .where('instructorSchool.schoolId = :schoolId', {
+          schoolId: board.school.id,
+        })
+        .andWhere('instructor.userId = :userId', {
+          userId: dto.userId,
+        })
+        .getOne();
+      // name = schoolInstructor?.alias
+      //   ? `${schoolInstructor.alias} 강사`
+      //   : '강사님';
+      console.log('schoolInstructor', schoolInstructor);
+    } else if (dto.userRole === Role.PARENT) {
+      const parent = await this.dataSource.manager
+        .createQueryBuilder(Parent, 'parent')
+        .innerJoin(Student, 'student', 'parent.id = student.parentId')
+        .select(['student.name'])
+        .where('student.schoolId = :schoolId', {
+          schoolId: board.school.id,
+        })
+        .andWhere('parent.userId = :userId', {
+          userId: dto.userId,
+        })
+        .getOne();
+      console.log('parent', parent);
+    }
+    // const comment = this.commentRepository.create(dto);
+    // return await this.commentRepository.save(comment);
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? READ

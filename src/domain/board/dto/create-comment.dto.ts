@@ -27,7 +27,7 @@ export class CreateCommentDto {
   })
   @IsNumber()
   @IsNotEmpty()
-  postId: number;
+  boardId: number;
 
   @ApiProperty({
     description: '🈳 상위 댓글 아이디',
@@ -46,7 +46,7 @@ export class CreateCommentDto {
   })
   @IsString()
   @IsNotEmpty()
-  body: string;
+  content: string;
 
   @ApiProperty({
     description:
@@ -58,4 +58,14 @@ export class CreateCommentDto {
   @IsEnum(Role)
   @IsNotEmpty()
   userRole: Role;
+
+  @ApiProperty({
+    description: '🈳 작성자 이름',
+    example: '홍길동',
+    type: String,
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  name?: string;
 }

@@ -10,20 +10,23 @@ import {
   ClassSerializerInterceptor,
   ParseIntPipe,
 } from '@nestjs/common';
-import { BoardService } from './board.service';
+
 import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
-import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
-import { RemovalStatus, Role } from 'src/common/enums';
+import { CreateCommentDto } from './dto/create-comment.dto';
+import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
+import { RemovalStatus } from 'src/common/enums';
+
 import { Board } from './entities/board.entity';
+
 import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { CreateCommentDto } from './dto/create-comment.dto';
+import { BoardService } from './board.service';
 import { UploadService } from 'src/services/upload/upload.service';
 import { IS3Urls } from 'src/common/interfaces';
 
 @UseInterceptors(ClassSerializerInterceptor)
-@ApiTags(' Boards ( 게시판 )')
+@ApiTags('✅ Boards ( 게시판 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('boards')
 export class BoardController {
@@ -45,23 +48,25 @@ export class BoardController {
   }
 
   @Post()
-  async create(
-    @CurrentUserIdAndRole() user: { id: number; role: Role },
+  async createBoard(
+    @CurrentUserId() userId: number,
     @Body() dto: CreateBoardDto,
   ): Promise<Board> {
-    return await this.boardService.create({
+    return await this.boardService.createBoard({
       ...dto,
-      userId: user.id,
-      userRole: user.role,
+      userId,
     });
   }
 
   @Post('comments')
   async createComment(
-    @CurrentUserIdAndRole() user: { id: number; role: Role },
+    @CurrentUserId() userId: number,
     @Body() dto: CreateCommentDto,
-  ) {
-    // return await this.boardService.createComment(dto, user.id, user.role);
+  ): Promise<void> {
+    return await this.boardService.createComment({
+      ...dto,
+      userId,
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//
