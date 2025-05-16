@@ -11,7 +11,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Public } from 'src/common/decorators/public.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
@@ -49,7 +48,6 @@ export class OfferingController {
   //?-------------------------------------------------------------------------//
 
   @GetOfferingByIdDocs()
-  @Public()
   @Get(':id')
   async getOfferingById(
     @Param('id', ParseIntPipe) id: number,
@@ -58,7 +56,6 @@ export class OfferingController {
   }
 
   @FindImmediatelyPreviousTermIdDocs()
-  @Public()
   @Get(':id/previous-term-id')
   async findImmediatelyPreviousTermId(
     @Param('id', ParseIntPipe) id: number,

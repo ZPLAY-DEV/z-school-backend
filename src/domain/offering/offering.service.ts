@@ -80,7 +80,7 @@ export class OfferingService {
     if (previousTerm) {
       return previousTerm.id;
     } else {
-      throw new BadRequestException(HttpErrorConstants.CONDITION_NOT_MET);
+      throw new BadRequestException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
   }
 
