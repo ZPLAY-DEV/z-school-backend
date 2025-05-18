@@ -6,28 +6,36 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { BookingStatus } from 'src/common/enums';
+import { BookingStatus, EnrollmentRule } from 'src/common/enums';
 
 export class CreateBookingDto {
-  @ApiProperty({ description: 'ID of the offering' })
+  @ApiProperty({ description: 'ID of the offering', example: 1 })
   @IsInt()
   offeringId: number;
 
-  @ApiProperty({ description: 'ID of the student' })
+  @ApiProperty({ description: 'ID of the student', example: 1 })
   @IsInt()
   studentId: number;
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '수강신청 과목명' })
-  @IsString()
-  lessonName: string;
-
   @ApiProperty({
-    description: '정원. entity 에 존재하지 않지만 redis 예약로직에서 필요.',
+    description: '💡 entity 에 존재하지 않지만 신청 로직에서 반드시 필요.',
+    example: 18,
   })
   @IsInt()
   capacity: number;
+
+  @ApiProperty({
+    description: '💡 entity 에 존재하지 않지만 신청 로직에서 반드시 필요.',
+    example: EnrollmentRule.FIRST,
+  })
+  @IsEnum(EnrollmentRule)
+  enrollmentRule: EnrollmentRule;
+
+  @ApiProperty({ description: '수강신청 과목명', example: '마인드크래프트' })
+  @IsString()
+  lessonName: string;
 
   @ApiProperty({
     description: '재수강생 여부 (!)',
@@ -51,11 +59,6 @@ export class CreateBookingDto {
   @IsOptional()
   @IsEnum(BookingStatus)
   status?: BookingStatus;
-
-  @ApiProperty({ description: 'milliseconds 단위의 timestamp for versioning' })
-  @IsInt()
-  @IsOptional()
-  timestamp?: number;
 
   //? Constructor ---------------------------------------------------------- ?//
 

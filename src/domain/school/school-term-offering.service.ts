@@ -83,7 +83,8 @@ export class SchoolTermOfferingService {
           allowedGrades: group.allowedGrades.split(',').map(Number),
           bitmasks: [],
           formerStudentIds: [],
-          enrollmentRule: EnrollmentRule.FIRST,
+          enrollmentRule:
+            group.capacity === 0 ? EnrollmentRule.ANYONE : EnrollmentRule.FIRST,
           allowTimeOverlap: false,
         });
 

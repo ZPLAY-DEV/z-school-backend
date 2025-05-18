@@ -1,6 +1,8 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
 import { REDIS_BOOKING_OPTIONS } from 'src/common/constants';
+import { BookingStatus } from 'src/common/enums';
+import { IBookingSnapshotItem } from 'src/common/interfaces';
 
 interface RedisBookingOptions {
   host: string;
@@ -112,7 +114,10 @@ export class RedisBookingService implements OnModuleInit {
       local pending_key = offering_id .. ":pending"
       local all_key = offering_id .. ":all"
 
-      redis.call("ZREM", all_key, student_id)
+      local removed_from_all = redis.call("ZREM", all_key, student_id)
+      if removed_from_all == 0 then
+        return "ERR_NOT_FOUND"
+      end
       local removed_from_enrolled = redis.call("LREM", enrolled_key, 0, student_id)
       redis.call("LREM", pending_key, 0, student_id)
 
@@ -135,6 +140,7 @@ export class RedisBookingService implements OnModuleInit {
 
     if (typeof result === 'string') {
       if (result.startsWith('OK_')) return { ok: result.replace('OK_', '') };
+      if (result.startsWith('ERR_')) return { err: result.replace('ERR_', '') };
     }
 
     return { err: 'UNKNOWN' };
@@ -151,6 +157,44 @@ export class RedisBookingService implements OnModuleInit {
     const list = await this.redisClient.lRange(pendingKey, 0, -1);
     const position = list.findIndex((id) => id === studentId.toString());
     return position !== -1 ? position + 1 : -1;
+  }
+
+  // Cancel 시 sqs 에 전달할 snapshot 생성 로직
+  async getSnapshot(
+    offeringId: number,
+    lessonName: string,
+  ): Promise<IBookingSnapshotItem[]> {
+    const allKey = `offering:${offeringId}:all`;
+    const enrolledKey = `offering:${offeringId}:enrolled`;
+    const pendingKey = `offering:${offeringId}:pending`;
+
+    const allStudentIds = await this.redisClient.zRange(allKey, 0, -1);
+    const enrolledIds = await this.redisClient.lRange(enrolledKey, 0, -1);
+    const pendingIds = await this.redisClient.lRange(pendingKey, 0, -1);
+
+    return allStudentIds.map((id) => {
+      let status: BookingStatus;
+      let waitingPosition: number;
+
+      if (enrolledIds.includes(id)) {
+        status = BookingStatus.ENROLLED;
+        waitingPosition = 0;
+      } else if (pendingIds.includes(id)) {
+        status = BookingStatus.PENDING;
+        waitingPosition = pendingIds.indexOf(id) + 1;
+      } else {
+        status = BookingStatus.FULL;
+        waitingPosition = -1;
+      }
+
+      return {
+        offeringId,
+        studentId: Number(id),
+        lessonName,
+        status,
+        waitingPosition,
+      };
+    });
   }
 
   async ping(): Promise<string> {

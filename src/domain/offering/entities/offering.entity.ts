@@ -82,6 +82,9 @@ export class Offering {
   @Column({ default: false })
   allowTimeOverlap: boolean;
 
+  @Column({ type: 'bigint', unsigned: true, default: 0 })
+  lastSyncTimestamp: number;
+
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: 'createdAt' })

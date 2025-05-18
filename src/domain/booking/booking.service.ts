@@ -3,11 +3,13 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AWS_SQS_CLIENT, REDIS_BOOKING_CLIENT } from 'src/common/constants';
 import { BookingStatus } from 'src/common/enums';
+import { IBookingSnapshotItem } from 'src/common/interfaces';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisBookingService } from 'src/services/redis/redis-booking.service';
@@ -46,7 +48,7 @@ export class BookingService {
     }
   }
 
-  async cancelWithDb(cancelBookingDto: CancelBookingDto): Promise<void> {
+  async cancelWithDb(cancelBookingDto: CancelBookingDto): Promise<number> {
     const { offeringId, studentId } = cancelBookingDto;
 
     try {
@@ -54,6 +56,8 @@ export class BookingService {
         offeringId,
         studentId,
       });
+
+      return 1;
     } catch (error) {
       this.logger.error(`❌ Booking 취소 실패`, error.stack);
       throw new InternalServerErrorException(
@@ -63,8 +67,14 @@ export class BookingService {
   }
 
   async createWithRedis(dto: CreateBookingDto): Promise<ResponseBookingDto> {
-    const { offeringId, studentId, lessonName, capacity, isFormerStudent } =
-      dto;
+    const {
+      offeringId,
+      studentId,
+      lessonName,
+      capacity,
+      enrollmentRule,
+      isFormerStudent,
+    } = dto;
     const timestamp = Date.now();
 
     this.logger.log(
@@ -89,6 +99,7 @@ export class BookingService {
         if (result.ok === 'ENROLLED') {
           response = new ResponseBookingDto({
             status: BookingStatus.ENROLLED,
+            waitingPosition: 0,
             message: `🟢 수강신청결과 ${lessonName} 수강이 확정되었습니다.`,
           });
         } else if (result.ok === 'PENDING') {
@@ -103,7 +114,6 @@ export class BookingService {
             message: `🟡 수강신청결과 ${lessonName} 수강이 대기상태입니다. (대기 ${waitingPosition}번)`,
           });
         } else {
-          // ☠️ result.ok === 'FULL'
           response = new ResponseBookingDto({
             status: BookingStatus.FULL,
             waitingPosition: -1,
@@ -119,8 +129,9 @@ export class BookingService {
               studentId,
               lessonName,
               capacity,
+              enrollmentRule,
               isFormerStudent: isFormerStudent ?? false,
-              waitingPosition: response.waitingPosition ?? null,
+              waitingPosition: response.waitingPosition ?? 0,
               status: response.status,
               timestamp,
             } as CreateBookingDto, // bookings 저장용 data 를 sqs 로 전송
@@ -146,39 +157,43 @@ export class BookingService {
     }
   }
 
-  //? 1. upserting entire data in one go with Redis snapshot for idempotency
-  //? 2. ~~ 학부모에게 FCM 푸시알림 전송 (안하기로) ~~
-  async cancelWithRedis(cancelBookingDto: CancelBookingDto): Promise<void> {
-    const { offeringId, studentId, lessonName } = cancelBookingDto;
+  //? my goal: upsert entire data in one go with snapshot for idempotency.
+  async cancelWithRedis(dto: CancelBookingDto): Promise<number> {
+    const { offeringId, lessonName } = dto;
     const timestamp = Date.now();
 
     try {
-      // Execute Redis Lua script for cancellation
       const result = await this.redisBookingService.executeCancelScript(
         offeringId,
-        studentId,
+        dto.studentId,
       );
 
-      if (result.ok === 'CANCELED') {
-        // Send message to SQS for async processing (DB update, notification, etc.)
+      if (result.ok) {
+        // snapshot 생성 (RedisBookingService에서)
+        const snapshot: IBookingSnapshotItem[] =
+          await this.redisBookingService.getSnapshot(offeringId, lessonName);
+
+        // SQS로 전송
         await this.sqsClient.sendMessage({
           type: 'CANCEL_BOOKING',
           data: {
             offeringId,
-            studentId,
-            lessonName,
+            studentId: dto.studentId,
+            snapshot,
             timestamp,
           },
         });
-      } else if (result.err) {
-        // Log the error from result and throw appropriate exception
-        this.logger.error(`❌ Booking 취소 실패: ${result.err}`);
-        throw new InternalServerErrorException(
-          HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-        );
+
+        return snapshot.length;
+      } else {
+        throw result.err === 'NOT_FOUND' ? new Error('NOT_FOUND') : new Error();
       }
     } catch (error) {
       this.logger.error(`❌ Booking 취소 실패`, error.stack);
+
+      if (error instanceof Error && error.message === 'NOT_FOUND') {
+        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      }
       throw new InternalServerErrorException(
         HttpErrorConstants.INTERNAL_DATABASE_ERROR,
       );

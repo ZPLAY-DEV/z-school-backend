@@ -46,14 +46,6 @@ export class Booking {
   @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.PENDING })
   status: BookingStatus;
 
-  @ApiProperty({ description: 'milliseconds 단위의 timestamp for versioning' })
-  @Column({
-    type: 'bigint',
-    unsigned: true,
-    comment: 'for versioning strategy',
-  })
-  timestamp: number;
-
   @CreateDateColumn()
   createdAt: Date;
 

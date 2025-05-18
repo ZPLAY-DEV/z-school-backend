@@ -175,10 +175,9 @@ export const SetFormerStudentIdsDocs = () => {
     ApiOperation({
       summary: '수강신청과목 👈 이전 수강생 ID 설정',
       description: `
-      - 이전 학기의 수강신청과목 ID들을 입력값으로 제공하면,
-      - 해당 과목을 수강한 학생들의 ID 목록을 offering의 formerStudentIds에 설정
-      - 해당 과목을 수강한 학생들의 ID 목록을 리턴
-      - 수강생 확정시 수강신청한 학생아이디와 formerStudentIds를 이용하여 union 하면 재수강생 목록이 된다.
+      - dto.offeringIds 에 이전 학기의 수강신청과목 ID들을 넣고 호출
+      - 해당 과목을 수강한 학생들의 ID 목록을 리턴할 뿐만 아니라 offering.formerStudentIds에 자동으로 저장된다.
+      - flow 를 설명하자면, 따라서, 수강생 확정시 수강신청한 학생아이디와 formerStudentIds를 이용하여 union 하면 재수강생 목록을 뽑을 수 있다.
       `,
     }),
     ApiBody({
