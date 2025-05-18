@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { BookingStatus } from 'src/common/enums';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import {
@@ -34,16 +35,24 @@ export class Booking {
   lessonName: string | null;
 
   @ApiProperty({ description: '최대 50위 까지의 대기순서' })
-  @Column({ type: 'tinyint', unsigned: true, nullable: true })
+  @Column({ type: 'smallint', nullable: false, default: 0 })
   waitingPosition: number;
 
   @ApiProperty({ description: '우선 선정기준인 재수강생 여부' })
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isFormerStudent: boolean;
 
   @ApiProperty({ description: '수강확정 여부' })
-  @Column({ default: false })
-  isEnrolled: boolean;
+  @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.PENDING })
+  status: BookingStatus;
+
+  @ApiProperty({ description: 'milliseconds 단위의 timestamp for versioning' })
+  @Column({
+    type: 'bigint',
+    unsigned: true,
+    comment: 'for versioning strategy',
+  })
+  timestamp: number;
 
   @CreateDateColumn()
   createdAt: Date;

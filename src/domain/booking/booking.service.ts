@@ -31,24 +31,31 @@ export class BookingService {
   ) {}
 
   async createWithDb(dto: CreateBookingDto): Promise<ResponseBookingDto> {
-    const { offeringId, studentId, lessonName, isFormerStudent } = dto;
-
     try {
-      await this.bookingRepository.save(
-        this.bookingRepository.create({
-          offeringId,
-          studentId,
-          lessonName,
-          isFormerStudent,
-        }),
-      );
+      await this.bookingRepository.save(this.bookingRepository.create(dto));
 
       return new ResponseBookingDto({
         status: BookingStatus.PENDING,
-        message: `🔵 ${lessonName} 수강신청 했습니다. (신청기간이후 결과발표예정)`,
+        message: `🔵 ${dto.lessonName} 수강신청 했습니다. (신청기간이후 결과발표예정)`,
       });
     } catch (error) {
       this.logger.error(`❌ Booking 실패`, error.stack);
+      throw new InternalServerErrorException(
+        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
+      );
+    }
+  }
+
+  async cancelWithDb(cancelBookingDto: CancelBookingDto): Promise<void> {
+    const { offeringId, studentId } = cancelBookingDto;
+
+    try {
+      await this.bookingRepository.softRemove({
+        offeringId,
+        studentId,
+      });
+    } catch (error) {
+      this.logger.error(`❌ Booking 취소 실패`, error.stack);
       throw new InternalServerErrorException(
         HttpErrorConstants.INTERNAL_DATABASE_ERROR,
       );
@@ -98,8 +105,8 @@ export class BookingService {
         } else {
           // ☠️ result.ok === 'FULL'
           response = new ResponseBookingDto({
-            status: BookingStatus.PENDING, // ☠️ 대기자도 아닌 사람도 상태는 PENDING
-            waitingPosition: 666, // ☠️ 대기자도 아닌 사람한테 부여하는 불길한 숫자
+            status: BookingStatus.FULL,
+            waitingPosition: -1,
             message: `🔴 수강신청결과 ${lessonName} 수강이 불가합니다.`,
           });
         }
@@ -111,29 +118,21 @@ export class BookingService {
               offeringId,
               studentId,
               lessonName,
-              timestamp,
-              waitingPosition: response.waitingPosition ?? null,
+              capacity,
               isFormerStudent: isFormerStudent ?? false,
-              isEnrolled: response.status === BookingStatus.ENROLLED,
-            },
+              waitingPosition: response.waitingPosition ?? null,
+              status: response.status,
+              timestamp,
+            } as CreateBookingDto, // bookings 저장용 data 를 sqs 로 전송
           })
           .catch((e) => {
             this.logger.error('❌ Booking SQS 전송 실패', e.stack);
           });
 
         return response;
-      } else if (result.err) {
-        // Log the error from result and throw appropriate exception
-        this.logger.error(`❌ Booking 실패: ${result.err}`);
-        throw new InternalServerErrorException(
-          HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-        );
+      } else {
+        throw result.err === 'BOOKED' ? new Error('BOOKED') : new Error();
       }
-
-      // This should not happen, but to satisfy TypeScript return type
-      throw new InternalServerErrorException(
-        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-      );
     } catch (error) {
       this.logger.error(`❌ Booking 실패`, error.stack);
       if (error instanceof Error && error.message === 'BOOKED') {
@@ -147,27 +146,11 @@ export class BookingService {
     }
   }
 
-  async cancelWithDb(cancelBookingDto: CancelBookingDto): Promise<void> {
-    const { offeringId, studentId } = cancelBookingDto;
-
-    try {
-      await this.bookingRepository.softRemove({
-        offeringId,
-        studentId,
-      });
-    } catch (error) {
-      this.logger.error(`❌ Booking 취소 실패`, error.stack);
-      throw new InternalServerErrorException(
-        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-      );
-    }
-  }
-
-  // todo. 왜 queue 를 사용해야 하는지 고민해 볼 것.
-  //? 1. db 삭제
+  //? 1. upserting entire data in one go with Redis snapshot for idempotency
   //? 2. ~~ 학부모에게 FCM 푸시알림 전송 (안하기로) ~~
   async cancelWithRedis(cancelBookingDto: CancelBookingDto): Promise<void> {
     const { offeringId, studentId, lessonName } = cancelBookingDto;
+    const timestamp = Date.now();
 
     try {
       // Execute Redis Lua script for cancellation
@@ -184,6 +167,7 @@ export class BookingService {
             offeringId,
             studentId,
             lessonName,
+            timestamp,
           },
         });
       } else if (result.err) {

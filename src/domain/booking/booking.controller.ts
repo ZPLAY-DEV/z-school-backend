@@ -8,7 +8,7 @@ import {
   CancelWithRedisSwagger,
   CreateWithDbSwagger,
   CreateWithRedisSwagger,
-} from 'src/domain/booking/swagger/rest-swagger.decorator';
+} from 'src/domain/booking/swagger/booking-swagger.decorator';
 import { BookingService } from './booking.service';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -23,7 +23,7 @@ export class BookingController {
   //? Create Booking (수강신청)
   //? ---------------------------------------------------------------------- ?//
 
-  @Post('db')
+  @Post()
   @CreateWithDbSwagger()
   async createWithDb(
     @Body() dto: CreateBookingDto,
@@ -42,7 +42,7 @@ export class BookingController {
   //? Cancel Booking (수강신청 취소)
   //? ---------------------------------------------------------------------- ?//
 
-  @Delete('db')
+  @Delete()
   @CancelWithDbSwagger()
   async cancelWithDb(@Body() dto: CancelBookingDto): Promise<HttpResponse> {
     await this.bookingService.cancelWithDb(dto);

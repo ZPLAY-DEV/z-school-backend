@@ -116,7 +116,7 @@ export class RedisBookingService implements OnModuleInit {
       local removed_from_enrolled = redis.call("LREM", enrolled_key, 0, student_id)
       redis.call("LREM", pending_key, 0, student_id)
 
-      -- 만약 수강자에서 제거가 일어났고, 대기자가 존재한다면 한 명 승급
+      -- 만약 확정자에서 제거가 일어났고, 대기자가 존재한다면 한 명 승급
       if removed_from_enrolled > 0 then
         local next_waiting = redis.call("LPOP", pending_key)
         if next_waiting then
@@ -140,6 +140,9 @@ export class RedisBookingService implements OnModuleInit {
     return { err: 'UNKNOWN' };
   }
 
+  // 학생아이디가 대기 리스트에 없으면 -1 반환
+  // 학생아이디가 대기 리스트에 있으면 대기 리스트 position + 1 을 반환 (1부터 시작)
+  // 따라서, 0 이 반환 되는 경우는 없고, -1 을 던지거나 아니면, 1 이상의 값이 반환된다.
   async getWaitingPosition(
     offeringId: number,
     studentId: number,
@@ -147,7 +150,7 @@ export class RedisBookingService implements OnModuleInit {
     const pendingKey = `offering:${offeringId}:pending`;
     const list = await this.redisClient.lRange(pendingKey, 0, -1);
     const position = list.findIndex((id) => id === studentId.toString());
-    return position !== -1 ? position + 1 : 0;
+    return position !== -1 ? position + 1 : -1;
   }
 
   async ping(): Promise<string> {
