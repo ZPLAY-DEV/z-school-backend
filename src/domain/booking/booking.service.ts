@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AWS_SQS_CLIENT, REDIS_BOOKING_CLIENT } from 'src/common/constants';
-import { BookingStatus } from 'src/common/enums';
+import { BookingStatus, EnrollmentRule } from 'src/common/enums';
 import { IBookingSnapshotItem } from 'src/common/interfaces';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { SqsService } from 'src/services/aws/sqs.service';
@@ -34,11 +34,38 @@ export class BookingService {
 
   async createWithDb(dto: CreateBookingDto): Promise<ResponseBookingDto> {
     try {
-      await this.bookingRepository.save(this.bookingRepository.create(dto));
+      let status: BookingStatus;
+      let waitingPosition: number;
+      let message: string;
+
+      if (dto.enrollmentRule === EnrollmentRule.ANYONE) {
+        // 누구나
+        status = BookingStatus.ENROLLED;
+        waitingPosition = 0;
+        message = `🟢 수강신청결과 ${dto.lessonName} 수강이 확정되었습니다.`;
+        const booking = this.bookingRepository.create({
+          ...dto,
+          status,
+          waitingPosition,
+        });
+        await this.bookingRepository.save(booking);
+      } else {
+        // 무작위, 재수강우선
+        status = BookingStatus.PENDING;
+        waitingPosition = 0;
+        message = `🔵 ${dto.lessonName} 수강신청 했습니다. (신청기간이후 결과발표예정)`;
+        const booking = this.bookingRepository.create({
+          ...dto,
+          status,
+          waitingPosition,
+        });
+        await this.bookingRepository.save(booking);
+      }
 
       return new ResponseBookingDto({
-        status: BookingStatus.PENDING,
-        message: `🔵 ${dto.lessonName} 수강신청 했습니다. (신청기간이후 결과발표예정)`,
+        status,
+        waitingPosition,
+        message,
       });
     } catch (error) {
       this.logger.error(`❌ Booking 실패`, error.stack);
@@ -52,12 +79,11 @@ export class BookingService {
     const { offeringId, studentId } = cancelBookingDto;
 
     try {
-      await this.bookingRepository.softRemove({
-        offeringId,
-        studentId,
-      });
+      const { affectedRows } = await this.bookingRepository.query(
+        `UPDATE bookings SET status = 'PENDING', deletedAt = NOW() WHERE offeringId = ${offeringId} AND studentId = ${studentId}`,
+      );
 
-      return 1;
+      return affectedRows as number;
     } catch (error) {
       this.logger.error(`❌ Booking 취소 실패`, error.stack);
       throw new InternalServerErrorException(
@@ -172,6 +198,8 @@ export class BookingService {
         // snapshot 생성 (RedisBookingService에서)
         const snapshot: IBookingSnapshotItem[] =
           await this.redisBookingService.getSnapshot(offeringId, lessonName);
+
+        this.logger.log('🚀 snapshot', snapshot);
 
         // SQS로 전송
         await this.sqsClient.sendMessage({

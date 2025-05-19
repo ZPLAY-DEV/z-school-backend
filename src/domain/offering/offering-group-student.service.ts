@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { BookingStatus, EnrollmentRule } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Repository } from 'typeorm';
@@ -11,15 +13,47 @@ export class OfferingGroupStudentService {
   constructor(
     @InjectRepository(Offering)
     private readonly offeringRepository: Repository<Offering>,
+    @InjectRepository(Booking)
+    private readonly bookingRepository: Repository<Booking>,
+    @InjectRepository(GroupStudent)
+    private readonly groupStudentRepository: Repository<GroupStudent>,
   ) {}
 
   //?-------------------------------------------------------------------------//
   //? CREATE
   //?-------------------------------------------------------------------------//
 
-  async create(dto: CreateOfferingDto): Promise<Offering> {
-    const item = this.offeringRepository.create(dto);
-    return await this.offeringRepository.save(item);
+  async pickFirstComeFirstServed(offeringId: number): Promise<GroupStudent[]> {
+    const bookings = await this.bookingRepository.find({
+      where: { offeringId, status: BookingStatus.ENROLLED },
+    });
+    const groupStudents = bookings.map((booking) => {
+      return {
+        offeringId,
+        studentId: booking.studentId,
+      };
+    });
+    return this.groupStudentRepository.save(groupStudents);
+  }
+
+  async create(offeringId: number, dto: any): Promise<GroupStudent[]> {
+    const offering = await this.offeringRepository.findOneOrFail({
+      where: { id: dto.offeringId },
+    });
+
+    switch (offering.enrollmentRule) {
+      case EnrollmentRule.FIRST:
+        return await this.pickFirstComeFirstServed(offeringId);
+      case EnrollmentRule.PREVIOUS:
+        break;
+      case EnrollmentRule.RANDOM:
+        break;
+      default:
+        // EnrollmentRule.ANYONE
+        break;
+    }
+
+    return [];
   }
 
   //?-------------------------------------------------------------------------//

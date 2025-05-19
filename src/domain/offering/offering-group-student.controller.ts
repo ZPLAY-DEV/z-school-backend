@@ -11,7 +11,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
+import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { OfferingGroupStudentService } from 'src/domain/offering/offering-group-student.service';
 
@@ -30,8 +30,11 @@ export class OfferingGroupStudentController {
   //?-------------------------------------------------------------------------//
 
   @Post(':offeringId/group-students')
-  async create(@Body() dto: CreateOfferingDto): Promise<Offering> {
-    return this.offeringGroupStudentService.create(dto);
+  async create(
+    @Param('offeringId', ParseIntPipe) offeringId: number,
+    @Body() dto: any,
+  ): Promise<GroupStudent[]> {
+    return this.offeringGroupStudentService.create(offeringId, dto);
   }
 
   //?-------------------------------------------------------------------------//
