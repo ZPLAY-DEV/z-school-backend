@@ -33,6 +33,7 @@ import {
   CreateBoardDocs,
   CreateCommentDocs,
   DeleteBoardDocs,
+  DeleteCommentDocs,
   FindByIdBoardDocs,
   GenerateS3PathDocs,
   UpdateBoardDocs,
@@ -56,12 +57,9 @@ export class BoardController {
   //? ---------------------------------------------------------------------- ?//
 
   @GenerateS3PathDocs()
-  @Post(':id/s3urls')
-  async generateS3Urls(
-    @Param('id', ParseIntPipe) id: number,
-    @Body('mime') mime: string,
-  ): Promise<IS3Urls> {
-    return await this.uploadService.generateBoardImageUrls(id, mime);
+  @Post('s3urls')
+  async generateS3Urls(@Body('mime') mime: string): Promise<IS3Urls> {
+    return await this.uploadService.generateBoardImageUrls(mime);
   }
 
   @CreateBoardDocs()
@@ -140,13 +138,22 @@ export class BoardController {
 
   @DeleteBoardDocs()
   @Delete(':id')
-  async remove(
+  async removeBoard(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUserIdAndRole() user: { id: number; role: Role },
   ): Promise<RemovalStatus> {
     if (user.role !== Role.INSTRUCTOR) {
       throw new ForbiddenException(HttpErrorConstants.FORBIDDEN_USER_ROLE);
     }
-    return await this.boardService.remove(id, user.id);
+    return await this.boardService.removeBoard(id, user.id);
+  }
+
+  @DeleteCommentDocs()
+  @Delete('comments/:id')
+  async removeComment(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() userId: number,
+  ): Promise<RemovalStatus> {
+    return await this.boardService.removeComment(id, userId);
   }
 }

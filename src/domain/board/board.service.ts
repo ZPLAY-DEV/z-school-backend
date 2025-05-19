@@ -129,7 +129,7 @@ export class BoardService {
   //? ---------------------------------------------------------------------- ?//
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
-  async remove(id: number, userId: number): Promise<RemovalStatus> {
+  async removeBoard(id: number, userId: number): Promise<RemovalStatus> {
     return await this.dataSource.transaction(async (manager) => {
       // 1) 게시글 조회
       const board = await manager.findOne(Board, {
@@ -151,5 +151,19 @@ export class BoardService {
 
       return RemovalStatus.DELETED;
     });
+  }
+
+  async removeComment(id: number, userId: number): Promise<RemovalStatus> {
+    const comment = await this.commentRepository.findOne({
+      where: { id, user: { id: userId } },
+    });
+
+    if (!comment) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_COMMENT);
+    }
+
+    await this.commentRepository.delete(id);
+
+    return RemovalStatus.DELETED;
   }
 }

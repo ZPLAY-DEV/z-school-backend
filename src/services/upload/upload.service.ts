@@ -40,7 +40,7 @@ export class UploadService {
     return this.generateImageUrls([`news`, `${id}`], [`news`, mimeType]);
   }
 
-  async generateBoardImageUrls(id: number, mimeType: string): Promise<IS3Urls> {
+  async generateBoardImageUrls(mimeType: string): Promise<IS3Urls> {
     return this.generateImageUrls([`boards`], [`boards`, mimeType]);
   }
 

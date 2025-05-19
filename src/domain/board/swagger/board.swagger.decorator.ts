@@ -13,6 +13,7 @@ import { UpdateCommentDto } from '../dto/update-comment.dto';
 import { RemovalStatus } from 'src/common/enums';
 import { ApiEnumResponseTemplate } from 'src/core/swagger/response/api-enum.response';
 import { BoardRelationResponseDto } from '../dto/board-relation-response.dto';
+import { GenerateS3UrlResponseDto } from '../dto/generate-s3url.response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Generate S3 Path
@@ -22,15 +23,10 @@ export const GenerateS3PathDocs = () => {
     ApiOperation({
       summary: '✅ S3 PresignedURL, Upload URL 반환',
       description: `
-      - 게시글 작성시 첨부 이미지를 업로드 할 수 있음
-      - 게시글 작성시 이미지 첨부는 Presigned URL을 통해서 진행
+      - 게시글 작성시 첨부 이미지를 업로드 할 수 있는 Presigned URL과 upload URL을 반환
+      - 해당 Presigned URL은 10분간 유효하게 사용할 수 있으며, 해당 uploadUrl로 10분 내에 요청을 보내면, 실제 경로값은 imageUrl과 동일하게 적용됨. 
+      - 단, 다중 이미지 업로드에서 해당 엔드포인트를 업로드하는 이미지 만큼 요청을 해야되기 때문에, 해당 부분은 논의가 필요해보임.
       `,
-    }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: '게시글 id',
-      required: true,
     }),
     ApiBody({
       description: '이미지의 mime type',
@@ -45,6 +41,7 @@ export const GenerateS3PathDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: 'S3 Presigned URL 반환 완료',
+      type: GenerateS3UrlResponseDto,
     }),
     ApiErrorResponseTemplate([
       {
@@ -209,6 +206,36 @@ export const UpdateCommentDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
+//? FindById
+//? ---------------------------------------------------------------------- ?//
+export const FindByIdBoardDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 게시글 조회 - 강사의 수업 게시판 상세 조회',
+      description: `
+      - 게시글 상세 조회
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '게시글 id',
+      required: true,
+    }),
+    ApiCreatedResponseTemplate({
+      description: '게시글 조회 상세 완료',
+      type: BoardRelationResponseDto,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [HttpErrorConstants.NOT_FOUND_BOARD],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
 //? Delete Board
 //? ---------------------------------------------------------------------- ?//
 export const DeleteBoardDocs = () => {
@@ -245,30 +272,31 @@ export const DeleteBoardDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? FindById
+//? Delete Comment
 //? ---------------------------------------------------------------------- ?//
-export const FindByIdBoardDocs = () => {
+export const DeleteCommentDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 게시글 조회 - 강사의 수업 게시판 상세 조회',
+      summary: '✅ 댓글 삭제 - 강사의 수업 게시판 댓글 삭제',
       description: `
-      - 게시글 상세 조회
+      - 댓글 삭제
+      - userId, 댓글 id가 일치해야만 삭제 가능 - 불일치 할 경우 404 반환
       `,
     }),
     ApiParam({
       name: 'id',
       type: Number,
-      description: '게시글 id',
+      description: '댓글 id',
       required: true,
     }),
-    ApiCreatedResponseTemplate({
-      description: '게시글 조회 상세 완료',
-      type: BoardRelationResponseDto,
+    ApiEnumResponseTemplate({
+      description: '댓글 삭제 완료',
+      type: RemovalStatus,
     }),
     ApiErrorResponseTemplate([
       {
         status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_BOARD],
+        errorFormatList: [HttpErrorConstants.NOT_FOUND_COMMENT],
       },
     ]),
   );
