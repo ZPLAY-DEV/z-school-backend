@@ -21,10 +21,10 @@ import { GenerateS3UrlResponseDto } from '../dto/generate-s3url.response.dto';
 export const GenerateS3PathDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ S3 PresignedURL, Upload URL 반환',
+      summary: '✅ S3 uploadUrl(presignedUrl) & imageUrl 반환',
       description: `
       - 게시글 작성시 첨부 이미지를 업로드 할 수 있는 Presigned URL과 upload URL을 반환
-      - 해당 Presigned URL은 10분간 유효하게 사용할 수 있으며, 해당 uploadUrl로 10분 내에 요청을 보내면, 실제 경로값은 imageUrl과 동일하게 적용됨. 
+      - 해당 uploadUrl(presignedUrl)은 10분간 유효하게 사용할 수 있으며, 해당 uploadUrl로 10분 내에 요청을 보내면, 실제 경로값은 imageUrl과 동일하게 적용됨. 
       - 단, 다중 이미지 업로드에서 해당 엔드포인트를 업로드하는 이미지 만큼 요청을 해야되기 때문에, 해당 부분은 논의가 필요해보임.
       `,
     }),
