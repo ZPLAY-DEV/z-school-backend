@@ -96,17 +96,21 @@ export class SchoolTermLessonService {
 
     return await paginate(query, queryBuilder, {
       relations: {
+        instructorLessons: { instructor: true },
         groups: { instructor: true },
         category: true,
       },
       sortableColumns: ['id', 'lessonName', 'termId'],
-      searchableColumns: ['schoolName', 'lessonName'],
+      searchableColumns: ['lessonName', 'instructorLessons.instructor.name'],
       defaultSortBy: [
         ['schoolId', 'DESC'],
         ['id', 'DESC'],
       ],
       filterableColumns: {
+        'category.name': [FilterOperator.EQ, FilterOperator.IN],
+        'category.slug': [FilterOperator.EQ, FilterOperator.IN],
         schoolName: [FilterOperator.EQ, FilterOperator.ILIKE],
+        weekday: [FilterOperator.EQ, FilterOperator.IN],
         lessonName: [FilterOperator.EQ, FilterOperator.ILIKE],
       },
     });

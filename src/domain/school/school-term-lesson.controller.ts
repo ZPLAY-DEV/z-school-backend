@@ -38,7 +38,6 @@ export class SchoolTermLessonController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @Public()
   @CreateSchoolTermLessonBulkDocs()
   @Post(':schoolId/terms/:termId/lessons/bulk')
   @HttpCode(200)
@@ -56,9 +55,9 @@ export class SchoolTermLessonController {
     return await this.schoolTermLessonService.createBulk(createLessonDtos);
   }
 
-  @Public()
   @CreateSchoolTermLessonBulkDryRunDocs()
-  @Get(':schoolId/terms/:termId/lessons/bulk/dryrun')
+  @Post(':schoolId/terms/:termId/lessons/bulk/dryrun')
+  @HttpCode(200)
   async createBulkDryRun(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,

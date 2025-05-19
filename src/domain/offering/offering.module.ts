@@ -1,14 +1,19 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { OfferingGroupStudentController } from 'src/domain/offering/offering-group-student.controller';
+import { OfferingGroupStudentService } from 'src/domain/offering/offering-group-student.service';
 import { OfferingController } from 'src/domain/offering/offering.controller';
 import { OfferingService } from 'src/domain/offering/offering.service';
-import { S3Module } from 'src/services/aws/s3.module';
-import { UploadModule } from 'src/services/upload/upload.module';
+import { School } from 'src/domain/school/entities/school.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Offering]), UploadModule, S3Module],
-  providers: [OfferingService],
-  controllers: [OfferingController],
+  imports: [
+    TypeOrmModule.forFeature([Offering, Booking, GroupStudent, School]),
+  ],
+  providers: [OfferingService, OfferingGroupStudentService],
+  controllers: [OfferingController, OfferingGroupStudentController],
 })
 export class OfferingModule {}

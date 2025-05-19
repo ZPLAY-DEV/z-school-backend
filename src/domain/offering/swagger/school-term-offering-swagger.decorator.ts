@@ -23,7 +23,7 @@ const TERM_OFFERING_CONFIG: PaginateConfig<Offering> = {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Create Term > Offerings
+//? Create School > Term > Offerings
 //? ---------------------------------------------------------------------- ?//
 
 export const CreateSchoolTermOfferingsDocs = () => {
@@ -33,6 +33,7 @@ export const CreateSchoolTermOfferingsDocs = () => {
       description: `
       - 특정 학기에 속한 학교 및 과목 정보를 바탕으로 수강신청과목 일괄 생성
       - 학기 ID에 연결된 과목과 반 정보를 활용하여 수강신청과목(Offering) 생성
+      - [Patch] /v1/terms/:id 를 통해 수강신청기간을 설정시 수강신청과목(Offering) 자동생성되는 것과 동일 로직
       `,
     }),
     ApiCreatedResponseTemplate({
@@ -50,7 +51,7 @@ export const CreateSchoolTermOfferingsDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Get Term > Offerings Paginated List
+//? Get School > Term > Offerings Paginated List
 //? ---------------------------------------------------------------------- ?//
 
 export const SchoolTermOfferingPaginatedListDocs = () => {
@@ -74,7 +75,7 @@ export const SchoolTermOfferingPaginatedListDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Get Term > Offerings List
+//? Get School > Term > Offerings List
 //? ---------------------------------------------------------------------- ?//
 
 export const SchoolTermOfferingListDocs = () => {
@@ -100,7 +101,7 @@ export const SchoolTermOfferingListDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Delete All Term Offerings
+//? Delete School > Term > Offerings
 //? ---------------------------------------------------------------------- ?//
 
 export const DeleteAllSchoolTermOfferingsDocs = () => {

@@ -10,10 +10,12 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('instructor_lesson')
+@Unique(['instructorId', 'lessonId'])
 export class InstructorLesson {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
