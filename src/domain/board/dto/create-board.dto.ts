@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsEnum,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -10,7 +9,6 @@ import {
   Validate,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { BoardTarget, Role } from 'src/common/enums';
 import { GroupIdForManagerConstraint } from '../validator/group-id-for-manager.validator';
 
 export class CreateBoardDto {
@@ -32,9 +30,9 @@ export class CreateBoardDto {
   })
   @IsNumber()
   @Type(() => Number)
-  @IsOptional()
+  @IsNotEmpty()
   @Validate(GroupIdForManagerConstraint)
-  groupId?: number;
+  groupId: number;
 
   @ApiProperty({
     description: '🈵 학교 ID (number)',
@@ -67,25 +65,4 @@ export class CreateBoardDto {
   @IsString()
   @IsOptional()
   body?: string;
-
-  @ApiProperty({
-    description:
-      '🈵 게시글 작성자의 User 유형( MANAGER, INSTRUCTOR ) 2 case만 요청  ',
-    example: Role.MANAGER,
-    enum: Role,
-    required: true,
-  })
-  @IsEnum(Role)
-  @IsNotEmpty()
-  userRole: Role;
-
-  @ApiProperty({
-    description: '🈵 게시글 대상 (JSON)',
-    example: BoardTarget.PARENT,
-    enum: BoardTarget,
-    required: true,
-  })
-  @IsNotEmpty()
-  @IsEnum(BoardTarget)
-  target: BoardTarget;
 }

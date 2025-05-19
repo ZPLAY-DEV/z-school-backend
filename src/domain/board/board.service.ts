@@ -7,13 +7,11 @@ import { DataSource, Repository } from 'typeorm';
 import { School } from '../school/entities/school.entity';
 import { Group } from '../group/entities/group.entity';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { RemovalStatus, Role } from 'src/common/enums';
+import { RemovalStatus } from 'src/common/enums';
 import { Comment } from './entities/comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
-import { InstructorSchool } from '../instructor/entities/instructor-school.entity';
-import { Instructor } from '../instructor/entities/instructor.entity';
-import { Parent } from '../parent/entities/parent.entity';
-import { Student } from '../student/entities/student.entity';
+
+import { UpdateCommentDto } from './dto/update-comment.dto';
 
 @Injectable()
 export class BoardService {
@@ -40,83 +38,40 @@ export class BoardService {
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
     }
 
-    // 2) 그룹이 있을 경우 조회
-    if (dto.groupId) {
-      const group = await this.dataSource.manager.findOne(Group, {
-        where: {
-          id: dto.groupId,
-        },
-      });
-      if (!group) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_GROUP);
-      }
+    // 2) 그룹 존재 여부 조회
+    const group = await this.dataSource.manager.findOne(Group, {
+      where: {
+        id: dto.groupId,
+      },
+    });
+
+    if (!group) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_GROUP);
     }
 
     // 3) 게시글 생성
     const board = this.boardRepository.create(dto);
+
     return await this.boardRepository.save(board);
   }
 
-  async createComment(dto: CreateCommentDto): Promise<void> {
+  async createComment(dto: CreateCommentDto): Promise<Comment> {
     const board = await this.boardRepository.findOne({
       where: { id: dto.boardId },
-      relations: ['school'],
+      relations: ['school', 'group'],
     });
 
     if (!board) {
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_BOARD);
     }
 
-    let name: string | null;
-
-    if (dto.userRole === Role.MANAGER) {
-      name = board.school.name ? `${board.school.name} 관리자` : '학교 관리자';
-      console.log('name', name);
-    } else if (dto.userRole === Role.INSTRUCTOR) {
-      const schoolInstructor = await this.dataSource.manager
-        .createQueryBuilder(InstructorSchool, 'instructorSchool')
-        .innerJoin(
-          Instructor,
-          'instructor',
-          'instructorSchool.instructorId = instructor.id',
-        )
-        .select(['instructorSchool.alias'])
-        .where('instructorSchool.schoolId = :schoolId', {
-          schoolId: board.school.id,
-        })
-        .andWhere('instructor.userId = :userId', {
-          userId: dto.userId,
-        })
-        .getOne();
-      // name = schoolInstructor?.alias
-      //   ? `${schoolInstructor.alias} 강사`
-      //   : '강사님';
-      console.log('schoolInstructor', schoolInstructor);
-    } else if (dto.userRole === Role.PARENT) {
-      const parent = await this.dataSource.manager
-        .createQueryBuilder(Parent, 'parent')
-        .innerJoin(Student, 'student', 'parent.id = student.parentId')
-        .select(['student.name'])
-        .where('student.schoolId = :schoolId', {
-          schoolId: board.school.id,
-        })
-        .andWhere('parent.userId = :userId', {
-          userId: dto.userId,
-        })
-        .getOne();
-      console.log('parent', parent);
-    }
-    // const comment = this.commentRepository.create(dto);
-    // return await this.commentRepository.save(comment);
+    const comment = this.commentRepository.create(dto);
+    return await this.commentRepository.save(comment);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
-
-  findAll() {
-    return `This action returns all board`;
-  }
 
   async findById(id: number, relations: string[] = []): Promise<Board> {
     try {
@@ -130,31 +85,69 @@ export class BoardService {
           });
     } catch (error) {
       console.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_BOARD);
     }
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
-  async update(id: number, dto: UpdateBoardDto): Promise<Board> {
-    const board = await this.boardRepository.preload({ id, ...dto });
+  async updateBoard(id: number, dto: UpdateBoardDto): Promise<Board> {
+    const board = await this.boardRepository.findOne({
+      where: {
+        id,
+        user: { id: dto.userId },
+      },
+    });
+
     if (!board) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_BOARD);
     }
-    return await this.boardRepository.save(board);
+
+    await this.boardRepository.update(id, dto);
+
+    return await this.boardRepository.findOneOrFail({ where: { id } });
+  }
+
+  async updateComment(id: number, dto: UpdateCommentDto): Promise<Comment> {
+    const comment = await this.commentRepository.findOne({
+      where: {
+        id,
+        user: { id: dto.userId },
+      },
+    });
+
+    if (!comment) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_COMMENT);
+    }
+
+    await this.commentRepository.update(id, dto);
+
+    return await this.commentRepository.findOneOrFail({ where: { id } });
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
-  async remove(id: number): Promise<RemovalStatus> {
+  async remove(id: number, userId: number): Promise<RemovalStatus> {
     return await this.dataSource.transaction(async (manager) => {
-      await manager.findOne(Board, { where: { id } });
+      // 1) 게시글 조회
+      const board = await manager.findOne(Board, {
+        where: {
+          id,
+          user: { id: userId },
+        },
+      });
 
-      await manager.delete(Board, id);
+      if (!board) {
+        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_BOARD);
+      }
 
+      // 2) 댓글 삭제
       await manager.delete(Comment, { boardId: id });
+
+      // 3) 게시글 삭제
+      await manager.delete(Board, id);
 
       return RemovalStatus.DELETED;
     });

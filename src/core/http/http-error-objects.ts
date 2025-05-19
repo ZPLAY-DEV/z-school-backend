@@ -139,6 +139,11 @@ export const HttpErrorConstants = {
     message: '이미 수강신청 접수 중입니다.',
   } as HttpErrorFormat,
 
+  FORBIDDEN_USER_ROLE: {
+    error: 'FORBIDDEN_USER_ROLE',
+    message: '권한이 없는 유저입니다.',
+  } as HttpErrorFormat,
+
   CONFLICT_STUDENT: {
     error: 'CONFLICT_STUDENT',
     message: '이미 학생 정보가 존재합니다.',
@@ -233,6 +238,11 @@ export const HttpErrorConstants = {
   NOT_FOUND_BOARD: {
     error: 'NOT_FOUND_BOARD',
     message: '게시글을 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
+  NOT_FOUND_COMMENT: {
+    error: 'NOT_FOUND_COMMENT',
+    message: '댓글을 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)

@@ -19,4 +19,3 @@ export * from './subsidy-status';
 export * from './subsidy-type';
 export * from './time-unit';
 export * from './weekday';
-export * from './board-target';

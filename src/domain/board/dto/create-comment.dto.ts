@@ -1,12 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
 } from 'class-validator';
-import { Role } from 'src/common/enums';
 
 export class CreateCommentDto {
   @ApiProperty({
@@ -30,15 +29,6 @@ export class CreateCommentDto {
   boardId: number;
 
   @ApiProperty({
-    description: '🈳 상위 댓글 아이디',
-    required: false,
-    type: Number,
-  })
-  @IsNumber()
-  @IsOptional()
-  parentId?: number;
-
-  @ApiProperty({
     description: '🈳 댓글 내용',
     example: '댓글 내용',
     type: String,
@@ -49,23 +39,13 @@ export class CreateCommentDto {
   content: string;
 
   @ApiProperty({
-    description:
-      '🈵 댓글 작성자 유형 ( MANAGER, INSTRUCTOR, PARENT ) 3 case만 요청  ',
-    example: Role.INSTRUCTOR,
-    enum: Role,
-    required: true,
-  })
-  @IsEnum(Role)
-  @IsNotEmpty()
-  userRole: Role;
-
-  @ApiProperty({
-    description: '🈳 작성자 이름',
+    description: '🈵 작성자 이름',
     example: '홍길동',
     type: String,
     required: false,
   })
+  @IsNotEmpty()
   @IsString()
-  @IsOptional()
-  name?: string;
+  @MaxLength(50)
+  name: string;
 }

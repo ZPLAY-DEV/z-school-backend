@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { BoardTarget, Role } from 'src/common/enums';
 
 export class BoardResponseDto {
   @ApiProperty({
@@ -43,18 +42,6 @@ export class BoardResponseDto {
     type: [String],
   })
   images: string[] | null;
-
-  @ApiProperty({
-    description: '게시글 작성자의 ROLE ( MANAGER, INSTRUCTOR, PARENT )',
-    enum: Role,
-  })
-  userRole: Role;
-
-  @ApiProperty({
-    description: '게시글 대상 ROLE ( PARENT, INSTRUCTOR )',
-    enum: BoardTarget,
-  })
-  target: BoardTarget;
 
   @ApiProperty({
     description: '게시글 생성일',

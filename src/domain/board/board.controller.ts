@@ -9,21 +9,37 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
   ParseIntPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 
 import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
-import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
-import { RemovalStatus } from 'src/common/enums';
+import {
+  CurrentUserId,
+  CurrentUserIdAndRole,
+} from 'src/common/decorators/current-user-id.decorator';
+import { RemovalStatus, Role } from 'src/common/enums';
 
 import { Board } from './entities/board.entity';
+import { Comment } from './entities/comment.entity';
 
 import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { BoardService } from './board.service';
 import { UploadService } from 'src/services/upload/upload.service';
 import { IS3Urls } from 'src/common/interfaces';
+import {
+  CreateBoardDocs,
+  CreateCommentDocs,
+  DeleteBoardDocs,
+  FindByIdBoardDocs,
+  GenerateS3PathDocs,
+  UpdateBoardDocs,
+  UpdateCommentDocs,
+} from './swagger/board.swagger.decorator';
+import { UpdateCommentDto } from './dto/update-comment.dto';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Boards ( 게시판 )')
@@ -39,6 +55,7 @@ export class BoardController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @GenerateS3PathDocs()
   @Post(':id/s3urls')
   async generateS3Urls(
     @Param('id', ParseIntPipe) id: number,
@@ -47,22 +64,27 @@ export class BoardController {
     return await this.uploadService.generateBoardImageUrls(id, mime);
   }
 
+  @CreateBoardDocs()
   @Post()
   async createBoard(
-    @CurrentUserId() userId: number,
+    @CurrentUserIdAndRole() user: { id: number; role: Role },
     @Body() dto: CreateBoardDto,
   ): Promise<Board> {
+    if (user.role !== Role.INSTRUCTOR) {
+      throw new ForbiddenException(HttpErrorConstants.FORBIDDEN_USER_ROLE);
+    }
     return await this.boardService.createBoard({
       ...dto,
-      userId,
+      userId: user.id,
     });
   }
 
+  @CreateCommentDocs()
   @Post('comments')
   async createComment(
     @CurrentUserId() userId: number,
     @Body() dto: CreateCommentDto,
-  ): Promise<void> {
+  ): Promise<Comment> {
     return await this.boardService.createComment({
       ...dto,
       userId,
@@ -73,6 +95,7 @@ export class BoardController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @FindByIdBoardDocs()
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Board> {
     return await this.boardService.findById(id, ['comments']);
@@ -82,20 +105,48 @@ export class BoardController {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
+  @UpdateBoardDocs()
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateBoardDto: UpdateBoardDto,
-  ) {
-    return this.boardService.update(id, updateBoardDto);
+    @CurrentUserIdAndRole() user: { id: number; role: Role },
+    @Body() dto: UpdateBoardDto,
+  ): Promise<Board> {
+    if (user.role !== Role.INSTRUCTOR) {
+      throw new ForbiddenException(HttpErrorConstants.FORBIDDEN_USER_ROLE);
+    }
+    return this.boardService.updateBoard(id, {
+      ...dto,
+      userId: user.id,
+    });
+  }
+
+  @UpdateCommentDocs()
+  @Patch('comments/:id')
+  updateComment(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserId() userId: number,
+    @Body() dto: UpdateCommentDto,
+  ): Promise<Comment> {
+    return this.boardService.updateComment(id, {
+      ...dto,
+      userId,
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
+  @DeleteBoardDocs()
   @Delete(':id')
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<RemovalStatus> {
-    return await this.boardService.remove(id);
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUserIdAndRole() user: { id: number; role: Role },
+  ): Promise<RemovalStatus> {
+    if (user.role !== Role.INSTRUCTOR) {
+      throw new ForbiddenException(HttpErrorConstants.FORBIDDEN_USER_ROLE);
+    }
+    return await this.boardService.remove(id, user.id);
   }
 }
