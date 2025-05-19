@@ -74,6 +74,18 @@ export class Group {
   })
   status: ClassStatus;
 
+  @ApiProperty({ description: '🈵 수업료 합계 (A+B+C+D)' })
+  @Column({ type: 'int', unsigned: true, default: 0 })
+  tuition: number;
+
+  @ApiProperty({ description: '🈳 B. 도서구매비 배열(낮은가격순 정렬)' })
+  @Column({ type: 'int', unsigned: true, default: 0 })
+  bookFee: number;
+
+  @ApiProperty({ description: '🈳 C. 재료구매비 배열(낮은가격순 정렬)' })
+  @Column({ type: 'int', unsigned: true, default: 0 })
+  materialFee: number;
+
   @ApiProperty({ description: '🈳 누가 삭제했나?' })
   @Column({
     type: 'enum',

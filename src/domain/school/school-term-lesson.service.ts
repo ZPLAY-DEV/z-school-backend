@@ -100,7 +100,7 @@ export class SchoolTermLessonService {
         groups: { instructor: true },
         category: true,
       },
-      sortableColumns: ['id', 'lessonName', 'termId'],
+      sortableColumns: ['id', 'lessonName', 'termId', 'groups.weekday'],
       searchableColumns: ['lessonName', 'instructorLessons.instructor.name'],
       defaultSortBy: [
         ['schoolId', 'DESC'],
@@ -109,8 +109,7 @@ export class SchoolTermLessonService {
       filterableColumns: {
         'category.name': [FilterOperator.EQ, FilterOperator.IN],
         'category.slug': [FilterOperator.EQ, FilterOperator.IN],
-        schoolName: [FilterOperator.EQ, FilterOperator.ILIKE],
-        weekday: [FilterOperator.EQ, FilterOperator.IN],
+        'groups.weekday': [FilterOperator.EQ, FilterOperator.IN],
         lessonName: [FilterOperator.EQ, FilterOperator.ILIKE],
       },
     });

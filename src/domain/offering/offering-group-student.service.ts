@@ -24,16 +24,23 @@ export class OfferingGroupStudentService {
   //?-------------------------------------------------------------------------//
 
   async pickFirstComeFirstServed(offeringId: number): Promise<GroupStudent[]> {
+    const offering = await this.offeringRepository.findOneOrFail({
+      where: { id: offeringId },
+      relations: ['lesson', 'lesson.groups'],
+    });
+    const groupIds = offering.lesson.groups.map((v) => v.id);
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
     });
-    const groupStudents = bookings.map((booking) => {
-      return {
-        offeringId,
-        studentId: booking.studentId,
-      };
+    const createGroupStudentDtos = groupIds.flatMap((groupId: number) => {
+      return bookings.map((v) => {
+        return {
+          studentId: v.studentId,
+          groupId,
+        };
+      });
     });
-    return this.groupStudentRepository.save(groupStudents);
+    return this.groupStudentRepository.save(createGroupStudentDtos);
   }
 
   async create(offeringId: number, dto: any): Promise<GroupStudent[]> {
@@ -54,6 +61,12 @@ export class OfferingGroupStudentService {
     }
 
     return [];
+
+    // {
+    //   capacity: 10,
+    //   enrolled: 10,
+    //   missing: 0,
+    // }
   }
 
   //?-------------------------------------------------------------------------//

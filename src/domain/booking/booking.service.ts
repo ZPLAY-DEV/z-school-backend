@@ -79,11 +79,12 @@ export class BookingService {
     const { offeringId, studentId } = cancelBookingDto;
 
     try {
-      const { affectedRows } = await this.bookingRepository.query(
-        `UPDATE bookings SET status = 'PENDING', deletedAt = NOW() WHERE offeringId = ${offeringId} AND studentId = ${studentId}`,
+      const { affected } = await this.bookingRepository.update(
+        { offeringId, studentId },
+        { status: BookingStatus.PENDING, deletedAt: new Date() },
       );
 
-      return affectedRows as number;
+      return affected as number; // Assuming 1 row is affected
     } catch (error) {
       this.logger.error(`❌ Booking 취소 실패`, error.stack);
       throw new InternalServerErrorException(
