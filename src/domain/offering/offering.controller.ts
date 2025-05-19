@@ -11,7 +11,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Public } from 'src/common/decorators/public.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
@@ -19,8 +18,10 @@ import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { OfferingService } from 'src/domain/offering/offering.service';
 import {
   CreateOfferingDocs,
+  FindImmediatelyPreviousTermIdDocs,
   GetOfferingByIdDocs,
   RemoveOfferingDocs,
+  SetFormerStudentIdsDocs,
   UpdateOfferingDocs,
 } from 'src/domain/offering/swagger/offering-swagger.decorator';
 
@@ -47,7 +48,6 @@ export class OfferingController {
   //?-------------------------------------------------------------------------//
 
   @GetOfferingByIdDocs()
-  @Public()
   @Get(':id')
   async getOfferingById(
     @Param('id', ParseIntPipe) id: number,
@@ -55,7 +55,7 @@ export class OfferingController {
     return await this.offeringService.findById(id, ['bookings']);
   }
 
-  @Public()
+  @FindImmediatelyPreviousTermIdDocs()
   @Get(':id/previous-term-id')
   async findImmediatelyPreviousTermId(
     @Param('id', ParseIntPipe) id: number,
@@ -76,12 +76,13 @@ export class OfferingController {
     return await this.offeringService.update(id, dto);
   }
 
+  @SetFormerStudentIdsDocs()
   @Patch(':id/former-student-ids')
-  async updateFormerStudentIds(
+  async setFormerStudentIds(
     @Param('id', ParseIntPipe) id: number,
     @Body('offeringIds') offeringIds: number[],
-  ): Promise<void> {
-    return await this.offeringService.resetFormerStudentIds(id, offeringIds);
+  ): Promise<number[]> {
+    return await this.offeringService.setFormerStudentIds(id, offeringIds);
   }
 
   //?-------------------------------------------------------------------------//

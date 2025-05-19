@@ -1,6 +1,6 @@
 // import * as admin from 'firebase-admin';
 
-import { Role, Weekday } from 'src/common/enums';
+import { BookingStatus, Role, Weekday } from 'src/common/enums';
 
 export interface IDatabaseConfig {
   engine: string;
@@ -232,3 +232,11 @@ export type ITimeRange = {
   start: string;
   end: string;
 };
+
+export interface IBookingSnapshotItem {
+  offeringId: number;
+  studentId: number;
+  lessonName: string;
+  status: BookingStatus;
+  waitingPosition: number;
+}

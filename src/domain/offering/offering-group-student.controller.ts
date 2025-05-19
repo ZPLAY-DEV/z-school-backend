@@ -2,79 +2,50 @@ import {
   Body,
   ClassSerializerInterceptor,
   Controller,
-  Delete,
   Get,
   Param,
   ParseIntPipe,
-  Patch,
   Post,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
-import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
+import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
-import { OfferingService } from 'src/domain/offering/offering.service';
-import {
-  CreateOfferingDocs,
-  GetOfferingByIdDocs,
-  RemoveOfferingDocs,
-  UpdateOfferingDocs,
-} from 'src/domain/offering/swagger/offering-swagger.decorator';
+import { OfferingGroupStudentService } from 'src/domain/offering/offering-group-student.service';
 
 //! 단일 Offering 엔터티 작업
-@ApiTags('✅ Offerings > GroupStudents ( 수강신청과목 )')
+@ApiTags('✅ Offerings > GroupStudents ( 수강신청과목 > 수강생확정 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('offerings')
 @UseInterceptors(ClassSerializerInterceptor)
 export class OfferingGroupStudentController {
-  constructor(private readonly offeringService: OfferingService) {}
+  constructor(
+    private readonly offeringGroupStudentService: OfferingGroupStudentService,
+  ) {}
 
   //?-------------------------------------------------------------------------//
   //? Create
   //?-------------------------------------------------------------------------//
 
-  @CreateOfferingDocs()
   @Post(':offeringId/group-students')
-  async create(@Body() dto: CreateOfferingDto): Promise<Offering> {
-    return this.offeringService.create(dto);
+  async create(
+    @Param('offeringId', ParseIntPipe) offeringId: number,
+    @Body() dto: any,
+  ): Promise<GroupStudent[]> {
+    return this.offeringGroupStudentService.create(offeringId, dto);
   }
 
   //?-------------------------------------------------------------------------//
   //? Read
   //?-------------------------------------------------------------------------//
 
-  @GetOfferingByIdDocs()
   @Public()
-  @Get(':id')
+  @Get(':offeringId/group-students')
   async getOfferingById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Offering> {
-    return await this.offeringService.findById(id, ['bookings']);
-  }
-
-  //?-------------------------------------------------------------------------//
-  //? Update
-  //?-------------------------------------------------------------------------//
-
-  @UpdateOfferingDocs()
-  @Patch(':id')
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateOfferingDto,
-  ): Promise<Offering> {
-    return await this.offeringService.update(id, dto);
-  }
-
-  //?-------------------------------------------------------------------------//
-  //? Delete
-  //?-------------------------------------------------------------------------//
-
-  @RemoveOfferingDocs()
-  @Delete(':id')
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<Offering> {
-    return await this.offeringService.softRemove(id);
+    return await this.offeringGroupStudentService.findById(id, ['bookings']);
   }
 }

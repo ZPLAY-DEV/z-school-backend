@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsEnum,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Length,
@@ -18,7 +19,7 @@ export class CreateOfferingDto {
   @ApiProperty({ description: '🈳 DB의 학교ID' })
   @IsInt()
   @IsOptional()
-  schoolId: number;
+  schoolId?: number;
 
   @ApiProperty({ description: '학교명' })
   @IsString()
@@ -70,4 +71,9 @@ export class CreateOfferingDto {
   @ApiProperty({ description: '시간 중복 허용 여부', default: false })
   @IsBoolean()
   allowTimeOverlap: boolean;
+
+  @ApiProperty({ description: '마지막 동기화 시간', type: Number })
+  @IsNumber()
+  @IsOptional()
+  lastSyncTimestamp?: number;
 }

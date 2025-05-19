@@ -35,8 +35,8 @@ export class ResponseBookingDto {
 // - waitingPosition: 2
 // - message: "수강신청결과 xxx 수강이 대기상태입니다. (대기 2번)"
 //
-// - status: PENDING
-// - waitingPosition: 666
+// - status: FULL
+// - waitingPosition: -1
 // - message: "수강신청결과 xxx 수강이 불가합니다."
 
 // ok

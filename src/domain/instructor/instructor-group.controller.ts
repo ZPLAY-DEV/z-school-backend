@@ -1,8 +1,11 @@
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { InstructorGroupService } from 'src/domain/instructor/instructor-group.service';
 
+@ApiTags('✅ Instructors ( 강사 ) > Groups ( 반 )')
+@ApiCommonErrorResponseTemplate()
 @Controller('instructors')
 export class InstructorGroupController {
   constructor(

@@ -72,9 +72,10 @@ export class SchoolTermOfferingService {
         uniqueCombinations.add(uniqueKey);
 
         const offering = new Offering({
-          schoolId,
           termId,
+          schoolId,
           schoolName: lesson.schoolName || `학교 #${lesson.schoolId}`,
+          lessonId: lesson.id,
           lessonName: lesson.lessonName || `과목 #${lesson.id}`,
           groupName: group.groupName || `반 #${group.id}`,
           capacity: group.capacity,
@@ -82,7 +83,8 @@ export class SchoolTermOfferingService {
           allowedGrades: group.allowedGrades.split(',').map(Number),
           bitmasks: [],
           formerStudentIds: [],
-          enrollmentRule: EnrollmentRule.FIRST,
+          enrollmentRule:
+            group.capacity === 0 ? EnrollmentRule.ANYONE : EnrollmentRule.FIRST,
           allowTimeOverlap: false,
         });
 

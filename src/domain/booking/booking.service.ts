@@ -3,11 +3,13 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AWS_SQS_CLIENT, REDIS_BOOKING_CLIENT } from 'src/common/constants';
-import { BookingStatus } from 'src/common/enums';
+import { BookingStatus, EnrollmentRule } from 'src/common/enums';
+import { IBookingSnapshotItem } from 'src/common/interfaces';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisBookingService } from 'src/services/redis/redis-booking.service';
@@ -31,21 +33,39 @@ export class BookingService {
   ) {}
 
   async createWithDb(dto: CreateBookingDto): Promise<ResponseBookingDto> {
-    const { offeringId, studentId, lessonName, isFormerStudent } = dto;
-
     try {
-      await this.bookingRepository.save(
-        this.bookingRepository.create({
-          offeringId,
-          studentId,
-          lessonName,
-          isFormerStudent,
-        }),
-      );
+      let status: BookingStatus;
+      let waitingPosition: number;
+      let message: string;
+
+      if (dto.enrollmentRule === EnrollmentRule.ANYONE) {
+        // 누구나
+        status = BookingStatus.ENROLLED;
+        waitingPosition = 0;
+        message = `🟢 수강신청결과 ${dto.lessonName} 수강이 확정되었습니다.`;
+        const booking = this.bookingRepository.create({
+          ...dto,
+          status,
+          waitingPosition,
+        });
+        await this.bookingRepository.save(booking);
+      } else {
+        // 무작위, 재수강우선
+        status = BookingStatus.PENDING;
+        waitingPosition = 0;
+        message = `🔵 ${dto.lessonName} 수강신청 했습니다. (신청기간이후 결과발표예정)`;
+        const booking = this.bookingRepository.create({
+          ...dto,
+          status,
+          waitingPosition,
+        });
+        await this.bookingRepository.save(booking);
+      }
 
       return new ResponseBookingDto({
-        status: BookingStatus.PENDING,
-        message: `🔵 ${lessonName} 수강신청 했습니다. (신청기간이후 결과발표예정)`,
+        status,
+        waitingPosition,
+        message,
       });
     } catch (error) {
       this.logger.error(`❌ Booking 실패`, error.stack);
@@ -55,9 +75,32 @@ export class BookingService {
     }
   }
 
+  async cancelWithDb(cancelBookingDto: CancelBookingDto): Promise<number> {
+    const { offeringId, studentId } = cancelBookingDto;
+
+    try {
+      const { affectedRows } = await this.bookingRepository.query(
+        `UPDATE bookings SET status = 'PENDING', deletedAt = NOW() WHERE offeringId = ${offeringId} AND studentId = ${studentId}`,
+      );
+
+      return affectedRows as number;
+    } catch (error) {
+      this.logger.error(`❌ Booking 취소 실패`, error.stack);
+      throw new InternalServerErrorException(
+        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
+      );
+    }
+  }
+
   async createWithRedis(dto: CreateBookingDto): Promise<ResponseBookingDto> {
-    const { offeringId, studentId, lessonName, capacity, isFormerStudent } =
-      dto;
+    const {
+      offeringId,
+      studentId,
+      lessonName,
+      capacity,
+      enrollmentRule,
+      isFormerStudent,
+    } = dto;
     const timestamp = Date.now();
 
     this.logger.log(
@@ -82,6 +125,7 @@ export class BookingService {
         if (result.ok === 'ENROLLED') {
           response = new ResponseBookingDto({
             status: BookingStatus.ENROLLED,
+            waitingPosition: 0,
             message: `🟢 수강신청결과 ${lessonName} 수강이 확정되었습니다.`,
           });
         } else if (result.ok === 'PENDING') {
@@ -96,10 +140,9 @@ export class BookingService {
             message: `🟡 수강신청결과 ${lessonName} 수강이 대기상태입니다. (대기 ${waitingPosition}번)`,
           });
         } else {
-          // ☠️ result.ok === 'FULL'
           response = new ResponseBookingDto({
-            status: BookingStatus.PENDING, // ☠️ 대기자도 아닌 사람도 상태는 PENDING
-            waitingPosition: 666, // ☠️ 대기자도 아닌 사람한테 부여하는 불길한 숫자
+            status: BookingStatus.FULL,
+            waitingPosition: -1,
             message: `🔴 수강신청결과 ${lessonName} 수강이 불가합니다.`,
           });
         }
@@ -111,29 +154,22 @@ export class BookingService {
               offeringId,
               studentId,
               lessonName,
-              timestamp,
-              waitingPosition: response.waitingPosition ?? null,
+              capacity,
+              enrollmentRule,
               isFormerStudent: isFormerStudent ?? false,
-              isEnrolled: response.status === BookingStatus.ENROLLED,
-            },
+              waitingPosition: response.waitingPosition ?? 0,
+              status: response.status,
+              timestamp,
+            } as CreateBookingDto, // bookings 저장용 data 를 sqs 로 전송
           })
           .catch((e) => {
             this.logger.error('❌ Booking SQS 전송 실패', e.stack);
           });
 
         return response;
-      } else if (result.err) {
-        // Log the error from result and throw appropriate exception
-        this.logger.error(`❌ Booking 실패: ${result.err}`);
-        throw new InternalServerErrorException(
-          HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-        );
+      } else {
+        throw result.err === 'BOOKED' ? new Error('BOOKED') : new Error();
       }
-
-      // This should not happen, but to satisfy TypeScript return type
-      throw new InternalServerErrorException(
-        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-      );
     } catch (error) {
       this.logger.error(`❌ Booking 실패`, error.stack);
       if (error instanceof Error && error.message === 'BOOKED') {
@@ -147,54 +183,45 @@ export class BookingService {
     }
   }
 
-  async cancelWithDb(cancelBookingDto: CancelBookingDto): Promise<void> {
-    const { offeringId, studentId } = cancelBookingDto;
+  //? my goal: upsert entire data in one go with snapshot for idempotency.
+  async cancelWithRedis(dto: CancelBookingDto): Promise<number> {
+    const { offeringId, lessonName } = dto;
+    const timestamp = Date.now();
 
     try {
-      await this.bookingRepository.softRemove({
-        offeringId,
-        studentId,
-      });
-    } catch (error) {
-      this.logger.error(`❌ Booking 취소 실패`, error.stack);
-      throw new InternalServerErrorException(
-        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-      );
-    }
-  }
-
-  // todo. 왜 queue 를 사용해야 하는지 고민해 볼 것.
-  //? 1. db 삭제
-  //? 2. ~~ 학부모에게 FCM 푸시알림 전송 (안하기로) ~~
-  async cancelWithRedis(cancelBookingDto: CancelBookingDto): Promise<void> {
-    const { offeringId, studentId, lessonName } = cancelBookingDto;
-
-    try {
-      // Execute Redis Lua script for cancellation
       const result = await this.redisBookingService.executeCancelScript(
         offeringId,
-        studentId,
+        dto.studentId,
       );
 
-      if (result.ok === 'CANCELED') {
-        // Send message to SQS for async processing (DB update, notification, etc.)
+      if (result.ok) {
+        // snapshot 생성 (RedisBookingService에서)
+        const snapshot: IBookingSnapshotItem[] =
+          await this.redisBookingService.getSnapshot(offeringId, lessonName);
+
+        this.logger.log('🚀 snapshot', snapshot);
+
+        // SQS로 전송
         await this.sqsClient.sendMessage({
           type: 'CANCEL_BOOKING',
           data: {
             offeringId,
-            studentId,
-            lessonName,
+            studentId: dto.studentId,
+            snapshot,
+            timestamp,
           },
         });
-      } else if (result.err) {
-        // Log the error from result and throw appropriate exception
-        this.logger.error(`❌ Booking 취소 실패: ${result.err}`);
-        throw new InternalServerErrorException(
-          HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-        );
+
+        return snapshot.length;
+      } else {
+        throw result.err === 'NOT_FOUND' ? new Error('NOT_FOUND') : new Error();
       }
     } catch (error) {
       this.logger.error(`❌ Booking 취소 실패`, error.stack);
+
+      if (error instanceof Error && error.message === 'NOT_FOUND') {
+        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      }
       throw new InternalServerErrorException(
         HttpErrorConstants.INTERNAL_DATABASE_ERROR,
       );

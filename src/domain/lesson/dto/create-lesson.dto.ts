@@ -10,7 +10,7 @@ import {
   IsPositive,
   IsString,
   MaxLength,
-  ValidateNested
+  ValidateNested,
 } from 'class-validator';
 import { ClassStatus, DocumentType } from 'src/common/enums';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
@@ -39,18 +39,27 @@ export class CreateLessonDto {
     description: '🈳 관리자 편의를 위한 학교명',
     required: false,
     nullable: true,
+    example: '홍익대학교 사범대학 부속 초등학교',
   })
   @IsOptional()
   @IsString()
   @MaxLength(24) // '홍익대학교 사범대학 부속 초등학교'
   schoolName?: string | null;
 
-  @ApiProperty({ description: '🈵 같은 학기중 과목명은 유니크' })
+  @ApiProperty({
+    description: '🈵 같은 학기중 과목명은 유니크',
+    example: '초등 영어 A (1~2)',
+  })
   @IsString()
   @MaxLength(16)
   lessonName: string;
 
-  @ApiProperty({ description: '🈳 과목설명', required: false, nullable: true })
+  @ApiProperty({
+    description: '🈳 과목설명',
+    required: false,
+    nullable: true,
+    example: '마이클잭슨 선생님반',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(255)
@@ -68,12 +77,18 @@ export class CreateLessonDto {
   @IsNumber()
   weeklyLessonCount?: number;
 
-  @ApiProperty({ description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @ApiProperty({
+    description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
+    example: '2025-02-01',
+  })
   @IsOptional()
   @IsString()
   start?: string;
 
-  @ApiProperty({ description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @ApiProperty({
+    description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
+    example: '2025-05-25',
+  })
   @IsOptional()
   @IsString()
   end?: string;
@@ -99,6 +114,7 @@ export class CreateLessonDto {
   @ApiProperty({
     description: '🈳 B. 도서구매비 배열 (낮은가격순 정렬)',
     required: false,
+    example: [{ name: 'total', amount: 10000 }],
   })
   @IsOptional()
   @IsArray()
@@ -107,6 +123,7 @@ export class CreateLessonDto {
   @ApiProperty({
     description: '🈳 C. 재료구매비 배열 (낮은가격순 정렬)',
     required: false,
+    example: [{ name: 'total', amount: 10000 }],
   })
   @IsOptional()
   @IsArray()
@@ -133,7 +150,11 @@ export class CreateLessonDto {
   @MaxLength(16)
   operationFeeRule?: string | null;
 
-  @ApiProperty({ description: '🈳 필요한 문서의 Key 값들', required: false })
+  @ApiProperty({
+    description: '🈳 필요한 문서의 Key 값들',
+    required: false,
+    example: [DocumentType.RESUME, DocumentType.CAREER_CERTIFICATE],
+  })
   @IsOptional()
   @IsArray()
   @IsEnum(DocumentType, { each: true })
@@ -154,7 +175,22 @@ export class CreateLessonDto {
   @IsOptional()
   status?: ClassStatus;
 
-  @ApiProperty({ description: '🈵 강사 정보 목록' })
+  @ApiProperty({
+    description: '🈵 강사 정보 목록',
+    example: [
+      {
+        instructorName: '마이클',
+        instructorPhone: '01012340001',
+        groupName: '플레이스테이션 C반',
+        location: '컴퓨터실A',
+        capacity: 20,
+        allowedGrades: '1~2',
+        weekday: '월',
+        start: '12:40',
+        end: '13:00',
+      },
+    ],
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateGroupWithInstructorDto)
