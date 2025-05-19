@@ -30,6 +30,10 @@ import { SchoolStudentService } from './school-student.service';
 import { SchoolController } from './school.controller';
 import { SchoolService } from './school.service';
 import { InstructorSchool } from '../instructor/entities/instructor-school.entity';
+import { Board } from '../board/entities/board.entity';
+import { Comment } from '../board/entities/comment.entity';
+import { SchoolBoardController } from './school-board.controller';
+import { SchoolBoardService } from './school-board.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -42,6 +46,8 @@ import { InstructorSchool } from '../instructor/entities/instructor-school.entit
       Instructor,
       InstructorSchool,
       Phone,
+      Board,
+      Comment,
     ]),
     UploadModule,
     SlackModule,
@@ -58,6 +64,7 @@ import { InstructorSchool } from '../instructor/entities/instructor-school.entit
     SchoolTermLessonController,
     SchoolTermOfferingController,
     SchoolPhoneController,
+    SchoolBoardController,
   ],
   providers: [
     SchoolService,
@@ -68,6 +75,7 @@ import { InstructorSchool } from '../instructor/entities/instructor-school.entit
     SchoolTermLessonService,
     SchoolTermOfferingService,
     SchoolPhoneService,
+    SchoolBoardService,
   ],
 })
 export class SchoolModule {}

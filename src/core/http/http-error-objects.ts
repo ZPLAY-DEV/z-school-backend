@@ -19,6 +19,11 @@ export const HttpErrorConstants = {
     message: '아이디 또는 비밀번호가 잘못 되었습니다.',
   } as HttpErrorFormat,
 
+  UNAUTHORIZED_COMMENT: {
+    error: 'UNAUTHORIZED_COMMENT',
+    message: '댓글 작성 권한이 없습니다.',
+  } as HttpErrorFormat,
+
   FORBIDDEN: {
     error: 'FORBIDDEN',
     message: '권한이 없습니다.',
@@ -134,6 +139,11 @@ export const HttpErrorConstants = {
     message: '이미 수강신청 접수 중입니다.',
   } as HttpErrorFormat,
 
+  FORBIDDEN_USER_ROLE: {
+    error: 'FORBIDDEN_USER_ROLE',
+    message: '권한이 없는 유저입니다.',
+  } as HttpErrorFormat,
+
   CONFLICT_STUDENT: {
     error: 'CONFLICT_STUDENT',
     message: '이미 학생 정보가 존재합니다.',
@@ -167,6 +177,11 @@ export const HttpErrorConstants = {
   NOT_FOUND_SCHOOL: {
     error: 'NOT_FOUND_SCHOOL',
     message: '학교를 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
+  NOT_FOUND_GROUP: {
+    error: 'NOT_FOUND_GROUP',
+    message: '그룹(수업)을 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
   NOT_FOUND_TERM: {
@@ -218,6 +233,16 @@ export const HttpErrorConstants = {
     error: 'CANNOT_DELETE_ACTIVE_PHONE',
     message:
       '대표번호는 삭제할 수 없습니다. 다른 번호를 대표번호로 설정 후 삭제해 주세요.',
+  } as HttpErrorFormat,
+
+  NOT_FOUND_BOARD: {
+    error: 'NOT_FOUND_BOARD',
+    message: '게시글을 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
+  NOT_FOUND_COMMENT: {
+    error: 'NOT_FOUND_COMMENT',
+    message: '댓글을 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)

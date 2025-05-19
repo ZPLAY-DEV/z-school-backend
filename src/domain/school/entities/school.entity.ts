@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
+import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { InstructorSchool } from 'src/domain/instructor/entities/instructor-school.entity';
 // import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
@@ -134,6 +135,9 @@ export class School {
 
   @OneToMany(() => Phone, (phone) => phone.school)
   public phones: Phone[];
+
+  @OneToMany(() => Board, (board) => board.school)
+  public boards: Board[];
 
   //* N-to-M belongsToMany using 1-to-M ------------------------------------ *//
 
