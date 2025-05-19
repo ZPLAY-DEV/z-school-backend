@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { Role } from 'src/common/enums';
 import { Board } from 'src/domain/board/entities/board.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
@@ -10,12 +9,10 @@ import {
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
-  // Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('comments')
-// @Unique(['userId', 'boardId'])
 export class Comment {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -28,19 +25,19 @@ export class Comment {
   @Column({ type: 'int', unsigned: true })
   boardId: number;
 
-  @ApiProperty({ description: '🈳 작성자 이름', nullable: true })
-  @Column({ type: 'varchar', length: 16, nullable: true })
-  name: string | null;
+  @ApiProperty({ description: '🈵 작성자 이름' })
+  @Column({
+    type: 'varchar',
+    length: 50,
+    comment: '작성자 이름은 (학년-반-번호 이름)',
+  })
+  name: string;
 
   // @ApiProperty({ description: '🈳 부모 댓글 ID (답글인 경우)', nullable: true })
   // @Column({ type: 'int', unsigned: true, nullable: true })
   // parentId: number | null;
 
   //* ---------------------------------------------------------------------- *//
-
-  @ApiProperty({ description: '🈵 작성자 유형', enum: Role })
-  @Column({ type: 'enum', enum: Role })
-  userRole: Role;
 
   @ApiProperty({ description: '🈳 댓글 내용' })
   @Column({ type: 'text', nullable: true })

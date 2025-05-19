@@ -14,7 +14,6 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { BoardTarget, Role } from 'src/common/enums';
 import { IsArray } from 'class-validator';
 import { School } from 'src/domain/school/entities/school.entity';
 
@@ -27,11 +26,11 @@ export class Board {
   @Column({ type: 'int', unsigned: true })
   userId: number;
 
-  @ApiProperty({ description: '🈳 Group ID' })
-  @Column({ type: 'int', unsigned: true, nullable: true })
-  groupId: number | null;
+  @ApiProperty({ description: '🈵 Group ID' })
+  @Column({ type: 'int', unsigned: true })
+  groupId: number;
 
-  @ApiProperty({ description: '🈳 학교ID (relation용 아님)' })
+  @ApiProperty({ description: '🈵 학교ID (relation용 아님)' })
   @Column({ type: 'int', unsigned: true })
   schoolId: number;
 
@@ -49,17 +48,6 @@ export class Board {
   @Column('json', { nullable: true })
   @IsArray()
   images: string[] | null;
-
-  @ApiProperty({ description: '🈵 작성자 유형', enum: Role })
-  @Column({ type: 'enum', enum: Role })
-  userRole: Role;
-
-  @ApiProperty({ description: '🈵 게시글 대상 (JSON)' })
-  @Column({
-    type: 'enum',
-    enum: BoardTarget,
-  })
-  target: BoardTarget;
 
   // ------------------------------------------------------------------------ //
 
@@ -82,9 +70,7 @@ export class Board {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @ManyToOne(() => Group, (group: Group) => group.boards, {
-    nullable: true,
-  })
+  @ManyToOne(() => Group, (group: Group) => group.boards)
   @JoinColumn({ name: 'groupId' })
   group: Group;
 
