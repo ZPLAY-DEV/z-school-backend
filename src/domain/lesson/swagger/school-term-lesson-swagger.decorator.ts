@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import {
   ApiOkPaginatedResponse,
   ApiPaginationQuery,
+  FilterOperator,
   PaginateConfig,
 } from 'nestjs-paginate';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
@@ -14,11 +15,17 @@ import { Lesson } from '../entities/lesson.entity';
 
 const SCHOOL_TERM_LESSON_CONFIG: PaginateConfig<Lesson> = {
   sortableColumns: ['id', 'lessonName', 'termId'],
-  defaultSortBy: [['id', 'DESC']],
-  searchableColumns: ['schoolName', 'lessonName'],
+  searchableColumns: ['lessonName', 'instructorLessons.instructor.name'],
+  defaultSortBy: [
+    ['schoolId', 'DESC'],
+    ['id', 'DESC'],
+  ],
   filterableColumns: {
-    schoolName: true,
-    lessonName: true,
+    'category.name': [FilterOperator.EQ, FilterOperator.ILIKE],
+    'category.slug': [FilterOperator.EQ, FilterOperator.ILIKE],
+    weekday: [FilterOperator.EQ, FilterOperator.IN],
+    schoolName: [FilterOperator.EQ, FilterOperator.ILIKE],
+    lessonName: [FilterOperator.EQ, FilterOperator.ILIKE],
   },
 };
 
