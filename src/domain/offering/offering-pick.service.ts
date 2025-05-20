@@ -27,13 +27,11 @@ export class OfferingPickService {
   async pickFirstComeFirstServed(offeringId: number): Promise<Pick[]> {
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
-      relations: ['lesson', 'lesson.groups'],
     });
-    const groupIds = offering.lesson.groups.map((v) => v.id);
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
     });
-    const createPickDtos = groupIds.flatMap((groupId: number) => {
+    const items = offering.groupIds.flatMap((groupId: number) => {
       return bookings.map((v) => {
         return {
           studentId: v.studentId,
@@ -42,23 +40,22 @@ export class OfferingPickService {
         };
       });
     });
-    return this.pickRepository.save(createPickDtos);
+    return this.pickRepository.save(items);
   }
 
   async pickRandomStudents(offeringId: number): Promise<Pick[]> {
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
-      relations: ['lesson', 'lesson.groups'],
     });
-    const groupIds = offering.lesson.groups.map((v) => v.id);
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
     });
-    const createPickDtos = groupIds.flatMap((groupId: number) => {
+    const createPickDtos = offering.groupIds.flatMap((groupId: number) => {
       return bookings.map((v) => {
         return {
           studentId: v.studentId,
           groupId,
+          offeringId,
         };
       });
     });
@@ -68,33 +65,11 @@ export class OfferingPickService {
   async pickFormerStudentsFirst(offeringId: number): Promise<Pick[]> {
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
-      relations: ['lesson', 'lesson.groups'],
     });
-    const groupIds = offering.lesson.groups.map((v) => v.id);
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
     });
-    const createPickDtos = groupIds.flatMap((groupId: number) => {
-      return bookings.map((v) => {
-        return {
-          studentId: v.studentId,
-          groupId,
-        };
-      });
-    });
-    return this.pickRepository.save(createPickDtos);
-  }
-
-  async pickAnyone(offeringId: number): Promise<Pick[]> {
-    const offering = await this.offeringRepository.findOneOrFail({
-      where: { id: offeringId },
-      relations: ['lesson', 'lesson.groups'],
-    });
-    const groupIds = offering.lesson.groups.map((v) => v.id);
-    const bookings = await this.bookingRepository.find({
-      where: { offeringId, status: BookingStatus.ENROLLED },
-    });
-    const createPickDtos = groupIds.flatMap((groupId: number) => {
+    const items = offering.groupIds.flatMap((groupId: number) => {
       return bookings.map((v) => {
         return {
           studentId: v.studentId,
@@ -103,7 +78,26 @@ export class OfferingPickService {
         };
       });
     });
-    return this.pickRepository.save(createPickDtos);
+    return this.pickRepository.save(items);
+  }
+
+  async pickAnyone(offeringId: number): Promise<Pick[]> {
+    const offering = await this.offeringRepository.findOneOrFail({
+      where: { id: offeringId },
+    });
+    const bookings = await this.bookingRepository.find({
+      where: { offeringId, status: BookingStatus.ENROLLED },
+    });
+    const items = offering.groupIds.flatMap((groupId: number) => {
+      return bookings.map((v) => {
+        return {
+          studentId: v.studentId,
+          groupId,
+          offeringId,
+        };
+      });
+    });
+    return this.pickRepository.save(items);
   }
 
   async create(offeringId: number, dto: any): Promise<ResponsePickDto> {

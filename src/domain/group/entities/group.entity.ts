@@ -90,7 +90,8 @@ export class Group {
   @Column({
     type: 'enum',
     enum: Actor,
-    default: Actor.SYSTEM,
+    nullable: true,
+    default: null,
     comment: '누가 삭제했나?',
   })
   deletedBy: string | null;
