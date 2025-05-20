@@ -5,6 +5,7 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
 import { CreateOfferingDto } from '../dto/create-offering.dto';
 import { UpdateOfferingDto } from '../dto/update-offering.dto';
 import { Offering } from '../entities/offering.entity';
@@ -207,6 +208,33 @@ export const SetFormerStudentIdsDocs = () => {
       },
     }),
     ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Create Offering Pick
+//? ---------------------------------------------------------------------- ?//
+
+export const CreateOfferingPickDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '수강신청과목 > 수강생확정 👈 생성',
+      description: `\n- 수강신청과목에 대해 수강생을 확정합니다. (선착순/추첨/이전수강생 우선 등)`,
+    }),
+    ApiOkResponseTemplate({
+      description: '수강생 확정 결과',
+      type: ResponsePickDto,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
+      },
       {
         status: StatusCodes.NOT_FOUND,
         errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],

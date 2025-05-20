@@ -2,6 +2,7 @@ import {
   ClassSerializerInterceptor,
   Controller,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Post,
@@ -11,10 +12,9 @@ import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
-import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { OfferingPickService } from 'src/domain/offering/offering-pick.service';
+import { CreateOfferingPickDocs } from 'src/domain/offering/swagger/offering-swagger.decorator';
 
-//! 단일 Offering 엔터티 작업
 @ApiTags('✅ Offerings > Picks ( 수강신청과목 > 수강생확정 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('offerings')
@@ -26,7 +26,9 @@ export class OfferingPickController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateOfferingPickDocs()
   @Post(':offeringId/picks')
+  @HttpCode(200)
   async create(
     @Param('offeringId', ParseIntPipe) offeringId: number,
   ): Promise<ResponsePickDto> {
@@ -39,7 +41,8 @@ export class OfferingPickController {
 
   @Public()
   @Get(':offeringId/picks')
-  async list(@Param('id', ParseIntPipe) id: number): Promise<Offering> {
-    return await this.offeringPickService.findById(id, ['bookings']);
+  list(@Param('offeringId', ParseIntPipe) offeringId: number): any {
+    // do we even need this?
+    console.log(offeringId);
   }
 }

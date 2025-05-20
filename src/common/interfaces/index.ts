@@ -240,3 +240,9 @@ export interface IBookingSnapshotItem {
   status: BookingStatus;
   waitingPosition: number;
 }
+
+export interface IPickKeys {
+  studentId: number;
+  groupId: number;
+  offeringId: number;
+}

@@ -8,7 +8,6 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
-import { School } from 'src/domain/school/entities/school.entity';
 import { In, Repository } from 'typeorm';
 
 @Injectable()
@@ -16,8 +15,6 @@ export class OfferingService {
   constructor(
     @InjectRepository(Offering)
     private readonly offeringRepository: Repository<Offering>,
-    @InjectRepository(School)
-    private readonly schoolRepository: Repository<School>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
