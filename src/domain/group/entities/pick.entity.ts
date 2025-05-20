@@ -54,17 +54,15 @@ export class Pick {
   })
   enrolledBy: Actor;
 
-  @ApiProperty({
-    description: '🈵 누가 삭제했나?',
-    default: Actor.SYSTEM,
-  })
+  @ApiProperty({ description: '🈳 누가 삭제했나?' })
   @Column({
     type: 'enum',
     enum: Actor,
-    default: Actor.SYSTEM,
+    nullable: true,
+    default: null,
     comment: '누가 삭제했나?',
   })
-  deletedBy: Actor;
+  deletedBy: Actor | null;
 
   @ApiProperty({ description: '🈳 비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })

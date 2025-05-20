@@ -30,9 +30,9 @@ export class SchoolTermOfferingController {
     private readonly schoolTermOfferingService: SchoolTermOfferingService,
   ) {}
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? CREATE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   @CreateSchoolTermOfferingsDocs()
   @Post(':schoolId/terms/:termId/offerings/bulk')
@@ -43,9 +43,9 @@ export class SchoolTermOfferingController {
     return this.schoolTermOfferingService.create(schoolId, termId);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? READ
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   @SchoolTermOfferingPaginatedListDocs()
   @Public()
@@ -72,9 +72,9 @@ export class SchoolTermOfferingController {
     return await this.schoolTermOfferingService.list(schoolId, termId);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? DELETE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   @DeleteAllSchoolTermOfferingsDocs()
   @Delete(':schoolId/terms/:termId/offerings')

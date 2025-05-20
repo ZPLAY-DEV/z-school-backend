@@ -32,9 +32,9 @@ export class SchoolTermOfferingService {
     private readonly lessonRepository: Repository<Lesson>,
   ) {}
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? CREATE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   async create(schoolId: number, termId: number): Promise<Offering[]> {
     const lessons = await this.lessonRepository
@@ -119,9 +119,9 @@ export class SchoolTermOfferingService {
     return await this.offeringRepository.save(offerings);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? READ
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   async infiniteList(
     schoolId: number,
@@ -153,9 +153,9 @@ export class SchoolTermOfferingService {
       .getMany();
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? DELETE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   async deleteAll(schoolId: number, termId: number): Promise<number> {
     try {
       const result = await this.offeringRepository.manager.transaction(

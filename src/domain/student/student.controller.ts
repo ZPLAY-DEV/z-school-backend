@@ -14,19 +14,19 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { StudentService } from 'src/domain/student/student.service';
 import { UploadService } from 'src/services/upload/upload.service';
+import { CreateStudentDto } from './dto/create-student.dto';
+import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 import {
   CreateStudentDocs,
   StudentDryRunDocs,
   StudentStatusUpdateDocs,
   StudentUpdateDocs,
 } from './swagger/student.swagger.decorator';
-import { CreateStudentDto } from './dto/create-student.dto';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 
 @ApiTags('✅ Students ( 학생 )')
 @ApiCommonErrorResponseTemplate()
@@ -38,9 +38,9 @@ export class StudentController {
     private readonly uploadService: UploadService,
   ) {}
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? CREATE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   @CreateStudentDocs()
   @ApiOperation({ description: 'Student 생성' })
@@ -49,9 +49,9 @@ export class StudentController {
     return await this.studentService.create(dto);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? READ
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   @StudentDryRunDocs()
   @HttpCode(HttpStatus.OK)
@@ -67,9 +67,9 @@ export class StudentController {
     return await this.studentService.findById(id);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? UPDATE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   @StudentUpdateDocs()
   @ApiOperation({ description: 'Student 수정' })
   @Patch(':id')
@@ -94,9 +94,9 @@ export class StudentController {
     );
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? DELETE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'Student 삭제' })
   @Delete(':id')
@@ -104,9 +104,9 @@ export class StudentController {
     return await this.studentService.remove(id);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? NOT USED
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   // @ApiOperation({ description: '이미지 URL 생성' })
   // @Post(':id/s3urls')

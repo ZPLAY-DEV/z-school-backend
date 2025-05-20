@@ -13,17 +13,17 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { UpdateInstructorDto } from 'src/domain/instructor/dto/update-instructor.dto';
 import { InstructorService } from 'src/domain/instructor/instructor.service';
+import { CreateInstructorDto } from './dto/create-instructor.dto';
+import { DeleteInstructorSchoolDto } from './dto/delete-instructor-school.dto';
 import { Instructor } from './entities/instructor.entity';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import {
   CreateInstructorDocs,
   InstructorDryRunDocs,
   SoftDeleteSchoolInstructorDocs,
 } from './swagger/instructor.swagger.decorator';
-import { CreateInstructorDto } from './dto/create-instructor.dto';
-import { DeleteInstructorSchoolDto } from './dto/delete-instructor-school.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Instructors ( 강사 )')
@@ -88,9 +88,9 @@ export class InstructorController {
     return await this.instructorService.softDeleteSchoolInstructor(id, dto);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? NOT USED YET
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   // @Delete(':id')
   // @ApiOperation({ summary: 'Delete a instructor' })

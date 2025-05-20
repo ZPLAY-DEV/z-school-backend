@@ -6,17 +6,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, DeleteResult, Repository, UpdateResult } from 'typeorm';
-import { Phone } from '../phone/entities/phone.entity';
-import { CreatePhoneDto } from '../phone/dto/create-phone.dto';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { School } from '../school/entities/school.entity';
 import {
   FilterOperator,
   paginate,
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { DataSource, DeleteResult, Repository, UpdateResult } from 'typeorm';
+import { CreatePhoneDto } from '../phone/dto/create-phone.dto';
+import { Phone } from '../phone/entities/phone.entity';
+import { School } from '../school/entities/school.entity';
 @Injectable()
 export class SchoolPhoneService {
   private readonly logger = new Logger(SchoolPhoneService.name);
@@ -80,9 +80,9 @@ export class SchoolPhoneService {
     return await this.phoneRepository.save(phoneEntity);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? READ
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   //? 학교 발신번호 전체 조회
   async findAll(schoolId: number): Promise<Phone[]> {
@@ -135,9 +135,9 @@ export class SchoolPhoneService {
     });
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? Update
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   //? 학교 발신번호 활성화/비활성화
   async updateIsActive(
@@ -163,9 +163,9 @@ export class SchoolPhoneService {
       .execute();
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? Delete
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   //? 학교 발신번호 삭제
   async delete(schoolId: number, phoneId: number): Promise<DeleteResult> {

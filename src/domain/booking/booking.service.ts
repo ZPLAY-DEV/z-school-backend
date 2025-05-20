@@ -197,9 +197,8 @@ export class BookingService {
         const snapshot: IBookingSnapshotItem[] =
           await this.redisBookingService.getSnapshot(offeringId, lessonName);
 
-        this.logger.log('🚀 snapshot', snapshot);
-
-        // SQS로 전송
+        // this.logger.log('🚀 snapshot', snapshot);
+        // not fire and forget. need to wait for the result from sqs.
         await this.sqsClient.sendMessage({
           type: 'CANCEL_BOOKING',
           data: {

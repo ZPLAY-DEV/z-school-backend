@@ -106,9 +106,9 @@ export class SchoolTermLessonController {
     return await this.schoolTermLessonService.list(schoolId, termId);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? DELETE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   @DeleteAllSchoolTermLessonsDocs()
   @Delete(':schoolId/terms/:termId/lessons')

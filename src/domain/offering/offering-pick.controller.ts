@@ -1,5 +1,4 @@
 import {
-  Body,
   ClassSerializerInterceptor,
   Controller,
   Get,
@@ -23,27 +22,24 @@ import { OfferingPickService } from 'src/domain/offering/offering-pick.service';
 export class OfferingPickController {
   constructor(private readonly offeringPickService: OfferingPickService) {}
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? Create
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   @Post(':offeringId/picks')
   async create(
     @Param('offeringId', ParseIntPipe) offeringId: number,
-    @Body() dto: any,
   ): Promise<ResponsePickDto> {
-    return this.offeringPickService.create(offeringId, dto);
+    return this.offeringPickService.create(offeringId);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? Read
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   @Public()
-  @Get(':offeringId/group-students')
-  async getOfferingById(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<Offering> {
+  @Get(':offeringId/picks')
+  async list(@Param('id', ParseIntPipe) id: number): Promise<Offering> {
     return await this.offeringPickService.findById(id, ['bookings']);
   }
 }
