@@ -17,9 +17,9 @@ import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.re
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
 import { TraceableNoteDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
-import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
+import { Pick } from 'src/domain/group/entities/pick.entity';
 
-const GROUP_STUDENT_PAGINATE_CONFIG: PaginateConfig<GroupStudent> = {
+const GROUP_STUDENT_PAGINATE_CONFIG: PaginateConfig<Pick> = {
   sortableColumns: ['id'],
   defaultSortBy: [['id', 'DESC']],
   searchableColumns: ['note'],
@@ -33,7 +33,7 @@ const GROUP_STUDENT_PAGINATE_CONFIG: PaginateConfig<GroupStudent> = {
 //? Create Group Student
 //? ---------------------------------------------------------------------- ?//
 
-export const CreateGroupStudentDocs = () => {
+export const CreatePickDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '반 > 수강생 👈 등록 (수강신청 이후 사유와 함께 개별적 등록)',
@@ -58,7 +58,7 @@ export const CreateGroupStudentDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: '학생 반 등록 완료',
-      type: GroupStudent,
+      type: Pick,
     }),
     ApiErrorResponseTemplate([
       {
@@ -77,7 +77,7 @@ export const CreateGroupStudentDocs = () => {
 //? Create Group Student Bulk
 //? ---------------------------------------------------------------------- ?//
 
-export const CreateGroupStudentBulkDocs = () => {
+export const CreatePickBulkDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary:
@@ -107,7 +107,7 @@ export const CreateGroupStudentBulkDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: '학생 반 일괄 등록 완료',
-      type: GroupStudent,
+      type: Pick,
       isArray: true,
     }),
     ApiErrorResponseTemplate([
@@ -123,7 +123,7 @@ export const CreateGroupStudentBulkDocs = () => {
 //? List Group Students
 //? ---------------------------------------------------------------------- ?//
 
-export const ListGroupStudentsDocs = () => {
+export const ListPicksDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '반 > 수강생 👈 리스트 (all)',
@@ -139,7 +139,7 @@ export const ListGroupStudentsDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '반 수강생 목록 조회 완료',
-      type: GroupStudent,
+      type: Pick,
       isArray: true,
     }),
     ApiErrorResponseTemplate([
@@ -155,7 +155,7 @@ export const ListGroupStudentsDocs = () => {
 //? Paginated List Group Students
 //? ---------------------------------------------------------------------- ?//
 
-export const PaginatedListGroupStudentsDocs = () => {
+export const PaginatedListPicksDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '반 > 수강생 👈 리스트 (paginated)',
@@ -170,7 +170,7 @@ export const PaginatedListGroupStudentsDocs = () => {
       description: '반 ID',
     }),
     ApiPaginationQuery(GROUP_STUDENT_PAGINATE_CONFIG),
-    ApiOkPaginatedResponse(GroupStudent, GROUP_STUDENT_PAGINATE_CONFIG),
+    ApiOkPaginatedResponse(Pick, GROUP_STUDENT_PAGINATE_CONFIG),
     ApiErrorResponseTemplate([
       {
         status: StatusCodes.NOT_FOUND,
@@ -184,7 +184,7 @@ export const PaginatedListGroupStudentsDocs = () => {
 //? Update Group Student
 //? ---------------------------------------------------------------------- ?//
 
-export const UpdateGroupStudentDocs = () => {
+export const UpdatePickDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary:
@@ -209,7 +209,7 @@ export const UpdateGroupStudentDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '반 수강생 정보 수정 완료',
-      type: GroupStudent,
+      type: Pick,
     }),
     ApiErrorResponseTemplate([
       {
@@ -224,7 +224,7 @@ export const UpdateGroupStudentDocs = () => {
 //? Delete Group Student
 //? ---------------------------------------------------------------------- ?//
 
-export const DeleteGroupStudentDocs = () => {
+export const DeletePickDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '반 > 수강생 👈 삭제 (사유와 함께 개별적 반에서 강퇴)',

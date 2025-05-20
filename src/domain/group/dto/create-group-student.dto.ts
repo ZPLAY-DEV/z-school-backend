@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { Actor } from 'src/common/enums';
 
-export class CreateGroupStudentDto {
+export class CreatePickDto {
   @ApiProperty({ description: '반 ID' })
   @IsInt()
   @IsPositive()

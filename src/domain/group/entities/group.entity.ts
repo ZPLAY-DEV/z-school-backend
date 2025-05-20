@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { Actor, ClassStatus, Weekday } from 'src/common/enums';
 import { Board } from 'src/domain/board/entities/board.entity';
-import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
+import { Pick } from 'src/domain/group/entities/pick.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import {
@@ -128,8 +128,8 @@ export class Group {
   @ApiProperty({
     description: '🈳 연결된 학생 목록',
   })
-  @OneToMany(() => GroupStudent, (gs) => gs.group)
-  groupStudents: GroupStudent[];
+  @OneToMany(() => Pick, (gs) => gs.group)
+  groupStudents: Pick[];
 
   @OneToMany(() => Board, (board) => board.group)
   boards: Board[];

@@ -6,7 +6,7 @@ export class ResponsePickDto {
   enrollmentRule: EnrollmentRule;
 
   @ApiProperty({ description: '정원수' })
-  classCapacity: number;
+  offeringCapacity: number;
 
   @ApiProperty({ description: '수강확정 인원수' })
   studentsEnrolled: number;

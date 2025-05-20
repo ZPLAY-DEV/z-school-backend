@@ -4,27 +4,27 @@ import { BookingStatus, EnrollmentRule } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
-import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
+import { Pick } from 'src/domain/group/entities/pick.entity';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
-export class OfferingGroupStudentService {
+export class OfferingPickService {
   constructor(
     @InjectRepository(Offering)
     private readonly offeringRepository: Repository<Offering>,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
-    @InjectRepository(GroupStudent)
-    private readonly groupStudentRepository: Repository<GroupStudent>,
+    @InjectRepository(Pick)
+    private readonly pickRepository: Repository<Pick>,
   ) {}
 
   //?-------------------------------------------------------------------------//
   //? CREATE
   //?-------------------------------------------------------------------------//
 
-  async pickFirstComeFirstServed(offeringId: number): Promise<GroupStudent[]> {
+  async pickFirstComeFirstServed(offeringId: number): Promise<Pick[]> {
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
       relations: ['lesson', 'lesson.groups'],
@@ -33,18 +33,19 @@ export class OfferingGroupStudentService {
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
     });
-    const createGroupStudentDtos = groupIds.flatMap((groupId: number) => {
+    const createPickDtos = groupIds.flatMap((groupId: number) => {
       return bookings.map((v) => {
         return {
           studentId: v.studentId,
           groupId,
+          offeringId,
         };
       });
     });
-    return this.groupStudentRepository.save(createGroupStudentDtos);
+    return this.pickRepository.save(createPickDtos);
   }
 
-  async pickRandomStudents(offeringId: number): Promise<GroupStudent[]> {
+  async pickRandomStudents(offeringId: number): Promise<Pick[]> {
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
       relations: ['lesson', 'lesson.groups'],
@@ -53,7 +54,7 @@ export class OfferingGroupStudentService {
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
     });
-    const createGroupStudentDtos = groupIds.flatMap((groupId: number) => {
+    const createPickDtos = groupIds.flatMap((groupId: number) => {
       return bookings.map((v) => {
         return {
           studentId: v.studentId,
@@ -61,10 +62,10 @@ export class OfferingGroupStudentService {
         };
       });
     });
-    return this.groupStudentRepository.save(createGroupStudentDtos);
+    return this.pickRepository.save(createPickDtos);
   }
 
-  async pickFormerStudentsFirst(offeringId: number): Promise<GroupStudent[]> {
+  async pickFormerStudentsFirst(offeringId: number): Promise<Pick[]> {
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
       relations: ['lesson', 'lesson.groups'],
@@ -73,7 +74,7 @@ export class OfferingGroupStudentService {
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
     });
-    const createGroupStudentDtos = groupIds.flatMap((groupId: number) => {
+    const createPickDtos = groupIds.flatMap((groupId: number) => {
       return bookings.map((v) => {
         return {
           studentId: v.studentId,
@@ -81,10 +82,10 @@ export class OfferingGroupStudentService {
         };
       });
     });
-    return this.groupStudentRepository.save(createGroupStudentDtos);
+    return this.pickRepository.save(createPickDtos);
   }
 
-  async pickAnyone(offeringId: number): Promise<GroupStudent[]> {
+  async pickAnyone(offeringId: number): Promise<Pick[]> {
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
       relations: ['lesson', 'lesson.groups'],
@@ -93,47 +94,50 @@ export class OfferingGroupStudentService {
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
     });
-    const createGroupStudentDtos = groupIds.flatMap((groupId: number) => {
+    const createPickDtos = groupIds.flatMap((groupId: number) => {
       return bookings.map((v) => {
         return {
           studentId: v.studentId,
           groupId,
+          offeringId,
         };
       });
     });
-    return this.groupStudentRepository.save(createGroupStudentDtos);
+    return this.pickRepository.save(createPickDtos);
   }
 
   async create(offeringId: number, dto: any): Promise<ResponsePickDto> {
     const offering = await this.offeringRepository.findOneOrFail({
-      where: { id: dto.offeringId },
+      where: { id: offeringId },
     });
 
-    let groupStudents: GroupStudent[] = [];
+    let picks: Pick[] = [];
+
+    console.log(`🟠`, offering.enrollmentRule);
 
     switch (offering.enrollmentRule) {
       case EnrollmentRule.FIRST:
-        groupStudents = await this.pickFirstComeFirstServed(offeringId);
+        picks = await this.pickFirstComeFirstServed(offeringId);
         break;
       case EnrollmentRule.PREVIOUS:
-        groupStudents = await this.pickFormerStudentsFirst(offeringId);
+        picks = await this.pickFormerStudentsFirst(offeringId);
         break;
       case EnrollmentRule.RANDOM:
-        groupStudents = await this.pickRandomStudents(offeringId);
+        picks = await this.pickRandomStudents(offeringId);
         break;
       default:
         // EnrollmentRule.ANYONE
-        groupStudents = await this.pickAnyone(offeringId);
+        picks = await this.pickAnyone(offeringId);
     }
-
-    const studentsEnrolled = groupStudents.length;
-    const availableSlots = offering.lesson.groups.length - studentsEnrolled;
 
     return new ResponsePickDto({
       enrollmentRule: offering.enrollmentRule,
-      classCapacity: offering.lesson.groups.length,
-      studentsEnrolled,
-      availableSlots,
+      offeringCapacity: offering.capacity,
+      studentsEnrolled: picks.length,
+      availableSlots:
+        offering.capacity - picks.length < 0
+          ? 0
+          : offering.capacity - picks.length,
     });
   }
 
