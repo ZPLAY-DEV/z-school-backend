@@ -14,19 +14,23 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('group_student')
+@Entity('picks')
 @Unique(['groupId', 'studentId'])
-export class GroupStudent {
+export class Pick {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 
-  @ApiProperty({ description: '' })
+  @ApiProperty({ description: '학생 아이디' })
   @Column({ type: 'int', unsigned: true, nullable: true })
   studentId: number;
 
-  @ApiProperty({ description: '' })
+  @ApiProperty({ description: '그룹 아이디' })
   @Column({ type: 'int', unsigned: true, nullable: true })
   groupId: number;
+
+  @ApiProperty({ description: '수강신청과목 아이디' })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  offeringId: number;
 
   // ------------------------------------------------------------------------ //
 

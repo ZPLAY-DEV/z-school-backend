@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { Actor, ClassStatus, Weekday } from 'src/common/enums';
 import { Board } from 'src/domain/board/entities/board.entity';
-import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
+import { Pick } from 'src/domain/group/entities/pick.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import {
@@ -74,11 +74,24 @@ export class Group {
   })
   status: ClassStatus;
 
+  @ApiProperty({ description: '🈵 수업료 합계 (A+B+C+D)' })
+  @Column({ type: 'int', unsigned: true, default: 0 })
+  tuition: number;
+
+  @ApiProperty({ description: '🈳 B. 도서구매비 배열(낮은가격순 정렬)' })
+  @Column({ type: 'int', unsigned: true, default: 0 })
+  bookFee: number;
+
+  @ApiProperty({ description: '🈳 C. 재료구매비 배열(낮은가격순 정렬)' })
+  @Column({ type: 'int', unsigned: true, default: 0 })
+  materialFee: number;
+
   @ApiProperty({ description: '🈳 누가 삭제했나?' })
   @Column({
     type: 'enum',
     enum: Actor,
-    default: Actor.SYSTEM,
+    nullable: true,
+    default: null,
     comment: '누가 삭제했나?',
   })
   deletedBy: string | null;
@@ -116,8 +129,8 @@ export class Group {
   @ApiProperty({
     description: '🈳 연결된 학생 목록',
   })
-  @OneToMany(() => GroupStudent, (gs) => gs.group)
-  groupStudents: GroupStudent[];
+  @OneToMany(() => Pick, (gs) => gs.group)
+  groupStudents: Pick[];
 
   @OneToMany(() => Board, (board) => board.group)
   boards: Board[];

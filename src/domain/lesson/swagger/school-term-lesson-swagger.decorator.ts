@@ -14,17 +14,21 @@ import { CreateLessonDto } from '../dto/create-lesson.dto';
 import { Lesson } from '../entities/lesson.entity';
 
 const SCHOOL_TERM_LESSON_CONFIG: PaginateConfig<Lesson> = {
-  sortableColumns: ['id', 'lessonName', 'termId'],
+  relations: {
+    instructorLessons: { instructor: true },
+    groups: { instructor: true },
+    category: true,
+  },
+  sortableColumns: ['id', 'lessonName', 'termId', 'groups.weekday'],
   searchableColumns: ['lessonName', 'instructorLessons.instructor.name'],
   defaultSortBy: [
     ['schoolId', 'DESC'],
     ['id', 'DESC'],
   ],
   filterableColumns: {
-    'category.name': [FilterOperator.EQ, FilterOperator.ILIKE],
-    'category.slug': [FilterOperator.EQ, FilterOperator.ILIKE],
-    weekday: [FilterOperator.EQ, FilterOperator.IN],
-    schoolName: [FilterOperator.EQ, FilterOperator.ILIKE],
+    'category.name': [FilterOperator.EQ, FilterOperator.IN],
+    'category.slug': [FilterOperator.EQ, FilterOperator.IN],
+    'groups.weekday': [FilterOperator.EQ, FilterOperator.IN],
     lessonName: [FilterOperator.EQ, FilterOperator.ILIKE],
   },
 };

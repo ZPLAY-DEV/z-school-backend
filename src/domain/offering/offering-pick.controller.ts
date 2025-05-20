@@ -11,30 +11,28 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { GroupStudent } from 'src/domain/group/entities/group-student.entity';
+import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
-import { OfferingGroupStudentService } from 'src/domain/offering/offering-group-student.service';
+import { OfferingPickService } from 'src/domain/offering/offering-pick.service';
 
 //! 단일 Offering 엔터티 작업
-@ApiTags('✅ Offerings > GroupStudents ( 수강신청과목 > 수강생확정 )')
+@ApiTags('✅ Offerings > Picks ( 수강신청과목 > 수강생확정 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('offerings')
 @UseInterceptors(ClassSerializerInterceptor)
-export class OfferingGroupStudentController {
-  constructor(
-    private readonly offeringGroupStudentService: OfferingGroupStudentService,
-  ) {}
+export class OfferingPickController {
+  constructor(private readonly offeringPickService: OfferingPickService) {}
 
   //?-------------------------------------------------------------------------//
   //? Create
   //?-------------------------------------------------------------------------//
 
-  @Post(':offeringId/group-students')
+  @Post(':offeringId/picks')
   async create(
     @Param('offeringId', ParseIntPipe) offeringId: number,
     @Body() dto: any,
-  ): Promise<GroupStudent[]> {
-    return this.offeringGroupStudentService.create(offeringId, dto);
+  ): Promise<ResponsePickDto> {
+    return this.offeringPickService.create(offeringId, dto);
   }
 
   //?-------------------------------------------------------------------------//
@@ -46,6 +44,6 @@ export class OfferingGroupStudentController {
   async getOfferingById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Offering> {
-    return await this.offeringGroupStudentService.findById(id, ['bookings']);
+    return await this.offeringPickService.findById(id, ['bookings']);
   }
 }

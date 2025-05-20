@@ -134,6 +134,7 @@ export class Lesson {
   @JoinColumn({ name: 'termId' })
   term: Term;
 
+  @ApiProperty({ description: '관련 category', type: Category })
   @ManyToOne(() => Category, (category) => category.lessons, {
     onDelete: 'CASCADE',
   })
@@ -142,6 +143,7 @@ export class Lesson {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
+  @ApiProperty({ description: '관련 groups', type: [Group], isArray: true })
   @OneToMany(() => Group, (group) => group.lesson)
   public groups: Group[];
 
@@ -153,6 +155,31 @@ export class Lesson {
 
   //* N-to-M belongsToMany using 1-to-M ------------------------------------ *//
 
+  @ApiProperty({
+    description: '관련 instructorLessons',
+    type: [InstructorLesson],
+    isArray: true,
+    example: [
+      {
+        id: 22,
+        instructorId: 9,
+        lessonId: 21,
+        createdAt: '2025-05-16T02:34:15.441Z',
+        updatedAt: '2025-05-16T02:34:15.441Z',
+        instructor: {
+          id: 9,
+          userId: null,
+          name: '미확정',
+          phone: '01000000007',
+          score: 0,
+          registeredDocuments: null,
+          termsAgreedAt: null,
+          createdAt: '2025-05-16T02:34:15.437Z',
+          updatedAt: '2025-05-16T02:34:15.437Z',
+        },
+      },
+    ],
+  })
   @OneToMany(
     () => InstructorLesson,
     (instructorLesson: InstructorLesson) => instructorLesson.lesson,

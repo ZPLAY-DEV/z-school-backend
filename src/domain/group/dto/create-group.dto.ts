@@ -60,6 +60,21 @@ export class CreateGroupDto {
   @IsOptional()
   status?: ClassStatus;
 
+  @ApiPropertyOptional({ description: '수업료' })
+  @IsInt()
+  @IsOptional()
+  tuition?: number;
+
+  @ApiPropertyOptional({ description: '도서구매비' })
+  @IsInt()
+  @IsOptional()
+  bookFee?: number;
+
+  @ApiPropertyOptional({ description: '재료구매비' })
+  @IsInt()
+  @IsOptional()
+  materialFee?: number;
+
   @ApiPropertyOptional({ description: '비고' })
   @IsString()
   @MaxLength(255)

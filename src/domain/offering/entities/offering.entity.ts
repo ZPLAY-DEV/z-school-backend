@@ -58,6 +58,13 @@ export class Offering {
   @Column('simple-array')
   allowedGrades: number[];
 
+  @Column({
+    type: 'enum',
+    enum: EnrollmentRule,
+    default: EnrollmentRule.FIRST,
+  })
+  enrollmentRule: EnrollmentRule;
+
   @ApiProperty({
     description: '수업 시간 정보 (could be multiple)',
     type: 'array',
@@ -70,14 +77,10 @@ export class Offering {
   bitmasks: number[];
 
   @Column('simple-array')
-  formerStudentIds: number[];
+  groupIds: number[];
 
-  @Column({
-    type: 'enum',
-    enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST,
-  })
-  enrollmentRule: EnrollmentRule;
+  @Column('simple-array')
+  formerStudentIds: number[];
 
   @Column({ default: false })
   allowTimeOverlap: boolean;

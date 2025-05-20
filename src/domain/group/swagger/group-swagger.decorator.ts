@@ -18,7 +18,7 @@ import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { TraceableNoteDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { GroupStudent } from '../entities/group-student.entity';
+import { Pick } from '../entities/pick.entity';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create Group
@@ -65,7 +65,7 @@ export const FindGroupDocs = () => {
       type: Number,
       description: '반 ID',
     }),
-    ApiExtraModels(Group, GroupStudent),
+    ApiExtraModels(Group, Pick),
     ApiOkResponse({
       description: '반 상세 조회 완료 (groupStudents 관계 포함)',
       schema: {
@@ -75,7 +75,7 @@ export const FindGroupDocs = () => {
             properties: {
               groupStudents: {
                 type: 'array',
-                items: { $ref: getSchemaPath(GroupStudent) },
+                items: { $ref: getSchemaPath(Pick) },
                 description: '연결된 학생 목록 포함됨',
               },
             },

@@ -36,6 +36,24 @@ export class CreateOfferingDto {
   @Length(1, 32)
   groupName: string;
 
+  @ApiProperty({ description: '수강신청 정원' })
+  @IsInt()
+  @IsOptional()
+  capacity?: number;
+
+  @ApiProperty({ description: '허용 학년 목록', type: [Number] })
+  @IsArray()
+  @ArrayNotEmpty()
+  allowedGrades: number[];
+
+  @ApiProperty({
+    description: '수강신청 방식',
+    enum: EnrollmentRule,
+    default: EnrollmentRule.FIRST,
+  })
+  @IsEnum(EnrollmentRule)
+  enrollmentRule: EnrollmentRule;
+
   @ApiProperty({
     description: '요일별 수업 시간 목록',
     type: [ClassTimeDto],
@@ -50,23 +68,15 @@ export class CreateOfferingDto {
   @ArrayNotEmpty()
   bitmasks: number[];
 
-  @ApiProperty({ description: '허용 학년 목록', type: [Number] })
+  @ApiProperty({ description: 'bitmasks (간단 배열)', type: [Number] })
   @IsArray()
   @ArrayNotEmpty()
-  allowedGrades: number[];
+  groupIds: number[];
 
   @ApiProperty({ description: '이전 수강자 ID 목록', type: [Number] })
   @IsArray()
   @ArrayNotEmpty()
   formerStudentIds: number[];
-
-  @ApiProperty({
-    description: '수강신청 방식',
-    enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST,
-  })
-  @IsEnum(EnrollmentRule)
-  enrollmentRule: EnrollmentRule;
 
   @ApiProperty({ description: '시간 중복 허용 여부', default: false })
   @IsBoolean()

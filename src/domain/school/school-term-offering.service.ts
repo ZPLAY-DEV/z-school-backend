@@ -66,6 +66,7 @@ export class SchoolTermOfferingService {
           );
           if (existingOffering) {
             existingOffering.times.push(timeRange);
+            existingOffering.groupIds.push(group.id);
           }
           continue;
         }
@@ -78,13 +79,15 @@ export class SchoolTermOfferingService {
           lessonId: lesson.id,
           lessonName: lesson.lessonName || `과목 #${lesson.id}`,
           groupName: group.groupName || `반 #${group.id}`,
+
           capacity: group.capacity,
-          times: [timeRange],
           allowedGrades: group.allowedGrades.split(',').map(Number),
-          bitmasks: [],
-          formerStudentIds: [],
           enrollmentRule:
             group.capacity === 0 ? EnrollmentRule.ANYONE : EnrollmentRule.FIRST,
+          times: [timeRange],
+          bitmasks: [],
+          groupIds: [group.id],
+          formerStudentIds: [],
           allowTimeOverlap: false,
         });
 
@@ -92,7 +95,7 @@ export class SchoolTermOfferingService {
       }
     }
 
-    // 3. bitmasks 를 정확하게 update
+    // 3. bitmasks, groupIds 를 정확하게 update
     for (const offering of offerings) {
       const bitmasks: number[] = [];
       for (const time of offering.times) {
@@ -100,6 +103,7 @@ export class SchoolTermOfferingService {
         bitmasks.push(...slots);
       }
       offering.bitmasks = Array.from(new Set(bitmasks)).sort((a, b) => a - b);
+      offering.groupIds = Array.from(new Set(offering.groupIds));
     }
 
     // 4. groupName 을 정확하게 update
