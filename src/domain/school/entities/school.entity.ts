@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
 import { Board } from 'src/domain/board/entities/board.entity';
@@ -104,6 +105,7 @@ export class School {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Exclude()
   @ApiProperty({ description: '🈳 deletedAt' })
   @DeleteDateColumn()
   deletedAt: Date | null;

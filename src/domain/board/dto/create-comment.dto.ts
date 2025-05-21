@@ -29,7 +29,7 @@ export class CreateCommentDto {
   boardId: number;
 
   @ApiProperty({
-    description: '🈳 댓글 내용',
+    description: '🈵 댓글 내용',
     example: '댓글 내용',
     type: String,
     required: true,
@@ -42,7 +42,7 @@ export class CreateCommentDto {
     description: '🈵 작성자 이름',
     example: '홍길동',
     type: String,
-    required: false,
+    required: true,
   })
   @IsNotEmpty()
   @IsString()

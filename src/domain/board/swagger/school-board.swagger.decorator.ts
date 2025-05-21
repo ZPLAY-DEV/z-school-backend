@@ -11,6 +11,68 @@ import {
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학교에서 사용자가 작성한 게시글 목록 조회
 //? ---------------------------------------------------------------------- ?//
+export const SchoolBoardListDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 학교에서 사용자가 작성한 게시글 목록 조회',
+      description: `
+      - 학교에서 사용자가 작성한 게시글 목록을 조회한다
+      - 페이징 X
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+      required: true,
+    }),
+    ApiOkResponseTemplate({
+      description: '게시글 목록 조회 완료',
+      type: BoardResponseDto,
+      isArray: true,
+    }),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Private) 학교에서 사용자가 작성한 게시글 목록 조회 (페이징)
+//? ---------------------------------------------------------------------- ?//
+export const SchoolBoardListPaginatedDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 학교에서 사용자(강사)가 작성한 게시글 목록 조회 (페이징)',
+      description: `
+      - 학교에서 사용자(강사)가 작성한 게시글 목록을 조회한다
+      - 검색 조건: title
+        - 검색시 QueryString에 search 키워드를 통해 검색 조건을 입력할 수 있음. EX) ?search=게시글 제목 ...
+      - 필터 조건: groupId(그룹 ID)
+        - 필터시 QueryString에 filter.groupId 키워드를 통해 필터 조건을 입력할 수 있음. EX) ?filter.groupId=1...
+      - 정렬은 기본적으로 게시글 생성일 기준으로 정렬됨.
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+      required: true,
+    }),
+    ApiOkPaginatedResponse(BoardResponseDto, {
+      sortableColumns: ['createdAt'],
+      defaultSortBy: [['createdAt', 'DESC']],
+    }),
+    ApiPaginationQuery({
+      sortableColumns: ['createdAt'],
+      defaultSortBy: [['createdAt', 'DESC']],
+      searchableColumns: ['title'],
+      filterableColumns: {
+        groupId: [FilterOperator.EQ],
+      },
+    }),
+  );
+};
+//? ---------------------------------------------------------------------- ?//
+//? Private) 사용자(강사)가 작성한 본인의 게시글 목록 조회
+//? ---------------------------------------------------------------------- ?//
 export const SchoolBoardMineListDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -21,11 +83,6 @@ export const SchoolBoardMineListDocs = () => {
       - 페이징 X
       `,
     }),
-    ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID',
-    }),
     ApiOkResponseTemplate({
       description: '내가 작성한 게시글 목록 조회 완료',
       type: BoardResponseDto,
@@ -35,7 +92,7 @@ export const SchoolBoardMineListDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학교에서 사용자가 작성한 게시글 목록 조회 ( 페이징 )
+//? Private) 사용자(강사)가 작성한 본인의 게시글 목록 조회 ( 페이징 )
 //? ---------------------------------------------------------------------- ?//
 export const SchoolBoardMineListPaginatedDocs = () => {
   return applyDecorators(
@@ -51,11 +108,6 @@ export const SchoolBoardMineListPaginatedDocs = () => {
         - 필터시 QueryString에 filter.groupId, 키워드를 통해 필터 조건을 입력할 수 있음. EX) ?filter.groupId=1....
       - 정렬은 기본적으로 게시글 생성일 기준으로 정렬됨.
       `,
-    }),
-    ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID',
     }),
     ApiOkPaginatedResponse(BoardResponseDto, {
       sortableColumns: ['createdAt'],
@@ -76,7 +128,7 @@ export const SchoolBoardMineListPaginatedDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학교에서 대상자의 게시글 목록 조회
+//? Private) 게시글 대상자(학부모)의 목록 조회
 //? ---------------------------------------------------------------------- ?//
 export const SchoolBoardTargetListDocs = () => {
   return applyDecorators(
@@ -88,11 +140,6 @@ export const SchoolBoardTargetListDocs = () => {
       - queryString의 groupIds 값이 존재할 경우, groupIds 값을 기반으로 학부모가 속한 groups 별 강사가 게시한 게시글을 조회한다
       - 페이징 X
       `,
-    }),
-    ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID',
     }),
     ApiQuery({
       name: 'groupIds',
@@ -109,7 +156,7 @@ export const SchoolBoardTargetListDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) 학교에서 대상자의 게시글 목록 조회 ( 페이징 )
+//? Private) 게시글 대상자(학부모)의 목록 조회 ( 페이징 )
 //? ---------------------------------------------------------------------- ?//
 export const SchoolBoardTargetListPaginatedDocs = () => {
   return applyDecorators(
@@ -127,12 +174,6 @@ export const SchoolBoardTargetListPaginatedDocs = () => {
       - 정렬은 기본적으로 게시글 생성일 기준으로 정렬됨.
       `,
     }),
-    ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID',
-    }),
-
     ApiQuery({
       name: 'groupIds',
       type: [Number],

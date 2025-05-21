@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { SchoolResponseDto } from 'src/domain/school/dto/school-response.dto';
 
 export class BoardResponseDto {
   @ApiProperty({
@@ -54,4 +55,10 @@ export class BoardResponseDto {
     type: Date,
   })
   updatedAt: Date;
+
+  @ApiProperty({
+    description: '학교 정보',
+    type: SchoolResponseDto,
+  })
+  school: SchoolResponseDto;
 }

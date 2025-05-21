@@ -30,7 +30,7 @@ export class Board {
   @Column({ type: 'int', unsigned: true })
   groupId: number;
 
-  @ApiProperty({ description: '🈵 학교ID (relation용 아님)' })
+  @ApiProperty({ description: '🈵 학교ID' })
   @Column({ type: 'int', unsigned: true })
   schoolId: number;
 
