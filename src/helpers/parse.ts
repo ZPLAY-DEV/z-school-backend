@@ -129,8 +129,6 @@ export function getSortedWeekdays(days: string[]): string {
     .filter((day) => weekdayOrder.includes(day)) // 유효한 요일만
     .sort((a, b) => weekdayOrder.indexOf(a) - weekdayOrder.indexOf(b));
 
-  console.log(`>>>>`, sorted);
-
   if (sorted.length === 0) return ``;
   if (sorted.length === 1) return sorted[0];
 

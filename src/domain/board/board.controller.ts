@@ -1,34 +1,36 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
-  Delete,
-  UseInterceptors,
   ClassSerializerInterceptor,
-  ParseIntPipe,
+  Controller,
+  Delete,
   ForbiddenException,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  UseInterceptors,
 } from '@nestjs/common';
 
-import { CreateBoardDto } from './dto/create-board.dto';
-import { UpdateBoardDto } from './dto/update-board.dto';
-import { CreateCommentDto } from './dto/create-comment.dto';
 import {
   CurrentUserId,
   CurrentUserIdAndRole,
 } from 'src/common/decorators/current-user-id.decorator';
 import { RemovalStatus, Role } from 'src/common/enums';
+import { CreateBoardDto } from './dto/create-board.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
+import { UpdateBoardDto } from './dto/update-board.dto';
 
 import { Board } from './entities/board.entity';
 import { Comment } from './entities/comment.entity';
 
 import { ApiTags } from '@nestjs/swagger';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { BoardService } from './board.service';
-import { UploadService } from 'src/services/upload/upload.service';
 import { IS3Urls } from 'src/common/interfaces';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+import { UploadService } from 'src/services/upload/upload.service';
+import { BoardService } from './board.service';
+import { UpdateCommentDto } from './dto/update-comment.dto';
 import {
   CreateBoardDocs,
   CreateCommentDocs,
@@ -39,8 +41,6 @@ import {
   UpdateBoardDocs,
   UpdateCommentDocs,
 } from './swagger/board.swagger.decorator';
-import { UpdateCommentDto } from './dto/update-comment.dto';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Boards ( 게시판 )')

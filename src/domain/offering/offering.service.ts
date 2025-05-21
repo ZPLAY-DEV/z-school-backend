@@ -8,7 +8,6 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
-import { School } from 'src/domain/school/entities/school.entity';
 import { In, Repository } from 'typeorm';
 
 @Injectable()
@@ -16,22 +15,20 @@ export class OfferingService {
   constructor(
     @InjectRepository(Offering)
     private readonly offeringRepository: Repository<Offering>,
-    @InjectRepository(School)
-    private readonly schoolRepository: Repository<School>,
   ) {}
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? CREATE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateOfferingDto): Promise<Offering> {
     const item = this.offeringRepository.create(dto);
     return await this.offeringRepository.save(item);
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? READ
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   async findById(id: number, relations: string[] = []): Promise<Offering> {
     try {
@@ -84,9 +81,9 @@ export class OfferingService {
     }
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? UPDATE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateOfferingDto): Promise<Offering> {
     const offering = await this.offeringRepository.preload({ id, ...dto });
@@ -141,9 +138,9 @@ export class OfferingService {
     return studentIds;
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? DELETE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   async softRemove(id: number): Promise<Offering> {
     const offering = await this.findById(id);

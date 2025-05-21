@@ -66,8 +66,9 @@ docker 에서 사용하는 서비스들의 데이터 저장공간을 project fol
 3. 학교 생성 (Postman 의 학교)
 4. 학기 생성 (Postman 의 학교 > 늘봄학기)
 5. 늘봄분류 seed (Postman 의 늘봄분류)
-6. 수업 bulk 생성 (Postman 의 학교 > 블봄학기 > 수업)
-7. 수강신청과목 seed (Postman 의 수강신청과목)
+6. 학교 > 늘봄학기 > 과목 bulk 생성 (Postman 의 학교 > 블봄학기 > 과목)
+7. 학교 > 늘봄학기 > 수강신청과목 bulk 생성 (Postman 의 수강신청과목)
+8. 학교 > 학생 bulk 생성 seed (Postman 의 수강신청과목)
 
 ## Migration
 

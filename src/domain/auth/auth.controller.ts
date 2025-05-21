@@ -26,7 +26,6 @@ import {
   UserCredentialsDto,
   UserCredentialsDtoWithPhone,
 } from 'src/domain/auth/dto/user-credentials.dto';
-import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
 import {
   LoginDocs,
   LogOutDocs,
@@ -34,7 +33,8 @@ import {
   RegisterDocs,
   RegisterManagerDocs,
   ResetPasswordDocs,
-} from './swagger/auth-swagger.decorator';
+} from 'src/domain/auth/swagger/auth-swagger.decorator';
+import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Auth ( 인증 )')

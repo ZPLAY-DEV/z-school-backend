@@ -46,6 +46,12 @@ export class Booking {
   @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.PENDING })
   status: BookingStatus;
 
+  @ApiProperty({ description: '🈳 비고' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  note: string | null;
+
+  // ------------------------------------------------------------------------ //
+
   @CreateDateColumn()
   createdAt: Date;
 

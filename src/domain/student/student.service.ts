@@ -16,8 +16,8 @@ import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { S3Service } from 'src/services/aws/s3.service';
 import { DataSource, Not, Repository } from 'typeorm';
-import { CreateStudentDto } from './dto/create-student.dto';
 import { School } from '../school/entities/school.entity';
+import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 
 @Injectable()
@@ -31,9 +31,9 @@ export class StudentService {
     private readonly s3Service: S3Service,
   ) {}
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? CREATE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   async create(dto: CreateStudentDto): Promise<Student> {
     const { parent: parentDto, ...studentDto } = dto;
 
@@ -86,9 +86,9 @@ export class StudentService {
     }
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? READ
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   async findAll(query: PaginateQuery): Promise<Paginated<Student>> {
     const queryBuilder = this.studentRepository.createQueryBuilder('student');
@@ -141,9 +141,9 @@ export class StudentService {
     return existingStudent ? existingStudent : null;
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? UPDATE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   async update(id: number, dto: UpdateStudentDto): Promise<Student> {
     // 1. 학교 존재 여부 확인
     const school = await this.dataSource.createEntityManager().findOne(School, {
@@ -212,9 +212,9 @@ export class StudentService {
     });
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? DELETE
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   // note that this is hard-delete
   async remove(id: number): Promise<Student> {

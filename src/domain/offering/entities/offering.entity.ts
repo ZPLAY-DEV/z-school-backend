@@ -5,6 +5,7 @@ import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
+  AfterLoad,
   Column,
   CreateDateColumn,
   DeleteDateColumn,
@@ -121,5 +122,14 @@ export class Offering {
 
   constructor(partial: Partial<Offering>) {
     Object.assign(this, partial);
+  }
+
+  @AfterLoad()
+  convertSimpleArraysToNumbers() {
+    if (this.allowedGrades) this.allowedGrades = this.allowedGrades.map(Number);
+    if (this.bitmasks) this.bitmasks = this.bitmasks.map(Number);
+    if (this.groupIds) this.groupIds = this.groupIds.map(Number);
+    if (this.formerStudentIds)
+      this.formerStudentIds = this.formerStudentIds.map(Number);
   }
 }

@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { Actor } from 'src/common/enums';
 
 export class TraceableNoteDto {
   @ApiPropertyOptional({ description: '삭제 사유' })
@@ -8,6 +9,6 @@ export class TraceableNoteDto {
 
   @ApiPropertyOptional({ description: 'actor role' })
   @IsOptional()
-  @IsString()
-  role?: string;
+  @IsEnum(Actor)
+  role?: Actor;
 }

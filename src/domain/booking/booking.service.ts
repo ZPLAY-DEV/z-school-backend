@@ -76,12 +76,12 @@ export class BookingService {
   }
 
   async cancelWithDb(cancelBookingDto: CancelBookingDto): Promise<number> {
-    const { offeringId, studentId } = cancelBookingDto;
+    const { offeringId, studentId, note } = cancelBookingDto;
 
     try {
       const { affected } = await this.bookingRepository.update(
         { offeringId, studentId },
-        { status: BookingStatus.PENDING, deletedAt: new Date() },
+        { status: BookingStatus.CANCELED, note, deletedAt: new Date() },
       );
 
       return affected as number; // Assuming 1 row is affected
@@ -122,6 +122,7 @@ export class BookingService {
       );
 
       let response: ResponseBookingDto;
+
       if (result.ok) {
         if (result.ok === 'ENROLLED') {
           response = new ResponseBookingDto({
@@ -147,25 +148,21 @@ export class BookingService {
             message: `🔴 수강신청결과 ${lessonName} 수강이 불가합니다.`,
           });
         }
-        // 💥 fire and forget) to not block the main thread
-        this.sqsClient
-          .sendMessage({
-            type: 'CREATE_BOOKING',
-            data: {
-              offeringId,
-              studentId,
-              lessonName,
-              capacity,
-              enrollmentRule,
-              isFormerStudent: isFormerStudent ?? false,
-              waitingPosition: response.waitingPosition ?? 0,
-              status: response.status,
-              timestamp,
-            } as CreateBookingDto, // bookings 저장용 data 를 sqs 로 전송
-          })
-          .catch((e) => {
-            this.logger.error('❌ Booking SQS 전송 실패', e.stack);
-          });
+        // not fire and forget. need to wait for the result from sqs.
+        await this.sqsClient.sendMessage({
+          type: 'CREATE_BOOKING',
+          data: {
+            offeringId,
+            studentId,
+            lessonName,
+            capacity,
+            enrollmentRule,
+            isFormerStudent: isFormerStudent ?? false,
+            waitingPosition: response.waitingPosition ?? 0,
+            status: response.status,
+            timestamp,
+          } as CreateBookingDto, // bookings 저장용 data 를 sqs 로 전송
+        });
 
         return response;
       } else {
@@ -186,7 +183,7 @@ export class BookingService {
 
   //? my goal: upsert entire data in one go with snapshot for idempotency.
   async cancelWithRedis(dto: CancelBookingDto): Promise<number> {
-    const { offeringId, lessonName } = dto;
+    const { offeringId, studentId, lessonName, note } = dto;
     const timestamp = Date.now();
 
     try {
@@ -200,16 +197,16 @@ export class BookingService {
         const snapshot: IBookingSnapshotItem[] =
           await this.redisBookingService.getSnapshot(offeringId, lessonName);
 
-        this.logger.log('🚀 snapshot', snapshot);
-
-        // SQS로 전송
+        // this.logger.log('🚀 snapshot', snapshot);
+        // not fire and forget. need to wait for the result from sqs.
         await this.sqsClient.sendMessage({
           type: 'CANCEL_BOOKING',
           data: {
             offeringId,
-            studentId: dto.studentId,
-            snapshot,
+            studentId,
+            note, // reason to cancel
             timestamp,
+            snapshot,
           },
         });
 

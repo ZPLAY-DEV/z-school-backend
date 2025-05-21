@@ -94,7 +94,7 @@ export class Group {
     default: null,
     comment: '누가 삭제했나?',
   })
-  deletedBy: string | null;
+  deletedBy: Actor | null;
 
   @ApiProperty({ description: '🈳 비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })

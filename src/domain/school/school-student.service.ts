@@ -6,12 +6,12 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { DataSource, Repository } from 'typeorm';
 import { School } from './entities/school.entity';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 
 @Injectable()
 export class SchoolStudentService {
@@ -199,9 +199,9 @@ export class SchoolStudentService {
     }
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? READ
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 
   async infiniteList(
     schoolId: number,
@@ -280,7 +280,7 @@ export class SchoolStudentService {
     return existingStudents;
   }
 
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
   //? Update
-  //?-------------------------------------------------------------------------//
+  //? ---------------------------------------------------------------------- ?//
 }
