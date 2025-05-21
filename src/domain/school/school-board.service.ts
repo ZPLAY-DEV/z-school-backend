@@ -29,26 +29,26 @@ export class SchoolBoardService {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  //? 내가 작성한 게시글 목록
-  async listByMine(schoolId: number, userId: number): Promise<Board[]> {
+  //? 강사가 작성한 게시글을 학교(매니저)에서 조회
+  async list(schoolId: number): Promise<Board[]> {
     return await this.boardRepository.find({
       where: {
         schoolId,
-        userId,
+      },
+      order: {
+        createdAt: 'DESC',
       },
     });
   }
 
-  //? 내가 작성한 게시글 목록 (페이징)
-  async listByMinePaginated(
+  //? 강사가 작성한 게시글을 학교(매니저)에서 조회 (페이징)
+  async listPaginated(
     schoolId: number,
-    userId: number,
     query: PaginateQuery,
   ): Promise<Paginated<Board>> {
     const queryBuilder = this.boardRepository
       .createQueryBuilder('board')
-      .where('board.schoolId = :schoolId', { schoolId })
-      .andWhere('board.userId = :userId', { userId });
+      .where('board.schoolId = :schoolId', { schoolId });
 
     return await paginate<Board>(query, queryBuilder, {
       sortableColumns: ['createdAt'],
@@ -60,25 +60,64 @@ export class SchoolBoardService {
     });
   }
 
-  //? 대상 게시글 목록
-  async listByTarget(schoolId: number, groupIds?: number[]): Promise<Board[]> {
+  //? 내가 작성한 게시글 목록
+  async listByMine(userId: number): Promise<Board[]> {
     return await this.boardRepository.find({
       where: {
-        schoolId,
+        userId,
+      },
+      relations: {
+        school: true,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+  }
+
+  //? 내가 작성한 게시글 목록 (페이징)
+  async listByMinePaginated(
+    userId: number,
+    query: PaginateQuery,
+  ): Promise<Paginated<Board>> {
+    const queryBuilder = this.boardRepository
+      .createQueryBuilder('board')
+      .where('board.userId = :userId', { userId });
+
+    return await paginate<Board>(query, queryBuilder, {
+      relations: {
+        school: true,
+      },
+      sortableColumns: ['createdAt'],
+      searchableColumns: ['title'],
+      defaultSortBy: [['createdAt', 'DESC']],
+      filterableColumns: {
+        groupId: [FilterOperator.EQ],
+      },
+    });
+  }
+
+  //? 대상 게시글 목록
+  async listByTarget(groupIds?: number[]): Promise<Board[]> {
+    return await this.boardRepository.find({
+      where: {
         groupId: groupIds && groupIds.length > 0 ? In(groupIds) : undefined,
+      },
+      relations: {
+        school: true,
+      },
+      order: {
+        createdAt: 'DESC',
       },
     });
   }
 
   //? 대상 게시글 목록 (페이징)
   async listByTargetPaginated(
-    schoolId: number,
     groupIds: number[],
     query: PaginateQuery,
   ): Promise<Paginated<Board>> {
-    const queryBuilder = this.boardRepository
-      .createQueryBuilder('board')
-      .where('board.schoolId = :schoolId', { schoolId });
+    const queryBuilder = this.boardRepository.createQueryBuilder('board');
 
     // groupIds가 비어 있지 않을 때만 IN 조건 추가
     if (groupIds.length > 0) {
@@ -86,6 +125,9 @@ export class SchoolBoardService {
     }
 
     return await paginate<Board>(query, queryBuilder, {
+      relations: {
+        school: true,
+      },
       sortableColumns: ['createdAt'],
       searchableColumns: ['title'],
       defaultSortBy: [['createdAt', 'DESC']],
