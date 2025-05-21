@@ -80,13 +80,24 @@ export class SchoolTermOfferingService {
     });
   }
 
-  async list(schoolId: number, termId: number): Promise<Offering[]> {
-    return await this.offeringRepository
+  async list(
+    schoolId: number,
+    termId: number,
+    grade: string | null = null,
+  ): Promise<Offering[]> {
+    const items = await this.offeringRepository
       .createQueryBuilder('offering')
       .where('offering.schoolId = :schoolId', { schoolId })
       .andWhere('offering.termId = :termId', { termId })
       .orderBy('offering.id', 'DESC')
       .getMany();
+    if (grade) {
+      return items.filter((item: Offering) =>
+        item.allowedGrades.includes(+grade),
+      );
+    }
+
+    return items;
   }
 
   //? ---------------------------------------------------------------------- ?//
