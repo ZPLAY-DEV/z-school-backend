@@ -39,9 +39,9 @@ export class Comment {
 
   //* ---------------------------------------------------------------------- *//
 
-  @ApiProperty({ description: '🈳 댓글 내용' })
-  @Column({ type: 'text', nullable: true })
-  content: string | null;
+  @ApiProperty({ description: '🈵 댓글 내용' })
+  @Column({ type: 'text' })
+  content: string;
 
   // ------------------------------------------------------------------------ //
 
