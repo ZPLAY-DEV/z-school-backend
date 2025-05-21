@@ -22,6 +22,7 @@ import {
   CreateLessonDryRunDocs,
   GetLessonByIdDocs,
   RemoveLessonDocs,
+  UpdateLessonDaysDocs,
   UpdateLessonDocs,
 } from 'src/domain/lesson/swagger/lesson-swagger.decorator';
 
@@ -75,6 +76,12 @@ export class LessonController {
     @Body() dto: UpdateLessonDto,
   ): Promise<Lesson> {
     return await this.lessonService.update(id, dto);
+  }
+
+  @UpdateLessonDaysDocs()
+  @Patch(':id/days')
+  async updateDays(@Param('id', ParseIntPipe) id: number): Promise<number> {
+    return await this.lessonService.updateDays(id);
   }
 
   //? ---------------------------------------------------------------------- ?//

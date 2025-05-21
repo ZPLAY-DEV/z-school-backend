@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { IsArray } from 'class-validator';
 import { Actor, ClassStatus, Weekday } from 'src/common/enums';
+import { ICalendarDay } from 'src/common/interfaces';
 import { Board } from 'src/domain/board/entities/board.entity';
 import { Pick } from 'src/domain/group/entities/pick.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
@@ -86,7 +88,30 @@ export class Group {
   @Column({ type: 'int', unsigned: true, default: 0 })
   materialFee: number;
 
-  @ApiProperty({ description: '🈳 누가 삭제했나?' })
+  @ApiProperty({ description: '🈳 총 수업일 수', example: 18 })
+  @Column({ type: 'tinyint', unsigned: true, default: 0 })
+  days: number;
+
+  @ApiProperty({
+    description: '🈳 총 수업일 스케쥴',
+    example: [
+      {
+        startsAt: '2025-05-21T00:00:00+09:00',
+        endsAt: '2025-05-21T00:00:00+09:00',
+        isActive: true,
+      },
+      {
+        startsAt: '2025-05-23T00:00:00+09:00',
+        endsAt: '2025-05-23T00:00:00+09:00',
+        isActive: false,
+      },
+    ],
+  })
+  @Column('json', { nullable: true })
+  @IsArray()
+  calendarDays: ICalendarDay[];
+
+  @ApiProperty({ description: '🈳 누가 삭제했나?', example: Actor.INSTRUCTOR })
   @Column({
     type: 'enum',
     enum: Actor,

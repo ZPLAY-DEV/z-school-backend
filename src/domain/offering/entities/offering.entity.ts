@@ -56,9 +56,18 @@ export class Offering {
   @Column({ type: 'int', unsigned: true, default: 20 })
   capacity: number;
 
+  @ApiProperty({
+    description: '수강가능한 학년들 (배열)',
+    type: 'array',
+    isArray: true,
+  })
   @Column('simple-array')
   allowedGrades: number[];
 
+  @ApiProperty({
+    description: '수강신청 규칙 (enum)',
+    enum: EnrollmentRule,
+  })
   @Column({
     type: 'enum',
     enum: EnrollmentRule,
@@ -74,18 +83,37 @@ export class Offering {
   @Column({ type: 'json', comment: '수업 시간 정보 (could be multiple)' })
   times: ITimeRange[];
 
+  @ApiProperty({
+    description: 'bitmasks (수업시간 겹치는지 판단하기 위한 자료)',
+    type: 'array',
+    isArray: true,
+  })
   @Column('simple-array')
   bitmasks: number[];
 
+  @ApiProperty({
+    description:
+      '수강신청과목에 포함된 반 Ids (예. 체육A 는 월요일반과 수요일반 수업으로 구성)',
+    type: 'array',
+    isArray: true,
+  })
   @Column('simple-array')
   groupIds: number[];
 
+  @ApiProperty({
+    description: '지난 학기에 수강한 학생 Ids',
+    type: 'array',
+    isArray: true,
+  })
   @Column('simple-array')
   formerStudentIds: number[];
 
-  @Column({ default: false })
-  allowTimeOverlap: boolean;
-
+  @ApiProperty({
+    description:
+      '해당 수강신청과목 취소하면, full sync 가 이뤄지는데, 이를 처리하는데 필요한 version 정보를 저장',
+    type: 'array',
+    isArray: true,
+  })
   @Column({ type: 'bigint', unsigned: true, default: 0 })
   lastSyncTimestamp: number;
 

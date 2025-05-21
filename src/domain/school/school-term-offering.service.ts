@@ -6,17 +6,11 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { EnrollmentRule } from 'src/common/enums';
-import { ITimeRange } from 'src/common/interfaces';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
-import {
-  compressRangeFormat,
-  getBitmasks,
-  getSortedWeekdays,
-} from 'src/helpers/parse';
+import { makeOfferingsFromLessons } from 'src/helpers/offering.util';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -44,78 +38,7 @@ export class SchoolTermOfferingService {
       .orderBy('lesson.id', 'ASC')
       .getMany();
 
-    const offerings: Offering[] = [];
-    const uniqueCombinations = new Set<string>();
-
-    for (const lesson of lessons) {
-      for (const group of lesson.groups) {
-        // Create ITimeRange object
-        const timeRange: ITimeRange = {
-          weekday: group.weekday,
-          start: group.start,
-          end: group.end,
-        };
-
-        // 반에 대한 고유키 관리
-        const uniqueKey = `${lesson.id}-${group.allowedGrades}`;
-        if (uniqueCombinations.has(uniqueKey)) {
-          const existingOffering = offerings.find(
-            (o) =>
-              o.lessonName === (lesson.lessonName || `과목 #${lesson.id}`) &&
-              o.allowedGrades.join(',') === group.allowedGrades,
-          );
-          if (existingOffering) {
-            existingOffering.times.push(timeRange);
-            existingOffering.groupIds.push(group.id);
-          }
-          continue;
-        }
-        uniqueCombinations.add(uniqueKey);
-
-        const offering = new Offering({
-          termId,
-          schoolId,
-          schoolName: lesson.schoolName || `학교 #${lesson.schoolId}`,
-          lessonId: lesson.id,
-          lessonName: lesson.lessonName || `과목 #${lesson.id}`,
-          groupName: group.groupName || `반 #${group.id}`,
-
-          capacity: group.capacity,
-          allowedGrades: group.allowedGrades.split(',').map(Number),
-          enrollmentRule:
-            group.capacity === 0 ? EnrollmentRule.ANYONE : EnrollmentRule.FIRST,
-          times: [timeRange],
-          bitmasks: [],
-          groupIds: [group.id],
-          formerStudentIds: [],
-          allowTimeOverlap: false,
-        });
-
-        offerings.push(offering);
-      }
-    }
-
-    // 3. bitmasks, groupIds 를 정확하게 update
-    for (const offering of offerings) {
-      const bitmasks: number[] = [];
-      for (const time of offering.times) {
-        const slots = getBitmasks(time);
-        bitmasks.push(...slots);
-      }
-      offering.bitmasks = Array.from(new Set(bitmasks)).sort((a, b) => a - b);
-      offering.groupIds = Array.from(new Set(offering.groupIds));
-    }
-
-    // 4. groupName 을 정확하게 update
-    for (const offering of offerings) {
-      const weekdayz = getSortedWeekdays(
-        [...offering.times].map((v) => v.weekday),
-      );
-      const gradez = compressRangeFormat(offering.allowedGrades.join(','));
-      offering.groupName = `${offering.lessonName} ${weekdayz}반 (${gradez}학년)`;
-    }
-
-    // 5. Save to database and return results
+    const offerings = makeOfferingsFromLessons(termId, schoolId, lessons);
     return await this.offeringRepository.save(offerings);
   }
 
