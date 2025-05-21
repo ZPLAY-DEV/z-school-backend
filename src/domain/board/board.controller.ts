@@ -96,7 +96,7 @@ export class BoardController {
   @FindByIdBoardDocs()
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Board> {
-    return await this.boardService.findById(id, ['comments']);
+    return await this.boardService.findById(id, ['comments', 'school']);
   }
 
   //? ---------------------------------------------------------------------- ?//
