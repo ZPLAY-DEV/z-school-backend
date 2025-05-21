@@ -14,14 +14,15 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 //? 학교 수강신청 리스트 페이지에서 보여주는 아이템.
-//? - 반 정보와 유사하고 중복되더라도 v2/v3 수강신청로직 공유을 위해 별도로 유지필요.
 //? - 수강신청기간에만 valid 한 entries 이 들어 있으면 되므로 학기 정보는 필요없음.
 
 @Entity('offerings')
+@Unique(['schoolId', 'termId', 'lessonId', 'groupName'])
 export class Offering {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;

@@ -39,7 +39,20 @@ export class SchoolTermOfferingService {
       .getMany();
 
     const offerings = makeOfferingsFromLessons(termId, schoolId, lessons);
-    return await this.offeringRepository.save(offerings);
+
+    // upsert: 복합 유니크 키 기준으로 insert or update
+    await this.offeringRepository.upsert(offerings, [
+      'schoolId',
+      'termId',
+      'lessonId',
+      'groupName',
+    ]);
+
+    // 실제 저장된 offerings를 다시 조회해서 반환
+    return await this.offeringRepository.find({
+      where: { schoolId, termId },
+      order: { id: 'ASC' },
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//
