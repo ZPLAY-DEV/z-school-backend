@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
+import { MessageType } from 'src/common/enums/message-type';
 import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { InstructorSchool } from 'src/domain/instructor/entities/instructor-school.entity';
@@ -94,6 +95,14 @@ export class School {
   @IsArray()
   @IsString({ each: true })
   promos: string[];
+
+  @ApiProperty({ description: '🈵 메시지 타입' })
+  @Column({
+    type: 'enum',
+    enum: MessageType,
+    default: MessageType.ALL,
+  })
+  messageType: MessageType;
 
   // ------------------------------------------------------------------------ //
 
