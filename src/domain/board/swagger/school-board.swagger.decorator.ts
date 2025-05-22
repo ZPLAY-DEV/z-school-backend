@@ -57,12 +57,12 @@ export const SchoolBoardListPaginatedDocs = () => {
       required: true,
     }),
     ApiOkPaginatedResponse(BoardResponseDto, {
-      sortableColumns: ['createdAt'],
-      defaultSortBy: [['createdAt', 'DESC']],
+      sortableColumns: ['id'],
+      defaultSortBy: [['id', 'DESC']],
     }),
     ApiPaginationQuery({
-      sortableColumns: ['createdAt'],
-      defaultSortBy: [['createdAt', 'DESC']],
+      sortableColumns: ['id'],
+      defaultSortBy: [['id', 'DESC']],
       searchableColumns: ['title'],
       filterableColumns: {
         groupId: [FilterOperator.EQ],
@@ -110,15 +110,15 @@ export const SchoolBoardMineListPaginatedDocs = () => {
       `,
     }),
     ApiOkPaginatedResponse(BoardResponseDto, {
-      sortableColumns: ['createdAt'],
-      defaultSortBy: [['createdAt', 'DESC']],
+      sortableColumns: ['id'],
+      defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
         groupId: [FilterOperator.EQ],
       },
     }),
     ApiPaginationQuery({
-      sortableColumns: ['createdAt'],
-      defaultSortBy: [['createdAt', 'DESC']],
+      sortableColumns: ['id'],
+      defaultSortBy: [['id', 'DESC']],
       searchableColumns: ['title'],
       filterableColumns: {
         groupId: [FilterOperator.EQ],
@@ -181,15 +181,15 @@ export const SchoolBoardTargetListPaginatedDocs = () => {
       required: false,
     }),
     ApiOkPaginatedResponse(BoardResponseDto, {
-      sortableColumns: ['createdAt'],
-      defaultSortBy: [['createdAt', 'DESC']],
+      sortableColumns: ['id'],
+      defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
         groupId: [FilterOperator.EQ],
       },
     }),
     ApiPaginationQuery({
-      sortableColumns: ['createdAt'],
-      defaultSortBy: [['createdAt', 'DESC']],
+      sortableColumns: ['id'],
+      defaultSortBy: [['id', 'DESC']],
       searchableColumns: ['title'],
       filterableColumns: {
         groupId: [FilterOperator.EQ],
