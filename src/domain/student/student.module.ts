@@ -7,10 +7,11 @@ import { UploadModule } from 'src/services/upload/upload.module';
 import { StudentController } from './student.controller';
 import { StudentService } from './student.service';
 import { Pick } from '../group/entities/pick.entity';
+import { Booking } from '../booking/entities/booking.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Parent, Student, Pick]),
+    TypeOrmModule.forFeature([Parent, Student, Pick, Booking]),
     UploadModule,
     S3Module,
   ],

@@ -17,6 +17,7 @@ import { UpdateStudentStatusDto } from '../dto/update-student-status.dto';
 import { UpdateStudentDto } from '../dto/update-student.dto';
 import { StudentRelationResponseDto } from '../dto/student-relation-response.dto';
 import { BookingStatus } from 'src/common/enums';
+import { BookingRelationResponseDto } from 'src/domain/booking/dto/booking-relation-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학생 생성
@@ -228,5 +229,29 @@ export const StudentGroupFindByIdDocs = () => {
         errorFormatList: [HttpErrorConstants.STUDENT_COURSE_STATUS_NOT_FOUND],
       },
     ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Private) 학생의 수강신청 정보 조회
+//? ---------------------------------------------------------------------- ?//
+export const StudentBookingFindByIdDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 학생의 수강신청 정보 조회',
+      description: `
+      - 학생이 수강신청한 내역을 조회
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '학생 ID',
+      required: true,
+    }),
+    ApiOkResponseTemplate({
+      description: '학생의 수강신청 정보 조회 완료',
+      type: BookingRelationResponseDto,
+    }),
   );
 };

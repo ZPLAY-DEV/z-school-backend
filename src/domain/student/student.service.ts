@@ -22,6 +22,7 @@ import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 import { BookingStatus } from 'src/common/enums';
 import { Pick } from '../group/entities/pick.entity';
+import { Booking } from '../booking/entities/booking.entity';
 
 @Injectable()
 export class StudentService {
@@ -32,6 +33,8 @@ export class StudentService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(Pick)
     private readonly pickRepository: Repository<Pick>,
+    @InjectRepository(Booking)
+    private readonly bookingRepository: Repository<Booking>,
     private dataSource: DataSource,
     private readonly s3Service: S3Service,
   ) {}
@@ -95,6 +98,22 @@ export class StudentService {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
+  //? upsert 여부 조회
+  async dryRun(dto: CreateStudentDto): Promise<Student | null> {
+    // In dryRun mode, we check if the student exists but don't create it
+    const existingStudent = await this.studentRepository.findOne({
+      where: {
+        schoolId: dto.schoolId,
+        grade: dto.grade,
+        class: dto.class,
+        studentCode: dto.studentCode,
+      },
+    });
+
+    return existingStudent ? existingStudent : null;
+  }
+
+  //? 학생 목록 조회
   async findAll(query: PaginateQuery): Promise<Paginated<Student>> {
     const queryBuilder = this.studentRepository.createQueryBuilder('student');
     return await paginate(query, queryBuilder, {
@@ -108,6 +127,7 @@ export class StudentService {
     });
   }
 
+  //? 재학 학생 조회
   async findActive(): Promise<Student[]> {
     return await this.studentRepository
       .createQueryBuilder('student')
@@ -116,6 +136,7 @@ export class StudentService {
       .getMany();
   }
 
+  //? 학생 상세 정보 조회
   async findById(id: number): Promise<Student> {
     const student = await this.studentRepository
       .createQueryBuilder('student')
@@ -145,21 +166,6 @@ export class StudentService {
     }
   }
 
-  //? upsert 여부 조회
-  async dryRun(dto: CreateStudentDto): Promise<Student | null> {
-    // In dryRun mode, we check if the student exists but don't create it
-    const existingStudent = await this.studentRepository.findOne({
-      where: {
-        schoolId: dto.schoolId,
-        grade: dto.grade,
-        class: dto.class,
-        studentCode: dto.studentCode,
-      },
-    });
-
-    return existingStudent ? existingStudent : null;
-  }
-
   //? 학생의 수강중인 강좌 조회
   async findEnrolledGroups(studentId: number): Promise<Pick[]> {
     const picks = await this.pickRepository
@@ -187,6 +193,24 @@ export class StudentService {
     return picks;
   }
 
+  // //? 학생의 수강 일정 조회
+  // async findBySchedule(studentId: number, dates: string[]) {
+  //   // const picks = await this.pickRepository
+  //   //   .createQueryBuilder('pick')
+  //   //   .leftJoinAndSelect('pick.group', 'group')
+  //   //   .where('pick.studentId = :studentId', { studentId })
+  //   //   .getMany();
+  // }
+
+  //? 학생의 수강 신청 내역 조회
+  async findBookings(id: number): Promise<Booking[]> {
+    return await this.bookingRepository.find({
+      where: {
+        studentId: id,
+      },
+      relations: ['offering'],
+    });
+  }
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//

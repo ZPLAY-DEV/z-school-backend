@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  // ParseArrayPipe,
   ParseEnumPipe,
   ParseIntPipe,
   Patch,
@@ -25,6 +26,7 @@ import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 import {
   CreateStudentDocs,
+  StudentBookingFindByIdDocs,
   StudentDryRunDocs,
   StudentFindByIdDocs,
   StudentGroupFindByIdDocs,
@@ -32,6 +34,7 @@ import {
   StudentUpdateDocs,
 } from './swagger/student.swagger.decorator';
 import { BookingStatus } from 'src/common/enums';
+import { Booking } from '../booking/entities/booking.entity';
 
 @ApiTags('✅ Students ( 학생 )')
 @ApiCommonErrorResponseTemplate()
@@ -80,6 +83,23 @@ export class StudentController {
     @Query('status', new ParseEnumPipe(BookingStatus)) status: BookingStatus,
   ): Promise<Pick[]> {
     return await this.studentService.findByIdWithStatus(id, status);
+  }
+
+  //? 요일별 학생 수업 일정 조회
+  // @Get(':id/schedule')
+  // async findBySchedule(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Query('dates', new ParseArrayPipe({ items: String, optional: true }))
+  //   dates: string[],
+  // ) {}
+
+  //? 특정 학생의 수강 신청 내역 조회
+  @StudentBookingFindByIdDocs()
+  @Get(':id/bookings')
+  async findBookings(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Booking[]> {
+    return await this.studentService.findBookings(id);
   }
 
   //? ---------------------------------------------------------------------- ?//
