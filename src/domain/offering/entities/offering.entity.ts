@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 import { EnrollmentRule } from 'src/common/enums';
 import { ITimeRange } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
@@ -128,6 +129,7 @@ export class Offering {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Exclude()
   @ApiProperty({ description: 'deletedAt' })
   @DeleteDateColumn()
   deletedAt: Date | null;
