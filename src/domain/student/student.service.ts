@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -19,6 +20,8 @@ import { DataSource, Not, Repository } from 'typeorm';
 import { School } from '../school/entities/school.entity';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
+import { BookingStatus } from 'src/common/enums';
+import { Pick } from '../group/entities/pick.entity';
 
 @Injectable()
 export class StudentService {
@@ -27,6 +30,8 @@ export class StudentService {
     private readonly parentRepository: Repository<Parent>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
+    @InjectRepository(Pick)
+    private readonly pickRepository: Repository<Pick>,
     private dataSource: DataSource,
     private readonly s3Service: S3Service,
   ) {}
@@ -126,6 +131,21 @@ export class StudentService {
     return student;
   }
 
+  //? 학생의 수업 형태에 따른 조회
+  async findByIdWithStatus(id: number, status: BookingStatus): Promise<Pick[]> {
+    switch (status) {
+      case BookingStatus.ENROLLED:
+        return await this.findEnrolledGroups(id);
+      case BookingStatus.CANCELED:
+        return await this.findCancelledGroups(id);
+      default:
+        throw new BadRequestException(
+          HttpErrorConstants.STUDENT_COURSE_STATUS_NOT_FOUND,
+        );
+    }
+  }
+
+  //? upsert 여부 조회
   async dryRun(dto: CreateStudentDto): Promise<Student | null> {
     // In dryRun mode, we check if the student exists but don't create it
     const existingStudent = await this.studentRepository.findOne({
@@ -138,6 +158,33 @@ export class StudentService {
     });
 
     return existingStudent ? existingStudent : null;
+  }
+
+  //? 학생의 수강중인 강좌 조회
+  async findEnrolledGroups(studentId: number): Promise<Pick[]> {
+    const picks = await this.pickRepository
+      .createQueryBuilder('pick')
+      .leftJoinAndSelect('pick.group', 'group')
+      .leftJoinAndSelect('group.instructor', 'instructor')
+      .leftJoinAndSelect('instructor.instructorSchools', 'instructorSchools')
+      .where('pick.studentId = :studentId', { studentId })
+      .getMany();
+
+    return picks;
+  }
+
+  //? 학생의 수강취소 강좌 조회
+  async findCancelledGroups(studentId: number): Promise<Pick[]> {
+    const picks = await this.pickRepository
+      .createQueryBuilder('pick')
+      .leftJoinAndSelect('pick.group', 'group')
+      .leftJoinAndSelect('group.instructor', 'instructor')
+      .leftJoinAndSelect('instructor.instructorSchools', 'instructorSchools')
+      .where('pick.studentId = :studentId', { studentId })
+      .andWhere('pick.deletedBy IS NOT NULL')
+      .getMany();
+
+    return picks;
   }
 
   //? ---------------------------------------------------------------------- ?//

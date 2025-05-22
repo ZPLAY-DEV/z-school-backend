@@ -240,6 +240,16 @@ export const HttpErrorConstants = {
     message: '게시글을 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
+  NOT_FOUND_STATUS: {
+    error: 'NOT_FOUND_STATUS',
+    message: '학생의 수업 정보를 가져올 수 없습니다.',
+  } as HttpErrorFormat,
+
+  STUDENT_COURSE_STATUS_NOT_FOUND: {
+    error: 'STUDENT_COURSE_STATUS_NOT_FOUND',
+    message: '요청하신 수업 상태에 대한 정보를 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
   NOT_FOUND_COMMENT: {
     error: 'NOT_FOUND_COMMENT',
     message: '댓글을 찾을 수 없습니다.',

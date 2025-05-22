@@ -6,10 +6,11 @@ import { S3Module } from 'src/services/aws/s3.module';
 import { UploadModule } from 'src/services/upload/upload.module';
 import { StudentController } from './student.controller';
 import { StudentService } from './student.service';
+import { Pick } from '../group/entities/pick.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Parent, Student]),
+    TypeOrmModule.forFeature([Parent, Student, Pick]),
     UploadModule,
     S3Module,
   ],

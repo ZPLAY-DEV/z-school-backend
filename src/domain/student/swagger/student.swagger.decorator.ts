@@ -4,6 +4,7 @@ import {
   ApiCreatedResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
@@ -15,6 +16,7 @@ import { StudentResponseDto } from '../dto/student-response.dto';
 import { UpdateStudentStatusDto } from '../dto/update-student-status.dto';
 import { UpdateStudentDto } from '../dto/update-student.dto';
 import { StudentRelationResponseDto } from '../dto/student-relation-response.dto';
+import { BookingStatus } from 'src/common/enums';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학생 생성
@@ -185,6 +187,45 @@ export const StudentUpdateDocs = () => {
       {
         status: StatusCodes.CONFLICT,
         errorFormatList: [HttpErrorConstants.CONFLICT_STUDENT],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Private) 학생의 수강/취소 강좌 조회
+//? ---------------------------------------------------------------------- ?//
+export const StudentGroupFindByIdDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 학생의 수강/취소 강좌 조회',
+      description: `
+      - 학생의 수강/취소 강좌 조회
+      - 수강은 ENROLLED, 취소는 CANCELED 로 조회 QueryString에 포함시켜서 요청
+      - ENROLLED, CANCELED 이외의 값이 들어오면 400 에러 반환
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '학생 ID',
+      required: true,
+    }),
+
+    ApiQuery({
+      name: 'status',
+      enum: BookingStatus,
+      description: '수강/취소 강좌 상태',
+      required: true,
+    }),
+    ApiOkResponseTemplate({
+      description: '학생의 수강/취소 강좌 조회 완료',
+      // type: PickResponseDto,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.STUDENT_COURSE_STATUS_NOT_FOUND],
       },
     ]),
   );
