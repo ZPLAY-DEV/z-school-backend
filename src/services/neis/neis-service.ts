@@ -58,7 +58,7 @@ export class NeisService {
     const now = new Date();
     const currentYear = format(now, 'yyyy');
     const fromDate = format(now, 'yyyyMMdd');
-    const toDate = format(addMonths(now, 6), 'yyyyMMdd');
+    const toDate = format(addMonths(now, 9), 'yyyyMMdd');
     const options = {
       ATPT_OFCDC_SC_CODE: authorityCode,
       SD_SCHUL_CODE: schoolCode,

@@ -42,3 +42,26 @@ export const validateDateRange = (start: string, end: string): boolean => {
 
   return true;
 };
+
+/**
+ * 주어진 시작일과 종료일 사이에서 특정 요일(Weekday)에 해당하는 모든 날짜를 반환
+ * @param start - 시작 날짜 (Date)
+ * @param end - 종료 날짜 (Date)
+ * @param weekday - 0(일)~6(토) JS 표준 요일
+ * @returns Date[]
+ */
+export function getDatesForWeekdayBetween(
+  start: Date,
+  end: Date,
+  weekday: number,
+): Date[] {
+  const dates: Date[] = [];
+  const current = new Date(start);
+  // 첫 해당 요일까지 이동
+  current.setDate(current.getDate() + ((7 + weekday - current.getDay()) % 7));
+  while (current <= end) {
+    dates.push(new Date(current));
+    current.setDate(current.getDate() + 7);
+  }
+  return dates;
+}

@@ -14,14 +14,15 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 //? 학교 수강신청 리스트 페이지에서 보여주는 아이템.
-//? - 반 정보와 유사하고 중복되더라도 v2/v3 수강신청로직 공유을 위해 별도로 유지필요.
 //? - 수강신청기간에만 valid 한 entries 이 들어 있으면 되므로 학기 정보는 필요없음.
 
 @Entity('offerings')
+@Unique(['schoolId', 'termId', 'lessonId', 'groupName'])
 export class Offering {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -56,9 +57,18 @@ export class Offering {
   @Column({ type: 'int', unsigned: true, default: 20 })
   capacity: number;
 
+  @ApiProperty({
+    description: '수강가능한 학년들 (배열)',
+    type: 'array',
+    isArray: true,
+  })
   @Column('simple-array')
   allowedGrades: number[];
 
+  @ApiProperty({
+    description: '수강신청 규칙 (enum)',
+    enum: EnrollmentRule,
+  })
   @Column({
     type: 'enum',
     enum: EnrollmentRule,
@@ -74,18 +84,37 @@ export class Offering {
   @Column({ type: 'json', comment: '수업 시간 정보 (could be multiple)' })
   times: ITimeRange[];
 
+  @ApiProperty({
+    description: 'bitmasks (수업시간 겹치는지 판단하기 위한 자료)',
+    type: 'array',
+    isArray: true,
+  })
   @Column('simple-array')
   bitmasks: number[];
 
+  @ApiProperty({
+    description:
+      '수강신청과목에 포함된 반 Ids (예. 체육A 는 월요일반과 수요일반 수업으로 구성)',
+    type: 'array',
+    isArray: true,
+  })
   @Column('simple-array')
   groupIds: number[];
 
+  @ApiProperty({
+    description: '지난 학기에 수강한 학생 Ids',
+    type: 'array',
+    isArray: true,
+  })
   @Column('simple-array')
   formerStudentIds: number[];
 
-  @Column({ default: false })
-  allowTimeOverlap: boolean;
-
+  @ApiProperty({
+    description:
+      '해당 수강신청과목 취소하면, full sync 가 이뤄지는데, 이를 처리하는데 필요한 version 정보를 저장',
+    type: 'array',
+    isArray: true,
+  })
   @Column({ type: 'bigint', unsigned: true, default: 0 })
   lastSyncTimestamp: number;
 

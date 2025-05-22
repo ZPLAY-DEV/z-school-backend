@@ -36,7 +36,7 @@ export class InstructorSchool {
     comment:
       '학교에서 사용하는 강사 별칭 instructor entity에서 복제 되거나 그대로 활용',
   })
-  alias: string;
+  alias: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   @ApiProperty({ description: '🈳 내용' })

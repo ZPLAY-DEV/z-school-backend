@@ -1,15 +1,19 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import {
+  FilterOperator,
+  paginate,
+  Paginated,
+  PaginateQuery,
+} from 'nestjs-paginate';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { Document } from 'src/domain/document/entities/document.entity';
 import { CreateInstructorDto } from 'src/domain/instructor/dto/create-instructor.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
-import { InstructorSchool } from '../instructor/entities/instructor-school.entity';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { FilterOperator, paginate } from 'nestjs-paginate';
-import { Paginated, PaginateQuery } from 'nestjs-paginate';
 import { DeleteInstructorSchoolDto } from '../instructor/dto/delete-instructor-school.dto';
-import { Document } from 'src/domain/document/entities/document.entity';
+import { InstructorSchool } from '../instructor/entities/instructor-school.entity';
 @Injectable()
 export class SchoolInstructorService {
   private readonly logger = new Logger(SchoolInstructorService.name);

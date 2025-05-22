@@ -27,6 +27,8 @@ export class SchoolTermLessonService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  //! create() 의 모든 로직이 무사히 실행되는지 persist 하지 않고, 실험해보기 위한 것이
+  //! dryrun() 인데, 그냥 중복 강좌 레코드가 있는지만 확인하고 말았다. ㅠ.ㅠ
   async createBulk(
     dtos: CreateLessonDto[],
     dryrun: boolean = false, // 덮어쓰진 않고, 덮어쓰여질 레코드 목록만 반환
@@ -116,16 +118,15 @@ export class SchoolTermLessonService {
   }
 
   async list(schoolId: number, termId: number): Promise<Lesson[]> {
-    const queryBuilder = this.lessonRepository
+    return this.lessonRepository
       .createQueryBuilder('lesson')
       .leftJoinAndSelect('lesson.category', 'category')
       .leftJoinAndSelect('lesson.groups', 'group')
       .leftJoinAndSelect('group.instructor', 'instructor')
       .where('lesson.schoolId = :schoolId', { schoolId })
       .andWhere('lesson.termId = :termId', { termId })
-      .orderBy('lesson.id', 'DESC');
-
-    return await queryBuilder.getMany();
+      .orderBy('lesson.id', 'DESC')
+      .getMany();
   }
 
   //? ---------------------------------------------------------------------- ?//
