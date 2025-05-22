@@ -62,7 +62,7 @@ export const StudentFindByIdDocs = () => {
       `,
     }),
     ApiParam({
-      name: 'studentId',
+      name: 'id',
       type: Number,
       description: '학생 ID',
     }),
