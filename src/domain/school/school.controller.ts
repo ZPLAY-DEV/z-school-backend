@@ -12,7 +12,7 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Region } from 'src/common/enums';
@@ -22,7 +22,15 @@ import { UploadService } from 'src/services/upload/upload.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 import { SchoolService } from './school.service';
+import {
+  CreateSchoolDocs,
+  UpdateSchoolDocs,
+} from './swagger/school.swagger.decorator';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 
+@ApiTags('✅ Schools ( 학교 )')
+@ApiCommonErrorResponseTemplate()
+@UseInterceptors(ClassSerializerInterceptor)
 @Controller('schools')
 export class SchoolController {
   constructor(
@@ -35,6 +43,7 @@ export class SchoolController {
   //? ---------------------------------------------------------------------- ?//
 
   @Public()
+  @CreateSchoolDocs()
   @Post()
   async create(@Body() createSchoolDto: CreateSchoolDto): Promise<School> {
     return await this.schoolService.create(createSchoolDto);
@@ -95,7 +104,7 @@ export class SchoolController {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'update school' })
+  @UpdateSchoolDocs()
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
