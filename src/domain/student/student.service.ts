@@ -116,7 +116,6 @@ export class StudentService {
       .createQueryBuilder('student')
       .leftJoinAndSelect('student.parent', 'parent')
       .leftJoinAndSelect('student.groupStudents', 'groupStudents')
-      .leftJoinAndSelect('groupStudents.group', 'group')
       .where('student.id = :id', { id })
       .getOne();
 
@@ -218,7 +217,12 @@ export class StudentService {
 
   // note that this is hard-delete
   async remove(id: number): Promise<Student> {
-    const student = await this.findById(id);
+    const student = await this.studentRepository.findOne({
+      where: { id },
+    });
+    if (!student) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_STUDENT);
+    }
     return await this.studentRepository.remove(student);
   }
 

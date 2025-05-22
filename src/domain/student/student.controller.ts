@@ -13,7 +13,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Public } from 'src/common/decorators/public.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -24,6 +23,7 @@ import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 import {
   CreateStudentDocs,
   StudentDryRunDocs,
+  StudentFindByIdDocs,
   StudentStatusUpdateDocs,
   StudentUpdateDocs,
 } from './swagger/student.swagger.decorator';
@@ -60,8 +60,7 @@ export class StudentController {
     return await this.studentService.dryRun(dto);
   }
 
-  @ApiOperation({ description: 'Student 상세보기' })
-  @Public()
+  @StudentFindByIdDocs()
   @Get(':id')
   async getStudentById(@Param('id') id: number): Promise<Student> {
     return await this.studentService.findById(id);

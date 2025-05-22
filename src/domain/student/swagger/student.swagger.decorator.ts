@@ -51,18 +51,15 @@ export const CreateStudentDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학생 상세 조회
 //? ---------------------------------------------------------------------- ?//
-export const StudentDetailDocs = () => {
+export const StudentFindByIdDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '✅ 학생 상세 조회',
       description: `
-      - 학생 상세 조회
+      - 학생의 상세 정보를 조회한다.
+      - 학생 상세 정보에서 수강중인 강좌 수는 반환되는 groupStudents 객체의 length 값으로 처리해야한다.
+      - 학생 상세 정보에서 학부모앱 사용 여부는 반환되는 parent 객체의 userId 값이 null 값으로 존재 여부를 판별해야한다.
       `,
-    }),
-    ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID',
     }),
     ApiParam({
       name: 'studentId',
@@ -71,7 +68,7 @@ export const StudentDetailDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '학생 상세 조회 완료',
-      type: StudentResponseDto,
+      type: StudentRelationResponseDto,
     }),
     ApiErrorResponseTemplate([
       {
