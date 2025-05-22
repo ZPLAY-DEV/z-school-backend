@@ -55,6 +55,8 @@ export class SchoolTermLessonController {
     return await this.schoolTermLessonService.createBulk(createLessonDtos);
   }
 
+  //! create() 의 모든 로직이 무사히 실행되는지 persist 하지 않고, 실험해보기 위한 것이
+  //! dryrun() 인데, 그냥 중복 강좌 레코드가 있는지만 확인하고 말았다. ㅠ.ㅠ
   @CreateSchoolTermLessonBulkDryRunDocs()
   @Post(':schoolId/terms/:termId/lessons/bulk/dryrun')
   @HttpCode(200)

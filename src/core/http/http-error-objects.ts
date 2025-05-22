@@ -245,6 +245,11 @@ export const HttpErrorConstants = {
     message: '댓글을 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
+  OUT_OF_RANGE: {
+    error: 'OUT_OF_RANGE',
+    message: '입력값이 허용 범위를 벗어났습니다.',
+  } as HttpErrorFormat,
+
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)
 };
 

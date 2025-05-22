@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -68,8 +69,9 @@ export class SchoolTermOfferingController {
   async getList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
+    @Query('grade') grade: string | null = null,
   ): Promise<Offering[]> {
-    return await this.schoolTermOfferingService.list(schoolId, termId);
+    return await this.schoolTermOfferingService.list(schoolId, termId, grade);
   }
 
   //? ---------------------------------------------------------------------- ?//

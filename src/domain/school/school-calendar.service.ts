@@ -4,6 +4,9 @@ import { School } from 'src/domain/school/entities/school.entity';
 import { NeisService } from 'src/services/neis/neis-service';
 import { DataSource, Repository } from 'typeorm';
 
+//? neis API 계정 정보)
+//? 아래 notion 페이지 참고
+//? https://www.notion.so/dc201a905728469c9ba3017cff2845be
 @Injectable()
 export class SchoolCalendarService {
   private readonly logger = new Logger(SchoolCalendarService.name);

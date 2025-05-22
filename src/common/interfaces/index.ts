@@ -246,3 +246,9 @@ export interface IPickKeys {
   groupId: number;
   offeringId: number;
 }
+
+export interface ICalendarDay {
+  startsAt: Date;
+  endsAt: Date;
+  isActive: boolean;
+}

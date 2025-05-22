@@ -6,17 +6,11 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { EnrollmentRule } from 'src/common/enums';
-import { ITimeRange } from 'src/common/interfaces';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
-import {
-  compressRangeFormat,
-  getBitmasks,
-  getSortedWeekdays,
-} from 'src/helpers/parse';
+import { makeOfferingsFromLessons } from 'src/helpers/offering.util';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -44,79 +38,21 @@ export class SchoolTermOfferingService {
       .orderBy('lesson.id', 'ASC')
       .getMany();
 
-    const offerings: Offering[] = [];
-    const uniqueCombinations = new Set<string>();
+    const offerings = makeOfferingsFromLessons(termId, schoolId, lessons);
 
-    for (const lesson of lessons) {
-      for (const group of lesson.groups) {
-        // Create ITimeRange object
-        const timeRange: ITimeRange = {
-          weekday: group.weekday,
-          start: group.start,
-          end: group.end,
-        };
+    // upsert: 복합 유니크 키 기준으로 insert or update
+    await this.offeringRepository.upsert(offerings, [
+      'schoolId',
+      'termId',
+      'lessonId',
+      'groupName',
+    ]);
 
-        // 반에 대한 고유키 관리
-        const uniqueKey = `${lesson.id}-${group.allowedGrades}`;
-        if (uniqueCombinations.has(uniqueKey)) {
-          const existingOffering = offerings.find(
-            (o) =>
-              o.lessonName === (lesson.lessonName || `과목 #${lesson.id}`) &&
-              o.allowedGrades.join(',') === group.allowedGrades,
-          );
-          if (existingOffering) {
-            existingOffering.times.push(timeRange);
-            existingOffering.groupIds.push(group.id);
-          }
-          continue;
-        }
-        uniqueCombinations.add(uniqueKey);
-
-        const offering = new Offering({
-          termId,
-          schoolId,
-          schoolName: lesson.schoolName || `학교 #${lesson.schoolId}`,
-          lessonId: lesson.id,
-          lessonName: lesson.lessonName || `과목 #${lesson.id}`,
-          groupName: group.groupName || `반 #${group.id}`,
-
-          capacity: group.capacity,
-          allowedGrades: group.allowedGrades.split(',').map(Number),
-          enrollmentRule:
-            group.capacity === 0 ? EnrollmentRule.ANYONE : EnrollmentRule.FIRST,
-          times: [timeRange],
-          bitmasks: [],
-          groupIds: [group.id],
-          formerStudentIds: [],
-          allowTimeOverlap: false,
-        });
-
-        offerings.push(offering);
-      }
-    }
-
-    // 3. bitmasks, groupIds 를 정확하게 update
-    for (const offering of offerings) {
-      const bitmasks: number[] = [];
-      for (const time of offering.times) {
-        const slots = getBitmasks(time);
-        bitmasks.push(...slots);
-      }
-      offering.bitmasks = Array.from(new Set(bitmasks)).sort((a, b) => a - b);
-      offering.groupIds = Array.from(new Set(offering.groupIds));
-    }
-
-    // 4. groupName 을 정확하게 update
-    for (const offering of offerings) {
-      const weekdayz = getSortedWeekdays(
-        [...offering.times].map((v) => v.weekday),
-      );
-      const gradez = compressRangeFormat(offering.allowedGrades.join(','));
-      offering.groupName = `${offering.lessonName} ${weekdayz}반 (${gradez}학년)`;
-    }
-
-    // 5. Save to database and return results
-    return await this.offeringRepository.save(offerings);
+    // 실제 저장된 offerings를 다시 조회해서 반환
+    return await this.offeringRepository.find({
+      where: { schoolId, termId },
+      order: { id: 'ASC' },
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -144,13 +80,24 @@ export class SchoolTermOfferingService {
     });
   }
 
-  async list(schoolId: number, termId: number): Promise<Offering[]> {
-    return await this.offeringRepository
+  async list(
+    schoolId: number,
+    termId: number,
+    grade: string | null = null,
+  ): Promise<Offering[]> {
+    const items = await this.offeringRepository
       .createQueryBuilder('offering')
       .where('offering.schoolId = :schoolId', { schoolId })
       .andWhere('offering.termId = :termId', { termId })
       .orderBy('offering.id', 'DESC')
       .getMany();
+    if (grade) {
+      return items.filter((item: Offering) =>
+        item.allowedGrades.includes(+grade),
+      );
+    }
+
+    return items;
   }
 
   //? ---------------------------------------------------------------------- ?//

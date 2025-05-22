@@ -84,6 +84,7 @@ export const SchoolTermOfferingListDocs = () => {
       summary: '학교 > 학기 > 수강신청과목 👈 리스트 (all)',
       description: `
       - 특정 학기에 속한 모든 수강신청과목의 전체 리스트
+      - 학년 필터링 기능 제공 (예, ?grade=1 는 1학년이 들을 수 있는 과목만 보임)
       `,
     }),
     ApiOkResponseTemplate({

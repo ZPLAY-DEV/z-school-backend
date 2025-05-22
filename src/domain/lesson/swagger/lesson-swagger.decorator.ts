@@ -171,3 +171,35 @@ export const RemoveLessonDocs = () => {
     ]),
   );
 };
+
+//? ---------------------------------------------------------------------- ?//
+//? Update Lesson Days
+//? ---------------------------------------------------------------------- ?//
+
+export const UpdateLessonDaysDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '과목 수업일 자동 생성',
+      description: `\n- 과목의 기간(start~end)과 그룹의 요일/시간을 기준으로 수업일을 자동 생성합니다.\n- 휴일(캘린더) 정보가 있으면 해당 날짜는 비활성화됩니다.\n- 반환값: 생성된 전체 수업일 수 (number)`,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '과목 ID',
+    }),
+    ApiOkResponseTemplate({
+      description: '생성된 전체 수업일 수 반환',
+      type: Number,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [HttpErrorConstants.NOT_FOUND_LESSON],
+      },
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
+      },
+    ]),
+  );
+};

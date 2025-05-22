@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -56,6 +57,13 @@ export class LessonCoreService {
       });
       if (!term) {
         throw new NotFoundException(HttpErrorConstants.NOT_FOUND_TERM);
+      }
+
+      if (
+        new Date(`${dto.start}T09:00:00+09:00`) < term.startDate ||
+        new Date(`${dto.end}T09:00:00+09:00`) > term.endDate
+      ) {
+        throw new BadRequestException(HttpErrorConstants.OUT_OF_RANGE);
       }
 
       //? 3단계) 같은 이름의 기존 강좌가 있는지 확인
