@@ -248,7 +248,7 @@ export interface IPickKeys {
 }
 
 export interface ICalendarDay {
-  startsAt: Date;
-  endsAt: Date;
-  isActive: boolean;
+  start: string;
+  end: string;
+  classOn: boolean; // 수업이 있는지 여부
 }

@@ -15,10 +15,10 @@ import { ApiEnumResponseTemplate } from 'src/core/swagger/response/api-enum.resp
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
-import { TraceableNoteDto } from 'src/domain/group/dto/delete-group.dto';
+import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { Pick } from '../entities/pick.entity';
+import { Pick } from '../../pick/entities/pick.entity';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create Group
@@ -154,7 +154,7 @@ export const DeleteGroupDocs = () => {
       `,
     }),
     ApiBody({
-      type: TraceableNoteDto,
+      type: DeleteGroupDto,
     }),
     ApiEnumResponseTemplate({
       description: '상태 리턴',

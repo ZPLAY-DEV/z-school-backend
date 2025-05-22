@@ -2,9 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { StudentStatus } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
-import { Pick } from 'src/domain/group/entities/pick.entity';
 import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
 import {

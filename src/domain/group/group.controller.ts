@@ -15,7 +15,7 @@ import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.deco
 import { Actor, RemovalStatus } from 'src/common/enums';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
-import { TraceableNoteDto } from 'src/domain/group/dto/delete-group.dto';
+import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { GroupService } from 'src/domain/group/group.service';
@@ -80,7 +80,7 @@ export class GroupController {
   @Delete(':id')
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: TraceableNoteDto,
+    @Body() dto: DeleteGroupDto,
     @CurrentUserIdAndRole() user: { id: number; role: string },
   ): Promise<RemovalStatus> {
     const role =
