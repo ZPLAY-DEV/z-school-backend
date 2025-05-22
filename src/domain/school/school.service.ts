@@ -115,19 +115,16 @@ export class SchoolService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateSchoolDto) {
-    console.log(`❤️`, JSON.stringify(dto));
-    return this.dataSource.transaction(async (manager) => {
-      const school = await manager.findOne(School, {
-        where: { id },
-        relations: ['options'],
-      });
-
-      if (!school) {
-        throw new NotFoundException(`School with id ${id} not found`);
-      }
-
-      return await manager.save(School, school);
+    const school = await this.schoolRepository.preload({
+      id,
+      ...dto,
     });
+
+    if (!school) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+    }
+
+    return await this.schoolRepository.save(school);
   }
 
   //? ---------------------------------------------------------------------- ?//

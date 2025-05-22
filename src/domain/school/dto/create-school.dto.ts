@@ -3,6 +3,7 @@ import {
   IsArray,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Length,
@@ -10,12 +11,14 @@ import {
   Min,
 } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
+import { MessageType } from 'src/common/enums/message-type';
 
 export class CreateSchoolDto {
   @ApiProperty({
     description: '🈳 School name',
-    required: false,
+    example: '제트학교',
     maxLength: 32,
+    required: false,
   })
   @IsString()
   @Length(1, 32)
@@ -24,24 +27,30 @@ export class CreateSchoolDto {
 
   @ApiProperty({
     description: '🈵 Unique school code',
+    example: '212121',
     maxLength: 16,
   })
   @IsString()
   @Length(1, 16)
-  schoolCode?: string;
+  @IsNotEmpty()
+  schoolCode: string;
 
   @ApiProperty({
     description: '🈵 Unique school authority code',
+    example: 'K14',
     maxLength: 16,
   })
   @IsString()
   @Length(1, 16)
+  @IsNotEmpty()
   authorityCode?: string;
 
   @ApiProperty({
     description: '🈳 Region',
+    example: Region.SEOUL,
     enum: Region,
     default: Region.SEOUL,
+    required: false,
   })
   @IsEnum(Region)
   @IsOptional()
@@ -49,29 +58,21 @@ export class CreateSchoolDto {
 
   @ApiProperty({
     description: '🈳 School address',
-    required: false,
+    example: '서울특별시 강남구 역삼동 123-45',
     maxLength: 64,
+    required: false,
   })
   @IsString()
   @Length(1, 64)
   @IsOptional()
   address?: string;
 
-  // @ApiProperty({
-  //   description: '🈳 Phone number',
-  //   required: false,
-  //   maxLength: 16,
-  // })
-  // @IsString()
-  // @Length(1, 16)
-  // @IsOptional()
-  // phone?: string;
-
   @ApiProperty({
     description:
       '🈳 Operation fee rule (CO: same cost without changes, MC/MF: calculated by ratio)',
-    default: 'CO-1000',
+    example: 'CO-1000',
     maxLength: 16,
+    required: false,
   })
   @IsString()
   @Length(1, 16)
@@ -80,7 +81,9 @@ export class CreateSchoolDto {
 
   @ApiProperty({
     description: '🈳 Payout rate percentage (0-100)',
+    example: 100,
     default: 100,
+    required: false,
   })
   @IsInt()
   @Min(0)
@@ -90,6 +93,8 @@ export class CreateSchoolDto {
 
   @ApiProperty({
     description: '🈳 Allowed permissions',
+    example: [Permission.ALLOW_INSTRUCTOR_ADD_STUDENT],
+    required: false,
   })
   @IsArray()
   @IsEnum(Permission, { each: true })
@@ -98,9 +103,21 @@ export class CreateSchoolDto {
 
   @ApiProperty({
     description: '🈳 Promotional video URLs',
+    example: ['https://cdn.z-school.com/xxxx'],
     required: false,
     type: [String],
   })
   @IsOptional()
   promos?: string[];
+
+  @ApiProperty({
+    description: '🈳 학교에서 지정한 발송 메시지 타입 ( ALL, SMS, FCM )',
+    example: MessageType.ALL,
+    enum: MessageType,
+    default: MessageType.ALL,
+    required: false,
+  })
+  @IsEnum(MessageType)
+  @IsOptional()
+  messageType?: MessageType;
 }
