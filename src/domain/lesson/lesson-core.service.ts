@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
@@ -14,6 +15,7 @@ import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
+import { calculateLessonDays } from 'src/helpers/lesson-days.util';
 import {
   parseRangeFormat,
   parseTime,
@@ -95,13 +97,32 @@ export class LessonCoreService {
       }
 
       // 최종 데이터를 다시 로드하여 변환된 값을 반환
-      const savedLesson = await manager.findOne(Lesson, {
+      const savedLesson = await manager.findOneOrFail(Lesson, {
         where: { id: lesson.id },
         relations: { groups: true, category: true },
       });
 
-      if (!savedLesson) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
+      //? 6단계) 학업요일 days 정보 처리
+      for (const group of savedLesson.groups) {
+        const calendarDays = calculateLessonDays(savedLesson, group);
+        for (const calDay of calendarDays) {
+          const [date] = calDay.start.split(' ');
+          const calendar = await manager
+            .getRepository(Calendar)
+            .createQueryBuilder('calendar')
+            .where('calendar.schoolId = :schoolId', {
+              schoolId: savedLesson.schoolId,
+            })
+            .andWhere('calendar.date = :date', { date: date })
+            .getOne();
+          if (calendar) {
+            calDay.classOn = false;
+          }
+        }
+        console.log('🔴', calendarDays);
+        group.days = calendarDays.filter((day) => day.classOn).length;
+        group.calendarDays = calendarDays;
+        await manager.save(group);
       }
 
       return savedLesson;
@@ -228,13 +249,32 @@ export class LessonCoreService {
     }
 
     // 최종 데이터를 다시 로드하여 변환된 값을 반환
-    const finalLesson = await manager.findOne(Lesson, {
+    const finalLesson = await manager.findOneOrFail(Lesson, {
       where: { id },
       relations: { groups: true, category: true },
     });
 
-    if (!finalLesson) {
-      throw new NotFoundException(`Cannot find updated lesson with ID ${id}`);
+    //? 6단계) 학업요일 days 정보 처리
+    for (const group of finalLesson.groups) {
+      const calendarDays = calculateLessonDays(finalLesson, group);
+      for (const calDay of calendarDays) {
+        const [date] = calDay.start.split(' ');
+        const calendar = await manager
+          .getRepository(Calendar)
+          .createQueryBuilder('calendar')
+          .where('calendar.schoolId = :schoolId', {
+            schoolId: finalLesson.schoolId,
+          })
+          .andWhere('calendar.date = :date', { date: date })
+          .getOne();
+        if (calendar) {
+          calDay.classOn = false;
+        }
+      }
+      console.log('🔴', calendarDays);
+      group.days = calendarDays.filter((day) => day.classOn).length;
+      group.calendarDays = calendarDays;
+      await manager.save(group);
     }
 
     return finalLesson;
