@@ -4,9 +4,9 @@ import { IsArray } from 'class-validator';
 import { Actor, ClassStatus, Weekday } from 'src/common/enums';
 import { ICalendarDay } from 'src/common/interfaces';
 import { Board } from 'src/domain/board/entities/board.entity';
-import { Pick } from 'src/domain/group/entities/pick.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
 import {
   Column,
   CreateDateColumn,
@@ -96,14 +96,14 @@ export class Group {
     description: '🈳 총 수업일 스케쥴',
     example: [
       {
-        startsAt: '2025-05-21T00:00:00+09:00',
-        endsAt: '2025-05-21T00:00:00+09:00',
-        isActive: true,
+        start: '2025-05-21',
+        end: '2025-05-21',
+        classOn: true,
       },
       {
-        startsAt: '2025-05-23T00:00:00+09:00',
-        endsAt: '2025-05-23T00:00:00+09:00',
-        isActive: false,
+        start: '2025-05-23',
+        end: '2025-05-23',
+        classOn: false,
       },
     ],
   })

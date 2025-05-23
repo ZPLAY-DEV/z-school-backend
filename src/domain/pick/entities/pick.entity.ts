@@ -43,26 +43,45 @@ export class Pick {
   materialFee: number;
 
   @ApiProperty({
-    description: '🈵 누가 등록했나?',
+    description: '🈵 누가 수업시작일 등록했나?',
     default: Actor.SYSTEM,
   })
   @Column({
     type: 'enum',
     enum: Actor,
-    default: Actor.SYSTEM,
-    comment: '누가 등록했나?',
-  })
-  enrolledBy: Actor;
-
-  @ApiProperty({ description: '🈳 누가 삭제했나?' })
-  @Column({
-    type: 'enum',
-    enum: Actor,
-    nullable: true,
     default: null,
-    comment: '누가 삭제했나?',
+    nullable: true,
+    comment: '누가 수업시작일 등록했나?',
   })
-  deletedBy: Actor | null;
+  startedBy: Actor | null;
+
+  @ApiProperty({ description: '🈳 startedOn; 수업시작일(첫수업일)' })
+  @Column({
+    type: 'varchar',
+    length: 16,
+    nullable: true,
+    comment: '수업시작일(첫수업일)',
+  })
+  startedOn: string | null;
+
+  @ApiProperty({ description: '🈳 누가 수업종료일(마지막수업일) 등록했나?' })
+  @Column({
+    type: 'enum',
+    enum: Actor,
+    default: null,
+    nullable: true,
+    comment: '누가 수업종료일(마지막수업일) 등록했나?',
+  })
+  endedBy: Actor | null;
+
+  @ApiProperty({ description: '🈳 endedOn; 수업종료일(마지막수업일)' })
+  @Column({
+    type: 'varchar',
+    length: 16,
+    nullable: true,
+    comment: '수업종료일(마지막수업일)',
+  })
+  endedOn: string | null;
 
   @ApiProperty({ description: '🈳 비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -70,7 +89,7 @@ export class Pick {
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '🈵 createdAt; 언제 등록되었는지' })
+  @ApiProperty({ description: '🈵 createdAt' })
   @CreateDateColumn()
   createdAt: Date;
 
@@ -79,7 +98,7 @@ export class Pick {
   updatedAt: Date;
 
   @Exclude()
-  @ApiProperty({ description: '🈳 deletedAt; 언제 그만 두었는지' })
+  @ApiProperty({ description: '🈳 deletedAt' })
   @DeleteDateColumn()
   deletedAt: Date | null;
 

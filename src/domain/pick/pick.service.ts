@@ -8,12 +8,12 @@ import {
 } from 'nestjs-paginate';
 import { Actor } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { CreatePickDto } from 'src/domain/group/dto/create-group-student.dto';
-import { UpdatePickDto } from 'src/domain/group/dto/update-group-student.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { Pick } from 'src/domain/group/entities/pick.entity';
-import { Repository } from 'typeorm';
-import { UpdateGroupDto } from './dto/update-group.dto';
+import { CreateBulkPickDto } from 'src/domain/pick/dto/create-bulk-pick.dto';
+import { CreatePickDto, EndPickDto } from 'src/domain/pick/dto/create-pick.dto';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { In, Repository } from 'typeorm';
+import { UpdateGroupDto } from '../group/dto/update-group.dto';
 
 @Injectable()
 export class PickService {
@@ -30,37 +30,72 @@ export class PickService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  // 학생 개별등록 w/ note and enrolledBy
-  async create(dto: CreatePickDto): Promise<Pick> {
+  // 필수항목) groupId, studentId, startedOn, note (수동으로 등록시)
+  async startPick(dto: CreatePickDto): Promise<Pick> {
     const pick = this.pickRepository.create(dto);
     return await this.pickRepository.save(pick);
   }
 
-  async createBulk(groupId: number, studentIds: number[]): Promise<Pick[]> {
-    const picks: Pick[] = [];
-    for (const studentId of studentIds) {
-      const pick = this.pickRepository.create({
-        groupId,
-        studentId,
-        enrolledBy: Actor.SYSTEM,
-      });
-      picks.push(pick);
-    }
-    return await this.pickRepository.save(picks);
+  // 필수항목) groupId, studentId (무조건 시스템 등록이라 가정)
+  async createBulk(dto: CreateBulkPickDto): Promise<Pick[]> {
+    const picks: Partial<Pick>[] = dto.studentIds.map((studentId) => ({
+      groupId: dto.groupId,
+      studentId,
+      enrolledBy: Actor.SYSTEM,
+    }));
+
+    // upsert based on unique constraint: groupId, studentId
+    await this.pickRepository.upsert(picks, ['groupId', 'studentId']);
+
+    // refetch the upserted picks to return full entities
+    return await this.pickRepository.find({
+      where: { groupId: dto.groupId, studentId: In(dto.studentIds) },
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  async list(groupId: number): Promise<Pick[]> {
+  async listStudents(groupId: number): Promise<Pick[]> {
     return await this.pickRepository.find({
       where: { groupId },
       relations: ['student', 'student.parent'],
     });
   }
 
-  async infiniteList(
+  async listGroups(studentId: number): Promise<Pick[]> {
+    return await this.pickRepository.find({
+      where: { studentId },
+      relations: ['group', 'group.lesson'],
+    });
+  }
+
+  async groupInfiniteList(
+    studentId: number,
+    query: PaginateQuery,
+  ): Promise<Paginated<Pick>> {
+    const queryBuilder = this.pickRepository
+      .createQueryBuilder('pick')
+      .where('pick.studentId = :studentId', { studentId });
+
+    return await paginate(query, queryBuilder, {
+      relations: {
+        group: {
+          lesson: true,
+        },
+      },
+      sortableColumns: ['id'],
+      searchableColumns: ['note'],
+      defaultSortBy: [['id', 'DESC']],
+      filterableColumns: {
+        enrolledBy: [FilterOperator.EQ],
+        deletedBy: [FilterOperator.EQ],
+      },
+    });
+  }
+
+  async studentInfiniteList(
     groupId: number,
     query: PaginateQuery,
   ): Promise<Paginated<Pick>> {
@@ -109,14 +144,9 @@ export class PickService {
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
 
-  async update(
-    groupId: number,
-    studentId: number,
-    dto: UpdateGroupDto,
-  ): Promise<Pick> {
+  async update(id: number, dto: UpdateGroupDto): Promise<Pick> {
     const group = await this.pickRepository.preload({
-      groupId,
-      studentId,
+      id,
       ...dto,
     });
     if (!group) {
@@ -125,19 +155,33 @@ export class PickService {
     return await this.pickRepository.save(group);
   }
 
+  async endPick(dto: EndPickDto): Promise<Pick> {
+    const pick = await this.pickRepository.findOneOrFail({
+      where: { groupId: dto.groupId, studentId: dto.studentId },
+    });
+    await this.pickRepository.update(pick.id, {
+      note: dto.note,
+      endedBy: dto.endedBy,
+      endedOn: dto.endedOn,
+    });
+
+    // pick 객체에 dto 값 반영 (Pick entity 타입에 맞게 null 허용)
+    pick.note = dto.note;
+    pick.endedBy = dto.endedBy ?? null;
+    pick.endedOn = dto.endedOn;
+
+    return pick;
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
 
-  async remove(dto: UpdatePickDto): Promise<void> {
+  async remove(id: number): Promise<Pick> {
     const pick = await this.pickRepository.findOneOrFail({
-      where: { groupId: dto.groupId, studentId: dto.studentId },
+      where: { id },
     });
-
-    await this.pickRepository.update(pick.id, {
-      note: dto.note,
-      deletedBy: dto.deletedBy,
-      deletedAt: new Date(),
-    });
+    await this.pickRepository.softRemove(pick);
+    return pick;
   }
 }

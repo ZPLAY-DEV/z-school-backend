@@ -1,3 +1,4 @@
+import { format, toZonedTime } from 'date-fns-tz';
 import { WeekdayOrder } from 'src/common/enums';
 import { ICalendarDay } from 'src/common/interfaces';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
@@ -17,6 +18,8 @@ export async function calculateLessonDays(
   group: Group,
   calendarRepository: Repository<Calendar>,
 ): Promise<LessonDaysResult> {
+  const timeZone = 'Asia/Seoul';
+
   // 1. Calculate dates for the group's weekday between lesson.start and lesson.end
   const startDate = new Date(`${lesson.start}T00:00:00+09:00`);
   const endDate = new Date(`${lesson.end}T23:59:59+09:00`);
@@ -27,28 +30,32 @@ export async function calculateLessonDays(
   const [startHour, startMinute] = parseTime(group.start);
   const [endHour, endMinute] = parseTime(group.end);
   const calendarDays: ICalendarDay[] = [];
+
   for (const date of dates) {
-    const startsAt = new Date(date);
-    startsAt.setHours(startHour, startMinute, 0, 0);
-    const endsAt = new Date(date);
-    endsAt.setHours(endHour, endMinute, 0, 0);
-    calendarDays.push({ startsAt, endsAt, isActive: true });
+    const startTime = new Date(date);
+    startTime.setHours(startHour, startMinute, 0, 0);
+    const start = format(toZonedTime(startTime, timeZone), 'yyyy-MM-dd HH:mm');
+    const endTime = new Date(date);
+    endTime.setHours(endHour, endMinute, 0, 0);
+    const end = format(toZonedTime(endTime, timeZone), 'yyyy-MM-dd HH:mm');
+    calendarDays.push({ start, end, classOn: true });
   }
 
   // 3. Check for school calendar holidays and set isActive = false if found
   for (const calDay of calendarDays) {
-    const dateStr = calDay.startsAt.toISOString().slice(0, 10); // YYYY-MM-DD
+    const [date] = calDay.start.split(' ');
     const calendar = await calendarRepository
       .createQueryBuilder('calendar')
       .where('calendar.schoolId = :schoolId', { schoolId: lesson.schoolId })
-      .andWhere('calendar.date = :date', { date: dateStr })
+      .andWhere('calendar.date = :date', { date: date })
       .getOne();
     if (calendar) {
-      calDay.isActive = false;
+      calDay.classOn = false;
     }
   }
 
   // 4. Count active days
-  const days = calendarDays.filter((calDay) => calDay.isActive).length;
+  const days = calendarDays.filter((calDay) => calDay.classOn).length;
+
   return { calendarDays, days };
 }

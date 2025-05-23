@@ -199,6 +199,11 @@ export const HttpErrorConstants = {
     message: '비밀번호가 존재하지 않습니다.',
   } as HttpErrorFormat,
 
+  INVALID_QUERY_PARAMS: {
+    error: 'INVALID_QUERY_PARAMS',
+    message: '쿼리 파라미터가 유효하지 않습니다.',
+  } as HttpErrorFormat,
+
   INVALID_CREDENTIALS: {
     error: 'INVALID_CREDENTIALS',
     message: '인증정보가 불일치합니다.',

@@ -36,7 +36,7 @@ export class SchoolBoardService {
         schoolId,
       },
       order: {
-        createdAt: 'DESC',
+        id: 'DESC',
       },
     });
   }
@@ -51,9 +51,9 @@ export class SchoolBoardService {
       .where('board.schoolId = :schoolId', { schoolId });
 
     return await paginate<Board>(query, queryBuilder, {
-      sortableColumns: ['createdAt'],
+      sortableColumns: ['id'],
       searchableColumns: ['title'],
-      defaultSortBy: [['createdAt', 'DESC']],
+      defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
         groupId: [FilterOperator.EQ],
       },
@@ -70,7 +70,7 @@ export class SchoolBoardService {
         school: true,
       },
       order: {
-        createdAt: 'DESC',
+        id: 'DESC',
       },
     });
   }
@@ -88,9 +88,9 @@ export class SchoolBoardService {
       relations: {
         school: true,
       },
-      sortableColumns: ['createdAt'],
+      sortableColumns: ['id'],
       searchableColumns: ['title'],
-      defaultSortBy: [['createdAt', 'DESC']],
+      defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
         groupId: [FilterOperator.EQ],
       },
@@ -107,7 +107,7 @@ export class SchoolBoardService {
         school: true,
       },
       order: {
-        createdAt: 'DESC',
+        id: 'DESC',
       },
     });
   }
@@ -128,9 +128,9 @@ export class SchoolBoardService {
       relations: {
         school: true,
       },
-      sortableColumns: ['createdAt'],
+      sortableColumns: ['id'],
       searchableColumns: ['title'],
-      defaultSortBy: [['createdAt', 'DESC']],
+      defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
         groupId: [FilterOperator.EQ],
       },
