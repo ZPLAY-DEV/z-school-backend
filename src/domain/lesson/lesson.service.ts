@@ -23,6 +23,10 @@ export class LessonService {
   constructor(
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
+    @InjectRepository(Calendar)
+    private readonly calendarRepository: Repository<Calendar>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
     private readonly lessonCoreService: LessonCoreService,
   ) {}
 
@@ -104,17 +108,23 @@ export class LessonService {
 
     // 2. For each group, update calendarDays
     let totalDays = 0;
-    const calendarRepository =
-      this.lessonRepository.manager.getRepository(Calendar);
     for (const group of lesson.groups) {
-      const { calendarDays, days } = await calculateLessonDays(
-        lesson,
-        group,
-        calendarRepository,
-      );
-      group.days = days;
+      const calendarDays = calculateLessonDays(lesson, group);
+      for (const calDay of calendarDays) {
+        const [date] = calDay.start.split(' ');
+        const calendar = await this.calendarRepository
+          .createQueryBuilder('calendar')
+          .where('calendar.schoolId = :schoolId', { schoolId: lesson.schoolId })
+          .andWhere('calendar.date = :date', { date: date })
+          .getOne();
+        if (calendar) {
+          calDay.classOn = false;
+        }
+      }
+
+      group.days = calendarDays.filter((day) => day.classOn).length;
       group.calendarDays = calendarDays;
-      await calendarRepository.manager.getRepository(Group).save(group);
+      await this.groupRepository.save(group);
       totalDays += calendarDays.length;
     }
     return totalDays;

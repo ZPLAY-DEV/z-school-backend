@@ -43,12 +43,22 @@ export class LessonSubscriber implements EntitySubscriberInterface<Lesson> {
 
     for (const group of groups) {
       const calendarRepository = event.manager.getRepository(Calendar);
-      const { calendarDays, days } = await calculateLessonDays(
-        lesson,
-        group,
-        calendarRepository,
-      );
-      group.days = days;
+      const calendarDays = calculateLessonDays(lesson, group);
+      for (const calDay of calendarDays) {
+        const [date] = calDay.start.split(' ');
+        const calendar = await calendarRepository
+          .createQueryBuilder('calendar')
+          .where('calendar.schoolId = :schoolId', {
+            schoolId: lesson.schoolId,
+          })
+          .andWhere('calendar.date = :date', { date: date })
+          .getOne();
+        if (calendar) {
+          calDay.classOn = false;
+        }
+      }
+
+      group.days = calendarDays.filter((day) => day.classOn).length;
       group.calendarDays = calendarDays;
       await event.manager.getRepository(Group).save(group);
     }
