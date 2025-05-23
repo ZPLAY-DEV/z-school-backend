@@ -13,7 +13,7 @@ import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { DeleteInstructorSchoolDto } from '../instructor/dto/delete-instructor-school.dto';
-import { InstructorSchool } from '../instructor/entities/instructor-school.entity';
+import { Sam } from '../instructor/entities/sam.entity';
 @Injectable()
 export class SchoolInstructorService {
   private readonly logger = new Logger(SchoolInstructorService.name);
@@ -23,8 +23,8 @@ export class SchoolInstructorService {
     private instructorRepository: Repository<Instructor>,
     @InjectRepository(School)
     private schoolRepository: Repository<School>,
-    @InjectRepository(InstructorSchool)
-    private instructorSchoolRepository: Repository<InstructorSchool>,
+    @InjectRepository(Sam)
+    private samRepository: Repository<Sam>,
     private dataSource: DataSource,
   ) {}
 
@@ -64,13 +64,13 @@ export class SchoolInstructorService {
 
       // 3. 기존 InstructorSchool 관계 조회
       const existingInstructorSchools = await manager
-        .createQueryBuilder(InstructorSchool, 'instructorSchool')
-        .innerJoin('instructorSchool.instructor', 'instructor')
-        .where('instructorSchool.schoolId = :schoolId', { schoolId })
+        .createQueryBuilder(Sam, 'sam')
+        .innerJoin('sam.instructor', 'instructor')
+        .where('sam.schoolId = :schoolId', { schoolId })
         .andWhere('instructor.phone IN (:...phones)', { phones: phoneNumbers })
         .getMany();
 
-      const instructorSchoolMap = new Map<string, InstructorSchool>(
+      const instructorSchoolMap = new Map<string, Sam>(
         existingInstructorSchools.map((is) => [
           `${is.instructorId}-${is.schoolId}`,
           is,
@@ -113,7 +113,7 @@ export class SchoolInstructorService {
           if (instructorSchool) {
             // 기존 관계 업데이트
             await manager.update(
-              InstructorSchool,
+              Sam,
               { id: instructorSchool.id },
               {
                 instructorId: instructor.id,
@@ -125,12 +125,12 @@ export class SchoolInstructorService {
             );
 
             // 업데이트된 InstructorSchool 조회
-            instructorSchool = await manager.findOneOrFail(InstructorSchool, {
+            instructorSchool = await manager.findOneOrFail(Sam, {
               where: { id: instructorSchool.id },
             });
           } else {
             // 새 관계 생성
-            instructorSchool = this.instructorSchoolRepository.create({
+            instructorSchool = this.samRepository.create({
               instructorId: instructor.id,
               schoolId,
               alias: dto.name,
@@ -138,15 +138,12 @@ export class SchoolInstructorService {
               editEnrollmentPermission: dto.editEnrollmentPermission ?? false,
               note: dto.note,
             });
-            instructorSchool = await manager.save(
-              InstructorSchool,
-              instructorSchool,
-            );
+            instructorSchool = await manager.save(Sam, instructorSchool);
           }
 
           return await manager.findOneOrFail(Instructor, {
-            where: { id: instructor.id, instructorSchools: { schoolId } },
-            relations: ['instructorSchools'],
+            where: { id: instructor.id, sam: { schoolId } },
+            relations: ['sam'],
           });
         } catch (error) {
           this.logger.error(
@@ -167,12 +164,8 @@ export class SchoolInstructorService {
     const phoneNumbers = dtos.map((dto) => dto.phone);
     const existingInstructors = await this.instructorRepository
       .createQueryBuilder('instructor')
-      .innerJoin(
-        InstructorSchool,
-        'instructorSchool',
-        'instructorSchool.instructorId = instructor.id',
-      )
-      .where('instructorSchool.schoolId = :schoolId', {
+      .innerJoin(Sam, 'sam', 'sam.instructorId = instructor.id')
+      .where('sam.schoolId = :schoolId', {
         schoolId,
       })
       .andWhere('instructor.phone IN (:...phones)', { phones: phoneNumbers })
@@ -190,10 +183,10 @@ export class SchoolInstructorService {
 
   async list(schoolId: number): Promise<Instructor[]> {
     return await this.instructorRepository.find({
-      where: { instructorSchools: { schoolId } },
-      relations: ['instructorSchools', 'groups'],
+      where: { sam: { schoolId } },
+      relations: ['sam', 'groups'],
       order: {
-        instructorSchools: {
+        sam: {
           alias: 'ASC',
         },
       },
@@ -208,17 +201,17 @@ export class SchoolInstructorService {
       return await paginate<Instructor>(query, this.instructorRepository, {
         relations: ['instructorSchools', 'groups'],
         where: {
-          instructorSchools: {
+          sam: {
             schoolId: schoolId,
           },
         },
-        sortableColumns: ['instructorSchools.alias'],
-        searchableColumns: ['instructorSchools.alias', 'phone'],
-        defaultSortBy: [['instructorSchools.alias', 'ASC']],
+        sortableColumns: ['sam.alias'],
+        searchableColumns: ['sam.alias', 'phone'],
+        defaultSortBy: [['sam.alias', 'ASC']],
         filterableColumns: {
           'instructor.pushToken': [FilterOperator.EQ],
-          'instructorSchools.editFeePermission': [FilterOperator.EQ],
-          'instructorSchools.editEnrollmentPermission': [FilterOperator.EQ],
+          'sam.editFeePermission': [FilterOperator.EQ],
+          'sam.editEnrollmentPermission': [FilterOperator.EQ],
         },
       });
     } catch (error) {
@@ -237,7 +230,7 @@ export class SchoolInstructorService {
     try {
       return await this.dataSource
         .createQueryBuilder(Document, 'document')
-        .where('document.instructorId = :instructorId', { instructorId })
+        .where('document.samId = :samId', { samId: instructorId })
         .andWhere('document.schoolId = :schoolId', { schoolId })
         .getMany();
     } catch (error) {
@@ -255,7 +248,7 @@ export class SchoolInstructorService {
     dto: DeleteInstructorSchoolDto,
   ): Promise<void> {
     await this.dataSource.transaction(async (manager: EntityManager) => {
-      const instructorSchool = await manager.findOne(InstructorSchool, {
+      const instructorSchool = await manager.findOne(Sam, {
         where: { schoolId, instructorId },
       });
       if (!instructorSchool) {
@@ -265,12 +258,12 @@ export class SchoolInstructorService {
       }
       // note ( 사유 ) 업데이트
       await manager.update(
-        InstructorSchool,
+        Sam,
         { id: instructorSchool.id },
         { note: dto.note },
       );
       // soft Delete
-      await manager.softDelete(InstructorSchool, { id: instructorSchool.id });
+      await manager.softDelete(Sam, { id: instructorSchool.id });
     });
   }
 }

@@ -2,10 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { IsArray, IsEnum } from 'class-validator';
 import { DocumentType } from 'src/common/enums';
-import { Document } from 'src/domain/document/entities/document.entity';
-import { Group } from 'src/domain/group/entities/group.entity';
 import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
-import { Payout } from 'src/domain/payout/entities/payout.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
   Column,
@@ -19,7 +16,7 @@ import {
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
-import { InstructorSchool } from './instructor-school.entity';
+import { Sam } from './sam.entity';
 
 @Entity('instructors')
 @Unique(['name', 'phone'])
@@ -94,24 +91,10 @@ export class Instructor {
   @JoinColumn()
   user?: User;
 
-  //* 1-to-M hasMany ------------------------------------------------------- *//
-
-  @OneToMany(() => Document, (document) => document.instructor)
-  documents: Document[];
-
-  @OneToMany(() => Group, (group) => group.instructor)
-  groups: Group[];
-
-  @OneToMany(() => Payout, (payout) => payout.instructor)
-  payouts: Payout[];
-
   //* N-to-M belongsToMany using OneToMany --------------------------------- *//
 
-  @OneToMany(
-    () => InstructorSchool,
-    (instructorSchool) => instructorSchool.instructor,
-  )
-  instructorSchools: InstructorSchool[];
+  @OneToMany(() => Sam, (sam) => sam.instructor)
+  sam: Sam;
 
   @OneToMany(
     () => InstructorLesson,

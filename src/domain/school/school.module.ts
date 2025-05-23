@@ -29,7 +29,7 @@ import { SchoolStudentController } from './school-student.controller';
 import { SchoolStudentService } from './school-student.service';
 import { SchoolController } from './school.controller';
 import { SchoolService } from './school.service';
-import { InstructorSchool } from '../instructor/entities/instructor-school.entity';
+import { Sam } from '../instructor/entities/sam.entity';
 import { Board } from '../board/entities/board.entity';
 import { Comment } from '../board/entities/comment.entity';
 import { SchoolBoardController } from './school-board.controller';
@@ -44,7 +44,7 @@ import { SchoolBoardService } from './school-board.service';
       Offering,
       Parent,
       Instructor,
-      InstructorSchool,
+      Sam,
       Phone,
       Board,
       Comment,
