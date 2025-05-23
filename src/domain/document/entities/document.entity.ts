@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { DocumentType } from 'src/common/enums';
-import { Sam } from 'src/domain/instructor/entities/sam.entity';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
 import {
   Column,
   CreateDateColumn,
@@ -19,7 +19,7 @@ export class Document {
   id: number;
 
   @Column({ type: 'int', unsigned: true })
-  schoolInstructorId: number;
+  samId: number;
 
   @Column({
     type: 'int',

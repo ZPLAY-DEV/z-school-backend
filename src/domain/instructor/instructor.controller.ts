@@ -4,8 +4,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
-  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
@@ -14,19 +12,15 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+import { DeleteInstructorNoteDto } from 'src/domain/instructor/dto/delete-instructor-note.dto';
 import { UpdateInstructorDto } from 'src/domain/instructor/dto/update-instructor.dto';
 import { InstructorService } from 'src/domain/instructor/instructor.service';
 import { CreateInstructorDto } from './dto/create-instructor.dto';
-import { DeleteInstructorSchoolDto } from './dto/delete-instructor-school.dto';
 import { Instructor } from './entities/instructor.entity';
-import {
-  CreateInstructorDocs,
-  InstructorDryRunDocs,
-  SoftDeleteSchoolInstructorDocs,
-} from './swagger/instructor.swagger.decorator';
+import { SoftDeleteSchoolInstructorDocs } from './swagger/instructor.swagger.decorator';
 
 @UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('✅ Instructors ( 강사 )')
+@ApiTags('✅ Instructors ( 강사; equivalent to Parent )')
 @ApiCommonErrorResponseTemplate()
 @Controller('instructors')
 export class InstructorController {
@@ -35,22 +29,15 @@ export class InstructorController {
   //? ---------------------------------------------------------------------- ?//
   //? Create
   //? ---------------------------------------------------------------------- ?//
-  @CreateInstructorDocs()
+
   @Post()
   async create(@Body() dto: CreateInstructorDto): Promise<Instructor> {
     return await this.instructorService.create(dto);
   }
 
-  //* ---------------------------------------------------------------------- *//
-  //* Read
-  //* ---------------------------------------------------------------------- *//
-
-  @InstructorDryRunDocs()
-  @HttpCode(HttpStatus.OK)
-  @Post('dryrun')
-  async dryRun(@Body() dto: CreateInstructorDto): Promise<Instructor | null> {
-    return await this.instructorService.dryRun(dto);
-  }
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
 
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Instructor> {
@@ -64,9 +51,9 @@ export class InstructorController {
     ]);
   }
 
-  //* ---------------------------------------------------------------------- *//
-  //* Update
-  //* ---------------------------------------------------------------------- *//
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
 
   @Patch(':id')
   async update(
@@ -76,16 +63,17 @@ export class InstructorController {
     return await this.instructorService.update(id, dto);
   }
 
-  //* ---------------------------------------------------------------------- *//
-  //* Delete
-  //* ---------------------------------------------------------------------- *//
+  //? ---------------------------------------------------------------------- ?//
+  //? Delete
+  //? ---------------------------------------------------------------------- ?//
+
   @SoftDeleteSchoolInstructorDocs()
   @Delete(':id')
-  async softDeleteSchoolInstructor(
+  async softDelete(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: DeleteInstructorSchoolDto,
+    @Body() dto: DeleteInstructorNoteDto,
   ): Promise<void> {
-    return await this.instructorService.softDeleteSchoolInstructor(id, dto);
+    return await this.instructorService.softDelete(id, dto);
   }
 
   //? ---------------------------------------------------------------------- ?//

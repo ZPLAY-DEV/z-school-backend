@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { IsArray, IsEnum } from 'class-validator';
 import { DocumentType } from 'src/common/enums';
-import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
   Column,
@@ -16,7 +16,6 @@ import {
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
-import { Sam } from './sam.entity';
 
 @Entity('instructors')
 @Unique(['name', 'phone'])
@@ -48,15 +47,11 @@ export class Instructor {
   @ApiProperty({ description: '🈳 pushToken' })
   pushToken: string | null;
 
-  // @Column({ type: 'varchar', length: 255, nullable: true })
-  // @ApiProperty({ description: '🈳 내용' })
-  // note: string | null;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  @ApiProperty({ description: '🈳 내용' })
+  note: string | null;
 
   // ------------------------------------------------------------------------ //
-
-  @ApiProperty({ description: '🈵 aggregated 평가점수 100점 만점' })
-  @Column({ type: 'tinyint', unsigned: true, default: 0 })
-  score: number;
 
   @ApiProperty({ description: '🈵 강사가 지금까지 업로드한 문서' })
   @Column('json', { nullable: true })
@@ -93,14 +88,10 @@ export class Instructor {
 
   //* N-to-M belongsToMany using OneToMany --------------------------------- *//
 
-  @OneToMany(() => Sam, (sam) => sam.instructor)
-  sam: Sam;
-
-  @OneToMany(
-    () => InstructorLesson,
-    (instructorLesson: InstructorLesson) => instructorLesson.instructor,
-  )
-  instructorLessons: InstructorLesson[];
+  @OneToMany(() => Sam, (sam) => sam.instructor, {
+    cascade: ['insert', 'update'],
+  })
+  sams: Sam[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

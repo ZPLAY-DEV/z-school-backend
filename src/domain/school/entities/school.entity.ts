@@ -5,9 +5,9 @@ import { Permission, Region } from 'src/common/enums';
 import { MessageType } from 'src/common/enums/message-type';
 import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
-import { Sam } from 'src/domain/instructor/entities/sam.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Phone } from 'src/domain/phone/entities/phone.entity';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Statement } from 'src/domain/statement/entities/statement.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -148,10 +148,10 @@ export class School {
   @OneToMany(() => Board, (board) => board.school)
   public boards: Board[];
 
-  //* N-to-M belongsToMany using 1-to-M ------------------------------------ *//
-
-  @OneToMany(() => Sam, (sam) => sam.school)
-  public sam: Sam[];
+  @OneToMany(() => Sam, (sam) => sam.school, {
+    cascade: ['insert', 'update'],
+  })
+  public sams: Sam[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

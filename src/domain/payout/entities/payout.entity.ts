@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { LedgerType } from 'src/common/enums';
-import { Sam } from 'src/domain/instructor/entities/sam.entity';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
 import {
   Column,
   CreateDateColumn,

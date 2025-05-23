@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
 import {
   Column,
   CreateDateColumn,
@@ -14,14 +14,14 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('instructor_lesson')
-@Unique(['instructorId', 'lessonId'])
-export class InstructorLesson {
+@Entity('sam_lesson')
+@Unique(['samId', 'lessonId'])
+export class SamLesson {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
   @Column({ type: 'int', unsigned: true })
-  instructorId: number;
+  samId: number;
 
   @Column({ type: 'int', unsigned: true })
   lessonId: number;
@@ -41,11 +41,11 @@ export class InstructorLesson {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Instructor, (instructor) => instructor.instructorLessons)
-  @JoinColumn({ name: 'instructorId' })
-  instructor: Instructor;
+  @ManyToOne(() => Sam, (sam) => sam.samLessons)
+  @JoinColumn({ name: 'samId' })
+  sam: Sam;
 
-  @ManyToOne(() => Lesson, (lesson) => lesson.instructorLessons)
+  @ManyToOne(() => Lesson, (lesson) => lesson.samLessons)
   @JoinColumn({ name: 'lessonId' })
   lesson: Lesson;
 }

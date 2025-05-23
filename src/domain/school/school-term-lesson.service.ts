@@ -69,7 +69,7 @@ export class SchoolTermLessonService {
       relations: {
         category: true,
         groups: {
-          instructor: true,
+          sam: true,
         },
       },
     });
@@ -98,12 +98,12 @@ export class SchoolTermLessonService {
 
     return await paginate(query, queryBuilder, {
       relations: {
-        instructorLessons: { instructor: true },
-        groups: { instructor: true },
+        samLessons: { sam: true },
+        groups: { sam: true },
         category: true,
       },
       sortableColumns: ['id', 'lessonName', 'termId', 'groups.weekday'],
-      searchableColumns: ['lessonName', 'instructorLessons.instructor.name'],
+      searchableColumns: ['lessonName', 'samLessons.sam.alias'],
       defaultSortBy: [
         ['schoolId', 'DESC'],
         ['id', 'DESC'],

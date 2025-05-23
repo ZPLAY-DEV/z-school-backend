@@ -89,9 +89,9 @@ export class LessonCoreService {
         requiredDocuments: dto.requiredDocuments || [],
       });
 
-      //? 5단계) 그룹 및 강사 정보 처리
+      //? 5단계) 반(Group)과 쌤(Sam) 정보 처리
       if (dto.groups?.length) {
-        await this.processGroups(lesson, dto, manager);
+        await this.processGroups(lesson, dto.schoolId, dto.groups, manager);
       }
 
       // 최종 데이터를 다시 로드하여 변환된 값을 반환
@@ -219,7 +219,12 @@ export class LessonCoreService {
 
     //? 6단계) 그룹 및 강사 정보 처리
     if (dto.groups?.length) {
-      await this.processGroups(updatedLesson, dto, manager);
+      await this.processGroups(
+        updatedLesson,
+        dto.schoolId!,
+        dto.groups,
+        manager,
+      );
     }
 
     // 최종 데이터를 다시 로드하여 변환된 값을 반환
@@ -241,96 +246,99 @@ export class LessonCoreService {
 
   private async processGroups(
     lesson: Lesson,
-    dto: CreateLessonDto | UpdateLessonDto,
+    schoolId: number,
+    groups: CreateGroupWithInstructorDto[],
     manager: EntityManager,
   ): Promise<void> {
-    type InstructorGroupData = {
+    type GroupSamData = {
       lessonId: number;
-      instructorId: number;
-      instructorName: string;
-      instructorPhone: string;
+      samId: number;
       groupData: CreateGroupWithInstructorDto & {
         lessonId: number;
-        instructorId: number;
+        samId: number;
       };
     };
 
-    const uniqueInstructors = new Map<string, number>();
-    const instructorsWithGroupData: InstructorGroupData[] = [];
+    const uniqueSams = new Map<string, number>(); // key: `${instructorName}-${instructorPhone}`
+    const groupsWithSamData: GroupSamData[] = [];
 
-    // 각 강사를 순차적으로 처리 (Promise.all 대신 for...of 사용)
-    for (const groupDto of dto.groups || []) {
+    for (const groupDto of groups || []) {
       const instructorKey = `${groupDto.instructorName}-${groupDto.instructorPhone}`;
 
-      // 이미 처리한 강사인지 확인
-      if (uniqueInstructors.has(instructorKey)) {
-        const instructorId = uniqueInstructors.get(instructorKey)!;
-
-        instructorsWithGroupData.push({
+      // 이미 처리한 쌤인지 확인
+      if (uniqueSams.has(instructorKey)) {
+        const samId = uniqueSams.get(instructorKey)!;
+        groupsWithSamData.push({
           lessonId: lesson.id,
-          instructorId,
-          instructorName: groupDto.instructorName,
-          instructorPhone: groupDto.instructorPhone,
+          samId,
           groupData: {
             ...groupDto,
-            instructorId,
+            samId,
             lessonId: lesson.id,
           },
         });
-
         continue;
       }
 
-      // 기존 instructor 조회
-      const [existingInstructor] = await manager.query<{ id: number }[]>(
-        `SELECT id FROM instructors WHERE name = ? AND phone = ?`,
-        [groupDto.instructorName, groupDto.instructorPhone],
-      );
-
-      let instructorId: number;
-
-      if (existingInstructor) {
-        // 기존 instructor가 있으면 ID 사용
-        instructorId = existingInstructor.id;
-      } else {
-        // 기존 instructor가 없으면 새로 생성
-        const result = await manager.query(
-          `INSERT INTO instructors (name, phone) VALUES (?, ?)`,
-          [groupDto.instructorName, groupDto.instructorPhone],
-        );
-        instructorId = result.insertId;
+      // 1. Find or create Instructor
+      let instructor = await manager.getRepository('Instructor').findOne({
+        where: {
+          name: groupDto.instructorName,
+          phone: groupDto.instructorPhone,
+        },
+      });
+      if (!instructor) {
+        instructor = await manager.getRepository('Instructor').save({
+          name: groupDto.instructorName,
+          phone: groupDto.instructorPhone,
+        });
+      }
+      if (!instructor || !instructor.id) {
+        throw new Error('Failed to find or create Instructor');
       }
 
-      // 처리된 강사 정보 저장
-      uniqueInstructors.set(instructorKey, instructorId);
+      // 2. Find or create Sam (by instructorId, schoolId)
+      if (!schoolId) {
+        throw new Error('schoolId is required in DTO');
+      }
+      let sam = await manager.getRepository('Sam').findOne({
+        where: { instructorId: instructor.id, schoolId },
+      });
+      if (!sam) {
+        sam = await manager.getRepository('Sam').save({
+          instructorId: instructor.id,
+          schoolId: schoolId,
+          alias: groupDto.instructorName, // or set as needed
+        });
+      }
+      if (!sam || !sam.id) {
+        throw new Error('Failed to find or create Sam');
+      }
 
-      instructorsWithGroupData.push({
+      uniqueSams.set(instructorKey, Number(sam.id));
+      groupsWithSamData.push({
         lessonId: lesson.id,
-        instructorId,
-        instructorName: groupDto.instructorName,
-        instructorPhone: groupDto.instructorPhone,
+        samId: Number(sam.id),
         groupData: {
           ...groupDto,
-          instructorId,
+          samId: Number(sam.id),
           lessonId: lesson.id,
         },
       });
     }
 
-    // Upsert groups with both lessonId and instructorId
-    for (const { instructorId, groupData } of instructorsWithGroupData) {
-      // 수업 시작 시간과 종료 시간을 24시간 형식으로 변환
+    // Upsert groups with both lessonId and samId
+    for (const { samId, groupData } of groupsWithSamData) {
       const groupStart = parseTimeFormat(parseTime(groupData.start));
       const groupEnd = parseTimeFormat(parseTime(groupData.end));
       const groupAllowedGrades = parseRangeFormat(groupData.allowedGrades).join(
         ',',
       );
 
-      // 타입 안전한 방식으로 upsert 데이터 생성
       const upsertData: DeepPartial<Group> = {
         lessonId: lesson.id,
         groupName: groupData.groupName,
-        instructorId,
+        samId,
         location: groupData.location,
         capacity: groupData.capacity,
         allowedGrades: groupAllowedGrades,
@@ -338,12 +346,9 @@ export class LessonCoreService {
         start: groupStart,
         end: groupEnd,
       };
-
-      // lesson.groups 가 있는 경우, 3단계에서 id 추가
       if ('id' in groupData && groupData.id) {
         upsertData.id = Number(groupData.id);
       }
-
       await manager
         .getRepository(Group)
         .upsert(upsertData, ['lessonId', 'groupName']);
@@ -354,13 +359,11 @@ export class LessonCoreService {
       where: { id: lesson.id },
       relations: { groups: true },
     });
-
     if (existingLesson && existingLesson.groups.length > 0) {
-      const newGroupNames = dto.groups?.map((g) => g.groupName || '') || [];
+      const newGroupNames = groups?.map((g) => g.groupName || '') || [];
       const groupsToDelete = existingLesson.groups.filter(
         (g) => !newGroupNames.includes(g.groupName || ''),
       );
-
       if (groupsToDelete.length > 0) {
         await manager.softDelete(
           Group,
@@ -369,55 +372,18 @@ export class LessonCoreService {
       }
     }
 
-    // ---------------------------------------------------------------------- //
-    // instructor_lesson 관계 업데이트 (존재 확인 후 필요한 경우만 삽입)
-    // ---------------------------------------------------------------------- //
-
-    const instructorIds = Array.from(
-      new Set(instructorsWithGroupData.map((item) => item.instructorId)),
-    );
-
-    // 각 instructor에 대해 lesson 연결이 있는지 확인하고 없는 경우만 생성
-    for (const instructorId of instructorIds) {
-      // 기존 연결 확인
-      const [existingLessonRelation] = await manager.query<any[]>(
-        `SELECT id FROM instructor_lesson 
-         WHERE instructorId = ? AND lessonId = ? AND deletedAt IS NULL`,
-        [instructorId, lesson.id],
-      );
-
-      // 연결이 없는 경우에만 삽입
-      if (!existingLessonRelation) {
-        await manager.query(
-          `INSERT INTO instructor_lesson
-           (instructorId, lessonId)
-           VALUES (?, ?)`,
-          [instructorId, lesson.id],
-        );
-      }
-    }
-
-    // ---------------------------------------------------------------------- //
-    // instructor_school 관계 업데이트 (존재 확인 후 필요한 경우만 삽입)
-    // ---------------------------------------------------------------------- //
-
-    // 각 instructor에 대해 school 연결이 있는지 확인하고 없는 경우만 생성
-    for (const instructorId of instructorIds) {
-      // 기존 연결 확인
-      const [existingSchoolRelation] = await manager.query<any[]>(
-        `SELECT id FROM instructor_school 
-         WHERE instructorId = ? AND schoolId = ? AND deletedAt IS NULL`,
-        [instructorId, dto.schoolId],
-      );
-
-      // 연결이 없는 경우에만 삽입
-      if (!existingSchoolRelation) {
-        await manager.query(
-          `INSERT INTO instructor_school 
-           (instructorId, schoolId, alias) 
-           VALUES (?, ?, ?)`,
-          [instructorId, dto.schoolId, ''],
-        );
+    // SamLesson 관계 upsert (samId, lessonId)
+    const samIds = Array.from(uniqueSams.values());
+    for (const samId of samIds) {
+      // Check if SamLesson exists
+      const existingSamLesson = await manager.findOne('SamLesson', {
+        where: { samId, lessonId: lesson.id },
+      });
+      if (!existingSamLesson) {
+        await manager.save('SamLesson', {
+          samId,
+          lessonId: lesson.id,
+        });
       }
     }
 

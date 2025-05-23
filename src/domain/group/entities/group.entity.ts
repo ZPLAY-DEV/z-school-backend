@@ -4,9 +4,9 @@ import { IsArray } from 'class-validator';
 import { Actor, ClassStatus, Weekday } from 'src/common/enums';
 import { ICalendarDay } from 'src/common/interfaces';
 import { Board } from 'src/domain/board/entities/board.entity';
-import { Sam } from 'src/domain/instructor/entities/sam.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
 import {
   Column,
   CreateDateColumn,

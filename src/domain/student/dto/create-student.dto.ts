@@ -7,8 +7,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-  Min,
-  ValidateNested,
+  ValidateNested
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
 import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
@@ -16,26 +15,22 @@ import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
 export class CreateStudentDto {
   @ApiProperty({
     description: '🈳 학부모 ID',
-    required: false,
     type: Number,
+    required: false,
     example: 1,
   })
-  @IsOptional()
   @IsInt()
-  @Type(() => Number)
-  @Min(1)
-  parentId: number;
+  @IsOptional()
+  parentId?: number;
 
   @ApiProperty({
     description: '🈵 School ID (number)',
-    required: true,
     type: Number,
+    required: true,
     example: 1,
   })
   @IsNotEmpty()
   @IsInt()
-  @Type(() => Number)
-  @Min(1)
   schoolId: number;
 
   @ApiProperty({
@@ -150,13 +145,11 @@ export class CreateStudentDto {
 
   @ApiProperty({
     description: '🈵 보호자 정보',
-    required: true,
     type: CreateParentDto,
+    required: true,
     example: {
       name: '홍길동',
       phone: '01012345678',
-      email: 'hong@gmail.com',
-      address: '서울특별시 강남구 테헤란로 14길 6 남도빌딩 2층',
     },
   })
   @ValidateNested()
