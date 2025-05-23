@@ -33,7 +33,7 @@ export class SchoolSamController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @Post(':schoolId/instructors/bulk')
+  @Post(':schoolId/sams/bulk')
   async createBulk(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Body() dtos: CreateSamDto[],
@@ -46,7 +46,7 @@ export class SchoolSamController {
   //? ---------------------------------------------------------------------- ?//
 
   @HttpCode(StatusCodes.OK)
-  @Post(':schoolId/instructors/bulk/dryrun')
+  @Post(':schoolId/sams/bulk/dryrun')
   async bulkDryRun(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Body() dtos: CreateSamDto[],
