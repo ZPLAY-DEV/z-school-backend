@@ -21,7 +21,7 @@ import { School } from '../school/entities/school.entity';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 import { BookingStatus } from 'src/common/enums';
-import { Pick } from '../group/entities/pick.entity';
+import { Pick } from '../pick/entities/pick.entity';
 import { Booking } from '../booking/entities/booking.entity';
 
 @Injectable()
@@ -187,7 +187,7 @@ export class StudentService {
       .leftJoinAndSelect('group.instructor', 'instructor')
       .leftJoinAndSelect('instructor.instructorSchools', 'instructorSchools')
       .where('pick.studentId = :studentId', { studentId })
-      .andWhere('pick.deletedBy IS NOT NULL')
+      .andWhere('pick.endedBy IS NOT NULL')
       .getMany();
 
     return picks;

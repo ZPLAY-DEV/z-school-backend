@@ -19,7 +19,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { Pick } from 'src/domain/group/entities/pick.entity';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { StudentService } from 'src/domain/student/student.service';
 import { UploadService } from 'src/services/upload/upload.service';
 import { CreateStudentDto } from './dto/create-student.dto';
