@@ -5,8 +5,7 @@ import { Permission, Region } from 'src/common/enums';
 import { MessageType } from 'src/common/enums/message-type';
 import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
-import { InstructorSchool } from 'src/domain/instructor/entities/instructor-school.entity';
-// import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Sam } from 'src/domain/instructor/entities/sam.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Phone } from 'src/domain/phone/entities/phone.entity';
 import { Statement } from 'src/domain/statement/entities/statement.entity';
@@ -17,7 +16,6 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  // ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -152,11 +150,8 @@ export class School {
 
   //* N-to-M belongsToMany using 1-to-M ------------------------------------ *//
 
-  @OneToMany(
-    () => InstructorSchool,
-    (instructorSchool) => instructorSchool.school,
-  )
-  public instructorSchools: InstructorSchool[];
+  @OneToMany(() => Sam, (sam) => sam.school)
+  public sam: Sam[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

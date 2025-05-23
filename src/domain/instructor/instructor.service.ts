@@ -15,7 +15,7 @@ import { DataSource, EntityManager, Repository } from 'typeorm';
 import { School } from '../school/entities/school.entity';
 import { CreateInstructorDto } from './dto/create-instructor.dto';
 import { DeleteInstructorSchoolDto } from './dto/delete-instructor-school.dto';
-import { InstructorSchool } from './entities/instructor-school.entity';
+import { Sam } from './entities/sam.entity';
 
 @Injectable()
 export class InstructorService {
@@ -24,6 +24,8 @@ export class InstructorService {
   constructor(
     @InjectRepository(Instructor)
     private readonly instructorRepository: Repository<Instructor>,
+    @InjectRepository(Sam)
+    private readonly samRepository: Repository<Sam>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
     private readonly dataSource: DataSource,
@@ -78,21 +80,21 @@ export class InstructorService {
         });
         instructor = await manager.save(Instructor, instructor);
       }
-      // 4. InstructorSchool 관계 upsert (동일 phone 기준)
-      let instructorSchool = await manager
-        .createQueryBuilder(InstructorSchool, 'instructorSchool')
-        .innerJoin('instructorSchool.instructor', 'instructor')
-        .where('instructorSchool.schoolId = :schoolId', {
+      // 4. Sam 관계 upsert (동일 phone 기준)
+      let sam = await manager
+        .createQueryBuilder(Sam, 'sam')
+        .innerJoin('sam.instructor', 'instructor')
+        .where('sam.schoolId = :schoolId', {
           schoolId: dto.schoolId,
         })
         .andWhere('instructor.phone = :phone', { phone: dto.phone })
         .getOne();
 
-      if (instructorSchool) {
+      if (sam) {
         // 기존 관계 업데이트
         await manager.update(
-          InstructorSchool,
-          { id: instructorSchool.id },
+          Sam,
+          { id: sam.id },
           {
             instructorId: instructor.id, // phone이 동일하더라도 최신 instructor.id로 업데이트 되도록 처리
             alias: dto.name,
@@ -103,7 +105,7 @@ export class InstructorService {
         );
       } else {
         // 새 관계 생성
-        instructorSchool = manager.create(InstructorSchool, {
+        sam = manager.create(Sam, {
           instructorId: instructor.id,
           schoolId: dto.schoolId,
           alias: dto.name,
@@ -111,15 +113,15 @@ export class InstructorService {
           editEnrollmentPermission: dto.editEnrollmentPermission,
           note: dto.note,
         });
-        await manager.save(InstructorSchool, instructorSchool);
+        await manager.save(Sam, sam);
       }
 
       return await manager.findOneOrFail(Instructor, {
         where: {
           id: instructor.id,
-          instructorSchools: { schoolId: dto.schoolId },
+          sam: { schoolId: dto.schoolId },
         },
-        relations: ['instructorSchools'],
+        relations: ['sam'],
       });
     });
   }
@@ -133,11 +135,7 @@ export class InstructorService {
 
     const existingInstructor = await this.instructorRepository
       .createQueryBuilder('instructor')
-      .innerJoin(
-        InstructorSchool,
-        'instructorSchool',
-        'instructorSchool.instructorId = instructor.id',
-      )
+      .innerJoin(Sam, 'sam', 'sam.instructorId = instructor.id')
       .where('instructorSchool.schoolId = :schoolId', {
         schoolId: dto.schoolId,
       })
@@ -205,7 +203,7 @@ export class InstructorService {
 
   async listGroups(instructorId: number): Promise<Group[]> {
     return this.groupRepository.find({
-      where: { instructorId },
+      where: { samId: instructorId },
       relations: ['lesson'],
     });
   }
@@ -237,9 +235,9 @@ export class InstructorService {
   ): Promise<void> {
     await this.dataSource.transaction(async (manager: EntityManager) => {
       // note ( 사유 ) 업데이트
-      await manager.update(InstructorSchool, { id }, { note: dto.note });
+      await manager.update(Sam, { id }, { note: dto.note });
       // soft Delete
-      await manager.softDelete(InstructorSchool, { id });
+      await manager.softDelete(Sam, { id });
     });
   }
   // note that this is hard-delete

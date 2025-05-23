@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { DocumentType } from 'src/common/enums';
-import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Sam } from 'src/domain/instructor/entities/sam.entity';
 import {
   Column,
   CreateDateColumn,
@@ -19,7 +19,7 @@ export class Document {
   id: number;
 
   @Column({ type: 'int', unsigned: true })
-  instructorId: number;
+  schoolInstructorId: number;
 
   @Column({
     type: 'int',
@@ -60,9 +60,9 @@ export class Document {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Instructor, (instructor) => instructor.documents)
-  @JoinColumn({ name: 'instructorId' })
-  instructor: Instructor;
+  @ManyToOne(() => Sam, (sam) => sam.documents)
+  @JoinColumn({ name: 'samId' })
+  sam: Sam;
 
   //? Constructor ---------------------------------------------------------- ?//
 

@@ -8,15 +8,18 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import { Instructor } from './instructor.entity';
-
-@Entity('instructor_school')
+import { Group } from 'src/domain/group/entities/group.entity';
+import { Payout } from 'src/domain/payout/entities/payout.entity';
+import { Document } from 'src/domain/document/entities/document.entity';
+@Entity('sam')
 @Unique(['instructorId', 'schoolId'])
-export class InstructorSchool {
+export class Sam {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
@@ -75,19 +78,30 @@ export class InstructorSchool {
   @DeleteDateColumn()
   deletedAt: Date | null;
 
-  //* 1-to-M hasMany ------------------------------------------------------- *//
+  //* M-to-1 belongsTo ------------------------------------------------------- *//
 
-  @ManyToOne(() => Instructor, (instructor) => instructor.instructorSchools)
+  @ManyToOne(() => Instructor, (instructor) => instructor.sam)
   @JoinColumn({ name: 'instructorId' })
   instructor: Instructor;
 
-  @ManyToOne(() => School, (school) => school.instructorSchools)
+  @ManyToOne(() => School, (school) => school.sam)
   @JoinColumn({ name: 'schoolId' })
   school: School;
 
+  //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @OneToMany(() => Document, (document) => document.sam)
+  documents: Document[];
+
+  @OneToMany(() => Group, (group) => group.sam)
+  groups: Group[];
+
+  @OneToMany(() => Payout, (payout) => payout.sam)
+  payouts: Payout[];
+
   //? Constructor ---------------------------------------------------------- ?//
 
-  constructor(partial: Partial<InstructorSchool>) {
+  constructor(partial: Partial<Sam>) {
     Object.assign(this, partial);
   }
 }

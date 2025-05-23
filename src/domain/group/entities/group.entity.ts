@@ -4,7 +4,7 @@ import { IsArray } from 'class-validator';
 import { Actor, ClassStatus, Weekday } from 'src/common/enums';
 import { ICalendarDay } from 'src/common/interfaces';
 import { Board } from 'src/domain/board/entities/board.entity';
-import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Sam } from 'src/domain/instructor/entities/sam.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import {
@@ -29,7 +29,7 @@ export class Group {
 
   @ApiProperty({ description: '🈳 exclusively exists in instructor' })
   @Column({ type: 'int', unsigned: true, nullable: true })
-  instructorId: number;
+  samId: number;
 
   @ApiProperty({ description: '🈵 exclusively exists in lesson' })
   @Column({ type: 'int', unsigned: true })
@@ -142,9 +142,9 @@ export class Group {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Instructor, (instructor) => instructor.groups)
-  @JoinColumn({ name: 'instructorId' })
-  instructor: Instructor;
+  @ManyToOne(() => Sam, (sam) => sam.groups)
+  @JoinColumn({ name: 'samId' })
+  sam: Sam;
 
   @ManyToOne(() => Lesson, (lesson) => lesson.groups)
   @JoinColumn({ name: 'lessonId' })
