@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ClassStatus } from 'src/common/enums';
-import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { calculateLessonDays } from 'src/helpers/lesson-days.util';
 import { DataSource, EntitySubscriberInterface, UpdateEvent } from 'typeorm';
 
@@ -41,25 +41,36 @@ export class LessonSubscriber implements EntitySubscriberInterface<Lesson> {
       .andWhere('group.status = :status', { status: ClassStatus.ACTIVE })
       .getMany();
 
-    for (const group of groups) {
-      const calendarRepository = event.manager.getRepository(Calendar);
-      const calendarDays = calculateLessonDays(lesson, group);
-      for (const calDay of calendarDays) {
-        const [date] = calDay.start.split(' ');
-        const calendar = await calendarRepository
-          .createQueryBuilder('calendar')
-          .where('calendar.schoolId = :schoolId', {
-            schoolId: lesson.schoolId,
-          })
-          .andWhere('calendar.date = :date', { date: date })
-          .getOne();
-        if (calendar) {
-          calDay.classOn = false;
-        }
-      }
+    const schooldayRepository = event.manager.getRepository(Schoolday);
 
-      group.days = calendarDays.filter((day) => day.classOn).length;
-      group.calendarDays = calendarDays;
+    for (const group of groups) {
+      const calendarDays = calculateLessonDays(lesson, group);
+      // 기존 schooldays 삭제
+      await schooldayRepository.delete({ groupId: group.id });
+      // 새 schooldays 생성
+      const schooldays: Schoolday[] = calendarDays
+        .filter((day) => day.classOn)
+        .map((day) => {
+          const [startDateStr, startTimeStr] = day.start.split(' ');
+          const [endDateStr, endTimeStr] = day.end.split(' ');
+          return schooldayRepository.create({
+            schoolId: lesson.schoolId,
+            termId: lesson.termId,
+            lessonId: lesson.id,
+            groupId: group.id,
+            name: null,
+            startStr: day.start,
+            endStr: day.end,
+            duration: 0,
+            startsAt: new Date(`${startDateStr}T${startTimeStr}:00+09:00`),
+            endsAt: new Date(`${endDateStr}T${endTimeStr}:00+09:00`),
+            note: null,
+          });
+        });
+      if (schooldays.length > 0) {
+        await schooldayRepository.save(schooldays);
+      }
+      group.days = schooldays.length;
       await event.manager.getRepository(Group).save(group);
     }
   }

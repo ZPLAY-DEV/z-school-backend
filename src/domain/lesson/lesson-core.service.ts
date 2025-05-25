@@ -7,13 +7,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { calculateLessonDays } from 'src/helpers/lesson-days.util';
 import {
@@ -37,6 +37,8 @@ export class LessonCoreService {
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
     private readonly dataSource: DataSource,
+    @InjectRepository(Schoolday)
+    private readonly schooldayRepository: Repository<Schoolday>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -102,26 +104,35 @@ export class LessonCoreService {
         relations: { groups: true, category: true },
       });
 
-      //? 6단계) 학업요일 days 정보 처리
+      //? 6단계) 학업요일 days 정보 및 schooldays 처리
       for (const group of savedLesson.groups) {
         const calendarDays = calculateLessonDays(savedLesson, group);
-        for (const calDay of calendarDays) {
-          const [date] = calDay.start.split(' ');
-          const calendar = await manager
-            .getRepository(Calendar)
-            .createQueryBuilder('calendar')
-            .where('calendar.schoolId = :schoolId', {
+        // 기존 schooldays 삭제
+        await this.schooldayRepository.delete({ groupId: group.id });
+        // 새 schooldays 생성
+        const schooldays: Schoolday[] = calendarDays
+          .filter((day) => day.classOn)
+          .map((day) => {
+            const [startDateStr, startTimeStr] = day.start.split(' ');
+            const [endDateStr, endTimeStr] = day.end.split(' ');
+            return this.schooldayRepository.create({
               schoolId: savedLesson.schoolId,
-            })
-            .andWhere('calendar.date = :date', { date: date })
-            .getOne();
-          if (calendar) {
-            calDay.classOn = false;
-          }
+              termId: savedLesson.termId,
+              lessonId: savedLesson.id,
+              groupId: group.id,
+              name: null,
+              startStr: day.start,
+              endStr: day.end,
+              duration: 0,
+              startsAt: new Date(`${startDateStr}T${startTimeStr}:00+09:00`),
+              endsAt: new Date(`${endDateStr}T${endTimeStr}:00+09:00`),
+              note: null,
+            });
+          });
+        if (schooldays.length > 0) {
+          await this.schooldayRepository.save(schooldays);
         }
-        console.log('🔴', calendarDays);
-        group.days = calendarDays.filter((day) => day.classOn).length;
-        group.calendarDays = calendarDays;
+        group.days = schooldays.length;
         await manager.save(group);
       }
 
@@ -254,26 +265,35 @@ export class LessonCoreService {
       relations: { groups: true, category: true },
     });
 
-    //? 6단계) 학업요일 days 정보 처리
+    //? 6단계) 학업요일 days 정보 및 schooldays 처리
     for (const group of finalLesson.groups) {
       const calendarDays = calculateLessonDays(finalLesson, group);
-      for (const calDay of calendarDays) {
-        const [date] = calDay.start.split(' ');
-        const calendar = await manager
-          .getRepository(Calendar)
-          .createQueryBuilder('calendar')
-          .where('calendar.schoolId = :schoolId', {
+      // 기존 schooldays 삭제
+      await this.schooldayRepository.delete({ groupId: group.id });
+      // 새 schooldays 생성
+      const schooldays: Schoolday[] = calendarDays
+        .filter((day) => day.classOn)
+        .map((day) => {
+          const [startDateStr, startTimeStr] = day.start.split(' ');
+          const [endDateStr, endTimeStr] = day.end.split(' ');
+          return this.schooldayRepository.create({
             schoolId: finalLesson.schoolId,
-          })
-          .andWhere('calendar.date = :date', { date: date })
-          .getOne();
-        if (calendar) {
-          calDay.classOn = false;
-        }
+            termId: finalLesson.termId,
+            lessonId: finalLesson.id,
+            groupId: group.id,
+            name: null,
+            startStr: day.start,
+            endStr: day.end,
+            duration: 0,
+            startsAt: new Date(`${startDateStr}T${startTimeStr}:00+09:00`),
+            endsAt: new Date(`${endDateStr}T${endTimeStr}:00+09:00`),
+            note: null,
+          });
+        });
+      if (schooldays.length > 0) {
+        await this.schooldayRepository.save(schooldays);
       }
-      console.log('🔴', calendarDays);
-      group.days = calendarDays.filter((day) => day.classOn).length;
-      group.calendarDays = calendarDays;
+      group.days = schooldays.length;
       await manager.save(group);
     }
 

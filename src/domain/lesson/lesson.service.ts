@@ -11,6 +11,7 @@ import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { calculateLessonDays } from 'src/helpers/lesson-days.util';
 import { Repository } from 'typeorm';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
@@ -27,6 +28,8 @@ export class LessonService {
     private readonly calendarRepository: Repository<Calendar>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @InjectRepository(Schoolday)
+    private readonly schooldayRepository: Repository<Schoolday>,
     private readonly lessonCoreService: LessonCoreService,
   ) {}
 
@@ -106,24 +109,36 @@ export class LessonService {
     if (!lesson)
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
 
-    // 2. For each group, update calendarDays
     let totalDays = 0;
     for (const group of lesson.groups) {
       const calendarDays = calculateLessonDays(lesson, group);
-      for (const calDay of calendarDays) {
-        const [date] = calDay.start.split(' ');
-        const calendar = await this.calendarRepository
-          .createQueryBuilder('calendar')
-          .where('calendar.schoolId = :schoolId', { schoolId: lesson.schoolId })
-          .andWhere('calendar.date = :date', { date: date })
-          .getOne();
-        if (calendar) {
-          calDay.classOn = false;
-        }
+      // 기존 schooldays 삭제 (옵션)
+      await this.schooldayRepository.delete({ groupId: group.id });
+      // 새 schooldays 생성
+      const schooldays: Schoolday[] = calendarDays
+        .filter((day) => day.classOn)
+        .map((day) => {
+          // start, end: 'YYYY-MM-DD HH:mm'
+          const [startDateStr, startTimeStr] = day.start.split(' ');
+          const [endDateStr, endTimeStr] = day.end.split(' ');
+          return this.schooldayRepository.create({
+            schoolId: lesson.schoolId,
+            termId: lesson.termId,
+            lessonId: lesson.id,
+            groupId: group.id,
+            name: null,
+            startStr: day.start,
+            endStr: day.end,
+            duration: 0, // 필요시 계산
+            startsAt: new Date(`${startDateStr}T${startTimeStr}:00+09:00`),
+            endsAt: new Date(`${endDateStr}T${endTimeStr}:00+09:00`),
+            note: null,
+          });
+        });
+      if (schooldays.length > 0) {
+        await this.schooldayRepository.save(schooldays);
       }
-
-      group.days = calendarDays.filter((day) => day.classOn).length;
-      group.calendarDays = calendarDays;
+      group.days = schooldays.length;
       await this.groupRepository.save(group);
       totalDays += calendarDays.length;
     }

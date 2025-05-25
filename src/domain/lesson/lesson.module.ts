@@ -8,12 +8,21 @@ import { LessonController } from 'src/domain/lesson/lesson.controller';
 import { LessonService } from 'src/domain/lesson/lesson.service';
 import { LessonSubscriber } from 'src/domain/lesson/subscriber/lesson.subscriber';
 import { School } from 'src/domain/school/entities/school.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { LessonCoreService } from './lesson-core.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Lesson, School, Group, Term, Calendar, Category]),
+    TypeOrmModule.forFeature([
+      Lesson,
+      School,
+      Schoolday,
+      Group,
+      Term,
+      Calendar,
+      Category,
+    ]),
   ],
   providers: [LessonService, LessonCoreService, LessonSubscriber],
   controllers: [LessonController],
