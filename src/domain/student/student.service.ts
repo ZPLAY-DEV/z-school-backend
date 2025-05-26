@@ -31,7 +31,6 @@ import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 import { BookingStatus } from 'src/common/enums';
 import { Pick } from '../pick/entities/pick.entity';
 import { Booking } from '../booking/entities/booking.entity';
-import { Group } from '../group/entities/group.entity';
 
 @Injectable()
 export class StudentService {
