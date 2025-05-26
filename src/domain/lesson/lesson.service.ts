@@ -7,11 +7,12 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
+import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
-import { calculateLessonDays } from 'src/helpers/lesson-days.util';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { generateSchooldays } from 'src/helpers/school-days.util';
 import { Repository } from 'typeorm';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { LessonCoreService } from './lesson-core.service';
@@ -23,7 +24,12 @@ export class LessonService {
   constructor(
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
+    @InjectRepository(Schoolday)
+    private readonly schooldayRepository: Repository<Schoolday>,
     private readonly lessonCoreService: LessonCoreService,
+    private readonly calendarService: CalendarService,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -94,28 +100,36 @@ export class LessonService {
   }
 
   async updateDays(id: number): Promise<number> {
-    // 1. Find the lesson and its groups
+    let totalDays = 0;
+
     const lesson = await this.lessonRepository.findOne({
       where: { id },
-      relations: ['groups'],
+      relations: ['groups', 'groups.schooldays'], // schooldays도 함께 로드
     });
     if (!lesson)
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
 
-    // 2. For each group, update calendarDays
-    let totalDays = 0;
-    const calendarRepository =
-      this.lessonRepository.manager.getRepository(Calendar);
-    for (const group of lesson.groups) {
-      const { calendarDays, days } = await calculateLessonDays(
-        lesson,
-        group,
-        calendarRepository,
+    if (lesson.start && lesson.end) {
+      const offdays: string[] = await this.calendarService.findByDateRange(
+        lesson.schoolId,
+        lesson.start,
+        lesson.end,
       );
-      group.days = days;
-      group.calendarDays = calendarDays;
-      await calendarRepository.manager.getRepository(Group).save(group);
-      totalDays += calendarDays.length;
+
+      for (const group of lesson.groups) {
+        // 이 반의 기존 schooldays 모두 제거
+        await this.schooldayRepository.delete({ groupId: group.id });
+        // 이 반의 schooldays 생성
+        const schooldays: Schoolday[] = generateSchooldays(
+          lesson,
+          group,
+          offdays,
+        );
+        group.schooldays = schooldays; // cascade로 자동 저장
+        group.days = schooldays.length;
+        await this.groupRepository.save(group); // cascade로 schooldays도 저장/삭제됨
+        totalDays += schooldays.length;
+      }
     }
     return totalDays;
   }

@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ClassStatus } from 'src/common/enums';
-import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
+import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
-import { calculateLessonDays } from 'src/helpers/lesson-days.util';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { generateSchooldays } from 'src/helpers/school-days.util';
 import { DataSource, EntitySubscriberInterface, UpdateEvent } from 'typeorm';
 
 @Injectable()
@@ -12,7 +13,7 @@ export class LessonSubscriber implements EntitySubscriberInterface<Lesson> {
 
   constructor(
     dataSource: DataSource,
-    // private readonly calendarService: CalendarService,
+    private readonly calendarService: CalendarService,
   ) {
     dataSource.subscribers.push(this);
   }
@@ -41,16 +42,26 @@ export class LessonSubscriber implements EntitySubscriberInterface<Lesson> {
       .andWhere('group.status = :status', { status: ClassStatus.ACTIVE })
       .getMany();
 
+    const offdays: string[] = await this.calendarService.findByDateRange(
+      lesson.schoolId,
+      lesson.start,
+      lesson.end,
+    );
+
     for (const group of groups) {
-      const calendarRepository = event.manager.getRepository(Calendar);
-      const { calendarDays, days } = await calculateLessonDays(
+      // 이 반의 기존 schooldays 모두 제거
+      await event.manager
+        .getRepository('Schoolday')
+        .delete({ groupId: group.id });
+      // 이 반의 schooldays 생성
+      const schooldays: Schoolday[] = generateSchooldays(
         lesson,
         group,
-        calendarRepository,
+        offdays,
       );
-      group.days = days;
-      group.calendarDays = calendarDays;
-      await event.manager.getRepository(Group).save(group);
+      group.schooldays = schooldays; // cascade로 자동 저장
+      group.days = schooldays.length;
+      await event.manager.getRepository(Group).save(group); // cascade로 schooldays도 저장/삭제됨
     }
   }
 }
