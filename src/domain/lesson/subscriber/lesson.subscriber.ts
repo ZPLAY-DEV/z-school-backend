@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ClassStatus } from 'src/common/enums';
+import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { calculateLessonDays } from 'src/helpers/lesson-days.util';
+import { generateSchooldays } from 'src/helpers/school-days.util';
 import { DataSource, EntitySubscriberInterface, UpdateEvent } from 'typeorm';
 
 @Injectable()
@@ -12,7 +13,7 @@ export class LessonSubscriber implements EntitySubscriberInterface<Lesson> {
 
   constructor(
     dataSource: DataSource,
-    // private readonly calendarService: CalendarService,
+    private readonly calendarService: CalendarService,
   ) {
     dataSource.subscribers.push(this);
   }
@@ -41,37 +42,26 @@ export class LessonSubscriber implements EntitySubscriberInterface<Lesson> {
       .andWhere('group.status = :status', { status: ClassStatus.ACTIVE })
       .getMany();
 
-    const schooldayRepository = event.manager.getRepository(Schoolday);
+    const offdays: string[] = await this.calendarService.findByDateRange(
+      lesson.schoolId,
+      lesson.start,
+      lesson.end,
+    );
 
     for (const group of groups) {
-      const calendarDays = calculateLessonDays(lesson, group);
-      // 기존 schooldays 삭제
-      await schooldayRepository.delete({ groupId: group.id });
-      // 새 schooldays 생성
-      const schooldays: Schoolday[] = calendarDays
-        .filter((day) => day.classOn)
-        .map((day) => {
-          const [startDateStr, startTimeStr] = day.start.split(' ');
-          const [endDateStr, endTimeStr] = day.end.split(' ');
-          return schooldayRepository.create({
-            schoolId: lesson.schoolId,
-            termId: lesson.termId,
-            lessonId: lesson.id,
-            groupId: group.id,
-            name: null,
-            startStr: day.start,
-            endStr: day.end,
-            duration: 0,
-            startsAt: new Date(`${startDateStr}T${startTimeStr}:00+09:00`),
-            endsAt: new Date(`${endDateStr}T${endTimeStr}:00+09:00`),
-            note: null,
-          });
-        });
-      if (schooldays.length > 0) {
-        await schooldayRepository.save(schooldays);
-      }
+      // 이 반의 기존 schooldays 모두 제거
+      await event.manager
+        .getRepository('Schoolday')
+        .delete({ groupId: group.id });
+      // 이 반의 schooldays 생성
+      const schooldays: Schoolday[] = generateSchooldays(
+        lesson,
+        group,
+        offdays,
+      );
+      group.schooldays = schooldays; // cascade로 자동 저장
       group.days = schooldays.length;
-      await event.manager.getRepository(Group).save(group);
+      await event.manager.getRepository(Group).save(group); // cascade로 schooldays도 저장/삭제됨
     }
   }
 }

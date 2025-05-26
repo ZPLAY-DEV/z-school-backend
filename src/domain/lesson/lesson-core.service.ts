@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
@@ -15,12 +16,12 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
-import { calculateLessonDays } from 'src/helpers/lesson-days.util';
 import {
   parseRangeFormat,
   parseTime,
   parseTimeFormat,
 } from 'src/helpers/parse';
+import { generateSchooldays } from 'src/helpers/school-days.util';
 import {
   DataSource,
   DeepPartial,
@@ -37,8 +38,7 @@ export class LessonCoreService {
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
     private readonly dataSource: DataSource,
-    @InjectRepository(Schoolday)
-    private readonly schooldayRepository: Repository<Schoolday>,
+    private readonly calendarService: CalendarService,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -64,8 +64,9 @@ export class LessonCoreService {
       }
 
       if (
-        new Date(`${dto.start}T09:00:00+09:00`) < term.startDate ||
-        new Date(`${dto.end}T09:00:00+09:00`) > term.endDate
+        (dto.start &&
+          new Date(`${dto.start}T09:00:00+09:00`) < term.startDate) ||
+        (dto.end && new Date(`${dto.end}T09:00:00+09:00`) > term.endDate)
       ) {
         throw new BadRequestException(HttpErrorConstants.OUT_OF_RANGE);
       }
@@ -104,36 +105,25 @@ export class LessonCoreService {
         relations: { groups: true, category: true },
       });
 
+      const offdays: string[] = await this.calendarService.findByDateRange(
+        savedLesson.schoolId,
+        savedLesson.start,
+        savedLesson.end,
+      );
+
       //? 6단계) 학업요일 days 정보 및 schooldays 처리
       for (const group of savedLesson.groups) {
-        const calendarDays = calculateLessonDays(savedLesson, group);
-        // 기존 schooldays 삭제
-        await this.schooldayRepository.delete({ groupId: group.id });
-        // 새 schooldays 생성
-        const schooldays: Schoolday[] = calendarDays
-          .filter((day) => day.classOn)
-          .map((day) => {
-            const [startDateStr, startTimeStr] = day.start.split(' ');
-            const [endDateStr, endTimeStr] = day.end.split(' ');
-            return this.schooldayRepository.create({
-              schoolId: savedLesson.schoolId,
-              termId: savedLesson.termId,
-              lessonId: savedLesson.id,
-              groupId: group.id,
-              name: null,
-              startStr: day.start,
-              endStr: day.end,
-              duration: 0,
-              startsAt: new Date(`${startDateStr}T${startTimeStr}:00+09:00`),
-              endsAt: new Date(`${endDateStr}T${endTimeStr}:00+09:00`),
-              note: null,
-            });
-          });
-        if (schooldays.length > 0) {
-          await this.schooldayRepository.save(schooldays);
-        }
+        // 이 반의 기존 schooldays 모두 제거
+        await manager.getRepository('Schoolday').delete({ groupId: group.id });
+        // 이 반의 schooldays 생성
+        const schooldays: Schoolday[] = generateSchooldays(
+          savedLesson,
+          group,
+          offdays,
+        );
+        group.schooldays = schooldays; // cascade로 자동 저장
         group.days = schooldays.length;
-        await manager.save(group);
+        await manager.save(group); // cascade로 schooldays도 저장/삭제됨
       }
 
       return savedLesson;
@@ -265,36 +255,25 @@ export class LessonCoreService {
       relations: { groups: true, category: true },
     });
 
+    const offdays: string[] = await this.calendarService.findByDateRange(
+      finalLesson.schoolId,
+      finalLesson.start,
+      finalLesson.end,
+    );
+
     //? 6단계) 학업요일 days 정보 및 schooldays 처리
     for (const group of finalLesson.groups) {
-      const calendarDays = calculateLessonDays(finalLesson, group);
-      // 기존 schooldays 삭제
-      await this.schooldayRepository.delete({ groupId: group.id });
-      // 새 schooldays 생성
-      const schooldays: Schoolday[] = calendarDays
-        .filter((day) => day.classOn)
-        .map((day) => {
-          const [startDateStr, startTimeStr] = day.start.split(' ');
-          const [endDateStr, endTimeStr] = day.end.split(' ');
-          return this.schooldayRepository.create({
-            schoolId: finalLesson.schoolId,
-            termId: finalLesson.termId,
-            lessonId: finalLesson.id,
-            groupId: group.id,
-            name: null,
-            startStr: day.start,
-            endStr: day.end,
-            duration: 0,
-            startsAt: new Date(`${startDateStr}T${startTimeStr}:00+09:00`),
-            endsAt: new Date(`${endDateStr}T${endTimeStr}:00+09:00`),
-            note: null,
-          });
-        });
-      if (schooldays.length > 0) {
-        await this.schooldayRepository.save(schooldays);
-      }
+      // 이 반의 기존 schooldays 모두 제거
+      await manager.getRepository('Schoolday').delete({ groupId: group.id });
+      // 이 반의 schooldays 생성
+      const schooldays: Schoolday[] = generateSchooldays(
+        finalLesson,
+        group,
+        offdays,
+      );
+      group.schooldays = schooldays; // cascade로 자동 저장
       group.days = schooldays.length;
-      await manager.save(group);
+      await manager.save(group); // cascade로 schooldays도 저장/삭제됨
     }
 
     return finalLesson;

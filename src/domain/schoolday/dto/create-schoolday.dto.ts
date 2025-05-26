@@ -69,5 +69,5 @@ export class CreateSchooldayDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  note?: string;
+  note?: string | null;
 }

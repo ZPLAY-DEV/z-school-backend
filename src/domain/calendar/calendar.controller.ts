@@ -5,8 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Patch,
-  Post,
+  Patch
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -22,12 +21,6 @@ export class CalendarController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Calendar 생성' })
-  @Post()
-  async create(): Promise<any> {
-    return await this.calendarService.create();
-  }
-
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
@@ -38,14 +31,6 @@ export class CalendarController {
     @Paginate() query: PaginateQuery,
   ): Promise<Paginated<Calendar>> {
     return await this.calendarService.findAll(query);
-  }
-
-  @ApiOperation({ description: 'Calendar 상세보기' })
-  @Get(':id')
-  async findCalendarById(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<Calendar> {
-    return await this.calendarService.findById(id, ['grants', 'grants.user']);
   }
 
   //? ---------------------------------------------------------------------- ?//

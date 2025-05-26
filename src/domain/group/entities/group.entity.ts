@@ -123,7 +123,9 @@ export class Group {
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
   @ApiProperty({ description: '관련 groups', type: [Group], isArray: true })
-  @OneToMany(() => Schoolday, (schoolday) => schoolday.group)
+  @OneToMany(() => Schoolday, (schoolday) => schoolday.group, {
+    cascade: true,
+  })
   public schooldays: Schoolday[];
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//

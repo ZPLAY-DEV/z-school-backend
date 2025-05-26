@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
+import { CalendarModule } from 'src/domain/calendar/calendar.module';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -20,9 +20,9 @@ import { LessonCoreService } from './lesson-core.service';
       Schoolday,
       Group,
       Term,
-      Calendar,
       Category,
     ]),
+    CalendarModule,
   ],
   providers: [LessonService, LessonCoreService, LessonSubscriber],
   controllers: [LessonController],

@@ -12,7 +12,7 @@ import {
 } from 'typeorm';
 
 @Entity('schooldays')
-@Unique(['groupId', 'startsAt', 'endsAt'])
+@Unique(['schoolId', 'termId', 'lessonId', 'groupId', 'startStr', 'endStr'])
 export class Schoolday {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
