@@ -49,7 +49,7 @@ export class Pick {
   @Column({
     type: 'enum',
     enum: Actor,
-    default: null,
+    default: Actor.SYSTEM,
     nullable: true,
     comment: '누가 수업시작일 등록했나?',
   })

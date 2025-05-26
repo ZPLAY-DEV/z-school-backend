@@ -1,5 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import {
   FilterOperator,
   paginate,
@@ -38,10 +40,22 @@ export class PickService {
 
   // 필수항목) groupId, studentId (무조건 시스템 등록이라 가정)
   async createBulk(dto: CreateBulkPickDto): Promise<Pick[]> {
+    const group = await this.groupRepository.findOneOrFail({
+      where: { id: dto.groupId },
+      relations: ['schooldays'],
+    });
+    if (!group.schooldays || group.schooldays.length === 0) {
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+    }
+    const { startsAt } = group.schooldays[0];
+    const seoulTime = toZonedTime(startsAt, 'Asia/Seoul');
+    const startedOn = format(seoulTime, 'yyyy-MM-dd');
+
     const picks: Partial<Pick>[] = dto.studentIds.map((studentId) => ({
       groupId: dto.groupId,
       studentId,
-      enrolledBy: Actor.SYSTEM,
+      startedBy: Actor.SYSTEM,
+      startedOn,
     }));
 
     // upsert based on unique constraint: groupId, studentId
