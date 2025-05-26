@@ -33,7 +33,7 @@ import {
 import { Group } from '../group/entities/group.entity';
 
 @UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('✅ Sams ( 학교쌤; equivalent to Student )')
+@ApiTags('✅ Sams ( 학교쌤 ≓ Student )')
 @ApiCommonErrorResponseTemplate()
 @Controller('sams')
 export class SamController {

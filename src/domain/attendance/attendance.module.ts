@@ -1,0 +1,27 @@
+import { Module } from '@nestjs/common';
+import { DynamooseModule } from 'nestjs-dynamoose';
+import { AttendanceController } from 'src/domain/attendance/attendance.controller';
+import { AttendanceService } from 'src/domain/attendance/attendance.service';
+import { AttendanceSchema } from 'src/domain/attendance/entities/attendance.schema';
+import { S3Module } from 'src/services/aws/s3.module';
+
+//! With correct module configuration, the local dynamoDB is populated automatically
+//! as soon as executing any creation method.
+@Module({
+  imports: [
+    DynamooseModule.forFeature([
+      {
+        name: 'Attendance',
+        schema: AttendanceSchema,
+        options: {
+          tableName: 'attendance', // e.g. local_attendance_table
+        },
+      },
+    ]),
+    S3Module,
+  ],
+  providers: [AttendanceService],
+  controllers: [AttendanceController],
+  exports: [AttendanceService],
+})
+export class AttendanceModule {}

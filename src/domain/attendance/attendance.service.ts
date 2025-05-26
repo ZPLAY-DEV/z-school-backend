@@ -1,36 +1,33 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { addDays } from 'date-fns';
 import { SortOrder } from 'dynamoose/dist/General';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import { UpdateAlarmDto } from 'src/domain/alarm/dto/update-alarm.dto';
-import { IAlarm, IAlarmKey } from 'src/domain/alarm/entities/alarm.interface';
-import { CreateAlarmDto } from './dto/create-alarm.dto';
+import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
+import {
+  IAttendance,
+  IAttendanceKey,
+} from 'src/domain/attendance/entities/attendance.interface';
+import { CreateAttendanceDto } from './dto/create-attendance.dto';
 
 const LIMIT = 10;
 
 @Injectable()
-export class AlarmService {
+export class AttendanceService {
   constructor(
-    @InjectModel('Alarm')
-    private readonly model: Model<IAlarm, IAlarmKey>,
+    @InjectModel('Attendance')
+    private readonly model: Model<IAttendance, IAttendanceKey>,
   ) {}
 
   //? notice that even if you provide createdAt and updatedAt in the payload
   //? dynamodb will ignore them and record the timestamps with its own value.
   //?
-  async create(dto: CreateAlarmDto): Promise<IAlarm> {
-    const timestampInMilliseconds = new Date().getTime();
-    const id = `m${timestampInMilliseconds}`; // m as in message
-    //! as for the expiration, needs to be in seconds format (not milliseconds)
-    const expires = Math.floor(addDays(new Date(), 7).getTime() / 1000);
+  async create(dto: CreateAttendanceDto): Promise<IAttendance> {
     try {
-      const alarm = await this.model.create({
+      const attendance = await this.model.create({
         ...dto,
-        id,
-        expires,
-        data: dto.data || {},
+        parentNote: dto.parentNote ?? null,
+        schoolNote: dto.schoolNote ?? null,
       });
-      return alarm;
+      return attendance as IAttendance;
     } catch (error) {
       console.error(`[dynamodb] error`, error);
       throw new BadRequestException(error);
@@ -40,19 +37,19 @@ export class AlarmService {
   //? notice that records will be sorted by range key, which is id
   //? (in m## format string; xx is milliseconds).
   //?
-  async fetch(userId: number, lastKey: IAlarmKey | null): Promise<any> {
+  async fetch(groupKey: string, lastKey: IAttendanceKey | null): Promise<any> {
     try {
       return lastKey
         ? await this.model
-            .query('userId')
-            .eq(userId)
+            .query('groupKey')
+            .eq(groupKey)
             .sort(SortOrder.descending)
             .startAt(lastKey)
             .limit(LIMIT)
             .exec()
         : await this.model
-            .query('userId')
-            .eq(userId)
+            .query('groupKey')
+            .eq(groupKey)
             .sort(SortOrder.descending)
             .limit(LIMIT)
             .exec();
@@ -62,37 +59,39 @@ export class AlarmService {
     }
   }
 
-  async findById(key: IAlarmKey): Promise<IAlarm> {
+  async findById(key: IAttendanceKey): Promise<IAttendance> {
     try {
-      return this.model.get(key);
+      return (await this.model.get(key)) as IAttendance;
     } catch (error) {
       console.error(`[dynamodb] error`, error);
       throw new BadRequestException(error);
     }
   }
 
-  async update(key: IAlarmKey, dto: UpdateAlarmDto): Promise<IAlarm> {
+  async update(
+    key: IAttendanceKey,
+    dto: UpdateAttendanceDto,
+  ): Promise<IAttendance> {
     try {
-      return this.model.update(key, {
+      return (await this.model.update(key, {
         ...dto,
-        data: dto.data || {},
-      });
+      })) as IAttendance;
     } catch (error) {
       console.error(`[dynamodb] error`, error);
       throw new BadRequestException(error);
     }
   }
 
-  async markAsRead(userId: number, id: string): Promise<void> {
+  async markAsRead(key: IAttendanceKey): Promise<void> {
     try {
-      await this.model.update({ userId, id }, { isRead: true });
+      await this.model.update(key, { isRead: true });
     } catch (error) {
       console.error('Error updating isRead:', error);
       throw error;
     }
   }
 
-  async delete(key: IAlarmKey): Promise<any> {
+  async delete(key: IAttendanceKey): Promise<any> {
     try {
       return this.model.delete(key);
     } catch (error) {

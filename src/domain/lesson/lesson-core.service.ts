@@ -322,7 +322,6 @@ export class LessonCoreService {
       // 1. Find or create Instructor
       let instructor = await manager.getRepository('Instructor').findOne({
         where: {
-          name: groupDto.instructorName,
           phone: groupDto.instructorPhone,
         },
       });
