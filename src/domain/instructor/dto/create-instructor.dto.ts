@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -107,26 +106,4 @@ export class CreateInstructorDto {
   @IsNumber()
   @IsOptional()
   score?: number;
-
-  @ApiProperty({
-    description: '🈳 교재/재료비 수정 권한 여부',
-    example: false,
-    type: Boolean,
-    required: false,
-  })
-  @IsBoolean()
-  @Type(() => Boolean)
-  @IsOptional()
-  editFeePermission?: boolean;
-
-  @ApiProperty({
-    description: '🈳 수강 추가/취소 권한 여부',
-    example: false,
-    type: Boolean,
-    required: false,
-  })
-  @IsBoolean()
-  @Type(() => Boolean)
-  @IsOptional()
-  editEnrollmentPermission?: boolean;
 }
