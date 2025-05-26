@@ -31,6 +31,7 @@ export class SamService {
       const school = await manager.findOne(School, {
         where: { id: dto.schoolId },
       });
+
       if (!school) {
         throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
       }
@@ -91,6 +92,7 @@ export class SamService {
           instructorId: instructor.id,
           schoolId: dto.schoolId,
           alias: dto.alias,
+          score: dto.score,
           editFeePermission: dto.editFeePermission,
           editEnrollmentPermission: dto.editEnrollmentPermission,
           note: dto.note,

@@ -37,15 +37,15 @@ export class SamController {
     return await this.samService.create(dto);
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
+
   @HttpCode(HttpStatus.OK)
   @Post('dryrun')
   async dryRun(@Body() dto: CreateSamDto): Promise<Sam | null> {
     return await this.samService.dryRun(dto);
   }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Read
-  //? ---------------------------------------------------------------------- ?//
 
   @Get(':samId/groups')
   @ApiOperation({ summary: '이 쌤이 관리하는 반 정보들' })

@@ -13,12 +13,10 @@ import {
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
-  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('instructors')
-@Unique(['name', 'phone'])
 export class Instructor {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -34,12 +32,12 @@ export class Instructor {
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '🈵 강사 이름' })
-  @Column({ type: 'varchar', length: 16, default: null })
-  name: string;
+  @ApiProperty({ description: '🈳 강사 이름' })
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  name: string | null;
 
   @ApiProperty({ description: '🈵 강사 전화번호 (숫자만 입력)' })
-  @Column({ type: 'varchar', length: 16 })
+  @Column({ type: 'varchar', length: 16, unique: true })
   phone: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
