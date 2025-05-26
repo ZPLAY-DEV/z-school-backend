@@ -7,9 +7,11 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  // ParseArrayPipe,
   ParseIntPipe,
   Patch,
   Post,
+  // Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -51,6 +53,7 @@ export class SamController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  //? dryrun
   @SamDryRunDocs()
   @HttpCode(HttpStatus.OK)
   @Post('dryrun')
@@ -58,18 +61,21 @@ export class SamController {
     return await this.samService.dryRun(dto);
   }
 
+  //? 학교에 속한 강사(쌤)의 상세 정보 조회
   @GetSamByIdDocs()
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Sam> {
     return await this.samService.findById(id, ['instructor', 'documents']);
   }
 
+  //? 학교에 속한 강사(쌤)이 수강중인 group(강좌) 리스트
   @GetSamGroupsDocs()
   @Get(':id/groups')
   async groups(@Param('id', ParseIntPipe) id: number): Promise<Group[]> {
     return await this.samService.groups(id);
   }
 
+  //? 학교에 속한 강사(쌤)이 제출한 문서 리스트
   @SamDocumentsDocs()
   @Get(':id/documents')
   async getDocuments(
@@ -77,6 +83,15 @@ export class SamController {
   ): Promise<Document[]> {
     return await this.samService.getDocuments(id);
   }
+
+  // @Get(':id/schedule')
+  // async findBySchedule(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Query('dates', new ParseArrayPipe({ items: String, separator: ',' }))
+  //   dates: string[],
+  // ) {
+  //   return await this.samService.findBySchedule(id, dates);
+  // }
 
   //? ---------------------------------------------------------------------- ?//
   //? Update

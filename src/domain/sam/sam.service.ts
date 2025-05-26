@@ -165,6 +165,16 @@ export class SamService {
     });
   }
 
+  // async findBySchedule(id: number, dates: string[]) {
+  //   // 1. sam의 group 조회
+  //   const groups = await this.samRepository.find({
+  //     where: {
+  //       id,
+  //     },
+  //     relations: ['groups', 'groups.schooldays'],
+  //   });
+  // }
+
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
