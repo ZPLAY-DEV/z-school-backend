@@ -13,7 +13,6 @@ import { ApiTags } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { Document } from 'src/domain/document/entities/document.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { SchoolSamService } from 'src/domain/school/school-sam.service';
@@ -21,7 +20,6 @@ import { UploadService } from 'src/services/upload/upload.service';
 import {
   CreateSchoolSamBulkDocs,
   CreateSchoolSamBulkDryRunDocs,
-  SchoolSamDocumentsDocs,
   SchoolSamListDocs,
   SchoolSamPaginatedDocs,
 } from '../sam/swagger/school-sam.swagger.decorator';
@@ -80,12 +78,12 @@ export class SchoolSamController {
     return await this.schoolSamService.infiniteList(schoolId, query);
   }
 
-  @SchoolSamDocumentsDocs()
-  @Get(':schoolId/sams/:samId/documents')
-  async getDocuments(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Param('samId', ParseIntPipe) samId: number,
-  ): Promise<Document[]> {
-    return await this.schoolSamService.getDocuments(schoolId, samId);
-  }
+  // @SchoolSamDocumentsDocs()
+  // @Get(':schoolId/sams/:samId/documents')
+  // async getDocuments(
+  //   @Param('schoolId', ParseIntPipe) schoolId: number,
+  //   @Param('samId', ParseIntPipe) samId: number,
+  // ): Promise<Document[]> {
+  //   return await this.schoolSamService.getDocuments(schoolId, samId);
+  // }
 }

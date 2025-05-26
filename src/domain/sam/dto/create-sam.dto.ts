@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDefined,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -94,6 +95,7 @@ export class CreateSamDto {
     },
   })
   @ValidateNested()
+  @IsDefined()
   @Type(() => CreateInstructorDto)
   instructor: CreateInstructorDto;
 }

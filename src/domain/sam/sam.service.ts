@@ -9,7 +9,7 @@ import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { School } from 'src/domain/school/entities/school.entity';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Sam } from './entities/sam.entity';
-
+import { Document } from '../document/entities/document.entity';
 @Injectable()
 export class SamService {
   private readonly logger = new Logger(SamService.name);
@@ -19,6 +19,8 @@ export class SamService {
     private readonly samRepository: Repository<Sam>,
     @InjectRepository(Instructor)
     private readonly instructorRepository: Repository<Instructor>,
+    @InjectRepository(Document)
+    private readonly documentRepository: Repository<Document>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -39,7 +41,7 @@ export class SamService {
       // 2. instructor 존재 여부 확인
       let instructor: Instructor | undefined;
 
-      if (dto.instructor) {
+      if (dto?.instructor) {
         const foundInstructor = await this.instructorRepository.findOne({
           where: { phone: dto.instructor.phone },
         });
@@ -53,6 +55,7 @@ export class SamService {
           dto.instructorId = instructor.id;
         }
       }
+
       if (!instructor) {
         // 업데이트된 강사 정보 조회
         instructor = await manager.findOneOrFail(Instructor, {
@@ -91,8 +94,8 @@ export class SamService {
         sam = manager.create(Sam, {
           instructorId: instructor.id,
           schoolId: dto.schoolId,
-          alias: dto.alias,
           score: dto.score,
+          alias: dto.alias,
           editFeePermission: dto.editFeePermission,
           editEnrollmentPermission: dto.editEnrollmentPermission,
           note: dto.note,
@@ -109,44 +112,29 @@ export class SamService {
     });
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
+
   async dryRun(dto: CreateSamDto): Promise<Sam | null> {
     // In dryRun mode, we check if the instructor exists but don't create it
-    if (dto.instructor) {
-      const existingInstructor = await this.instructorRepository.findOne({
-        where: { phone: dto.instructor.phone },
-      });
-
-      if (existingInstructor) {
-        dto.instructorId = existingInstructor.id;
-      } else {
-        const newInstructor = this.samRepository.create(dto.instructor);
-        await this.samRepository.save(newInstructor);
-        dto.instructorId = newInstructor.id;
-      }
-    }
     const existingSam = await this.samRepository
       .createQueryBuilder('sam')
+      .innerJoin(Instructor, 'instructor', 'instructor.id = sam.instructorId')
       .where('sam.schoolId = :schoolId', {
         schoolId: dto.schoolId,
       })
-      .andWhere('sam.instructorId = :instructorId', {
-        instructorId: dto.instructorId,
-      })
-      .andWhere('sam.alias = :alias', {
-        alias: dto.alias,
+      .andWhere('instructor.phone = :phone', {
+        phone: dto.instructor.phone,
       })
       .getOne();
 
     return existingSam ? existingSam : null;
   }
 
-  //? ---------------------------------------------------------------------- ?//
-  //? Read
-  //? ---------------------------------------------------------------------- ?//
-
-  async list(samId: number): Promise<Group[]> {
+  async groups(id: number): Promise<Group[]> {
     const sam = await this.samRepository.findOneOrFail({
-      where: { id: samId },
+      where: { id },
       relations: ['groups', 'groups.groupStudents'],
     });
 
@@ -167,6 +155,14 @@ export class SamService {
       this.logger.error(e);
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
     }
+  }
+
+  async getDocuments(samId: number): Promise<Document[]> {
+    return await this.documentRepository.find({
+      where: {
+        samId,
+      },
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//

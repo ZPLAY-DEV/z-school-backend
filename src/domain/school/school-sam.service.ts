@@ -299,19 +299,6 @@ export class SchoolSamService {
     });
   }
 
-  async getDocuments(schoolId: number, samId: number): Promise<Document[]> {
-    try {
-      return await this.documentRepository
-        .createQueryBuilder('document')
-        .where('document.samId = :samId', { samId })
-        .andWhere('document.schoolId = :schoolId', { schoolId })
-        .getMany();
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  }
-
   //? ---------------------------------------------------------------------- ?//
   //? Delete
   //? ---------------------------------------------------------------------- ?//

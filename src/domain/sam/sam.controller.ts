@@ -12,14 +12,23 @@ import {
   Post,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { DeleteSamNoteDto } from 'src/domain/sam/dto/delete-sam-note.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
+import { Document } from 'src/domain/document/entities/document.entity';
 import { SamService } from 'src/domain/sam/sam.service';
+import {
+  CreateSamDocs,
+  GetSamByIdDocs,
+  GetSamGroupsDocs,
+  SamDocumentsDocs,
+  SamDryRunDocs,
+  SoftDeleteSamDocs,
+} from './swagger/sam.swagger.decorator';
+import { Group } from '../group/entities/group.entity';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Sams ( 학교쌤; equivalent to Student )')
@@ -32,6 +41,7 @@ export class SamController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateSamDocs()
   @Post()
   async create(@Body() dto: CreateSamDto): Promise<Sam> {
     return await this.samService.create(dto);
@@ -41,16 +51,31 @@ export class SamController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @SamDryRunDocs()
   @HttpCode(HttpStatus.OK)
   @Post('dryrun')
   async dryRun(@Body() dto: CreateSamDto): Promise<Sam | null> {
     return await this.samService.dryRun(dto);
   }
 
-  @Get(':samId/groups')
-  @ApiOperation({ summary: '이 쌤이 관리하는 반 정보들' })
-  async list(@Param('samId', ParseIntPipe) samId: number): Promise<Group[]> {
-    return await this.samService.list(samId);
+  @GetSamByIdDocs()
+  @Get(':id')
+  async findById(@Param('id', ParseIntPipe) id: number): Promise<Sam> {
+    return await this.samService.findById(id, ['instructor', 'documents']);
+  }
+
+  @GetSamGroupsDocs()
+  @Get(':id/groups')
+  async groups(@Param('id', ParseIntPipe) id: number): Promise<Group[]> {
+    return await this.samService.groups(id);
+  }
+
+  @SamDocumentsDocs()
+  @Get(':id/documents')
+  async getDocuments(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Document[]> {
+    return await this.samService.getDocuments(id);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -69,6 +94,7 @@ export class SamController {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
+  @SoftDeleteSamDocs()
   @Delete(':id')
   async softDelete(
     @Param('id', ParseIntPipe) id: number,
