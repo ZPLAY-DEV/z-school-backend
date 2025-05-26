@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 import { Group } from 'src/domain/group/entities/group.entity';
 import {
   Column,
@@ -60,10 +61,12 @@ export class Schoolday {
 
   // ------------------------------------------------------------------------ //
 
+  @Exclude()
   @ApiProperty({ description: 'createdAt' })
   @CreateDateColumn()
   createdAt: Date;
 
+  @Exclude()
   @ApiProperty({ description: 'updatedAt' })
   @UpdateDateColumn()
   updatedAt: Date;
