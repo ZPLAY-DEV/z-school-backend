@@ -20,7 +20,7 @@ import { Instructor } from './entities/instructor.entity';
 import { SoftDeleteSchoolInstructorDocs } from './swagger/instructor.swagger.decorator';
 
 @UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('✅ Instructors ( 강사; equivalent to Parent )')
+@ApiTags('✅ Instructors ( 강사 ≓ Parent )')
 @ApiCommonErrorResponseTemplate()
 @Controller('instructors')
 export class InstructorController {
