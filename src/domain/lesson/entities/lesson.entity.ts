@@ -24,48 +24,50 @@ import {
 @Entity('lessons')
 @Unique(['termId', 'schoolId', 'lessonName'])
 export class Lesson {
+  @ApiProperty({ description: '🈵 ID', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈵 학기ID' })
+  @ApiProperty({ description: '🈵 학기ID', example: 1 })
   @Column({ type: 'int', unsigned: true })
   termId: number;
 
-  @ApiProperty({ description: '🈵 분류ID' })
+  @ApiProperty({ description: '🈵 분류ID', example: 1 })
   @Column({ type: 'int', unsigned: true })
   categoryId: number;
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '🈵 학교ID (relation용 아님)' })
+  @ApiProperty({ description: '🈵 학교ID (relation용 아님)', example: 1 })
   @Column({ type: 'int', unsigned: true })
   schoolId: number; // 관리자 편의를 위한 Column.
 
-  @ApiProperty({ description: '🈳 학교명' })
+  @ApiProperty({
+    description: '🈳 학교명',
+    example: '홍익대학교 사범대학 부속 초등학교',
+  })
   @Column({ type: 'varchar', length: 24, nullable: true })
   schoolName: string | null; // 관리자 편의를 위한 Column.
 
-  @ApiProperty({ description: '🈵 과목명' })
+  @ApiProperty({ description: '🈵 과목명', example: '수학' })
   @Column({ type: 'varchar', length: 24 })
   lessonName: string;
 
-  @ApiProperty({ description: '🈳 과목설명' })
+  @ApiProperty({ description: '🈳 과목설명', example: 'optional 설명내용' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   description: string | null;
 
-  @ApiProperty({ description: '🈵 수업수/term' })
-  @Column({ type: 'int', unsigned: true, default: 0 })
-  termlyLessonCount: number;
-
-  @ApiProperty({ description: '🈵 수업수/week' })
-  @Column({ type: 'int', unsigned: true, default: 0 })
-  weeklyLessonCount: number;
-
-  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @ApiProperty({
+    description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
+    example: '2025-01-01',
+  })
   @Column({ type: 'varchar', length: 10 })
   start: string;
 
-  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @ApiProperty({
+    description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
+    example: '2025-02-01',
+  })
   @Column({ type: 'varchar', length: 10 })
   end: string;
 
@@ -78,33 +80,46 @@ export class Lesson {
   @Column({ type: 'int', unsigned: true, default: 0 })
   instructorFee: number;
 
-  @ApiProperty({ description: '🈳 B. 도서구매비 배열(낮은가격순 정렬)' })
+  @ApiProperty({
+    description: '🈳 B. 도서구매비 배열(낮은가격순 정렬)',
+    example: [{ name: 'total', amount: 1000 }],
+  })
   @Column('json', { nullable: true })
   bookFees: FeeItemDto[] | null;
 
-  @ApiProperty({ description: '🈳 C. 재료구매비 배열(낮은가격순 정렬)' })
+  @ApiProperty({
+    description: '🈳 C. 재료구매비 배열(낮은가격순 정렬)',
+    example: [{ name: 'total', amount: 1000 }],
+  })
   @Column('json', { nullable: true })
   materialFees: FeeItemDto[] | null;
 
   // todo: 어떻게 finalizing 할 지 나중에 결정할 것
-  @ApiProperty({ description: '🈵 D. 수용비; 학교시설 이용경비' })
+  @ApiProperty({
+    description: '🈵 D. 수용비; 학교시설 이용경비',
+    example: 1000,
+  })
   @Column({ type: 'int', unsigned: true, default: 0 })
   operationFee: number;
 
   @ApiProperty({
     description: '🈵 CO-xxx 변경없이 동일비용 적용, MC/MF 비율로 계산',
+    example: 'CO-1000',
   })
   @Column({ type: 'varchar', length: 16, default: 'CO-1000' })
   operationFeeRule: string | null; // 과목별로 다른 계산룰이 적용되는 경우를 위해 추가
 
-  @ApiProperty({ description: '🈳 필요한 문서의 Key 값들; Source of Truth' })
+  @ApiProperty({
+    description: '🈳 필요한 문서의 Key 값들; Source of Truth',
+    example: [DocumentType.RESUME],
+  })
   @Column('json', { nullable: true })
   @IsArray()
   @IsEnum(DocumentType, { each: true })
   @IsOptional()
   requiredDocuments: DocumentType[] | null;
 
-  @ApiProperty({ description: '🈳 비고' })
+  @ApiProperty({ description: '🈳 비고', example: 'optional 비고내용' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
 
@@ -122,7 +137,7 @@ export class Lesson {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ApiProperty({ description: '🈳 deletedAt' })
+  @ApiProperty({ description: '🈳 deletedAt', example: null })
   @DeleteDateColumn()
   deletedAt: Date | null;
 
@@ -134,7 +149,18 @@ export class Lesson {
   @JoinColumn({ name: 'termId' })
   term: Term;
 
-  @ApiProperty({ description: '관련 category', type: Category })
+  @ApiProperty({
+    description: '관련 category',
+    type: Category,
+    example: {
+      id: 1,
+      slug: 'FREE_CUSTOM',
+      name: '늘봄맞춤무료',
+      count: 0,
+      createdAt: '2025-05-23T08:13:35.112Z',
+      updatedAt: '2025-05-23T08:13:35.112Z',
+    },
+  })
   @ManyToOne(() => Category, (category) => category.lessons, {
     onDelete: 'CASCADE',
   })
@@ -143,7 +169,46 @@ export class Lesson {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @ApiProperty({ description: '관련 groups', type: [Group], isArray: true })
+  @ApiProperty({
+    description: '관련 groups',
+    type: [Group],
+    isArray: true,
+    example: [
+      {
+        id: 1,
+        samId: 1,
+        lessonId: 1,
+        groupName: '바이올린:화요일A반',
+        location: '과학실2',
+        capacity: 10,
+        allowedGrades: '1,2',
+        weekday: '화',
+        start: '13:50',
+        end: '14:30',
+        status: 'PENDING',
+        tuition: 0,
+        bookFee: 0,
+        materialFee: 0,
+        days: 18,
+        deletedBy: null,
+        note: null,
+        createdAt: '2025-05-23T08:43:26.709Z',
+        updatedAt: '2025-05-26T02:28:19.000Z',
+        sam: {
+          id: 1,
+          instructorId: 1,
+          schoolId: 1,
+          alias: '김사과',
+          score: 0,
+          editFeePermission: false,
+          editEnrollmentPermission: false,
+          note: null,
+          createdAt: '2025-05-23T08:31:12.233Z',
+          updatedAt: '2025-05-23T08:31:12.233Z',
+        },
+      },
+    ],
+  })
   @OneToMany(() => Group, (group) => group.lesson)
   public groups: Group[];
 

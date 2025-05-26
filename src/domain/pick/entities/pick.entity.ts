@@ -15,20 +15,20 @@ import {
 } from 'typeorm';
 
 @Entity('picks')
-@Unique(['groupId', 'studentId'])
+@Unique(['studentId', 'groupId', 'offeringId'])
 export class Pick {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 
-  @ApiProperty({ description: '학생 아이디' })
+  @ApiProperty({ description: '학생 아이디', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   studentId: number;
 
-  @ApiProperty({ description: '그룹 아이디' })
+  @ApiProperty({ description: '그룹 아이디', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   groupId: number;
 
-  @ApiProperty({ description: '수강신청과목 아이디' })
+  @ApiProperty({ description: '수강신청과목 아이디', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   offeringId: number;
 
@@ -45,26 +45,31 @@ export class Pick {
   @ApiProperty({
     description: '🈵 누가 수업시작일 등록했나?',
     default: Actor.SYSTEM,
+    example: Actor.SYSTEM,
   })
   @Column({
     type: 'enum',
     enum: Actor,
     default: Actor.SYSTEM,
-    nullable: true,
     comment: '누가 수업시작일 등록했나?',
   })
-  startedBy: Actor | null;
+  startedBy: Actor;
 
-  @ApiProperty({ description: '🈳 startedOn; 수업시작일(첫수업일)' })
+  @ApiProperty({
+    description: '🈳 startedOn; 수업시작일(첫수업일)',
+    example: '2025-05-27',
+  })
   @Column({
     type: 'varchar',
     length: 16,
-    nullable: true,
     comment: '수업시작일(첫수업일)',
   })
-  startedOn: string | null;
+  startedOn: string;
 
-  @ApiProperty({ description: '🈳 누가 수업종료일(마지막수업일) 등록했나?' })
+  @ApiProperty({
+    description: '🈳 누가 수업종료일(마지막수업일) 등록했나?',
+    example: Actor.INSTRUCTOR,
+  })
   @Column({
     type: 'enum',
     enum: Actor,
@@ -74,7 +79,10 @@ export class Pick {
   })
   endedBy: Actor | null;
 
-  @ApiProperty({ description: '🈳 endedOn; 수업종료일(마지막수업일)' })
+  @ApiProperty({
+    description: '🈳 endedOn; 수업종료일(마지막수업일)',
+    example: '2025-08-27',
+  })
   @Column({
     type: 'varchar',
     length: 16,
@@ -83,7 +91,7 @@ export class Pick {
   })
   endedOn: string | null;
 
-  @ApiProperty({ description: '🈳 비고' })
+  @ApiProperty({ description: '🈳 비고', example: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
 

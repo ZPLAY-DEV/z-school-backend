@@ -245,6 +245,7 @@ export interface IPickKeys {
   studentId: number;
   groupId: number;
   offeringId: number;
+  startedOn: string;
 }
 
 export interface ICalendarDay {
