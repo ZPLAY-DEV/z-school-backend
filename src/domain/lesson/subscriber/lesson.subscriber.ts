@@ -4,7 +4,7 @@ import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { generateSchooldays } from 'src/helpers/school-days.util';
+import { generateSchooldays } from 'src/helpers/lesson-days.util';
 import { DataSource, EntitySubscriberInterface, UpdateEvent } from 'typeorm';
 
 @Injectable()

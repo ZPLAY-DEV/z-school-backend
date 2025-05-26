@@ -12,7 +12,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { generateSchooldays } from 'src/helpers/school-days.util';
+import { generateSchooldays } from 'src/helpers/lesson-days.util';
 import { Repository } from 'typeorm';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { LessonCoreService } from './lesson-core.service';

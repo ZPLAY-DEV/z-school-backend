@@ -16,12 +16,12 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
+import { generateSchooldays } from 'src/helpers/lesson-days.util';
 import {
   parseRangeFormat,
   parseTime,
   parseTimeFormat,
 } from 'src/helpers/parse';
-import { generateSchooldays } from 'src/helpers/school-days.util';
 import {
   DataSource,
   DeepPartial,

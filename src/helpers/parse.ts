@@ -62,7 +62,7 @@ const SLOTS_PER_DAY = (12 * 60) / SLOT_MINUTES; // 144
 // 시간을 24시간 형식으로 변환하는 함수
 export const parseTime = (time: string): [number, number] => {
   const isPM = /pm$/i.test(time);
-  const isAM = /am$/i.test(time) || !/am|pm/i.test(time); // am/pm 없으면 am으로
+  const isAM = /am$/i.test(time);
 
   const timeValues = time
     .replace(/(am|pm)/i, '')
@@ -72,12 +72,15 @@ export const parseTime = (time: string): [number, number] => {
   let hour = timeValues[0];
   const minute = timeValues[1];
 
-  if (hour === 12) {
-    hour = isAM ? 0 : 12;
-  } else if (isPM) {
-    hour += 12;
+  if (/am|pm/i.test(time)) {
+    // 12시간제 표기
+    if (hour === 12) {
+      hour = isAM ? 0 : 12;
+    } else if (isPM) {
+      hour += 12;
+    }
   }
-
+  // 24시간제 표기는 그대로 반환
   return [hour, minute];
 };
 
