@@ -1,11 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsBoolean,
   IsEnum,
   IsInt,
-  IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -22,30 +19,32 @@ export class CreateInstructorDto {
   })
   @IsOptional()
   @IsInt()
+  @Type(() => Number)
   @Min(1)
   userId?: number;
 
   @ApiProperty({
-    description: '🈵 School ID (number)',
-    required: true,
+    description: '🈳 School ID (number)',
+    required: false,
     type: Number,
     example: 1,
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsInt()
   @Type(() => Number)
   @Min(1)
   schoolId: number;
 
   @ApiProperty({
-    description: '🈵 강사 이름',
+    description: '🈳 강사 이름',
     example: '홍길동',
     type: String,
     required: true,
   })
+  @IsOptional()
   @IsString()
   @MaxLength(16)
-  name: string;
+  name?: string;
 
   @ApiProperty({
     description: '🈵 강사 전화번호 (숫자만 입력)',
@@ -97,36 +96,4 @@ export class CreateInstructorDto {
   })
   @IsOptional()
   termsAgreedAt?: Date;
-
-  @ApiProperty({
-    description: '🈳 리뷰점수',
-    example: 1,
-    type: Number,
-    required: false,
-  })
-  @IsNumber()
-  @IsOptional()
-  score?: number;
-
-  @ApiProperty({
-    description: '🈳 교재/재료비 수정 권한 여부',
-    example: false,
-    type: Boolean,
-    required: false,
-  })
-  @IsBoolean()
-  @Type(() => Boolean)
-  @IsOptional()
-  editFeePermission?: boolean;
-
-  @ApiProperty({
-    description: '🈳 수강 추가/취소 권한 여부',
-    example: false,
-    type: Boolean,
-    required: false,
-  })
-  @IsBoolean()
-  @Type(() => Boolean)
-  @IsOptional()
-  editEnrollmentPermission?: boolean;
 }

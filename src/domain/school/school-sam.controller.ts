@@ -18,9 +18,16 @@ import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { SchoolSamService } from 'src/domain/school/school-sam.service';
 import { UploadService } from 'src/services/upload/upload.service';
+import {
+  CreateSchoolSamBulkDocs,
+  CreateSchoolSamBulkDryRunDocs,
+  SchoolSamDocumentsDocs,
+  SchoolSamListDocs,
+  SchoolSamPaginatedDocs,
+} from '../sam/swagger/school-sam.swagger.decorator';
 
 @UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('✅ Schools > Instructors ( 학교 > 강사 )')
+@ApiTags('✅ Schools > Sams ( 학교 > 강사 )')
 @ApiCommonErrorResponseTemplate()
 @Controller('schools')
 export class SchoolSamController {
@@ -33,6 +40,7 @@ export class SchoolSamController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateSchoolSamBulkDocs()
   @Post(':schoolId/sams/bulk')
   async createBulk(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -45,6 +53,7 @@ export class SchoolSamController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateSchoolSamBulkDryRunDocs()
   @HttpCode(StatusCodes.OK)
   @Post(':schoolId/sams/bulk/dryrun')
   async bulkDryRun(
@@ -54,6 +63,7 @@ export class SchoolSamController {
     return await this.schoolSamService.createBulk(schoolId, dtos, true);
   }
 
+  @SchoolSamListDocs()
   @Get(':schoolId/sams')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -61,6 +71,7 @@ export class SchoolSamController {
     return await this.schoolSamService.list(schoolId);
   }
 
+  @SchoolSamPaginatedDocs()
   @Get(':schoolId/sams/paginated')
   async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -69,6 +80,7 @@ export class SchoolSamController {
     return await this.schoolSamService.infiniteList(schoolId, query);
   }
 
+  @SchoolSamDocumentsDocs()
   @Get(':schoolId/sams/:samId/documents')
   async getDocuments(
     @Param('schoolId', ParseIntPipe) schoolId: number,

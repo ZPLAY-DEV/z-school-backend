@@ -95,5 +95,5 @@ export class CreateSamDto {
   })
   @ValidateNested()
   @Type(() => CreateInstructorDto)
-  instructor?: CreateInstructorDto;
+  instructor: CreateInstructorDto;
 }
