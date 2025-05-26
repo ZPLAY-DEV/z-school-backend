@@ -18,11 +18,11 @@ import { Student } from 'src/domain/student/entities/student.entity';
 import { S3Service } from 'src/services/aws/s3.service';
 import {
   DataSource,
-  // IsNull,
-  // LessThanOrEqual,
-  // MoreThanOrEqual,
+  IsNull,
+  LessThanOrEqual,
+  MoreThanOrEqual,
   Not,
-  // Or,
+  Or,
   Repository,
 } from 'typeorm';
 import { School } from '../school/entities/school.entity';
@@ -31,6 +31,8 @@ import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 import { BookingStatus } from 'src/common/enums';
 import { Pick } from '../pick/entities/pick.entity';
 import { Booking } from '../booking/entities/booking.entity';
+import { Group } from '../group/entities/group.entity';
+import { Schoolday } from '../schoolday/entities/schoolday.entity';
 
 @Injectable()
 export class StudentService {
@@ -179,8 +181,8 @@ export class StudentService {
     const picks = await this.pickRepository
       .createQueryBuilder('pick')
       .leftJoinAndSelect('pick.group', 'group')
-      .leftJoinAndSelect('group.instructor', 'instructor')
-      .leftJoinAndSelect('instructor.instructorSchools', 'instructorSchools')
+      .leftJoinAndSelect('group.sam', 'sam')
+      .leftJoinAndSelect('sam.instructor', 'instructor')
       .where('pick.studentId = :studentId', { studentId })
       .getMany();
 
@@ -192,8 +194,8 @@ export class StudentService {
     const picks = await this.pickRepository
       .createQueryBuilder('pick')
       .leftJoinAndSelect('pick.group', 'group')
-      .leftJoinAndSelect('group.instructor', 'instructor')
-      .leftJoinAndSelect('instructor.instructorSchools', 'instructorSchools')
+      .leftJoinAndSelect('group.sam', 'sam')
+      .leftJoinAndSelect('sam.instructor', 'instructor')
       .where('pick.studentId = :studentId', { studentId })
       .andWhere('pick.endedBy IS NOT NULL')
       .getMany();
@@ -201,91 +203,189 @@ export class StudentService {
     return picks;
   }
 
-  // //? 학생의 수강 일정 조회
-  // async findBySchedule(studentId: number, dates: string[]) {
-  //   // 1. 학생의 수강신청 내역을 조회
-  //   const picks = await this.pickRepository.find({
-  //     where: {
-  //       studentId,
-  //       startedOn: LessThanOrEqual(dates[dates.length - 1]),
-  //       endedOn: Or(IsNull(), MoreThanOrEqual(dates[0])),
-  //     },
-  //     relations: [
-  //       'group',
-  //       'group.instructor',
-  //       'group.instructor.instructorSchools',
-  //     ],
-  //     select: {
-  //       id: true,
-  //       studentId: true,
-  //       groupId: true,
-  //       startedOn: true,
-  //       endedOn: true,
-  //       group: {
-  //         id: true,
-  //         groupName: true,
-  //         location: true,
-  //         weekday: true,
-  //         start: true,
-  //         end: true,
-  //         calendarDays: true,
-  //         instructor: {
-  //           id: true,
-  //           instructorSchools: {
-  //             alias: true,
-  //           },
-  //         },
-  //       },
-  //     },
-  //   });
+  //? 학생의 수강 일정 조회
+  async findBySchedule(studentId: number, dates: string[]) {
+    const picks = await this.pickRepository.find({
+      where: {
+        studentId,
+        startedOn: LessThanOrEqual(dates[dates.length - 1]),
+        endedOn: Or(IsNull(), MoreThanOrEqual(dates[0])),
+      },
+      relations: [
+        'group',
+        'group.schooldays',
+        'group.sam',
+        'group.sam.instructor', // sam 하위의 instructor
+      ],
+      select: {
+        id: true,
+        studentId: true,
+        groupId: true,
+        startedOn: true,
+        endedOn: true,
+        group: {
+          id: true,
+          groupName: true,
+          location: true,
+          weekday: true,
+          start: true,
+          end: true,
+          schooldays: {
+            id: true,
+            startsAt: true,
+            endsAt: true,
+            duration: true,
+          },
+          sam: {
+            id: true,
+            alias: true,
+            instructor: {
+              id: true,
+              phone: true,
+            },
+          },
+        },
+      },
+    });
 
-  //   // 2. 날짜별로 Group을 그룹화
-  //   const result: Record<string, Group[]> = {};
+    // 2. 날짜별로 Group 그룹화
+    const result: Record<string, Group[]> = {};
+    dates.forEach((date) => {
+      result[date] = [];
+    });
 
-  //   // dates 배열의 각 날짜에 대해 초기화
-  //   dates.forEach((date) => {
-  //     result[date] = [];
-  //   });
+    // 3. 결과가 없으면 예외 처리
+    if (!picks.length) {
+      return result;
+    }
 
-  //   // 각 Pick과 Group을 처리
-  //   picks.forEach((pick) => {
-  //     const group = pick.group;
-  //     // calendarDays에서 dates 배열에 포함된 날짜만 필터링
-  //     const filteredCalendarDays = group.calendarDays
-  //       .filter((day) => {
-  //         const dayDate = day.start.split(' ')[0]; // "2025-05-20 13:50" -> "2025-05-20"
-  //         return dates.includes(dayDate) && day.classOn;
-  //       })
-  //       .map((day) => ({
-  //         start: day.start,
-  //         end: day.end,
-  //         classOn: day.classOn,
-  //       }));
+    picks.forEach((pick) => {
+      const group = pick.group;
+      // schooldays에서 dates 배열에 포함된 날짜만 필터링
+      const filteredSchooldays = group.schooldays.filter((day) => {
+        const dayDate = day.startsAt.toISOString().split('T')[0]; // "2025-05-20T13:50:00Z" -> "2025-05-20"
+        return dates.includes(dayDate);
+      });
 
-  //     // 필터링된 calendarDays가 있는 경우, 각 날짜에 Group 추가
-  //     filteredCalendarDays.forEach((day) => {
-  //       const dayDate = day.start.split(' ')[0];
-  //       if (dates.includes(dayDate)) {
-  //         result[dayDate].push({
-  //           ...group,
-  //           calendarDays: [day], // 해당 날짜에 해당하는 calendarDays만 포함
-  //         });
-  //       }
-  //     });
-  //   });
+      // 필터링된 schooldays가 있는 경우, 각 날짜에 Group 추가
+      filteredSchooldays.forEach((schoolday) => {
+        const dayDate = schoolday.startsAt.toISOString().split('T')[0];
+        if (dates.includes(dayDate)) {
+          // Group 객체 기반 schooldays와 sam을 부분 객체로 구성
+          result[dayDate].push({
+            ...group,
+            schooldays: [
+              {
+                id: schoolday.id,
+                startsAt: schoolday.startsAt,
+                endsAt: schoolday.endsAt,
+                duration: schoolday.duration,
+              } as Schoolday,
+            ],
+            sam: group.sam
+              ? {
+                  id: group.sam.id,
+                  alias: group.sam.alias,
+                  instructor: group.sam.instructor
+                    ? {
+                        id: group.sam.instructor.id,
+                        phone: group.sam.instructor.phone,
+                      }
+                    : undefined,
+                }
+              : undefined,
+          } as Group); // 타입 에러 방지를 위해 Group으로 캐스팅
+        }
+      });
+    });
 
-  //   // 3. 결과가 비어있는지 확인
-  //   const hasResults = Object.values(result).some(
-  //     (groups) => groups.length > 0,
-  //   );
-  //   if (!hasResults) {
-  //     throw new NotFoundException(
-  //       `No scheduled groups found for student ID ${studentId} in the given date range`,
-  //     );
-  //   }
+    return result;
+    // // 1. 학생의 수강신청 내역을 조회
+    // const picks = await this.pickRepository.find({
+    //   where: {
+    //     studentId,
+    //     startedOn: LessThanOrEqual(dates[dates.length - 1]),
+    //     endedOn: Or(IsNull(), MoreThanOrEqual(dates[0])),
+    //   },
+    //   relations: [
+    //     'group',
+    //     'group.sam',
+    //     'group.sam.instructor',
+    //     'group.schooldays',
+    //   ],
+    //   select: {
+    //     id: true,
+    //     studentId: true,
+    //     groupId: true,
+    //     startedOn: true,
+    //     endedOn: true,
+    //     group: {
+    //       id: true,
+    //       groupName: true,
+    //       location: true,
+    //       weekday: true,
+    //       start: true,
+    //       end: true,
+    //       schooldays: true,
+    //       sam: {
+    //         id: true,
+    //         alias: true,
+    //         instructor: {
+    //           phone: true,
+    //         },
+    //       },
+    //     },
+    //   },
+    // });
 
-  //   return result;
-  // }
+    // // 2. 날짜별로 Group을 그룹화
+    // const result: Record<string, Group[]> = {};
+    // console.log('result --->', result);
+    // console.log('picks --->', picks[0].group.schooldays);
+
+    // // dates 배열의 각 날짜에 대해 초기화
+    // dates.forEach((date) => {
+    //   result[date] = [];
+    // });
+
+    // console.log('result --->', result);
+
+    // // 각 Pick과 Group을 처리
+    // picks.forEach((pick) => {
+    //   const group = pick.group;
+    //   // calendarDays에서 dates 배열에 포함된 날짜만 필터링
+    //   const filteredCalendarDays = group.schooldays
+    //     .filter((day) => {
+    //       const dayDate = day.startsAt.split(' ')[0]; // "2025-05-20 13:50" -> "2025-05-20"
+    //       return dates.includes(dayDate) && day.classOn;
+    //     })
+    //     .map((day) => ({
+    //       start: day.start,
+    //       end: day.end,
+    //       classOn: day.classOn,
+    //     }));
+    //   // 필터링된 calendarDays가 있는 경우, 각 날짜에 Group 추가
+    //   filteredCalendarDays.forEach((day) => {
+    //     const dayDate = day.start.split(' ')[0];
+    //     if (dates.includes(dayDate)) {
+    //       result[dayDate].push({
+    //         ...group,
+    //         calendarDays: [day], // 해당 날짜에 해당하는 calendarDays만 포함
+    //       });
+    //     }
+    //   });
+    // });
+    // // 3. 결과가 비어있는지 확인
+    // const hasResults = Object.values(result).some(
+    //   (groups) => groups.length > 0,
+    // );
+    // if (!hasResults) {
+    //   throw new NotFoundException(
+    //     `No scheduled groups found for student ID ${studentId} in the given date range`,
+    //   );
+    // }
+    // return result;
+  }
 
   //? 학생의 수강 신청 내역 조회
   async findBookings(id: number): Promise<Booking[]> {

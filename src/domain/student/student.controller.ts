@@ -85,15 +85,15 @@ export class StudentController {
     return await this.studentService.findByIdWithStatus(id, status);
   }
 
-  // //? 요일별 학생 수업 일정 조회
-  // @Get(':id/schedule')
-  // async findBySchedule(
-  //   @Param('id', ParseIntPipe) id: number,
-  //   @Query('dates', new ParseArrayPipe({ items: String, optional: true }))
-  //   dates: string[],
-  // ) {
-  //   return await this.studentService.findBySchedule(id, dates);
-  // }
+  //? 요일별 학생 수업 일정 조회
+  @Get(':id/schedule')
+  async findBySchedule(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('dates', new ParseArrayPipe({ items: String, optional: true }))
+    dates: string[],
+  ) {
+    return await this.studentService.findBySchedule(id, dates);
+  }
 
   //? 특정 학생의 수강 신청 내역 조회
   @StudentBookingFindByIdDocs()
