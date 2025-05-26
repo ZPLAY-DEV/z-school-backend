@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
@@ -39,7 +40,7 @@ export class CreateInstructorDto {
     description: '🈳 강사 이름',
     example: '홍길동',
     type: String,
-    required: true,
+    required: false,
   })
   @IsOptional()
   @IsString()
@@ -52,6 +53,7 @@ export class CreateInstructorDto {
     type: String,
     required: true,
   })
+  @IsNotEmpty()
   @IsString()
   @MaxLength(16)
   phone: string;
