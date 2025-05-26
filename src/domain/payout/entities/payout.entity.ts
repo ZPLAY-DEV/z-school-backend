@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { LedgerType } from 'src/common/enums';
-import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
 import {
   Column,
   CreateDateColumn,
@@ -15,9 +15,9 @@ export class Payout {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈵 instructorId' })
+  @ApiProperty({ description: '🈵 schoolInstructorId' })
   @Column({ type: 'int', unsigned: true })
-  instructorId: number;
+  schoolInstructorId: number;
 
   @ApiProperty({ description: '🈵 lessonId' })
   @Column({ type: 'int', unsigned: true })
@@ -64,8 +64,8 @@ export class Payout {
   //* ---------------------------------------------------------------------- *//
   //* M-to-1 belongsTo
 
-  @ManyToOne(() => Instructor, (instructor) => instructor.payouts, {
+  @ManyToOne(() => Sam, (sam) => sam.payouts, {
     onDelete: 'CASCADE',
   })
-  instructor: Instructor;
+  sam: Sam;
 }

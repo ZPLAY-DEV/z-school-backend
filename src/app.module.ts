@@ -28,7 +28,9 @@ import { ManagerModule } from 'src/domain/manager/manager.module';
 import { OfferingModule } from 'src/domain/offering/offering.module';
 import { ParentModule } from 'src/domain/parent/parent.module';
 import { PayoutModule } from 'src/domain/payout/payout.module';
+import { SamModule } from 'src/domain/sam/sam.module';
 import { SchoolModule } from 'src/domain/school/school.module';
+import { SchooldayModule } from 'src/domain/schoolday/schoolday.module';
 import { StatementModule } from 'src/domain/statement/statement.module';
 import { StudentModule } from 'src/domain/student/student.module';
 import { SubsidyModule } from 'src/domain/subsidy/subsidy.module';
@@ -38,10 +40,10 @@ import { RedisModule } from 'src/services/redis/redis.module';
 import { SlackModule } from 'src/services/slack/slack-module';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { OrmConfig } from './database/orm-config';
+import { BoardModule } from './domain/board/board.module';
 import { PhoneModule } from './domain/phone/phone.module';
 import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
-import { BoardModule } from './domain/board/board.module';
 
 @Module({
   imports: [
@@ -119,7 +121,9 @@ import { BoardModule } from './domain/board/board.module';
     OfferingModule,
     ParentModule,
     PayoutModule,
+    SamModule,
     SchoolModule,
+    SchooldayModule,
     SlackModule,
     StatementModule,
     StudentModule,

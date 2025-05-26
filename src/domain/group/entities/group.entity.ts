@@ -1,12 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { IsArray } from 'class-validator';
 import { Actor, ClassStatus, Weekday } from 'src/common/enums';
-import { ICalendarDay } from 'src/common/interfaces';
 import { Board } from 'src/domain/board/entities/board.entity';
-import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import {
   Column,
   CreateDateColumn,
@@ -29,7 +28,7 @@ export class Group {
 
   @ApiProperty({ description: '🈳 exclusively exists in instructor' })
   @Column({ type: 'int', unsigned: true, nullable: true })
-  instructorId: number;
+  samId: number;
 
   @ApiProperty({ description: '🈵 exclusively exists in lesson' })
   @Column({ type: 'int', unsigned: true })
@@ -92,25 +91,6 @@ export class Group {
   @Column({ type: 'tinyint', unsigned: true, default: 0 })
   days: number;
 
-  @ApiProperty({
-    description: '🈳 총 수업일 스케쥴',
-    example: [
-      {
-        start: '2025-05-21',
-        end: '2025-05-21',
-        classOn: true,
-      },
-      {
-        start: '2025-05-23',
-        end: '2025-05-23',
-        classOn: false,
-      },
-    ],
-  })
-  @Column('json', { nullable: true })
-  @IsArray()
-  calendarDays: ICalendarDay[];
-
   @ApiProperty({ description: '🈳 누가 삭제했나?', example: Actor.INSTRUCTOR })
   @Column({
     type: 'enum',
@@ -140,11 +120,19 @@ export class Group {
   @DeleteDateColumn()
   deletedAt: Date | null;
 
+  //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @ApiProperty({ description: '관련 groups', type: [Group], isArray: true })
+  @OneToMany(() => Schoolday, (schoolday) => schoolday.group, {
+    cascade: true,
+  })
+  public schooldays: Schoolday[];
+
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Instructor, (instructor) => instructor.groups)
-  @JoinColumn({ name: 'instructorId' })
-  instructor: Instructor;
+  @ManyToOne(() => Sam, (sam) => sam.groups)
+  @JoinColumn({ name: 'samId' })
+  sam: Sam;
 
   @ManyToOne(() => Lesson, (lesson) => lesson.groups)
   @JoinColumn({ name: 'lessonId' })

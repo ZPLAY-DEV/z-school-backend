@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
-export class DeleteInstructorSchoolDto {
+export class DeleteInstructorNoteDto {
   @ApiProperty({
     description: '삭제 사유',
     example: '강사 계약 종료',

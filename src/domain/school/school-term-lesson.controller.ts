@@ -16,13 +16,6 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { CreateLessonRequestDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
-import {
-  CreateSchoolTermLessonBulkDocs,
-  CreateSchoolTermLessonBulkDryRunDocs,
-  DeleteAllSchoolTermLessonsDocs,
-  SchoolTermLessonInfiniteListDocs,
-  SchoolTermLessonListDocs,
-} from 'src/domain/lesson/swagger/school-term-lesson-swagger.decorator';
 import { SchoolTermLessonService } from 'src/domain/school/school-term-lesson.service';
 
 @ApiTags('✅ Schools > Terms > Lessons ( 학교 > 학기 > 과목 )')
@@ -38,7 +31,6 @@ export class SchoolTermLessonController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @CreateSchoolTermLessonBulkDocs()
   @Post(':schoolId/terms/:termId/lessons/bulk')
   @HttpCode(200)
   async createBulk(
@@ -57,7 +49,7 @@ export class SchoolTermLessonController {
 
   //! create() 의 모든 로직이 무사히 실행되는지 persist 하지 않고, 실험해보기 위한 것이
   //! dryrun() 인데, 그냥 중복 강좌 레코드가 있는지만 확인하고 말았다. ㅠ.ㅠ
-  @CreateSchoolTermLessonBulkDryRunDocs()
+
   @Post(':schoolId/terms/:termId/lessons/bulk/dryrun')
   @HttpCode(200)
   async createBulkDryRun(
@@ -82,7 +74,6 @@ export class SchoolTermLessonController {
   //? ---------------------------------------------------------------------- ?//
 
   @Public()
-  @SchoolTermLessonInfiniteListDocs()
   @Get(':schoolId/terms/:termId/lessons/paginated')
   @UseInterceptors(ClassSerializerInterceptor)
   async infiniteList(
@@ -98,7 +89,6 @@ export class SchoolTermLessonController {
   }
 
   @Public()
-  @SchoolTermLessonListDocs()
   @Get(':schoolId/terms/:termId/lessons')
   @UseInterceptors(ClassSerializerInterceptor)
   async list(
@@ -112,7 +102,6 @@ export class SchoolTermLessonController {
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
 
-  @DeleteAllSchoolTermLessonsDocs()
   @Delete(':schoolId/terms/:termId/lessons')
   async deleteAll(
     @Param('schoolId', ParseIntPipe) schoolId: number,

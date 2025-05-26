@@ -3,10 +3,10 @@ import { IsArray, IsEnum, IsOptional } from 'class-validator';
 import { ClassStatus, DocumentType } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { InstructorLesson } from 'src/domain/instructor/entities/instructor-lesson.entity';
 import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
 import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { SamLesson } from 'src/domain/sam/entities/sam-lesson.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
@@ -156,8 +156,8 @@ export class Lesson {
   //* N-to-M belongsToMany using 1-to-M ------------------------------------ *//
 
   @ApiProperty({
-    description: '관련 instructorLessons',
-    type: [InstructorLesson],
+    description: '관련 samLessons',
+    type: [SamLesson],
     isArray: true,
     example: [
       {
@@ -180,11 +180,8 @@ export class Lesson {
       },
     ],
   })
-  @OneToMany(
-    () => InstructorLesson,
-    (instructorLesson: InstructorLesson) => instructorLesson.lesson,
-  )
-  instructorLessons: InstructorLesson[];
+  @OneToMany(() => SamLesson, (samLesson: SamLesson) => samLesson.lesson)
+  samLessons: SamLesson[];
 
   //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
 

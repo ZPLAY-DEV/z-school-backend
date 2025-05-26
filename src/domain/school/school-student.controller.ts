@@ -38,6 +38,7 @@ export class SchoolStudentController {
   //? ---------------------------------------------------------------------- ?//
   //? Create
   //? ---------------------------------------------------------------------- ?//
+
   @CreateSchoolStudentBulkDocs()
   @Post(':schoolId/students/bulk')
   async createBulk(

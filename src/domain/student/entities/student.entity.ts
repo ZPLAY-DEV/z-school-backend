@@ -20,20 +20,14 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-//? TransferHistory (수업이동) 대신 student_group 사용
 @Entity('students')
 @Unique(['schoolId', 'grade', 'class', 'studentCode'])
 export class Student {
-  @ApiProperty({
-    description: 'student id',
-  })
+  @ApiProperty({ description: 'student`s id' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 
-  // todo. 부모는 1명만 가능하다. okay?
-  @ApiProperty({
-    description: 'exclusively exists in parent',
-  })
+  @ApiProperty({ description: 'exclusively exists in parent' })
   @Column({ type: 'int', unsigned: true, nullable: true })
   parentId: number;
 
@@ -100,7 +94,7 @@ export class Student {
   })
   status: StudentStatus;
 
-  @ApiProperty({ description: '비고' })
+  @ApiProperty({ description: '🈳 비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
 
@@ -132,13 +126,13 @@ export class Student {
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
   @OneToMany(() => Booking, (booking) => booking.student)
-  bookings: Booking[];
+  bookings: Booking[]; // 수강신청
 
   @OneToMany(() => Subsidy, (subsidy) => subsidy.student)
-  subsidies: Subsidy[];
+  subsidies: Subsidy[]; // 학생지원금
 
   @OneToMany(() => Ledger, (ledger) => ledger.student)
-  ledgers: Ledger[];
+  ledgers: Ledger[]; // 영수증
 
   //* N-to-M belongsToMany with custom props using 1-to-M ------------------ *//
 

@@ -1,0 +1,211 @@
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { Group } from 'src/domain/group/entities/group.entity';
+import { DeleteInstructorNoteDto } from 'src/domain/instructor/dto/delete-instructor-note.dto';
+import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
+import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
+import { School } from 'src/domain/school/entities/school.entity';
+import { DataSource, EntityManager, Repository } from 'typeorm';
+import { Sam } from './entities/sam.entity';
+import { Document } from '../document/entities/document.entity';
+@Injectable()
+export class SamService {
+  private readonly logger = new Logger(SamService.name);
+
+  constructor(
+    @InjectRepository(Sam)
+    private readonly samRepository: Repository<Sam>,
+    @InjectRepository(Instructor)
+    private readonly instructorRepository: Repository<Instructor>,
+    @InjectRepository(Document)
+    private readonly documentRepository: Repository<Document>,
+    private readonly dataSource: DataSource,
+  ) {}
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Create
+  //? ---------------------------------------------------------------------- ?//
+  async create(dto: CreateSamDto): Promise<Sam> {
+    return await this.dataSource.transaction(async (manager: EntityManager) => {
+      // 1. 학교 존재 여부 확인
+      const school = await manager.findOne(School, {
+        where: { id: dto.schoolId },
+      });
+
+      if (!school) {
+        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+      }
+
+      // 2. instructor 존재 여부 확인
+      let instructor: Instructor | undefined;
+
+      if (dto?.instructor) {
+        const foundInstructor = await this.instructorRepository.findOne({
+          where: { phone: dto.instructor.phone },
+        });
+
+        if (foundInstructor) {
+          instructor = foundInstructor;
+          dto.instructorId = instructor.id;
+        } else {
+          instructor = this.instructorRepository.create(dto.instructor);
+          await this.instructorRepository.save(instructor);
+          dto.instructorId = instructor.id;
+        }
+      }
+
+      if (!instructor) {
+        // 업데이트된 강사 정보 조회
+        instructor = await manager.findOneOrFail(Instructor, {
+          where: { id: dto.instructorId },
+        });
+      }
+
+      // 4. Sam 관계 upsert (동일 phone 기준)
+      let sam = await manager
+        .createQueryBuilder(Sam, 'sam')
+        .innerJoin('sam.instructor', 'instructor')
+        .where('sam.schoolId = :schoolId', {
+          schoolId: dto.schoolId,
+        })
+        .andWhere('sam.instructorId = :instructorId', {
+          instructorId: dto.instructorId,
+        })
+        .getOne();
+
+      if (sam) {
+        // 기존 관계 업데이트
+        await manager.update(
+          Sam,
+          { id: sam.id },
+          {
+            instructorId: instructor.id,
+            alias: dto.alias,
+            score: dto.score,
+            editFeePermission: dto.editFeePermission,
+            editEnrollmentPermission: dto.editEnrollmentPermission,
+            note: dto.note,
+          },
+        );
+      } else {
+        // 새 관계 생성
+        sam = manager.create(Sam, {
+          instructorId: instructor.id,
+          schoolId: dto.schoolId,
+          score: dto.score,
+          alias: dto.alias,
+          editFeePermission: dto.editFeePermission,
+          editEnrollmentPermission: dto.editEnrollmentPermission,
+          note: dto.note,
+        });
+        await manager.save(Sam, sam);
+      }
+
+      return await manager.findOneOrFail(Sam, {
+        where: {
+          id: sam.id,
+        },
+        relations: ['instructor'],
+      });
+    });
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
+
+  async dryRun(dto: CreateSamDto): Promise<Sam | null> {
+    // In dryRun mode, we check if the instructor exists but don't create it
+    const existingSam = await this.samRepository
+      .createQueryBuilder('sam')
+      .innerJoin(Instructor, 'instructor', 'instructor.id = sam.instructorId')
+      .where('sam.schoolId = :schoolId', {
+        schoolId: dto.schoolId,
+      })
+      .andWhere('instructor.phone = :phone', {
+        phone: dto.instructor.phone,
+      })
+      .getOne();
+
+    return existingSam ? existingSam : null;
+  }
+
+  async groups(id: number): Promise<Group[]> {
+    const sam = await this.samRepository.findOneOrFail({
+      where: { id },
+      relations: ['groups', 'groups.groupStudents'],
+    });
+
+    return sam?.groups ?? [];
+  }
+
+  async findById(id: number, relations: string[] = []): Promise<Sam> {
+    try {
+      return relations.length > 0
+        ? await this.samRepository.findOneOrFail({
+            where: { id },
+            relations,
+          })
+        : await this.samRepository.findOneOrFail({
+            where: { id },
+          });
+    } catch (e) {
+      this.logger.error(e);
+      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+    }
+  }
+
+  async getDocuments(samId: number): Promise<Document[]> {
+    return await this.documentRepository.find({
+      where: {
+        samId,
+      },
+    });
+  }
+
+  // async findBySchedule(id: number, dates: string[]) {
+  //   // 1. sam의 group 조회
+  //   const groups = await this.samRepository.find({
+  //     where: {
+  //       id,
+  //     },
+  //     relations: ['groups', 'groups.schooldays'],
+  //   });
+  // }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
+  async update(id: number, dto: UpdateSamDto): Promise<Sam> {
+    const sam = await this.samRepository.preload({
+      ...dto,
+      id,
+    });
+    if (!sam) {
+      throw new NotFoundException(`entity not found`);
+    }
+    return await this.samRepository.save(sam);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Delete
+  //? ---------------------------------------------------------------------- ?//
+
+  // this is soft-delete
+  async softDelete(id: number, dto: DeleteInstructorNoteDto): Promise<void> {
+    await this.samRepository.update(
+      { id },
+      { note: dto.note, deletedAt: new Date() },
+    );
+  }
+
+  // this is hard-delete
+  async remove(id: number): Promise<Sam> {
+    const sam = await this.findById(id);
+    await this.samRepository.softRemove(sam);
+    return sam;
+  }
+}

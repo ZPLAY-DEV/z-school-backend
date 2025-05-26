@@ -1,5 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { Document } from 'src/domain/document/entities/document.entity';
+import { Group } from 'src/domain/group/entities/group.entity';
+import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Payout } from 'src/domain/payout/entities/payout.entity';
+import { SamLesson } from 'src/domain/sam/entities/sam-lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import {
   Column,
@@ -8,21 +13,24 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
-import { Instructor } from './instructor.entity';
 
-@Entity('instructor_school')
+@Entity('sams')
 @Unique(['instructorId', 'schoolId'])
-export class InstructorSchool {
+export class Sam {
+  @ApiProperty({ description: 'sam`s id' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
+  @ApiProperty({ description: 'exclusively exists in instructor' })
   @Column({ type: 'int', unsigned: true })
   instructorId: number;
 
+  @ApiProperty({ description: 'exclusively exists in school' })
   @Column({ type: 'int', unsigned: true })
   schoolId: number;
 
@@ -38,11 +46,9 @@ export class InstructorSchool {
   })
   alias: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  @ApiProperty({ description: '🈳 내용' })
-  note: string | null;
-
-  // ------------------------------------------------------------------------ //
+  @ApiProperty({ description: '🈵 aggregated 평가점수 100점 만점' })
+  @Column({ type: 'tinyint', unsigned: true, default: 0 })
+  score: number;
 
   @Column({
     type: 'boolean',
@@ -60,6 +66,10 @@ export class InstructorSchool {
   @ApiProperty({ description: '🈳 수강 추가/취소 권한 여부' })
   editEnrollmentPermission: boolean;
 
+  @ApiProperty({ description: '🈳 비고' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  note: string | null;
+
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈵 createdAt' })
@@ -75,19 +85,33 @@ export class InstructorSchool {
   @DeleteDateColumn()
   deletedAt: Date | null;
 
-  //* 1-to-M hasMany ------------------------------------------------------- *//
+  //* M-to-1 belongsTo ------------------------------------------------------- *//
 
-  @ManyToOne(() => Instructor, (instructor) => instructor.instructorSchools)
+  @ManyToOne(() => Instructor, (instructor) => instructor.sams)
   @JoinColumn({ name: 'instructorId' })
   instructor: Instructor;
 
-  @ManyToOne(() => School, (school) => school.instructorSchools)
+  @ManyToOne(() => School, (school) => school.sams)
   @JoinColumn({ name: 'schoolId' })
   school: School;
 
+  //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @OneToMany(() => Document, (document) => document.sam)
+  documents: Document[]; // 문서
+
+  @OneToMany(() => Group, (group) => group.sam)
+  groups: Group[]; // 가르치는 반
+
+  @OneToMany(() => Payout, (payout) => payout.sam)
+  payouts: Payout[]; // 월급
+
+  @OneToMany(() => SamLesson, (samLesson: SamLesson) => samLesson.sam)
+  samLessons: SamLesson[]; // 가르치는 과목
+
   //? Constructor ---------------------------------------------------------- ?//
 
-  constructor(partial: Partial<InstructorSchool>) {
+  constructor(partial: Partial<Sam>) {
     Object.assign(this, partial);
   }
 }
