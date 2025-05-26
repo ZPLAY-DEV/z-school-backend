@@ -5,6 +5,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -13,6 +14,12 @@ import {
 } from 'typeorm';
 
 @Entity('schooldays')
+@Index('idx_school_term_start_end', [
+  'schoolId',
+  'termId',
+  'startsAt',
+  'endsAt',
+])
 @Unique(['schoolId', 'termId', 'lessonId', 'groupId', 'startsAt', 'endsAt'])
 export class Schoolday {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
