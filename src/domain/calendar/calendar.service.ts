@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -6,38 +6,15 @@ import {
   Paginated,
   paginate,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { UpdateCalendarDto } from 'src/domain/calendar/dto/update-calendar.dto';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
-import { School } from 'src/domain/school/entities/school.entity';
-import { NeisService } from 'src/services/neis/neis-service';
 import { Repository } from 'typeorm';
 @Injectable()
 export class CalendarService {
-  private readonly logger = new Logger(CalendarService.name);
-
   constructor(
-    @InjectRepository(School)
-    private readonly schoolRepository: Repository<School>,
     @InjectRepository(Calendar)
     private readonly calendarRepository: Repository<Calendar>,
-    private readonly neisService: NeisService,
   ) {}
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Create
-  //? ---------------------------------------------------------------------- ?//
-
-  async create(): Promise<any> {
-    const school = await this.schoolRepository.findOne({
-      where: { id: 1 },
-    });
-    if (!school) {
-      return;
-    }
-    // const calendar = this.calendarRepository.create(dto);
-    // return await this.calendarRepository.save(calendar);
-  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Read
@@ -56,21 +33,39 @@ export class CalendarService {
     });
   }
 
-  async findById(id: number, relations: string[] = []): Promise<Calendar> {
-    try {
-      return relations.length > 0
-        ? await this.calendarRepository.findOneOrFail({
-            where: { id },
-            relations,
-          })
-        : await this.calendarRepository.findOneOrFail({
-            where: { id },
-          });
-    } catch (error) {
-      this.logger.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
-    }
+  async findByDateRange(
+    schoolId: number,
+    startDate: string, // 예: "2025-08-01"
+    endDate: string, // 예: "2025-08-31"
+  ): Promise<string[]> {
+    const dates = await this.calendarRepository
+      .createQueryBuilder('calendar')
+      .where('calendar.schoolId = :schoolId', { schoolId })
+      .andWhere('calendar.date >= :startDate AND calendar.date <= :endDate', {
+        startDate,
+        endDate,
+      })
+      .orderBy('calendar.date', 'ASC')
+      .getMany();
+
+    return dates.map((calendar) => calendar.date);
   }
+
+  // async findById(id: number, relations: string[] = []): Promise<Calendar> {
+  //   try {
+  //     return relations.length > 0
+  //       ? await this.calendarRepository.findOneOrFail({
+  //           where: { id },
+  //           relations,
+  //         })
+  //       : await this.calendarRepository.findOneOrFail({
+  //           where: { id },
+  //         });
+  //   } catch (error) {
+  //     this.logger.error(error);
+  //     throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+  //   }
+  // }
 
   //? ---------------------------------------------------------------------- ?//
   //? Update
@@ -88,9 +83,11 @@ export class CalendarService {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
-  // note that this is hard-delete
   async remove(id: number): Promise<Calendar> {
-    const calendar = await this.findById(id);
-    return await this.calendarRepository.remove(calendar);
+    const calendar = await this.calendarRepository.findOneOrFail({
+      where: { id },
+    });
+    await this.calendarRepository.remove(calendar);
+    return calendar;
   }
 }

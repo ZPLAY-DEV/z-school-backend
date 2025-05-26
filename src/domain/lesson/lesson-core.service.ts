@@ -7,18 +7,21 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   parseRangeFormat,
   parseTime,
   parseTimeFormat,
 } from 'src/helpers/parse';
+import { generateSchooldays } from 'src/helpers/school-days.util';
 import {
   DataSource,
   DeepPartial,
@@ -35,6 +38,7 @@ export class LessonCoreService {
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
     private readonly dataSource: DataSource,
+    private readonly calendarService: CalendarService,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -60,8 +64,9 @@ export class LessonCoreService {
       }
 
       if (
-        new Date(`${dto.start}T09:00:00+09:00`) < term.startDate ||
-        new Date(`${dto.end}T09:00:00+09:00`) > term.endDate
+        (dto.start &&
+          new Date(`${dto.start}T09:00:00+09:00`) < term.startDate) ||
+        (dto.end && new Date(`${dto.end}T09:00:00+09:00`) > term.endDate)
       ) {
         throw new BadRequestException(HttpErrorConstants.OUT_OF_RANGE);
       }
@@ -95,13 +100,30 @@ export class LessonCoreService {
       }
 
       // 최종 데이터를 다시 로드하여 변환된 값을 반환
-      const savedLesson = await manager.findOne(Lesson, {
+      const savedLesson = await manager.findOneOrFail(Lesson, {
         where: { id: lesson.id },
         relations: { groups: true, category: true },
       });
 
-      if (!savedLesson) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
+      const offdays: string[] = await this.calendarService.findByDateRange(
+        savedLesson.schoolId,
+        savedLesson.start,
+        savedLesson.end,
+      );
+
+      //? 6단계) 학업요일 days 정보 및 schooldays 처리
+      for (const group of savedLesson.groups) {
+        // 이 반의 기존 schooldays 모두 제거
+        await manager.getRepository('Schoolday').delete({ groupId: group.id });
+        // 이 반의 schooldays 생성
+        const schooldays: Schoolday[] = generateSchooldays(
+          savedLesson,
+          group,
+          offdays,
+        );
+        group.schooldays = schooldays; // cascade로 자동 저장
+        group.days = schooldays.length;
+        await manager.save(group); // cascade로 schooldays도 저장/삭제됨
       }
 
       return savedLesson;
@@ -228,13 +250,30 @@ export class LessonCoreService {
     }
 
     // 최종 데이터를 다시 로드하여 변환된 값을 반환
-    const finalLesson = await manager.findOne(Lesson, {
+    const finalLesson = await manager.findOneOrFail(Lesson, {
       where: { id },
       relations: { groups: true, category: true },
     });
 
-    if (!finalLesson) {
-      throw new NotFoundException(`Cannot find updated lesson with ID ${id}`);
+    const offdays: string[] = await this.calendarService.findByDateRange(
+      finalLesson.schoolId,
+      finalLesson.start,
+      finalLesson.end,
+    );
+
+    //? 6단계) 학업요일 days 정보 및 schooldays 처리
+    for (const group of finalLesson.groups) {
+      // 이 반의 기존 schooldays 모두 제거
+      await manager.getRepository('Schoolday').delete({ groupId: group.id });
+      // 이 반의 schooldays 생성
+      const schooldays: Schoolday[] = generateSchooldays(
+        finalLesson,
+        group,
+        offdays,
+      );
+      group.schooldays = schooldays; // cascade로 자동 저장
+      group.days = schooldays.length;
+      await manager.save(group); // cascade로 schooldays도 저장/삭제됨
     }
 
     return finalLesson;
