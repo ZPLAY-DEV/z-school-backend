@@ -13,7 +13,7 @@ import {
 } from 'typeorm';
 
 @Entity('schooldays')
-@Unique(['schoolId', 'termId', 'lessonId', 'groupId', 'startStr', 'endStr'])
+@Unique(['schoolId', 'termId', 'lessonId', 'groupId', 'startsAt', 'endsAt'])
 export class Schoolday {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -36,24 +36,16 @@ export class Schoolday {
   @Column({ type: 'varchar', length: 16, nullable: true })
   name: string | null; // 관리자 편의를 위한 column
 
-  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD HH:mm)' })
-  @Column({ type: 'varchar', length: 16 })
-  startStr: string; // "2025-08-14 14:20" 형식으로 저장
-
-  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD HH:mm)' })
-  @Column({ type: 'varchar', length: 16 })
-  endStr: string; // "2025-08-14 15:00" 형식으로 저장
-
-  @Column({ type: 'int', unsigned: true, default: 0 })
-  duration: number;
-
-  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD HH:mm)' })
+  @ApiProperty({ description: '시작시각 DateTime' })
   @Column({ type: 'datetime', nullable: true })
   startsAt: Date;
 
-  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD HH:mm)' })
+  @ApiProperty({ description: '종료시각 DateTime' })
   @Column({ type: 'datetime', nullable: true })
   endsAt: Date;
+
+  @Column({ type: 'int', unsigned: true, default: 0 })
+  duration: number;
 
   @ApiProperty({ description: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })

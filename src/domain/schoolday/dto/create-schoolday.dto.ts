@@ -5,7 +5,6 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  Length,
   MaxLength,
 } from 'class-validator';
 
@@ -38,32 +37,22 @@ export class CreateSchooldayDto {
   @MaxLength(16)
   name: string;
 
-  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
-  @IsString()
-  @Length(16)
-  startStr: string; // "2025-08-14" 형식으로 저장
-
-  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
-  @IsString()
-  @Length(16)
-  endStr: string; // "2025-08-14" 형식으로 저장
-
-  @ApiPropertyOptional({ description: 'DB의 반ID' })
-  @IsInt()
-  @Type(() => Number)
-  duration: number;
-
-  @ApiProperty({ description: '시작시각 (ISO8601)' })
+  @ApiProperty({ description: '시작시각 (DateTime)' })
   @Type(() => Date)
   @IsDate()
   @IsOptional()
   startsAt?: Date;
 
-  @ApiProperty({ description: '종료시각 (ISO8601)' })
+  @ApiProperty({ description: '종료시각 (DateTime)' })
   @Type(() => Date)
   @IsDate()
   @IsOptional()
   endsAt?: Date;
+
+  @ApiPropertyOptional({ description: '수업시간 분단위' })
+  @IsInt()
+  @Type(() => Number)
+  duration: number;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
