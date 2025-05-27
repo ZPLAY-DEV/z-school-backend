@@ -18,7 +18,7 @@ import { UpdateStudentDto } from '../dto/update-student.dto';
 import { StudentRelationResponseDto } from '../dto/student-relation-response.dto';
 import { BookingStatus } from 'src/common/enums';
 import { BookingRelationResponseDto } from 'src/domain/booking/dto/booking-relation-response.dto';
-import { ScheduleResponseDto } from '../dto/schedule-response.dto';
+import { ScheduleResponseDto } from '../../group/dto/schedule-response.dto';
 import { GroupSamResponseDto } from 'src/domain/group/dto/group-sam-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
