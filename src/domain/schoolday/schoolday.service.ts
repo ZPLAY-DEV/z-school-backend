@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { addDays } from 'date-fns';
 import {
   FilterOperator,
   PaginateQuery,
@@ -10,7 +11,7 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { School } from 'src/domain/school/entities/school.entity';
 import { UpdateSchooldayDto } from 'src/domain/schoolday/dto/update-schoolday.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { Repository } from 'typeorm';
+import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 @Injectable()
 export class SchooldayService {
   private readonly logger = new Logger(SchooldayService.name);
@@ -27,14 +28,35 @@ export class SchooldayService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(): Promise<any> {
-    const school = await this.schoolRepository.findOne({
-      where: { id: 1 },
+    const schoolId = 1;
+    const termId = 1;
+    const startsAt = new Date('2025-04-26');
+    const endsAt = addDays(startsAt, 1);
+    console.log(`startsAt =`, startsAt);
+    console.log(`endsAt =`, endsAt);
+
+    console.log(`schoolId =`, schoolId);
+    console.log(`termId =`, termId);
+    console.log(`startsAt =`, startsAt);
+    console.log(`endsAt =`, endsAt);
+
+    const schooldays = await this.schooldayRepository.find({
+      where: {
+        schoolId,
+        termId,
+        startsAt: MoreThanOrEqual(startsAt),
+        endsAt: LessThanOrEqual(endsAt),
+      },
+      relations: {
+        group: {
+          groupStudents: {
+            student: true,
+          },
+        },
+      },
     });
-    if (!school) {
-      return;
-    }
-    // const schoolday = this.schooldayRepository.create(dto);
-    // return await this.schooldayRepository.save(schoolday);
+
+    return schooldays;
   }
 
   //? ---------------------------------------------------------------------- ?//
