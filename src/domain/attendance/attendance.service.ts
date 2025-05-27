@@ -1,12 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { SortOrder } from 'dynamoose/dist/General';
 import { InjectModel, Model } from 'nestjs-dynamoose';
+import { CreateAttendanceDto } from 'src/domain/attendance/dto/create-attendance.dto';
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 import {
   IAttendance,
   IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
-import { CreateAttendanceDto } from './dto/create-attendance.dto';
 
 const LIMIT = 10;
 

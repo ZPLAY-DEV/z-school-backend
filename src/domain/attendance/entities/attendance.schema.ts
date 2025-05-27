@@ -48,10 +48,6 @@ export const AttendanceSchema = new Schema(
       type: Number,
       required: true,
     },
-    date: {
-      type: String,
-      required: true,
-    },
     status: {
       type: String,
       enum: ['o', 'x', 'l', 'xx', 'll'],

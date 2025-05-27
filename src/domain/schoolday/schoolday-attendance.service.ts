@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { AttendanceStatus } from 'src/common/enums/attendance-status';
+import { AttendanceService } from 'src/domain/attendance/attendance.service';
 import { CreateSchooldayAttendanceDto } from 'src/domain/schoolday/dto/create-schoolday-attendance.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
@@ -12,6 +14,7 @@ export class SchooldayAttendanceService {
   constructor(
     @InjectRepository(Schoolday)
     private readonly schooldayRepository: Repository<Schoolday>,
+    private readonly attendanceService: AttendanceService,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -36,22 +39,40 @@ export class SchooldayAttendanceService {
           groupStudents: {
             student: true,
           },
+          lesson: true,
         },
       },
     });
 
-    schooldays.map((schoolday) => {
-      const { group, startsAt } = schoolday;
-      const { groupStudents } = group;
-      const seoulTime = toZonedTime(startsAt, 'Asia/Seoul');
-      const formattedDate = format(seoulTime, 'yyyy-MM-dd');
-      groupStudents.map((v) => {
-        const { student } = v;
-        const { id: studentId } = student;
-        console.log(`studentId =`, studentId, 'formattedDate =', formattedDate);
-        // dynamodb 에 학생 출결 생성
-      });
-    });
+    await Promise.all(
+      schooldays.map(async (schoolday) => {
+        const { group, startsAt, duration, lessonId, groupId } = schoolday;
+        const { groupStudents, groupName, lesson } = group;
+        const localDate = format(
+          toZonedTime(startsAt, 'Asia/Seoul'),
+          'yyyy-MM-dd',
+        );
+        for (const { student } of groupStudents ?? []) {
+          const studentId = `${student.grade}${student.class}-${student.studentCode}`;
+          const groupKey = `GROUP#${groupId}`;
+          const dailyStudentKey = `DATE#${localDate}#STUDENT#${studentId}`;
+          await this.attendanceService.create({
+            groupKey,
+            dailyStudentKey,
+            lessonId,
+            lessonName: lesson?.lessonName ?? '과목',
+            groupId,
+            groupName: groupName ?? '반',
+            studentId,
+            studentName: student.name ?? '학생',
+            start: group.start,
+            end: group.end,
+            duration,
+            status: AttendanceStatus.PRESENT, // 기본값, 필요시 변경
+          });
+        }
+      }),
+    );
 
     return schooldays;
   }
