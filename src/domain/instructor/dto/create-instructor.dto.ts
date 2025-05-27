@@ -14,7 +14,7 @@ import { PlatformType } from 'src/common/enums';
 export class CreateInstructorDto {
   @ApiProperty({
     description: '🈳 사용자 ID',
-    example: 1,
+    example: '1 --- 앱으로 가입한 강사의 userId',
     type: Number,
     required: false,
   })
@@ -28,7 +28,7 @@ export class CreateInstructorDto {
     description: '🈳 School ID (number)',
     required: false,
     type: Number,
-    example: 1,
+    example: '1 --- 앱으로 가입한 강사의 학교의 id',
   })
   @IsOptional()
   @IsInt()
@@ -38,7 +38,7 @@ export class CreateInstructorDto {
 
   @ApiProperty({
     description: '🈳 강사 이름',
-    example: '홍길동',
+    example: '홍길동 --- 앱으로 가입한 강사의 이름',
     type: String,
     required: false,
   })
@@ -49,7 +49,7 @@ export class CreateInstructorDto {
 
   @ApiProperty({
     description: '🈵 강사 전화번호 (숫자만 입력)',
-    example: '01012345678',
+    example: '01012345678 --- 앱으로 가입한 강사의 전화 번호',
     type: String,
     required: true,
   })
@@ -60,7 +60,7 @@ export class CreateInstructorDto {
 
   @ApiProperty({
     description: '🈳 마지막 로그인 기기 web, ios, or android',
-    example: PlatformType.WEB,
+    example: 'WEB --- 앱으로 가입한 강사의 마지막 로그인 기기',
     type: String,
     required: false,
   })
@@ -70,7 +70,7 @@ export class CreateInstructorDto {
 
   @ApiProperty({
     description: '🈳 pushToken',
-    example: 'wxyz...',
+    example: 'wxyz... --- 앱으로 가입한 강사의 pushToken',
     type: String,
     required: false,
   })
@@ -81,7 +81,7 @@ export class CreateInstructorDto {
 
   @ApiProperty({
     description: '🈳 내용',
-    example: '특이사항 없음',
+    example: '특이사항 없음 --- 앱으로 가입한 강사의 비고',
     type: String,
     required: false,
   })
@@ -92,7 +92,7 @@ export class CreateInstructorDto {
 
   @ApiProperty({
     description: '🈳 Terms agreed date',
-    example: '2025-01-01',
+    example: '2025-01-01 --- 앱으로 가입한 강사가 약관동의한 시간',
     type: Date,
     required: false,
   })
