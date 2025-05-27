@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { format, toZonedTime } from 'date-fns-tz';
 import { BookingStatus, ClassStatus, EnrollmentRule } from 'src/common/enums';
 import { IPickKeys } from 'src/common/interfaces';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
@@ -35,31 +36,41 @@ export class OfferingPickService {
 
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
+      relations: ['lesson', 'lesson.groups', 'lesson.groups.schooldays'],
     });
+
+    const combo: { groupId: number; startedOn: string }[] =
+      offering.lesson.groups?.map((v: Group) => {
+        const groupId = v.id;
+        const { startsAt } = v.schooldays[0];
+        const seoulTime = toZonedTime(startsAt, 'Asia/Seoul');
+        const startedOn = format(seoulTime, 'yyyy-MM-dd');
+        return { groupId, startedOn };
+      });
 
     if (offering.enrollmentRule === EnrollmentRule.FIRST) {
       selectedStudentIds = await this.pickFirstComeFirstServed(
         offeringId,
         offering.capacity,
-        offering.groupIds,
+        combo,
       );
     } else if (offering.enrollmentRule === EnrollmentRule.FORMER) {
       selectedStudentIds = await this.pickFormerStudentsFirst(
         offeringId,
         offering.capacity,
-        offering.groupIds,
+        combo,
       );
     } else if (offering.enrollmentRule === EnrollmentRule.RANDOM) {
       selectedStudentIds = await this.pickRandomStudents(
         offeringId,
         offering.capacity,
-        offering.groupIds,
+        combo,
       );
     } else {
       selectedStudentIds = await this.pickAnyone(
         offeringId,
         offering.capacity,
-        offering.groupIds,
+        combo,
       );
     }
 
@@ -107,7 +118,7 @@ export class OfferingPickService {
   async pickFirstComeFirstServed(
     offeringId: number,
     capacity: number,
-    groupIds: number[],
+    combo: { groupId: number; startedOn: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
@@ -117,24 +128,28 @@ export class OfferingPickService {
     const selectedStudentIds = allStudents.slice(0, capacity);
     // 각 그룹에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    groupIds.forEach((groupId: number) => {
+    combo.forEach(({ groupId, startedOn }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
         offeringId,
+        startedOn,
       }));
       items = items.concat(groupItems);
     });
-
+    const groupIds = combo.map((v) => v.groupId);
     // raw query로 upsert 처리
     if (items.length > 0) {
       const values = items
-        .map((item) => `(${item.studentId},${item.groupId},${item.offeringId})`)
+        .map(
+          (item) =>
+            `(${item.studentId},${item.groupId},${item.offeringId},'${item.startedOn}')`,
+        )
         .join(',');
       const query = `
-        INSERT INTO picks (studentId, groupId, offeringId)
+        INSERT INTO picks (studentId, groupId, offeringId, startedOn)
         VALUES ${values}
-        ON DUPLICATE KEY UPDATE offeringId=VALUES(offeringId)
+        ON DUPLICATE KEY UPDATE startedOn=VALUES(startedOn)
       `;
       await this.pickRepository.query(query);
     }
@@ -159,7 +174,7 @@ export class OfferingPickService {
   async pickAnyone(
     offeringId: number,
     capacity: number,
-    groupIds: number[],
+    combo: { groupId: number; startedOn: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
@@ -169,24 +184,28 @@ export class OfferingPickService {
     const selectedStudentIds = allStudents;
     // 각 그룹에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    groupIds.forEach((groupId: number) => {
+    combo.forEach(({ groupId, startedOn }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
         offeringId,
+        startedOn,
       }));
       items = items.concat(groupItems);
     });
-
+    const groupIds = combo.map((v) => v.groupId);
     // raw query로 upsert 처리
     if (items.length > 0) {
       const values = items
-        .map((item) => `(${item.studentId},${item.groupId},${item.offeringId})`)
+        .map(
+          (item) =>
+            `(${item.studentId},${item.groupId},${item.offeringId},'${item.startedOn}')`,
+        )
         .join(',');
       const query = `
-        INSERT INTO picks (studentId, groupId, offeringId)
+        INSERT INTO picks (studentId, groupId, offeringId, startedOn)
         VALUES ${values}
-        ON DUPLICATE KEY UPDATE offeringId=VALUES(offeringId)
+        ON DUPLICATE KEY UPDATE startedOn=VALUES(startedOn)
       `;
       await this.pickRepository.query(query);
     }
@@ -212,7 +231,7 @@ export class OfferingPickService {
   async pickRandomStudents(
     offeringId: number,
     capacity: number,
-    groupIds: number[],
+    combo: { groupId: number; startedOn: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
@@ -230,24 +249,28 @@ export class OfferingPickService {
     }
     // 각 그룹에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    groupIds.forEach((groupId: number) => {
+    combo.forEach(({ groupId, startedOn }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
         offeringId,
+        startedOn,
       }));
       items = items.concat(groupItems);
     });
-
+    const groupIds = combo.map((v) => v.groupId);
     // raw query로 upsert 처리
     if (items.length > 0) {
       const values = items
-        .map((item) => `(${item.studentId},${item.groupId},${item.offeringId})`)
+        .map(
+          (item) =>
+            `(${item.studentId},${item.groupId},${item.offeringId},'${item.startedOn}')`,
+        )
         .join(',');
       const query = `
-        INSERT INTO picks (studentId, groupId, offeringId)
+        INSERT INTO picks (studentId, groupId, offeringId, startedOn)
         VALUES ${values}
-        ON DUPLICATE KEY UPDATE offeringId=VALUES(offeringId)
+        ON DUPLICATE KEY UPDATE startedOn=VALUES(startedOn)
       `;
       await this.pickRepository.query(query);
     }
@@ -272,7 +295,7 @@ export class OfferingPickService {
   async pickFormerStudentsFirst(
     offeringId: number,
     capacity: number,
-    groupIds: number[],
+    combo: { groupId: number; startedOn: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
@@ -298,24 +321,28 @@ export class OfferingPickService {
 
     // 각 그룹에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    groupIds.forEach((groupId: number) => {
+    combo.forEach(({ groupId, startedOn }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
         offeringId,
+        startedOn,
       }));
       items = items.concat(groupItems);
     });
-
+    const groupIds = combo.map((v) => v.groupId);
     // raw query로 upsert 처리
     if (items.length > 0) {
       const values = items
-        .map((item) => `(${item.studentId},${item.groupId},${item.offeringId})`)
+        .map(
+          (item) =>
+            `(${item.studentId},${item.groupId},${item.offeringId},'${item.startedOn}')`,
+        )
         .join(',');
       const query = `
-        INSERT INTO picks (studentId, groupId, offeringId)
+        INSERT INTO picks (studentId, groupId, offeringId, startedOn)
         VALUES ${values}
-        ON DUPLICATE KEY UPDATE offeringId=VALUES(offeringId)
+        ON DUPLICATE KEY UPDATE startedOn=VALUES(startedOn)
       `;
       await this.pickRepository.query(query);
     }

@@ -84,7 +84,7 @@ export class Instructor {
   @JoinColumn()
   user?: User;
 
-  //* N-to-M belongsToMany using OneToMany --------------------------------- *//
+  //* 1-to-M hasMany -------------------- ---------------------------------- *//
 
   @OneToMany(() => Sam, (sam) => sam.instructor, {
     cascade: ['insert', 'update'],

@@ -56,10 +56,6 @@ export class CreateAttendanceDto {
   @IsNumber()
   duration: number;
 
-  @ApiProperty({ description: '🈵 date (ISO 8601)' })
-  @IsString()
-  date: string;
-
   @ApiProperty({
     description: '🈵 status',
     default: AttendanceStatus.PRESENT,
@@ -89,16 +85,6 @@ export class CreateAttendanceDto {
   @IsBoolean()
   @IsOptional()
   isRead?: boolean;
-
-  @ApiProperty({ description: '🈳 생성 시각', required: false })
-  @IsNumber()
-  @IsOptional()
-  createdAt?: number;
-
-  @ApiProperty({ description: '🈳 수정 시각', required: false })
-  @IsNumber()
-  @IsOptional()
-  updatedAt?: number;
 
   @ApiProperty({
     description: '🈳 ttl',

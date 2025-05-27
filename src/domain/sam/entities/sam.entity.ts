@@ -26,17 +26,26 @@ export class Sam {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: 'exclusively exists in instructor' })
+  @ApiProperty({
+    description: 'exclusively exists in instructor',
+    example: 1,
+  })
   @Column({ type: 'int', unsigned: true })
   instructorId: number;
 
-  @ApiProperty({ description: 'exclusively exists in school' })
+  @ApiProperty({
+    description: 'exclusively exists in school',
+    example: 1,
+  })
   @Column({ type: 'int', unsigned: true })
   schoolId: number;
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '🈵 학교에서 사용하는 강사 별칭' })
+  @ApiProperty({
+    description: '🈵 학교에서 사용하는 강사 별칭',
+    example: '강사 별칭',
+  })
   @Column({
     type: 'varchar',
     length: 16,
@@ -46,27 +55,36 @@ export class Sam {
   })
   alias: string | null;
 
-  @ApiProperty({ description: '🈵 aggregated 평가점수 100점 만점' })
+  @ApiProperty({
+    description: '🈵 aggregated 평가점수 100점 만점',
+    example: 100,
+  })
   @Column({ type: 'tinyint', unsigned: true, default: 0 })
   score: number;
 
+  @ApiProperty({
+    description: '🈳 교재/재료비 수정 권한 여부',
+    example: false,
+  })
   @Column({
     type: 'boolean',
     default: false,
     comment: '교재/재료비 수정 권한 여부',
   })
-  @ApiProperty({ description: '🈳 교재/재료비 수정 권한 여부' })
   editFeePermission: boolean;
 
+  @ApiProperty({
+    description: '🈳 수강 추가/취소 권한 여부',
+    example: false,
+  })
   @Column({
     type: 'boolean',
     default: false,
     comment: '수강 추가/취소 권한 여부',
   })
-  @ApiProperty({ description: '🈳 수강 추가/취소 권한 여부' })
   editEnrollmentPermission: boolean;
 
-  @ApiProperty({ description: '🈳 비고' })
+  @ApiProperty({ description: '🈳 비고', example: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
 

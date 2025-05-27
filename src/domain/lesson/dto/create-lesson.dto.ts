@@ -65,18 +65,6 @@ export class CreateLessonDto {
   @MaxLength(255)
   description?: string | null;
 
-  // todo) need to address this!
-  @ApiProperty({ description: '🈳 수업수/term', required: false, default: 0 })
-  @IsOptional()
-  @IsNumber()
-  termlyLessonCount?: number;
-
-  // todo) need to address this!
-  @ApiProperty({ description: '🈳 수업수/week', required: false, default: 0 })
-  @IsOptional()
-  @IsNumber()
-  weeklyLessonCount?: number;
-
   @ApiProperty({
     description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
     example: '2025-02-01',
@@ -94,7 +82,7 @@ export class CreateLessonDto {
   end?: string;
 
   @ApiProperty({
-    description: '🈳 수업료 합계 (A -D)',
+    description: '🈳 수업료 합계 (A - D)',
     required: false,
     default: 0,
   })

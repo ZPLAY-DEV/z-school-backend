@@ -17,7 +17,7 @@ describe('AppController', () => {
           provide: AppService,
           useValue: {
             getVersion: jest.fn().mockReturnValue('0.0.1'),
-            cacheBust: jest.fn().mockResolvedValue(undefined),
+            cacheBust: jest.fn().mockReturnValue('🗑️ cleared Redis cache'),
           },
         },
       ],
@@ -35,8 +35,8 @@ describe('AppController', () => {
   });
 
   describe('bust', () => {
-    it('should bust cache', async () => {
-      expect(await appController.bust()).toBe('busted cache store');
+    it('should bust cache', () => {
+      expect(appController.bust()).toBe('🗑️ cleared Redis cache');
       expect(appService.cacheBust).toHaveBeenCalled();
     });
   });

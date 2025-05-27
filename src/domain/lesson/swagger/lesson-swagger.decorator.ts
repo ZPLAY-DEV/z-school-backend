@@ -1,5 +1,11 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
@@ -53,9 +59,14 @@ export const CreateLessonDryRunDocs = () => {
     ApiBody({
       type: CreateLessonDto,
     }),
-    ApiOkResponseTemplate({
+    ApiOkResponse({
       description: '과목 등록 시뮬레이션 결과',
-      type: Lesson,
+      schema: {
+        oneOf: [
+          { $ref: getSchemaPath(Lesson) },
+          { type: 'null', nullable: true },
+        ],
+      },
     }),
     ApiErrorResponseTemplate([
       {
