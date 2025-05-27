@@ -39,7 +39,7 @@ export class AttendanceController {
   @ApiOperation({ description: 'Attendance 리스트' })
   @Get()
   async fetch(
-    @Query('groupKey') groupKey: string,
+    @Query('date') groupKey: string,
     @Query('lastDailyStudentKey') lastDailyStudentKey?: string,
   ): Promise<any> {
     const lastKey = lastDailyStudentKey
@@ -63,6 +63,19 @@ export class AttendanceController {
       groupKey,
       dailyStudentKey,
     });
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? FIND BY DATE
+  //? ---------------------------------------------------------------------- ?//
+
+  @ApiOperation({ description: '특정 날짜의 Attendance 리스트' })
+  @Get('by-date')
+  async findByDate(
+    @Query('groupKey') groupKey: string,
+    @Query('date') date: string,
+  ): Promise<IAttendance[]> {
+    return await this.attendancesService.findByDate(groupKey, date);
   }
 
   //? ---------------------------------------------------------------------- ?//

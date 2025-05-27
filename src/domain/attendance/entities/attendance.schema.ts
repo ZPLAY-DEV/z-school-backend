@@ -1,4 +1,5 @@
 import { Schema } from 'dynamoose';
+import { AttendanceStatus } from 'src/common/enums';
 
 export const AttendanceSchema = new Schema(
   {
@@ -50,7 +51,7 @@ export const AttendanceSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ['o', 'x', 'l', 'xx', 'll'],
+      enum: Object.values(AttendanceStatus),
       required: true,
     },
     parentNote: {

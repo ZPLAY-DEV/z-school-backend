@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { PickRule } from 'src/common/enums';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { School } from 'src/domain/school/entities/school.entity';
@@ -62,13 +63,35 @@ export class Term {
   @Column({ type: 'timestamp', nullable: true, comment: '수강신청 종료일시' })
   bookingEnd: Date | null;
 
+  @ApiProperty({ description: '🈳 시간 중복 허용 여부', default: false })
+  @Column({
+    type: 'boolean',
+    default: false,
+    comment: '시간 중복 허용',
+  })
+  allowTimeOverlap: boolean;
+
+  @ApiProperty({
+    description:
+      '🈳 2차 default 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
+    default: PickRule.RANDOM,
+  })
+  @Column({
+    type: 'enum',
+    enum: PickRule,
+    default: PickRule.RANDOM,
+    comment:
+      '2차 default 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
+  })
+  defaultPickRule: PickRule;
+
   @ApiProperty({ description: '🈳 수강신청 준비 상태', default: false })
   @Column({
     type: 'boolean',
     default: false,
     comment: '수강신청 준비 상태. [null => 날짜] 지정시 자동으로 true',
   })
-  isBookingReady: boolean;
+  isOfferingReady: boolean;
 
   // ------------------------------------------------------------------------ //
 

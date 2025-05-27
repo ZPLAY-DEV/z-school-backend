@@ -71,7 +71,7 @@ export class CreateAttendanceDto {
   })
   @IsString()
   @IsOptional()
-  parentNote?: string | null;
+  parentNote?: string;
 
   @ApiProperty({
     description: '🈳 학교에서 학생·학부모에 남긴 메시지',
@@ -79,7 +79,7 @@ export class CreateAttendanceDto {
   })
   @IsString()
   @IsOptional()
-  schoolNote?: string | null;
+  schoolNote?: string;
 
   @ApiProperty({ description: '🈳 읽음 여부', required: false, default: false })
   @IsBoolean()

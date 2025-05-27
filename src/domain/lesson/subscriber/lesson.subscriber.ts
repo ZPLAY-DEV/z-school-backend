@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ClassStatus } from 'src/common/enums';
 import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -31,15 +30,13 @@ export class LessonSubscriber implements EntitySubscriberInterface<Lesson> {
     const endChanged = lesson?.end !== prev?.end;
     if (!(startChanged || endChanged)) return;
 
-    // 2. status 가 ACTIVE 상태라면
-    if (lesson.status !== ClassStatus.ACTIVE) return;
-
-    // 3. 연관된 groups 중 ACTIVE 만 필터링
+    // status 와 상관없이 모든 강좌의 수업일 계산이 다시 일어나도록 수정.
+    // if (lesson.status !== ClassStatus.ACTIVE) return;
     const groups = await event.manager
       .getRepository(Group)
       .createQueryBuilder('group')
       .where('group.lessonId = :lessonId', { lessonId: lesson.id })
-      .andWhere('group.status = :status', { status: ClassStatus.ACTIVE })
+      //.andWhere('group.status = :status', { status: ClassStatus.ACTIVE })
       .getMany();
 
     const offdays: string[] = await this.calendarService.findByDateRange(

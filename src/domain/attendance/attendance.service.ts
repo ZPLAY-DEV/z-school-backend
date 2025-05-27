@@ -24,8 +24,8 @@ export class AttendanceService {
     try {
       const attendance = await this.model.create({
         ...dto,
-        parentNote: dto.parentNote ?? null,
-        schoolNote: dto.schoolNote ?? null,
+        parentNote: dto.parentNote ?? '',
+        schoolNote: dto.schoolNote ?? '',
       });
       return attendance as IAttendance;
     } catch (error) {
@@ -34,8 +34,8 @@ export class AttendanceService {
     }
   }
 
-  //? notice that records will be sorted by range key, which is id
-  //? (in m## format string; xx is milliseconds).
+  //? notice that records will be sorted by range key,
+  //? which is dailyStudentKey
   //?
   async fetch(groupKey: string, lastKey: IAttendanceKey | null): Promise<any> {
     try {
@@ -94,6 +94,22 @@ export class AttendanceService {
   async delete(key: IAttendanceKey): Promise<any> {
     try {
       return this.model.delete(key);
+    } catch (error) {
+      console.error(`[dynamodb] error`, error);
+      throw new BadRequestException(error);
+    }
+  }
+
+  async findByDate(groupKey: string, date: string): Promise<IAttendance[]> {
+    try {
+      const prefix = `DATE#${date}`;
+      const result = await this.model
+        .query('groupKey')
+        .eq(groupKey)
+        .where('dailyStudentKey')
+        .beginsWith(prefix)
+        .exec();
+      return result as IAttendance[];
     } catch (error) {
       console.error(`[dynamodb] error`, error);
       throw new BadRequestException(error);

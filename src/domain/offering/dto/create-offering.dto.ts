@@ -3,14 +3,13 @@ import { Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   IsArray,
-  IsBoolean,
   IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
   Length,
-  ValidateNested,
+  ValidateNested
 } from 'class-validator';
 import { EnrollmentRule } from 'src/common/enums';
 import { ClassTimeDto } from 'src/domain/offering/dto/class-time.dto';
@@ -77,10 +76,6 @@ export class CreateOfferingDto {
   @IsArray()
   @ArrayNotEmpty()
   formerStudentIds: number[];
-
-  @ApiProperty({ description: '시간 중복 허용 여부', default: false })
-  @IsBoolean()
-  allowTimeOverlap: boolean;
 
   @ApiProperty({ description: '마지막 동기화 시간', type: Number })
   @IsNumber()
