@@ -11,6 +11,7 @@ export class StudentRelationResponseDto extends StudentResponseDto {
     description: '수강중인 강좌 정보',
     type: GroupResponseDto,
     isArray: true,
+    nullable: true,
   })
   groupStudents: GroupResponseDto[];
 }

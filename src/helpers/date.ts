@@ -13,6 +13,12 @@ export const getWeekNumber = (date: Date): number => {
   return getYear(date) * 100 + getWeek(date);
 };
 
+export const getKoreanWeekday = (date: string): string => {
+  const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+  const dateObj = new Date(date);
+  return weekdays[dateObj.getDay()];
+};
+
 /**
  * ISO 형식의 날짜 문자열 범위 검증
  * @param start - 시작 날짜

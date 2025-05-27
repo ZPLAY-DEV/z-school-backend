@@ -4,6 +4,7 @@ import {
   ApiCreatedResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
@@ -15,6 +16,10 @@ import { StudentResponseDto } from '../dto/student-response.dto';
 import { UpdateStudentStatusDto } from '../dto/update-student-status.dto';
 import { UpdateStudentDto } from '../dto/update-student.dto';
 import { StudentRelationResponseDto } from '../dto/student-relation-response.dto';
+import { BookingStatus } from 'src/common/enums';
+import { BookingRelationResponseDto } from 'src/domain/booking/dto/booking-relation-response.dto';
+import { ScheduleResponseDto } from '../dto/schedule-response.dto';
+import { GroupSamResponseDto } from 'src/domain/group/dto/group-sam-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학생 생성
@@ -51,27 +56,24 @@ export const CreateStudentDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학생 상세 조회
 //? ---------------------------------------------------------------------- ?//
-export const StudentDetailDocs = () => {
+export const StudentFindByIdDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '✅ 학생 상세 조회',
       description: `
-      - 학생 상세 조회
+      - 학생의 상세 정보를 조회한다.
+      - 학생 상세 정보에서 수강중인 강좌 수는 반환되는 groupStudents 객체의 length 값으로 처리해야한다.
+      - 학생 상세 정보에서 학부모앱 사용 여부는 반환되는 parent 객체의 userId 값이 null 값으로 존재 여부를 판별해야한다.
       `,
     }),
     ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID',
-    }),
-    ApiParam({
-      name: 'studentId',
+      name: 'id',
       type: Number,
       description: '학생 ID',
     }),
     ApiOkResponseTemplate({
       description: '학생 상세 조회 완료',
-      type: StudentResponseDto,
+      type: StudentRelationResponseDto,
     }),
     ApiErrorResponseTemplate([
       {
@@ -190,5 +192,109 @@ export const StudentUpdateDocs = () => {
         errorFormatList: [HttpErrorConstants.CONFLICT_STUDENT],
       },
     ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Private) 학생의 수강/취소 강좌 조회
+//? ---------------------------------------------------------------------- ?//
+export const StudentGroupFindByIdDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 학생의 수강/취소 강좌 조회 --- 학생 상세조회',
+      description: `
+      - 학생의 수강/취소 강좌 조회
+      - 수강은 ENROLLED, 취소는 CANCELED 로 조회 QueryString에 포함시켜서 요청
+      - ENROLLED, CANCELED 이외의 값이 들어오면 400 에러 반환
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '학생 ID',
+      required: true,
+    }),
+
+    ApiQuery({
+      name: 'status',
+      enum: BookingStatus,
+      description: '수강/취소 강좌 상태',
+      required: true,
+    }),
+    ApiOkResponseTemplate({
+      description: '학생의 수강/취소 강좌 조회 완료',
+      type: GroupSamResponseDto,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.STUDENT_COURSE_STATUS_NOT_FOUND],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Private) 학생의 수강신청 정보 조회
+//? ---------------------------------------------------------------------- ?//
+export const StudentBookingFindByIdDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 학생의 수강신청 정보 조회',
+      description: `
+      - 학생이 수강신청한 내역을 조회
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '학생 ID',
+      required: true,
+    }),
+    ApiOkResponseTemplate({
+      description: '학생의 수강신청 정보 조회 완료',
+      type: BookingRelationResponseDto,
+    }),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Private) 학생의 수업 일정 조회
+//? ---------------------------------------------------------------------- ?//
+export const StudentScheduleFindByIdDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 학생의 수업 일정 조회',
+      description: `
+      - 학생의 수업 일정 조회
+      - 반드시 주간 일요일 ~ 토요일 기준으로 QueryString에 날짜형식 2025-06-01 으로 전달해야함.
+      - 해당 주차에 수업이 있는 강좌가 없을 경우 객체 배열의 형태는 유지하되, 내부의 groups 배열은 비어있는 값이 반환됨.
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '학생 ID',
+      required: true,
+    }),
+    ApiQuery({
+      name: 'dates',
+      type: [String],
+      description: '조회할 날짜 배열',
+      example: [
+        '2025-06-01',
+        '2025-06-02',
+        '2025-06-03',
+        '2025-06-04',
+        '2025-06-05',
+        '2025-06-06',
+        '2025-06-07',
+      ],
+      required: true,
+    }),
+    ApiOkResponseTemplate({
+      description: '학생의 수업 일정 조회 완료',
+      type: ScheduleResponseDto,
+    }),
   );
 };
