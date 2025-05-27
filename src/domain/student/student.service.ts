@@ -36,7 +36,7 @@ import { Group } from '../group/entities/group.entity';
 import { Schoolday } from '../schoolday/entities/schoolday.entity';
 import { getKoreanWeekday } from 'src/helpers/date';
 import { transformScheduleResponse } from 'src/helpers/group-schedule.util';
-import { ScheduleResponseDto } from './dto/schedule-response.dto';
+import { ScheduleResponseDto } from '../group/dto/schedule-response.dto';
 
 @Injectable()
 export class StudentService {

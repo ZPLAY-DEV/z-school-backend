@@ -7,11 +7,11 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  // ParseArrayPipe,
+  ParseArrayPipe,
   ParseIntPipe,
   Patch,
   Post,
-  // Query,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -28,6 +28,7 @@ import {
   GetSamGroupsDocs,
   SamDocumentsDocs,
   SamDryRunDocs,
+  SamScheduleFindByIdDocs,
   SoftDeleteSamDocs,
 } from './swagger/sam.swagger.decorator';
 import { Group } from '../group/entities/group.entity';
@@ -84,14 +85,16 @@ export class SamController {
     return await this.samService.getDocuments(id);
   }
 
-  // @Get(':id/schedule')
-  // async findBySchedule(
-  //   @Param('id', ParseIntPipe) id: number,
-  //   @Query('dates', new ParseArrayPipe({ items: String, separator: ',' }))
-  //   dates: string[],
-  // ) {
-  //   return await this.samService.findBySchedule(id, dates);
-  // }
+  //? 학교에 속한 강사(쌤)의 강의 일정 조회 ( 주단위 )
+  @SamScheduleFindByIdDocs()
+  @Get(':id/schedule')
+  async findBySchedule(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('dates', new ParseArrayPipe({ items: String, separator: ',' }))
+    dates: string[],
+  ) {
+    return await this.samService.findBySchedule(id, dates);
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Update

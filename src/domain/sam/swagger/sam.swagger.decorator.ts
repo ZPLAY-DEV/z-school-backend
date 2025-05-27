@@ -1,5 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { StatusCodes } from 'http-status-codes';
@@ -12,6 +12,7 @@ import { DeleteSamNoteDto } from '../dto/delete-sam-note.dto';
 import { DocumentResponseDto } from 'src/domain/document/dto/document-response.dto';
 import { SamRelationResponseDto } from '../dto/sam-relation-response.dto';
 import { GroupRelationResponseDto } from 'src/domain/group/dto/group-relation-response.dto';
+import { ScheduleResponseDto } from 'src/domain/group/dto/schedule-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create School Sam
@@ -139,7 +140,8 @@ export const GetSamByIdDocs = () => {
 export const GetSamGroupsDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교에 속한 강사의 반 & 학생 상세 조회',
+      summary:
+        '✅ 학교에 속한 강사의 반 & 학생 상세 조회 --- 학교에 속한 강사의 상세 수업정보 조회',
       description: `
       - 학교에 속한 특정 강사가 관리하는 반 목록을 조회한다.
       - 반 목록에는 반 정보와 반 학생 목록이 포함된다.
@@ -178,6 +180,48 @@ export const SamDocumentsDocs = () => {
       description: '학교에 속한 강사의 문서 조회',
       type: DocumentResponseDto,
       isArray: true,
+    }),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//?  학교에 속한 강사의 수업 일정 조회 ( 주단위 )
+//? ---------------------------------------------------------------------- ?//
+export const SamScheduleFindByIdDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary:
+        '✅ 학교에 속한 강사(쌤)의 수업 일정 조회 --- 학교에 속한 강사의 주간 강의일정 조회',
+      description: `
+      - 학교에 속한 강사의(쌤) 수업 일정 조회
+      - 반드시 주간 일요일 ~ 토요일 기준으로 QueryString에 날짜형식 2025-06-01 으로 전달해야함.
+      - 해당 주차에 수업이 있는 강좌가 없을 경우 객체 배열의 형태는 유지하되, 내부의 groups 배열은 비어있는 값이 반환됨.
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '학교에 속한 강사(쌤)의 ID',
+      required: true,
+    }),
+    ApiQuery({
+      name: 'dates',
+      type: [String],
+      description: '조회할 날짜 배열',
+      example: [
+        '2025-06-01',
+        '2025-06-02',
+        '2025-06-03',
+        '2025-06-04',
+        '2025-06-05',
+        '2025-06-06',
+        '2025-06-07',
+      ],
+      required: true,
+    }),
+    ApiOkResponseTemplate({
+      description: '학교에 속한 강사의 주간 수업 일정 조회 완료',
+      type: ScheduleResponseDto,
     }),
   );
 };

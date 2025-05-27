@@ -1,9 +1,9 @@
-import { ScheduleResponseDto } from 'src/domain/student/dto/schedule-response.dto';
+import { ScheduleResponseDto } from 'src/domain/group/dto/schedule-response.dto';
 
 import {
   DailyScheduleDto,
   ScheduleGroupDto,
-} from 'src/domain/student/dto/schedule-response.dto';
+} from 'src/domain/group/dto/schedule-response.dto';
 
 /**
  * @see ScheduleResponseDto
