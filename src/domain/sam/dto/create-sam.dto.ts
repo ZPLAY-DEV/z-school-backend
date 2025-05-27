@@ -18,7 +18,7 @@ export class CreateSamDto {
     description: '🈳 강사 ID',
     type: Number,
     required: false,
-    example: 1,
+    example: '1 --- 앱으로 가입한 강사의 id',
   })
   @IsInt()
   @IsOptional()
@@ -28,7 +28,7 @@ export class CreateSamDto {
     description: '🈵 School ID (number)',
     type: Number,
     required: true,
-    example: 1,
+    example: '1 --- 학교의 id',
   })
   @IsNotEmpty()
   @IsInt()
@@ -36,7 +36,7 @@ export class CreateSamDto {
 
   @ApiProperty({
     description: '🈵 강사 학교별 별칭',
-    example: '퉁퉁쌤',
+    example: '퉁퉁쌤 --- 학교에서 추가시킬 강사의 별칭(이름)',
     type: String,
     required: true,
   })
@@ -46,7 +46,7 @@ export class CreateSamDto {
 
   @ApiProperty({
     description: '🈳 강사 평가점수',
-    example: '80',
+    example: '80 --- 학교에서 평가한 강사의 평가점수',
     type: Number,
     required: true,
   })
@@ -56,7 +56,7 @@ export class CreateSamDto {
 
   @ApiProperty({
     description: '🈳 교재/재료비 수정 권한 여부',
-    example: true,
+    example: 'true --- 학교에서 부여할 교재/재료비 수정 권한 여부',
     type: Boolean,
     required: false,
   })
@@ -66,7 +66,7 @@ export class CreateSamDto {
 
   @ApiProperty({
     description: '🈳 수강 추가/취소 권한 여부',
-    example: true,
+    example: 'true --- 학교에서 부여할 수강 추가/취소 권한 여부',
     type: Boolean,
     required: false,
   })
@@ -76,7 +76,7 @@ export class CreateSamDto {
 
   @ApiProperty({
     description: '🈳 내용',
-    example: '특이사항 없음',
+    example: '특이사항 없음 --- 학교에서 부여할 비고',
     type: String,
     required: false,
   })
@@ -89,10 +89,6 @@ export class CreateSamDto {
     description: '🈵 강사 정보',
     type: CreateInstructorDto,
     required: true,
-    example: {
-      name: '홍길동',
-      phone: '01012345678',
-    },
   })
   @ValidateNested()
   @IsDefined()
