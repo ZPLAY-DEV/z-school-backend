@@ -18,6 +18,7 @@ import { Student } from 'src/domain/student/entities/student.entity';
 import { S3Service } from 'src/services/aws/s3.service';
 import {
   DataSource,
+  In,
   IsNull,
   LessThanOrEqual,
   MoreThanOrEqual,
@@ -33,6 +34,9 @@ import { Pick } from '../pick/entities/pick.entity';
 import { Booking } from '../booking/entities/booking.entity';
 import { Group } from '../group/entities/group.entity';
 import { Schoolday } from '../schoolday/entities/schoolday.entity';
+import { getKoreanWeekday } from 'src/helpers/date';
+import { transformScheduleResponse } from 'src/helpers/group-schedule.util';
+import { ScheduleResponseDto } from './dto/schedule-response.dto';
 
 @Injectable()
 export class StudentService {
@@ -43,6 +47,8 @@ export class StudentService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(Pick)
     private readonly pickRepository: Repository<Pick>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
     private dataSource: DataSource,
@@ -163,7 +169,10 @@ export class StudentService {
   }
 
   //? 학생의 수업 형태에 따른 조회
-  async findByIdWithStatus(id: number, status: BookingStatus): Promise<Pick[]> {
+  async findByIdWithStatus(
+    id: number,
+    status: BookingStatus,
+  ): Promise<Group[]> {
     switch (status) {
       case BookingStatus.ENROLLED:
         return await this.findEnrolledGroups(id);
@@ -177,34 +186,57 @@ export class StudentService {
   }
 
   //? 학생의 수강중인 강좌 조회
-  async findEnrolledGroups(studentId: number): Promise<Pick[]> {
-    const picks = await this.pickRepository
-      .createQueryBuilder('pick')
-      .leftJoinAndSelect('pick.group', 'group')
-      .leftJoinAndSelect('group.sam', 'sam')
-      .leftJoinAndSelect('sam.instructor', 'instructor')
-      .where('pick.studentId = :studentId', { studentId })
-      .getMany();
+  async findEnrolledGroups(studentId: number): Promise<Group[]> {
+    // 1) pick에서 학생이 수강중인 강좌 조회
+    const picks = await this.pickRepository.find({
+      where: {
+        studentId,
+        endedBy: IsNull(),
+      },
+      relations: ['group'],
+    });
 
-    return picks;
+    // 2) pick에서 학생이 수강중인 강좌의 id값 추출
+    const groupIds = picks.map((pick) => pick.group.id);
+
+    // 3) 학생이 수강중인 강좌 조회
+    const groups = await this.groupRepository.find({
+      where: {
+        id: In(groupIds),
+      },
+      relations: ['sam', 'sam.instructor'],
+    });
+
+    return groups;
   }
 
   //? 학생의 수강취소 강좌 조회
-  async findCancelledGroups(studentId: number): Promise<Pick[]> {
-    const picks = await this.pickRepository
-      .createQueryBuilder('pick')
-      .leftJoinAndSelect('pick.group', 'group')
-      .leftJoinAndSelect('group.sam', 'sam')
-      .leftJoinAndSelect('sam.instructor', 'instructor')
-      .where('pick.studentId = :studentId', { studentId })
-      .andWhere('pick.endedBy IS NOT NULL')
-      .getMany();
+  async findCancelledGroups(studentId: number): Promise<Group[]> {
+    const picks = await this.pickRepository.find({
+      where: {
+        studentId,
+        endedBy: Not(IsNull()),
+      },
+      relations: ['group'],
+    });
 
-    return picks;
+    // 2) pick에서 학생이 수강중인 강좌의 id 추출
+    const groupIds = picks.map((pick) => pick.group.id);
+
+    // 3) 학생이 수강 취소한 강좌 조회
+    const groups = await this.groupRepository.find({
+      where: { id: In(groupIds) },
+      relations: ['sam', 'sam.instructor'],
+    });
+
+    return groups;
   }
 
   //? 학생의 수강 일정 조회
-  async findBySchedule(studentId: number, dates: string[]) {
+  async findBySchedule(
+    studentId: number,
+    dates: string[],
+  ): Promise<ScheduleResponseDto> {
     const picks = await this.pickRepository.find({
       where: {
         studentId,
@@ -215,7 +247,7 @@ export class StudentService {
         'group',
         'group.schooldays',
         'group.sam',
-        'group.sam.instructor', // sam 하위의 instructor
+        'group.sam.instructor', // sam 하위의 instructor ( phone 값 추출을 위함 )
       ],
       select: {
         id: true,
@@ -251,12 +283,13 @@ export class StudentService {
     // 2. 날짜별로 Group 그룹화
     const result: Record<string, Group[]> = {};
     dates.forEach((date) => {
-      result[date] = [];
+      const koreanWeekday = getKoreanWeekday(date);
+      result[`${date}(${koreanWeekday})`] = [];
     });
 
-    // 3. 결과가 없으면 예외 처리
+    // 3. 결과 값이 없을 경우 프론트에서 전달 받은 주단위 날짜 배열을 리턴
     if (!picks.length) {
-      return result;
+      return transformScheduleResponse(dates, result);
     }
 
     picks.forEach((pick) => {
@@ -270,9 +303,10 @@ export class StudentService {
       // 필터링된 schooldays가 있는 경우, 각 날짜에 Group 추가
       filteredSchooldays.forEach((schoolday) => {
         const dayDate = schoolday.startsAt.toISOString().split('T')[0];
+        const koreanWeekday = getKoreanWeekday(dayDate);
         if (dates.includes(dayDate)) {
           // Group 객체 기반 schooldays와 sam을 부분 객체로 구성
-          result[dayDate].push({
+          result[`${dayDate}(${koreanWeekday})`].push({
             ...group,
             schooldays: [
               {
@@ -294,97 +328,11 @@ export class StudentService {
                     : undefined,
                 }
               : undefined,
-          } as Group); // 타입 에러 방지를 위해 Group으로 캐스팅
+          } as Group);
         }
       });
     });
-
-    return result;
-    // // 1. 학생의 수강신청 내역을 조회
-    // const picks = await this.pickRepository.find({
-    //   where: {
-    //     studentId,
-    //     startedOn: LessThanOrEqual(dates[dates.length - 1]),
-    //     endedOn: Or(IsNull(), MoreThanOrEqual(dates[0])),
-    //   },
-    //   relations: [
-    //     'group',
-    //     'group.sam',
-    //     'group.sam.instructor',
-    //     'group.schooldays',
-    //   ],
-    //   select: {
-    //     id: true,
-    //     studentId: true,
-    //     groupId: true,
-    //     startedOn: true,
-    //     endedOn: true,
-    //     group: {
-    //       id: true,
-    //       groupName: true,
-    //       location: true,
-    //       weekday: true,
-    //       start: true,
-    //       end: true,
-    //       schooldays: true,
-    //       sam: {
-    //         id: true,
-    //         alias: true,
-    //         instructor: {
-    //           phone: true,
-    //         },
-    //       },
-    //     },
-    //   },
-    // });
-
-    // // 2. 날짜별로 Group을 그룹화
-    // const result: Record<string, Group[]> = {};
-    // console.log('result --->', result);
-    // console.log('picks --->', picks[0].group.schooldays);
-
-    // // dates 배열의 각 날짜에 대해 초기화
-    // dates.forEach((date) => {
-    //   result[date] = [];
-    // });
-
-    // console.log('result --->', result);
-
-    // // 각 Pick과 Group을 처리
-    // picks.forEach((pick) => {
-    //   const group = pick.group;
-    //   // calendarDays에서 dates 배열에 포함된 날짜만 필터링
-    //   const filteredCalendarDays = group.schooldays
-    //     .filter((day) => {
-    //       const dayDate = day.startsAt.split(' ')[0]; // "2025-05-20 13:50" -> "2025-05-20"
-    //       return dates.includes(dayDate) && day.classOn;
-    //     })
-    //     .map((day) => ({
-    //       start: day.start,
-    //       end: day.end,
-    //       classOn: day.classOn,
-    //     }));
-    //   // 필터링된 calendarDays가 있는 경우, 각 날짜에 Group 추가
-    //   filteredCalendarDays.forEach((day) => {
-    //     const dayDate = day.start.split(' ')[0];
-    //     if (dates.includes(dayDate)) {
-    //       result[dayDate].push({
-    //         ...group,
-    //         calendarDays: [day], // 해당 날짜에 해당하는 calendarDays만 포함
-    //       });
-    //     }
-    //   });
-    // });
-    // // 3. 결과가 비어있는지 확인
-    // const hasResults = Object.values(result).some(
-    //   (groups) => groups.length > 0,
-    // );
-    // if (!hasResults) {
-    //   throw new NotFoundException(
-    //     `No scheduled groups found for student ID ${studentId} in the given date range`,
-    //   );
-    // }
-    // return result;
+    return transformScheduleResponse(dates, result);
   }
 
   //? 학생의 수강 신청 내역 조회

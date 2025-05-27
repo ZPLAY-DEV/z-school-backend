@@ -19,7 +19,6 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { StudentService } from 'src/domain/student/student.service';
 import { UploadService } from 'src/services/upload/upload.service';
 import { CreateStudentDto } from './dto/create-student.dto';
@@ -30,11 +29,13 @@ import {
   StudentDryRunDocs,
   StudentFindByIdDocs,
   StudentGroupFindByIdDocs,
+  StudentScheduleFindByIdDocs,
   StudentStatusUpdateDocs,
   StudentUpdateDocs,
 } from './swagger/student.swagger.decorator';
 import { BookingStatus } from 'src/common/enums';
 import { Booking } from '../booking/entities/booking.entity';
+import { Group } from '../group/entities/group.entity';
 
 @ApiTags('✅ Students ( 학생 )')
 @ApiCommonErrorResponseTemplate()
@@ -81,11 +82,12 @@ export class StudentController {
   async findByIdWithStatus(
     @Param('id', ParseIntPipe) id: number,
     @Query('status', new ParseEnumPipe(BookingStatus)) status: BookingStatus,
-  ): Promise<Pick[]> {
+  ): Promise<Group[]> {
     return await this.studentService.findByIdWithStatus(id, status);
   }
 
   //? 요일별 학생 수업 일정 조회
+  @StudentScheduleFindByIdDocs()
   @Get(':id/schedule')
   async findBySchedule(
     @Param('id', ParseIntPipe) id: number,
