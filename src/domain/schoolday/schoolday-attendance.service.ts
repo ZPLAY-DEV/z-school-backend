@@ -38,7 +38,16 @@ export class SchooldayAttendanceService {
       },
     });
 
-    console.log(`schooldays =`, schooldays.length);
+    schooldays.map((v) => {
+      const { group } = v;
+      const { groupStudents } = group;
+      groupStudents.map((v) => {
+        const { student } = v;
+        const { id: studentId } = student;
+        console.log(`studentId =`, studentId);
+        // dynamodb 에 학생 출결 생성
+      });
+    });
 
     return schooldays;
   }

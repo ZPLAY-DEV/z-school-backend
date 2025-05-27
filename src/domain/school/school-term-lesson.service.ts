@@ -122,7 +122,7 @@ export class SchoolTermLessonService {
       .createQueryBuilder('lesson')
       .leftJoinAndSelect('lesson.category', 'category')
       .leftJoinAndSelect('lesson.groups', 'group')
-      .leftJoinAndSelect('group.instructor', 'instructor')
+      .leftJoinAndSelect('group.sam', 'sam')
       .where('lesson.schoolId = :schoolId', { schoolId })
       .andWhere('lesson.termId = :termId', { termId })
       .orderBy('lesson.id', 'DESC')
