@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 import { BookingStatus } from 'src/common/enums';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -58,6 +59,7 @@ export class Booking {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Exclude()
   @DeleteDateColumn()
   deletedAt: Date;
 

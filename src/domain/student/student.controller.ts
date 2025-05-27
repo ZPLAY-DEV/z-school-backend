@@ -7,13 +7,15 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseArrayPipe,
+  ParseEnumPipe,
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Public } from 'src/common/decorators/public.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -23,10 +25,17 @@ import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 import {
   CreateStudentDocs,
+  StudentBookingFindByIdDocs,
   StudentDryRunDocs,
+  StudentFindByIdDocs,
+  StudentGroupFindByIdDocs,
+  StudentScheduleFindByIdDocs,
   StudentStatusUpdateDocs,
   StudentUpdateDocs,
 } from './swagger/student.swagger.decorator';
+import { BookingStatus } from 'src/common/enums';
+import { Booking } from '../booking/entities/booking.entity';
+import { Group } from '../group/entities/group.entity';
 
 @ApiTags('✅ Students ( 학생 )')
 @ApiCommonErrorResponseTemplate()
@@ -60,11 +69,41 @@ export class StudentController {
     return await this.studentService.dryRun(dto);
   }
 
-  @ApiOperation({ description: 'Student 상세보기' })
-  @Public()
+  //? 학생 상세 정보 조회
+  @StudentFindByIdDocs()
   @Get(':id')
-  async getStudentById(@Param('id') id: number): Promise<Student> {
+  async findById(@Param('id') id: number): Promise<Student> {
     return await this.studentService.findById(id);
+  }
+
+  //? 수강중인 강좌 / 수강취소 강좌 조회
+  @StudentGroupFindByIdDocs()
+  @Get(':id/groups')
+  async findByIdWithStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('status', new ParseEnumPipe(BookingStatus)) status: BookingStatus,
+  ): Promise<Group[]> {
+    return await this.studentService.findByIdWithStatus(id, status);
+  }
+
+  //? 요일별 학생 수업 일정 조회
+  @StudentScheduleFindByIdDocs()
+  @Get(':id/schedule')
+  async findBySchedule(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('dates', new ParseArrayPipe({ items: String, optional: true }))
+    dates: string[],
+  ) {
+    return await this.studentService.findBySchedule(id, dates);
+  }
+
+  //? 특정 학생의 수강 신청 내역 조회
+  @StudentBookingFindByIdDocs()
+  @Get(':id/bookings')
+  async findBookings(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Booking[]> {
+    return await this.studentService.findBookings(id);
   }
 
   //? ---------------------------------------------------------------------- ?//
