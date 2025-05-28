@@ -63,7 +63,16 @@ export class SchooldayService {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  async findAll(query: PaginateQuery): Promise<Paginated<Schoolday>> {
+  async list(): Promise<Schoolday[]> {
+    const queryBuilder = this.schooldayRepository
+      .createQueryBuilder('schoolday')
+      .leftJoinAndSelect('schoolday.group', 'group')
+      .leftJoinAndSelect('group.groupStudents', 'groupStudents');
+
+    return await queryBuilder.getMany();
+  }
+
+  async infiniteList(query: PaginateQuery): Promise<Paginated<Schoolday>> {
     const queryBuilder =
       this.schooldayRepository.createQueryBuilder('schoolday');
 
@@ -97,6 +106,9 @@ export class SchooldayService {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
+  // 현재 수업일 변경만 지원한다. 변경할 수업일 validation 은 수행하지 않는다.
+  // 즉, 새로운 수업시간에 해당 수업의 진행이 정말 가능한지 검사하거나 확인하지 않는다.
+  // 수업일이 변경되면, 다이나모 출석부도 수정해야 되므로, subscriber 를 사용했다.
   async update(id: number, dto: UpdateSchooldayDto): Promise<Schoolday> {
     const schoolday = await this.schooldayRepository.preload({ id, ...dto });
     if (!schoolday) {

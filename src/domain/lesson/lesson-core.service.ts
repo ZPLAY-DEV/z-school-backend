@@ -30,6 +30,11 @@ import {
   Repository,
 } from 'typeorm';
 
+type GroupSamData = CreateGroupWithInstructorDto & {
+  lessonId: number;
+  samId: number;
+};
+
 @Injectable()
 export class LessonCoreService {
   private readonly logger = new Logger(LessonCoreService.name);
@@ -357,15 +362,6 @@ export class LessonCoreService {
     groups: CreateGroupWithInstructorDto[],
     manager: EntityManager,
   ): Promise<void> {
-    type GroupSamData = {
-      lessonId: number;
-      samId: number;
-      groupData: CreateGroupWithInstructorDto & {
-        lessonId: number;
-        samId: number;
-      };
-    };
-
     const uniqueSams = new Map<string, number>(); // key: `${instructorName}-${instructorPhone}`
     const groupsWithSamData: GroupSamData[] = [];
 
@@ -378,11 +374,7 @@ export class LessonCoreService {
         groupsWithSamData.push({
           lessonId: lesson.id,
           samId,
-          groupData: {
-            ...groupDto,
-            samId,
-            lessonId: lesson.id,
-          },
+          ...groupDto,
         });
         continue;
       }
@@ -425,16 +417,12 @@ export class LessonCoreService {
       groupsWithSamData.push({
         lessonId: lesson.id,
         samId: Number(sam.id),
-        groupData: {
-          ...groupDto,
-          samId: Number(sam.id),
-          lessonId: lesson.id,
-        },
+        ...groupDto,
       });
     }
 
     // Upsert groups with both lessonId and samId
-    for (const { samId, groupData } of groupsWithSamData) {
+    for (const groupData of groupsWithSamData) {
       const groupStart = parseTimeFormat(parseTime(groupData.start));
       const groupEnd = parseTimeFormat(parseTime(groupData.end));
       const groupAllowedGrades = parseRangeFormat(groupData.allowedGrades).join(
@@ -442,9 +430,9 @@ export class LessonCoreService {
       );
 
       const upsertData: DeepPartial<Group> = {
-        lessonId: lesson.id,
+        lessonId: groupData.lessonId,
         groupName: groupData.groupName,
-        samId,
+        samId: groupData.samId,
         location: groupData.location,
         capacity: groupData.capacity,
         allowedGrades: groupAllowedGrades,

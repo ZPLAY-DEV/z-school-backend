@@ -40,8 +40,32 @@ export class SchoolTermOfferingService {
 
     const offerings = makeOfferingsFromLessons(termId, schoolId, lessons);
 
+    // 기존 offerings 조회 (unique constraint 기준)
+    const existingOfferings = await this.offeringRepository.find({
+      where: { schoolId, termId },
+    });
+
+    // 기존 offerings와 새로운 offerings를 매핑하여 ID 설정
+    const offeringsToUpsert = offerings.map((newOffering) => {
+      const existing = existingOfferings.find(
+        (existing) =>
+          existing.schoolId === newOffering.schoolId &&
+          existing.termId === newOffering.termId &&
+          existing.lessonId === newOffering.lessonId &&
+          existing.groupName === newOffering.groupName,
+      );
+
+      // 기존 offering이 있으면 ID를 설정하여 update가 되도록 함
+      if (existing) {
+        return { ...newOffering, id: existing.id };
+      }
+
+      // 새로운 offering이면 ID 없이 반환 (insert가 됨)
+      return newOffering;
+    });
+
     // upsert: 복합 유니크 키 기준으로 insert or update
-    await this.offeringRepository.upsert(offerings, [
+    await this.offeringRepository.upsert(offeringsToUpsert, [
       'schoolId',
       'termId',
       'lessonId',
