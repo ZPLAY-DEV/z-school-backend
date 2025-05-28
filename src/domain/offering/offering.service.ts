@@ -112,11 +112,11 @@ export class OfferingService {
     // 이전 학기 수강생 데이터가 존재한다면 추가
     if (lessonIds.length > 0) {
       const query = `
-        SELECT DISTINCT gs."studentId"
-        FROM group_student gs
-        JOIN "groups" g ON gs."groupId" = g.id
-        WHERE g."lessonId" IN (${lessonIds.join(',')})
-        AND gs."deletedAt" IS NULL
+        SELECT DISTINCT p.studentId
+        FROM picks p
+        JOIN \`groups\` g ON p.groupId = g.id
+        WHERE g.lessonId IN (${lessonIds.join(',')})
+        AND p.deletedAt IS NULL
       `;
 
       const studentIdsResult = await this.offeringRepository.query(query);

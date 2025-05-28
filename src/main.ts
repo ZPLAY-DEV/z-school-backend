@@ -43,7 +43,8 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true, // 정의되지 않은 속성 금지
       validateCustomDecorators: true, // 커스텀 데코레이터 유효성 검사
-      exceptionFactory: () => {
+      exceptionFactory: (e) => {
+        console.log('error', e);
         // 상세 오류가 답답하면, validation-catch-all.filter.ts 를 전역필터로 적용.
         return new BadRequestException(HttpErrorConstants.VALIDATE_ERROR);
       },

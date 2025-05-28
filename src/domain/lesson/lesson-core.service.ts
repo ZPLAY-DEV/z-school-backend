@@ -52,7 +52,7 @@ export class LessonCoreService {
 
   async create(dto: CreateLessonDto): Promise<Lesson> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      //? 1단계) Find school
+      //? 1단계) 학교 정보 확인
       const school = await manager.findOne(School, {
         where: { id: dto.schoolId },
       });
@@ -60,7 +60,7 @@ export class LessonCoreService {
         throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
       }
 
-      //? 2단계) Find term to use start/end dates
+      //? 2단계) 학기 정보 확인
       const term = await manager.findOne(Term, {
         where: { id: dto.termId },
       });
@@ -191,7 +191,7 @@ export class LessonCoreService {
       );
     }
 
-    //? 1단계) 업데이트할 강좌 찾기
+    //? 0단계) 업데이트할 강좌 찾기
     const existingLesson = await manager.findOne(Lesson, {
       where: { id },
       relations: {
@@ -202,7 +202,7 @@ export class LessonCoreService {
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
     }
 
-    //? 2단계) 학교 정보 확인
+    //? 1단계) 학교 정보 확인
     const school = await manager.findOne(School, {
       where: { id: dto.schoolId },
     });
@@ -210,7 +210,7 @@ export class LessonCoreService {
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
     }
 
-    //? 3단계) 학기 정보 확인
+    //? 2단계) 학기 정보 확인
     const term = await manager.findOne(Term, {
       where: { id: dto.termId },
     });
@@ -218,7 +218,7 @@ export class LessonCoreService {
       throw new NotFoundException('Term not found');
     }
 
-    //? 4단계) 기존 그룹 ID 매핑
+    //? 3단계) 기존 반(group)정보 매핑
     if (dto.groups?.length) {
       // 기존 GroupId 를 보존하도록 매핑
       dto.groups = dto.groups.map((groupDto) => {
@@ -262,7 +262,7 @@ export class LessonCoreService {
       }
     }
 
-    //? 5단계) 강좌 업데이트
+    //? 4단계) 강좌 업데이트
     const updatedLesson = await manager
       .save(Lesson, {
         ...existingLesson,
@@ -278,7 +278,7 @@ export class LessonCoreService {
         );
       });
 
-    //? 6단계) 그룹 및 강사 정보 처리
+    //? 5단계) 반(Group)과 쌤(Sam) 정보 처리
     if (dto.groups?.length) {
       await this.processGroups(
         updatedLesson,
@@ -443,6 +443,9 @@ export class LessonCoreService {
       if ('id' in groupData && groupData.id) {
         upsertData.id = Number(groupData.id);
       }
+      // Ensure lessonId is always set correctly
+      upsertData.lessonId = lesson.id;
+
       await manager
         .getRepository(Group)
         .upsert(upsertData, ['lessonId', 'groupName']);

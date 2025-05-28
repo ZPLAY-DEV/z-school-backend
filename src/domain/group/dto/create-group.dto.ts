@@ -4,9 +4,8 @@ import {
   IsInt,
   IsNotEmpty,
   IsOptional,
-  IsPositive,
   IsString,
-  MaxLength,
+  MaxLength
 } from 'class-validator';
 import { ClassStatus, Weekday } from 'src/common/enums';
 
@@ -28,7 +27,6 @@ export class CreateGroupDto {
 
   @ApiPropertyOptional({ description: 'class size' })
   @IsInt()
-  @IsPositive()
   @IsOptional()
   capacity?: number;
 
@@ -43,11 +41,11 @@ export class CreateGroupDto {
   @IsEnum(Weekday)
   weekday: Weekday;
 
-  @ApiPropertyOptional({ description: '수업 시작 시간' })
+  @ApiPropertyOptional({ description: '수업 시작 시간', example: '15:00' })
   @IsString()
   start: string;
 
-  @ApiPropertyOptional({ description: '수업 종료 시간' })
+  @ApiPropertyOptional({ description: '수업 종료 시간', example: '15:40' })
   @IsString()
   end: string;
 
