@@ -16,6 +16,6 @@ export class SchooldayAttendanceController {
   @ApiOperation({ description: 'Schoolday 생성' })
   @Post('attendances')
   async create(@Body() dto: CreateSchooldayAttendanceDto): Promise<any> {
-    return await this.schooldayAttendanceService.create(dto);
+    return await this.schooldayAttendanceService.create2(dto);
   }
 }

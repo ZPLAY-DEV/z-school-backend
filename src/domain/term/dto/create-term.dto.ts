@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
+  IsEnum,
   IsInt,
   IsOptional,
   IsPositive,
@@ -8,6 +10,7 @@ import {
   Length,
   MaxLength,
 } from 'class-validator';
+import { PickRule } from 'src/common/enums';
 import {
   IsDateTimePriorToDate,
   IsValidDateRange,
@@ -96,4 +99,16 @@ export class CreateTermDto {
     message: 'bookingEnd must be prior to start date',
   })
   bookingEnd?: Date;
+
+  @ApiProperty({ description: '시간 중복 허용 여부', default: false })
+  @IsBoolean()
+  allowTimeOverlap: boolean;
+
+  @ApiProperty({
+    description:
+      '2차 default 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
+    default: PickRule.RANDOM,
+  })
+  @IsEnum(PickRule)
+  defaultPickRule: PickRule;
 }

@@ -134,7 +134,7 @@ export const UpdateTermDocs = () => {
       summary: '학교 > 학기 👈 수정',
       description: `
       - 학교에 귀속된 학기 정보 수정
-      - bookingStart 속성값을 최초 입력시, 수강신청과목 (offerings) 테이블이 생성되고, isBookingReady 가 true 로 변경됨.
+      - bookingStart 속성값을 최초 입력시, 수강신청과목 (offerings) 테이블이 생성되고, isOfferingReady 가 true 로 변경됨.
       `,
     }),
     ApiOkResponseTemplate({

@@ -4,3 +4,8 @@ export enum EnrollmentRule {
   RANDOM = '무작위', // random students, 무작위
   ANYONE = '누구나', // anyone, 누구나 (신청만 하면)
 }
+
+export enum PickRule {
+  FIRST = 'FIRST',
+  RANDOM = 'RANDOM',
+}

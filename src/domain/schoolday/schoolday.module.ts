@@ -7,9 +7,14 @@ import { SchooldayAttendanceController } from 'src/domain/schoolday/schoolday-at
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
 import { SchooldayController } from 'src/domain/schoolday/schoolday.controller';
 import { SchooldayService } from 'src/domain/schoolday/schoolday.service';
+import { DynamoModule } from 'src/services/aws/dynamo.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([School, Schoolday]), AttendanceModule],
+  imports: [
+    TypeOrmModule.forFeature([School, Schoolday]),
+    AttendanceModule,
+    DynamoModule,
+  ],
   providers: [SchooldayService, SchooldayAttendanceService],
   controllers: [SchooldayController, SchooldayAttendanceController],
 })
