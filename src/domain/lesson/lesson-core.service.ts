@@ -113,17 +113,51 @@ export class LessonCoreService {
 
       //? 6단계) 학업요일 days 정보 및 schooldays 처리
       for (const group of savedLesson.groups) {
-        // 이 반의 기존 schooldays 모두 제거
-        await manager.getRepository('Schoolday').delete({ groupId: group.id });
-        // 이 반의 schooldays 생성
-        const schooldays: Schoolday[] = generateSchooldays(
+        // 1. 기존 schooldays를 key-value로 변환 (startsAt+endsAt 기준)
+        const existingSchooldays = await manager
+          .getRepository('Schoolday')
+          .find({ where: { groupId: group.id } });
+        const existingMap = new Map<string, Schoolday>();
+        for (const sd of existingSchooldays) {
+          const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
+          existingMap.set(key, sd as Schoolday);
+        }
+
+        // 2. 새로 생성될 schooldays
+        const newSchooldays: Schoolday[] = generateSchooldays(
           savedLesson,
           group,
           offdays,
         );
-        group.schooldays = schooldays; // cascade로 자동 저장
-        group.days = schooldays.length;
-        await manager.save(group); // cascade로 schooldays도 저장/삭제됨
+        const newMap = new Map<string, Schoolday>();
+        for (const sd of newSchooldays) {
+          const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
+          newMap.set(key, sd);
+        }
+
+        // 3. 추가해야 할 schooldays (new에만 있는 것)
+        const toInsert = Array.from(newMap.entries())
+          .filter(([key]) => !existingMap.has(key))
+          .map(([, sd]) => sd);
+
+        // 4. 삭제해야 할 schooldays (existing에만 있는 것)
+        const toDelete = Array.from(existingMap.entries())
+          .filter(([key]) => !newMap.has(key))
+          .map(([, sd]) => sd);
+
+        // 5. 실제 DB 반영 (update는 불필요하므로 생략)
+        if (toDelete.length > 0) {
+          await manager
+            .getRepository('Schoolday')
+            .delete(toDelete.map((sd) => sd.id));
+        }
+        if (toInsert.length > 0) {
+          await manager.getRepository('Schoolday').save(toInsert as any);
+        }
+
+        // 6. group.days 갱신
+        group.days = newSchooldays.length;
+        await manager.save(group);
       }
 
       return savedLesson;
@@ -263,17 +297,51 @@ export class LessonCoreService {
 
     //? 6단계) 학업요일 days 정보 및 schooldays 처리
     for (const group of finalLesson.groups) {
-      // 이 반의 기존 schooldays 모두 제거
-      await manager.getRepository('Schoolday').delete({ groupId: group.id });
-      // 이 반의 schooldays 생성
-      const schooldays: Schoolday[] = generateSchooldays(
+      // 1. 기존 schooldays를 key-value로 변환 (startsAt+endsAt 기준)
+      const existingSchooldays = await manager
+        .getRepository('Schoolday')
+        .find({ where: { groupId: group.id } });
+      const existingMap = new Map<string, Schoolday>();
+      for (const sd of existingSchooldays) {
+        const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
+        existingMap.set(key, sd as Schoolday);
+      }
+
+      // 2. 새로 생성될 schooldays
+      const newSchooldays: Schoolday[] = generateSchooldays(
         finalLesson,
         group,
         offdays,
       );
-      group.schooldays = schooldays; // cascade로 자동 저장
-      group.days = schooldays.length;
-      await manager.save(group); // cascade로 schooldays도 저장/삭제됨
+      const newMap = new Map<string, Schoolday>();
+      for (const sd of newSchooldays) {
+        const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
+        newMap.set(key, sd);
+      }
+
+      // 3. 추가해야 할 schooldays (new에만 있는 것)
+      const toInsert = Array.from(newMap.entries())
+        .filter(([key]) => !existingMap.has(key))
+        .map(([, sd]) => sd);
+
+      // 4. 삭제해야 할 schooldays (existing에만 있는 것)
+      const toDelete = Array.from(existingMap.entries())
+        .filter(([key]) => !newMap.has(key))
+        .map(([, sd]) => sd);
+
+      // 5. 실제 DB 반영 (update는 불필요하므로 생략)
+      if (toDelete.length > 0) {
+        await manager
+          .getRepository('Schoolday')
+          .delete(toDelete.map((sd) => sd.id));
+      }
+      if (toInsert.length > 0) {
+        await manager.getRepository('Schoolday').save(toInsert as any);
+      }
+
+      // 6. group.days 갱신
+      group.days = newSchooldays.length;
+      await manager.save(group);
     }
 
     return finalLesson;
