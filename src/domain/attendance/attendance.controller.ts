@@ -1,19 +1,27 @@
 import {
+  BadRequestException,
   Body,
   ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
-  Param,
   Patch,
   Post,
   Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { AttendanceService } from 'src/domain/attendance/attendance.service';
 import { CreateAttendanceDto } from 'src/domain/attendance/dto/create-attendance.dto';
-import { IAttendance } from 'src/domain/attendance/entities/attendance.interface';
+import {
+  AttendanceKeyDto,
+  UpdateAttendanceDto,
+} from 'src/domain/attendance/dto/update-attendance.dto';
+import {
+  IAttendance,
+  IAttendanceKey,
+} from 'src/domain/attendance/entities/attendance.interface';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('attendances')
@@ -39,26 +47,60 @@ export class AttendanceController {
   @ApiOperation({ description: 'Attendance 리스트' })
   @Get()
   async fetch(
-    @Query('date') groupKey: string,
-    @Query('lastDailyStudentKey') lastDailyStudentKey?: string,
+    @Query('groupId') groupId: string,
+    @Query('cursor') cursor?: string,
   ): Promise<any> {
-    const lastKey = lastDailyStudentKey
-      ? { groupKey, dailyStudentKey: lastDailyStudentKey }
-      : null;
+    if (!groupId) {
+      throw new BadRequestException(HttpErrorConstants.INVALID_QUERY_PARAMS);
+    }
+
+    // groupId를 groupKey로 변환 (PREFIX 추가)
+    const groupKey = `GROUP#${groupId}`;
+
+    // cursor를 lastKey로 디코딩
+    let lastKey: IAttendanceKey | undefined = undefined;
+    if (cursor) {
+      try {
+        const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
+        const cursorData = JSON.parse(decoded);
+        lastKey = {
+          groupKey: cursorData.groupKey,
+          dailyStudentKey: cursorData.dailyStudentKey,
+        };
+      } catch {
+        throw new BadRequestException('Invalid cursor format');
+      }
+    }
+
     const res = await this.attendancesService.fetch(groupKey, lastKey);
+
+    // nextCursor 생성
+    let nextCursor: string | undefined = undefined;
+    if (res.lastKey) {
+      const cursorData = {
+        groupKey: res.lastKey.groupKey,
+        dailyStudentKey: res.lastKey.dailyStudentKey,
+      };
+      nextCursor = Buffer.from(JSON.stringify(cursorData)).toString('base64');
+    }
+
     return {
-      lastKey: res.lastKey,
+      items: res.items,
       count: res.count,
-      items: res,
+      nextCursor,
+      hasMore: !!res.lastKey,
     };
   }
 
   @ApiOperation({ description: 'Attendance 상세보기' })
-  @Get(':groupKey/:dailyStudentKey')
+  @Get()
   async getAttendanceById(
-    @Param('groupKey') groupKey: string,
-    @Param('dailyStudentKey') dailyStudentKey: string,
+    @Query('groupId') groupId: string,
+    @Query('date') date: string,
+    @Query('studentId') studentId: string,
   ): Promise<IAttendance> {
+    const groupKey = `GROUP#${groupId}`;
+    const dailyStudentKey = `DATE#${date}#STUDENT#${studentId}`;
     return await this.attendancesService.findById({
       groupKey,
       dailyStudentKey,
@@ -66,29 +108,14 @@ export class AttendanceController {
   }
 
   //? ---------------------------------------------------------------------- ?//
-  //? FIND BY DATE
-  //? ---------------------------------------------------------------------- ?//
-
-  @ApiOperation({ description: '특정 날짜의 Attendance 리스트' })
-  @Get('by-date')
-  async findByDate(
-    @Query('groupKey') groupKey: string,
-    @Query('date') date: string,
-  ): Promise<IAttendance[]> {
-    return await this.attendancesService.findByDate(groupKey, date);
-  }
-
-  //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
 
-  @Patch(':groupKey/:dailyStudentKey/read')
-  async markAsRead(
-    @Param('groupKey') groupKey: string,
-    @Param('dailyStudentKey') dailyStudentKey: string,
-  ): Promise<any> {
-    await this.attendancesService.markAsRead({ groupKey, dailyStudentKey });
-    return { data: 'ok' };
+  @ApiOperation({ description: 'Attendance 상태변경' })
+  @Patch()
+  async update(@Body() dto: UpdateAttendanceDto): Promise<IAttendance> {
+    const { groupKey, dailyStudentKey } = dto;
+    return await this.attendancesService.update({ groupKey, dailyStudentKey });
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -96,12 +123,8 @@ export class AttendanceController {
   //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'Attendance 삭제' })
-  @Delete(':groupKey/:dailyStudentKey')
-  async delete(
-    @Param('groupKey') groupKey: string,
-    @Param('dailyStudentKey') dailyStudentKey: string,
-  ): Promise<any> {
-    await this.attendancesService.delete({ groupKey, dailyStudentKey });
-    return { data: 'ok' };
+  @Delete()
+  async delete(@Body() dto: AttendanceKeyDto): Promise<void> {
+    await this.attendancesService.delete(dto);
   }
 }

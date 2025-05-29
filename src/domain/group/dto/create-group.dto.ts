@@ -5,7 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  MaxLength
+  MaxLength,
 } from 'class-validator';
 import { ClassStatus, Weekday } from 'src/common/enums';
 

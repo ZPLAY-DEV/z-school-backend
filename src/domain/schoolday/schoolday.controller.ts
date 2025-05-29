@@ -1,48 +1,48 @@
 import {
   BadRequestException,
   Body,
+  ClassSerializerInterceptor,
   Controller,
-  Delete,
   Get,
   Param,
   ParseIntPipe,
   Patch,
-  Post,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { UpdateSchooldayTimeDto } from 'src/domain/schoolday/dto/update-schoolday.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayService } from './schoolday.service';
+import {
+  GetSchooldayByIdDocs,
+  GetSchooldayListDocs,
+  GetSchooldayPaginatedListDocs,
+  UpdateSchooldayTimeDocs,
+} from './swagger/schoolday-swagger.decorator';
 
+@ApiTags('✅ Schooldays ( 수업일 )')
+@ApiCommonErrorResponseTemplate()
 @Controller('schooldays')
+@UseInterceptors(ClassSerializerInterceptor)
 export class SchooldayController {
   constructor(private readonly schooldayService: SchooldayService) {}
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Create
-  //? ---------------------------------------------------------------------- ?//
-
-  @ApiOperation({ description: 'Schoolday 생성' })
-  @Post()
-  async create(): Promise<any> {
-    return await this.schooldayService.create();
-  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Schoolday 리스트 w/ Pagination' })
+  @GetSchooldayListDocs()
   @Get()
   async getList(): Promise<Schoolday[]> {
     return await this.schooldayService.list();
   }
 
-  @ApiOperation({ description: 'Schoolday 리스트 w/ Pagination' })
+  @GetSchooldayPaginatedListDocs()
   @Get('paginated')
   async getInfiniteList(
     @Paginate() query: PaginateQuery,
@@ -50,7 +50,7 @@ export class SchooldayController {
     return await this.schooldayService.infiniteList(query);
   }
 
-  @ApiOperation({ description: 'Schoolday 상세보기' })
+  @GetSchooldayByIdDocs()
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Schoolday> {
     return await this.schooldayService.findById(id, [
@@ -65,9 +65,8 @@ export class SchooldayController {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({
-    description: 'Schoolday 의 시간 수정. dynamodb 출석부도 수정되어야 한다!',
-  })
+  //! 수업일 변경시 다이나모 출석부도 변경됨.
+  @UpdateSchooldayTimeDocs()
   @Patch(':id')
   async update(
     @Param('id') id: number,
@@ -92,14 +91,5 @@ export class SchooldayController {
           ? Actor.INSTRUCTOR
           : Actor.OTHER;
     return await this.schooldayService.update(id, { ...dto, updatedBy: role });
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Delete
-  //? ---------------------------------------------------------------------- ?//
-
-  @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.schooldayService.remove(id);
   }
 }

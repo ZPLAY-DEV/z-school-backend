@@ -81,7 +81,12 @@ export class SchooldayService {
       searchableColumns: ['name'],
       defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
-        code: [FilterOperator.EQ],
+        schoolId: [FilterOperator.EQ],
+        termId: [FilterOperator.EQ],
+        lessonId: [FilterOperator.EQ],
+        groupId: [FilterOperator.EQ, FilterOperator.IN],
+        startsAt: [FilterOperator.EQ, FilterOperator.GTE, FilterOperator.LTE],
+        endsAt: [FilterOperator.EQ, FilterOperator.GTE, FilterOperator.LTE],
       },
     });
   }

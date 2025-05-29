@@ -265,6 +265,21 @@ export const HttpErrorConstants = {
     message: '입력값이 허용 범위를 벗어났습니다.',
   } as HttpErrorFormat,
 
+  DYNAMO_READ: {
+    error: 'DYNAMO_READ',
+    message: 'DynamoDB 읽기 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
+  DYNAMO_WRITE: {
+    error: 'DYNAMO_WRITE',
+    message: 'DynamoDB 쓰기 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
+  DYNAMO_DELETE: {
+    error: 'DYNAMO_DELETE',
+    message: 'DynamoDB 삭제 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)
 };
 

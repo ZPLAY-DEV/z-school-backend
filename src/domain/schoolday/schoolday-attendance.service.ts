@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
 import { AttendanceService } from 'src/domain/attendance/attendance.service';
-import { CreateSchooldayAttendanceDto } from 'src/domain/schoolday/dto/create-schoolday-attendance.dto';
+import { CreateAttendanceOfSchooldayWithRangeDto } from 'src/domain/schoolday/dto/create-attendance-of-schoolday.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { getDigitStudentId, getStudentId } from 'src/helpers/student';
 import { DynamoService } from 'src/services/aws/dynamo.service';
@@ -26,7 +26,7 @@ export class SchooldayAttendanceService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  async create(dto: CreateSchooldayAttendanceDto): Promise<any> {
+  async create(dto: CreateAttendanceOfSchooldayWithRangeDto): Promise<any> {
     const { schoolId, termId, from, to } = dto;
     const startsAt = new Date(from);
     const endsAt = new Date(to);
@@ -91,7 +91,7 @@ export class SchooldayAttendanceService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  async create2(dto: CreateSchooldayAttendanceDto): Promise<any> {
+  async create2(dto: CreateAttendanceOfSchooldayWithRangeDto): Promise<any> {
     const { schoolId, termId, from, to } = dto;
     const startsAt = new Date(from);
     const endsAt = new Date(to);

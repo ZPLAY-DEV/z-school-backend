@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { SortOrder } from 'dynamoose/dist/General';
 import { InjectModel, Model } from 'nestjs-dynamoose';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateAttendanceDto } from 'src/domain/attendance/dto/create-attendance.dto';
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 import {
@@ -30,89 +31,71 @@ export class AttendanceService {
       return attendance as IAttendance;
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
+      throw new BadRequestException(HttpErrorConstants.DYNAMO_WRITE);
     }
   }
 
   //? notice that records will be sorted by range key,
   //? which is dailyStudentKey
   //?
-  async fetch(groupKey: string, lastKey: IAttendanceKey | null): Promise<any> {
+  async fetch(
+    groupKey: string,
+    lastKey?: IAttendanceKey,
+  ): Promise<{
+    items: IAttendance[];
+    count: number;
+    lastKey?: IAttendanceKey;
+  }> {
     try {
-      return lastKey
-        ? await this.model
-            .query('groupKey')
-            .eq(groupKey)
-            .sort(SortOrder.descending)
-            .startAt(lastKey)
-            .limit(LIMIT)
-            .exec()
-        : await this.model
-            .query('groupKey')
-            .eq(groupKey)
-            .sort(SortOrder.descending)
-            .limit(LIMIT)
-            .exec();
+      const query = this.model
+        .query('groupKey')
+        .eq(groupKey)
+        .sort(SortOrder.descending)
+        .limit(LIMIT);
+
+      const result = lastKey
+        ? await query.startAt(lastKey).exec()
+        : await query.exec();
+
+      return {
+        items: result as IAttendance[],
+        count: result.count,
+        lastKey: result.lastKey as IAttendanceKey | undefined,
+      };
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
+      throw new BadRequestException(HttpErrorConstants.DYNAMO_READ);
     }
   }
 
-  async findById(key: IAttendanceKey): Promise<IAttendance> {
+  async findById(dto: IAttendanceKey): Promise<IAttendance> {
     try {
-      return (await this.model.get(key)) as IAttendance;
+      return (await this.model.get(dto)) as IAttendance;
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
+      throw new BadRequestException(HttpErrorConstants.DYNAMO_READ);
     }
   }
 
-  async update(
-    key: IAttendanceKey,
-    dto: UpdateAttendanceDto,
-  ): Promise<IAttendance> {
+  async update(dto: UpdateAttendanceDto): Promise<IAttendance> {
+    const { groupKey, dailyStudentKey, ...rest } = dto;
+    const key = { groupKey, dailyStudentKey };
     try {
       return (await this.model.update(key, {
-        ...dto,
+        ...rest,
       })) as IAttendance;
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
+      throw new BadRequestException(HttpErrorConstants.DYNAMO_WRITE);
     }
   }
 
-  async markAsRead(key: IAttendanceKey): Promise<void> {
+  async delete(dto: IAttendanceKey): Promise<void> {
     try {
-      await this.model.update(key, { isRead: true });
-    } catch (error) {
-      console.error('Error updating isRead:', error);
-      throw error;
-    }
-  }
-
-  async delete(key: IAttendanceKey): Promise<any> {
-    try {
-      return this.model.delete(key);
+      await this.model.delete(dto);
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
-    }
-  }
-
-  async findByDate(groupKey: string, date: string): Promise<IAttendance[]> {
-    try {
-      const prefix = `DATE#${date}`;
-      const result = await this.model
-        .query('groupKey')
-        .eq(groupKey)
-        .where('dailyStudentKey')
-        .beginsWith(prefix)
-        .exec();
-      return result as IAttendance[];
-    } catch (error) {
-      console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
+      throw new BadRequestException(HttpErrorConstants.DYNAMO_DELETE);
     }
   }
 }

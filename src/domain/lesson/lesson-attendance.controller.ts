@@ -3,21 +3,22 @@ import {
   Controller,
   Get,
   Param,
+  ParseIntPipe,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { IAttendance } from 'src/domain/attendance/entities/attendance.interface';
-import { GroupAttendanceService } from 'src/domain/group/group-attendance.service';
-import { FindAttendanceByDateDocs } from 'src/domain/group/swagger/group-attendance-swagger.decorator';
+import { LessonAttendanceService } from 'src/domain/lesson/lesson-attendance.service';
+import { FindAttendanceByDateDocs } from 'src/domain/lesson/swagger/lesson-attendance-swagger.decorator';
 
-@ApiTags('✅ Groups > Attendance ( 반 > 출석 )')
+@ApiTags('✅ Lessons > Attendance ( 과목 > 출석 )')
 @ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
-@Controller('groups')
-export class GroupAttendanceController {
+@Controller('lessons')
+export class LessonAttendanceController {
   constructor(
-    private readonly groupAttendancesService: GroupAttendanceService,
+    private readonly lessonAttendancesService: LessonAttendanceService,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -29,12 +30,11 @@ export class GroupAttendanceController {
   //? ---------------------------------------------------------------------- ?//
 
   @FindAttendanceByDateDocs()
-  @Get(':groupId/attendances/:date')
+  @Get(':lessonId/attendances/:date')
   async findByDate(
-    @Param('groupId') groupId: string,
+    @Param('lessonId', ParseIntPipe) lessonId: number,
     @Param('date') date: string,
   ): Promise<IAttendance[]> {
-    const groupKey = `GROUP#${groupId}`;
-    return await this.groupAttendancesService.findByDate(groupKey, date);
+    return await this.lessonAttendancesService.findByDate(lessonId, date);
   }
 }
