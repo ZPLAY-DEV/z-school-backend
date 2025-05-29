@@ -5,9 +5,12 @@ import {
   Post,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { CreateAttendanceOfSchooldayWithRangeDto } from 'src/domain/schoolday/dto/create-attendance-of-schoolday.dto';
+import {
+  CreateDynamoRecordWithDateDto,
+  CreateDynamoRecordWithRangeDto,
+} from 'src/domain/schoolday/dto/create-dynamo-record.dto';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
 import { CreateAttendanceOfSchooldayWithRangeDocs } from 'src/domain/schoolday/swagger/schoolday-attendance-swagger.decorator';
 
@@ -24,19 +27,19 @@ export class SchooldayAttendanceController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  // @ApiOperation({ description: 'Schoolday 생성' })
-  // @Post('attendances/date')
-  // async createWithDate(
-  //   @Body() dto: CreateAttendanceOfSchooldayWithDateDto,
-  // ): Promise<any> {
-  //   return await this.schooldayAttendanceService.create2(dto);
-  // }
+  @ApiOperation({ description: 'Schoolday 생성' })
+  @Post('attendances/date')
+  async createWithDate(
+    @Body() dto: CreateDynamoRecordWithDateDto,
+  ): Promise<any> {
+    return await this.schooldayAttendanceService.createWithDate(dto);
+  }
 
   @CreateAttendanceOfSchooldayWithRangeDocs()
   @Post('attendances/range')
   async createWithRange(
-    @Body() dto: CreateAttendanceOfSchooldayWithRangeDto,
+    @Body() dto: CreateDynamoRecordWithRangeDto,
   ): Promise<any> {
-    return await this.schooldayAttendanceService.create2(dto);
+    return await this.schooldayAttendanceService.createWithRange(dto);
   }
 }

@@ -17,7 +17,7 @@ export const CreatePickDocs = () =>
     ApiOperation({
       summary: '이유와 함께 수업시작일 기록',
       description:
-        '중간에 반에 join 하는 경우. 개별 학생을 반에 등록합니다. note에 등록 사유를 남길 수 있습니다.',
+        '중간에 반에 join 하는 경우. 개별 학생을 반에 등록합니다. note에 등록 사유를 남길 수 있습니다. (schooldays 에 근거하여 cron 이 다이나모 출석부를 자동 생성하므로, 출석부 생성로직은 없음.)',
     }),
     ApiBody({ type: StartPickDto }),
     ApiCreatedResponseTemplate({
@@ -85,7 +85,7 @@ export const EndPickDocs = () =>
     ApiOperation({
       summary: '이유와 함께 수업종료일 기록',
       description:
-        '중간에 반에서 quit 하는 경우. 반에 등록된 특정 학생의 수업을 종료합니다.',
+        '중간에 반에서 quit 하는 경우. 반에 등록된 특정 학생의 마지막 수업일을 기록하고 pick 상태를 종료로 변경합니다.',
     }),
     ApiBody({ type: EndPickDto }),
     ApiOkResponseTemplate({

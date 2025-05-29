@@ -1,11 +1,15 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+} from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
-import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
 import { CreateOfferingDto } from '../dto/create-offering.dto';
 import { UpdateOfferingDto } from '../dto/update-offering.dto';
 import { Offering } from '../entities/offering.entity';
@@ -54,6 +58,12 @@ export const GetOfferingByIdDocs = () => {
       - 수강신청과목 ID로 상세 정보 조회
       `,
     }),
+    ApiParam({
+      name: 'id',
+      description: '수강신청과목 ID',
+      type: 'number',
+      example: 123,
+    }),
     ApiOkResponseTemplate({
       description: '수강신청과목 상세 조회 완료',
       type: Offering,
@@ -79,6 +89,12 @@ export const UpdateOfferingDocs = () => {
       - 수강신청과목 업데이트
       - Request의 UpdateOfferingDto는 PartialType(CreateOfferingDto)로 변경 원하는 필드만 작성
       `,
+    }),
+    ApiParam({
+      name: 'id',
+      description: '수강신청과목 ID',
+      type: 'number',
+      example: 123,
     }),
     ApiBody({
       type: UpdateOfferingDto,
@@ -120,6 +136,12 @@ export const RemoveOfferingDocs = () => {
       - 수강신청과목 삭제 (소프트 삭제)
       `,
     }),
+    ApiParam({
+      name: 'id',
+      description: '수강신청과목 ID',
+      type: 'number',
+      example: 123,
+    }),
     ApiOkResponseTemplate({
       description: '수강신청과목 삭제 완료',
       type: Offering,
@@ -134,77 +156,45 @@ export const RemoveOfferingDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Find Immediately Previous Term ID
-//? ---------------------------------------------------------------------- ?//
-
-export const FindImmediatelyPreviousTermIdDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '수강신청과목 👈 직전 학기 ID 조회',
-      description: `
-      - 호출하면 지난 학교ID 와 학기ID 를 스스로 이용하여 바로 전학기의 ID 를 리턴한다. 없으면 404 오류 반환
-      - 해당 수강신청과목이 속한 학기의 바로 전 학기 ID를 조회
-      - 해당 학교의 학기 일정 정보를 기준으로 현재 학기 직전에 등록된 학기를 찾음
-      `,
-    }),
-    ApiOkResponse({
-      description: '직전 학기 ID 조회 완료',
-      schema: {
-        type: 'number',
-        example: 123,
-      },
-    }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
-      },
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.CONDITION_NOT_MET],
-      },
-    ]),
-  );
-};
-
-//? ---------------------------------------------------------------------- ?//
 //? Set Former Student IDs
 //? ---------------------------------------------------------------------- ?//
 
 export const SetFormerStudentIdsDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '수강신청과목 👈 이전 수강생 ID 설정',
+      summary: '수강신청과목 👈 이전 수강생 ID 수동 설정',
       description: `
-      - dto.offeringIds 에 이전 학기의 수강신청과목 ID들을 넣고 호출
-      - 해당 과목을 수강한 학생들의 ID 목록을 리턴할 뿐만 아니라 offering.formerStudentIds에 자동으로 저장된다.
-      - flow 를 설명하자면, 따라서, 수강생 확정시 수강신청한 학생아이디와 formerStudentIds를 이용하여 union 하면 재수강생 목록을 뽑을 수 있다.
+      - lessonName을 받아서 이전 학기의 동일한 과목을 수강한 학생들의 ID를 찾아 설정
+      - 해당 과목을 수강한 학생들의 ID 목록을 offering.formerStudentIds에 자동으로 저장
+      - 반환값은 설정된 이전 수강생 수 (number)
+      - 수강생 확정시 수강신청한 학생 ID와 formerStudentIds를 이용하여 재수강생 목록을 뽑을 수 있음
       `,
+    }),
+    ApiParam({
+      name: 'id',
+      description: '수강신청과목 ID',
+      type: 'number',
+      example: 123,
     }),
     ApiBody({
       schema: {
         type: 'object',
         properties: {
-          offeringIds: {
-            type: 'array',
-            items: {
-              type: 'number',
-            },
-            description: '이전학기 수강과목들의 ID 목록',
-            example: [101, 102, 103],
+          lessonName: {
+            type: 'string',
+            description: '과목명 (이전 학기에서 동일한 과목을 찾기 위함)',
+            example: '수학',
           },
         },
-        required: ['offeringIds'],
+        required: ['lessonName'],
       },
     }),
     ApiOkResponse({
       description: '이전 수강생 ID 설정 완료',
       schema: {
-        type: 'array',
-        items: {
-          type: 'number',
-        },
-        example: [1001, 1002, 1003],
+        type: 'number',
+        description: '설정된 이전 수강생 수',
+        example: 15,
       },
     }),
     ApiErrorResponseTemplate([
@@ -212,32 +202,9 @@ export const SetFormerStudentIdsDocs = () => {
         status: StatusCodes.NOT_FOUND,
         errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
       },
-    ]),
-  );
-};
-
-//? ---------------------------------------------------------------------- ?//
-//? Create Offering Pick
-//? ---------------------------------------------------------------------- ?//
-
-export const CreateOfferingPickDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '수강신청과목 > 수강생확정 👈 생성',
-      description: `\n- 수강신청과목에 대해 수강생을 확정합니다. (선착순/추첨/이전수강생 우선 등)`,
-    }),
-    ApiOkResponseTemplate({
-      description: '수강생 확정 결과',
-      type: ResponsePickDto,
-    }),
-    ApiErrorResponseTemplate([
       {
         status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
+        errorFormatList: [HttpErrorConstants.DATABASE_QUERY_ERROR],
       },
     ]),
   );

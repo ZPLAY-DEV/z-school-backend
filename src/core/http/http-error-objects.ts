@@ -265,6 +265,11 @@ export const HttpErrorConstants = {
     message: '입력값이 허용 범위를 벗어났습니다.',
   } as HttpErrorFormat,
 
+  DATABASE_QUERY_ERROR: {
+    error: 'DATABASE_QUERY_ERROR',
+    message: 'Database Query 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
   DYNAMO_READ: {
     error: 'DYNAMO_READ',
     message: 'DynamoDB 읽기 오류가 발생하였습니다.',

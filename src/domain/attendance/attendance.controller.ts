@@ -10,8 +10,9 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AttendanceService } from 'src/domain/attendance/attendance.service';
 import { CreateAttendanceDto } from 'src/domain/attendance/dto/create-attendance.dto';
 import {
@@ -22,7 +23,16 @@ import {
   IAttendance,
   IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
+import {
+  CreateAttendanceDocs,
+  DeleteAttendanceDocs,
+  FetchAttendancesDocs,
+  GetAttendanceDetailDocs,
+  UpdateAttendanceDocs,
+} from 'src/domain/attendance/swagger/attendance-swagger.decorator';
 
+@ApiTags('✅ Attendances ( 출석 )')
+@ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('attendances')
 export class AttendanceController {
@@ -32,7 +42,7 @@ export class AttendanceController {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Attendance 생성' })
+  @CreateAttendanceDocs()
   @Post()
   async create(
     @Body() createAttendanceDto: CreateAttendanceDto,
@@ -44,7 +54,7 @@ export class AttendanceController {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Attendance 리스트' })
+  @FetchAttendancesDocs()
   @Get()
   async fetch(
     @Query('groupId') groupId: string,
@@ -92,8 +102,8 @@ export class AttendanceController {
     };
   }
 
-  @ApiOperation({ description: 'Attendance 상세보기' })
-  @Get()
+  @GetAttendanceDetailDocs()
+  @Get('detail')
   async getAttendanceById(
     @Query('groupId') groupId: string,
     @Query('date') date: string,
@@ -111,18 +121,17 @@ export class AttendanceController {
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Attendance 상태변경' })
+  @UpdateAttendanceDocs()
   @Patch()
   async update(@Body() dto: UpdateAttendanceDto): Promise<IAttendance> {
-    const { groupKey, dailyStudentKey } = dto;
-    return await this.attendancesService.update({ groupKey, dailyStudentKey });
+    return await this.attendancesService.update(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Attendance 삭제' })
+  @DeleteAttendanceDocs()
   @Delete()
   async delete(@Body() dto: AttendanceKeyDto): Promise<void> {
     await this.attendancesService.delete(dto);

@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString } from 'class-validator';
 
-export class CreateAttendanceOfSchooldayWithRangeDto {
+export class CreateDynamoRecordWithRangeDto {
   @ApiPropertyOptional({ description: 'DB의 학교ID' })
   @IsInt()
   @Type(() => Number)
@@ -24,7 +24,7 @@ export class CreateAttendanceOfSchooldayWithRangeDto {
   to: string; // "2025-08-14" 형식으로 저장
 }
 
-export class CreateAttendanceOfSchooldayWithDateDto {
+export class CreateDynamoRecordWithDateDto {
   @ApiPropertyOptional({ description: 'DB의 학교ID' })
   @IsInt()
   @Type(() => Number)

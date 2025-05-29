@@ -4,7 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { CreateAttendanceOfSchooldayWithRangeDto } from 'src/domain/schoolday/dto/create-attendance-of-schoolday.dto';
+import { CreateAttendanceOfSchooldayWithRangeDto } from 'src/domain/schoolday/dto/create-dynamo-record.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create Attendance for Schooldays (Range)

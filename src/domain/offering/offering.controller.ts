@@ -18,11 +18,10 @@ import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { OfferingService } from 'src/domain/offering/offering.service';
 import {
   CreateOfferingDocs,
-  FindImmediatelyPreviousTermIdDocs,
   GetOfferingByIdDocs,
   RemoveOfferingDocs,
   SetFormerStudentIdsDocs,
-  UpdateOfferingDocs,
+  UpdateOfferingDocs
 } from 'src/domain/offering/swagger/offering-swagger.decorator';
 
 //! 단일 Offering 엔터티 작업
@@ -55,14 +54,6 @@ export class OfferingController {
     return await this.offeringService.findById(id, ['bookings']);
   }
 
-  @FindImmediatelyPreviousTermIdDocs()
-  @Get(':id/previous-term-id')
-  async findImmediatelyPreviousTermId(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<number> {
-    return await this.offeringService.findImmediatelyPreviousTermId(id);
-  }
-
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
@@ -80,9 +71,9 @@ export class OfferingController {
   @Patch(':id/former-student-ids')
   async setFormerStudentIds(
     @Param('id', ParseIntPipe) id: number,
-    @Body('offeringIds') offeringIds: number[],
-  ): Promise<number[]> {
-    return await this.offeringService.setFormerStudentIds(id, offeringIds);
+    @Body(`lessonName`) lessonName: string,
+  ): Promise<number> {
+    return await this.offeringService.updateFormerStudentIds(id, lessonName);
   }
 
   //? ---------------------------------------------------------------------- ?//

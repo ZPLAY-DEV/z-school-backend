@@ -69,6 +69,7 @@ export class AttendanceService {
   }
 
   async findById(dto: IAttendanceKey): Promise<IAttendance> {
+    console.log(dto);
     try {
       return (await this.model.get(dto)) as IAttendance;
     } catch (error) {

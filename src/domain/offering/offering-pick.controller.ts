@@ -13,7 +13,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
 import { OfferingPickService } from 'src/domain/offering/offering-pick.service';
-import { CreateOfferingPickDocs } from 'src/domain/offering/swagger/offering-swagger.decorator';
+import { CreateOfferingPickDocs } from 'src/domain/offering/swagger/offering-pick-swagger.decorator';
 
 @ApiTags('✅ Offerings > Picks ( 수강신청과목 > 수강생확정 )')
 @ApiCommonErrorResponseTemplate()
