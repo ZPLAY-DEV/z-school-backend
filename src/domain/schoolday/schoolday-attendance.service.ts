@@ -2,7 +2,7 @@ import { BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
 import {
   CreateDynamoRecordWithDateDto,
@@ -16,6 +16,7 @@ const BATCH_SIZE = 25;
 const MAX_RETRIES = 5;
 const BASE_DELAY = 100; // ms
 const timeZone = 'Asia/Seoul';
+const tableName = `${process.env.NODE_ENV}_attendance_table`;
 
 @Injectable()
 export class SchooldayAttendanceService {
@@ -31,11 +32,15 @@ export class SchooldayAttendanceService {
   //? Create w/ date
   //? ---------------------------------------------------------------------- ?//
 
+  //! date from db is zulu time (UTC)
+  //! local time is korea time (Asia/Seoul)
+  //! Date() returns korea time (Asia/Seoul)
+  //! fromZonedTime() returns zulu time (UTC)
+
   async createWithDate(dto: CreateDynamoRecordWithDateDto): Promise<any> {
     const { schoolId, termId, date } = dto;
-
-    const startsAt = zonedTimeToUtc(`${date}T00:00:00`, timeZone);
-    const endsAt = zonedTimeToUtc(`${date}T23:59:59`, timeZone);
+    const startsAt = fromZonedTime(`${date}T00:00:00`, timeZone);
+    const endsAt = fromZonedTime(`${date}T23:59:59`, timeZone);
 
     const schooldays = await this.schooldayRepository.find({
       where: {
@@ -62,24 +67,32 @@ export class SchooldayAttendanceService {
 
     for (const schoolday of schooldays) {
       const { group, startsAt, duration, lessonId, groupId } = schoolday;
-      const { groupStudents, groupName, lesson } = group;
+      const { groupStudents: picks, groupName, lesson } = group;
       const localDate = format(
         toZonedTime(startsAt, 'Asia/Seoul'),
         'yyyy-MM-dd',
       );
-      for (const { student } of groupStudents ?? []) {
+      for (const pick of picks ?? []) {
         const groupKey = `GROUP#${groupId}`;
         const digitStudentId = getDigitStudentId(
-          student.grade,
-          student.class,
-          student.studentCode,
+          pick.student.grade,
+          pick.student.class,
+          pick.student.studentCode,
         );
         const studentId = getStudentId(
-          student.grade,
-          student.class,
-          student.studentCode,
+          pick.student.grade,
+          pick.student.class,
+          pick.student.studentCode,
         );
         const dailyStudentKey = `DATE#${localDate}#STUDENT#${digitStudentId}`;
+
+        if (
+          pick.endedOn &&
+          fromZonedTime(`${pick.endedOn}T23:59:59`, timeZone) > startsAt
+        ) {
+          continue;
+        }
+
         items.push({
           PutRequest: {
             Item: {
@@ -90,7 +103,7 @@ export class SchooldayAttendanceService {
               groupId,
               groupName: groupName ?? '반',
               studentId,
-              studentName: student.name ?? '학생',
+              studentName: pick.student.name ?? '학생',
               start: group.start,
               end: group.end,
               duration,
@@ -103,7 +116,6 @@ export class SchooldayAttendanceService {
     }
 
     let failedBatches = 0;
-    const tableName = 'development_attendance_table';
     for (let i = 0; i < items.length; i += BATCH_SIZE) {
       const batch: WriteRequest[] = items.slice(i, i + BATCH_SIZE);
       let retries = 0;
@@ -150,8 +162,9 @@ export class SchooldayAttendanceService {
 
   async createWithRange(dto: CreateDynamoRecordWithRangeDto): Promise<any> {
     const { schoolId, termId, from, to } = dto;
-    const startsAt = zonedTimeToUtc(`${from}T00:00:00`, timeZone);
-    const endsAt = zonedTimeToUtc(`${to}T23:59:59`, timeZone);
+    const startsAt = fromZonedTime(`${from}T00:00:00`, timeZone);
+    const endsAt = fromZonedTime(`${to}T23:59:59`, timeZone);
+
     const schooldays = await this.schooldayRepository.find({
       where: {
         schoolId,
@@ -177,24 +190,32 @@ export class SchooldayAttendanceService {
 
     for (const schoolday of schooldays) {
       const { group, startsAt, duration, lessonId, groupId } = schoolday;
-      const { groupStudents, groupName, lesson } = group;
+      const { groupStudents: picks, groupName, lesson } = group;
       const localDate = format(
         toZonedTime(startsAt, 'Asia/Seoul'),
         'yyyy-MM-dd',
       );
-      for (const { student } of groupStudents ?? []) {
+      for (const pick of picks ?? []) {
         const groupKey = `GROUP#${groupId}`;
         const digitStudentId = getDigitStudentId(
-          student.grade,
-          student.class,
-          student.studentCode,
+          pick.student.grade,
+          pick.student.class,
+          pick.student.studentCode,
         );
         const studentId = getStudentId(
-          student.grade,
-          student.class,
-          student.studentCode,
+          pick.student.grade,
+          pick.student.class,
+          pick.student.studentCode,
         );
         const dailyStudentKey = `DATE#${localDate}#STUDENT#${digitStudentId}`;
+
+        if (
+          pick.endedOn &&
+          fromZonedTime(`${pick.endedOn}T23:59:59`, timeZone) > startsAt
+        ) {
+          continue;
+        }
+
         items.push({
           PutRequest: {
             Item: {
@@ -205,7 +226,7 @@ export class SchooldayAttendanceService {
               groupId,
               groupName: groupName ?? '반',
               studentId,
-              studentName: student.name ?? '학생',
+              studentName: pick.student.name ?? '학생',
               start: group.start,
               end: group.end,
               duration,
@@ -218,7 +239,6 @@ export class SchooldayAttendanceService {
     }
 
     let failedBatches = 0;
-    const tableName = 'development_attendance_table';
     for (let i = 0; i < items.length; i += BATCH_SIZE) {
       const batch: WriteRequest[] = items.slice(i, i + BATCH_SIZE);
       let retries = 0;
@@ -267,7 +287,4 @@ export class SchooldayAttendanceService {
     // Exponential backoff sleep helper
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
-}
-function zonedTimeToUtc(arg0: string, timeZone: string) {
-  throw new Error('Function not implemented.');
 }
