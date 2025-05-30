@@ -15,7 +15,7 @@ import {
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
 import {
   CreateAttendanceOfSchooldayWithDateDocs,
-  CreateAttendanceOfSchooldayWithRangeDocs,
+  CreateAttendanceOfSchooldayWithPeriodDocs,
 } from 'src/domain/schoolday/swagger/schoolday-attendance-swagger.decorator';
 
 @ApiTags('✅ Schooldays > Attendance ( 수업일 > 출석부 생성 )')
@@ -39,8 +39,8 @@ export class SchooldayAttendanceController {
     return await this.schooldayAttendanceService.createWithDate(dto);
   }
 
-  @CreateAttendanceOfSchooldayWithRangeDocs()
-  @Post('attendances/range')
+  @CreateAttendanceOfSchooldayWithPeriodDocs()
+  @Post('attendances/period')
   async createWithPeriod(
     @Body() dto: CreateDynamoRecordWithRangeDto,
   ): Promise<CreateAttendanceResultDto> {

@@ -114,7 +114,7 @@ export const CreateAttendanceOfSchooldayWithDateDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? Create Attendance for Schooldays (Range)
 //? ---------------------------------------------------------------------- ?//
-export const CreateAttendanceOfSchooldayWithRangeDocs = () => {
+export const CreateAttendanceOfSchooldayWithPeriodDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '다이나모 출석부 📅 지정한 기간동안에 대한 모든과목 출석부 생성',
