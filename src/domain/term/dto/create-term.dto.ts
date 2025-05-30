@@ -102,7 +102,8 @@ export class CreateTermDto {
 
   @ApiProperty({ description: '시간 중복 허용 여부', default: false })
   @IsBoolean()
-  allowTimeOverlap: boolean;
+  @IsOptional()
+  allowTimeOverlap?: boolean;
 
   @ApiProperty({
     description:
@@ -110,5 +111,6 @@ export class CreateTermDto {
     default: PickRule.RANDOM,
   })
   @IsEnum(PickRule)
-  defaultPickRule: PickRule;
+  @IsOptional()
+  defaultPickRule?: PickRule;
 }
