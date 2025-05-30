@@ -12,7 +12,7 @@ import { IAttendance } from 'src/domain/attendance/entities/attendance.interface
 import { LessonAttendanceService } from 'src/domain/lesson/lesson-attendance.service';
 import { FindAttendanceByDateDocs } from 'src/domain/lesson/swagger/lesson-attendance-swagger.decorator';
 
-@ApiTags('✅ Lessons > Attendance ( 과목 > 출석 )')
+@ApiTags('✅ Lessons > Attendance ( 과목 > 출석부 조회 )')
 @ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('lessons')

@@ -3,7 +3,6 @@ import { SortOrder } from 'dynamoose/dist/General';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateAttendanceDto } from 'src/domain/attendance/dto/create-attendance.dto';
-import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 import {
   IAttendance,
   IAttendanceKey,
@@ -20,8 +19,9 @@ export class AttendanceService {
 
   //? notice that even if you provide createdAt and updatedAt in the payload
   //? dynamodb will ignore them and record the timestamps with its own value.
+  //? This method works as upsert - if the item exists, it will be overwritten.
   //?
-  async create(dto: CreateAttendanceDto): Promise<IAttendance> {
+  async upsert(dto: CreateAttendanceDto): Promise<IAttendance> {
     try {
       const attendance = await this.model.create({
         ...dto,
@@ -75,19 +75,6 @@ export class AttendanceService {
     } catch (error) {
       console.error(`[dynamodb] error`, error);
       throw new BadRequestException(HttpErrorConstants.DYNAMO_READ);
-    }
-  }
-
-  async update(dto: UpdateAttendanceDto): Promise<IAttendance> {
-    const { groupKey, dailyStudentKey, ...rest } = dto;
-    const key = { groupKey, dailyStudentKey };
-    try {
-      return (await this.model.update(key, {
-        ...rest,
-      })) as IAttendance;
-    } catch (error) {
-      console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(HttpErrorConstants.DYNAMO_WRITE);
     }
   }
 

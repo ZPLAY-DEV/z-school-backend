@@ -5,7 +5,6 @@ import {
   Controller,
   Delete,
   Get,
-  Patch,
   Post,
   Query,
   UseInterceptors,
@@ -15,10 +14,7 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AttendanceService } from 'src/domain/attendance/attendance.service';
 import { CreateAttendanceDto } from 'src/domain/attendance/dto/create-attendance.dto';
-import {
-  AttendanceKeyDto,
-  UpdateAttendanceDto,
-} from 'src/domain/attendance/dto/update-attendance.dto';
+import { AttendanceKeyDto } from 'src/domain/attendance/dto/update-attendance.dto';
 import {
   IAttendance,
   IAttendanceKey,
@@ -28,7 +24,6 @@ import {
   DeleteAttendanceDocs,
   FetchAttendancesDocs,
   GetAttendanceDetailDocs,
-  UpdateAttendanceDocs,
 } from 'src/domain/attendance/swagger/attendance-swagger.decorator';
 
 @ApiTags('✅ Attendances ( 출석 )')
@@ -39,15 +34,15 @@ export class AttendanceController {
   constructor(private readonly attendancesService: AttendanceService) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? CREATE
+  //? CREATE / UPDATE (Upsert - DynamoDB Style)
   //? ---------------------------------------------------------------------- ?//
 
   @CreateAttendanceDocs()
   @Post()
-  async create(
+  async upsert(
     @Body() createAttendanceDto: CreateAttendanceDto,
   ): Promise<IAttendance> {
-    return await this.attendancesService.create(createAttendanceDto);
+    return await this.attendancesService.upsert(createAttendanceDto);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -115,16 +110,6 @@ export class AttendanceController {
       groupKey,
       dailyStudentKey,
     });
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? UPDATE
-  //? ---------------------------------------------------------------------- ?//
-
-  @UpdateAttendanceDocs()
-  @Patch()
-  async update(@Body() dto: UpdateAttendanceDto): Promise<IAttendance> {
-    return await this.attendancesService.update(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//

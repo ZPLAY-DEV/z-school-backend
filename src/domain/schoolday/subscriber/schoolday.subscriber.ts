@@ -1,11 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
-import { AttendanceService } from 'src/domain/attendance/attendance.service';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { getDigitStudentId, getStudentId } from 'src/helpers/student';
+import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
 import { DataSource, EntitySubscriberInterface, UpdateEvent } from 'typeorm';
+import { DeleteRequest, WriteRequest } from '../types/attendance.types';
+import {
+  calculateTtl,
+  formatToLocalDateString,
+  generateDailyStudentKey,
+  generateGroupKey,
+  generateStudentId,
+} from '../utils/attendance.utils';
 
 @Injectable()
 export class SchooldaySubscriber
@@ -15,7 +20,7 @@ export class SchooldaySubscriber
 
   constructor(
     dataSource: DataSource,
-    private readonly attendanceService: AttendanceService,
+    private readonly schooldayAttendanceService: SchooldayAttendanceService,
   ) {
     dataSource.subscribers.push(this);
   }
@@ -24,16 +29,22 @@ export class SchooldaySubscriber
     return Schoolday;
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? 1. DynamoDB throttling 대응
+  //? 2. Subscriber 중복 실행 방지.
+  //? 3. DynamoDB batch 실행만 5번 retry
+  //? 4. retry 시 exponential backoff 대응
+  //? 5. 강화된 에러 처리 및 타입 안전성
+  //? ---------------------------------------------------------------------- ?//
+
   async afterUpdate(event: UpdateEvent<Schoolday>) {
     const schoolday = event.entity as Schoolday;
     const prev = event.databaseEntity;
 
-    // 1. startsAt 또는 endsAt이 변경되었는지 확인
+    // 1. startsAt 또는 endsAt 이 변경되었는지 확인
     const startChanged = schoolday?.startsAt !== prev?.startsAt;
     const endChanged = schoolday?.endsAt !== prev?.endsAt;
     if (!(startChanged || endChanged)) return;
-
-    this.logger.log(`Schoolday time changed for ID: ${schoolday.id}`);
 
     try {
       // 2. 관련된 그룹과 학생 정보 조회
@@ -57,70 +68,64 @@ export class SchooldaySubscriber
       }
 
       const { group } = schooldayWithRelations;
-      const { groupStudents, lesson } = group;
+      const { groupStudents: picks, lesson } = group;
 
-      // 3. 이전 날짜와 새 날짜 계산
-      const prevLocalDate = format(
-        toZonedTime(prev.startsAt, 'Asia/Seoul'),
-        'yyyy-MM-dd',
-      );
-      const newLocalDate = format(
-        toZonedTime(schoolday.startsAt, 'Asia/Seoul'),
-        'yyyy-MM-dd',
-      );
-
-      const groupKey = `GROUP#${group.id}`;
-
-      // 4. 기존 출석 기록 삭제 (날짜가 변경된 경우 또는 시간이 변경된 경우)
-      if (groupStudents && groupStudents.length > 0) {
-        for (const { student } of groupStudents) {
-          const digitStudentId = getDigitStudentId(
-            student.grade,
-            student.class,
-            student.studentCode,
-          );
-          const prevDailyStudentKey = `DATE#${prevLocalDate}#STUDENT#${digitStudentId}`;
-
-          try {
-            // 기존 출석 기록 삭제
-            await this.attendanceService.delete({
-              groupKey,
-              dailyStudentKey: prevDailyStudentKey,
-            });
-            this.logger.log(
-              `Deleted attendance record: ${groupKey}/${prevDailyStudentKey}`,
-            );
-          } catch (error) {
-            // 기록이 없을 수도 있으므로 에러는 로그만 남김
-            this.logger.warn(
-              `Failed to delete attendance record: ${groupKey}/${prevDailyStudentKey}`,
-              error,
-            );
-          }
-        }
+      if (!picks || picks.length === 0) {
+        this.logger.warn(`No students found for schoolday ID: ${schoolday.id}`);
+        return;
       }
 
-      // 5. 새로운 출석 기록 생성
-      if (groupStudents && groupStudents.length > 0) {
-        const expires =
-          Math.floor(new Date(schoolday.startsAt).getTime() / 1000) +
-          60 * 60 * 24 * 365; // 1년 후 만료
+      // 3. 이전 날짜와 새 날짜 계산
+      const prevLocalDateStr = formatToLocalDateString(prev.startsAt);
+      const newLocalDateStr = formatToLocalDateString(schoolday.startsAt);
 
-        for (const { student } of groupStudents) {
-          const digitStudentId = getDigitStudentId(
-            student.grade,
-            student.class,
-            student.studentCode,
-          );
-          const studentId = getStudentId(
-            student.grade,
-            student.class,
-            student.studentCode,
-          );
-          const newDailyStudentKey = `DATE#${newLocalDate}#STUDENT#${digitStudentId}`;
+      // 날짜가 실제로 변경되지 않았다면 처리하지 않음
+      if (prevLocalDateStr === newLocalDateStr) {
+        this.logger.debug(`Date unchanged for schoolday ID: ${schoolday.id}`);
+        return;
+      }
 
-          try {
-            await this.attendanceService.create({
+      const groupKey = generateGroupKey(group.id);
+
+      // 4. 배치 작업을 위한 데이터 준비
+      const batchRequests: (WriteRequest | DeleteRequest)[] = [];
+
+      // 4a. 기존 출석 기록 삭제를 위한 delete requests 생성
+      const dailyStudentKeysToDelete = picks.map(({ student }) => {
+        return generateDailyStudentKey(
+          prevLocalDateStr,
+          student.grade,
+          student.class,
+          student.studentCode,
+        );
+      });
+
+      const deleteRequests =
+        this.schooldayAttendanceService.createDeleteRequests(
+          groupKey,
+          dailyStudentKeysToDelete,
+        );
+      batchRequests.push(...deleteRequests);
+
+      // 4b. 새로운 출석 기록 생성을 위한 put requests 생성
+      const expires = calculateTtl(schoolday.startsAt);
+
+      const putRequests: WriteRequest[] = picks.map((pick) => {
+        const newDailyStudentKey = generateDailyStudentKey(
+          newLocalDateStr,
+          pick.student.grade,
+          pick.student.class,
+          pick.student.studentCode,
+        );
+        const studentId = generateStudentId(
+          pick.student.grade,
+          pick.student.class,
+          pick.student.studentCode,
+        );
+
+        return {
+          PutRequest: {
+            Item: this.schooldayAttendanceService.buildAttendanceItem({
               groupKey,
               dailyStudentKey: newDailyStudentKey,
               lessonId: schoolday.lessonId,
@@ -128,33 +133,44 @@ export class SchooldaySubscriber
               groupId: group.id,
               groupName: group.groupName ?? '반',
               studentId,
-              studentName: student.name ?? '학생',
+              studentName: pick.student.name ?? '학생',
               start: group.start,
               end: group.end,
               duration: schoolday.duration,
               status: AttendanceStatus.PENDING,
               expires,
-            });
-            this.logger.log(
-              `Created new attendance record: ${groupKey}/${newDailyStudentKey}`,
-            );
-          } catch (error) {
-            this.logger.error(
-              `Failed to create attendance record: ${groupKey}/${newDailyStudentKey}`,
-              error,
-            );
-          }
+            }),
+          },
+        };
+      });
+
+      batchRequests.push(...putRequests);
+
+      // 5. 배치 처리 실행
+      if (batchRequests.length > 0) {
+        const result =
+          await this.schooldayAttendanceService.batchWriteAttendanceItems(
+            batchRequests,
+          );
+
+        this.logger.log(
+          `Successfully processed attendance records for schoolday ID: ${schoolday.id}. ` +
+            `Total: ${result.total}, Failed batches: ${result.failedBatches}`,
+        );
+
+        // 실패한 배치가 있다면 경고 로그 출력
+        if (result.failedBatches > 0) {
+          this.logger.warn(
+            `Some batches failed for schoolday ID: ${schoolday.id}. Failed: ${result.failedBatches}`,
+          );
         }
       }
-
-      this.logger.log(
-        `Successfully updated attendance records for schoolday ID: ${schoolday.id}`,
-      );
     } catch (error) {
       this.logger.error(
         `Error updating attendance records for schoolday ID: ${schoolday.id}`,
         error,
       );
+      // 중요한 에러의 경우 추가 알림 로직을 여기에 추가할 수 있음
     }
   }
 }

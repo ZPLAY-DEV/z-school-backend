@@ -11,7 +11,7 @@ import { IAttendance } from 'src/domain/attendance/entities/attendance.interface
 import { GroupAttendanceService } from 'src/domain/group/group-attendance.service';
 import { FindAttendanceByDateDocs } from 'src/domain/group/swagger/group-attendance-swagger.decorator';
 
-@ApiTags('✅ Groups > Attendance ( 반 > 출석 )')
+@ApiTags('✅ Groups > Attendance ( 반 > 출석부 조회 )')
 @ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('groups')

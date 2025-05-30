@@ -21,7 +21,7 @@ import {
   GetOfferingByIdDocs,
   RemoveOfferingDocs,
   SetFormerStudentIdsDocs,
-  UpdateOfferingDocs
+  UpdateOfferingDocs,
 } from 'src/domain/offering/swagger/offering-swagger.decorator';
 
 //! 단일 Offering 엔터티 작업

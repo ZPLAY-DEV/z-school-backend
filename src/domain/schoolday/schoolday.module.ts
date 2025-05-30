@@ -24,5 +24,6 @@ import { DynamoModule } from 'src/services/aws/dynamo.module';
     SchooldaySubscriber,
   ],
   controllers: [SchooldayController, SchooldayAttendanceController],
+  exports: [SchooldayAttendanceService],
 })
 export class SchooldayModule {}

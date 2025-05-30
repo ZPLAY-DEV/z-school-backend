@@ -41,3 +41,17 @@ export class CreateDynamoRecordWithDateDto {
   @IsString()
   date: string; // "2025-08-14" 형식으로 저장
 }
+
+export class CreateAttendanceResultDto {
+  @ApiProperty({
+    description: '생성된 총 출석 기록 수',
+    example: 150,
+  })
+  total: number;
+
+  @ApiProperty({
+    description: '실패한 배치 작업 수',
+    example: 0,
+  })
+  failedBatches: number;
+}
