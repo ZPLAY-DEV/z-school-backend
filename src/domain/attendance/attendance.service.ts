@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { SortOrder } from 'dynamoose/dist/General';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { CreateAttendanceDto } from 'src/domain/attendance/dto/create-attendance.dto';
+import { UpsertAttendanceDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
   IAttendance,
   IAttendanceKey,
@@ -21,14 +21,10 @@ export class AttendanceService {
   //? dynamodb will ignore them and record the timestamps with its own value.
   //? This method works as upsert - if the item exists, it will be overwritten.
   //?
-  async upsert(dto: CreateAttendanceDto): Promise<IAttendance> {
+  async upsert(dto: UpsertAttendanceDto): Promise<IAttendance> {
     try {
-      const attendance = await this.model.create({
-        ...dto,
-        parentNote: dto.parentNote ?? '',
-        schoolNote: dto.schoolNote ?? '',
-      });
-      return attendance as IAttendance;
+      const attendance = await this.model.create(dto as IAttendance);
+      return attendance as unknown as IAttendance;
     } catch (error) {
       console.error(`[dynamodb] error`, error);
       throw new BadRequestException(HttpErrorConstants.DYNAMO_WRITE);

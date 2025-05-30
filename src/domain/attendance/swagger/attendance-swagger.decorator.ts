@@ -7,34 +7,66 @@ import {
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
-import { CreateAttendanceDto } from '../dto/create-attendance.dto';
 import {
   AttendanceKeyDto,
-  UpdateAttendanceDto,
-} from '../dto/update-attendance.dto';
+  UpsertAttendanceDto,
+} from 'src/domain/attendance/dto/upsert-attendance.dto';
 
 //? ---------------------------------------------------------------------- ?//
-//? Create Attendance
+//? Create/Update Attendance
 //? ---------------------------------------------------------------------- ?//
 
-export const CreateAttendanceDocs = () => {
+export const UpsertAttendanceDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '출석 👈 생성',
+      summary: '출석 👈 생성/수정 (Upsert)',
       description: `
-      - 출석 기록 생성
+      - 출석 기록 생성 또는 수정 (Upsert)
+      - 존재하지 않으면 새로 생성, 존재하면 덮어쓰기
       - DynamoDB에 저장되며 groupKey(파티션키), dailyStudentKey(정렬키) 구조
       `,
     }),
     ApiBody({
-      type: CreateAttendanceDto,
+      type: UpsertAttendanceDto,
     }),
-    ApiCreatedResponseTemplate({
-      description: '출석 기록 생성 완료',
-      type: Object, // IAttendance interface는 swagger에서 직접 사용 불가
+    ApiOkResponse({
+      description: '출석 기록 생성/수정 완료',
+      schema: {
+        type: 'object',
+        properties: {
+          groupKey: { type: 'string', example: 'GROUP#50' },
+          dailyStudentKey: {
+            type: 'string',
+            example: 'DATE#2025-05-21#STUDENT#010110',
+          },
+          lessonId: { type: 'number', example: 123 },
+          lessonName: { type: 'string', example: '수학' },
+          groupId: { type: 'number', example: 50 },
+          groupName: { type: 'string', example: '1학년 1반' },
+          studentId: { type: 'string', example: '1학년1반-10' },
+          studentName: { type: 'string', example: '김철수' },
+          start: { type: 'string', example: '14:00' },
+          end: { type: 'string', example: '14:40' },
+          duration: { type: 'number', example: 40 },
+          status: {
+            type: 'string',
+            enum: [
+              'PENDING',
+              'PRESENT',
+              'ABSENT',
+              'LATE',
+              'REPORTED_ABSENT',
+              'REPORTED_LATE',
+            ],
+          },
+          parentNote: { type: 'string', nullable: true },
+          schoolNote: { type: 'string', nullable: true },
+          isRead: { type: 'boolean', nullable: true },
+          createdAt: { type: 'number', nullable: true },
+          updatedAt: { type: 'number', nullable: true },
+        },
+      },
     }),
     ApiErrorResponseTemplate([
       {
@@ -143,73 +175,50 @@ export const GetAttendanceDetailDocs = () => {
       name: 'studentId',
       type: String,
       description: '학생 ID',
-      example: '010456',
+      example: '1학년1반-10',
     }),
-    ApiOkResponseTemplate({
+    ApiOkResponse({
       description: '출석 상세 조회 완료',
-      type: Object, // IAttendance interface
+      schema: {
+        type: 'object',
+        properties: {
+          groupKey: { type: 'string', example: 'GROUP#50' },
+          dailyStudentKey: {
+            type: 'string',
+            example: 'DATE#2025-05-21#STUDENT#010110',
+          },
+          lessonId: { type: 'number', example: 123 },
+          lessonName: { type: 'string', example: '수학' },
+          groupId: { type: 'number', example: 50 },
+          groupName: { type: 'string', example: '1학년 1반' },
+          studentId: { type: 'string', example: '1학년1반-10' },
+          studentName: { type: 'string', example: '김철수' },
+          start: { type: 'string', example: '14:00' },
+          end: { type: 'string', example: '14:40' },
+          duration: { type: 'number', example: 40 },
+          status: {
+            type: 'string',
+            enum: [
+              'PENDING',
+              'PRESENT',
+              'ABSENT',
+              'LATE',
+              'REPORTED_ABSENT',
+              'REPORTED_LATE',
+            ],
+          },
+          parentNote: { type: 'string', nullable: true },
+          schoolNote: { type: 'string', nullable: true },
+          isRead: { type: 'boolean', nullable: true },
+          createdAt: { type: 'number', nullable: true },
+          updatedAt: { type: 'number', nullable: true },
+        },
+      },
     }),
     ApiErrorResponseTemplate([
       {
         status: StatusCodes.BAD_REQUEST,
         errorFormatList: [HttpErrorConstants.DYNAMO_READ],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
-      },
-    ]),
-  );
-};
-
-//? ---------------------------------------------------------------------- ?//
-//? Update Attendance
-//? ---------------------------------------------------------------------- ?//
-
-export const UpdateAttendanceDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '출석 👈 상태변경',
-      description: `
-      - 출석 기록 업데이트
-      - groupKey, dailyStudentKey는 필수 (수정 대상 식별)
-      - 나머지 필드는 선택적으로 업데이트 가능
-      `,
-    }),
-    ApiBody({
-      type: UpdateAttendanceDto,
-      examples: {
-        example1: {
-          summary: '출석 상태 변경',
-          value: {
-            groupKey: 'GROUP#50',
-            dailyStudentKey: 'DATE#2025-05-21#STUDENT#010456',
-            status: 'PRESENT',
-            isRead: true,
-          },
-        },
-        example2: {
-          summary: '메모 추가',
-          value: {
-            groupKey: 'GROUP#50',
-            dailyStudentKey: 'DATE#2025-05-21#STUDENT#010456',
-            parentNote: '감기로 인한 지각',
-            schoolNote: '확인 완료',
-          },
-        },
-      },
-    }),
-    ApiOkResponseTemplate({
-      description: '출석 기록 업데이트 완료',
-      type: Object, // IAttendance interface
-    }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [
-          HttpErrorConstants.VALIDATE_ERROR,
-          HttpErrorConstants.DYNAMO_WRITE,
-        ],
       },
       {
         status: StatusCodes.NOT_FOUND,
@@ -239,22 +248,13 @@ export const DeleteAttendanceDocs = () => {
         example1: {
           value: {
             groupKey: 'GROUP#50',
-            dailyStudentKey: 'DATE#2025-05-21#STUDENT#010456',
+            dailyStudentKey: 'DATE#2025-05-21#STUDENT#010110',
           },
         },
       },
     }),
     ApiOkResponse({
       description: '출석 기록 삭제 완료',
-      schema: {
-        type: 'object',
-        properties: {
-          message: {
-            type: 'string',
-            example: 'Attendance record deleted successfully',
-          },
-        },
-      },
     }),
     ApiErrorResponseTemplate([
       {

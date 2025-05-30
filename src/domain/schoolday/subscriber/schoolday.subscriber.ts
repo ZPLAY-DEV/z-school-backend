@@ -1,16 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
-import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
-import { DataSource, EntitySubscriberInterface, UpdateEvent } from 'typeorm';
-import { DeleteRequest, WriteRequest } from '../types/attendance.types';
 import {
+  DeleteRequest,
+  WriteRequest,
+} from 'src/domain/attendance/types/attendance.types';
+import {
+  buildAttendanceItem,
   calculateTtl,
   formatToLocalDateString,
   generateDailyStudentKey,
   generateGroupKey,
   generateStudentId,
-} from '../utils/attendance.utils';
+} from 'src/domain/attendance/utils/attendance.utils';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
+import { DataSource, EntitySubscriberInterface, UpdateEvent } from 'typeorm';
 
 @Injectable()
 export class SchooldaySubscriber
@@ -125,7 +129,7 @@ export class SchooldaySubscriber
 
         return {
           PutRequest: {
-            Item: this.schooldayAttendanceService.buildAttendanceItem({
+            Item: buildAttendanceItem({
               groupKey,
               dailyStudentKey: newDailyStudentKey,
               lessonId: schoolday.lessonId,

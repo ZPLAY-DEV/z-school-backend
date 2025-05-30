@@ -4,25 +4,25 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { fromZonedTime } from 'date-fns-tz';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
 import {
-  CreateAttendanceResultDto,
-  CreateDynamoRecordWithDateDto,
-  CreateDynamoRecordWithRangeDto,
-} from 'src/domain/schoolday/dto/create-dynamo-record.dto';
-import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import {
   ATTENDANCE_CONSTANTS,
-  AttendanceItem,
   AttendanceRecordParams,
   DeleteRequest,
   WriteRequest,
-} from 'src/domain/schoolday/types/attendance.types';
+} from 'src/domain/attendance/types/attendance.types';
 import {
+  buildAttendanceItem,
   calculateTtl,
   formatToLocalDateString,
   generateDailyStudentKey,
   generateGroupKey,
   generateStudentId,
-} from 'src/domain/schoolday/utils/attendance.utils';
+} from 'src/domain/attendance/utils/attendance.utils';
+import {
+  CreateAttendanceResultDto,
+  CreateDynamoRecordWithDateDto,
+  CreateDynamoRecordWithRangeDto,
+} from 'src/domain/schoolday/dto/create-dynamo-record.dto';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { DynamoService } from 'src/services/aws/dynamo.service';
 import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 
@@ -176,22 +176,9 @@ export class SchooldayAttendanceService {
   ): WriteRequest[] {
     return attendanceItems.map((item) => ({
       PutRequest: {
-        Item: this.buildAttendanceItem(item),
+        Item: buildAttendanceItem(item),
       },
     }));
-  }
-
-  /**
-   * Builds DynamoDB item by filtering out undefined values (NoSQL best practice)
-   */
-  public buildAttendanceItem(item: AttendanceRecordParams): AttendanceItem {
-    const result: Partial<AttendanceItem> = {};
-    for (const [key, value] of Object.entries(item)) {
-      if (value !== undefined) {
-        result[key as keyof AttendanceItem] = value;
-      }
-    }
-    return result as AttendanceItem;
   }
 
   // ------------------------------------------------------------------------ //
@@ -267,7 +254,7 @@ export class SchooldayAttendanceService {
 
         items.push({
           PutRequest: {
-            Item: this.buildAttendanceItem({
+            Item: buildAttendanceItem({
               groupKey,
               dailyStudentKey,
               lessonId,

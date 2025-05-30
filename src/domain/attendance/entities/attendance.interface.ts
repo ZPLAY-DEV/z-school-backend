@@ -4,16 +4,16 @@ export interface IAttendanceKey {
 }
 
 export interface IAttendance extends IAttendanceKey {
-  lessonId: number;
-  lessonName: string;
-  groupId: number;
-  groupName: string;
-  studentId: string; // e.g. "1학년1반-10"
-  studentName: string;
-  start: string; // e.g. "14:00"
-  end: string; // e.g. "14:40"
-  duration: number; // e.g. 40
-  status:
+  lessonId?: number;
+  lessonName?: string;
+  groupId?: number;
+  groupName?: string;
+  studentId?: string; // e.g. "1학년1반-10"
+  studentName?: string;
+  start?: string; // e.g. "14:00"
+  end?: string; // e.g. "14:40"
+  duration?: number; // e.g. 40
+  status?:
     | 'PENDING'
     | 'PRESENT'
     | 'ABSENT'
@@ -22,7 +22,5 @@ export interface IAttendance extends IAttendanceKey {
     | 'REPORTED_LATE';
   parentNote?: string;
   schoolNote?: string;
-  createdAt?: number;
-  updatedAt?: number;
   isRead?: boolean;
 }

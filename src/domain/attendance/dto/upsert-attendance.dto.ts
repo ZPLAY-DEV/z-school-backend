@@ -17,3 +17,16 @@ export class UpsertAttendanceDto extends OptionalFields {
   @IsString()
   dailyStudentKey: string;
 }
+
+export class AttendanceKeyDto {
+  @ApiProperty({ description: '🈵 groupKey (partition key, e.g. "GROUP#1")' })
+  @IsString()
+  groupKey: string;
+
+  @ApiProperty({
+    description:
+      '🈵 dailyStudentKey (sort key, e.g. "DATE#2025-05-01#STUDENT#1학년1반-10")',
+  })
+  @IsString()
+  dailyStudentKey: string;
+}
