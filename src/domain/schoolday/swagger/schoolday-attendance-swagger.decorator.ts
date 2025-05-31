@@ -93,7 +93,8 @@ export const CreateAttendanceOfSchooldayWithDateDocs = () => {
         status: StatusCodes.BAD_REQUEST,
         errorFormatList: [
           HttpErrorConstants.VALIDATE_ERROR,
-          HttpErrorConstants.DYNAMO_WRITE,
+          HttpErrorConstants.DYNAMO_CREATE,
+          HttpErrorConstants.DYNAMO_UPDATE,
         ],
       },
       {
@@ -216,7 +217,8 @@ export const CreateAttendanceOfSchooldayWithPeriodDocs = () => {
         status: StatusCodes.BAD_REQUEST,
         errorFormatList: [
           HttpErrorConstants.VALIDATE_ERROR,
-          HttpErrorConstants.DYNAMO_WRITE,
+          HttpErrorConstants.DYNAMO_CREATE,
+          HttpErrorConstants.DYNAMO_UPDATE,
         ],
       },
       {

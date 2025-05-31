@@ -22,12 +22,46 @@ export class AttendanceService {
   //? This method works as upsert - if the item exists, it will be overwritten.
   //?
   async upsert(dto: UpsertAttendanceDto): Promise<IAttendance> {
+    const { groupKey, dailyStudentKey, ...rest } = dto;
+    const itemKey = {
+      groupKey,
+      dailyStudentKey,
+    };
+    const itemDto = {
+      ...rest,
+    };
+
+    // intentionally using exception-driven control flow
     try {
-      const attendance = await this.model.create(dto as IAttendance);
-      return attendance as unknown as IAttendance;
+      const result = await this.model.create({
+        ...itemKey,
+        ...itemDto,
+      });
+      console.log(
+        '✅ created new attendance:',
+        JSON.stringify(result, null, 2),
+      );
+      return result as unknown as IAttendance;
     } catch (error) {
-      console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(HttpErrorConstants.DYNAMO_WRITE);
+      if (
+        error.name === 'ConditionalCheckFailedException' ||
+        error.code === 'ConditionalCheckFailedException'
+      ) {
+        try {
+          const result = await this.model.update(itemKey, itemDto);
+          console.log(
+            '✅ updated existing attendance:',
+            JSON.stringify(result, null, 2),
+          );
+          return result as unknown as IAttendance;
+        } catch (updateError) {
+          console.error(`[dynamodb] update error`, updateError);
+          throw new BadRequestException(HttpErrorConstants.DYNAMO_UPDATE);
+        }
+      } else {
+        console.error(`[dynamodb] error`, error);
+        throw new BadRequestException(HttpErrorConstants.DYNAMO_CREATE);
+      }
     }
   }
 

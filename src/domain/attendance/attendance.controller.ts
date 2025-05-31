@@ -5,6 +5,7 @@ import {
   Controller,
   Delete,
   Get,
+  ParseIntPipe,
   Post,
   Query,
   UseInterceptors,
@@ -28,6 +29,7 @@ import {
   GetAttendanceDetailDocs,
   UpsertAttendanceDocs,
 } from 'src/domain/attendance/swagger/attendance-swagger.decorator';
+import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 
 @ApiTags('✅ Attendances ( 출석 )')
 @ApiCommonErrorResponseTemplate()
@@ -53,15 +55,13 @@ export class AttendanceController {
   @FetchAttendancesDocs()
   @Get()
   async fetch(
-    @Query('groupId') groupId: string,
+    @Query('groupId', ParseIntPipe) groupId: number,
     @Query('cursor') cursor?: string,
   ): Promise<any> {
     if (!groupId) {
       throw new BadRequestException(HttpErrorConstants.INVALID_QUERY_PARAMS);
     }
-
-    // groupId를 groupKey로 변환 (PREFIX 추가)
-    const groupKey = `GROUP#${groupId}`;
+    const groupKey = generateGroupKey(groupId);
 
     // cursor를 lastKey로 디코딩
     let lastKey: IAttendanceKey | undefined = undefined;

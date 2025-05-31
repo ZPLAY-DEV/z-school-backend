@@ -73,7 +73,8 @@ export const UpsertAttendanceDocs = () => {
         status: StatusCodes.BAD_REQUEST,
         errorFormatList: [
           HttpErrorConstants.VALIDATE_ERROR,
-          HttpErrorConstants.DYNAMO_WRITE,
+          HttpErrorConstants.DYNAMO_CREATE,
+          HttpErrorConstants.DYNAMO_UPDATE,
         ],
       },
     ]),

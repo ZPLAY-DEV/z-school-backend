@@ -62,3 +62,79 @@ export const FindAttendanceByDateDocs = () => {
     ]),
   );
 };
+
+//? ---------------------------------------------------------------------- ?//
+//? Upsert Attendance
+//? ---------------------------------------------------------------------- ?//
+export const UpsertAttendanceDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '출석 정보 👈 등록/수정',
+      description: `
+      - 특정 반의 특정 날짜에 대한 학생의 출석 정보를 등록하거나 수정합니다.
+      - 기존 출석 정보가 있으면 업데이트하고, 없으면 새로 생성합니다.
+      - DynamoDB를 사용하여 실시간으로 출석 정보를 저장합니다.
+      
+      ### 매개변수:
+      - \`groupId\`: 반의 ID (숫자)
+      - \`date\`: 출석 날짜 (YYYY-MM-DD 형식)
+      - \`studentId\`: 학생의 ID (숫자)
+      
+      ### 요청 본문:
+      - 출석 상태 및 관련 정보를 포함한 DTO
+      
+      ### 출석 상태:
+      - \`PENDING\`: 대기 중
+      - \`PRESENT\`: 출석
+      - \`ABSENT\`: 결석
+      - \`LATE\`: 지각
+      - \`REPORTED_ABSENT\`: 사전 결석 신고
+      - \`REPORTED_LATE\`: 사전 지각 신고
+      
+      ### 응답 데이터:
+      - 등록/수정된 출석 정보 객체
+      - 학생 정보, 수업 정보, 출석 상태가 모두 포함됩니다.
+      
+      ### 주의사항:
+      - 해당 날짜에 수업이 없는 경우 오류가 발생합니다.
+      - 반과 학생이 존재하지 않는 경우 오류가 발생합니다.
+      `,
+    }),
+    ApiParam({
+      name: 'groupId',
+      type: 'number',
+      description: '반 ID',
+      example: 123,
+    }),
+    ApiParam({
+      name: 'date',
+      type: 'string',
+      description: '출석 날짜 (YYYY-MM-DD)',
+      example: '2025-01-15',
+    }),
+    ApiParam({
+      name: 'studentId',
+      type: 'number',
+      description: '학생 ID',
+      example: 456,
+    }),
+    ApiOkResponseTemplate({
+      description: '출석 정보 등록/수정 성공',
+      type: Object,
+      isArray: false,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
+      },
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [
+          HttpErrorConstants.NOT_FOUND_ENTITY,
+          HttpErrorConstants.NO_CLASS_DAY,
+        ],
+      },
+    ]),
+  );
+};

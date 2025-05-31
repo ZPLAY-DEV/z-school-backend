@@ -8,7 +8,7 @@ export interface IAttendance extends IAttendanceKey {
   lessonName?: string;
   groupId?: number;
   groupName?: string;
-  studentId?: string; // e.g. "1학년1반-10"
+  studentId?: number;
   studentName?: string;
   start?: string; // e.g. "14:00"
   end?: string; // e.g. "14:40"
@@ -23,4 +23,5 @@ export interface IAttendance extends IAttendanceKey {
   parentNote?: string;
   schoolNote?: string;
   isRead?: boolean;
+  expires?: number;
 }
