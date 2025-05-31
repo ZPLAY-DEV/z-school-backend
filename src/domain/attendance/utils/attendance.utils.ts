@@ -3,9 +3,7 @@ import { toZonedTime } from 'date-fns-tz';
 import {
   ATTENDANCE_CONSTANTS,
   AttendanceItem,
-  AttendanceRecordParams,
 } from 'src/domain/attendance/types/attendance.types';
-import { getDigitStudentId, getStudentId } from 'src/helpers/student';
 
 /**
  * Convert Date to local date string in Korean timezone
@@ -29,23 +27,14 @@ export function generateGroupKey(groupId: number): string {
  */
 export function generateDailyStudentKey(
   localDateStr: string,
+  studentId: number,
   grade: string,
-  studentClass: string | null,
-  studentCode: number | null,
+  klass: string,
+  studentCode: number,
 ): string {
-  const digitStudentId = getDigitStudentId(grade, studentClass, studentCode);
-  return `DATE#${localDateStr}#STUDENT#${digitStudentId}`;
-}
-
-/**
- * Generate student ID string
- */
-export function generateStudentId(
-  grade: string,
-  studentClass: string | null,
-  studentCode: number | null,
-): string {
-  return getStudentId(grade, studentClass, studentCode);
+  const zeroPaddedCode = studentCode.toString().padStart(2, '0');
+  const studentCodeStr = `${grade}-${klass}-${zeroPaddedCode}`;
+  return `DATE#${localDateStr}#STUDENT#${studentId}#${studentCodeStr}`;
 }
 
 /**
@@ -61,9 +50,7 @@ export function calculateTtl(startsAt: Date): number {
 /**
  * Builds DynamoDB item by filtering out undefined values (NoSQL best practice)
  */
-export function buildAttendanceItem(
-  item: AttendanceRecordParams,
-): AttendanceItem {
+export function buildAttendanceItem(item: AttendanceItem): AttendanceItem {
   const result: Partial<AttendanceItem> = {};
   for (const [key, value] of Object.entries(item)) {
     if (value !== undefined) {

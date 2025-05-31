@@ -29,7 +29,7 @@ export interface AttendanceItem {
   lessonName: string;
   groupId: number;
   groupName: string;
-  studentId: string;
+  studentId: number;
   studentName: string;
   start: string;
   end: string;
@@ -41,20 +41,4 @@ export interface AttendanceItem {
 export interface BatchResult {
   total: number;
   failedBatches: number;
-}
-
-export interface AttendanceRecordParams {
-  groupKey: string;
-  dailyStudentKey: string;
-  lessonId: number;
-  lessonName: string;
-  groupId: number;
-  groupName: string;
-  studentId: string;
-  studentName: string;
-  start: string;
-  end: string;
-  duration: number;
-  status: string;
-  expires: number;
 }

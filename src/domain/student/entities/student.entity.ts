@@ -48,22 +48,20 @@ export class Student {
     type: 'varchar',
     length: 8,
     comment: '반은 다양한 형태로 생성될 수 있음 (1반, 2반, 기쁨반 ..)',
-    nullable: true,
   })
-  class: string | null;
+  class: string;
 
   @ApiProperty({ description: '학번/번호', example: 10 })
   @Column({
     type: 'tinyint',
     unsigned: true,
-    nullable: true,
     comment: '학번/번호',
   })
-  studentCode: number | null;
+  studentCode: number;
 
   @ApiProperty({ description: 'up to 16 characters' })
-  @Column({ type: 'varchar', length: 16, nullable: true, comment: '이름' })
-  name: string | null;
+  @Column({ type: 'varchar', length: 16, comment: '이름' })
+  name: string;
 
   @ApiProperty({ description: '전화번호 (숫자만 입력)' })
   @Column({ type: 'varchar', length: 16, nullable: true, comment: '학생번호' })

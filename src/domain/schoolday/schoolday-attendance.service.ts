@@ -5,7 +5,7 @@ import { fromZonedTime } from 'date-fns-tz';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
 import {
   ATTENDANCE_CONSTANTS,
-  AttendanceRecordParams,
+  AttendanceItem,
   DeleteRequest,
   WriteRequest,
 } from 'src/domain/attendance/types/attendance.types';
@@ -15,7 +15,6 @@ import {
   formatToLocalDateString,
   generateDailyStudentKey,
   generateGroupKey,
-  generateStudentId,
 } from 'src/domain/attendance/utils/attendance.utils';
 import {
   CreateAttendanceResultDto,
@@ -171,9 +170,7 @@ export class SchooldayAttendanceService {
   /**
    * Helper method to create put requests for batch operations
    */
-  public createPutRequests(
-    attendanceItems: AttendanceRecordParams[],
-  ): WriteRequest[] {
+  public createPutRequests(attendanceItems: AttendanceItem[]): WriteRequest[] {
     return attendanceItems.map((item) => ({
       PutRequest: {
         Item: buildAttendanceItem(item),
@@ -232,11 +229,7 @@ export class SchooldayAttendanceService {
         const groupKey = generateGroupKey(groupId);
         const dailyStudentKey = generateDailyStudentKey(
           localDate,
-          pick.student.grade,
-          pick.student.class,
-          pick.student.studentCode,
-        );
-        const studentId = generateStudentId(
+          pick.student.id,
           pick.student.grade,
           pick.student.class,
           pick.student.studentCode,
@@ -247,8 +240,9 @@ export class SchooldayAttendanceService {
           fromZonedTime(
             `${pick.endedOn}T23:59:59`,
             ATTENDANCE_CONSTANTS.TIME_ZONE,
-          ) > startsAt
+          ) < startsAt
         ) {
+          // endedOn 이 있고, startsAt 이 마지막 수업시간(endedOn)보다 크면 출석부 생성 안함
           continue;
         }
 
@@ -258,11 +252,11 @@ export class SchooldayAttendanceService {
               groupKey,
               dailyStudentKey,
               lessonId,
-              lessonName: lesson?.lessonName ?? '과목',
+              lessonName: lesson?.lessonName,
               groupId,
-              groupName: groupName ?? '반',
-              studentId,
-              studentName: pick.student.name ?? '학생',
+              groupName: groupName,
+              studentId: pick.student.id,
+              studentName: pick.student.name,
               start: group.start,
               end: group.end,
               duration,

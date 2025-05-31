@@ -10,7 +10,6 @@ import {
   formatToLocalDateString,
   generateDailyStudentKey,
   generateGroupKey,
-  generateStudentId,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
@@ -98,6 +97,7 @@ export class SchooldaySubscriber
       const dailyStudentKeysToDelete = picks.map(({ student }) => {
         return generateDailyStudentKey(
           prevLocalDateStr,
+          student.id,
           student.grade,
           student.class,
           student.studentCode,
@@ -117,11 +117,7 @@ export class SchooldaySubscriber
       const putRequests: WriteRequest[] = picks.map((pick) => {
         const newDailyStudentKey = generateDailyStudentKey(
           newLocalDateStr,
-          pick.student.grade,
-          pick.student.class,
-          pick.student.studentCode,
-        );
-        const studentId = generateStudentId(
+          pick.student.id,
           pick.student.grade,
           pick.student.class,
           pick.student.studentCode,
@@ -133,11 +129,11 @@ export class SchooldaySubscriber
               groupKey,
               dailyStudentKey: newDailyStudentKey,
               lessonId: schoolday.lessonId,
-              lessonName: lesson?.lessonName ?? '과목',
+              lessonName: lesson?.lessonName,
               groupId: group.id,
-              groupName: group.groupName ?? '반',
-              studentId,
-              studentName: pick.student.name ?? '학생',
+              groupName: group.groupName,
+              studentId: pick.student.id,
+              studentName: pick.student.name,
               start: group.start,
               end: group.end,
               duration: schoolday.duration,
