@@ -54,4 +54,10 @@ export class CreateAttendanceResultDto {
     example: 0,
   })
   failedBatches: number;
+
+  @ApiProperty({
+    description: '이미 존재하는 출석 기록 수',
+    example: 0,
+  })
+  alreadyExists?: number;
 }

@@ -38,7 +38,7 @@ export class GroupAttendanceService {
     date: string,
     studentId: number,
     dto: UpdateAttendanceDto,
-  ): Promise<void> {
+  ): Promise<IAttendance> {
     const group = await this.groupRepository.findOneOrFail({
       where: { id: groupId },
       relations: ['lesson', 'schooldays'],
@@ -93,6 +93,7 @@ export class GroupAttendanceService {
         '✅ created new attendance:',
         JSON.stringify(result, null, 2),
       );
+      return result;
     } catch (error) {
       if (
         error.name === 'ConditionalCheckFailedException' ||
@@ -104,6 +105,7 @@ export class GroupAttendanceService {
             '✅ updated existing attendance:',
             JSON.stringify(result, null, 2),
           );
+          return result;
         } catch (updateError) {
           console.error(`[dynamodb] update error`, updateError);
           throw new BadRequestException(HttpErrorConstants.DYNAMO_UPDATE);

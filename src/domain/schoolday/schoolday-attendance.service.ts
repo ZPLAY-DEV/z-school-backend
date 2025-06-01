@@ -99,6 +99,7 @@ export class SchooldayAttendanceService {
     items: (WriteRequest | DeleteRequest)[],
   ): Promise<CreateAttendanceResultDto> {
     let failedBatches = 0;
+    let conditionalCheckFailures = 0;
 
     for (let i = 0; i < items.length; i += ATTENDANCE_CONSTANTS.BATCH_SIZE) {
       const batch = items.slice(i, i + ATTENDANCE_CONSTANTS.BATCH_SIZE);
@@ -131,6 +132,19 @@ export class SchooldayAttendanceService {
             unprocessed = [];
           }
         } catch (err: any) {
+          // ConditionalCheckFailedException은 이미 존재하는 레코드를 의미하므로
+          // 실패로 간주하지 않음
+          if (
+            err.name === 'ConditionalCheckFailedException' ||
+            err.code === 'ConditionalCheckFailedException'
+          ) {
+            this.logger.log(
+              `ConditionalCheckFailedException: ${unprocessed.length} items already exist, skipping...`,
+            );
+            conditionalCheckFailures += unprocessed.length;
+            break; // 이 배치는 완료된 것으로 간주
+          }
+
           this.logger.error('BatchWriteCommand error', err);
           retries++;
           await this.sleep(
@@ -139,7 +153,10 @@ export class SchooldayAttendanceService {
         }
       }
 
-      if (unprocessed.length > 0) {
+      if (
+        unprocessed.length > 0 &&
+        retries >= ATTENDANCE_CONSTANTS.MAX_RETRIES
+      ) {
         this.logger.error(
           `Failed to process ${unprocessed.length} items after ${ATTENDANCE_CONSTANTS.MAX_RETRIES} retries.`,
         );
@@ -147,7 +164,15 @@ export class SchooldayAttendanceService {
       }
     }
 
-    return { total: items.length, failedBatches };
+    this.logger.log(
+      `Batch write completed. Total: ${items.length}, Failed: ${failedBatches}, Already exists: ${conditionalCheckFailures}`,
+    );
+
+    return {
+      total: items.length,
+      failedBatches,
+      alreadyExists: conditionalCheckFailures,
+    };
   }
 
   /**
@@ -174,6 +199,8 @@ export class SchooldayAttendanceService {
     return attendanceItems.map((item) => ({
       PutRequest: {
         Item: buildAttendanceItem(item),
+        ConditionExpression:
+          'attribute_not_exists(groupKey) AND attribute_not_exists(dailyStudentKey)',
       },
     }));
   }

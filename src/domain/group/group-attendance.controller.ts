@@ -38,7 +38,7 @@ export class GroupAttendanceController {
     @Param('date') date: string,
     @Param('studentId', ParseIntPipe) studentId: number,
     @Body() dto: UpdateAttendanceDto,
-  ): Promise<void> {
+  ): Promise<IAttendance> {
     return await this.groupAttendancesService.upsert(
       groupId,
       date,
