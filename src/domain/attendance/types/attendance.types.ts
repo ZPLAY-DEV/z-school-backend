@@ -42,3 +42,14 @@ export interface BatchResult {
   total: number;
   failedBatches: number;
 }
+
+export interface AttendanceReportItem {
+  date: string;
+  status: string;
+}
+
+export interface AttendanceReport {
+  studentKey: string;
+  studentName: string;
+  attendances: AttendanceReportItem[];
+}

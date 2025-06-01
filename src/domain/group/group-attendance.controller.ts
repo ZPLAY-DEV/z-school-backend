@@ -12,6 +12,8 @@ import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 import { IAttendance } from 'src/domain/attendance/entities/attendance.interface';
+import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
+import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 import { GroupAttendanceService } from 'src/domain/group/group-attendance.service';
 import {
   FindAttendanceByDateDocs,
@@ -28,7 +30,7 @@ export class GroupAttendanceController {
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? READ
+  //? Upsert
   //? ---------------------------------------------------------------------- ?//
 
   @UpsertAttendanceDocs()
@@ -48,16 +50,25 @@ export class GroupAttendanceController {
   }
 
   //? ---------------------------------------------------------------------- ?//
-  //? FIND BY DATE
+  //? Read
   //? ---------------------------------------------------------------------- ?//
 
   @FindAttendanceByDateDocs()
   @Get(':groupId/attendances/:date')
   async findByDate(
-    @Param('groupId', ParseIntPipe) groupId: string,
+    @Param('groupId', ParseIntPipe) groupId: number,
     @Param('date') date: string,
   ): Promise<IAttendance[]> {
-    const groupKey = `GROUP#${groupId}`;
+    const groupKey = generateGroupKey(groupId);
     return await this.groupAttendancesService.findByDate(groupKey, date);
+  }
+
+  @Get(':groupId/attendances/:date/report')
+  async getReport(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('date') date: string,
+  ): Promise<AttendanceReport[]> {
+    const groupKey = generateGroupKey(groupId);
+    return await this.groupAttendancesService.getReport(groupKey, date);
   }
 }

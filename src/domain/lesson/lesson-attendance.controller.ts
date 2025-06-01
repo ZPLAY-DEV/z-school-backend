@@ -9,6 +9,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { IAttendance } from 'src/domain/attendance/entities/attendance.interface';
+import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import { LessonAttendanceService } from 'src/domain/lesson/lesson-attendance.service';
 import { FindAttendanceByDateDocs } from 'src/domain/lesson/swagger/lesson-attendance-swagger.decorator';
 
@@ -22,11 +23,7 @@ export class LessonAttendanceController {
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? READ
-  //? ---------------------------------------------------------------------- ?//
-
-  //? ---------------------------------------------------------------------- ?//
-  //? FIND BY DATE
+  //? Read
   //? ---------------------------------------------------------------------- ?//
 
   @FindAttendanceByDateDocs()
@@ -36,5 +33,13 @@ export class LessonAttendanceController {
     @Param('date') date: string,
   ): Promise<IAttendance[]> {
     return await this.lessonAttendancesService.findByDate(lessonId, date);
+  }
+
+  @Get(':lessonId/attendances/:date/report')
+  async getReport(
+    @Param('lessonId', ParseIntPipe) lessonId: number,
+    @Param('date') date: string,
+  ): Promise<AttendanceReport[]> {
+    return await this.lessonAttendancesService.getReport(lessonId, date);
   }
 }

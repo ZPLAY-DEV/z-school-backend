@@ -12,10 +12,12 @@ import {
   IAttendance,
   IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
+import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
   calculateTtl,
   generateDailyStudentKey,
   generateGroupKey,
+  processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -129,7 +131,12 @@ export class GroupAttendanceService {
       return result as IAttendance[];
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
+      throw new BadRequestException(HttpErrorConstants.DYNAMO_READ);
     }
+  }
+
+  async getReport(groupKey: string, date: string): Promise<AttendanceReport[]> {
+    const items = await this.findByDate(groupKey, date);
+    return processAttendanceReport(items);
   }
 }
