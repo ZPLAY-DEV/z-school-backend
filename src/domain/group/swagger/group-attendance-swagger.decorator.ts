@@ -1,5 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
@@ -134,6 +134,115 @@ export const UpsertAttendanceDocs = () => {
           HttpErrorConstants.NOT_FOUND_ENTITY,
           HttpErrorConstants.NO_CLASS_DAY,
         ],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Get Attendance Report
+//? ---------------------------------------------------------------------- ?//
+
+export const GetReportDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '반별 출석 리포트 👈 특정 날짜 조회',
+      description: `
+      - 특정 반의 특정 날짜에 대한 출석 리포트를 조회합니다.
+      - 학생별로 출석 정보를 그룹화하여 리포트 형태로 반환합니다.
+      - 각 학생의 출석 기록이 날짜순으로 정렬되어 제공됩니다.
+      
+      ### 매개변수:
+      - \`groupId\`: 조회할 반의 ID (숫자)
+      - \`date\`: 조회할 날짜 (YYYY-MM-DD 형식)
+      
+      ### 응답 데이터:
+      - 학생별로 그룹화된 출석 리포트 배열
+      - 각 학생의 출석 기록이 날짜순으로 정렬됨
+      
+      ### 사용 예시:
+      - 반별 출석 현황을 한눈에 파악
+      - 학생별 출석 패턴 분석
+      - 출석 통계 생성을 위한 데이터 수집
+      - 학부모 리포트 생성
+      
+      ### 출석 상태:
+      - \`PENDING\`: 대기 중
+      - \`PRESENT\`: 출석
+      - \`ABSENT\`: 결석
+      - \`LATE\`: 지각
+      - \`REPORTED_ABSENT\`: 사전 결석 신고
+      - \`REPORTED_LATE\`: 사전 지각 신고
+      `,
+    }),
+    ApiParam({
+      name: 'groupId',
+      type: Number,
+      description: '반 ID',
+      example: 123,
+    }),
+    ApiParam({
+      name: 'date',
+      type: String,
+      description: '조회할 날짜 (YYYY-MM-DD)',
+      example: '2025-01-15',
+    }),
+    ApiOkResponse({
+      description: '출석 리포트 조회 성공',
+      schema: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            studentKey: {
+              type: 'string',
+              description: '학생 고유 키',
+              example: '4-4-55',
+            },
+            studentName: {
+              type: 'string',
+              description: '학생명',
+              example: '홍길동',
+            },
+            attendances: {
+              type: 'array',
+              description: '출석 기록 배열',
+              items: {
+                type: 'object',
+                properties: {
+                  date: {
+                    type: 'string',
+                    description: '출석 날짜',
+                    example: '2025-01-15',
+                  },
+                  status: {
+                    type: 'string',
+                    enum: [
+                      'PENDING',
+                      'PRESENT',
+                      'ABSENT',
+                      'LATE',
+                      'REPORTED_ABSENT',
+                      'REPORTED_LATE',
+                    ],
+                    description: '출석 상태',
+                    example: 'PRESENT',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
+      },
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
       },
     ]),
   );

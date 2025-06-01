@@ -11,7 +11,10 @@ import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-er
 import { IAttendance } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import { LessonAttendanceService } from 'src/domain/lesson/lesson-attendance.service';
-import { FindAttendanceByDateDocs } from 'src/domain/lesson/swagger/lesson-attendance-swagger.decorator';
+import {
+  FindAttendanceByDateDocs,
+  GetReportDocs,
+} from 'src/domain/lesson/swagger/lesson-attendance-swagger.decorator';
 
 @ApiTags('✅ Lessons > Attendance ( 과목 > 출석부 조회 )')
 @ApiCommonErrorResponseTemplate()
@@ -35,6 +38,7 @@ export class LessonAttendanceController {
     return await this.lessonAttendancesService.findByDate(lessonId, date);
   }
 
+  @GetReportDocs()
   @Get(':lessonId/attendances/:date/report')
   async getReport(
     @Param('lessonId', ParseIntPipe) lessonId: number,

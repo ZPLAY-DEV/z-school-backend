@@ -17,6 +17,7 @@ import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 import { GroupAttendanceService } from 'src/domain/group/group-attendance.service';
 import {
   FindAttendanceByDateDocs,
+  GetReportDocs,
   UpsertAttendanceDocs,
 } from 'src/domain/group/swagger/group-attendance-swagger.decorator';
 
@@ -63,6 +64,7 @@ export class GroupAttendanceController {
     return await this.groupAttendancesService.findByDate(groupKey, date);
   }
 
+  @GetReportDocs()
   @Get(':groupId/attendances/:date/report')
   async getReport(
     @Param('groupId', ParseIntPipe) groupId: number,

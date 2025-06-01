@@ -150,3 +150,95 @@ export const FindAttendanceByDateDocs = () => {
     ]),
   );
 };
+
+//? ---------------------------------------------------------------------- ?//
+//? Get Attendance Report
+//? ---------------------------------------------------------------------- ?//
+
+export const GetReportDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '특정 과목의 특정 날짜 출석 리포트 조회',
+      description: `
+      - 특정 과목(lesson)의 특정 날짜에 해당하는 출석 리포트를 조회합니다.
+      - 학생별로 출석 정보를 그룹화하여 리포트 형태로 반환합니다.
+      - 각 학생의 출석 기록이 날짜순으로 정렬되어 제공됩니다.
+      
+      ### 사용 예시:
+      - 특정 수업의 출석 현황을 한눈에 파악
+      - 학생별 출석 패턴 분석
+      - 출석 통계 생성을 위한 데이터 수집
+      `,
+    }),
+    ApiParam({
+      name: 'lessonId',
+      type: Number,
+      description: '과목 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'date',
+      type: String,
+      description: '조회할 날짜 (YYYY-MM-DD 형식)',
+      example: '2024-12-30',
+    }),
+    ApiOkResponse({
+      description: '특정 날짜의 출석 리포트 조회 완료',
+      schema: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            studentKey: {
+              type: 'string',
+              description: '학생 고유 키',
+              example: '1학년1반-10',
+            },
+            studentName: {
+              type: 'string',
+              description: '학생명',
+              example: '홍길동',
+            },
+            attendances: {
+              type: 'array',
+              description: '출석 기록 배열',
+              items: {
+                type: 'object',
+                properties: {
+                  date: {
+                    type: 'string',
+                    description: '출석 날짜',
+                    example: '2024-12-30',
+                  },
+                  status: {
+                    type: 'string',
+                    enum: [
+                      'PENDING',
+                      'PRESENT',
+                      'ABSENT',
+                      'LATE',
+                      'REPORTED_ABSENT',
+                      'REPORTED_LATE',
+                    ],
+                    description: '출석 상태',
+                    example: 'PRESENT',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [HttpErrorConstants.NOT_FOUND_LESSON],
+      },
+      {
+        status: StatusCodes.BAD_REQUEST,
+        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
+      },
+    ]),
+  );
+};
