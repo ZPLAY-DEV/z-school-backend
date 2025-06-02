@@ -2,11 +2,13 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsDate,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
   MaxLength,
 } from 'class-validator';
+import { Actor } from 'src/common/enums';
 
 export class CreateSchooldayDto {
   @ApiPropertyOptional({ description: 'DB의 학교ID' })
@@ -53,6 +55,15 @@ export class CreateSchooldayDto {
   @IsInt()
   @Type(() => Number)
   duration: number;
+
+  @ApiProperty({
+    description: '수업 종료일 등록 주체 ',
+    example: 'SYSTEM --- 수정 수정 주체 ( SYSTEM, INSTRUCTOR, MANAGER )',
+    enum: Actor,
+  })
+  @IsEnum(Actor)
+  @IsOptional()
+  updatedBy?: Actor;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()

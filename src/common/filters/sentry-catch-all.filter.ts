@@ -8,6 +8,7 @@ import {
   HttpErrorFormat,
 } from 'src/core/http/http-error-objects';
 import { SlackService } from 'src/services/slack/slack-service';
+import { EntityNotFoundError } from 'typeorm';
 
 // todo. Sentry DSN 를 v3 용으로 Sentry 콘솔에서 새로 발급하는 게 좋을듯.
 @Catch()
@@ -62,16 +63,25 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
         }
       }
     } else {
-      // 일반 오류 처리
-      httpStatus = 500;
-      errorResponse = {
-        ...HttpErrorConstants.INTERNAL_SERVER_ERROR,
-        description: req.url,
-      };
+      // TypeORM EntityNotFoundError 처리
+      if (exception instanceof EntityNotFoundError) {
+        httpStatus = 404;
+        errorResponse = {
+          ...HttpErrorConstants.NOT_FOUND_ENTITY,
+          description: req.url,
+        };
+      } else {
+        // 일반 오류 처리
+        httpStatus = 500;
+        errorResponse = {
+          ...HttpErrorConstants.INTERNAL_SERVER_ERROR,
+          description: req.url,
+        };
 
-      // 오류 메시지가 있는 경우 덮어쓰기
-      if (exception instanceof Error && exception.message) {
-        errorResponse.message = exception.message;
+        // 오류 메시지가 있는 경우 덮어쓰기
+        if (exception instanceof Error && exception.message) {
+          errorResponse.message = exception.message;
+        }
       }
     }
 

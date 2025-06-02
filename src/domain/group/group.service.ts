@@ -114,10 +114,7 @@ export class GroupService {
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
 
-  async removeWithDto(
-    id: number,
-    dto: DeleteGroupDto,
-  ): Promise<RemovalStatus> {
+  async removeWithDto(id: number, dto: DeleteGroupDto): Promise<RemovalStatus> {
     const group = await this.findById(id);
 
     try {

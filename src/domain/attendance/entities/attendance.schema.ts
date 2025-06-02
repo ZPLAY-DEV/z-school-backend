@@ -30,7 +30,7 @@ export const AttendanceSchema = new Schema(
       required: true,
     },
     studentId: {
-      type: String,
+      type: Number,
       required: true,
     },
     studentName: {

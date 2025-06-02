@@ -5,7 +5,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Patch
+  Patch,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';

@@ -1,72 +1,95 @@
 import {
+  BadRequestException,
   Body,
+  ClassSerializerInterceptor,
   Controller,
-  Delete,
   Get,
   Param,
   ParseIntPipe,
   Patch,
-  Post,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { UpdateSchooldayDto } from 'src/domain/schoolday/dto/update-schoolday.dto';
+import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
+import { Actor } from 'src/common/enums';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+import { UpdateSchooldayTimeDto } from 'src/domain/schoolday/dto/update-schoolday.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayService } from './schoolday.service';
+import {
+  GetSchooldayByIdDocs,
+  GetSchooldayListDocs,
+  GetSchooldayPaginatedListDocs,
+  UpdateSchooldayTimeDocs,
+} from './swagger/schoolday-swagger.decorator';
 
+@ApiTags('✅ Schooldays ( 수업일 )')
+@ApiCommonErrorResponseTemplate()
 @Controller('schooldays')
+@UseInterceptors(ClassSerializerInterceptor)
 export class SchooldayController {
   constructor(private readonly schooldayService: SchooldayService) {}
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Create
-  //? ---------------------------------------------------------------------- ?//
-
-  @ApiOperation({ description: 'Schoolday 생성' })
-  @Post()
-  async create(): Promise<any> {
-    return await this.schooldayService.create();
-  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Schoolday 리스트 w/ Pagination' })
+  @GetSchooldayListDocs()
   @Get()
-  async findSchooldays(
-    @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<Schoolday>> {
-    return await this.schooldayService.findAll(query);
+  async getList(): Promise<Schoolday[]> {
+    return await this.schooldayService.list();
   }
 
-  @ApiOperation({ description: 'Schoolday 상세보기' })
+  @GetSchooldayPaginatedListDocs()
+  @Get('paginated')
+  async getInfiniteList(
+    @Paginate() query: PaginateQuery,
+  ): Promise<Paginated<Schoolday>> {
+    return await this.schooldayService.infiniteList(query);
+  }
+
+  @GetSchooldayByIdDocs()
   @Get(':id')
-  async findSchooldayById(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<Schoolday> {
-    return await this.schooldayService.findById(id, ['grants', 'grants.user']);
+  async findById(@Param('id', ParseIntPipe) id: number): Promise<Schoolday> {
+    return await this.schooldayService.findById(id, [
+      'group',
+      'group.groupStudents',
+      'group.groupStudents.student',
+      'group.lesson',
+    ]);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Schoolday 수정' })
+  //! 수업일 변경시 다이나모 출석부도 변경됨.
+  @UpdateSchooldayTimeDocs()
   @Patch(':id')
   async update(
     @Param('id') id: number,
-    @Body() dto: UpdateSchooldayDto,
+    @Body() dto: UpdateSchooldayTimeDto,
+    @CurrentUserIdAndRole() user: { id: number; role: string },
   ): Promise<Schoolday> {
-    return await this.schooldayService.update(id, dto);
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Delete
-  //? ---------------------------------------------------------------------- ?//
-
-  @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.schooldayService.remove(id);
+    const { startsAt, endsAt } = await this.schooldayService.findById(id);
+    if (
+      startsAt &&
+      endsAt &&
+      dto.startsAt &&
+      dto.endsAt &&
+      startsAt === dto.startsAt &&
+      endsAt === dto.endsAt
+    ) {
+      throw new BadRequestException(HttpErrorConstants.VALIDATE_ERROR);
+    }
+    const role =
+      user.role === 'MANAGER'
+        ? Actor.MANAGER
+        : user.role === 'INSTRUCTOR'
+          ? Actor.INSTRUCTOR
+          : Actor.OTHER;
+    return await this.schooldayService.update(id, { ...dto, updatedBy: role });
   }
 }

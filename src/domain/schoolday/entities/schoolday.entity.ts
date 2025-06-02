@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Transform } from 'class-transformer';
 import { formatInTimeZone } from 'date-fns-tz';
+import { Actor } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
 import {
   Column,
@@ -75,6 +76,10 @@ export class Schoolday {
   @ApiProperty({ description: '수업 시간 (분)', example: 60 })
   @Column({ type: 'int', unsigned: true, default: 0 })
   duration: number;
+
+  @ApiProperty({ description: '시간 수정 주체', example: 'SYSTEM' })
+  @Column({ type: 'enum', enum: Actor, default: null, nullable: true })
+  updatedBy: Actor | null;
 
   @ApiProperty({ description: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
