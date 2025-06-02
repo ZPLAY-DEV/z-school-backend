@@ -295,6 +295,11 @@ export const HttpErrorConstants = {
     message: 'DynamoDB 삭제 오류가 발생하였습니다.',
   } as HttpErrorFormat,
 
+  ALIGO_FAILED: {
+    error: 'ALIGO_FAILED',
+    message: '알리고 SaaS 서비스 호출시 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)
 };
 
