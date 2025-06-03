@@ -54,7 +54,7 @@ export class AligoService {
   /**
    * 문자보내기
    */
-  async send(data: {
+  async send(dto: {
     sender: string;
     receiver: string;
     msg: string;
@@ -65,7 +65,7 @@ export class AligoService {
     rtime?: string;
     testmode_yn?: string;
   }): Promise<any> {
-    return this.postRequest(data, '/send/');
+    return this.postRequest(dto, '/send/');
   }
 
   /**
@@ -102,10 +102,10 @@ export class AligoService {
   /**
    * 문자전송결과보기 상세
    */
-  async smsList(data: {
+  async detail(data: {
     mid: string;
     page?: number;
-    limit?: number;
+    page_size?: number;
   }): Promise<any> {
     return this.postRequest(data, '/sms_list/');
   }

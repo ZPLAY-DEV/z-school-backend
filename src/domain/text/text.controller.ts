@@ -1,9 +1,16 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { SendTextDto } from 'src/domain/text/dto/send-text.dto';
 import { TextService } from 'src/domain/text/text.service';
 
 @Controller('texts')
 export class TextController {
   constructor(private readonly textService: TextService) {}
+
+  @Post()
+  async send(@Body() dto: SendTextDto): Promise<any> {
+    const { sender, receiver, message, dryrun } = dto;
+    return await this.textService.send(sender, receiver, message, dryrun);
+  }
 
   @Get()
   async list(
@@ -18,5 +25,18 @@ export class TextController {
   @Get('aggregate')
   async aggregate(@Query('start') start?: string): Promise<any> {
     return await this.textService.aggregate(start);
+  }
+
+  @Get('remain')
+  async remain(): Promise<any> {
+    return await this.textService.remain();
+  }
+
+  @Get(':id')
+  async detail(
+    @Param('id') id: string,
+    @Query('limit') limit?: number,
+  ): Promise<any> {
+    return await this.textService.detail(id, limit);
   }
 }

@@ -10,6 +10,29 @@ export class TextService {
 
   constructor(private readonly aligoService: AligoService) {}
 
+  async send(
+    sender: string,
+    receiver: string,
+    message: string,
+    dryrun: boolean = false,
+  ): Promise<any> {
+    const dto = dryrun
+      ? {
+          sender,
+          receiver,
+          msg: message,
+          msg_type: 'SMS',
+          testmode_yn: 'Y',
+        }
+      : {
+          sender,
+          receiver,
+          msg: message,
+          msg_type: 'SMS',
+        };
+    return await this.aligoService.send(dto);
+  }
+
   async list(
     page: number,
     limit: number = 500,
@@ -36,6 +59,7 @@ export class TextService {
       start_date: startDate,
       limit_day: 1,
     };
+    console.log(`dto`, dto);
     const items: SmsItem[] = [];
     while (true) {
       const { list, next_yn }: { list: SmsItem[]; next_yn: string } =
@@ -46,9 +70,7 @@ export class TextService {
       }
       dto.page++;
     }
-    console.log(`items (length) =`, items.length);
     const result: Record<string, string[]> = {};
-
     items.forEach((item) => {
       const { sender, mid } = item;
       if (!result[sender]) {
@@ -58,5 +80,19 @@ export class TextService {
     });
 
     return result;
+  }
+
+  async remain(): Promise<any> {
+    return await this.aligoService.remain();
+  }
+
+  async detail(id: string, limit: number = 500): Promise<any> {
+    const dto = {
+      mid: id,
+      page: 1,
+      page_size: limit,
+    };
+    console.log(`dto`, dto);
+    return await this.aligoService.detail(dto);
   }
 }
