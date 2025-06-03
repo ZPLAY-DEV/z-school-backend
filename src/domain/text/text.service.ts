@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { format } from 'date-fns';
-import { SmsItem } from 'src/domain/text/types/text.types';
+import { BulkMessage } from 'src/domain/text/dto/send-bulk-text.dto';
+import { MessageResponseItem } from 'src/domain/text/types/text.types';
 
 import { AligoService } from 'src/services/aligo/aligo-service';
 
@@ -16,21 +17,30 @@ export class TextService {
     message: string,
     dryrun: boolean = false,
   ): Promise<any> {
-    const dto = dryrun
-      ? {
-          sender,
-          receiver,
-          msg: message,
-          msg_type: 'SMS',
-          testmode_yn: 'Y',
-        }
-      : {
-          sender,
-          receiver,
-          msg: message,
-          msg_type: 'SMS',
-        };
+    const dto = {
+      sender,
+      receiver,
+      msg: message,
+      msg_type: 'SMS',
+      testmode_yn: dryrun ? 'Y' : 'N',
+    };
+    console.log(`dto`, dto);
     return await this.aligoService.send(dto);
+  }
+
+  async sendBulk(
+    sender: string,
+    messages: BulkMessage[],
+    dryrun: boolean = false,
+  ): Promise<any> {
+    const baseDto = {
+      sender,
+      msg_type: 'SMS',
+      testmode_yn: dryrun ? 'Y' : 'N',
+      cnt: messages.length,
+    };
+
+    return await this.aligoService.sendBulkMessages(baseDto, messages);
   }
 
   async list(
@@ -39,7 +49,8 @@ export class TextService {
     start: string | undefined,
     days: number = 1,
   ): Promise<any> {
-    const startDate = start || format(new Date(), 'yyyyMMdd');
+    const startDate =
+      start?.replace(/[^0-9]/g, '') || format(new Date(), 'yyyyMMdd');
     const dto = {
       page,
       page_size: limit,
@@ -52,7 +63,8 @@ export class TextService {
 
   async aggregate(start: string | undefined): Promise<any> {
     const page = 1;
-    const startDate = start || format(new Date(), 'yyyyMMdd');
+    const startDate =
+      start?.replace(/[^0-9]/g, '') || format(new Date(), 'yyyyMMdd');
     const dto = {
       page,
       page_size: 500,
@@ -60,9 +72,12 @@ export class TextService {
       limit_day: 1,
     };
     console.log(`dto`, dto);
-    const items: SmsItem[] = [];
+    const items: MessageResponseItem[] = [];
     while (true) {
-      const { list, next_yn }: { list: SmsItem[]; next_yn: string } =
+      const {
+        list,
+        next_yn,
+      }: { list: MessageResponseItem[]; next_yn: string } =
         await this.aligoService.list(dto);
       items.push(...list);
       if (next_yn === 'N') {
@@ -70,13 +85,13 @@ export class TextService {
       }
       dto.page++;
     }
-    const result: Record<string, string[]> = {};
+    const result: Record<string, any[]> = {};
     items.forEach((item) => {
-      const { sender, mid } = item;
+      const { sender, mid, sms_count } = item;
       if (!result[sender]) {
         result[sender] = [];
       }
-      result[sender].push(mid);
+      result[sender].push({ id: mid, count: +sms_count });
     });
 
     return result;

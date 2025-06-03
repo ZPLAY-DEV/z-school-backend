@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { SendBulkTextDto } from 'src/domain/text/dto/send-bulk-text.dto';
 import { SendTextDto } from 'src/domain/text/dto/send-text.dto';
 import { TextService } from 'src/domain/text/text.service';
 
@@ -10,6 +11,12 @@ export class TextController {
   async send(@Body() dto: SendTextDto): Promise<any> {
     const { sender, receiver, message, dryrun } = dto;
     return await this.textService.send(sender, receiver, message, dryrun);
+  }
+
+  @Post('bulk')
+  async sendBulk(@Body() dto: SendBulkTextDto): Promise<any> {
+    const { sender, messages, dryrun } = dto;
+    return await this.textService.sendBulk(sender, messages, dryrun);
   }
 
   @Get()
