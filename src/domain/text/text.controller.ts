@@ -14,4 +14,9 @@ export class TextController {
   ): Promise<any> {
     return await this.textService.list(page, limit, start, days);
   }
+
+  @Get('aggregate')
+  async aggregate(@Query('start') start?: string): Promise<any> {
+    return await this.textService.aggregate(start);
+  }
 }

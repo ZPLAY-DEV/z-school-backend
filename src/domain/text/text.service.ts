@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { format } from 'date-fns';
+import { SmsItem } from 'src/domain/text/types/text.types';
 
 import { AligoService } from 'src/services/aligo/aligo-service';
 
@@ -24,5 +25,38 @@ export class TextService {
     };
     console.log(`dto`, dto);
     return await this.aligoService.list(dto);
+  }
+
+  async aggregate(start: string | undefined): Promise<any> {
+    const page = 1;
+    const startDate = start || format(new Date(), 'yyyyMMdd');
+    const dto = {
+      page,
+      page_size: 500,
+      start_date: startDate,
+      limit_day: 1,
+    };
+    const items: SmsItem[] = [];
+    while (true) {
+      const { list, next_yn }: { list: SmsItem[]; next_yn: string } =
+        await this.aligoService.list(dto);
+      items.push(...list);
+      if (next_yn === 'N') {
+        break;
+      }
+      dto.page++;
+    }
+    console.log(`items (length) =`, items.length);
+    const result: Record<string, string[]> = {};
+
+    items.forEach((item) => {
+      const { sender, mid } = item;
+      if (!result[sender]) {
+        result[sender] = [];
+      }
+      result[sender].push(mid);
+    });
+
+    return result;
   }
 }
