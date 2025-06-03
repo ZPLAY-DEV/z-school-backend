@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { format } from 'date-fns';
 import { BulkMessage } from 'src/domain/text/dto/send-bulk-text.dto';
 import { MessageResponseItem } from 'src/domain/text/types/text.types';
+import { parseMessageType } from 'src/domain/text/utils/text.utils';
 
 import { AligoService } from 'src/services/aligo/aligo-service';
 
@@ -87,11 +88,15 @@ export class TextService {
     }
     const result: Record<string, any[]> = {};
     items.forEach((item) => {
-      const { sender, mid, sms_count } = item;
+      const { sender, mid, sms_count, msg } = item;
       if (!result[sender]) {
         result[sender] = [];
       }
-      result[sender].push({ id: mid, count: +sms_count });
+      result[sender].push({
+        id: mid,
+        count: +sms_count,
+        msg: parseMessageType(msg),
+      });
     });
 
     return result;

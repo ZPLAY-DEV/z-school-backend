@@ -70,7 +70,14 @@ export class AligoService {
     rtime?: string; // 예약시간 (미사용)
     testmode_yn?: string; // dryrun 여부
   }): Promise<any> {
-    return this.postRequest(dto, '/send/');
+    return this.postRequest(
+      {
+        ...dto,
+        sender: dto.sender.replace(/[^0-9]/g, ''),
+        receiver: dto.receiver.replace(/[^0-9]/g, ''),
+      },
+      '/send/',
+    );
   }
 
   /**
@@ -82,7 +89,10 @@ export class AligoService {
     messages: BulkMessageItem[],
   ): Promise<any> {
     // 타입 안전한 방식으로 동적 필드 생성
-    const dynamicDto: BulkMessageDto = { ...baseDto };
+    const dynamicDto: BulkMessageDto = {
+      ...baseDto,
+      sender: baseDto.sender.replace(/[^0-9]/g, ''),
+    };
     messages.forEach((message, index) => {
       const idx = index + 1;
       (dynamicDto as any)[`rec_${idx}`] = message.receiver.replace(
