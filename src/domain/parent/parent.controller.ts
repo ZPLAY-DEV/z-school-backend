@@ -24,7 +24,7 @@ export class ParentController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: '주문 생성' })
+  @ApiOperation({ description: 'parent 생성' })
   @Post()
   async create(@Body() dto: CreateParentDto) {
     return this.parentService.create(dto);
@@ -34,14 +34,14 @@ export class ParentController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'paginated 주문 리스트' })
+  @ApiOperation({ description: 'parent paginated 리스트' })
   @Get('paginated')
   async findAll(@Paginate() query: PaginateQuery): Promise<Paginated<Parent>> {
     return this.parentService.findAll(query);
   }
 
   @Public()
-  @ApiOperation({ description: '주문 조회' })
+  @ApiOperation({ description: 'parent detail 조회' })
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.parentService.findById(id, [
@@ -60,7 +60,7 @@ export class ParentController {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: '주문 수정' })
+  @ApiOperation({ description: 'parent 수정' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -73,7 +73,7 @@ export class ParentController {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: '주문 삭제' })
+  @ApiOperation({ description: 'parent 삭제' })
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<Parent> {
     return this.parentService.remove(id);
