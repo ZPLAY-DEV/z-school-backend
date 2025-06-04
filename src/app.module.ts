@@ -35,6 +35,7 @@ import { StatementModule } from 'src/domain/statement/statement.module';
 import { StudentModule } from 'src/domain/student/student.module';
 import { SubsidyModule } from 'src/domain/subsidy/subsidy.module';
 import { TermModule } from 'src/domain/term/term.module';
+import { TextModule } from 'src/domain/text/text.module';
 import { UserModule } from 'src/domain/user/user.module';
 import { RedisModule } from 'src/services/redis/redis.module';
 import { SlackModule } from 'src/services/slack/slack-module';
@@ -131,6 +132,7 @@ import { UploadModule } from './services/upload/upload.module';
     StudentModule,
     SubsidyModule,
     TermModule,
+    TextModule,
     UserModule,
     UploadModule,
     HealthModule,

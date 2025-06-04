@@ -18,6 +18,7 @@ import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
   UserCredentialsDto,
   UserCredentialsDtoWithPhone,
+  UserNanoIdDto,
 } from 'src/domain/auth/dto/user-credentials.dto';
 import { UserDto } from 'src/domain/auth/dto/user.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
@@ -86,6 +87,30 @@ export class AuthService {
 
     const passwordMatches = await bcrypt.compare(password, user.password);
     if (!passwordMatches) {
+      throw new UnauthorizedException(HttpErrorConstants.INVALID_CREDENTIALS);
+    }
+
+    return user;
+  }
+
+  async validateUserWithNanoId(dto: UserNanoIdDto): Promise<User> {
+    const { username, nanoId, role } = dto;
+
+    const user = await this.userRepository.findOne({
+      where: { username },
+      relations: ['parent', 'parent.nanoId'],
+    });
+
+    if (!user) {
+      throw new UnauthorizedException(HttpErrorConstants.NOT_FOUND_USER);
+    }
+
+    const hasRole = this.checkUserHasRole(user, role);
+    if (!hasRole) {
+      throw new UnauthorizedException(HttpErrorConstants.INVALID_ROLE);
+    }
+
+    if (nanoId !== user.parent?.nanoId?.nanoId) {
       throw new UnauthorizedException(HttpErrorConstants.INVALID_CREDENTIALS);
     }
 
@@ -209,6 +234,23 @@ export class AuthService {
   }
 
   /**
+   * Log in a user and generate auth tokens
+   */
+  async loginWithNanoId(dto: UserNanoIdDto): Promise<AuthUserDto> {
+    const user = await this.validateUserWithNanoId(dto);
+    const { accessToken, refreshToken } = await this.generateTokensWithNanoId(
+      user,
+      dto.role,
+    );
+    return {
+      user: plainToClass(UserDto, user, { excludeExtraneousValues: true }),
+      role: dto.role,
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  /**
    * Log out a user by removing their refresh token(s)
    */
   async logout(
@@ -218,7 +260,7 @@ export class AuthService {
   ): Promise<void> {
     if (refreshToken) {
       // Logout specific device
-      const partialToken = refreshToken.slice(0, 36);
+      const partialToken = `${refreshToken}-L`;
       const tokenRecord = await this.tokenRepository.findOne({
         where: { userId, role, partialToken },
       });
@@ -254,7 +296,7 @@ export class AuthService {
       where: {
         userId,
         role,
-        partialToken: refreshToken.slice(0, 36),
+        partialToken: `${refreshToken}-L`,
         expiresAt: MoreThan(new Date()),
       },
       relations: ['user', 'user.instructor', 'user.parent', 'user.manager'],
@@ -498,8 +540,8 @@ export class AuthService {
     const accessToken = await this.generateAccessToken(payload);
 
     // Generate refresh token
-    const refreshToken = `XYZ-${user.id}-${role.toLowerCase()}-${uuid.v4()}`;
-    const partialToken = refreshToken.slice(0, 36);
+    const refreshToken = `Z-${user.id}-${role.charAt(0)}-${uuid.v4()}`;
+    const partialToken = `${refreshToken}-L`;
     const hashedToken = await bcrypt.hash(refreshToken, 10);
     const expiresAt = new Date(Date.now() + THIRTY_DAYS);
 
@@ -514,6 +556,61 @@ export class AuthService {
       },
       ['userId', 'role', 'partialToken'],
     );
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  /**
+   * Generate both access and refresh tokens
+   */
+  private async generateTokensWithNanoId(
+    user: User,
+    role: Role,
+  ): Promise<TokenData> {
+    // Generate access token
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      role,
+    };
+
+    const accessToken = await this.generateAccessToken(payload);
+    const tokens = await this.tokenRepository.find({
+      where: {
+        userId: user.id,
+        role,
+      },
+    });
+    let refreshToken: string;
+    if (tokens.length === 0) {
+      // Generate refresh token
+      refreshToken = `Z-${user.id}-${role.charAt(0)}-${uuid.v4()}`;
+      const partialToken = `${refreshToken}-L`;
+      const hashedToken = await bcrypt.hash(refreshToken, 10);
+      const expiresAt = new Date(Date.now() + THIRTY_DAYS);
+
+      // Store token in database
+      await this.tokenRepository.upsert(
+        {
+          userId: user.id,
+          role,
+          partialToken,
+          hashedToken,
+          expiresAt,
+        },
+        ['userId', 'role', 'partialToken'],
+      );
+    } else {
+      const latestToken = tokens.reduce((latest, current) => {
+        return new Date(current.createdAt) > new Date(latest.createdAt)
+          ? current
+          : latest;
+      });
+      refreshToken = latestToken.partialToken.slice(0, -2);
+    }
 
     return {
       accessToken,

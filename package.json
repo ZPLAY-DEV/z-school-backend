@@ -70,6 +70,7 @@
     "keyv": "^5.3.3",
     "multer": "2.0.0",
     "mysql2": "^3.14.1",
+    "nanoid": "3",
     "nestjs-dynamoose": "^0.6.0",
     "nestjs-paginate": "^12.5.0",
     "passport": "^0.7.0",
