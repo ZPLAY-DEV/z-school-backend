@@ -13,7 +13,7 @@ import * as bcrypt from 'bcrypt';
 import { Cache } from 'cache-manager';
 import { addMinutes, isAfter } from 'date-fns';
 import * as random from 'randomstring';
-import { AWS_SQS_CLIENT } from 'src/common/constants';
+import { AWS_SQS_CLIENT, ZPLAY_SEOUL_NUMBER } from 'src/common/constants';
 import { UpdateUserDto } from 'src/domain/user/dto/update-user.dto';
 import { Secret } from 'src/domain/user/entities/secret.entity';
 import { User } from 'src/domain/user/entities/user.entity';
@@ -218,7 +218,7 @@ ON DUPLICATE KEY UPDATE `key`=VALUES(`key`), `otp`=VALUES(`otp`), updatedAt=(CON
       await this.sqsClient.sendMessage({
         type: 'SEND_TEXT',
         data: {
-          sender: '02-6052-7000',
+          sender: ZPLAY_SEOUL_NUMBER,
           receiver: phone,
           message: body,
         },

@@ -300,6 +300,11 @@ export const HttpErrorConstants = {
     message: '알리고 SaaS 서비스 호출시 오류가 발생하였습니다.',
   } as HttpErrorFormat,
 
+  SQS_ERROR: {
+    error: 'SQS_ERROR',
+    message: 'SQS 에서 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)
 };
 

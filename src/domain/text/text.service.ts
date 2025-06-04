@@ -1,16 +1,28 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { format } from 'date-fns';
+import { AWS_SQS_CLIENT } from 'src/common/constants';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { BulkMessage } from 'src/domain/text/dto/send-bulk-text.dto';
 import { MessageResponseItem } from 'src/domain/text/types/text.types';
 import { parseMessageType } from 'src/domain/text/utils/text.utils';
 
 import { AligoService } from 'src/services/aligo/aligo-service';
+import { SqsService } from 'src/services/aws/sqs.service';
 
 @Injectable()
 export class TextService {
   private readonly logger = new Logger(TextService.name);
 
-  constructor(private readonly aligoService: AligoService) {}
+  constructor(
+    private readonly aligoService: AligoService,
+    @Inject(AWS_SQS_CLIENT)
+    private readonly sqsClient: SqsService,
+  ) {}
 
   async send(
     sender: string,
@@ -42,6 +54,32 @@ export class TextService {
     };
 
     return await this.aligoService.sendBulkMessages(baseDto, messages);
+  }
+
+  async sendTextViaQueue(
+    sender: string,
+    receiver: string,
+    message: string,
+    dryrun: boolean = false,
+  ): Promise<any> {
+    const dto = {
+      sender,
+      receiver,
+      msg: message,
+      msg_type: 'SMS',
+      testmode_yn: dryrun ? 'Y' : 'N',
+    };
+    console.log(`dto`, dto);
+    const payload = {
+      type: 'SEND_TEXT',
+      data: dto,
+    };
+    try {
+      return await this.sqsClient.sendMessage(payload);
+    } catch (e) {
+      console.log(e);
+      throw new BadRequestException(HttpErrorConstants.SQS_ERROR);
+    }
   }
 
   async list(

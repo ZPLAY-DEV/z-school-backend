@@ -19,6 +19,17 @@ export class TextController {
     return await this.textService.sendBulk(sender, messages, dryrun);
   }
 
+  @Post('queue')
+  async sendTextViaQueue(@Body() dto: SendTextDto): Promise<any> {
+    const { sender, receiver, message, dryrun } = dto;
+    return await this.textService.sendTextViaQueue(
+      sender,
+      receiver,
+      message,
+      dryrun,
+    );
+  }
+
   @Get()
   async list(
     @Query('page') page: number,
