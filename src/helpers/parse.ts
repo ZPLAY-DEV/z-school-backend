@@ -30,6 +30,11 @@ export function parseRangeFormat(input?: string): number[] {
     return result;
   }
 
+  // 쉼표로 구분된 숫자 문자열 처리. 마지막 , 는 무시
+  if (input.includes(',')) {
+    return input.split(',').map((v) => parseInt(v.trim(), 10));
+  }
+
   return [1, 2, 3, 4, 5, 6]; // you can do better than this.
 }
 

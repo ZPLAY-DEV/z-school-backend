@@ -49,7 +49,8 @@ interface NeisApiResponse {
 
 @Injectable()
 export class NeisService {
-  private authKey: string = '8c9b43b18cab4614847cba6989621588';
+  private authKey: string = process.env.NEIS_API_KEY || '';
+
   async getCalendar({
     authorityCode,
     schoolCode,

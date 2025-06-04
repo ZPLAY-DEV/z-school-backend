@@ -156,7 +156,7 @@ export class BookingService {
             studentId,
             lessonName,
             capacity,
-            enrollmentRule,
+            enrollmentRule, // basically, this is going to be "선착순"
             isFormerStudent: isFormerStudent ?? false,
             waitingPosition: response.waitingPosition ?? 0,
             status: response.status,

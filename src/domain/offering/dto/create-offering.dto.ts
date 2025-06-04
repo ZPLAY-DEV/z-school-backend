@@ -9,7 +9,7 @@ import {
   IsOptional,
   IsString,
   Length,
-  ValidateNested
+  ValidateNested,
 } from 'class-validator';
 import { EnrollmentRule } from 'src/common/enums';
 import { ClassTimeDto } from 'src/domain/offering/dto/class-time.dto';

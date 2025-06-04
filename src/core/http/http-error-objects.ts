@@ -265,6 +265,41 @@ export const HttpErrorConstants = {
     message: '입력값이 허용 범위를 벗어났습니다.',
   } as HttpErrorFormat,
 
+  NO_CLASS_DAY: {
+    error: 'NO_CLASS_DAY',
+    message: '해당일에 수업이 없습니다.',
+  } as HttpErrorFormat,
+
+  DATABASE_QUERY_ERROR: {
+    error: 'DATABASE_QUERY_ERROR',
+    message: 'Database Query 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
+  DYNAMO_READ: {
+    error: 'DYNAMO_READ',
+    message: 'DynamoDB 읽기 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
+  DYNAMO_CREATE: {
+    error: 'DYNAMO_CREATE',
+    message: 'DynamoDB 생성 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
+  DYNAMO_UPDATE: {
+    error: 'DYNAMO_UPDATE',
+    message: 'DynamoDB 수정 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
+  DYNAMO_DELETE: {
+    error: 'DYNAMO_DELETE',
+    message: 'DynamoDB 삭제 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
+  ALIGO_FAILED: {
+    error: 'ALIGO_FAILED',
+    message: '알리고 SaaS 서비스 호출시 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)
 };
 

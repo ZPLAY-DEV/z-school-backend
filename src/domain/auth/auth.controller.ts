@@ -25,6 +25,7 @@ import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
   UserCredentialsDto,
   UserCredentialsDtoWithPhone,
+  UserNanoIdDto,
 } from 'src/domain/auth/dto/user-credentials.dto';
 import {
   LoginDocs,
@@ -145,6 +146,33 @@ export class AuthController {
     return tokens;
   }
 
+  @HttpCode(200)
+  @Public()
+  @Post('login/nanoid')
+  async loginWithNanoId(
+    @Body() dto: UserNanoIdDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthUserDto> {
+    const tokens = await this.authService.loginWithNanoId(dto);
+
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: ONE_HOUR,
+    });
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: THIRTY_DAYS,
+    });
+
+    return tokens;
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Public) 토큰 refresh
   //? ---------------------------------------------------------------------- ?//
@@ -176,7 +204,13 @@ export class AuthController {
 
     const tokens = await this.authService.refreshToken(
       +userId,
-      role.toUpperCase() as Role,
+      role === 'P'
+        ? Role.PARENT
+        : role === 'I'
+          ? Role.INSTRUCTOR
+          : role === 'M'
+            ? Role.MANAGER
+            : Role.ADMIN,
       refreshToken as string,
     );
 
@@ -215,7 +249,13 @@ export class AuthController {
         if (userId && role) {
           await this.authService.logout(
             +userId,
-            role.toUpperCase() as Role,
+            role === 'P'
+              ? Role.PARENT
+              : role === 'I'
+                ? Role.INSTRUCTOR
+                : role === 'M'
+                  ? Role.MANAGER
+                  : Role.ADMIN,
             refreshToken as string,
           );
         }

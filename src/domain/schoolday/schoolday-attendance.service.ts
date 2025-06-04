@@ -1,15 +1,31 @@
 import { BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { fromZonedTime } from 'date-fns-tz';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
-import { AttendanceService } from 'src/domain/attendance/attendance.service';
-import { CreateSchooldayAttendanceDto } from 'src/domain/schoolday/dto/create-schoolday-attendance.dto';
+import {
+  ATTENDANCE_CONSTANTS,
+  AttendanceItem,
+  DeleteRequest,
+  WriteRequest,
+} from 'src/domain/attendance/types/attendance.types';
+import {
+  buildAttendanceItem,
+  calculateTtl,
+  formatToLocalDateString,
+  generateDailyStudentKey,
+  generateGroupKey,
+} from 'src/domain/attendance/utils/attendance.utils';
+import {
+  CreateAttendanceResultDto,
+  CreateDynamoRecordWithDateDto,
+  CreateDynamoRecordWithRangeDto,
+} from 'src/domain/schoolday/dto/create-dynamo-record.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { getDigitStudentId, getStudentId } from 'src/helpers/student';
 import { DynamoService } from 'src/services/aws/dynamo.service';
 import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+
+const tableName = `${process.env.NODE_ENV}_attendance_table`;
 
 @Injectable()
 export class SchooldayAttendanceService {
@@ -18,158 +34,82 @@ export class SchooldayAttendanceService {
   constructor(
     @InjectRepository(Schoolday)
     private readonly schooldayRepository: Repository<Schoolday>,
-    private readonly attendanceService: AttendanceService,
     private readonly dynamoService: DynamoService,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? Create
+  //? Create w/ date
   //? ---------------------------------------------------------------------- ?//
 
-  async create(dto: CreateSchooldayAttendanceDto): Promise<any> {
-    const { schoolId, termId, from, to } = dto;
-    const startsAt = new Date(from);
-    const endsAt = new Date(to);
-    console.log(`startsAt =`, startsAt);
-    console.log(`endsAt =`, endsAt);
-    const schooldays = await this.schooldayRepository.find({
-      where: {
-        schoolId,
-        termId,
-        startsAt: MoreThanOrEqual(startsAt),
-        endsAt: LessThanOrEqual(endsAt),
-      },
-      relations: {
-        group: {
-          groupStudents: {
-            student: true,
-          },
-          lesson: true,
-        },
-      },
-    });
-
-    await Promise.all(
-      schooldays.map(async (schoolday) => {
-        const { group, startsAt, duration, lessonId, groupId } = schoolday;
-        const { groupStudents, groupName, lesson } = group;
-        const localDate = format(
-          toZonedTime(startsAt, 'Asia/Seoul'),
-          'yyyy-MM-dd',
-        );
-        for (const { student } of groupStudents ?? []) {
-          const groupKey = `GROUP#${groupId}`;
-          const dailyStudentKey = `DATE#${localDate}#STUDENT#${student.id}`;
-          const studentId = getStudentId(
-            student.grade,
-            student.class,
-            student.studentCode,
-          );
-          await this.attendanceService.create({
-            groupKey,
-            dailyStudentKey,
-            lessonId,
-            lessonName: lesson?.lessonName ?? '과목',
-            groupId,
-            groupName: groupName ?? '반',
-            studentId,
-            studentName: student.name ?? '학생',
-            start: group.start,
-            end: group.end,
-            duration,
-            status: AttendanceStatus.PRESENT, // 기본값, 필요시 변경
-          });
-        }
-      }),
+  async createWithDate(
+    dto: CreateDynamoRecordWithDateDto,
+  ): Promise<CreateAttendanceResultDto> {
+    const { schoolId, termId, date } = dto;
+    const startsAt = fromZonedTime(
+      `${date}T00:00:00`,
+      ATTENDANCE_CONSTANTS.TIME_ZONE,
+    );
+    const endsAt = fromZonedTime(
+      `${date}T23:59:59`,
+      ATTENDANCE_CONSTANTS.TIME_ZONE,
     );
 
-    return schooldays;
+    return await this.createAttendanceRecords(
+      schoolId,
+      termId,
+      startsAt,
+      endsAt,
+    );
   }
 
-  // Exponential backoff sleep helper
-  private sleep(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
+  //? ---------------------------------------------------------------------- ?//
+  //? Create w/ range
+  //? ---------------------------------------------------------------------- ?//
 
-  async create2(dto: CreateSchooldayAttendanceDto): Promise<any> {
+  async createWithPeriod(
+    dto: CreateDynamoRecordWithRangeDto,
+  ): Promise<CreateAttendanceResultDto> {
     const { schoolId, termId, from, to } = dto;
-    const startsAt = new Date(from);
-    const endsAt = new Date(to);
-    const schooldays = await this.schooldayRepository.find({
-      where: {
-        schoolId,
-        termId,
-        startsAt: MoreThanOrEqual(startsAt),
-        endsAt: LessThanOrEqual(endsAt),
-      },
-      relations: {
-        group: {
-          groupStudents: {
-            student: true,
-          },
-          lesson: true,
-        },
-      },
-    });
+    const startsAt = fromZonedTime(
+      `${from}T00:00:00`,
+      ATTENDANCE_CONSTANTS.TIME_ZONE,
+    );
+    const endsAt = fromZonedTime(
+      `${to}T23:59:59`,
+      ATTENDANCE_CONSTANTS.TIME_ZONE,
+    );
 
-    type WriteRequest = { PutRequest: { Item: Record<string, any> } };
-    const items: WriteRequest[] = [];
+    return await this.createAttendanceRecords(
+      schoolId,
+      termId,
+      startsAt,
+      endsAt,
+    );
+  }
 
-    const expires =
-      Math.floor(new Date(startsAt).getTime() / 1000) + 60 * 60 * 24 * 365;
+  //? ---------------------------------------------------------------------- ?//
+  //? Public batch operations for use by SchooldaySubscriber
+  //? ---------------------------------------------------------------------- ?//
 
-    for (const schoolday of schooldays) {
-      const { group, startsAt, duration, lessonId, groupId } = schoolday;
-      const { groupStudents, groupName, lesson } = group;
-      const localDate = format(
-        toZonedTime(startsAt, 'Asia/Seoul'),
-        'yyyy-MM-dd',
-      );
-      for (const { student } of groupStudents ?? []) {
-        const groupKey = `GROUP#${groupId}`;
-        const digitStudentId = getDigitStudentId(
-          student.grade,
-          student.class,
-          student.studentCode,
-        );
-        const studentId = getStudentId(
-          student.grade,
-          student.class,
-          student.studentCode,
-        );
-        const dailyStudentKey = `DATE#${localDate}#STUDENT#${digitStudentId}`;
-        items.push({
-          PutRequest: {
-            Item: {
-              groupKey,
-              dailyStudentKey,
-              lessonId,
-              lessonName: lesson?.lessonName ?? '과목',
-              groupId,
-              groupName: groupName ?? '반',
-              studentId,
-              studentName: student.name ?? '학생',
-              start: group.start,
-              end: group.end,
-              duration,
-              status: AttendanceStatus.PENDING,
-              expires,
-            },
-          },
-        });
-      }
-    }
-
-    const BATCH_SIZE = 25;
-    const MAX_RETRIES = 5;
-    const BASE_DELAY = 100; // ms
+  /**
+   * Public method for batch writing attendance items with retry logic
+   * Used by SchooldaySubscriber for efficient batch operations
+   */
+  public async batchWriteAttendanceItems(
+    items: (WriteRequest | DeleteRequest)[],
+  ): Promise<CreateAttendanceResultDto> {
     let failedBatches = 0;
-    const tableName = 'development_attendance_table';
-    for (let i = 0; i < items.length; i += BATCH_SIZE) {
-      const batch: WriteRequest[] = items.slice(i, i + BATCH_SIZE);
+    let conditionalCheckFailures = 0;
+
+    for (let i = 0; i < items.length; i += ATTENDANCE_CONSTANTS.BATCH_SIZE) {
+      const batch = items.slice(i, i + ATTENDANCE_CONSTANTS.BATCH_SIZE);
       let retries = 0;
       let unprocessed = batch;
-      while (unprocessed.length > 0 && retries < MAX_RETRIES) {
+
+      while (
+        unprocessed.length > 0 &&
+        retries < ATTENDANCE_CONSTANTS.MAX_RETRIES
+      ) {
         try {
           const result = await this.dynamoService.send(
             new BatchWriteCommand({
@@ -183,25 +123,182 @@ export class SchooldayAttendanceService {
             this.logger.warn(
               `BatchWriteCommand: ${unprocessedItems.length} unprocessed items, retrying... (attempt ${retries + 1})`,
             );
-            unprocessed = unprocessedItems as WriteRequest[];
+            unprocessed = unprocessedItems as typeof batch;
             retries++;
-            await this.sleep(BASE_DELAY * 2 ** (retries - 1));
+            await this.sleep(
+              ATTENDANCE_CONSTANTS.BASE_DELAY * 2 ** (retries - 1),
+            );
           } else {
             unprocessed = [];
           }
         } catch (err: any) {
+          // ConditionalCheckFailedException은 이미 존재하는 레코드를 의미하므로
+          // 실패로 간주하지 않음
+          if (
+            err.name === 'ConditionalCheckFailedException' ||
+            err.code === 'ConditionalCheckFailedException'
+          ) {
+            this.logger.log(
+              `ConditionalCheckFailedException: ${unprocessed.length} items already exist, skipping...`,
+            );
+            conditionalCheckFailures += unprocessed.length;
+            break; // 이 배치는 완료된 것으로 간주
+          }
+
           this.logger.error('BatchWriteCommand error', err);
           retries++;
-          await this.sleep(BASE_DELAY * 2 ** (retries - 1));
+          await this.sleep(
+            ATTENDANCE_CONSTANTS.BASE_DELAY * 2 ** (retries - 1),
+          );
         }
       }
-      if (unprocessed.length > 0) {
+
+      if (
+        unprocessed.length > 0 &&
+        retries >= ATTENDANCE_CONSTANTS.MAX_RETRIES
+      ) {
         this.logger.error(
-          `Failed to process ${unprocessed.length} items after ${MAX_RETRIES} retries.`,
+          `Failed to process ${unprocessed.length} items after ${ATTENDANCE_CONSTANTS.MAX_RETRIES} retries.`,
         );
         failedBatches++;
       }
     }
-    return { total: items.length, failedBatches };
+
+    this.logger.log(
+      `Batch write completed. Total: ${items.length}, Failed: ${failedBatches}, Already exists: ${conditionalCheckFailures}`,
+    );
+
+    return {
+      total: items.length,
+      failedBatches,
+      alreadyExists: conditionalCheckFailures,
+    };
+  }
+
+  /**
+   * Helper method to create delete requests for batch operations
+   */
+  public createDeleteRequests(
+    groupKey: string,
+    dailyStudentKeys: string[],
+  ): DeleteRequest[] {
+    return dailyStudentKeys.map((dailyStudentKey) => ({
+      DeleteRequest: {
+        Key: {
+          groupKey,
+          dailyStudentKey,
+        },
+      },
+    }));
+  }
+
+  /**
+   * Helper method to create put requests for batch operations
+   */
+  public createPutRequests(attendanceItems: AttendanceItem[]): WriteRequest[] {
+    return attendanceItems.map((item) => ({
+      PutRequest: {
+        Item: buildAttendanceItem(item),
+        ConditionExpression:
+          'attribute_not_exists(groupKey) AND attribute_not_exists(dailyStudentKey)',
+      },
+    }));
+  }
+
+  // ------------------------------------------------------------------------ //
+  // Private methods
+  // ------------------------------------------------------------------------ //
+
+  /**
+   * Creates attendance records for schooldays within the given date range
+   */
+  private async createAttendanceRecords(
+    schoolId: number | undefined,
+    termId: number | undefined,
+    startsAt: Date,
+    endsAt: Date,
+  ): Promise<CreateAttendanceResultDto> {
+    // Build where condition dynamically based on provided parameters
+    const whereCondition: any = {
+      startsAt: MoreThanOrEqual(startsAt),
+      endsAt: LessThanOrEqual(endsAt),
+    };
+
+    if (schoolId !== undefined) {
+      whereCondition.schoolId = schoolId;
+    }
+
+    if (termId !== undefined) {
+      whereCondition.termId = termId;
+    }
+
+    const schooldays = await this.schooldayRepository.find({
+      where: whereCondition,
+      relations: {
+        group: {
+          groupStudents: {
+            student: true,
+          },
+          lesson: true,
+        },
+      },
+    });
+
+    const items: WriteRequest[] = [];
+    const expires = calculateTtl(startsAt);
+
+    for (const schoolday of schooldays) {
+      const { group, startsAt, duration, lessonId, groupId } = schoolday;
+      const { groupStudents: picks, groupName, lesson } = group;
+      const localDate = formatToLocalDateString(startsAt);
+
+      for (const pick of picks ?? []) {
+        const groupKey = generateGroupKey(groupId);
+        const dailyStudentKey = generateDailyStudentKey(
+          localDate,
+          pick.student.id,
+          pick.student.grade,
+          pick.student.class,
+          pick.student.studentCode,
+        );
+
+        if (
+          pick.endedOn &&
+          fromZonedTime(
+            `${pick.endedOn}T23:59:59`,
+            ATTENDANCE_CONSTANTS.TIME_ZONE,
+          ) < startsAt
+        ) {
+          // endedOn 이 있고, startsAt 이 마지막 수업시간(endedOn)보다 크면 출석부 생성 안함
+          continue;
+        }
+
+        items.push({
+          PutRequest: {
+            Item: buildAttendanceItem({
+              groupKey,
+              dailyStudentKey,
+              lessonId,
+              lessonName: lesson?.lessonName,
+              groupId,
+              groupName: groupName,
+              studentId: pick.student.id,
+              studentName: pick.student.name,
+              start: group.start,
+              end: group.end,
+              duration,
+              status: AttendanceStatus.PENDING,
+              expires,
+            }),
+          },
+        });
+      }
+    }
+
+    return await this.batchWriteAttendanceItems(items);
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { SortOrder } from 'dynamoose/dist/General';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import { CreateAttendanceDto } from 'src/domain/attendance/dto/create-attendance.dto';
-import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { UpsertAttendanceDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
   IAttendance,
   IAttendanceKey,
@@ -19,100 +19,101 @@ export class AttendanceService {
 
   //? notice that even if you provide createdAt and updatedAt in the payload
   //? dynamodb will ignore them and record the timestamps with its own value.
+  //? This method works as upsert - if the item exists, it will be overwritten.
   //?
-  async create(dto: CreateAttendanceDto): Promise<IAttendance> {
+  async upsert(dto: UpsertAttendanceDto): Promise<IAttendance> {
+    const { groupKey, dailyStudentKey, ...rest } = dto;
+    const itemKey = {
+      groupKey,
+      dailyStudentKey,
+    };
+    const itemDto = {
+      ...rest,
+    };
+
+    // intentionally using exception-driven control flow
     try {
-      const attendance = await this.model.create({
-        ...dto,
-        parentNote: dto.parentNote ?? '',
-        schoolNote: dto.schoolNote ?? '',
+      const result = await this.model.create({
+        ...itemKey,
+        ...itemDto,
       });
-      return attendance as IAttendance;
+      console.log(
+        '✅ created new attendance:',
+        JSON.stringify(result, null, 2),
+      );
+      return result as unknown as IAttendance;
     } catch (error) {
-      console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
+      if (
+        error.name === 'ConditionalCheckFailedException' ||
+        error.code === 'ConditionalCheckFailedException'
+      ) {
+        try {
+          const result = await this.model.update(itemKey, itemDto);
+          console.log(
+            '✅ updated existing attendance:',
+            JSON.stringify(result, null, 2),
+          );
+          return result as unknown as IAttendance;
+        } catch (updateError) {
+          console.error(`[dynamodb] update error`, updateError);
+          throw new BadRequestException(HttpErrorConstants.DYNAMO_UPDATE);
+        }
+      } else {
+        console.error(`[dynamodb] error`, error);
+        throw new BadRequestException(HttpErrorConstants.DYNAMO_CREATE);
+      }
     }
   }
 
   //? notice that records will be sorted by range key,
   //? which is dailyStudentKey
   //?
-  async fetch(groupKey: string, lastKey: IAttendanceKey | null): Promise<any> {
+  async fetch(
+    groupKey: string,
+    lastKey?: IAttendanceKey,
+  ): Promise<{
+    items: IAttendance[];
+    count: number;
+    lastKey?: IAttendanceKey;
+  }> {
     try {
-      return lastKey
-        ? await this.model
-            .query('groupKey')
-            .eq(groupKey)
-            .sort(SortOrder.descending)
-            .startAt(lastKey)
-            .limit(LIMIT)
-            .exec()
-        : await this.model
-            .query('groupKey')
-            .eq(groupKey)
-            .sort(SortOrder.descending)
-            .limit(LIMIT)
-            .exec();
-    } catch (error) {
-      console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
-    }
-  }
-
-  async findById(key: IAttendanceKey): Promise<IAttendance> {
-    try {
-      return (await this.model.get(key)) as IAttendance;
-    } catch (error) {
-      console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
-    }
-  }
-
-  async update(
-    key: IAttendanceKey,
-    dto: UpdateAttendanceDto,
-  ): Promise<IAttendance> {
-    try {
-      return (await this.model.update(key, {
-        ...dto,
-      })) as IAttendance;
-    } catch (error) {
-      console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
-    }
-  }
-
-  async markAsRead(key: IAttendanceKey): Promise<void> {
-    try {
-      await this.model.update(key, { isRead: true });
-    } catch (error) {
-      console.error('Error updating isRead:', error);
-      throw error;
-    }
-  }
-
-  async delete(key: IAttendanceKey): Promise<any> {
-    try {
-      return this.model.delete(key);
-    } catch (error) {
-      console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
-    }
-  }
-
-  async findByDate(groupKey: string, date: string): Promise<IAttendance[]> {
-    try {
-      const prefix = `DATE#${date}`;
-      const result = await this.model
+      const query = this.model
         .query('groupKey')
         .eq(groupKey)
-        .where('dailyStudentKey')
-        .beginsWith(prefix)
-        .exec();
-      return result as IAttendance[];
+        .sort(SortOrder.descending)
+        .limit(LIMIT);
+
+      const result = lastKey
+        ? await query.startAt(lastKey).exec()
+        : await query.exec();
+
+      return {
+        items: result as IAttendance[],
+        count: result.count,
+        lastKey: result.lastKey as IAttendanceKey | undefined,
+      };
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error);
+      throw new BadRequestException(HttpErrorConstants.DYNAMO_READ);
+    }
+  }
+
+  async findById(dto: IAttendanceKey): Promise<IAttendance> {
+    console.log(dto);
+    try {
+      return (await this.model.get(dto)) as IAttendance;
+    } catch (error) {
+      console.error(`[dynamodb] error`, error);
+      throw new BadRequestException(HttpErrorConstants.DYNAMO_READ);
+    }
+  }
+
+  async delete(dto: IAttendanceKey): Promise<void> {
+    try {
+      await this.model.delete(dto);
+    } catch (error) {
+      console.error(`[dynamodb] error`, error);
+      throw new BadRequestException(HttpErrorConstants.DYNAMO_DELETE);
     }
   }
 }

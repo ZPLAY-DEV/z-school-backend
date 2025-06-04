@@ -13,6 +13,7 @@ import * as bcrypt from 'bcrypt';
 import { Cache } from 'cache-manager';
 import { addMinutes, isAfter } from 'date-fns';
 import * as random from 'randomstring';
+import { AWS_SQS_CLIENT } from 'src/common/constants';
 import { UpdateUserDto } from 'src/domain/user/dto/update-user.dto';
 import { Secret } from 'src/domain/user/entities/secret.entity';
 import { User } from 'src/domain/user/entities/user.entity';
@@ -30,10 +31,10 @@ export class UserOtpService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Secret)
     private readonly secretRepository: Repository<Secret>,
+    @Inject(AWS_SQS_CLIENT)
+    private readonly sqsClient: SqsService,
     @Inject(ConfigService) private configService: ConfigService, // global
     @Inject(CACHE_MANAGER) private cacheManager: Cache, // global
-
-    private readonly sqsService: SqsService,
   ) {
     this.env = this.configService.get('nodeEnv');
   }
@@ -211,13 +212,16 @@ ON DUPLICATE KEY UPDATE `key`=VALUES(`key`), `otp`=VALUES(`otp`), updatedAt=(CON
   }
 
   async _sendSmsTo(phone: string, otp: string): Promise<any> {
-    const body = `[미소] 인증코드 ${otp}`;
+    const body = `[] 인증코드 ${otp}`;
     try {
       // Instead of directly sending SMS, queue the message in SQS
-      await this.sqsService.sendMessage({
-        messageType: 'SMS',
-        to: phone,
-        content: body,
+      await this.sqsClient.sendMessage({
+        type: 'SEND_TEXT',
+        data: {
+          sender: '02-6052-7000',
+          receiver: phone,
+          message: body,
+        },
       });
     } catch (e) {
       console.log(e);

@@ -20,7 +20,7 @@ export class CreateAttendanceDto {
   @IsString()
   dailyStudentKey: string;
 
-  @ApiProperty({ description: '🈵 lessonId' })
+  @ApiProperty({ description: '🈵 lessonId', example: 1 })
   @IsNumber()
   lessonId: number;
 
@@ -28,7 +28,7 @@ export class CreateAttendanceDto {
   @IsString()
   lessonName: string;
 
-  @ApiProperty({ description: '🈵 groupId' })
+  @ApiProperty({ description: '🈵 groupId', example: 1 })
   @IsNumber()
   groupId: number;
 
@@ -36,9 +36,9 @@ export class CreateAttendanceDto {
   @IsString()
   groupName: string;
 
-  @ApiProperty({ description: '🈵 studentId (e.g. "1학년1반-10")' })
-  @IsString()
-  studentId: string;
+  @ApiProperty({ description: '🈵 studentId', example: 1 })
+  @IsNumber()
+  studentId: number;
 
   @ApiProperty({ description: '🈵 studentName' })
   @IsString()

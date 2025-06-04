@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
@@ -66,9 +67,17 @@ export class Parent {
   @Exclude()
   deletedAt: Date | null;
 
+  //* 1-to-1 hasOne -------------------------------------------------------- *//
+
+  @Exclude()
+  @OneToOne(() => NanoId, (nanoId) => nanoId.parent, {
+    cascade: ['insert', 'update'],
+  })
+  nanoId?: NanoId;
+
   //* 1-to-1 belongsTo ----------------------------------------------------- *//
 
-  @OneToOne(() => User, (user) => user.instructor, {
+  @OneToOne(() => User, (user) => user.parent, {
     onDelete: 'CASCADE',
   })
   @JoinColumn()

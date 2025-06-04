@@ -10,11 +10,12 @@ import { GroupService } from 'src/domain/group/group.service';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { PickController } from 'src/domain/pick/pick.controller';
 import { PickService } from 'src/domain/pick/pick.service';
+import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Group, Pick]),
+    TypeOrmModule.forFeature([User, Group, Pick, Student]),
     DynamooseModule.forFeature([
       {
         name: 'Attendance',

@@ -30,6 +30,11 @@ import {
   Repository,
 } from 'typeorm';
 
+type GroupSamData = CreateGroupWithInstructorDto & {
+  lessonId: number;
+  samId: number;
+};
+
 @Injectable()
 export class LessonCoreService {
   private readonly logger = new Logger(LessonCoreService.name);
@@ -47,7 +52,7 @@ export class LessonCoreService {
 
   async create(dto: CreateLessonDto): Promise<Lesson> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      //? 1단계) Find school
+      //? 1단계) 학교 정보 확인
       const school = await manager.findOne(School, {
         where: { id: dto.schoolId },
       });
@@ -55,7 +60,7 @@ export class LessonCoreService {
         throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
       }
 
-      //? 2단계) Find term to use start/end dates
+      //? 2단계) 학기 정보 확인
       const term = await manager.findOne(Term, {
         where: { id: dto.termId },
       });
@@ -113,17 +118,51 @@ export class LessonCoreService {
 
       //? 6단계) 학업요일 days 정보 및 schooldays 처리
       for (const group of savedLesson.groups) {
-        // 이 반의 기존 schooldays 모두 제거
-        await manager.getRepository('Schoolday').delete({ groupId: group.id });
-        // 이 반의 schooldays 생성
-        const schooldays: Schoolday[] = generateSchooldays(
+        // 1. 기존 schooldays를 key-value로 변환 (startsAt+endsAt 기준)
+        const existingSchooldays = await manager
+          .getRepository('Schoolday')
+          .find({ where: { groupId: group.id } });
+        const existingMap = new Map<string, Schoolday>();
+        for (const sd of existingSchooldays) {
+          const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
+          existingMap.set(key, sd as Schoolday);
+        }
+
+        // 2. 새로 생성될 schooldays
+        const newSchooldays: Schoolday[] = generateSchooldays(
           savedLesson,
           group,
           offdays,
         );
-        group.schooldays = schooldays; // cascade로 자동 저장
-        group.days = schooldays.length;
-        await manager.save(group); // cascade로 schooldays도 저장/삭제됨
+        const newMap = new Map<string, Schoolday>();
+        for (const sd of newSchooldays) {
+          const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
+          newMap.set(key, sd);
+        }
+
+        // 3. 추가해야 할 schooldays (new에만 있는 것)
+        const toInsert = Array.from(newMap.entries())
+          .filter(([key]) => !existingMap.has(key))
+          .map(([, sd]) => sd);
+
+        // 4. 삭제해야 할 schooldays (existing에만 있는 것)
+        const toDelete = Array.from(existingMap.entries())
+          .filter(([key]) => !newMap.has(key))
+          .map(([, sd]) => sd);
+
+        // 5. 실제 DB 반영 (update는 불필요하므로 생략)
+        if (toDelete.length > 0) {
+          await manager
+            .getRepository('Schoolday')
+            .delete(toDelete.map((sd) => sd.id));
+        }
+        if (toInsert.length > 0) {
+          await manager.getRepository('Schoolday').save(toInsert as any);
+        }
+
+        // 6. group.days 갱신
+        group.days = newSchooldays.length;
+        await manager.save(group);
       }
 
       return savedLesson;
@@ -152,7 +191,7 @@ export class LessonCoreService {
       );
     }
 
-    //? 1단계) 업데이트할 강좌 찾기
+    //? 0단계) 업데이트할 강좌 찾기
     const existingLesson = await manager.findOne(Lesson, {
       where: { id },
       relations: {
@@ -163,7 +202,7 @@ export class LessonCoreService {
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
     }
 
-    //? 2단계) 학교 정보 확인
+    //? 1단계) 학교 정보 확인
     const school = await manager.findOne(School, {
       where: { id: dto.schoolId },
     });
@@ -171,7 +210,7 @@ export class LessonCoreService {
       throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
     }
 
-    //? 3단계) 학기 정보 확인
+    //? 2단계) 학기 정보 확인
     const term = await manager.findOne(Term, {
       where: { id: dto.termId },
     });
@@ -179,7 +218,7 @@ export class LessonCoreService {
       throw new NotFoundException('Term not found');
     }
 
-    //? 4단계) 기존 그룹 ID 매핑
+    //? 3단계) 기존 반(group)정보 매핑
     if (dto.groups?.length) {
       // 기존 GroupId 를 보존하도록 매핑
       dto.groups = dto.groups.map((groupDto) => {
@@ -223,7 +262,7 @@ export class LessonCoreService {
       }
     }
 
-    //? 5단계) 강좌 업데이트
+    //? 4단계) 강좌 업데이트
     const updatedLesson = await manager
       .save(Lesson, {
         ...existingLesson,
@@ -239,7 +278,7 @@ export class LessonCoreService {
         );
       });
 
-    //? 6단계) 그룹 및 강사 정보 처리
+    //? 5단계) 반(Group)과 쌤(Sam) 정보 처리
     if (dto.groups?.length) {
       await this.processGroups(
         updatedLesson,
@@ -263,17 +302,51 @@ export class LessonCoreService {
 
     //? 6단계) 학업요일 days 정보 및 schooldays 처리
     for (const group of finalLesson.groups) {
-      // 이 반의 기존 schooldays 모두 제거
-      await manager.getRepository('Schoolday').delete({ groupId: group.id });
-      // 이 반의 schooldays 생성
-      const schooldays: Schoolday[] = generateSchooldays(
+      // 1. 기존 schooldays를 key-value로 변환 (startsAt+endsAt 기준)
+      const existingSchooldays = await manager
+        .getRepository('Schoolday')
+        .find({ where: { groupId: group.id } });
+      const existingMap = new Map<string, Schoolday>();
+      for (const sd of existingSchooldays) {
+        const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
+        existingMap.set(key, sd as Schoolday);
+      }
+
+      // 2. 새로 생성될 schooldays
+      const newSchooldays: Schoolday[] = generateSchooldays(
         finalLesson,
         group,
         offdays,
       );
-      group.schooldays = schooldays; // cascade로 자동 저장
-      group.days = schooldays.length;
-      await manager.save(group); // cascade로 schooldays도 저장/삭제됨
+      const newMap = new Map<string, Schoolday>();
+      for (const sd of newSchooldays) {
+        const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
+        newMap.set(key, sd);
+      }
+
+      // 3. 추가해야 할 schooldays (new에만 있는 것)
+      const toInsert = Array.from(newMap.entries())
+        .filter(([key]) => !existingMap.has(key))
+        .map(([, sd]) => sd);
+
+      // 4. 삭제해야 할 schooldays (existing에만 있는 것)
+      const toDelete = Array.from(existingMap.entries())
+        .filter(([key]) => !newMap.has(key))
+        .map(([, sd]) => sd);
+
+      // 5. 실제 DB 반영 (update는 불필요하므로 생략)
+      if (toDelete.length > 0) {
+        await manager
+          .getRepository('Schoolday')
+          .delete(toDelete.map((sd) => sd.id));
+      }
+      if (toInsert.length > 0) {
+        await manager.getRepository('Schoolday').save(toInsert as any);
+      }
+
+      // 6. group.days 갱신
+      group.days = newSchooldays.length;
+      await manager.save(group);
     }
 
     return finalLesson;
@@ -289,15 +362,6 @@ export class LessonCoreService {
     groups: CreateGroupWithInstructorDto[],
     manager: EntityManager,
   ): Promise<void> {
-    type GroupSamData = {
-      lessonId: number;
-      samId: number;
-      groupData: CreateGroupWithInstructorDto & {
-        lessonId: number;
-        samId: number;
-      };
-    };
-
     const uniqueSams = new Map<string, number>(); // key: `${instructorName}-${instructorPhone}`
     const groupsWithSamData: GroupSamData[] = [];
 
@@ -310,11 +374,7 @@ export class LessonCoreService {
         groupsWithSamData.push({
           lessonId: lesson.id,
           samId,
-          groupData: {
-            ...groupDto,
-            samId,
-            lessonId: lesson.id,
-          },
+          ...groupDto,
         });
         continue;
       }
@@ -357,16 +417,12 @@ export class LessonCoreService {
       groupsWithSamData.push({
         lessonId: lesson.id,
         samId: Number(sam.id),
-        groupData: {
-          ...groupDto,
-          samId: Number(sam.id),
-          lessonId: lesson.id,
-        },
+        ...groupDto,
       });
     }
 
     // Upsert groups with both lessonId and samId
-    for (const { samId, groupData } of groupsWithSamData) {
+    for (const groupData of groupsWithSamData) {
       const groupStart = parseTimeFormat(parseTime(groupData.start));
       const groupEnd = parseTimeFormat(parseTime(groupData.end));
       const groupAllowedGrades = parseRangeFormat(groupData.allowedGrades).join(
@@ -374,9 +430,9 @@ export class LessonCoreService {
       );
 
       const upsertData: DeepPartial<Group> = {
-        lessonId: lesson.id,
+        lessonId: groupData.lessonId,
         groupName: groupData.groupName,
-        samId,
+        samId: groupData.samId,
         location: groupData.location,
         capacity: groupData.capacity,
         allowedGrades: groupAllowedGrades,
@@ -387,6 +443,9 @@ export class LessonCoreService {
       if ('id' in groupData && groupData.id) {
         upsertData.id = Number(groupData.id);
       }
+      // Ensure lessonId is always set correctly
+      upsertData.lessonId = lesson.id;
+
       await manager
         .getRepository(Group)
         .upsert(upsertData, ['lessonId', 'groupName']);

@@ -29,8 +29,8 @@ import {
 //! 단일 Lesson 엔터티 작업
 @ApiTags('✅ Lessons ( 과목 )')
 @ApiCommonErrorResponseTemplate()
-@Controller('lessons')
 @UseInterceptors(ClassSerializerInterceptor)
+@Controller('lessons')
 export class LessonController {
   constructor(private readonly lessonService: LessonService) {}
 
