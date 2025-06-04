@@ -11,6 +11,7 @@ import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Statement } from 'src/domain/statement/entities/statement.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
+import { Notification } from 'src/domain/notification/entities/notification.entity';
 import {
   Column,
   CreateDateColumn,
@@ -152,6 +153,9 @@ export class School {
     cascade: ['insert', 'update'],
   })
   public sams: Sam[];
+
+  @OneToMany(() => Notification, (notification) => notification.school)
+  public notifications: Notification[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

@@ -44,6 +44,7 @@ import { BoardModule } from './domain/board/board.module';
 import { PhoneModule } from './domain/phone/phone.module';
 import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
+import { NotificationModule } from './domain/notification/notification.module';
 
 @Module({
   imports: [
@@ -136,6 +137,7 @@ import { UploadModule } from './services/upload/upload.module';
     HealthModule,
     PhoneModule,
     BoardModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [
@@ -155,10 +157,10 @@ import { UploadModule } from './services/upload/upload.module';
     //   provide: APP_INTERCEPTOR,
     //   useClass: HttpCacheInterceptor,
     // },
-    {
-      provide: APP_FILTER,
-      useClass: SentryCatchAllFilter, // 500 이상오류, Sentry/Slack 보고
-    },
+    // {
+    //   provide: APP_FILTER,
+    //   useClass: SentryCatchAllFilter, // 500 이상오류, Sentry/Slack 보고
+    // },
     AppService,
   ],
 })

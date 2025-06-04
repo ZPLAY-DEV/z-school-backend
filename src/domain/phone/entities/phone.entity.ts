@@ -17,6 +17,10 @@ export class Phone {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
+  @ApiProperty({ description: '🈵 학교 아이디' })
+  @Column({ type: 'int', unsigned: true })
+  schoolId: number;
+
   @ApiProperty({ description: '🈵 학교에서 관리하는 발송 번호 (숫자만 입력)' })
   @Column({ type: 'varchar', length: 16 })
   phone: string;

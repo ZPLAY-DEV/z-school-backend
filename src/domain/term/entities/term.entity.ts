@@ -4,6 +4,7 @@ import { PickRule } from 'src/common/enums';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { School } from 'src/domain/school/entities/school.entity';
+import { Notification } from 'src/domain/notification/entities/notification.entity';
 import {
   Column,
   CreateDateColumn,
@@ -124,6 +125,9 @@ export class Term {
     cascade: ['insert', 'update'],
   })
   public offerings: Offering[];
+
+  @OneToMany(() => Notification, (notification) => notification.term)
+  notifications: Notification[];
 
   //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
 
