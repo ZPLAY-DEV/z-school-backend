@@ -305,6 +305,16 @@ export const HttpErrorConstants = {
     message: 'SQS 에서 오류가 발생하였습니다.',
   } as HttpErrorFormat,
 
+  INVALID_PUSH_TOKEN: {
+    error: 'INVALID_PUSH_TOKEN',
+    message: 'PUSH TOKEN 이 유효하지 않습니다.',
+  } as HttpErrorFormat,
+
+  PUSH_FAILED: {
+    error: 'PUSH_FAILED',
+    message: '푸시 알림 전송에 실패하였습니다.',
+  } as HttpErrorFormat,
+
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)
 };
 

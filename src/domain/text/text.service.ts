@@ -10,7 +10,6 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { BulkMessage } from 'src/domain/text/dto/send-bulk-text.dto';
 import { MessageResponseItem } from 'src/domain/text/types/text.types';
 import { parseMessageType } from 'src/domain/text/utils/text.utils';
-
 import { AligoService } from 'src/services/aligo/aligo-service';
 import { SqsService } from 'src/services/aws/sqs.service';
 
@@ -46,14 +45,14 @@ export class TextService {
     messages: BulkMessage[],
     dryrun: boolean = false,
   ): Promise<any> {
-    const baseDto = {
+    const dto = {
       sender,
       msg_type: 'SMS',
       testmode_yn: dryrun ? 'Y' : 'N',
       cnt: messages.length,
     };
-
-    return await this.aligoService.sendBulkMessages(baseDto, messages);
+    console.log(`dto`, dto);
+    return await this.aligoService.sendBulkMessages(dto, messages);
   }
 
   async sendTextViaQueue(
