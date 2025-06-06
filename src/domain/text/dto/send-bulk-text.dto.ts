@@ -1,35 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsBoolean,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from 'class-validator';
-
-export class BulkMessage {
-  @ApiProperty({ description: 'receiver (e.g. "01012345678")' })
-  @IsString()
-  receiver: string;
-
-  @ApiProperty({ description: 'message' })
-  @IsString()
-  message: string;
-}
+import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class SendBulkTextDto {
-  @ApiProperty({ description: 'sender (e.g. "01012345678")' })
+  @ApiProperty({ description: 'sender', example: '01012345678' })
   @IsString()
   sender: string;
 
-  @ApiProperty({ description: 'bulk sms messages' })
+  @ApiProperty({
+    description: 'receiver phone numbers',
+    example: ['01012345678', '01012345679'],
+  })
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => BulkMessage)
-  messages: BulkMessage[];
+  phones: string[];
 
-  @ApiProperty({ description: 'dryrun flag (default: false)' })
+  @ApiProperty({ description: 'message', example: 'Hello, world!' })
+  @IsString()
+  message: string;
+
+  @ApiProperty({ description: 'dryrun flag (default: false)', example: false })
   @IsBoolean()
   @IsOptional()
   dryrun?: boolean;

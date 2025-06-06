@@ -89,6 +89,7 @@ export class FcmService {
   }
 
   /**
+   * 대상을 모두 때려넣어서 호출하면 알아서 chunk 로 나눠서 보내는 책임을 갖는다.
    * Send notification to multiple tokens with automatic batching and retry
    */
   async sendMulticast(

@@ -7,10 +7,9 @@ import {
 import { format } from 'date-fns';
 import { AWS_SQS_CLIENT } from 'src/common/constants';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { BulkMessage } from 'src/domain/text/dto/send-bulk-text.dto';
-import { MessageResponseItem } from 'src/domain/text/types/text.types';
 import { parseMessageType } from 'src/domain/text/utils/text.utils';
 import { AligoService } from 'src/services/aligo/aligo-service';
+import { AligoListResult } from 'src/services/aligo/types';
 import { SqsService } from 'src/services/aws/sqs.service';
 
 @Injectable()
@@ -42,17 +41,18 @@ export class TextService {
 
   async sendBulk(
     sender: string,
-    messages: BulkMessage[],
+    phones: string[],
+    message: string,
     dryrun: boolean = false,
   ): Promise<any> {
     const dto = {
       sender,
       msg_type: 'SMS',
       testmode_yn: dryrun ? 'Y' : 'N',
-      cnt: messages.length,
+      cnt: phones.length,
     };
     console.log(`dto`, dto);
-    return await this.aligoService.sendBulkMessages(dto, messages);
+    return await this.aligoService.sendBulk(dto, phones, message);
   }
 
   async sendTextViaQueue(
@@ -110,12 +110,9 @@ export class TextService {
       limit_day: 1,
     };
     console.log(`dto`, dto);
-    const items: MessageResponseItem[] = [];
+    const items: AligoListResult[] = [];
     while (true) {
-      const {
-        list,
-        next_yn,
-      }: { list: MessageResponseItem[]; next_yn: string } =
+      const { list, next_yn }: { list: AligoListResult[]; next_yn: string } =
         await this.aligoService.list(dto);
       items.push(...list);
       if (next_yn === 'N') {

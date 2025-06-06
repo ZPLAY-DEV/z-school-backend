@@ -5,7 +5,8 @@ import { Injectable, Logger } from '@nestjs/common';
 export class FirehoseService {
   private readonly logger = new Logger(FirehoseService.name);
   private readonly client: FirehoseClient;
-  private readonly deliveryStreamName = process.env.FIREHOSE_STREAM_NAME;
+  private readonly deliveryStreamName =
+    process.env.FIREHOSE_STREAM_NAME || 'fcm-log-stream';
 
   constructor() {
     this.client = new FirehoseClient({ region: process.env.AWS_REGION });
