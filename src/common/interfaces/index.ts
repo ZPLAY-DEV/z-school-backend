@@ -129,9 +129,9 @@ export interface ICounts {
   feeds: number;
 }
 
-//? need to be compatible with FCM data payload signature
-export interface IData {
-  [key: string]: string;
+// FCM data payload requires all values to be strings
+export interface IFcmData {
+  [key: string]: string; // one size fits all approach may be excused for now.
 }
 
 export interface IPicture {
