@@ -7,7 +7,7 @@ import {
 import { format } from 'date-fns';
 import { AWS_SQS_CLIENT } from 'src/common/constants';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { parseMessageType } from 'src/domain/text/utils/text.utils';
+import { classifyMessage } from 'src/helpers/classify';
 import { AligoService } from 'src/services/aligo/aligo-service';
 import { AligoListResult } from 'src/services/aligo/types';
 import { SqsService } from 'src/services/aws/sqs.service';
@@ -129,7 +129,7 @@ export class TextService {
       result[sender].push({
         id: mid,
         count: +sms_count,
-        msg: parseMessageType(msg),
+        msg: classifyMessage(msg),
       });
     });
 

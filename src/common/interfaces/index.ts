@@ -200,6 +200,35 @@ export interface IS3Urls {
   imageUrl: string;
 }
 
+// S3 관련 확장 인터페이스들
+export interface IS3UploadResult {
+  key: string;
+  bucket: string;
+  etag?: string;
+  size?: number;
+}
+
+export interface IS3DeleteResult {
+  success: boolean;
+  key: string;
+  deletedAt: Date;
+}
+
+export interface IS3FileInfo {
+  exists: boolean;
+  key: string;
+  size?: number;
+  lastModified?: Date;
+  contentType?: string;
+}
+
+export interface IImageUploadOptions {
+  expiresIn?: number; // seconds
+  maxFileSize?: number; // bytes
+  allowedMimeTypes?: string[];
+  generateThumbnail?: boolean;
+}
+
 // export type FirebaseUser = admin.auth.DecodedIdToken;
 
 // export type StaleToken = {

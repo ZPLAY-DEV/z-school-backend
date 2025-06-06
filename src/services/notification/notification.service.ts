@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { formatInTimeZone } from 'date-fns-tz';
 import { IFcmData } from 'src/common/interfaces';
 import { User } from 'src/domain/user/entities/user.entity';
 import { AligoService } from 'src/services/aligo/aligo-service';
@@ -7,6 +8,7 @@ import { FcmService } from 'src/services/fcm/fcm.service';
 import { DataSource, In, Repository } from 'typeorm';
 
 interface NotifyUsersParams {
+  messageType: string;
   userIds: number[];
   schoolId: number;
   schoolName: string;
@@ -34,6 +36,7 @@ export class NotificationService {
 
   async notifyUsers(params: NotifyUsersParams): Promise<void> {
     const {
+      messageType,
       userIds,
       schoolId,
       schoolName,
@@ -111,19 +114,35 @@ export class NotificationService {
         );
         smsFailureCount = usersWithoutPushToken.length;
       } else {
-        for (const user of usersWithoutPushToken) {
-          try {
-            await this.sendSms(senderPhone, user.phone as string, body, title);
-            smsSuccessCount++;
-          } catch (error) {
-            this.logger.error(`Failed to send SMS to ${user.phone}`, error);
-            smsFailureCount++;
-          }
-        }
-
-        this.logger.log(
-          `SMS notifications sent - Success: ${smsSuccessCount}, Failure: ${smsFailureCount}`,
+        const phoneNumbers = usersWithoutPushToken.map(
+          (user) => user.phone as string,
         );
+
+        // SMS에서는 title이 있으면 body에 포함시킴
+        const message = title ? `[${title}] ${body}` : body;
+
+        try {
+          const result = await this.aligoService.sendBulkWrapper(
+            {
+              sender: senderPhone,
+              msg_type: 'SMS',
+              cnt: phoneNumbers.length,
+              testmode_yn: 'N',
+            },
+            phoneNumbers,
+            message,
+          );
+
+          smsSuccessCount = result.successCount;
+          smsFailureCount = result.failureCount;
+
+          this.logger.log(
+            `SMS bulk notifications sent - Success: ${smsSuccessCount}, Failure: ${smsFailureCount}`,
+          );
+        } catch (error) {
+          this.logger.error('Failed to send bulk SMS notifications', error);
+          smsFailureCount = usersWithoutPushToken.length;
+        }
       }
     }
 
@@ -134,6 +153,7 @@ export class NotificationService {
 
     // Log to Firehose for S3 storage
     await this.logToFirehose({
+      messageType,
       schoolId,
       schoolName,
       title,
@@ -147,25 +167,8 @@ export class NotificationService {
     });
   }
 
-  private async sendSms(
-    senderPhone: string,
-    receiverPhone: string,
-    body: string,
-    title?: string,
-  ): Promise<void> {
-    // SMS에서는 title이 있으면 body에 포함시킴
-    const message = title ? `[${title}] ${body}` : body;
-
-    await this.aligoService.send({
-      sender: senderPhone,
-      receiver: receiverPhone,
-      msg: message,
-      msg_type: 'SMS',
-      testmode_yn: 'N',
-    });
-  }
-
   private async logToFirehose(logData: {
+    messageType: string;
     schoolId: number;
     schoolName: string;
     title?: string;
@@ -178,11 +181,72 @@ export class NotificationService {
     smsFailureCount?: number;
   }): Promise<void> {
     try {
-      await this.firehoseService.sendRecord(logData);
-      this.logger.log('Notification log sent to Firehose');
+      const now = new Date();
+      const seoulTimeZone = 'Asia/Seoul';
+
+      const partitionedLogData = {
+        ...logData,
+        year: formatInTimeZone(now, seoulTimeZone, 'yyyy'),
+        month: formatInTimeZone(now, seoulTimeZone, 'MM'),
+        day: formatInTimeZone(now, seoulTimeZone, 'dd'),
+        hour: formatInTimeZone(now, seoulTimeZone, 'HH'),
+
+        // 비즈니스 로직 기반 파티셔닝
+        school_id: logData.schoolId, // 학교ID 로 그룹핑
+        role_type: this.categorizeRole(logData.role),
+
+        // 쿼리 최적화를 위한 추가 필드
+        timestamp: formatInTimeZone(
+          now,
+          seoulTimeZone,
+          "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+        ),
+        total_users: logData.userIds.length,
+        total_success:
+          (logData.fcmSuccessCount || 0) + (logData.smsSuccessCount || 0),
+        total_failure:
+          (logData.fcmFailureCount || 0) + (logData.smsFailureCount || 0),
+
+        // 알림 타입 분류
+        message_type: logData.messageType,
+
+        // 성능 메트릭
+        success_rate: this.calculateSuccessRate(
+          (logData.fcmSuccessCount || 0) + (logData.smsSuccessCount || 0),
+          logData.userIds.length,
+        ),
+      };
+      await this.firehoseService.sendRecord(partitionedLogData);
+      this.logger.log(
+        'Notification log sent to Firehose with Asia/Seoul timezone partitioning metadata',
+      );
     } catch (error) {
       this.logger.error('Failed to send log to Firehose', error);
       // Don't throw error here to avoid failing the main notification process
     }
+  }
+
+  /**
+   * 역할을 카테고리로 분류하여 파티셔닝 효율성 증대
+   */
+  private categorizeRole(role: string): string {
+    const roleLower = role.toLowerCase();
+    if (roleLower.includes('instructor')) {
+      return 'INSTRUCTOR';
+    } else if (roleLower.includes('parent')) {
+      return 'PARENT';
+    }
+    return 'OTHER';
+  }
+
+  /**
+   * 성공률 계산 (백분율)
+   */
+  private calculateSuccessRate(
+    successCount: number,
+    totalCount: number,
+  ): number {
+    if (totalCount === 0) return 0;
+    return Math.round((successCount / totalCount) * 100);
   }
 }
