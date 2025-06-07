@@ -52,7 +52,14 @@ export class TextService {
       cnt: phones.length,
     };
     console.log(`dto`, dto);
-    return await this.aligoService.sendBulk(dto, phones, message);
+
+    // AligoTextTarget 형태로 변환
+    const targets = phones.map((phone) => ({
+      phone,
+      body: message,
+    }));
+
+    return await this.aligoService.sendBulk(dto, targets);
   }
 
   async sendTextViaQueue(

@@ -19,11 +19,17 @@ export type AligoBulkSendResult = {
   msg_type: string;
 };
 
-export type AlligoWrapperResult = {
+export type AligoWrapperResult = {
   successCount: number;
   failureCount: number;
   failedBatches: number;
   responses: AligoBulkSendResult[];
+};
+
+// 개별 알림 아이템
+export type AligoTextTarget = {
+  phone: string;
+  body: string;
 };
 
 // 기본 필드 타입 정의

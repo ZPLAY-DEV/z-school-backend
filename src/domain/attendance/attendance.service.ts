@@ -22,7 +22,6 @@ import {
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { NotifyParentsParams } from 'src/services/notification/types';
 import { Repository } from 'typeorm';
 
 const LIMIT = 10;
@@ -127,7 +126,7 @@ export class AttendanceService {
     }
   }
 
-  async notify(dto: NotifyParentsParams): Promise<any> {}
+  // async notify(dto: NotifyParentsParams): Promise<any> {}
 
   //? notice that even if you provide createdAt and updatedAt in the payload
   //? dynamodb will ignore them and record the timestamps with its own value.

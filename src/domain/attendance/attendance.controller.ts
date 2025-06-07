@@ -62,13 +62,6 @@ export class AttendanceController {
     return await this.attendancesService.upsert(dto);
   }
 
-  @UpsertAttendanceBareDocs()
-  @HttpCode(200)
-  @Post('notify')
-  async notify(@Body() dto: NotifyParentsParams): Promise<IAttendance> {
-    return await this.attendancesService.nofity(dto);
-  }
-
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//

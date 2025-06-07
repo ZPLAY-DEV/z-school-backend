@@ -4,7 +4,8 @@ import {
   AligoBulkSendBaseDto,
   AligoBulkSendDto,
   AligoBulkSendResult,
-  AlligoWrapperResult,
+  AligoTextTarget,
+  AligoWrapperResult,
 } from 'src/services/aligo/types';
 
 @Injectable()
@@ -90,18 +91,17 @@ export class AligoService {
    */
   async sendBulk(
     baseDto: AligoBulkSendBaseDto,
-    phones: string[],
-    message: string,
+    targets: AligoTextTarget[],
   ): Promise<AligoBulkSendResult> {
     // 타입 안전한 방식으로 동적 필드 생성
     const dynamicDto: AligoBulkSendDto = {
       ...baseDto,
       sender: baseDto.sender.replace(/[^0-9]/g, ''),
     };
-    phones.forEach((phone, index) => {
+    targets.forEach((target, index) => {
       const idx = index + 1;
-      (dynamicDto as any)[`rec_${idx}`] = phone.replace(/[^0-9]/g, '');
-      (dynamicDto as any)[`msg_${idx}`] = message;
+      (dynamicDto as any)[`rec_${idx}`] = target.phone.replace(/[^0-9]/g, '');
+      (dynamicDto as any)[`msg_${idx}`] = target.body;
     });
     console.log(`dynamicDto`, dynamicDto);
 
@@ -113,53 +113,50 @@ export class AligoService {
 
   /**
    * FCM 서비스와 유사한 방식으로 대량 메시지 발송을 처리하는 래퍼 메서드
-   * 임의의 수의 전화번호를 받아서 500개씩 chunking하여 sendBulk를 호출
+   * AligoTextTarget 배열을 받아서 500개씩 chunking하여 sendBulk를 호출
    */
   async sendBulkWrapper(
     baseDto: AligoBulkSendBaseDto,
-    phones: string[],
-    message: string,
-  ): Promise<AlligoWrapperResult> {
-    if (!phones || phones.length === 0) {
-      throw new BadRequestException('No phones provided');
+    targets: AligoTextTarget[],
+  ): Promise<AligoWrapperResult> {
+    if (!targets || targets.length === 0) {
+      throw new BadRequestException('No targets provided');
     }
 
-    if (!message || !message.trim()) {
-      throw new BadRequestException('Message is required');
-    }
-
-    // 중복 제거 및 유효한 전화번호만 필터링
-    const uniquePhones = [
-      ...new Set(phones.filter((phone) => phone && phone.trim())),
-    ];
-
-    if (uniquePhones.length === 0) {
-      throw new BadRequestException('No valid phone numbers provided');
-    }
-
-    this.logger.log(
-      `Starting bulk send to ${uniquePhones.length} phone numbers`,
+    // 유효한 타겟만 필터링 (phone과 body가 모두 있는 것)
+    const validTargets = targets.filter(
+      (target) =>
+        target.phone &&
+        target.phone.trim() &&
+        target.body &&
+        target.body.trim(),
     );
+
+    if (validTargets.length === 0) {
+      throw new BadRequestException('No valid targets provided');
+    }
+
+    this.logger.log(`Starting bulk send to ${validTargets.length} targets`);
 
     let totalSuccessCount = 0;
     let totalFailureCount = 0;
     let failedBatches = 0;
     const responses: AligoBulkSendResult[] = [];
 
-    // 전화번호를 500개씩 chunking
-    const phoneBatches = this.chunkArray(
-      uniquePhones,
+    // 타겟을 500개씩 chunking
+    const targetBatches = this.chunkArray(
+      validTargets,
       this.MAX_PHONES_PER_BATCH,
     );
 
-    for (let i = 0; i < phoneBatches.length; i++) {
-      const batch = phoneBatches[i];
+    for (let i = 0; i < targetBatches.length; i++) {
+      const batch = targetBatches[i];
       this.logger.log(
-        `Processing batch ${i + 1}/${phoneBatches.length} with ${batch.length} phone numbers`,
+        `Processing batch ${i + 1}/${targetBatches.length} with ${batch.length} targets`,
       );
 
       try {
-        const response = await this.sendBulk(baseDto, batch, message);
+        const response = await this.sendBulk(baseDto, batch);
         responses.push(response);
 
         // Aligo API 응답에서 성공/실패 카운트 추출
@@ -179,7 +176,7 @@ export class AligoService {
         }
 
         // 배치 간 딜레이 (API rate limiting 방지)
-        if (i < phoneBatches.length - 1) {
+        if (i < targetBatches.length - 1) {
           await this.delay(this.RETRY_DELAY_MS);
         }
       } catch (error) {
@@ -199,7 +196,7 @@ export class AligoService {
       }
     }
 
-    const result: AlligoWrapperResult = {
+    const result: AligoWrapperResult = {
       successCount: totalSuccessCount,
       failureCount: totalFailureCount,
       failedBatches,

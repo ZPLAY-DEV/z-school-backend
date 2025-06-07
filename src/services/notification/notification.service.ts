@@ -7,11 +7,24 @@ import { AligoService } from 'src/services/aligo/aligo-service';
 import { FirehoseService } from 'src/services/aws/firehose.service';
 import { FcmService } from 'src/services/fcm/fcm.service';
 import {
-  LogResult,
-  NotifyParentsParams,
-  NotifyUsersParams,
+  BulkNotificationRequest,
+  IndividualNotificationRequest,
+  NotificationResult,
 } from 'src/services/notification/types';
 import { DataSource, In, Repository } from 'typeorm';
+
+interface NotificationTarget {
+  id: number;
+  pushToken?: string | null;
+  phone?: string | null;
+}
+
+interface NotificationCounts {
+  fcmSuccess: number;
+  fcmFailure: number;
+  smsSuccess: number;
+  smsFailure: number;
+}
 
 @Injectable()
 export class NotificationService {
@@ -22,301 +35,351 @@ export class NotificationService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly fcmService: FcmService,
-    private readonly firehoseService: FirehoseService,
     private readonly aligoService: AligoService,
+    private readonly firehoseService: FirehoseService,
   ) {
     this.parentRepository = this.dataSource.getRepository(Parent);
     this.userRepository = this.dataSource.getRepository(User);
   }
 
-  async notifyParents(params: NotifyParentsParams): Promise<void> {
-    const {
-      messageType,
-      parentIds,
-      schoolId,
-      schoolName,
-      title,
-      body,
-      role,
-      target,
-      targetId,
-      senderPhone,
-    } = params;
-
-    // Get users with push tokens and phone numbers
+  async sendBulkNotificationToParents(
+    params: BulkNotificationRequest,
+  ): Promise<void> {
     const parents = await this.parentRepository.find({
-      where: { id: In(parentIds) },
-      relations: ['user', 'user.pushToken'],
+      where: { id: In(params.ids) },
+      relations: ['user'],
     });
 
-    // Separate users by notification method
-    const parentsWithPushToken = parents.filter(
-      (parent) => parent.user?.pushToken && parent.user?.pushToken.trim(),
-    );
-    const parentsWithoutPushToken = parents.filter(
-      (parent) =>
-        (!parent.user?.pushToken || !parent.user?.pushToken.trim()) &&
-        parent.user?.phone &&
-        parent.user?.phone.trim(),
-    );
+    const targets: NotificationTarget[] = parents.map((parent) => ({
+      id: parent.id,
+      pushToken: parent.user?.pushToken,
+      phone: parent.user?.phone, // 일관성을 위해 user.phone 사용
+    }));
 
-    let fcmSuccessCount = 0;
-    let fcmFailureCount = 0;
-    let smsSuccessCount = 0;
-    let smsFailureCount = 0;
-
-    // Send FCM notifications to users with push tokens
-    if (parentsWithPushToken.length > 0) {
-      const validTokens = parentsWithPushToken.map(
-        (parent) => parent.user?.pushToken as string,
-      );
-
-      const fcmData: IFcmData = {
-        ...(target && { page: target }),
-        args: JSON.stringify({
-          role,
-          ...(targetId && { targetId }),
-        }),
-      };
-
-      try {
-        const result = await this.fcmService.sendMulticast(
-          validTokens,
-          {
-            title,
-            body,
-          },
-          fcmData,
-        );
-
-        fcmSuccessCount = result.successCount;
-        fcmFailureCount = result.failureCount;
-
-        this.logger.log(
-          `FCM notifications sent - Success: ${fcmSuccessCount}, Failure: ${fcmFailureCount}`,
-        );
-      } catch (error) {
-        this.logger.error('Failed to send FCM notifications', error);
-        fcmFailureCount = parentsWithPushToken.length;
-      }
-    }
-
-    // Send SMS to users without push tokens
-    if (parentsWithoutPushToken.length > 0) {
-      if (!senderPhone) {
-        this.logger.warn(
-          `${parentsWithoutPushToken.length} users without push tokens found, but no senderPhone provided for SMS`,
-        );
-        smsFailureCount = parentsWithoutPushToken.length;
-      } else {
-        const phoneNumbers = parentsWithoutPushToken.map(
-          (parent) => parent.phone,
-        );
-
-        // SMS에서는 title이 있으면 body에 포함시킴
-        const message = title ? `[${title}] ${body}` : body;
-
-        try {
-          const result = await this.aligoService.sendBulkWrapper(
-            {
-              sender: senderPhone,
-              msg_type: 'SMS',
-              cnt: phoneNumbers.length,
-              testmode_yn: 'N',
-            },
-            phoneNumbers,
-            message,
-          );
-
-          smsSuccessCount = result.successCount;
-          smsFailureCount = result.failureCount;
-
-          this.logger.log(
-            `SMS bulk notifications sent - Success: ${smsSuccessCount}, Failure: ${smsFailureCount}`,
-          );
-        } catch (error) {
-          this.logger.error('Failed to send bulk SMS notifications', error);
-          smsFailureCount = parentsWithoutPushToken.length;
-        }
-      }
-    }
-
-    // Log summary
-    this.logger.log(
-      `Notification summary - FCM: ${fcmSuccessCount}/${fcmSuccessCount + fcmFailureCount}, SMS: ${smsSuccessCount}/${smsSuccessCount + smsFailureCount}`,
-    );
-
-    // Log to Firehose for S3 storage
-    const logResult = await this.logToFirehose({
-      messageType,
-      schoolId,
-      schoolName,
-      title,
-      body,
-      ids: parentIds,
-      role,
-      fcmSuccessCount,
-      fcmFailureCount,
-      smsSuccessCount,
-      smsFailureCount,
-    });
-
-    // Log the result for observability
-    if (!logResult.success) {
-      this.logger.warn(
-        `Notification sent successfully but failed to log to Firehose: ${logResult.error?.message}`,
-        {
-          messageType,
-          schoolId,
-          affectedUsers: parentIds.length,
-        },
-      );
-    }
+    await this.processBulkNotification(params, targets);
   }
 
-  async notifyUsers(params: NotifyUsersParams): Promise<void> {
-    const {
-      messageType,
-      userIds,
-      schoolId,
-      schoolName,
-      title,
-      body,
-      role,
-      target,
-      targetId,
-      senderPhone,
-    } = params;
+  async sendBulkNotificationToUsers(
+    params: BulkNotificationRequest,
+  ): Promise<void> {
+    const users = await this.userRepository.find({
+      where: { id: In(params.ids) },
+      select: ['id', 'pushToken', 'phone'],
+    });
 
-    // Get users with push tokens and phone numbers
+    const targets: NotificationTarget[] = users.map((user) => ({
+      id: user.id,
+      pushToken: user.pushToken,
+      phone: user.phone,
+    }));
+
+    await this.processBulkNotification(params, targets);
+  }
+
+  async sendPersonalizedNotificationToParents(
+    params: IndividualNotificationRequest,
+  ): Promise<void> {
+    const parentIds = params.notifications.map((n) => n.id);
+    const parents = await this.parentRepository.find({
+      where: { id: In(parentIds) },
+      relations: ['user'],
+    });
+
+    const targets: NotificationTarget[] = parents.map((parent) => ({
+      id: parent.id,
+      pushToken: parent.user?.pushToken,
+      phone: parent.phone, // user.phone 사용하면 안된다.
+    }));
+
+    await this.processPersonalizedNotification(params, targets);
+  }
+
+  async sendPersonalizedNotificationToUsers(
+    params: IndividualNotificationRequest,
+  ): Promise<void> {
+    const userIds = params.notifications.map((n) => n.id);
     const users = await this.userRepository.find({
       where: { id: In(userIds) },
       select: ['id', 'pushToken', 'phone'],
     });
 
-    // Separate users by notification method
-    const usersWithPushToken = users.filter(
-      (user) => user.pushToken && user.pushToken.trim(),
-    );
-    const usersWithoutPushToken = users.filter(
-      (user) =>
-        (!user.pushToken || !user.pushToken.trim()) &&
-        user.phone &&
-        user.phone.trim(),
-    );
+    const targets: NotificationTarget[] = users.map((user) => ({
+      id: user.id,
+      pushToken: user.pushToken,
+      phone: user.phone,
+    }));
 
-    let fcmSuccessCount = 0;
-    let fcmFailureCount = 0;
-    let smsSuccessCount = 0;
-    let smsFailureCount = 0;
+    await this.processPersonalizedNotification(params, targets);
+  }
 
-    // Send FCM notifications to users with push tokens
-    if (usersWithPushToken.length > 0) {
-      const validTokens = usersWithPushToken.map(
-        (user) => user.pushToken as string,
+  private async processBulkNotification(
+    params: BulkNotificationRequest,
+    targets: NotificationTarget[],
+  ): Promise<void> {
+    const { title, body, role, target, targetId, senderPhone } = params;
+
+    // Separate targets by notification method
+    const tokensForFcm = targets
+      .filter((t) => t.pushToken?.trim())
+      .map((t) => t.pushToken!)
+      .filter((token) => token);
+
+    const targetsForSms = targets
+      .filter((t) => !t.pushToken?.trim() && t.phone?.trim())
+      .map((t) => ({
+        phone: t.phone!,
+        body: title ? `[${title}] ${body}` : body,
+      }));
+
+    const counts: NotificationCounts = {
+      fcmSuccess: 0,
+      fcmFailure: 0,
+      smsSuccess: 0,
+      smsFailure: 0,
+    };
+
+    // Send FCM notifications
+    if (tokensForFcm.length > 0) {
+      await this.sendBulkFcm(
+        tokensForFcm,
+        { title, body },
+        role,
+        counts,
+        target,
+        targetId,
+      );
+    }
+
+    // Send SMS notifications
+    if (targetsForSms.length > 0) {
+      await this.sendBulkSms(targetsForSms, counts, senderPhone);
+    } else if (targets.some((t) => !t.pushToken?.trim() && !t.phone?.trim())) {
+      const invalidTargets = targets.filter(
+        (t) => !t.pushToken?.trim() && !t.phone?.trim(),
+      );
+      counts.smsFailure += invalidTargets.length;
+      this.logger.warn(
+        `${invalidTargets.length} targets have no valid contact method`,
+      );
+    }
+
+    this.logNotificationSummary('Bulk', counts);
+    await this.logToFirehose({
+      ...params,
+      ids: targets.map((t) => t.id),
+      fcmSuccessCount: counts.fcmSuccess,
+      fcmFailureCount: counts.fcmFailure,
+      smsSuccessCount: counts.smsSuccess,
+      smsFailureCount: counts.smsFailure,
+    });
+  }
+
+  private async processPersonalizedNotification(
+    params: IndividualNotificationRequest,
+    targets: NotificationTarget[],
+  ): Promise<void> {
+    const { notifications, role, senderPhone } = params;
+    const counts: NotificationCounts = {
+      fcmSuccess: 0,
+      fcmFailure: 0,
+      smsSuccess: 0,
+      smsFailure: 0,
+    };
+
+    // Prepare FCM and SMS targets
+    const fcmTargets: { token: string; notification: any }[] = [];
+    const smsTargets: { phone: string; body: string }[] = [];
+
+    for (const notification of notifications) {
+      const target = targets.find((t) => t.id === notification.id);
+      if (!target) {
+        this.logger.warn(`Target with ID ${notification.id} not found`);
+        counts.fcmFailure++; // or smsFailure depending on preference
+        continue;
+      }
+
+      const hasPushToken = target.pushToken?.trim();
+      const hasPhone = target.phone?.trim();
+
+      if (hasPushToken) {
+        fcmTargets.push({
+          token: target.pushToken!,
+          notification,
+        });
+      } else if (hasPhone && senderPhone) {
+        const message = notification.title
+          ? `[${notification.title}] ${notification.body}`
+          : notification.body;
+
+        smsTargets.push({
+          phone: target.phone!,
+          body: message,
+        });
+      } else {
+        this.logger.warn(
+          `Target ${notification.id} has no valid contact method or senderPhone not provided`,
+        );
+        counts.smsFailure++;
+      }
+    }
+
+    // Send FCM notifications in parallel for better performance
+    if (fcmTargets.length > 0) {
+      await this.sendPersonalizedFcm(fcmTargets, role, counts);
+    }
+
+    // Send SMS notifications
+    if (smsTargets.length > 0) {
+      await this.sendBulkSms(smsTargets, counts, senderPhone);
+    }
+
+    this.logNotificationSummary('Personalized', counts);
+    await this.logToFirehose({
+      messageType: params.messageType,
+      schoolId: params.schoolId,
+      schoolName: params.schoolName,
+      title: 'Personalized Messages',
+      body: `${notifications.length} personalized messages sent`,
+      ids: targets.map((t) => t.id),
+      role: params.role,
+      fcmSuccessCount: counts.fcmSuccess,
+      fcmFailureCount: counts.fcmFailure,
+      smsSuccessCount: counts.smsSuccess,
+      smsFailureCount: counts.smsFailure,
+    });
+  }
+
+  private async sendBulkFcm(
+    tokens: string[],
+    notification: { title?: string; body: string },
+    role: string,
+    counts: NotificationCounts,
+    target?: string,
+    targetId?: string,
+  ): Promise<void> {
+    const fcmData: IFcmData = {
+      ...(target && { page: target }),
+      args: JSON.stringify({
+        role,
+        ...(targetId && { targetId }),
+      }),
+    };
+
+    try {
+      const result = await this.fcmService.sendMulticast(
+        tokens,
+        notification,
+        fcmData,
       );
 
+      counts.fcmSuccess += result.successCount;
+      counts.fcmFailure += result.failureCount;
+
+      this.logger.log(
+        `FCM bulk notifications - Success: ${result.successCount}, Failure: ${result.failureCount}`,
+      );
+    } catch (error) {
+      this.logger.error('Failed to send FCM bulk notifications', error);
+      counts.fcmFailure += tokens.length;
+    }
+  }
+
+  private async sendPersonalizedFcm(
+    fcmTargets: { token: string; notification: any }[],
+    role: string,
+    counts: NotificationCounts,
+  ): Promise<void> {
+    // Send FCM notifications in parallel for better performance
+    const fcmPromises = fcmTargets.map(async (fcmTarget) => {
       const fcmData: IFcmData = {
-        ...(target && { page: target }),
+        ...(fcmTarget.notification.target && {
+          page: fcmTarget.notification.target,
+        }),
         args: JSON.stringify({
           role,
-          ...(targetId && { targetId }),
+          ...(fcmTarget.notification.targetId && {
+            targetId: fcmTarget.notification.targetId,
+          }),
         }),
       };
 
       try {
-        const result = await this.fcmService.sendMulticast(
-          validTokens,
-          {
-            title,
-            body,
+        await this.fcmService.sendToToken({
+          token: fcmTarget.token,
+          notification: {
+            title: fcmTarget.notification.title,
+            body: fcmTarget.notification.body,
           },
-          fcmData,
-        );
-
-        fcmSuccessCount = result.successCount;
-        fcmFailureCount = result.failureCount;
-
-        this.logger.log(
-          `FCM notifications sent - Success: ${fcmSuccessCount}, Failure: ${fcmFailureCount}`,
-        );
+          data: fcmData,
+        });
+        return { success: true };
       } catch (error) {
-        this.logger.error('Failed to send FCM notifications', error);
-        fcmFailureCount = usersWithPushToken.length;
+        this.logger.error(`Failed to send FCM notification`, error);
+        return { success: false };
       }
-    }
-
-    // Send SMS to users without push tokens
-    if (usersWithoutPushToken.length > 0) {
-      if (!senderPhone) {
-        this.logger.warn(
-          `${usersWithoutPushToken.length} users without push tokens found, but no senderPhone provided for SMS`,
-        );
-        smsFailureCount = usersWithoutPushToken.length;
-      } else {
-        const phoneNumbers = usersWithoutPushToken.map(
-          (user) => user.phone as string,
-        );
-
-        // SMS에서는 title이 있으면 body에 포함시킴
-        const message = title ? `[${title}] ${body}` : body;
-
-        try {
-          const result = await this.aligoService.sendBulkWrapper(
-            {
-              sender: senderPhone,
-              msg_type: 'SMS',
-              cnt: phoneNumbers.length,
-              testmode_yn: 'N',
-            },
-            phoneNumbers,
-            message,
-          );
-
-          smsSuccessCount = result.successCount;
-          smsFailureCount = result.failureCount;
-
-          this.logger.log(
-            `SMS bulk notifications sent - Success: ${smsSuccessCount}, Failure: ${smsFailureCount}`,
-          );
-        } catch (error) {
-          this.logger.error('Failed to send bulk SMS notifications', error);
-          smsFailureCount = usersWithoutPushToken.length;
-        }
-      }
-    }
-
-    // Log summary
-    this.logger.log(
-      `Notification summary - FCM: ${fcmSuccessCount}/${fcmSuccessCount + fcmFailureCount}, SMS: ${smsSuccessCount}/${smsSuccessCount + smsFailureCount}`,
-    );
-
-    // Log to Firehose for S3 storage
-    const logResult = await this.logToFirehose({
-      messageType,
-      schoolId,
-      schoolName,
-      title,
-      body,
-      ids: userIds,
-      role,
-      fcmSuccessCount,
-      fcmFailureCount,
-      smsSuccessCount,
-      smsFailureCount,
     });
 
-    // Log the result for observability
-    if (!logResult.success) {
+    const results = await Promise.allSettled(fcmPromises);
+
+    results.forEach((result) => {
+      if (result.status === 'fulfilled' && result.value.success) {
+        counts.fcmSuccess++;
+      } else {
+        counts.fcmFailure++;
+      }
+    });
+
+    this.logger.log(
+      `Personalized FCM notifications - Success: ${counts.fcmSuccess}, Failure: ${counts.fcmFailure}`,
+    );
+  }
+
+  private async sendBulkSms(
+    smsTargets: { phone: string; body: string }[],
+    counts: NotificationCounts,
+    senderPhone?: string,
+  ): Promise<void> {
+    if (!senderPhone) {
       this.logger.warn(
-        `Notification sent successfully but failed to log to Firehose: ${logResult.error?.message}`,
-        {
-          messageType,
-          schoolId,
-          affectedUsers: userIds.length,
-        },
+        `${smsTargets.length} SMS targets found but no senderPhone provided`,
       );
+      counts.smsFailure += smsTargets.length;
+      return;
     }
+
+    try {
+      const result = await this.aligoService.sendBulkWrapper(
+        {
+          sender: senderPhone,
+          msg_type: 'SMS',
+          cnt: smsTargets.length,
+          testmode_yn: 'N',
+        },
+        smsTargets,
+      );
+
+      counts.smsSuccess += result.successCount;
+      counts.smsFailure += result.failureCount;
+
+      this.logger.log(
+        `SMS notifications - Success: ${result.successCount}, Failure: ${result.failureCount}`,
+      );
+    } catch (error) {
+      this.logger.error('Failed to send SMS notifications', error);
+      counts.smsFailure += smsTargets.length;
+    }
+  }
+
+  private logNotificationSummary(
+    type: string,
+    counts: NotificationCounts,
+  ): void {
+    const totalFcm = counts.fcmSuccess + counts.fcmFailure;
+    const totalSms = counts.smsSuccess + counts.smsFailure;
+
+    this.logger.log(
+      `${type} notification summary - FCM: ${counts.fcmSuccess}/${totalFcm}, SMS: ${counts.smsSuccess}/${totalSms}`,
+    );
   }
 
   private async logToFirehose(logData: {
@@ -331,7 +394,7 @@ export class NotificationService {
     fcmFailureCount?: number;
     smsSuccessCount?: number;
     smsFailureCount?: number;
-  }): Promise<LogResult> {
+  }): Promise<NotificationResult> {
     try {
       const now = new Date();
       const seoulTimeZone = 'Asia/Seoul';
