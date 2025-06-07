@@ -44,10 +44,12 @@ role_type=PARENT/  (학부모)
 ```
 
 #### Message Type 컬럼 (파티션 아니고 일반 칼럼임)
-- **notification**: 알림전송
-- **registration**: 수강신청
-- **notice**: 공지사항
-- **survey**: 설문조사
+- **ping.exit**: 하교알림
+- **ping.class**: 수업관련알림 (수업시작, 수업종료, 지각, 결석, ...)
+- **ping.other**: 기타알림
+- **letter.registration**: 수강신청
+- **letter.notice**: 공지사항
+- **letter.survey**: 설문조사
 
 ## Firehose 설정 예시
 

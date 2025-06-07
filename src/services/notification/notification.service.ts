@@ -8,17 +8,34 @@ import { FcmService } from 'src/services/fcm/fcm.service';
 import { DataSource, In, Repository } from 'typeorm';
 
 interface NotifyUsersParams {
-  messageType: string;
+  messageType: string; // ping.class, ping.exit, letter.registration, letter.survey, letter.notice
   userIds: number[];
   schoolId: number;
   schoolName: string;
   title?: string;
   body: string;
-  role: string;
-  target: string;
-  targetId: string;
-  senderPhone?: string; // SMS 발송자 번호 (pushToken이 없는 사용자를 위해)
+  role: string; // INSTRUCTOR, PARENT, OTHER
+  target: string; // for Client Routing
+  targetId: string; // for Client Routing
+  senderPhone?: string; // SMS 발송자 school.phone 번호 (pushToken이 없는 사용자를 위해)
 }
+
+interface LogResult {
+  success: boolean;
+  error?: Error;
+  retryable?: boolean; // 재시도 가능한 에러인지 표시
+}
+
+// TODO: 향후 메트릭 서비스 추가 시 사용
+// interface MetricsService {
+//   incrementCounter(metric: string, tags?: Record<string, string>): void;
+//   recordLatency(metric: string, duration: number, tags?: Record<string, string>): void;
+// }
+
+// TODO: 향후 fallback 저장소 추가 시 사용
+// interface FallbackLogStorage {
+//   save(logData: any): Promise<void>;
+// }
 
 @Injectable()
 export class NotificationService {
@@ -152,7 +169,7 @@ export class NotificationService {
     );
 
     // Log to Firehose for S3 storage
-    await this.logToFirehose({
+    const logResult = await this.logToFirehose({
       messageType,
       schoolId,
       schoolName,
@@ -165,6 +182,18 @@ export class NotificationService {
       smsSuccessCount,
       smsFailureCount,
     });
+
+    // Log the result for observability
+    if (!logResult.success) {
+      this.logger.warn(
+        `Notification sent successfully but failed to log to Firehose: ${logResult.error?.message}`,
+        {
+          messageType,
+          schoolId,
+          affectedUsers: userIds.length,
+        },
+      );
+    }
   }
 
   private async logToFirehose(logData: {
@@ -179,7 +208,7 @@ export class NotificationService {
     fcmFailureCount?: number;
     smsSuccessCount?: number;
     smsFailureCount?: number;
-  }): Promise<void> {
+  }): Promise<LogResult> {
     try {
       const now = new Date();
       const seoulTimeZone = 'Asia/Seoul';
@@ -216,13 +245,29 @@ export class NotificationService {
           logData.userIds.length,
         ),
       };
+
       await this.firehoseService.sendRecord(partitionedLogData);
+
       this.logger.log(
         'Notification log sent to Firehose with Asia/Seoul timezone partitioning metadata',
       );
+
+      return { success: true };
     } catch (error) {
       this.logger.error('Failed to send log to Firehose', error);
+
+      // TODO: 메트릭/모니터링 추가
+      // this.metricsService.incrementCounter('firehose.log.failure', {
+      //   messageType: logData.messageType,
+      //   schoolId: logData.schoolId.toString()
+      // });
+
+      // TODO: 중요한 로그는 fallback 저장소에 저장
+      // await this.fallbackLogStorage.save(logData);
+
       // Don't throw error here to avoid failing the main notification process
+      // But return the error information for caller awareness
+      return { success: false, error: error as Error };
     }
   }
 
