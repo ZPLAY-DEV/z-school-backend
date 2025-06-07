@@ -5,6 +5,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   ParseIntPipe,
   Post,
   Query,
@@ -14,6 +15,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AttendanceService } from 'src/domain/attendance/attendance.service';
+import { CreateWithStudentAndSchooldayDto } from 'src/domain/attendance/dto/create-with-student-and-schoolday.dto';
 import {
   AttendanceKeyDto,
   UpsertAttendanceDto,
@@ -27,7 +29,8 @@ import {
   DeleteAttendanceDocs,
   FetchAttendancesDocs,
   GetAttendanceDetailDocs,
-  UpsertAttendanceDocs,
+  UpsertAttendanceBareDocs,
+  UpsertWithStudentAndSchooldayDocs,
 } from 'src/domain/attendance/swagger/attendance-swagger.decorator';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 
@@ -42,10 +45,28 @@ export class AttendanceController {
   //? CREATE / UPDATE (Upsert - DynamoDB Style)
   //? ---------------------------------------------------------------------- ?//
 
-  @UpsertAttendanceDocs()
+  @UpsertWithStudentAndSchooldayDocs()
+  @HttpCode(200)
   @Post()
+  async upsertWithStudentAndSchoolday(
+    @Body()
+    dto: CreateWithStudentAndSchooldayDto,
+  ): Promise<IAttendance> {
+    return await this.attendancesService.upsertWithStudentAndSchoolday(dto);
+  }
+
+  @UpsertAttendanceBareDocs()
+  @HttpCode(200)
+  @Post('bare')
   async upsert(@Body() dto: UpsertAttendanceDto): Promise<IAttendance> {
     return await this.attendancesService.upsert(dto);
+  }
+
+  @UpsertAttendanceBareDocs()
+  @HttpCode(200)
+  @Post('notify')
+  async notify(@Body() dto: NotifyParentsParams): Promise<IAttendance> {
+    return await this.attendancesService.nofity(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -101,11 +122,11 @@ export class AttendanceController {
   @GetAttendanceDetailDocs()
   @Get('detail')
   async getAttendanceById(
-    @Query('groupId') groupId: string,
+    @Query('groupId', ParseIntPipe) groupId: number,
     @Query('date') date: string,
-    @Query('studentId') studentId: string,
+    @Query('studentId', ParseIntPipe) studentId: number,
   ): Promise<IAttendance> {
-    const groupKey = `GROUP#${groupId}`;
+    const groupKey = generateGroupKey(groupId);
     const dailyStudentKey = `DATE#${date}#STUDENT#${studentId}`;
     return await this.attendancesService.findById({
       groupKey,

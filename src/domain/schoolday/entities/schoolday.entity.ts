@@ -78,7 +78,13 @@ export class Schoolday {
   duration: number;
 
   @ApiProperty({ description: '시간 수정 주체', example: 'SYSTEM' })
-  @Column({ type: 'enum', enum: Actor, default: null, nullable: true })
+  @Column({
+    type: 'enum',
+    enum: Actor,
+    default: null,
+    nullable: true,
+    comment: '시간 수정 주체',
+  })
   updatedBy: Actor | null;
 
   @ApiProperty({ description: '비고' })

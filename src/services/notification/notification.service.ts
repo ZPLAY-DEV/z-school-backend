@@ -1,45 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { formatInTimeZone } from 'date-fns-tz';
 import { IFcmData } from 'src/common/interfaces';
+import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { AligoService } from 'src/services/aligo/aligo-service';
 import { FirehoseService } from 'src/services/aws/firehose.service';
 import { FcmService } from 'src/services/fcm/fcm.service';
+import {
+  LogResult,
+  NotifyParentsParams,
+  NotifyUsersParams,
+} from 'src/services/notification/types';
 import { DataSource, In, Repository } from 'typeorm';
-
-interface NotifyUsersParams {
-  messageType: string; // ping.class, ping.exit, letter.registration, letter.survey, letter.notice
-  userIds: number[];
-  schoolId: number;
-  schoolName: string;
-  title?: string;
-  body: string;
-  role: string; // INSTRUCTOR, PARENT, OTHER
-  target: string; // for Client Routing
-  targetId: string; // for Client Routing
-  senderPhone?: string; // SMS 발송자 school.phone 번호 (pushToken이 없는 사용자를 위해)
-}
-
-interface LogResult {
-  success: boolean;
-  error?: Error;
-  retryable?: boolean; // 재시도 가능한 에러인지 표시
-}
-
-// TODO: 향후 메트릭 서비스 추가 시 사용
-// interface MetricsService {
-//   incrementCounter(metric: string, tags?: Record<string, string>): void;
-//   recordLatency(metric: string, duration: number, tags?: Record<string, string>): void;
-// }
-
-// TODO: 향후 fallback 저장소 추가 시 사용
-// interface FallbackLogStorage {
-//   save(logData: any): Promise<void>;
-// }
 
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
+  private readonly parentRepository: Repository<Parent>;
   private readonly userRepository: Repository<User>;
 
   constructor(
@@ -48,7 +25,153 @@ export class NotificationService {
     private readonly firehoseService: FirehoseService,
     private readonly aligoService: AligoService,
   ) {
+    this.parentRepository = this.dataSource.getRepository(Parent);
     this.userRepository = this.dataSource.getRepository(User);
+  }
+
+  async notifyParents(params: NotifyParentsParams): Promise<void> {
+    const {
+      messageType,
+      parentIds,
+      schoolId,
+      schoolName,
+      title,
+      body,
+      role,
+      target,
+      targetId,
+      senderPhone,
+    } = params;
+
+    // Get users with push tokens and phone numbers
+    const parents = await this.parentRepository.find({
+      where: { id: In(parentIds) },
+      relations: ['user', 'user.pushToken'],
+    });
+
+    // Separate users by notification method
+    const parentsWithPushToken = parents.filter(
+      (parent) => parent.user?.pushToken && parent.user?.pushToken.trim(),
+    );
+    const parentsWithoutPushToken = parents.filter(
+      (parent) =>
+        (!parent.user?.pushToken || !parent.user?.pushToken.trim()) &&
+        parent.user?.phone &&
+        parent.user?.phone.trim(),
+    );
+
+    let fcmSuccessCount = 0;
+    let fcmFailureCount = 0;
+    let smsSuccessCount = 0;
+    let smsFailureCount = 0;
+
+    // Send FCM notifications to users with push tokens
+    if (parentsWithPushToken.length > 0) {
+      const validTokens = parentsWithPushToken.map(
+        (parent) => parent.user?.pushToken as string,
+      );
+
+      const fcmData: IFcmData = {
+        ...(target && { page: target }),
+        args: JSON.stringify({
+          role,
+          ...(targetId && { targetId }),
+        }),
+      };
+
+      try {
+        const result = await this.fcmService.sendMulticast(
+          validTokens,
+          {
+            title,
+            body,
+          },
+          fcmData,
+        );
+
+        fcmSuccessCount = result.successCount;
+        fcmFailureCount = result.failureCount;
+
+        this.logger.log(
+          `FCM notifications sent - Success: ${fcmSuccessCount}, Failure: ${fcmFailureCount}`,
+        );
+      } catch (error) {
+        this.logger.error('Failed to send FCM notifications', error);
+        fcmFailureCount = parentsWithPushToken.length;
+      }
+    }
+
+    // Send SMS to users without push tokens
+    if (parentsWithoutPushToken.length > 0) {
+      if (!senderPhone) {
+        this.logger.warn(
+          `${parentsWithoutPushToken.length} users without push tokens found, but no senderPhone provided for SMS`,
+        );
+        smsFailureCount = parentsWithoutPushToken.length;
+      } else {
+        const phoneNumbers = parentsWithoutPushToken.map(
+          (parent) => parent.phone,
+        );
+
+        // SMS에서는 title이 있으면 body에 포함시킴
+        const message = title ? `[${title}] ${body}` : body;
+
+        try {
+          const result = await this.aligoService.sendBulkWrapper(
+            {
+              sender: senderPhone,
+              msg_type: 'SMS',
+              cnt: phoneNumbers.length,
+              testmode_yn: 'N',
+            },
+            phoneNumbers,
+            message,
+          );
+
+          smsSuccessCount = result.successCount;
+          smsFailureCount = result.failureCount;
+
+          this.logger.log(
+            `SMS bulk notifications sent - Success: ${smsSuccessCount}, Failure: ${smsFailureCount}`,
+          );
+        } catch (error) {
+          this.logger.error('Failed to send bulk SMS notifications', error);
+          smsFailureCount = parentsWithoutPushToken.length;
+        }
+      }
+    }
+
+    // Log summary
+    this.logger.log(
+      `Notification summary - FCM: ${fcmSuccessCount}/${fcmSuccessCount + fcmFailureCount}, SMS: ${smsSuccessCount}/${smsSuccessCount + smsFailureCount}`,
+    );
+
+    // Log to Firehose for S3 storage
+    const logResult = await this.logToFirehose({
+      messageType,
+      schoolId,
+      schoolName,
+      title,
+      body,
+      ids: parentIds,
+      role,
+      fcmSuccessCount,
+      fcmFailureCount,
+      smsSuccessCount,
+      smsFailureCount,
+    });
+
+    // Log the result for observability
+    if (!logResult.success) {
+      this.logger.warn(
+        `Notification sent successfully but failed to log to Firehose: ${logResult.error?.message}`,
+        {
+          messageType,
+          schoolId,
+          affectedUsers: parentIds.length,
+        },
+      );
+    }
   }
 
   async notifyUsers(params: NotifyUsersParams): Promise<void> {
@@ -94,10 +217,10 @@ export class NotificationService {
       );
 
       const fcmData: IFcmData = {
-        page: target,
+        ...(target && { page: target }),
         args: JSON.stringify({
           role,
-          targetId,
+          ...(targetId && { targetId }),
         }),
       };
 
@@ -175,7 +298,7 @@ export class NotificationService {
       schoolName,
       title,
       body,
-      userIds,
+      ids: userIds,
       role,
       fcmSuccessCount,
       fcmFailureCount,
@@ -202,7 +325,7 @@ export class NotificationService {
     schoolName: string;
     title?: string;
     body: string;
-    userIds: number[];
+    ids: number[]; // could be userIds or parentIds
     role: string;
     fcmSuccessCount?: number;
     fcmFailureCount?: number;
@@ -230,7 +353,7 @@ export class NotificationService {
           seoulTimeZone,
           "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
         ),
-        total_users: logData.userIds.length,
+        total_users: logData.ids.length,
         total_success:
           (logData.fcmSuccessCount || 0) + (logData.smsSuccessCount || 0),
         total_failure:
@@ -242,7 +365,7 @@ export class NotificationService {
         // 성능 메트릭
         success_rate: this.calculateSuccessRate(
           (logData.fcmSuccessCount || 0) + (logData.smsSuccessCount || 0),
-          logData.userIds.length,
+          logData.ids.length,
         ),
       };
 
