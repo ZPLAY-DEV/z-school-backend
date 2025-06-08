@@ -120,10 +120,8 @@ export class AligoService {
     targets: AligoTextTarget[],
   ): Promise<AligoWrapperResult> {
     if (!targets || targets.length === 0) {
-      throw new BadRequestException('No targets provided');
+      throw new BadRequestException(HttpErrorConstants.VALIDATE_ERROR);
     }
-
-    // 유효한 타겟만 필터링 (phone과 body가 모두 있는 것)
     const validTargets = targets.filter(
       (target) =>
         target.phone &&
@@ -131,9 +129,8 @@ export class AligoService {
         target.body &&
         target.body.trim(),
     );
-
     if (validTargets.length === 0) {
-      throw new BadRequestException('No valid targets provided');
+      throw new BadRequestException(HttpErrorConstants.VALIDATE_ERROR);
     }
 
     this.logger.log(`Starting bulk send to ${validTargets.length} targets`);
@@ -141,6 +138,7 @@ export class AligoService {
     let totalSuccessCount = 0;
     let totalFailureCount = 0;
     let failedBatches = 0;
+
     const responses: AligoBulkSendResult[] = [];
 
     // 타겟을 500개씩 chunking
@@ -160,7 +158,7 @@ export class AligoService {
         responses.push(response);
 
         // Aligo API 응답에서 성공/실패 카운트 추출
-        if (response.result_code === 1) {
+        if (Number(response.result_code) === 1) {
           totalSuccessCount += response.success_cnt || 0;
           totalFailureCount += response.error_cnt || 0;
           this.logger.log(

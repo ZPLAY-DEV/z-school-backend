@@ -62,6 +62,12 @@ export class AttendanceController {
     return await this.attendancesService.upsert(dto);
   }
 
+  @HttpCode(200)
+  @Post('notify')
+  async notifyParents(): Promise<any> {
+    return await this.attendancesService.notifyParents();
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//

@@ -11,7 +11,7 @@ export type AligoListResult = {
 };
 
 export type AligoBulkSendResult = {
-  result_code: number;
+  result_code: number; //! 주) 알리고 문서에 number 로 되었지만 '1' 이 지랄로 전달됨.
   message: string;
   msg_id: number;
   success_cnt: number;

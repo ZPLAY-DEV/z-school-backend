@@ -22,6 +22,7 @@ import {
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { NotificationService } from 'src/services/notification/notification.service';
 import { Repository } from 'typeorm';
 
 const LIMIT = 10;
@@ -37,6 +38,7 @@ export class AttendanceService {
     private readonly schooldayRepository: Repository<Schoolday>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   //? notice that even if you provide createdAt and updatedAt in the payload
@@ -195,6 +197,32 @@ export class AttendanceService {
       }
     }
   }
+
+  async notifyParents(): Promise<any> {
+    return await this.notificationService.sendPersonalizedNotificationToParents(
+      {
+        messageType: 'ping.class',
+        notifications: [
+          {
+            id: 1, // 부모 ID
+            body: '김철수 학생 오늘 수학 수업에 지각했습니다.',
+          },
+          {
+            id: 2, // 부모 ID
+            body: '이영희 학생 오늘 하교 했습니다.',
+          },
+        ],
+        schoolId: 1,
+        schoolName: '삼척초등학교',
+        role: 'PARENT',
+        senderPhone: '02-6052-7000',
+      },
+    );
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? READ
+  //? ---------------------------------------------------------------------- ?//
 
   //? notice that records will be sorted by range key,
   //? which is dailyStudentKey

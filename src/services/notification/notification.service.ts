@@ -88,7 +88,7 @@ export class NotificationService {
     const targets: NotificationTarget[] = parents.map((parent) => ({
       id: parent.id,
       pushToken: parent.user?.pushToken,
-      phone: parent.phone, // user.phone 사용하면 안된다.
+      phone: parent.phone, //! user.phone 사용하면 안된다.
     }));
 
     await this.processPersonalizedNotification(params, targets);
@@ -234,6 +234,7 @@ export class NotificationService {
     }
 
     this.logNotificationSummary('Personalized', counts);
+
     await this.logToFirehose({
       messageType: params.messageType,
       schoolId: params.schoolId,
@@ -353,7 +354,7 @@ export class NotificationService {
           sender: senderPhone,
           msg_type: 'SMS',
           cnt: smsTargets.length,
-          testmode_yn: 'N',
+          testmode_yn: process.env.NODE_ENV === 'production' ? 'N' : 'Y',
         },
         smsTargets,
       );
