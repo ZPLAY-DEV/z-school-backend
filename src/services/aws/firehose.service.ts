@@ -48,10 +48,14 @@ export class FirehoseService implements OnModuleInit {
           }
         : undefined; // AWS SDK가 기본 credential chain 사용 (IAM role, AWS profile 등)
 
+    // LocalStack 엔드포인트 설정
+    const endpoint = process.env.AWS_FIREHOSE_ENDPOINT;
+
     this.client = new FirehoseClient({
       region,
       maxAttempts: this.maxRetries,
       ...(credentials && { credentials }),
+      ...(endpoint && { endpoint }),
     });
   }
 
