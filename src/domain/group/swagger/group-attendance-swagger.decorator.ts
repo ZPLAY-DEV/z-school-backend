@@ -29,8 +29,8 @@ export const FindAttendanceByDateDocs = () => {
       - \`PRESENT\`: 출석
       - \`ABSENT\`: 결석
       - \`LATE\`: 지각
-      - \`REPORTED_ABSENT\`: 사전 결석 신고
-      - \`REPORTED_LATE\`: 사전 지각 신고
+      - \`EXCUSED_ABSENT\`: 사전 결석 신고
+      - \`EXCUSED_LATE\`: 사전 지각 신고
       `,
     }),
     ApiParam({
@@ -88,8 +88,8 @@ export const UpsertAttendanceDocs = () => {
       - \`PRESENT\`: 출석
       - \`ABSENT\`: 결석
       - \`LATE\`: 지각
-      - \`REPORTED_ABSENT\`: 사전 결석 신고
-      - \`REPORTED_LATE\`: 사전 지각 신고
+      - \`EXCUSED_ABSENT\`: 사전 결석 신고
+      - \`EXCUSED_LATE\`: 사전 지각 신고
       
       ### 응답 데이터:
       - 등록/수정된 출석 정보 객체
@@ -171,8 +171,8 @@ export const GetReportDocs = () => {
       - \`PRESENT\`: 출석
       - \`ABSENT\`: 결석
       - \`LATE\`: 지각
-      - \`REPORTED_ABSENT\`: 사전 결석 신고
-      - \`REPORTED_LATE\`: 사전 지각 신고
+      - \`EXCUSED_ABSENT\`: 사전 결석 신고
+      - \`EXCUSED_LATE\`: 사전 지각 신고
       `,
     }),
     ApiParam({
@@ -222,8 +222,8 @@ export const GetReportDocs = () => {
                       'PRESENT',
                       'ABSENT',
                       'LATE',
-                      'REPORTED_ABSENT',
-                      'REPORTED_LATE',
+                      'EXCUSED_ABSENT',
+                      'EXCUSED_LATE',
                     ],
                     description: '출석 상태',
                     example: 'PRESENT',

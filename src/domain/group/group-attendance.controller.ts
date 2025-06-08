@@ -3,6 +3,7 @@ import {
   ClassSerializerInterceptor,
   Controller,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Post,
@@ -31,10 +32,29 @@ export class GroupAttendanceController {
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? Upsert
+  //? Create/Upsert
   //? ---------------------------------------------------------------------- ?//
 
+  @HttpCode(200)
+  @Post(':groupId/attendances/:date/start')
+  async start(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('date') date: string,
+  ): Promise<number> {
+    return await this.groupAttendancesService.notifyStart(groupId, date);
+  }
+
+  @HttpCode(200)
+  @Post(':groupId/attendances/:date/end')
+  async end(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('date') date: string,
+  ): Promise<any> {
+    return await this.groupAttendancesService.notifyEnd(groupId, date);
+  }
+
   @UpsertAttendanceDocs()
+  @HttpCode(200)
   @Post(':groupId/attendances/:date/students/:studentId')
   async upsert(
     @Param('groupId', ParseIntPipe) groupId: number,

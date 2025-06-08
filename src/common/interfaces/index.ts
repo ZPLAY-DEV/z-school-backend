@@ -119,7 +119,7 @@ export interface IEventButton {
   buttonType: 'info' | 'success' | 'error' | 'warn';
   location: string | null;
   target: string;
-  targetId: number | null;
+  targetArgs: number | null;
 }
 
 export interface ICounts {

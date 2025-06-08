@@ -1,32 +1,33 @@
 // 대량 알림 요청 (여러 수신자에게 동일한 메시지)
-export type BulkNotificationRequest = {
+export type BroadcastMessageRequest = {
   messageType: string; // ping.class, ping.exit, letter.registration, letter.survey, letter.notice
   title?: string;
   body: string;
   target?: string; // for Client Routing
-  targetId?: string; // for Client Routing
+  targetArgs?: string; // for Client Routing
   ids: number[]; // parentIds 또는 instructorIds
   role: string; // PARENT 또는 INSTRUCTOR
   schoolId: number;
 };
 
 // 개별 알림 아이템
-export type IndividualNotification = {
+export type PersonalizedMessage = {
   id: number; // parentId or instructorId
   title?: string;
   body: string;
   target?: string; // for Client Routing
-  targetId?: string; // for Client Routing
+  targetArgs?: string; // for Client Routing
 };
 
 // 개별화된 알림 요청 (각 수신자별 다른 메시지)
-export type IndividualNotificationRequest = {
+export type PersonalizedMessagesRequest = {
   messageType: string;
-  notifications: IndividualNotification[]; // 각 수신자별 개별 메시지
+  notifications: PersonalizedMessage[]; // 각 수신자별 개별 메시지
   role: string; // PARENT 또는 INSTRUCTOR
   schoolId: number;
 };
 
+// 발송 결과 타입
 export type NotificationResult = {
   success: boolean;
   error?: Error;

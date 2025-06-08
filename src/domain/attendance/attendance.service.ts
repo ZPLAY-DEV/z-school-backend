@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { formatInTimeZone } from 'date-fns-tz';
 import { SortOrder } from 'dynamoose/dist/General';
 import { InjectModel, Model } from 'nestjs-dynamoose';
+import { AttendanceStatus } from 'src/common/enums';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateWithStudentAndSchooldayDto } from 'src/domain/attendance/dto/create-with-student-and-schoolday.dto';
 import { UpsertAttendanceDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
@@ -22,7 +23,6 @@ import {
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { NotificationService } from 'src/services/notification/notification.service';
 import { Repository } from 'typeorm';
 
 const LIMIT = 10;
@@ -38,8 +38,24 @@ export class AttendanceService {
     private readonly schooldayRepository: Repository<Schoolday>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
-    private readonly notificationService: NotificationService,
   ) {}
+
+  async init(): Promise<any> {
+    return await this.model.create({
+      groupKey: generateGroupKey(1),
+      dailyStudentKey: generateDailyStudentKey('2025-01-01', 1, '1', '1', 1),
+      lessonId: 1,
+      lessonName: '수학',
+      groupId: 1,
+      groupName: '1학년1반',
+      studentId: 1,
+      studentName: '김철수',
+      start: '14:00',
+      end: '15:00',
+      duration: 60,
+      status: AttendanceStatus.PENDING,
+    });
+  }
 
   //? notice that even if you provide createdAt and updatedAt in the payload
   //? dynamodb will ignore them and record the timestamps with its own value.
@@ -196,28 +212,6 @@ export class AttendanceService {
         throw new BadRequestException(HttpErrorConstants.DYNAMO_CREATE);
       }
     }
-  }
-
-  async notifyParents(): Promise<any> {
-    return await this.notificationService.sendIndividualNotificationToParents(
-      {
-        messageType: 'ping.class',
-        notifications: [
-          {
-            id: 1, // 부모 ID
-            body: '김철수 학생 오늘 수학 수업에 지각했습니다.',
-          },
-          {
-            id: 2, // 부모 ID
-            body: '이영희 학생 오늘 하교 했습니다.',
-          },
-        ],
-        schoolId: 1,
-        schoolName: '삼척초등학교',
-        role: 'PARENT',
-        senderPhone: '02-6052-7000',
-      },
-    );
   }
 
   //? ---------------------------------------------------------------------- ?//

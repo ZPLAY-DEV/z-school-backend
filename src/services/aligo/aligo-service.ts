@@ -103,7 +103,6 @@ export class AligoService {
       (dynamicDto as any)[`rec_${idx}`] = target.phone.replace(/[^0-9]/g, '');
       (dynamicDto as any)[`msg_${idx}`] = target.body;
     });
-    console.log(`dynamicDto`, dynamicDto);
 
     return this.postRequest(
       dynamicDto,

@@ -1,0 +1,39 @@
+{
+  "DeliveryStreamName": "notification-logs-stream",
+  "DeliveryStreamType": "DirectPut",
+  "S3DestinationConfiguration": {
+    "BucketARN": "arn:aws:s3:::notification-logs-bucket",
+    "BufferingHints": {
+      "IntervalInSeconds": 60,
+      "SizeInMBs": 1
+    },
+    "CompressionFormat": "GZIP",
+    "DynamicPartitioningConfiguration": {
+      "Enabled": true,
+      "RetryOptions": {
+        "DurationInSeconds": 3600
+      }
+    },
+    "ErrorOutputPrefix": "errors/",
+    "Prefix": "logs/year=!{partitionKeyFromQuery:year}/month=!{partitionKeyFromQuery:month}/day=!{partitionKeyFromQuery:day}/hour=!{partitionKeyFromQuery:hour}/school=!{partitionKeyFromQuery:school}/type=!{partitionKeyFromQuery:type}/",
+    "ProcessingConfiguration": {
+      "Enabled": true,
+      "Processors": [
+        {
+          "Parameters": [
+            {
+              "ParameterName": "MetadataExtractionQuery",
+              "ParameterValue": "{year:.year,month:.month,day:.day,hour:.hour,school:.school,type:.type}"
+            },
+            {
+              "ParameterName": "JsonParsingEngine",
+              "ParameterValue": "JQ-1.6"
+            }
+          ],
+          "Type": "MetadataExtraction"
+        }
+      ]
+    },
+    "RoleARN": "arn:aws:iam::000000000000:role/firehose_delivery_role"
+  }
+}

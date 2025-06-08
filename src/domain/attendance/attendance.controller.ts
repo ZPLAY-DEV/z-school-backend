@@ -15,22 +15,12 @@ import { ApiTags } from '@nestjs/swagger';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AttendanceService } from 'src/domain/attendance/attendance.service';
-import { CreateWithStudentAndSchooldayDto } from 'src/domain/attendance/dto/create-with-student-and-schoolday.dto';
-import {
-  AttendanceKeyDto,
-  UpsertAttendanceDto,
-} from 'src/domain/attendance/dto/upsert-attendance.dto';
+import { AttendanceKeyDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 
-import {
-  IAttendance,
-  IAttendanceKey,
-} from 'src/domain/attendance/entities/attendance.interface';
+import { IAttendanceKey } from 'src/domain/attendance/entities/attendance.interface';
 import {
   DeleteAttendanceDocs,
   FetchAttendancesDocs,
-  GetAttendanceDetailDocs,
-  UpsertAttendanceBareDocs,
-  UpsertWithStudentAndSchooldayDocs,
 } from 'src/domain/attendance/swagger/attendance-swagger.decorator';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 
@@ -42,30 +32,23 @@ export class AttendanceController {
   constructor(private readonly attendancesService: AttendanceService) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? CREATE / UPDATE (Upsert - DynamoDB Style)
+  //? CREATE / UPDATE
   //? ---------------------------------------------------------------------- ?//
 
-  @UpsertWithStudentAndSchooldayDocs()
-  @HttpCode(200)
-  @Post()
-  async upsertWithStudentAndSchoolday(
-    @Body()
-    dto: CreateWithStudentAndSchooldayDto,
-  ): Promise<IAttendance> {
-    return await this.attendancesService.upsertWithStudentAndSchoolday(dto);
-  }
-
-  @UpsertAttendanceBareDocs()
-  @HttpCode(200)
-  @Post('bare')
-  async upsert(@Body() dto: UpsertAttendanceDto): Promise<IAttendance> {
-    return await this.attendancesService.upsert(dto);
-  }
+  // @UpsertWithStudentAndSchooldayDocs()
+  // @HttpCode(200)
+  // @Post()
+  // async upsertWithStudentAndSchoolday(
+  //   @Body()
+  //   dto: CreateWithStudentAndSchooldayDto,
+  // ): Promise<IAttendance> {
+  //   return await this.attendancesService.upsertWithStudentAndSchoolday(dto);
+  // }
 
   @HttpCode(200)
-  @Post('notify')
-  async notifyParents(): Promise<any> {
-    return await this.attendancesService.notifyParents();
+  @Post('init')
+  async upsert(): Promise<any> {
+    return await this.attendancesService.init();
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -118,20 +101,20 @@ export class AttendanceController {
     };
   }
 
-  @GetAttendanceDetailDocs()
-  @Get('detail')
-  async getAttendanceById(
-    @Query('groupId', ParseIntPipe) groupId: number,
-    @Query('date') date: string,
-    @Query('studentId', ParseIntPipe) studentId: number,
-  ): Promise<IAttendance> {
-    const groupKey = generateGroupKey(groupId);
-    const dailyStudentKey = `DATE#${date}#STUDENT#${studentId}`;
-    return await this.attendancesService.findById({
-      groupKey,
-      dailyStudentKey,
-    });
-  }
+  // @GetAttendanceDetailDocs()
+  // @Get('detail')
+  // async getAttendanceById(
+  //   @Query('groupId', ParseIntPipe) groupId: number,
+  //   @Query('date') date: string,
+  //   @Query('studentId', ParseIntPipe) studentId: number,
+  // ): Promise<IAttendance> {
+  //   const groupKey = generateGroupKey(groupId);
+  //   const dailyStudentKey = `DATE#${date}#STUDENT#${studentId}`;
+  //   return await this.attendancesService.findById({
+  //     groupKey,
+  //     dailyStudentKey,
+  //   });
+  // }
 
   //? ---------------------------------------------------------------------- ?//
   //? DELETE

@@ -12,6 +12,7 @@ import { PickController } from 'src/domain/pick/pick.controller';
 import { PickService } from 'src/domain/pick/pick.service';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
+import { NotificationModule } from 'src/services/notification/notification.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { User } from 'src/domain/user/entities/user.entity';
         },
       },
     ]),
+    NotificationModule,
   ],
   providers: [GroupService, GroupAttendanceService, PickService],
   controllers: [GroupController, GroupAttendanceController, PickController],

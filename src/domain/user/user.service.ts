@@ -1,20 +1,20 @@
 import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-  UnprocessableEntityException,
+    BadRequestException,
+    ForbiddenException,
+    Injectable,
+    Logger,
+    NotFoundException,
+    UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { TokenMessage } from 'firebase-admin/lib/messaging/messaging-api';
 import {
-  FilterOperator,
-  PaginateConfig,
-  PaginateQuery,
-  Paginated,
-  paginate,
+    FilterOperator,
+    PaginateConfig,
+    PaginateQuery,
+    Paginated,
+    paginate,
 } from 'nestjs-paginate';
 import * as random from 'randomstring';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
@@ -439,7 +439,7 @@ reason = VALUES(`reason`)',
       token: user.pushToken,
       data: {
         target: `users`,
-        targetId: `${user.id}`,
+        targetArgs: `${user.id}`,
         role: user.parent ? 'parent' : 'instructor',
       },
       notification: {

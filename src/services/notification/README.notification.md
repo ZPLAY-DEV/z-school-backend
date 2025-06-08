@@ -4,16 +4,16 @@ NotificationService는 다양한 방식으로 알림을 전송할 수 있는 4�
 
 ## 📨 알림 전송 메서드들
 
-### 1. `sendBulkNotificationToParents()` - 부모 일괄 알림
+### 1. `broadcastMessageToParents()` - 부모 일괄 알림
 여러 부모에게 **동일한 메시지**를 발송합니다.
 
-### 2. `sendIndividualNotificationToParents()` - 부모 개별 알림  
+### 2. `sendMessagesToParents()` - 부모 개별 알림  
 각 부모에게 **개별적으로 다른 메시지**를 발송합니다.
 
 ### 3. `sendBulkNotificationToUsers()` - 사용자 일괄 알림
 여러 사용자에게 **동일한 메시지**를 발송합니다.
 
-### 4. `sendIndividualNotificationToUsers()` - 사용자 개별 알림
+### 4. `sendPersonalizedMessageToUsers()` - 사용자 개별 알림
 각 사용자에게 **개별적으로 다른 메시지**를 발송합니다.
 
 ## 🚀 스마트 알림 시스템
@@ -60,7 +60,7 @@ export class YourService {
   ) {}
 
   async sendBulkToParents() {
-    await this.notificationService.sendBulkNotificationToParents({
+    await this.notificationService.broadcastMessageToParents({
       messageType: 'ping.class',
       ids: [1, 2, 3, 4, 5],           // 알림을 보낼 부모 ID 배열
       schoolId: 1,                             // 로깅용 학교 ID
@@ -69,7 +69,7 @@ export class YourService {
       body: "모든 부모님께 전달하는 중요한 메시지입니다", // 알림 내용 (필수)
       role: "PARENT",                          // FCM 데이터용 사용자 역할
       target: "announcements",                 // FCM 데이터용 대상 페이지/섹션
-      targetId: "123",                         // FCM 데이터용 대상 ID
+      targetArgs: "123",                         // FCM 데이터용 대상 ID
       senderPhone: "01012345678",              // SMS 발신번호
     });
   }
@@ -88,7 +88,7 @@ async sendBulkToUsers() {
     body: "오늘 밤 12시부터 2시까지 시스템 점검이 있습니다",
     role: "INSTRUCTOR",
     target: "system-status",
-    targetId: "maintenance-001",
+    targetArgs: "maintenance-001",
     senderPhone: "01012345678",
   });
 }
@@ -99,7 +99,7 @@ async sendBulkToUsers() {
 #### 부모들에게 개별 알림
 ```typescript
 async sendIndividualToParents() {
-  await this.notificationService.sendIndividualNotificationToParents({
+  await this.notificationService.sendMessagesToParents({
     messageType: 'letter.report',
     notifications: [
       {
@@ -107,20 +107,20 @@ async sendIndividualToParents() {
         title: "김철수 학부모님께",
         body: "김철수 학생 오늘 수학 수업에 지각했습니다.",
         target: "student-detail",
-        targetId: "student-123"
+        targetArgs: "student-123"
       },
       {
         id: 2,                               // 부모 ID
         title: "이영희 학부모님께", 
         body: "이영희 학생 오늘 하교 했습니다.",
         target: "student-detail",
-        targetId: "student-124"
+        targetArgs: "student-124"
       },
       {
         id: 3,                               // 부모 ID
         body: "오늘 숙제를 확인해 주세요.",    // title 없이도 가능
         target: "homework",
-        targetId: "hw-456"
+        targetArgs: "hw-456"
       }
     ],
     schoolId: 1,
@@ -134,7 +134,7 @@ async sendIndividualToParents() {
 #### 사용자들에게 개별 알림
 ```typescript
 async sendIndividualToUsers() {
-  await this.notificationService.sendIndividualNotificationToUsers({
+  await this.notificationService.sendPersonalizedMessageToUsers({
     messageType: 'ping.personal',
     notifications: [
       {
@@ -142,14 +142,14 @@ async sendIndividualToUsers() {
         title: "김선생님께",
         body: "3학년 1반 교실 환기 상태를 확인해 주세요",
         target: "classroom-status",
-        targetId: "room-301"
+        targetArgs: "room-301"
       },
       {
         id: 102,                             // 사용자 ID
         title: "박선생님께",
         body: "오늘 체육 수업이 실내로 변경되었습니다",
         target: "schedule",
-        targetId: "pe-class-001"
+        targetArgs: "pe-class-001"
       }
     ],
     schoolId: 1,
@@ -162,7 +162,7 @@ async sendIndividualToUsers() {
 
 ## 📋 파라미터 상세 설명
 
-### Bulk 알림 파라미터 (`BulkNotificationRequest`)
+### Bulk 알림 파라미터 (`BroadcastMessageRequest`)
 
 - `messageType`: 메시지 타입 (예: 'ping.class', 'letter.notice', 'ping.exit')
 - `ids`: 알림을 보낼 수신자 ID 배열 (부모 또는 사용자 ID)
@@ -172,18 +172,18 @@ async sendIndividualToUsers() {
 - `body`: 알림 메시지 (필수)
 - `role`: FCM 데이터에 포함할 사용자 역할 (`INSTRUCTOR`, `PARENT`, `OTHER`)
 - `target`: FCM 데이터에 포함할 대상 페이지/섹션 (선택사항)
-- `targetId`: FCM 데이터에 포함할 대상 ID (선택사항)
+- `targetArgs`: FCM 데이터에 포함할 대상 ID (선택사항)
 - `senderPhone`: SMS 발신 전화번호 (선택사항, 푸시 토큰이 없는 사용자에게 SMS를 보내려면 필수)
 
-### Individual 알림 파라미터 (`IndividualNotificationRequest`)
+### Individual 알림 파라미터 (`PersonalizedMessageRequest`)
 
 - `messageType`: 메시지 타입
-- `notifications`: 개별 알림 배열 (`IndividualNotification[]`)
+- `notifications`: 개별 알림 배열 (`PersonalizedMessage[]`)
   - `id`: 대상 부모/사용자 ID
   - `title`: 개별 제목 (선택사항)
   - `body`: 개별 메시지 내용 (필수)
   - `target`: 개별 대상 페이지 (선택사항)
-  - `targetId`: 개별 대상 ID (선택사항)
+  - `targetArgs`: 개별 대상 ID (선택사항)
 - `schoolId`: 학교 ID
 - `schoolName`: 학교명
 - `role`: 사용자 역할
@@ -195,7 +195,7 @@ async sendIndividualToUsers() {
 ```json
 {
   "page": "announcements",        // 이동할 화면
-  "args": "{\"role\":\"PARENT\",\"targetId\":\"123\"}"  // 화면에 전달할 파라미터
+  "args": "{\"role\":\"PARENT\",\"targetArgs\":\"123\"}"  // 화면에 전달할 파라미터
 }
 ```
 
@@ -204,7 +204,7 @@ async sendIndividualToUsers() {
 ### FCM 푸시 알림 (우선순위 1)
 - **조건**: 사용자가 유효한 `pushToken`을 가지고 있는 경우
 - **방법**: Firebase Cloud Messaging
-- **데이터**: 앱 내비게이션용 role, targetId 포함
+- **데이터**: 앱 내비게이션용 role, targetArgs 포함
 
 ### SMS 대체 수단 (우선순위 2)
 - **조건**: 사용자가 `pushToken`은 없지만 유효한 `phone` 번호가 있는 경우
@@ -296,7 +296,7 @@ Individual notification summary for parents - FCM: 2/3, SMS: 1/1
 ### 시나리오 1: 전체 공지 (Bulk)
 ```typescript
 // 모든 부모에게 동일한 급식 공지
-await notificationService.sendBulkNotificationToParents({
+await notificationService.broadcastMessageToParents({
   messageType: 'letter.notice',
   ids: [1, 2, 3, 4, 5],
   schoolId: 1,
@@ -305,7 +305,7 @@ await notificationService.sendBulkNotificationToParents({
   body: "내일은 김치찌개와 불고기가 나옵니다",
   role: "PARENT",
   target: "meal-schedule",
-  targetId: "meal-2024-03-16",
+  targetArgs: "meal-2024-03-16",
   senderPhone: "01012345678"
 });
 ```
@@ -313,7 +313,7 @@ await notificationService.sendBulkNotificationToParents({
 ### 시나리오 2: 개별 성적 통지 (Individual)
 ```typescript
 // 각 부모에게 자녀별 개별 성적 통지
-await notificationService.sendIndividualNotificationToParents({
+await notificationService.sendMessagesToParents({
   messageType: 'letter.report',
   notifications: [
     {
@@ -321,14 +321,14 @@ await notificationService.sendIndividualNotificationToParents({
       title: "김철수 어머님께",
       body: "철수의 중간고사 성적: 수학 95점, 국어 88점, 영어 92점",
       target: "grade-report",
-      targetId: "student-123-midterm"
+      targetArgs: "student-123-midterm"
     },
     {
       id: 2, 
       title: "이영희 아버님께",
       body: "영희의 중간고사 성적: 수학 100점, 국어 96점, 영어 94점",
       target: "grade-report", 
-      targetId: "student-124-midterm"
+      targetArgs: "student-124-midterm"
     }
   ],
   schoolId: 1,
@@ -341,7 +341,7 @@ await notificationService.sendIndividualNotificationToParents({
 ### 시나리오 3: 교사 개별 업무 알림 (Individual)
 ```typescript
 // 각 교사에게 개별 업무 배정
-await notificationService.sendIndividualNotificationToUsers({
+await notificationService.sendPersonalizedMessageToUsers({
   messageType: 'ping.task',
   notifications: [
     {
@@ -349,14 +349,14 @@ await notificationService.sendIndividualNotificationToUsers({
       title: "김선생님",
       body: "3학년 1반 교실 정리 및 환기를 부탁드립니다",
       target: "task-detail",
-      targetId: "task-001"
+      targetArgs: "task-001"
     },
     {
       id: 102,
       title: "박선생님", 
       body: "체육관 기자재 점검을 부탁드립니다",
       target: "task-detail",
-      targetId: "task-002"
+      targetArgs: "task-002"
     }
   ],
   schoolId: 1,
@@ -382,20 +382,20 @@ await notificationService.sendBulkNotificationToUsers({
 });
 
 // 2단계: 각 교사에게 개별 역할 배정 (Individual)
-await notificationService.sendIndividualNotificationToUsers({
+await notificationService.sendPersonalizedMessageToUsers({
   messageType: 'ping.emergency.task',
   notifications: [
     {
       id: 101,
       body: "1층 학생들 대피 지도를 담당해 주세요",
       target: "emergency-task",
-      targetId: "evacuation-floor1"
+      targetArgs: "evacuation-floor1"
     },
     {
       id: 102,
       body: "2층 학생들 대피 지도를 담당해 주세요",
       target: "emergency-task", 
-      targetId: "evacuation-floor2"
+      targetArgs: "evacuation-floor2"
     }
   ],
   schoolId: 1,
@@ -409,7 +409,7 @@ await notificationService.sendIndividualNotificationToUsers({
 
 ```typescript
 // 대량 알림 요청 (여러 수신자에게 동일한 메시지)
-export type BulkNotificationRequest = {
+export type BroadcastMessageRequest = {
   messageType: string;
   ids: number[]; // parentIds 또는 userIds
   schoolId: number;
@@ -418,23 +418,23 @@ export type BulkNotificationRequest = {
   body: string;
   role: string;
   target?: string;
-  targetId?: string;
+  targetArgs?: string;
   senderPhone: string;
 };
 
 // 개별 알림 아이템
-export type IndividualNotification = {
+export type PersonalizedMessage = {
   id: number; // parentId or userId
   title?: string;
   body: string;
   target?: string;
-  targetId?: string;
+  targetArgs?: string;
 };
 
 // 개별화된 알림 요청 (각 수신자별 다른 메시지)
-export type IndividualNotificationRequest = {
+export type PersonalizedMessageRequest = {
   messageType: string;
-  notifications: IndividualNotification[];
+  notifications: PersonalizedMessage[];
   schoolId: number;
   schoolName: string;
   role: string;
@@ -453,10 +453,10 @@ export type NotificationResult = {
 
 | 상황 | 추천 메서드 | 설명 |
 |------|-------------|------|
-| 전체 공지사항 | `sendBulkNotificationToParents/Users` | 모든 대상에게 동일한 내용 |
-| 개별 성적통지 | `sendIndividualNotificationToParents` | 각 학생별 다른 성적 |
-| 개별 업무배정 | `sendIndividualNotificationToUsers` | 각 교사별 다른 업무 |
-| 급식 메뉴 안내 | `sendBulkNotificationToParents` | 모든 부모에게 동일한 메뉴 |
-| 맞춤형 상담 일정 | `sendIndividualNotificationToParents` | 각 부모별 다른 상담 시간 |
+| 전체 공지사항 | `broadcastMessageToParents/Users` | 모든 대상에게 동일한 내용 |
+| 개별 성적통지 | `sendMessagesToParents` | 각 학생별 다른 성적 |
+| 개별 업무배정 | `sendPersonalizedMessageToUsers` | 각 교사별 다른 업무 |
+| 급식 메뉴 안내 | `broadcastMessageToParents` | 모든 부모에게 동일한 메뉴 |
+| 맞춤형 상담 일정 | `sendMessagesToParents` | 각 부모별 다른 상담 시간 |
 
 이제 NotificationService는 다양한 알림 요구사항을 효율적으로 처리할 수 있는 완전한 솔루션을 제공합니다! 🚀

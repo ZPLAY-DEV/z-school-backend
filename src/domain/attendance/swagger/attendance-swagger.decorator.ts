@@ -1,17 +1,17 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiQuery,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { CreateWithStudentAndSchooldayDto } from 'src/domain/attendance/dto/create-with-student-and-schoolday.dto';
 import {
-  AttendanceKeyDto,
-  UpsertAttendanceDto,
+    AttendanceKeyDto,
+    UpsertAttendanceDto,
 } from 'src/domain/attendance/dto/upsert-attendance.dto';
 
 //? ---------------------------------------------------------------------- ?//
@@ -148,8 +148,8 @@ export const UpsertWithStudentAndSchooldayDocs = () => {
               'PRESENT',
               'ABSENT',
               'LATE',
-              'REPORTED_ABSENT',
-              'REPORTED_LATE',
+              'EXCUSED_ABSENT',
+              'EXCUSED_LATE',
             ],
             example: 'PRESENT',
             description: '출석 상태',
@@ -346,8 +346,8 @@ export const UpsertAttendanceBareDocs = () => {
               'PRESENT',
               'ABSENT',
               'LATE',
-              'REPORTED_ABSENT',
-              'REPORTED_LATE',
+              'EXCUSED_ABSENT',
+              'EXCUSED_LATE',
             ],
             example: 'PRESENT',
             description: '출석 상태',
@@ -532,8 +532,8 @@ export const FetchAttendancesDocs = () => {
                     'PRESENT',
                     'ABSENT',
                     'LATE',
-                    'REPORTED_ABSENT',
-                    'REPORTED_LATE',
+                    'EXCUSED_ABSENT',
+                    'EXCUSED_LATE',
                   ],
                   example: 'PRESENT',
                   description: '출석 상태',
@@ -726,8 +726,8 @@ export const GetAttendanceDetailDocs = () => {
               'PRESENT',
               'ABSENT',
               'LATE',
-              'REPORTED_ABSENT',
-              'REPORTED_LATE',
+              'EXCUSED_ABSENT',
+              'EXCUSED_LATE',
             ],
             example: 'PRESENT',
             description: '출석 상태',
