@@ -17,8 +17,10 @@ import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 import { GroupAttendanceService } from 'src/domain/group/group-attendance.service';
 import {
+  EndAttendanceDocs,
   FindAttendanceByDateDocs,
   GetReportDocs,
+  StartAttendanceDocs,
   UpsertAttendanceDocs,
 } from 'src/domain/group/swagger/group-attendance-swagger.decorator';
 
@@ -35,6 +37,7 @@ export class GroupAttendanceController {
   //? Create/Upsert
   //? ---------------------------------------------------------------------- ?//
 
+  @StartAttendanceDocs()
   @HttpCode(200)
   @Post(':groupId/attendances/:date/start')
   async start(
@@ -44,12 +47,13 @@ export class GroupAttendanceController {
     return await this.groupAttendancesService.notifyStart(groupId, date);
   }
 
+  @EndAttendanceDocs()
   @HttpCode(200)
   @Post(':groupId/attendances/:date/end')
   async end(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('date') date: string,
-  ): Promise<any> {
+  ): Promise<number> {
     return await this.groupAttendancesService.notifyEnd(groupId, date);
   }
 

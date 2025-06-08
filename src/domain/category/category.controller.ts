@@ -36,7 +36,7 @@ export class CategoryController {
   //? SEED (DB 생성 후, 단 한번만 호출)
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ summary: 'seed data ⚙️ DB 초기화때 사용' })
+  @ApiOperation({ summary: '⚙️ to seed data' })
   @Post('seed')
   async seed(): Promise<void> {
     return await this.categoryService.seed();

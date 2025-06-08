@@ -11,7 +11,7 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AttendanceService } from 'src/domain/attendance/attendance.service';
@@ -20,7 +20,7 @@ import { AttendanceKeyDto } from 'src/domain/attendance/dto/upsert-attendance.dt
 import { IAttendanceKey } from 'src/domain/attendance/entities/attendance.interface';
 import {
   DeleteAttendanceDocs,
-  FetchAttendancesDocs,
+  FetchAttendancesDocs
 } from 'src/domain/attendance/swagger/attendance-swagger.decorator';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 
@@ -32,23 +32,14 @@ export class AttendanceController {
   constructor(private readonly attendancesService: AttendanceService) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? CREATE / UPDATE
+  //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  // @UpsertWithStudentAndSchooldayDocs()
-  // @HttpCode(200)
-  // @Post()
-  // async upsertWithStudentAndSchoolday(
-  //   @Body()
-  //   dto: CreateWithStudentAndSchooldayDto,
-  // ): Promise<IAttendance> {
-  //   return await this.attendancesService.upsertWithStudentAndSchoolday(dto);
-  // }
-
+  @ApiOperation({ summary: '⚙️ to initialize table' })
   @HttpCode(200)
   @Post('init')
-  async upsert(): Promise<any> {
-    return await this.attendancesService.init();
+  async upsert(): Promise<void> {
+    await this.attendancesService.init();
   }
 
   //? ---------------------------------------------------------------------- ?//

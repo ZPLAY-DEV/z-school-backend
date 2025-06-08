@@ -40,8 +40,8 @@ export class AttendanceService {
     private readonly studentRepository: Repository<Student>,
   ) {}
 
-  async init(): Promise<any> {
-    return await this.model.create({
+  async init(): Promise<void> {
+    await this.model.create({
       groupKey: generateGroupKey(1),
       dailyStudentKey: generateDailyStudentKey('2025-01-01', 1, '1', '1', 1),
       lessonId: 1,
