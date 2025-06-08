@@ -199,7 +199,7 @@ export class AttendanceService {
   }
 
   async notifyParents(): Promise<any> {
-    return await this.notificationService.sendPersonalizedNotificationToParents(
+    return await this.notificationService.sendIndividualNotificationToParents(
       {
         messageType: 'ping.class',
         notifications: [

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { formatInTimeZone } from 'date-fns-tz';
 import { IFcmData } from 'src/common/interfaces';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
-import { User } from 'src/domain/user/entities/user.entity';
+import { School } from 'src/domain/school/entities/school.entity';
 import { AligoService } from 'src/services/aligo/aligo-service';
 import { FirehoseService } from 'src/services/aws/firehose.service';
 import { FcmService } from 'src/services/fcm/fcm.service';
@@ -13,7 +13,7 @@ import {
 } from 'src/services/notification/types';
 import { DataSource, In, Repository } from 'typeorm';
 
-interface NotificationTarget {
+interface IndividualNotification {
   id: number;
   pushToken?: string | null;
   phone?: string | null;
@@ -30,7 +30,7 @@ interface NotificationCounts {
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
   private readonly parentRepository: Repository<Parent>;
-  private readonly userRepository: Repository<User>;
+  private readonly schoolRepository: Repository<School>;
 
   constructor(
     private readonly dataSource: DataSource,
@@ -39,7 +39,7 @@ export class NotificationService {
     private readonly firehoseService: FirehoseService,
   ) {
     this.parentRepository = this.dataSource.getRepository(Parent);
-    this.userRepository = this.dataSource.getRepository(User);
+    this.schoolRepository = this.dataSource.getRepository(School);
   }
 
   async sendBulkNotificationToParents(
@@ -49,34 +49,19 @@ export class NotificationService {
       where: { id: In(params.ids) },
       relations: ['user'],
     });
-
-    const targets: NotificationTarget[] = parents.map((parent) => ({
+    const school = await this.schoolRepository.findOneOrFail({
+      where: { id: params.schoolId },
+    });
+    const targets: IndividualNotification[] = parents.map((parent) => ({
       id: parent.id,
       pushToken: parent.user?.pushToken,
-      phone: parent.user?.phone, // 일관성을 위해 user.phone 사용
+      phone: parent.phone, //! 가입안한 학부모가 있을 수 있으므로 항상 parent.phone 사용할것.
     }));
 
-    await this.processBulkNotification(params, targets);
+    await this.processBulkNotification(params, targets, school);
   }
 
-  async sendBulkNotificationToUsers(
-    params: BulkNotificationRequest,
-  ): Promise<void> {
-    const users = await this.userRepository.find({
-      where: { id: In(params.ids) },
-      select: ['id', 'pushToken', 'phone'],
-    });
-
-    const targets: NotificationTarget[] = users.map((user) => ({
-      id: user.id,
-      pushToken: user.pushToken,
-      phone: user.phone,
-    }));
-
-    await this.processBulkNotification(params, targets);
-  }
-
-  async sendPersonalizedNotificationToParents(
+  async sendIndividualNotificationToParents(
     params: IndividualNotificationRequest,
   ): Promise<void> {
     const parentIds = params.notifications.map((n) => n.id);
@@ -84,40 +69,26 @@ export class NotificationService {
       where: { id: In(parentIds) },
       relations: ['user'],
     });
-
-    const targets: NotificationTarget[] = parents.map((parent) => ({
-      id: parent.id,
-      pushToken: parent.user?.pushToken,
-      phone: parent.phone, //! user.phone 사용하면 안된다.
-    }));
-
-    await this.processPersonalizedNotification(params, targets);
-  }
-
-  async sendPersonalizedNotificationToUsers(
-    params: IndividualNotificationRequest,
-  ): Promise<void> {
-    const userIds = params.notifications.map((n) => n.id);
-    const users = await this.userRepository.find({
-      where: { id: In(userIds) },
-      select: ['id', 'pushToken', 'phone'],
+    const school = await this.schoolRepository.findOneOrFail({
+      where: { id: params.schoolId },
     });
 
-    const targets: NotificationTarget[] = users.map((user) => ({
-      id: user.id,
-      pushToken: user.pushToken,
-      phone: user.phone,
+    const targets: IndividualNotification[] = parents.map((parent) => ({
+      id: parent.id,
+      pushToken: parent.user?.pushToken,
+      phone: parent.phone, //! 가입안한 학부모가 있을 수 있으므로 항상 parent.phone 사용할것.
     }));
 
-    await this.processPersonalizedNotification(params, targets);
+    await this.processIndividualNotification(params, targets, school);
   }
 
   private async processBulkNotification(
     params: BulkNotificationRequest,
-    targets: NotificationTarget[],
+    targets: IndividualNotification[],
+    school: School,
   ): Promise<void> {
-    const { title, body, role, target, targetId, senderPhone } = params;
-
+    const { title, body, role, target, targetId } = params;
+    const senderPhone = school.phone;
     // Separate targets by notification method
     const tokensForFcm = targets
       .filter((t) => t.pushToken?.trim())
@@ -174,9 +145,9 @@ export class NotificationService {
     });
   }
 
-  private async processPersonalizedNotification(
+  private async processIndividualNotification(
     params: IndividualNotificationRequest,
-    targets: NotificationTarget[],
+    targets: IndividualNotification[],
   ): Promise<void> {
     const { notifications, role, senderPhone } = params;
     const counts: NotificationCounts = {
@@ -225,7 +196,7 @@ export class NotificationService {
 
     // Send FCM notifications in parallel for better performance
     if (fcmTargets.length > 0) {
-      await this.sendPersonalizedFcm(fcmTargets, role, counts);
+      await this.sendIndividualFcm(fcmTargets, role, counts);
     }
 
     // Send SMS notifications
@@ -233,13 +204,13 @@ export class NotificationService {
       await this.sendBulkSms(smsTargets, counts, senderPhone);
     }
 
-    this.logNotificationSummary('Personalized', counts);
+    this.logNotificationSummary('Individual', counts);
 
     await this.logToFirehose({
       messageType: params.messageType,
       schoolId: params.schoolId,
       schoolName: params.schoolName,
-      title: 'Personalized Messages',
+      title: 'Individual Messages',
       body: `${notifications.length} personalized messages sent`,
       ids: targets.map((t) => t.id),
       role: params.role,
@@ -285,7 +256,7 @@ export class NotificationService {
     }
   }
 
-  private async sendPersonalizedFcm(
+  private async sendIndividualFcm(
     fcmTargets: { token: string; notification: any }[],
     role: string,
     counts: NotificationCounts,
@@ -331,7 +302,7 @@ export class NotificationService {
     });
 
     this.logger.log(
-      `Personalized FCM notifications - Success: ${counts.fcmSuccess}, Failure: ${counts.fcmFailure}`,
+      `Individual FCM notifications - Success: ${counts.fcmSuccess}, Failure: ${counts.fcmFailure}`,
     );
   }
 
@@ -401,17 +372,28 @@ export class NotificationService {
       const seoulTimeZone = 'Asia/Seoul';
 
       const partitionedLogData = {
-        ...logData,
+        // 기본 로그 정보 (원본 필드명 제거하고 파티션 필드명으로 통일)
+        message_type: logData.messageType, // messageType 제거, message_type만 사용
+        school_id: logData.schoolId, // schoolId 제거, school_id만 사용
+        school_name: logData.schoolName,
+        title: logData.title,
+        body: logData.body,
+        user_ids: logData.ids,
+        role: this.categorizeRole(logData.role), // role_type -> role로 변경
+
+        // 시간 기반 파티션 키
         year: formatInTimeZone(now, seoulTimeZone, 'yyyy'),
         month: formatInTimeZone(now, seoulTimeZone, 'MM'),
         day: formatInTimeZone(now, seoulTimeZone, 'dd'),
         hour: formatInTimeZone(now, seoulTimeZone, 'HH'),
 
-        // 비즈니스 로직 기반 파티셔닝
-        school_id: logData.schoolId, // 학교ID 로 그룹핑
-        role_type: this.categorizeRole(logData.role),
+        // 성과 메트릭
+        fcm_success_count: logData.fcmSuccessCount || 0,
+        fcm_failure_count: logData.fcmFailureCount || 0,
+        sms_success_count: logData.smsSuccessCount || 0,
+        sms_failure_count: logData.smsFailureCount || 0,
 
-        // 쿼리 최적화를 위한 추가 필드
+        // 계산된 필드
         timestamp: formatInTimeZone(
           now,
           seoulTimeZone,
@@ -422,11 +404,6 @@ export class NotificationService {
           (logData.fcmSuccessCount || 0) + (logData.smsSuccessCount || 0),
         total_failure:
           (logData.fcmFailureCount || 0) + (logData.smsFailureCount || 0),
-
-        // 알림 타입 분류
-        message_type: logData.messageType,
-
-        // 성능 메트릭
         success_rate: this.calculateSuccessRate(
           (logData.fcmSuccessCount || 0) + (logData.smsSuccessCount || 0),
           logData.ids.length,
@@ -436,7 +413,7 @@ export class NotificationService {
       await this.firehoseService.sendRecord(partitionedLogData);
 
       this.logger.log(
-        'Notification log sent to Firehose with Asia/Seoul timezone partitioning metadata',
+        'Notification log sent to Firehose with optimized dynamic partitioning',
       );
 
       return { success: true };
@@ -468,7 +445,7 @@ export class NotificationService {
     } else if (roleLower.includes('parent')) {
       return 'PARENT';
     }
-    return 'OTHER';
+    return 'ALL';
   }
 
   /**
@@ -481,4 +458,39 @@ export class NotificationService {
     if (totalCount === 0) return 0;
     return Math.round((successCount / totalCount) * 100);
   }
+
+  // async sendBulkNotificationToUsers(
+  //   params: BulkNotificationRequest,
+  // ): Promise<void> {
+  //   const users = await this.userRepository.find({
+  //     where: { id: In(params.ids) },
+  //     select: ['id', 'pushToken', 'phone'],
+  //   });
+
+  //   const targets: IndividualNotification[] = users.map((user) => ({
+  //     id: user.id,
+  //     pushToken: user.pushToken,
+  //     phone: user.phone,
+  //   }));
+
+  //   await this.processBulkNotification(params, targets);
+  // }
+
+  // async sendIndividualNotificationToUsers(
+  //   params: IndividualNotificationRequest,
+  // ): Promise<void> {
+  //   const userIds = params.notifications.map((n) => n.id);
+  //   const users = await this.userRepository.find({
+  //     where: { id: In(userIds) },
+  //     select: ['id', 'pushToken', 'phone'],
+  //   });
+
+  //   const targets: IndividualNotification[] = users.map((user) => ({
+  //     id: user.id,
+  //     pushToken: user.pushToken,
+  //     phone: user.phone,
+  //   }));
+
+  //   await this.processIndividualNotification(params, targets);
+  // }
 }
