@@ -9,47 +9,47 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
 } from '@nestjs/common';
-import { NotificationService } from './notification.service';
-import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
+import { CreateDispatchDto } from './dto/create-dispatch.dto';
+import { UpdateDispatchDto } from './dto/update-dispatch.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+import { DispatchService } from './dispatch.service';
 
 @ApiTags('✅ Notifications ( 발송관리 ) --- 수강신청, 공지사항, 설문지')
 @ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('notifications')
-export class NotificationController {
-  constructor(private readonly notificationService: NotificationService) {}
+export class DispatchController {
+  constructor(private readonly dispatchService: DispatchService) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
   @Post()
-  create(@Body() createNotificationDto: CreateNotificationDto) {
-    return this.notificationService.create(createNotificationDto);
+  create(@Body() createNotificationDto: CreateDispatchDto) {
+    return this.dispatchService.create(createNotificationDto);
   }
 
   @Get()
   findAll() {
-    return this.notificationService.findAll();
+    return this.dispatchService.findAll();
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.notificationService.findOne(+id);
+    return this.dispatchService.findOne(+id);
   }
 
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() updateNotificationDto: UpdateNotificationDto,
+    @Body() updateDispatchDto: UpdateDispatchDto,
   ) {
-    return this.notificationService.update(+id, updateNotificationDto);
+    return this.dispatchService.update(+id, updateDispatchDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.notificationService.remove(+id);
+    return this.dispatchService.remove(+id);
   }
 }

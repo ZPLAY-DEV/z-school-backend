@@ -3,6 +3,7 @@ import { Exclude } from 'class-transformer';
 import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
 import { MessageType } from 'src/common/enums/message-type';
+import { Dispatch } from 'src/domain/dispatch/entities/dispatch.entity';
 import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
@@ -11,7 +12,6 @@ import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Statement } from 'src/domain/statement/entities/statement.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
-import { Notification } from 'src/domain/notification/entities/notification.entity';
 import {
   Column,
   CreateDateColumn,
@@ -167,8 +167,8 @@ export class School {
   })
   public sams: Sam[];
 
-  @OneToMany(() => Notification, (notification) => notification.school)
-  public notifications: Notification[];
+  @OneToMany(() => Dispatch, (dispatch) => dispatch.school)
+  public dispatch: Dispatch[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

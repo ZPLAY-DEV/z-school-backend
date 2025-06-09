@@ -1,39 +1,29 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
+import { CreateDispatchDto } from './dto/create-dispatch.dto';
+import { UpdateDispatchDto } from './dto/update-dispatch.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Notification } from './entities/notification.entity';
+import { Dispatch } from './entities/dispatch.entity';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { School } from '../school/entities/school.entity';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Term } from '../term/entities/term.entity';
-// import { NotificationPlatform, TargetGroup } from 'src/common/enums';
-// import { Student } from '../student/entities/student.entity';
-// import { Sam } from '../sam/entities/sam.entity';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import {
-  INotification,
-  INotificationKey,
-} from './entities/notification.interface';
-// import { batchPutHelper } from 'src/helpers/dynamo-batch-put.util';
+import { IDispatch, IDispatchKey } from './entities/dispatch.interface';
 import { AWS_SQS_CLIENT } from 'src/common/constants';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { Phone } from '../phone/entities/phone.entity';
 import { EventBridgeService } from 'src/services/aws/event-bridge.service';
 import { ConfigService } from '@nestjs/config';
-// import { Student } from '../student/entities/student.entity';
-// import { Sam } from '../sam/entities/sam.entity';
-// import { NotificationPlatform, TargetGroup } from 'src/common/enums';
 
 @Injectable()
-export class NotificationService {
-  private readonly logger = new Logger(NotificationService.name);
+export class DispatchService {
+  private readonly logger = new Logger(DispatchService.name);
 
   constructor(
-    @InjectRepository(Notification)
-    private readonly notificationRepository: Repository<Notification>,
-    @InjectModel('Notification')
-    private readonly model: Model<INotification, INotificationKey>,
+    @InjectRepository(Dispatch)
+    private readonly notificationRepository: Repository<Dispatch>,
+    @InjectModel('Dispatch')
+    private readonly model: Model<IDispatch, IDispatchKey>,
     @Inject(AWS_SQS_CLIENT)
     private readonly sqsClient: SqsService,
     private readonly eventBridgeService: EventBridgeService,
@@ -44,7 +34,7 @@ export class NotificationService {
   //? ---------------------------------------------------------------------- ?//
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
-  async create(dto: CreateNotificationDto) {
+  async create(dto: CreateDispatchDto) {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       // 1. 학교 존재 여부 확인
       const school = await manager.findOne(School, {
@@ -79,16 +69,16 @@ export class NotificationService {
       }
 
       // 3. 발송 정보 생성
-      const notification = manager.create(Notification, dto);
-      const savedNotification = await manager.save(notification);
+      const dispatch = manager.create(Dispatch, dto);
+      const saveDispatch = await manager.save(dispatch);
 
-      // 5. SQS 또는 EventBridge 처리
-      const notificationData = {
+      // 4. SQS 또는 EventBridge 처리
+      const dispatchData = {
         schoolId: dto.schoolId,
         termId: dto.termId,
         title: dto.title,
         body: dto.body,
-        notificationType: dto.notificationType,
+        type: dto.type,
         target: dto.target,
         targetGroup: dto.targetGroup,
         reservationDate: dto.reservationDate,
@@ -97,7 +87,7 @@ export class NotificationService {
 
       if (dto.reservationDate) {
         // 예약 시간이 있으면 EventBridge Rule 생성
-        const ruleName = `NotificationRule-${savedNotification.id}-${Date.now()}`;
+        const ruleName = `NotificationRule-${saveDispatch.id}-${Date.now()}`;
         const lambdaArn =
           'arn:aws:lambda:ap-northeast-2:000000000000:function:lambda-function';
 
@@ -107,15 +97,16 @@ export class NotificationService {
           ruleName,
           dto.reservationDate.toISOString(), // KST 기준, 예: "2025-06-05T14:30:00+09:00"
           lambdaArn,
-          notificationData,
+          dispatchData,
         );
       } else {
         // 예약 시간이 없으면 즉시 SQS로 전송
         await this.sqsClient.sendMessage({
-          type: 'SEND_NOTIFICATION',
-          data: notificationData,
+          type: 'SEND_DISPATCH',
+          data: dispatchData,
         });
       }
+      return saveDispatch;
 
       // // 4. SQS 발송 대기 큐 등록
       // await this.sqsClient.sendMessage({
@@ -210,8 +201,6 @@ export class NotificationService {
 
       // // 6. dynamoDB로 발송 대상자 Chunk 단위로 Batch Update
       // await batchPutHelper(this.model, mappingTarget);
-
-      return savedNotification;
     });
   }
 
@@ -223,7 +212,7 @@ export class NotificationService {
     return `This action returns a #${id} notification`;
   }
 
-  update(id: number, updateNotificationDto: UpdateNotificationDto) {
+  update(id: number, updateDispatchDto: UpdateDispatchDto) {
     return `This action updates a #${id} notification`;
   }
 

@@ -1,13 +1,13 @@
 import { Schema } from 'dynamoose';
 import {
-  NotificationType,
-  NotificationPlatform,
-  NotificationStatus,
+  DispatchType,
+  DispatchPlatform,
+  DispatchStatus,
 } from 'src/common/enums';
 
-export const NotificationSchema = new Schema(
+export const DispatchSchema = new Schema(
   {
-    notificationKey: {
+    dispatchKey: {
       type: String,
       hashKey: true,
       required: true,
@@ -19,7 +19,7 @@ export const NotificationSchema = new Schema(
       required: true,
     },
 
-    notificationId: {
+    dispatchId: {
       type: Number,
       required: true,
     },
@@ -31,7 +31,7 @@ export const NotificationSchema = new Schema(
 
     type: {
       type: String,
-      enum: Object.values(NotificationType),
+      enum: Object.values(DispatchType),
       required: true,
     },
 
@@ -42,7 +42,7 @@ export const NotificationSchema = new Schema(
 
     status: {
       type: String,
-      enum: Object.values(NotificationStatus),
+      enum: Object.values(DispatchStatus),
       default: 'READY',
       required: true,
     },
@@ -64,7 +64,7 @@ export const NotificationSchema = new Schema(
 
     platform: {
       type: String,
-      enum: Object.values(NotificationPlatform),
+      enum: Object.values(DispatchPlatform),
       required: true,
     },
   },

@@ -6,7 +6,7 @@
  * @param GROUP_STUDENT 그룹 학생 ( 특정 수업(그룹)을 수강중인 학생 대상 )
  * @param GROUP_SAM 그룹 강사 ( 특정 수업(그룹)을 강의중인 강사 대상 )
  */
-export enum NotificationTarget {
+export enum DispatchTarget {
   ALL_STUDENT = 'ALL_STUDENT',
   ALL_SAM = 'ALL_SAM',
   GRADE = 'GRADE',
@@ -20,7 +20,7 @@ export enum NotificationTarget {
  * @param ANNOUNCEMENT 공지사항
  * @param SURVEY 설문조사
  */
-export enum NotificationType {
+export enum DispatchType {
   ENROLLMENT = 'ENROLLMENT',
   ANNOUNCEMENT = 'ANNOUNCEMENT',
   SURVEY = 'SURVEY',
@@ -30,7 +30,7 @@ export enum NotificationType {
  * @param SMS 문자
  * @param FCM 푸시
  */
-export enum NotificationPlatform {
+export enum DispatchPlatform {
   SMS = 'SMS',
   FCM = 'FCM',
 }
@@ -40,7 +40,7 @@ export enum NotificationPlatform {
  * @param SUCCESS 성공
  * @param FAILED 실패
  */
-export enum NotificationStatus {
+export enum DispatchStatus {
   READY = 'READY',
   SUCCESS = 'SUCCESS',
   FAILED = 'FAILED',

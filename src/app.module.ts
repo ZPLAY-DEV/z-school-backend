@@ -45,7 +45,7 @@ import { BoardModule } from './domain/board/board.module';
 import { PhoneModule } from './domain/phone/phone.module';
 import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
-import { NotificationModule } from './domain/notification/notification.module';
+import { DispatchModule } from './domain/dispatch/dispatch.module';
 
 @Module({
   imports: [
@@ -139,7 +139,7 @@ import { NotificationModule } from './domain/notification/notification.module';
     HealthModule,
     PhoneModule,
     BoardModule,
-    NotificationModule,
+    DispatchModule,
   ],
   controllers: [AppController],
   providers: [

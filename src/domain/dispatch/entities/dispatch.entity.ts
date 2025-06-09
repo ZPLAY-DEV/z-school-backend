@@ -1,11 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { IsArray, IsEnum } from 'class-validator';
-import {
-  NotificationTarget,
-  NotificationType,
-  TargetGroup,
-} from 'src/common/enums';
+import { DispatchTarget, DispatchType, TargetGroup } from 'src/common/enums';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
@@ -19,8 +15,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('notifications')
-export class Notification {
+@Entity('dispatchs')
+export class Dispatch {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
@@ -56,15 +52,15 @@ export class Notification {
   })
   @Column({
     type: 'enum',
-    enum: NotificationType,
+    enum: DispatchType,
     comment: ' 발송 유형 ( 수강신청, 공지사항, 설문지 )',
   })
-  notificationType: NotificationType;
+  type: DispatchType;
 
   @Column('json', { nullable: true })
   @IsArray()
-  @IsEnum(NotificationTarget, { each: true })
-  target: NotificationTarget[];
+  @IsEnum(DispatchTarget, { each: true })
+  target: DispatchTarget[];
 
   @ApiProperty({
     description: '🈵 발송 대상 유형 ( student, sam )',
@@ -104,11 +100,11 @@ export class Notification {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => School, (school: School) => school.notifications)
+  @ManyToOne(() => School, (school: School) => school.dispatch)
   @JoinColumn({ name: 'schoolId' })
   school: School;
 
-  @ManyToOne(() => Term, (term: Term) => term.notifications)
+  @ManyToOne(() => Term, (term: Term) => term.dispatch)
   @JoinColumn({ name: 'termId' })
   term: Term;
 
@@ -118,7 +114,7 @@ export class Notification {
   // targets: Target[];
 
   //? Constructor ---------------------------------------------------------- ?//
-  constructor(partial: Partial<Notification>) {
+  constructor(partial: Partial<Dispatch>) {
     Object.assign(this, partial);
   }
 }
