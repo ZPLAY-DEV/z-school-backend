@@ -6,6 +6,7 @@ import { Notification } from './entities/notification.entity';
 import { DynamooseModule } from 'nestjs-dynamoose';
 import { NotificationSchema } from './entities/notification.schema';
 import { SqsModule } from 'src/services/aws/sqs.module';
+import { EventBridgeModule } from 'src/services/aws/event-bridge.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SqsModule } from 'src/services/aws/sqs.module';
       },
     ]),
     SqsModule,
+    EventBridgeModule,
   ],
   controllers: [NotificationController],
   providers: [NotificationService],

@@ -108,11 +108,12 @@ export class CreateNotificationDto {
   @ApiProperty({
     description: '🈳 예약 시간 ( 예약 발송 시 사용 )',
     type: Date,
-    example: '2025-05-23 15:30:00',
+    example: '2025-06-05T10:30:00+09:00',
     required: false,
   })
   @IsOptional()
   @IsDate()
+  @Type(() => Date)
   reservationDate?: Date;
 
   @ApiProperty({

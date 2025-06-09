@@ -3,7 +3,7 @@ import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Notification } from './entities/notification.entity';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { School } from '../school/entities/school.entity';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Term } from '../term/entities/term.entity';
@@ -19,9 +19,11 @@ import {
 import { AWS_SQS_CLIENT } from 'src/common/constants';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { Phone } from '../phone/entities/phone.entity';
-import { Student } from '../student/entities/student.entity';
-import { Sam } from '../sam/entities/sam.entity';
-import { NotificationPlatform, TargetGroup } from 'src/common/enums';
+import { EventBridgeService } from 'src/services/aws/event-bridge.service';
+import { ConfigService } from '@nestjs/config';
+// import { Student } from '../student/entities/student.entity';
+// import { Sam } from '../sam/entities/sam.entity';
+// import { NotificationPlatform, TargetGroup } from 'src/common/enums';
 
 @Injectable()
 export class NotificationService {
@@ -34,6 +36,8 @@ export class NotificationService {
     private readonly model: Model<INotification, INotificationKey>,
     @Inject(AWS_SQS_CLIENT)
     private readonly sqsClient: SqsService,
+    private readonly eventBridgeService: EventBridgeService,
+    private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -78,21 +82,56 @@ export class NotificationService {
       const notification = manager.create(Notification, dto);
       const savedNotification = await manager.save(notification);
 
-      // 4. SQS 발송 대기 큐 등록
-      await this.sqsClient.sendMessage({
-        type: 'SEND_NOTIFICATION',
-        data: {
-          schoolId: dto.schoolId,
-          termId: dto.termId,
-          title: dto.title,
-          body: dto.body,
-          notificationType: dto.notificationType,
-          target: dto.target,
-          targetGroup: dto.targetGroup,
-          reservationDate: dto.reservationDate,
-          targetIds: dto.targetIds,
-        },
-      });
+      // 5. SQS 또는 EventBridge 처리
+      const notificationData = {
+        schoolId: dto.schoolId,
+        termId: dto.termId,
+        title: dto.title,
+        body: dto.body,
+        notificationType: dto.notificationType,
+        target: dto.target,
+        targetGroup: dto.targetGroup,
+        reservationDate: dto.reservationDate,
+        targetIds: dto.targetIds,
+      };
+
+      if (dto.reservationDate) {
+        // 예약 시간이 있으면 EventBridge Rule 생성
+        const ruleName = `NotificationRule-${savedNotification.id}-${Date.now()}`;
+        const lambdaArn =
+          'arn:aws:lambda:ap-northeast-2:000000000000:function:lambda-function';
+
+        console.log('예약시간 ', dto.reservationDate.toISOString());
+
+        await this.eventBridgeService.createScheduledRule(
+          ruleName,
+          dto.reservationDate.toISOString(), // KST 기준, 예: "2025-06-05T14:30:00+09:00"
+          lambdaArn,
+          notificationData,
+        );
+      } else {
+        // 예약 시간이 없으면 즉시 SQS로 전송
+        await this.sqsClient.sendMessage({
+          type: 'SEND_NOTIFICATION',
+          data: notificationData,
+        });
+      }
+
+      // // 4. SQS 발송 대기 큐 등록
+      // await this.sqsClient.sendMessage({
+      //   type: 'SEND_NOTIFICATION',
+      //   data: {
+      //     schoolId: dto.schoolId,
+      //     termId: dto.termId,
+      //     title: dto.title,
+      //     body: dto.body,
+      //     notificationType: dto.notificationType,
+      //     target: dto.target,
+      //     targetGroup: dto.targetGroup,
+      //     reservationDate: dto.reservationDate,
+      //     targetIds: dto.targetIds,
+      //   },
+      // });
 
       // // 4. 발송 대상자 조회
       // const target = dto.targetGroup;

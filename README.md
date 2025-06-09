@@ -95,6 +95,8 @@ $ pnpm install multer
 $ pnpm install qs 
 $ pnpm install uuid 
 $ pnpm install @nestjs/terminus @nestjs/axios # health check module
+$ pnpm install @aws-sdk/client-eventbridge
+$ pnpm install @aws-sdk/client-lambda
 ```
 
 
