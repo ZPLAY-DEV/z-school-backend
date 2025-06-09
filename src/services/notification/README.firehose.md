@@ -12,9 +12,9 @@ logs/year=2025/month=01/day=15/hour=09/school=123/type=ping.exit/
 - `ping.exit`: 하교알림
 - `ping.class`: 수업관련알림  
 - `ping.other`: 기타알림
-- `letter.registration`: 수강신청
-- `letter.notice`: 공지사항
-- `letter.survey`: 설문조사
+- `dispatch.registration`: 수강신청
+- `dispatch.notice`: 공지사항
+- `dispatch.survey`: 설문조사
 
 ### 2. 비즈니스 로직 기반 파티셔닝
 
@@ -83,18 +83,18 @@ type=letter.survey/       (설문조사)
 
 ## Athena 테이블 생성 예시
 
-```sql
-CREATE EXTERNAL TABLE notification_logs (
-  schoolId bigint,
-  schoolName string,
+```
+awslocal athena start-query-execution \
+  --query-string "CREATE EXTERNAL TABLE IF NOT EXISTS notification_logs (
+  school_name string,
   title string,
   body string,
-  userIds array<bigint>,
-  role string,  -- 항상 'PARENT' 고정
-  fcmSuccessCount int,
-  fcmFailureCount int,
-  smsSuccessCount int,
-  smsFailureCount int,
+  user_ids array<int>,
+  role string,
+  fcm_success_count int,
+  fcm_failure_count int,
+  sms_success_count int,
+  sms_failure_count int,
   timestamp string,
   total_users int,
   total_success int,
@@ -106,11 +106,16 @@ PARTITIONED BY (
   month string,
   day string,
   hour string,
-  school int,
+  school string,
   type string
 )
-STORED AS JSON
-LOCATION 's3://your-bucket/notification-logs-stream/'
+ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
+WITH SERDEPROPERTIES (
+  'ignore.malformed.json' = 'true'
+)
+LOCATION 's3://notification-logs-bucket/notification-logs-stream/'" \
+  --query-execution-context Database=logs \
+  --result-configuration OutputLocation=s3://notification-logs-bucket
 ```
 
 ## 최적화된 쿼리 예시
