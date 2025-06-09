@@ -59,7 +59,7 @@ export const configuration = () => ({
     defaultRegion: process.env.AWS_DEFAULT_REGION,
     accessKey: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    bucketName: process.env.AWS_BUCKET_NAME,
+    bucketName: process.env.AWS_IMG_BUCKET_NAME,
     cloudFrontUrl: process.env.AWS_CLOUDFRONT_URL,
     dbSecretsArn: process.env.AWS_DB_SECRETS_ARN,
     sqsEndpoint: process.env.AWS_SQS_ENDPOINT,

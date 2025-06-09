@@ -21,3 +21,5 @@ export const ONE_MIN = 1000 * 60 * 1; // access token and cookie expiry window f
 export const TEN_MINS = 1000 * 60 * 10; // access token and cookie expiry window for testing
 export const ONE_HOUR = 1000 * 60 * 60; // access token and cookie expiry window
 export const THIRTY_DAYS = 1000 * 60 * 60 * 24 * 30; // refresh token expiry window
+
+export const ZPLAY_SEOUL_NUMBER = '02-6052-7000';

@@ -1,16 +1,26 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { format } from 'date-fns';
-import { BulkMessage } from 'src/domain/text/dto/send-bulk-text.dto';
-import { MessageResponseItem } from 'src/domain/text/types/text.types';
-import { parseMessageType } from 'src/domain/text/utils/text.utils';
-
+import { AWS_SQS_CLIENT } from 'src/common/constants';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { classifyMessage } from 'src/helpers/classify';
 import { AligoService } from 'src/services/aligo/aligo-service';
+import { AligoListResult } from 'src/services/aligo/types';
+import { SqsService } from 'src/services/aws/sqs.service';
 
 @Injectable()
 export class TextService {
   private readonly logger = new Logger(TextService.name);
 
-  constructor(private readonly aligoService: AligoService) {}
+  constructor(
+    private readonly aligoService: AligoService,
+    @Inject(AWS_SQS_CLIENT)
+    private readonly sqsClient: SqsService,
+  ) {}
 
   async send(
     sender: string,
@@ -31,17 +41,51 @@ export class TextService {
 
   async sendBulk(
     sender: string,
-    messages: BulkMessage[],
+    phones: string[],
+    message: string,
     dryrun: boolean = false,
   ): Promise<any> {
-    const baseDto = {
+    const dto = {
       sender,
       msg_type: 'SMS',
       testmode_yn: dryrun ? 'Y' : 'N',
-      cnt: messages.length,
+      cnt: phones.length,
     };
+    console.log(`dto`, dto);
 
-    return await this.aligoService.sendBulkMessages(baseDto, messages);
+    // AligoTextTarget 형태로 변환
+    const targets = phones.map((phone) => ({
+      phone,
+      body: message,
+    }));
+
+    return await this.aligoService.sendBulk(dto, targets);
+  }
+
+  async sendTextViaQueue(
+    sender: string,
+    receiver: string,
+    message: string,
+    dryrun: boolean = false,
+  ): Promise<any> {
+    const dto = {
+      sender,
+      receiver,
+      msg: message,
+      msg_type: 'SMS',
+      testmode_yn: dryrun ? 'Y' : 'N',
+    };
+    console.log(`dto`, dto);
+    const payload = {
+      type: 'SEND_TEXT',
+      data: dto,
+    };
+    try {
+      return await this.sqsClient.sendMessage(payload);
+    } catch (e) {
+      console.log(e);
+      throw new BadRequestException(HttpErrorConstants.SQS_ERROR);
+    }
   }
 
   async list(
@@ -73,12 +117,9 @@ export class TextService {
       limit_day: 1,
     };
     console.log(`dto`, dto);
-    const items: MessageResponseItem[] = [];
+    const items: AligoListResult[] = [];
     while (true) {
-      const {
-        list,
-        next_yn,
-      }: { list: MessageResponseItem[]; next_yn: string } =
+      const { list, next_yn }: { list: AligoListResult[]; next_yn: string } =
         await this.aligoService.list(dto);
       items.push(...list);
       if (next_yn === 'N') {
@@ -95,7 +136,7 @@ export class TextService {
       result[sender].push({
         id: mid,
         count: +sms_count,
-        msg: parseMessageType(msg),
+        msg: classifyMessage(msg),
       });
     });
 

@@ -29,6 +29,7 @@ import {
 } from 'src/domain/auth/dto/user-credentials.dto';
 import {
   LoginDocs,
+  LoginWithNanoIdDocs,
   LogOutDocs,
   RefreshDocs,
   RegisterDocs,
@@ -146,6 +147,7 @@ export class AuthController {
     return tokens;
   }
 
+  @LoginWithNanoIdDocs()
   @HttpCode(200)
   @Public()
   @Post('login/nanoid')

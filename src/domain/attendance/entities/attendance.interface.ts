@@ -18,8 +18,8 @@ export interface IAttendance extends IAttendanceKey {
     | 'PRESENT'
     | 'ABSENT'
     | 'LATE'
-    | 'REPORTED_ABSENT'
-    | 'REPORTED_LATE';
+    | 'EXCUSED_ABSENT'
+    | 'EXCUSED_LATE';
   parentNote?: string;
   schoolNote?: string;
   isRead?: boolean;
