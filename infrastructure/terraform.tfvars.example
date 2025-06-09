@@ -1,0 +1,28 @@
+# Environment configuration
+environment = "dev"  # Options: dev, staging, prod
+aws_region  = "ap-northeast-2"
+
+# Project configuration
+project_name = "zs-notification"
+
+# Firehose configuration
+firehose_buffer_size     = 64   # MB (1-128)
+firehose_buffer_interval = 60   # seconds (60-900)
+
+# S3 lifecycle configuration
+s3_transition_to_ia_days      = 30   # days
+s3_transition_to_glacier_days = 90   # days
+s3_expiration_days           = 730   # days (2 years)
+
+# CloudWatch configuration
+cloudwatch_log_retention_days = 14   # days
+
+# Default tags
+default_tags = {
+  Project     = "zs-notification"
+  ManagedBy   = "terraform"
+  Service     = "notification-analytics"
+  Owner       = "dev-team"
+  Environment = "dev"
+  CostCenter  = "engineering"
+} 

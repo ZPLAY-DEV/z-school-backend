@@ -36,7 +36,7 @@ export class SchooldayAttendanceController {
   async createWithDate(
     @Body() dto: CreateDynamoRecordWithDateDto,
   ): Promise<CreateAttendanceResultDto> {
-    return await this.schooldayAttendanceService.createWithDate(dto);
+    return await this.schooldayAttendanceService.createAttendanceForDate(dto);
   }
 
   @CreateAttendanceOfSchooldayWithPeriodDocs()
@@ -44,6 +44,6 @@ export class SchooldayAttendanceController {
   async createWithPeriod(
     @Body() dto: CreateDynamoRecordWithRangeDto,
   ): Promise<CreateAttendanceResultDto> {
-    return await this.schooldayAttendanceService.createWithPeriod(dto);
+    return await this.schooldayAttendanceService.createAttendanceForPeriod(dto);
   }
 }

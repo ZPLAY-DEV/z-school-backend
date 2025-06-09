@@ -119,7 +119,7 @@ export interface IEventButton {
   buttonType: 'info' | 'success' | 'error' | 'warn';
   location: string | null;
   target: string;
-  targetId: number | null;
+  targetArgs: number | null;
 }
 
 export interface ICounts {
@@ -129,9 +129,9 @@ export interface ICounts {
   feeds: number;
 }
 
-//? need to be compatible with FCM data payload signature
-export interface IData {
-  [key: string]: string;
+// FCM data payload requires all values to be strings
+export interface IFcmData {
+  [key: string]: string; // one size fits all approach may be excused for now.
 }
 
 export interface IPicture {
@@ -198,6 +198,35 @@ export interface IUploadedFile {
 export interface IS3Urls {
   uploadUrl: string;
   imageUrl: string;
+}
+
+// S3 관련 확장 인터페이스들
+export interface IS3UploadResult {
+  key: string;
+  bucket: string;
+  etag?: string;
+  size?: number;
+}
+
+export interface IS3DeleteResult {
+  success: boolean;
+  key: string;
+  deletedAt: Date;
+}
+
+export interface IS3FileInfo {
+  exists: boolean;
+  key: string;
+  size?: number;
+  lastModified?: Date;
+  contentType?: string;
+}
+
+export interface IImageUploadOptions {
+  expiresIn?: number; // seconds
+  maxFileSize?: number; // bytes
+  allowedMimeTypes?: string[];
+  generateThumbnail?: boolean;
 }
 
 // export type FirebaseUser = admin.auth.DecodedIdToken;

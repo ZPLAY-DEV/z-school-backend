@@ -15,8 +15,19 @@ export class TextController {
 
   @Post('bulk')
   async sendBulk(@Body() dto: SendBulkTextDto): Promise<any> {
-    const { sender, messages, dryrun } = dto;
-    return await this.textService.sendBulk(sender, messages, dryrun);
+    const { sender, phones, message, dryrun } = dto;
+    return await this.textService.sendBulk(sender, phones, message, dryrun);
+  }
+
+  @Post('queue')
+  async sendTextViaQueue(@Body() dto: SendTextDto): Promise<any> {
+    const { sender, receiver, message, dryrun } = dto;
+    return await this.textService.sendTextViaQueue(
+      sender,
+      receiver,
+      message,
+      dryrun,
+    );
   }
 
   @Get()

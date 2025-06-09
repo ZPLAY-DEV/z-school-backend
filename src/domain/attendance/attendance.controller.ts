@@ -5,29 +5,22 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   ParseIntPipe,
   Post,
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AttendanceService } from 'src/domain/attendance/attendance.service';
-import {
-  AttendanceKeyDto,
-  UpsertAttendanceDto,
-} from 'src/domain/attendance/dto/upsert-attendance.dto';
+import { AttendanceKeyDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 
-import {
-  IAttendance,
-  IAttendanceKey,
-} from 'src/domain/attendance/entities/attendance.interface';
+import { IAttendanceKey } from 'src/domain/attendance/entities/attendance.interface';
 import {
   DeleteAttendanceDocs,
-  FetchAttendancesDocs,
-  GetAttendanceDetailDocs,
-  UpsertAttendanceDocs,
+  FetchAttendancesDocs
 } from 'src/domain/attendance/swagger/attendance-swagger.decorator';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 
@@ -39,13 +32,14 @@ export class AttendanceController {
   constructor(private readonly attendancesService: AttendanceService) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? CREATE / UPDATE (Upsert - DynamoDB Style)
+  //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  @UpsertAttendanceDocs()
-  @Post()
-  async upsert(@Body() dto: UpsertAttendanceDto): Promise<IAttendance> {
-    return await this.attendancesService.upsert(dto);
+  @ApiOperation({ summary: '⚙️ to initialize table' })
+  @HttpCode(200)
+  @Post('init')
+  async upsert(): Promise<void> {
+    await this.attendancesService.init();
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -98,20 +92,20 @@ export class AttendanceController {
     };
   }
 
-  @GetAttendanceDetailDocs()
-  @Get('detail')
-  async getAttendanceById(
-    @Query('groupId') groupId: string,
-    @Query('date') date: string,
-    @Query('studentId') studentId: string,
-  ): Promise<IAttendance> {
-    const groupKey = `GROUP#${groupId}`;
-    const dailyStudentKey = `DATE#${date}#STUDENT#${studentId}`;
-    return await this.attendancesService.findById({
-      groupKey,
-      dailyStudentKey,
-    });
-  }
+  // @GetAttendanceDetailDocs()
+  // @Get('detail')
+  // async getAttendanceById(
+  //   @Query('groupId', ParseIntPipe) groupId: number,
+  //   @Query('date') date: string,
+  //   @Query('studentId', ParseIntPipe) studentId: number,
+  // ): Promise<IAttendance> {
+  //   const groupKey = generateGroupKey(groupId);
+  //   const dailyStudentKey = `DATE#${date}#STUDENT#${studentId}`;
+  //   return await this.attendancesService.findById({
+  //     groupKey,
+  //     dailyStudentKey,
+  //   });
+  // }
 
   //? ---------------------------------------------------------------------- ?//
   //? DELETE

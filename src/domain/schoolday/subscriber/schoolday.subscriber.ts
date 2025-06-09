@@ -105,7 +105,7 @@ export class SchooldaySubscriber
       });
 
       const deleteRequests =
-        this.schooldayAttendanceService.createDeleteRequests(
+        this.schooldayAttendanceService.createDeleteRequestBatch(
           groupKey,
           dailyStudentKeysToDelete,
         );
@@ -149,7 +149,7 @@ export class SchooldaySubscriber
       // 5. 배치 처리 실행
       if (batchRequests.length > 0) {
         const result =
-          await this.schooldayAttendanceService.batchWriteAttendanceItems(
+          await this.schooldayAttendanceService.executeBatchOperations(
             batchRequests,
           );
 

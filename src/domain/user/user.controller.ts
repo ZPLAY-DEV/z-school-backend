@@ -51,8 +51,11 @@ export class UserController {
   }
 
   @Post(':id/notify')
-  async testNotify(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    await this.userService.testNotify(id);
+  async notifyUser(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: { title: string; message: string },
+  ): Promise<void> {
+    await this.userService.notifyUser(id, dto);
   }
 
   @Post(':id/avatar/s3urls')

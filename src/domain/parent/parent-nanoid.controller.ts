@@ -12,6 +12,7 @@ import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-er
 import { CreateNanoIdDto } from 'src/domain/parent/dto/create-nanoid.dto';
 import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
 import { ParentNanoIdService } from 'src/domain/parent/parent-nanoid.service';
+import { CreateNanoIdDocs } from 'src/domain/parent/swagger/parent-nanoid.swagger.decorator';
 
 @ApiTags('✅ Parents ( 학부모 ) > NanoIds ( 나노아이디 )')
 @ApiCommonErrorResponseTemplate()
@@ -24,6 +25,7 @@ export class ParentNanoIdController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateNanoIdDocs()
   @Post(':parentId/nanoids')
   async create(
     @Param('parentId', ParseIntPipe) parentId: number,

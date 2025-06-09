@@ -10,8 +10,9 @@ import { AuthUserDto } from 'src/domain/auth/dto/auth-user.dto';
 import { LogoutDto } from 'src/domain/auth/dto/logout.dto';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
-  UserCredentialsDto,
-  UserCredentialsDtoWithPhone,
+    UserCredentialsDto,
+    UserCredentialsDtoWithPhone,
+    UserNanoIdDto,
 } from 'src/domain/auth/dto/user-credentials.dto';
 
 //? ---------------------------------------------------------------------- ?//
@@ -146,6 +147,42 @@ export const LoginDocs = () => {
         errorFormatList: [
           HttpErrorConstants.ACCESS_DENIED,
           HttpErrorConstants.NOT_FOUND_PASSWORD,
+          HttpErrorConstants.INVALID_CREDENTIALS,
+        ],
+      },
+    ]),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Login with NanoId
+//? ---------------------------------------------------------------------- ?//
+
+export const LoginWithNanoIdDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'NanoId 로그인',
+      description: `
+      - NanoId를 사용한 로그인 방식.
+      - httpOnly 쿠키 및 Response 로 accessToken 과 refreshToken 을 반환.
+      `,
+    }),
+    ApiBody({
+      type: UserNanoIdDto,
+    }),
+    ApiCreatedResponseTemplate({
+      description: 'NanoId 로그인 성공',
+      type: AuthUserDto,
+    }),
+    ApiErrorResponseTemplate([
+      {
+        status: StatusCodes.NOT_FOUND,
+        errorFormatList: [HttpErrorConstants.NOT_FOUND_USER],
+      },
+      {
+        status: StatusCodes.UNAUTHORIZED,
+        errorFormatList: [
+          HttpErrorConstants.ACCESS_DENIED,
           HttpErrorConstants.INVALID_CREDENTIALS,
         ],
       },

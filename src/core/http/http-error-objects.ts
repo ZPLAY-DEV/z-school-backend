@@ -179,6 +179,11 @@ export const HttpErrorConstants = {
     message: '학교를 찾을 수 없습니다.',
   } as HttpErrorFormat,
 
+  NOT_FOUND_SCHOOLDAY: {
+    error: 'NOT_FOUND_SCHOOLDAY',
+    message: '학교 수업일을 찾을 수 없습니다.',
+  } as HttpErrorFormat,
+
   NOT_FOUND_GROUP: {
     error: 'NOT_FOUND_GROUP',
     message: '그룹(수업)을 찾을 수 없습니다.',
@@ -298,6 +303,21 @@ export const HttpErrorConstants = {
   ALIGO_FAILED: {
     error: 'ALIGO_FAILED',
     message: '알리고 SaaS 서비스 호출시 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
+  SQS_ERROR: {
+    error: 'SQS_ERROR',
+    message: 'SQS 에서 오류가 발생하였습니다.',
+  } as HttpErrorFormat,
+
+  INVALID_PUSH_TOKEN: {
+    error: 'INVALID_PUSH_TOKEN',
+    message: 'PUSH TOKEN 이 유효하지 않습니다.',
+  } as HttpErrorFormat,
+
+  PUSH_FAILED: {
+    error: 'PUSH_FAILED',
+    message: '푸시 알림 전송에 실패하였습니다.',
   } as HttpErrorFormat,
 
   COMMON_UNAUTHORIZED_TOKEN_ERROR: [] as HttpErrorFormat[], // 공통(bearer Access Token Error Template)

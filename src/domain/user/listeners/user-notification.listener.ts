@@ -14,13 +14,16 @@ export class UserNotificationListener {
     if (event.token) {
       const payload: TokenMessage = {
         token: event.token,
+        data: event.data,
         notification: {
+          title: event.title,
           body: event.body,
         },
       };
 
+      console.log(`✅ payload`, payload);
+
       try {
-        console.log(payload);
         await this.fcmService.sendToToken(payload);
       } catch (e) {
         // todo. slack or sentry report
