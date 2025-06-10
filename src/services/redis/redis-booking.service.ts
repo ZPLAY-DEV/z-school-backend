@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
 import { REDIS_BOOKING_OPTIONS } from 'src/common/constants';
 import { BookingStatus } from 'src/common/enums';
@@ -8,19 +8,19 @@ interface RedisBookingOptions {
   host: string;
   port: number;
   password?: string;
+  keyPrefix?: string;
   db?: number;
 }
 
 @Injectable()
 export class RedisBookingService implements OnModuleInit {
-  private redisClient: RedisClientType;
+  private readonly logger = new Logger(RedisBookingService.name);
+  private readonly redisClient: RedisClientType;
 
   constructor(
     @Inject(REDIS_BOOKING_OPTIONS)
     private readonly redisOptions: RedisBookingOptions,
-  ) {}
-
-  async onModuleInit() {
+  ) {
     this.redisClient = createClient({
       socket: {
         host: this.redisOptions.host,
@@ -30,16 +30,21 @@ export class RedisBookingService implements OnModuleInit {
       database: this.redisOptions.db,
       legacyMode: false, // 최신 방식 사용
     });
+    // Connect to Redis when service is instantiated
+    this.redisClient.connect().catch((error) => {
+      console.error('❌ Failed to connect to Redis booking:', error);
+    });
+  }
 
-    this.redisClient.on('error', (err) =>
-      console.error('❌ Redis error:', err),
-    );
-
-    await this.redisClient.connect();
-    await this.ping();
-    console.log(
-      `✅ Redis connected: ${this.redisOptions.host}:${this.redisOptions.port}`,
-    );
+  async onModuleInit() {
+    try {
+      await this.ping();
+      this.logger.log(
+        `Redis (Booking) connected: ${this.redisOptions.host}:${this.redisOptions.port}`,
+      );
+    } catch (error) {
+      console.error('❌ Failed to connect to Redis cache:', error);
+    }
   }
 
   //! 수강신청
