@@ -30,7 +30,7 @@ export class FirehoseService implements OnModuleInit {
     const streamName = process.env.AWS_FIREHOSE_STREAM_NAME;
 
     if (!region) {
-      throw new Error('AWS_REGION environment variable is required');
+      throw new Error('AWS_DEFAULT_REGION environment variable is required');
     }
 
     if (!streamName) {
@@ -61,7 +61,7 @@ export class FirehoseService implements OnModuleInit {
 
   onModuleInit() {
     this.logger.log(
-      `✅ Firehose service initialized - Stream: ${this.deliveryStreamName}, Region: ${process.env.AWS_REGION}`,
+      `✅ Firehose service initialized - Stream: ${this.deliveryStreamName}`,
     );
   }
 

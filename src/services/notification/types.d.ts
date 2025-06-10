@@ -1,46 +1,67 @@
-// 대량 알림 요청 (여러 수신자에게 동일한 메시지)
-export type BroadcastMessageRequest = {
-  messageType: string; // ping.class, ping.exit, letter.registration, letter.survey, letter.notice
+// s3 partitioning metadata
+export type PartitioningMeta = {
+  type: string; // ping | dispatch
+  school: string; // 학교아이디
+  role: string; // `PARENT` 또는 `INSTRUCTOR`
+};
+
+export type PhonePair = {
+  id: number; // firehose 로깅을 위함
+  phone: string;
+};
+export type TokenPair = {
+  id: number; // firehose 로깅을 위함
+  token: string;
+};
+export type MixedPair = {
+  id: number; // firehose 로깅을 위함
+  token?: string | null;
+  phone?: string;
+};
+
+export type MessageBody = {
   title?: string;
   body: string;
-  target?: string; // for Client Routing
-  targetArgs?: string; // for Client Routing
-  ids: number[]; // parentIds 또는 instructorIds
-  role: string; // PARENT 또는 INSTRUCTOR
-  schoolId: number;
 };
 
-// 개별 알림 아이템
-export type PersonalizedMessage = {
-  id: number; // parentId or instructorId
-  title?: string;
-  body: string;
+export type FcmData = {
+  role: string; // `PARENT` 또는 `INSTRUCTOR`
   target?: string; // for Client Routing
   targetArgs?: string; // for Client Routing
 };
 
-// 개별화된 알림 요청 (각 수신자별 다른 메시지)
-export type PersonalizedMessagesRequest = {
-  messageType: string;
-  notifications: PersonalizedMessage[]; // 각 수신자별 개별 메시지
-  role: string; // PARENT 또는 INSTRUCTOR
-  schoolId: number;
-};
+// -------------------------------------------------------------------------- //
 
-// 발송 결과 타입
+export type SingleFcmMessage = TokenPair &
+  MessageBody &
+  FcmData &
+  PartitioningMeta;
+export type BroadcastFcmMessage = {
+  tokenPairs: TokenPair[];
+} & MessageBody &
+  FcmData &
+  PartitioningMeta;
+export type MultiFcmMessages = {
+  messages: (TokenPair & MessageBody & FcmData)[];
+} & PartitioningMeta;
+
+export type SingleSmsMessage = PhonePair & MessageBody & PartitioningMeta;
+export type BroadcastSmsMessage = {
+  phonePairs: PhonePair[];
+} & MessageBody &
+  PartitioningMeta;
+export type MultiSmsMessages = {
+  messages: (PhonePair & MessageBody)[];
+} & PartitioningMeta;
+
+export type MultiMixedMessages = {
+  messages: (MixedPair & MessageBody & FcmData)[];
+} & PartitioningMeta;
+
+// -------------------------------------------------------------------------- //
+
 export type NotificationResult = {
   success: boolean;
   error?: Error;
   retryable?: boolean; // 재시도 가능한 에러인지 표시
 };
-
-// TODO: 향후 메트릭 서비스 추가 시 사용
-// export type MetricsService = {
-//   incrementCounter(metric: string, tags?: Record<string, string>): void;
-//   recordLatency(metric: string, duration: number, tags?: Record<string, string>): void;
-// };
-
-// TODO: 향후 fallback 저장소 추가 시 사용
-// export type FallbackLogStorage = {
-//   save(logData: any): Promise<void>;
-// };

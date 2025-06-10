@@ -28,9 +28,9 @@ school=123/  (개별 학교ID)
 type=ping.exit/           (하교알림)
 type=ping.class/          (수업관련알림)
 type=ping.other/          (기타알림)
-type=letter.registration/ (수강신청)
-type=letter.notice/       (공지사항)
-type=letter.survey/       (설문조사)
+type=dispatch.registration/ (수강신청)
+type=dispatch.notice/       (공지사항)
+type=dispatch.survey/       (설문조사)
 ```
 
 ## Firehose 설정 예시

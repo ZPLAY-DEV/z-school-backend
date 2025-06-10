@@ -40,13 +40,13 @@ export class Instructor {
   @Column({ type: 'varchar', length: 16, unique: true })
   phone: string;
 
+  @ApiProperty({ description: '** deprecated **' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   @Exclude({ toPlainOnly: true })
-  @ApiProperty({ description: '🈳 pushToken' })
   pushToken: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
   @ApiProperty({ description: '🈳 내용' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
 
   // ------------------------------------------------------------------------ //

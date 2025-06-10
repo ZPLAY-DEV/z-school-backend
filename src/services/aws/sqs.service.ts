@@ -38,7 +38,7 @@ export class SqsService implements OnModuleInit {
     }
   }
 
-  async sendMessage(payload: any): Promise<void> {
+  async sendMessage(payload: { type: string; data: any }): Promise<void> {
     const command = new SendMessageCommand({
       QueueUrl: this.queueUrl,
       MessageBody: JSON.stringify(payload),
