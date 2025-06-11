@@ -138,11 +138,9 @@ export class AuthService {
       );
 
       // 💥 fire and forget) Send Slack notification
-      this.sendRegistrationNotification(updatedUser, dto.role).catch(
-        (error) => {
-          this.logger.warn('Failed to send Slack notification', error);
-        },
-      );
+      this.sendRegistrationSlack(updatedUser, dto.role).catch((error) => {
+        this.logger.warn('Failed to send Slack notification', error);
+      });
 
       // Return response
       return {
@@ -185,11 +183,9 @@ export class AuthService {
       );
 
       // 💥 fire and forget) Send Slack notification
-      this.sendRegistrationNotification(updatedUser, dto.role).catch(
-        (error) => {
-          this.logger.warn('Failed to send Slack notification', error);
-        },
-      );
+      this.sendRegistrationSlack(updatedUser, dto.role).catch((error) => {
+        this.logger.warn('Failed to send Slack notification', error);
+      });
 
       // Return response
       return {
@@ -621,10 +617,7 @@ export class AuthService {
   /**
    * Send registration notification to Slack
    */
-  private async sendRegistrationNotification(
-    user: User,
-    role: Role,
-  ): Promise<void> {
+  private async sendRegistrationSlack(user: User, role: Role): Promise<void> {
     if (this.configService.get('env') !== 'development') {
       const userId = user.id;
       const username = user.username ?? role;

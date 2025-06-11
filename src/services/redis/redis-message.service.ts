@@ -1,5 +1,5 @@
 // src/services/redis/redis-message.service.ts
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import {
   ClientProxy,
   ClientProxyFactory,
@@ -9,62 +9,73 @@ import { createClient } from 'redis';
 import { lastValueFrom } from 'rxjs';
 import { REDIS_MESSAGE_OPTIONS } from 'src/common/constants';
 
+interface RedisMessageOptions {
+  host: string;
+  port: number;
+  password?: string;
+  keyPrefix?: string;
+  db?: number;
+  retryStrategy?: (times: number) => number;
+}
 @Injectable()
-export class RedisMessageService {
+export class RedisMessageService implements OnModuleInit {
+  private readonly logger = new Logger(RedisMessageService.name);
   private readonly redisClient: ReturnType<typeof createClient>; // Pub/Sub용 클라이언트
   private readonly redisSubClient: ReturnType<typeof createClient>; // 구독 전용 클라이언트
   private readonly redisMessageClient: ClientProxy; // Microservice 클라이언트
 
   constructor(
     @Inject(REDIS_MESSAGE_OPTIONS)
-    private readonly redisOptions: {
-      host: string;
-      port: number;
-      password?: string;
-      keyPrefix?: string;
-      db?: number;
-      retryStrategy?: (times: number) => number;
-    },
+    private readonly redisOptions: RedisMessageOptions,
   ) {
     // 발행용 클라이언트
     this.redisClient = createClient({
       socket: {
-        host: redisOptions.host,
-        port: redisOptions.port,
+        host: this.redisOptions.host,
+        port: this.redisOptions.port,
       },
-      password: redisOptions.password,
-      database: redisOptions.db,
+      password: this.redisOptions.password,
+      database: this.redisOptions.db,
     });
-
-    // Connect immediately
+    // Connect to the publisher client
     this.redisClient.connect().catch((error) => {
-      console.error('❌ Failed to connect to Redis messaging service:', error);
+      console.error('❌ Failed to connect to Redis publisher client:', error);
     });
 
     // 구독용 클라이언트 (별도 연결)
     this.redisSubClient = createClient({
       socket: {
-        host: redisOptions.host,
-        port: redisOptions.port,
+        host: this.redisOptions.host,
+        port: this.redisOptions.port,
       },
-      password: redisOptions.password,
-      database: redisOptions.db,
+      password: this.redisOptions.password,
+      database: this.redisOptions.db,
     });
-
-    // Connect the subscriber client
+    // Connect to the subscriber client
     this.redisSubClient.connect().catch((error) => {
-      console.error('❌ Failed to connect Redis subscriber client:', error);
+      console.error('❌ Failed to connect to Redis subscriber client:', error);
     });
-
     // Microservice 클라이언트 초기화
     this.redisMessageClient = ClientProxyFactory.create({
       transport: Transport.REDIS,
       options: {
-        host: redisOptions.host,
-        port: redisOptions.port,
-        password: redisOptions.password,
+        host: this.redisOptions.host,
+        port: this.redisOptions.port,
+        password: this.redisOptions.password,
       },
     });
+  }
+
+  async onModuleInit() {
+    try {
+      await this.pingPub();
+      await this.pingSub();
+      this.logger.log(
+        `Redis (Messaging) connected: ${this.redisOptions.host}:${this.redisOptions.port}`,
+      );
+    } catch (error) {
+      console.error('❌ Failed to connect to Redis message service:', error);
+    }
   }
 
   // 메시지 발행 (Pub/Sub)
@@ -109,12 +120,23 @@ export class RedisMessageService {
     )) as T;
   }
 
+  getMessageClient(): ClientProxy {
+    return this.redisMessageClient;
+  }
+
+  getPubClient(): ReturnType<typeof createClient> {
+    return this.redisClient;
+  }
   getSubClient(): ReturnType<typeof createClient> {
     return this.redisSubClient;
   }
 
-  getMessageClient(): ClientProxy {
-    return this.redisMessageClient;
+  async pingPub(): Promise<string> {
+    return await this.redisClient.ping();
+  }
+
+  async pingSub(): Promise<string> {
+    return await this.redisSubClient.ping();
   }
 
   // Add key prefix manually

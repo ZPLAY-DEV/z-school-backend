@@ -6,7 +6,7 @@ import {
   S3ServiceException,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface S3UploadResult {
@@ -21,7 +21,7 @@ export interface S3DeleteResult {
 }
 
 @Injectable()
-export class S3Service {
+export class S3Service implements OnModuleInit {
   private readonly logger = new Logger(S3Service.name);
   private readonly s3: S3Client;
   private readonly bucket: string;
@@ -35,10 +35,14 @@ export class S3Service {
     this.s3 = new S3Client({
       region: this.region,
     });
+  }
 
-    this.logger.log(
-      `S3Service initialized with bucket: ${this.bucket}, region: ${this.region}`,
-    );
+  onModuleInit() {
+    try {
+      this.logger.log(`AWS S3 service initialized w/ bucket: ${this.bucket}`);
+    } catch (error) {
+      console.error('❌ Failed to initialize AWS S3 service:', error);
+    }
   }
 
   async upload(buffer: Buffer, path: string): Promise<S3UploadResult> {

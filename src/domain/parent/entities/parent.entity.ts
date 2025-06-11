@@ -41,7 +41,7 @@ export class Parent {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   @Exclude({ toPlainOnly: true })
-  @ApiProperty({ description: '🈳 pushToken' })
+  @ApiProperty({ description: '** deprecated **' })
   pushToken: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
