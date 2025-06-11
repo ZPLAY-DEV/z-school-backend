@@ -94,11 +94,11 @@ export class AuthService {
   }
 
   async validateUserWithNanoId(dto: UserNanoIdDto): Promise<User> {
-    const { username, nanoId, role } = dto;
+    const { username, nanoid, role } = dto;
 
     const user = await this.userRepository.findOne({
       where: { username },
-      relations: ['parent', 'parent.nanoId'],
+      relations: ['parent', 'parent.nanoIds'],
     });
 
     if (!user) {
@@ -110,7 +110,10 @@ export class AuthService {
       throw new UnauthorizedException(HttpErrorConstants.INVALID_ROLE);
     }
 
-    if (nanoId !== user.parent?.nanoId?.nanoId) {
+    if (
+      user.parent?.nanoIds &&
+      user.parent?.nanoIds.some((v) => v.nanoid === nanoid)
+    ) {
       throw new UnauthorizedException(HttpErrorConstants.INVALID_CREDENTIALS);
     }
 

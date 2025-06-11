@@ -27,4 +27,22 @@ export class CreateNanoIdDto {
   })
   @IsString()
   validity?: string;
+
+  @ApiPropertyOptional({
+    description: '🈳 라우팅 정보',
+    required: false,
+    type: String,
+  })
+  @IsString()
+  @IsOptional()
+  target?: string;
+
+  @ApiPropertyOptional({
+    description: '🈳 라우팅 부가 args 정보',
+    required: false,
+    type: String,
+  })
+  @IsString()
+  @IsOptional()
+  targetArgs?: string;
 }

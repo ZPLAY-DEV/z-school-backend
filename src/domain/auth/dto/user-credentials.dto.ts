@@ -49,9 +49,9 @@ export class UserNanoIdDto {
   @IsString()
   username: string;
 
-  @ApiProperty({ description: '🈵 nanoId' })
+  @ApiProperty({ description: '🈵 21자리 나노아이디 값' })
   @IsString()
-  nanoId: string;
+  nanoid: string;
 
   @ApiProperty({
     description: '🈵 사용자 역할 parent, instructor, manager, admin',
