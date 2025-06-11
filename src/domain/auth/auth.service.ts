@@ -94,11 +94,11 @@ export class AuthService {
   }
 
   async validateUserWithNanoId(dto: UserNanoIdDto): Promise<User> {
-    const { username, nanoId, role } = dto;
+    const { username, nanoid, role } = dto;
 
     const user = await this.userRepository.findOne({
       where: { username },
-      relations: ['parent', 'parent.nanoId'],
+      relations: ['parent', 'parent.nanoIds'],
     });
 
     if (!user) {
@@ -110,7 +110,10 @@ export class AuthService {
       throw new UnauthorizedException(HttpErrorConstants.INVALID_ROLE);
     }
 
-    if (nanoId !== user.parent?.nanoId?.nanoId) {
+    if (
+      user.parent?.nanoIds &&
+      user.parent?.nanoIds.some((v) => v.nanoid === nanoid)
+    ) {
       throw new UnauthorizedException(HttpErrorConstants.INVALID_CREDENTIALS);
     }
 
@@ -138,11 +141,9 @@ export class AuthService {
       );
 
       // 💥 fire and forget) Send Slack notification
-      this.sendRegistrationNotification(updatedUser, dto.role).catch(
-        (error) => {
-          this.logger.warn('Failed to send Slack notification', error);
-        },
-      );
+      this.sendRegistrationSlack(updatedUser, dto.role).catch((error) => {
+        this.logger.warn('Failed to send Slack notification', error);
+      });
 
       // Return response
       return {
@@ -185,11 +186,9 @@ export class AuthService {
       );
 
       // 💥 fire and forget) Send Slack notification
-      this.sendRegistrationNotification(updatedUser, dto.role).catch(
-        (error) => {
-          this.logger.warn('Failed to send Slack notification', error);
-        },
-      );
+      this.sendRegistrationSlack(updatedUser, dto.role).catch((error) => {
+        this.logger.warn('Failed to send Slack notification', error);
+      });
 
       // Return response
       return {
@@ -621,10 +620,7 @@ export class AuthService {
   /**
    * Send registration notification to Slack
    */
-  private async sendRegistrationNotification(
-    user: User,
-    role: Role,
-  ): Promise<void> {
+  private async sendRegistrationSlack(user: User, role: Role): Promise<void> {
     if (this.configService.get('env') !== 'development') {
       const userId = user.id;
       const username = user.username ?? role;

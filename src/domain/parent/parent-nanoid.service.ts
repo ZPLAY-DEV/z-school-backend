@@ -42,19 +42,22 @@ export class ParentNanoIdService {
     await this.nanoIdRepository.upsert(
       {
         parentId: dto.parentId,
-        nanoId: generatedNanoId,
+        nanoid: generatedNanoId,
         phone: parent.phone,
+        target: dto.target,
+        targetArgs: dto.targetArgs,
         expiresAt: expiresAt,
       },
-      {
-        conflictPaths: ['parentId'], // parentId가 unique이므로 충돌 기준
-        skipUpdateIfNoValuesChanged: false, // 값이 같아도 업데이트 (새로운 nanoId와 expiresAt 때문)
-      },
+      ['parentId', 'target', 'targetArgs'],
     );
 
-    // upsert 후 결과 조회하여 반환
+    // upsert 후 결과 조회 시 unique constraint 조합으로 정확히 조회
     const savedNanoId = await this.nanoIdRepository.findOne({
-      where: { parentId: dto.parentId },
+      where: {
+        parentId: dto.parentId,
+        target: dto.target,
+        targetArgs: dto.targetArgs,
+      },
     });
 
     if (!savedNanoId) {

@@ -54,37 +54,43 @@ export class GroupAttendanceService {
         'groupStudents',
         'groupStudents.student',
         'groupStudents.student.parent',
+        'groupStudents.student.parent.user',
       ],
     });
-    const students = group.groupStudents.map((v) => v.student);
+    const allStudents = group.groupStudents.map((v) => v.student);
     const groupKey = generateGroupKey(group.id);
     // Dynamo 읽고
     const items = await this.findByDate(groupKey, date);
-    const studentIds = items
+    const pendingStudentIds = items
       .filter((v) => v.status === AttendanceStatus.PENDING)
       .map((v) => v.studentId);
-    const itemKeys: IAttendanceKey[] = items
+    const pendingItemKeys: IAttendanceKey[] = items
       .filter((v) => v.status === AttendanceStatus.PENDING)
       .map((v) => ({
         groupKey,
         dailyStudentKey: v.dailyStudentKey,
       }));
-    students.filter((v) => studentIds.includes(v.id));
-    const notifications = students.map((v) => {
-      return {
-        id: v.parent.id,
-        title: `${group.lesson.schoolName}`,
-        body: `${v.name} 학생 ${group.lesson.lessonName} 수업 시작했습니다.`,
-      };
-    });
-    await this.notificationService.sendMessagesToParents({
-      messageType: 'ping.class',
-      notifications,
-      schoolId: group.lesson.schoolId,
+    const messages = allStudents
+      .filter((v) => pendingStudentIds.includes(v.id))
+      .map((v: Student) => {
+        return {
+          id: v.parent.id,
+          phone: v.parent.phone,
+          token: v.parent.user?.pushToken,
+          title: `${group.lesson.schoolName}`,
+          body: `${v.name} 학생 ${group.lesson.lessonName} 수업 시작했습니다.`,
+          role: 'PARENT',
+        };
+      });
+
+    await this.notificationService.sendMixedMessages({
+      messages,
+      type: 'ping.class',
+      school: group.lesson.schoolId.toString(),
       role: 'PARENT',
     });
-    await this.updateStatusesBulk(itemKeys, AttendanceStatus.PRESENT);
-    return notifications.length;
+    await this.updateStatusesBulk(pendingItemKeys, AttendanceStatus.PRESENT);
+    return messages.length;
   }
 
   async notifyEnd(
@@ -121,10 +127,18 @@ export class GroupAttendanceService {
         body: `${v.name} 학생 ${group.lesson.lessonName} 수업 종료했습니다.`,
       };
     });
-    await this.notificationService.sendMessagesToParents({
-      messageType: 'ping.class',
-      notifications,
-      schoolId: group.lesson.schoolId,
+    // Convert notifications to proper message format
+    const mixedMessages = notifications.map((notification) => ({
+      id: notification.id,
+      title: notification.title,
+      body: notification.body,
+      role: 'PARENT' as const,
+    }));
+
+    await this.notificationService.sendMixedMessages({
+      messages: mixedMessages,
+      type: 'ping.class',
+      school: group.lesson.schoolId.toString(),
       role: 'PARENT',
     });
     return notifications.length;

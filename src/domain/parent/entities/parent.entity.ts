@@ -41,7 +41,7 @@ export class Parent {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   @Exclude({ toPlainOnly: true })
-  @ApiProperty({ description: '🈳 pushToken' })
+  @ApiProperty({ description: '** deprecated **' })
   pushToken: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -67,14 +67,6 @@ export class Parent {
   @Exclude()
   deletedAt: Date | null;
 
-  //* 1-to-1 hasOne -------------------------------------------------------- *//
-
-  @Exclude()
-  @OneToOne(() => NanoId, (nanoId) => nanoId.parent, {
-    cascade: ['insert', 'update'],
-  })
-  nanoId?: NanoId;
-
   //* 1-to-1 belongsTo ----------------------------------------------------- *//
 
   @OneToOne(() => User, (user) => user.parent, {
@@ -89,6 +81,11 @@ export class Parent {
     cascade: ['insert', 'update'],
   })
   students: Student[];
+
+  @OneToOne(() => NanoId, (nanoId) => nanoId.parent, {
+    cascade: ['insert', 'update'],
+  })
+  nanoIds?: NanoId[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

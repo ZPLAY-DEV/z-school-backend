@@ -1,9 +1,10 @@
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { AWS_SQS_OPTIONS } from 'src/common/constants';
 
 @Injectable()
 export class SqsService implements OnModuleInit {
+  private readonly logger = new Logger(SqsService.name);
   private readonly sqsClient: SQSClient;
   private readonly queueUrl: string;
 
@@ -29,16 +30,12 @@ export class SqsService implements OnModuleInit {
   }
 
   onModuleInit() {
-    try {
-      console.log(
-        `✅ AWS SQS service initialized for region: ${this.sqsOptions.region}`,
-      );
-    } catch (error) {
-      console.error('❌ Failed to initialize AWS SQS service:', error);
-    }
+    this.logger.log(
+      `AWS SQS service initialized for endpoint: ${this.sqsOptions.sqsEndpoint}`,
+    );
   }
 
-  async sendMessage(payload: any): Promise<void> {
+  async sendMessage(payload: { type: string; data: any }): Promise<void> {
     const command = new SendMessageCommand({
       QueueUrl: this.queueUrl,
       MessageBody: JSON.stringify(payload),

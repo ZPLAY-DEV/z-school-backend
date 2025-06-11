@@ -1,31 +1,33 @@
 // src/services/redis/redis-cache.service.ts
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { createClient } from 'redis';
 import { REDIS_CACHE_OPTIONS } from 'src/common/constants';
 
+interface RedisCacheOptions {
+  host: string;
+  port: number;
+  password?: string;
+  keyPrefix?: string;
+  db?: number;
+}
+
 @Injectable()
 export class RedisCacheService implements OnModuleInit {
+  private readonly logger = new Logger(RedisCacheService.name);
   private readonly redisClient: ReturnType<typeof createClient>;
 
   constructor(
     @Inject(REDIS_CACHE_OPTIONS)
-    private readonly redisOptions: {
-      host: string;
-      port: number;
-      password?: string;
-      keyPrefix?: string;
-      db?: number;
-    },
+    private readonly redisOptions: RedisCacheOptions,
   ) {
     this.redisClient = createClient({
       socket: {
-        host: redisOptions.host,
-        port: redisOptions.port,
+        host: this.redisOptions.host,
+        port: this.redisOptions.port,
       },
-      password: redisOptions.password,
-      database: redisOptions.db,
+      password: this.redisOptions.password,
+      database: this.redisOptions.db,
     });
-
     // Connect to Redis when service is instantiated
     this.redisClient.connect().catch((error) => {
       console.error('❌ Failed to connect to Redis cache:', error);
@@ -36,8 +38,8 @@ export class RedisCacheService implements OnModuleInit {
     try {
       // Verify Redis connection on module initialization
       await this.ping();
-      console.log(
-        `✅ Redis cache connected: ${this.redisOptions.host}:${this.redisOptions.port}`,
+      this.logger.log(
+        `Redis (cache) connected: ${this.redisOptions.host}:${this.redisOptions.port}`,
       );
     } catch (error) {
       console.error('❌ Failed to connect to Redis cache:', error);

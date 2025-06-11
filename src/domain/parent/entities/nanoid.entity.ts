@@ -6,13 +6,14 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  JoinColumn,
-  OneToOne,
+  ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('nanoids')
+@Unique(['parentId', 'target', 'targetArgs'])
 export class NanoId {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
@@ -20,20 +21,27 @@ export class NanoId {
   @ApiProperty({ description: '🈳 로그인 사용자ID' })
   @Column({
     type: 'int',
-    unique: true,
     unsigned: true,
   })
   parentId: number;
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '🈵 nanoId' })
+  @ApiProperty({ description: '🈵 21자리 나노아이디 값' })
   @Column({ type: 'varchar', length: 32 })
-  nanoId: string;
+  nanoid: string;
 
   @ApiProperty({ description: '🈵 전화번호 (숫자만)' })
-  @Column({ type: 'varchar', unique: true, length: 16 })
+  @Column({ type: 'varchar', length: 16 })
   phone: string;
+
+  @ApiProperty({ description: '🈵 routing 정보' })
+  @Column({ type: 'varchar', nullable: true })
+  target: string;
+
+  @ApiProperty({ description: '🈵 routing 부가 args 정보' })
+  @Column({ type: 'varchar', nullable: true })
+  targetArgs: string;
 
   // ------------------------------------------------------------------------ //
 
@@ -56,11 +64,10 @@ export class NanoId {
 
   //* 1-to-1 belongsTo ----------------------------------------------------- *//
 
-  @OneToOne(() => Parent, (parent) => parent.nanoId, {
+  @ManyToOne(() => Parent, (parent) => parent.nanoIds, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn()
-  parent?: Parent;
+  parent: Parent;
 
   //? Constructor ---------------------------------------------------------- ?//
 
