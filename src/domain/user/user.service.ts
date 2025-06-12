@@ -225,15 +225,6 @@ export class UserService {
     }
   }
 
-  // Invalid FCM token 처리
-  async handleInvalidToken(invalidToken: string) {
-    // unique constraint 덕분에 정확히 하나의 사용자만 찾아짐
-    await this.userRepository.update(
-      { pushToken: invalidToken },
-      { pushToken: null },
-    );
-  }
-
   // User 탈퇴
   async quit(id: number, dto: DeleteUserDto): Promise<void> {
     const user = await this.findById(id);

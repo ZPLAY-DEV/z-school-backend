@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { formatInTimeZone } from 'date-fns-tz';
 import { MessageType } from 'src/common/enums/message-type';
+import { NotificationType } from 'src/common/enums/notification-type';
 import { IFcmData } from 'src/common/interfaces';
 import { School } from 'src/domain/school/entities/school.entity';
 import { AligoService } from 'src/services/aligo/aligo-service';
@@ -52,12 +53,7 @@ export class NotificationService {
     const school = await this.schoolRepository.findOneOrFail({
       where: { id: +params.school },
     });
-    const counts: NotificationCounts = {
-      fcmSuccess: 0,
-      fcmFailure: 0,
-      smsSuccess: 0,
-      smsFailure: 0,
-    };
+    const counts = this.initializeNotificationCounts();
 
     try {
       await this.fcmService.sendToToken({
@@ -67,11 +63,9 @@ export class NotificationService {
           body: params.body,
         },
         data: {
+          role: params.role,
           ...(params.target && { page: params.target }),
-          args: JSON.stringify({
-            role: 'PARENT',
-            ...(params.targetArgs && { targetArgs: params.targetArgs }),
-          }),
+          ...(params.targetArgs && { args: params.targetArgs }),
         },
       });
       counts.fcmSuccess++;
@@ -112,21 +106,14 @@ export class NotificationService {
     });
 
     const { title, body, role, target, targetArgs } = params;
-    const counts: NotificationCounts = {
-      fcmSuccess: 0,
-      fcmFailure: 0,
-      smsSuccess: 0,
-      smsFailure: 0,
-    };
+    const counts = this.initializeNotificationCounts();
 
     // FCM 대량발송 (sendMulticast)
     if (params.tokenPairs.length > 0) {
       const fcmData: IFcmData = {
+        role: role,
         ...(target && { page: target }),
-        args: JSON.stringify({
-          role,
-          ...(targetArgs && { targetArgs }),
-        }),
+        ...(targetArgs && { args: targetArgs }),
       };
 
       try {
@@ -174,12 +161,7 @@ export class NotificationService {
       where: { id: +params.school },
     });
 
-    const counts: NotificationCounts = {
-      fcmSuccess: 0,
-      fcmFailure: 0,
-      smsSuccess: 0,
-      smsFailure: 0,
-    };
+    const counts = this.initializeNotificationCounts();
 
     // Filter valid messages with tokens
     const validMessages = params.messages.filter((message) => {
@@ -201,11 +183,9 @@ export class NotificationService {
             body: message.body,
           },
           data: {
+            role: message.role,
             ...(message.target && { page: message.target }),
-            args: JSON.stringify({
-              role: message.role,
-              ...(message.targetArgs && { targetArgs: message.targetArgs }),
-            }),
+            ...(message.targetArgs && { args: message.targetArgs }),
           },
         };
 
@@ -273,12 +253,7 @@ export class NotificationService {
     const senderAllowed =
       school.messageType === MessageType.SMS ||
       school.messageType === MessageType.ALL;
-    const counts: NotificationCounts = {
-      fcmSuccess: 0,
-      fcmFailure: 0,
-      smsSuccess: 0,
-      smsFailure: 0,
-    };
+    const counts = this.initializeNotificationCounts();
     // 유효성 검사
     if (!phone) {
       this.logger.warn('No phone number provided for SMS sending');
@@ -343,12 +318,7 @@ export class NotificationService {
     const senderAllowed =
       school.messageType === MessageType.SMS ||
       school.messageType === MessageType.ALL;
-    const counts: NotificationCounts = {
-      fcmSuccess: 0,
-      fcmFailure: 0,
-      smsSuccess: 0,
-      smsFailure: 0,
-    };
+    const counts = this.initializeNotificationCounts();
 
     if (!senderPhone || !senderAllowed) {
       this.logger.warn(
@@ -425,12 +395,7 @@ export class NotificationService {
     const senderAllowed =
       school.messageType === MessageType.SMS ||
       school.messageType === MessageType.ALL;
-    const counts: NotificationCounts = {
-      fcmSuccess: 0,
-      fcmFailure: 0,
-      smsSuccess: 0,
-      smsFailure: 0,
-    };
+    const counts = this.initializeNotificationCounts();
 
     if (!senderPhone || !senderAllowed) {
       this.logger.warn(
@@ -512,12 +477,7 @@ export class NotificationService {
     const senderAllowed =
       school.messageType === MessageType.SMS ||
       school.messageType === MessageType.ALL;
-    const counts: NotificationCounts = {
-      fcmSuccess: 0,
-      fcmFailure: 0,
-      smsSuccess: 0,
-      smsFailure: 0,
-    };
+    const counts = this.initializeNotificationCounts();
 
     // Separate messages into FCM and SMS candidates
     const fcmCandidates = params.messages.filter((message) => {
@@ -543,9 +503,47 @@ export class NotificationService {
     });
     counts.fcmFailure += invalidMessages.length;
 
+    // Remove duplicates for DISP_REGISTRATION type
+    let finalFcmCandidates = fcmCandidates;
+    let finalSmsCandidates = smsCandidates;
+
+    if (params.type === NotificationType.DISP_REGISTRATION) {
+      // Remove duplicate tokens in FCM candidates
+      const seenTokens = new Set<string>();
+      finalFcmCandidates = fcmCandidates.filter((message) => {
+        if (seenTokens.has(message.token!)) {
+          return false;
+        }
+        seenTokens.add(message.token!);
+        return true;
+      });
+
+      // Remove duplicate phones in SMS candidates
+      const seenPhones = new Set<string>();
+      finalSmsCandidates = smsCandidates.filter((message) => {
+        if (seenPhones.has(message.phone!)) {
+          return false;
+        }
+        seenPhones.add(message.phone!);
+        return true;
+      });
+
+      if (fcmCandidates.length !== finalFcmCandidates.length) {
+        this.logger.log(
+          `DISP_REGISTRATION: Removed ${fcmCandidates.length - finalFcmCandidates.length} duplicate FCM tokens`,
+        );
+      }
+
+      if (smsCandidates.length !== finalSmsCandidates.length) {
+        this.logger.log(
+          `DISP_REGISTRATION: Removed ${smsCandidates.length - finalSmsCandidates.length} duplicate phone numbers`,
+        );
+      }
+    }
+
     // Send FCM messages
-    if (fcmCandidates.length > 0) {
-      const fcmPromises = fcmCandidates.map(async (message) => {
+    if (finalFcmCandidates.length > 0) {
+      const fcmPromises = finalFcmCandidates.map(async (message) => {
         const data = {
           token: message.token!,
           notification: {
@@ -553,11 +551,9 @@ export class NotificationService {
             body: message.body,
           },
           data: {
+            role: message.role,
             ...(message.target && { page: message.target }),
-            args: JSON.stringify({
-              role: message.role,
-              ...(message.targetArgs && { targetArgs: message.targetArgs }),
-            }),
+            ...(message.targetArgs && { args: message.targetArgs }),
           },
         };
 
@@ -585,14 +581,14 @@ export class NotificationService {
     }
 
     // Send SMS messages (only if sender is configured and allowed)
-    if (smsCandidates.length > 0) {
+    if (finalSmsCandidates.length > 0) {
       if (!senderPhone || !senderAllowed) {
         this.logger.warn(
           'SMS sending not allowed or sender phone not configured',
         );
-        counts.smsFailure += smsCandidates.length;
+        counts.smsFailure += finalSmsCandidates.length;
       } else {
-        const smsTargets = smsCandidates.map((message) => ({
+        const smsTargets = finalSmsCandidates.map((message) => ({
           phone: message.phone!,
           body: message.title
             ? `[${message.title}] ${message.body}`
@@ -618,7 +614,7 @@ export class NotificationService {
           );
         } catch (error) {
           this.logger.error('Failed to send SMS notifications', error);
-          counts.smsFailure += smsCandidates.length;
+          counts.smsFailure += finalSmsCandidates.length;
         }
       }
     }
@@ -629,7 +625,7 @@ export class NotificationService {
       type: params.type,
       school: +params.school,
       schoolName: school.name!,
-      title: `Mixed 개별대량 ${params.messages.length}개 (FCM: ${fcmCandidates.length}, SMS: ${smsCandidates.length})`,
+      title: `Mixed 개별대량 ${params.messages.length}개 (FCM: ${finalFcmCandidates.length}, SMS: ${finalSmsCandidates.length})`,
       body: `${params.messages[0]?.body || ''}`,
       ids: params.messages.map((v) => v.id),
       role: params.role,
@@ -643,6 +639,18 @@ export class NotificationService {
   //? ---------------------------------------------------------------------- ?//
   //? 나머지 private 함수들
   //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * NotificationCounts 초기화 helper
+   */
+  private initializeNotificationCounts(): NotificationCounts {
+    return {
+      fcmSuccess: 0,
+      fcmFailure: 0,
+      smsSuccess: 0,
+      smsFailure: 0,
+    };
+  }
 
   /**
    * 마지막 로그 출력
@@ -675,7 +683,7 @@ export class NotificationService {
   //? ---------------------------------------------------------------------- ?//
 
   private async logToFirehose(logData: {
-    type: string;
+    type: NotificationType;
     school: number;
     schoolName: string;
     title?: string;

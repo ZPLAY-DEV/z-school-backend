@@ -1,6 +1,6 @@
 // s3 partitioning metadata
 export type PartitioningMeta = {
-  type: string; // ping | dispatch
+  type: NotificationType; // PING_SCHOOL, PING_CLASS, PING_OTHER, DISP_REGISTER, DISP_NEWS, DISP_SURVEY
   school: string; // 학교아이디
   role: string; // `PARENT` 또는 `INSTRUCTOR`
 };
