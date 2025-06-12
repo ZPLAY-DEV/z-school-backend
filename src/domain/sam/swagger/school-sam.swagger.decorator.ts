@@ -128,10 +128,9 @@ export const SchoolSamPaginatedDocs = () => {
       description: `
       - 학교에 속한 강사 리스트를 페이징 조회한다.
       - 해당 엔드포인트로 페이징 기반 강사 전체조회, 강사 검색, 필터가 가능. 
-      - 검색 조건: alias(강사의 별칭 ), instructor.phone ( 강사의 전화번호 )
-        - 검색시 QueryString에 search 키워드를 통해 검색 조건을 입력할 수 있음. EX) ?search=홍길동 ?search=01012345678 ...
-      - 필터 조건: alias(강사이름), editFeePermission(수업료 수정 권한), editEnrollmentPermission(수강신청 수정 권한), instructor.phone(강사의 전화번호), instructor.userId(강사의 유저ID -> 앱 사용 여부 조회 ), groups.name(강사가 가르치는 반의 이름)
-        - 필터시 QueryString에 filter.alias, filter.editFeePermission, filter.editEnrollmentPermission, filter.instructor.phone, filter.instructor.userId, filter.groups.name 키워드를 통해 필터 조건을 입력할 수 있음. EX) ?filter.alias=홍길동&filter.editFeePermission=1&filter.editEnrollmentPermission=1&filter.instructor.phone=01012345678&filter.instructor.userId=1&filter.groups.name=수학A ..
+      - 검색 조건: alias(강사의 별칭 ), instructor.phone ( 강사의 전화번호 ), groups.groupName ( 강사가 가르치는 반의 이름 )
+        - 검색시 QueryString에 search 키워드를 통해 검색 조건을 입력할 수 있음. EX) ?search=홍길동 ?search=01012345678 ? search=수학 ...
+      - 필터 조건: alias(강사이름), editFeePermission(수업료 수정 권한), editEnrollmentPermission(수강신청 수정 권한), instructor.phone(강사의 전화번호), instructor.userId(강사의 유저ID -> 앱 사용 
       - 정렬 조건: alias(강사의 별칭)으로 정렬이 가능
       `,
     }),

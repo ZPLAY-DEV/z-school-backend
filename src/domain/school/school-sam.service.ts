@@ -286,11 +286,11 @@ export class SchoolSamService {
         groups: true,
       },
       sortableColumns: ['alias'],
-      searchableColumns: ['alias', 'instructor.phone'],
+      searchableColumns: ['alias', 'instructor.phone', 'groups.groupName'],
       defaultSortBy: [['id', 'ASC']],
       filterableColumns: {
         alias: [FilterOperator.EQ, FilterOperator.ILIKE],
-        'groups.name': [FilterOperator.EQ, FilterOperator.ILIKE],
+        'groups.groupName': [FilterOperator.EQ, FilterOperator.ILIKE],
         'instructor.userId': [FilterOperator.EQ],
         'instructor.phone': [FilterOperator.EQ, FilterOperator.ILIKE],
         editFeePermission: [FilterOperator.EQ],
