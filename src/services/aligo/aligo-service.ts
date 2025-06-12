@@ -2,12 +2,20 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ZPLAY_SEOUL_NUMBER } from 'src/common/constants';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { chunk } from 'src/helpers/array';
+import { delay } from 'src/helpers/time';
 import {
   BroadcastSmsMessage,
   MultiSmsMessages,
   NotificationResult,
   SingleSmsMessage,
 } from 'src/services/notification/types';
+
+export interface SmsBatchResult {
+  results: NotificationResult[];
+  failedPhones: string[];
+  successCount: number;
+  failureCount: number;
+}
 
 @Injectable()
 export class AligoService {
@@ -17,8 +25,6 @@ export class AligoService {
     key: string;
     user_id: string;
   };
-  private readonly MAX_PHONES_PER_BATCH = 500;
-  private readonly RETRY_DELAY_MS = 1000;
 
   constructor() {
     this.baseUrl = process.env.ALIGO_URL || 'https://apis.aligo.in';
@@ -28,44 +34,54 @@ export class AligoService {
     };
   }
 
-  async sendSingleMessage(
-    message: SingleSmsMessage,
+  async sendSingleMessageToSingleDestination(
+    data: SingleSmsMessage,
     sender?: string,
-  ): Promise<NotificationResult> {
+  ): Promise<SmsBatchResult> {
     try {
       const result = await this.send({
         sender: sender || ZPLAY_SEOUL_NUMBER,
-        receiver: message.phone,
-        msg: message.body,
+        receiver: data.phone,
+        msg: data.body,
         // msg_type: 'SMS',
-        title: message.title,
+        title: data.title,
       });
 
       return {
-        success: Number(result.result_code) === 1,
-        error:
-          Number(result.result_code) !== 1
-            ? new Error(String(result.message) || 'Aligo send failed')
-            : undefined,
-        id: message.id,
+        results: [
+          {
+            success: Number(result.result_code) === 1,
+            id: data.id,
+          },
+        ],
+        failedPhones: [],
+        successCount: 1,
+        failureCount: 0,
       };
     } catch (error) {
       return {
-        success: false,
-        error: error instanceof Error ? error : new Error(String(error)),
-        id: message.id,
+        results: [
+          {
+            success: false,
+            error: error instanceof Error ? error : new Error(String(error)),
+            id: data.id,
+          },
+        ],
+        failedPhones: [data.phone],
+        successCount: 1,
+        failureCount: 0,
       };
     }
   }
 
-  async sendBroadcastMessage(
-    message: BroadcastSmsMessage,
+  async sendSingleMessageToMultipleDestinations(
+    data: BroadcastSmsMessage,
     sender?: string,
-  ): Promise<NotificationResult[]> {
-    const dtos = message.phonePairs.map((pair) => ({
+  ): Promise<SmsBatchResult> {
+    const dtos = data.phonePairs.map((pair) => ({
       phone: pair.phone,
-      title: message.title,
-      body: message.body,
+      title: data.title,
+      body: data.body,
       id: pair.id,
     }));
     const baseDto = {
@@ -73,30 +89,30 @@ export class AligoService {
       // msg_type: 'SMS',
     };
 
-    const batches = chunk(dtos, this.MAX_PHONES_PER_BATCH);
+    const batches = chunk(dtos, 500);
     const results: NotificationResult[] = [];
+    const failedPhones: string[] = [];
+    const batchIds: number[] = [];
+    let numberOfSuccess: number = 0;
+    let numberOfFailure: number = 0;
 
-    for (const batch of batches) {
+    for (const [index, batch] of batches.entries()) {
       try {
-        const response = await this.sendBulk(baseDto, batch);
+        const bulkResponse = await this.sendBulk(baseDto, batch);
+        const messageId = Number(bulkResponse.msg_id);
 
-        // Aligo는 배치 단위로 응답하므로 각 phone에 대해 동일한 결과 적용
-        batch.forEach((v) => {
-          results.push({
-            success: Number(response.result_code) === 1,
-            error:
-              Number(response.result_code) !== 1
-                ? new Error(String(response.message) || 'Aligo send failed')
-                : undefined,
-            id: v.id,
-          });
-        });
+        numberOfSuccess += Number(bulkResponse.success_cnt) || 0;
+        numberOfFailure += Number(bulkResponse.error_cnt) || 0;
+        batchIds.push(messageId);
 
-        if (batches.length > 1) {
-          await this.delay(this.RETRY_DELAY_MS);
+        if (index < batches.length - 1) {
+          // delay between batches to avoid rate limiting
+          await delay(100);
         }
       } catch (error) {
+        numberOfFailure += batch.length;
         batch.forEach((v) => {
+          failedPhones.push(v.phone);
           results.push({
             success: false,
             error: error instanceof Error ? error : new Error(String(error)),
@@ -106,14 +122,50 @@ export class AligoService {
       }
     }
 
-    return results;
+    // 성공한 경우만 배치 ID를 사용하여 상세 조회
+    for (const batchId of batchIds) {
+      try {
+        const detailResponse = await this.detail({
+          mid: batchId,
+          page: 1,
+          page_size: 500,
+        });
+        const list = detailResponse.list || [];
+
+        list.forEach((v) => {
+          results.push({
+            success: v.sms_state === '발송완료',
+            error:
+              v.sms_state !== '발송완료'
+                ? new Error(String(v.sms_state) || 'Aligo send failed')
+                : undefined,
+            id: v.id,
+          });
+          if (v.sms_state !== '발송완료') {
+            failedPhones.push(v.receiver as string);
+          }
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to fetch details for batch ID ${batchId}`,
+          error,
+        );
+      }
+    }
+
+    return {
+      results,
+      failedPhones,
+      successCount: numberOfSuccess,
+      failureCount: numberOfFailure,
+    };
   }
 
-  async sendMultipleMessages(
-    messages: MultiSmsMessages,
+  async sendMultipleMessagesToMultipleDestinations(
+    data: MultiSmsMessages,
     sender?: string,
-  ): Promise<NotificationResult[]> {
-    const dtos = messages.messages.map((message) => ({
+  ): Promise<SmsBatchResult> {
+    const dtos = data.messages.map((message) => ({
       phone: message.phone,
       title: message.title,
       body: message.body,
@@ -124,30 +176,30 @@ export class AligoService {
       // msg_type: 'SMS',
     };
 
-    const batches = chunk(dtos, this.MAX_PHONES_PER_BATCH);
+    const batches = chunk(dtos, 500);
     const results: NotificationResult[] = [];
+    const failedPhones: string[] = [];
+    const batchIds: number[] = [];
+    let numberOfSuccess: number = 0;
+    let numberOfFailure: number = 0;
 
-    for (const batch of batches) {
+    for (const [index, batch] of batches.entries()) {
       try {
-        const response = await this.sendBulk(baseDto, batch);
+        const bulkResponse = await this.sendBulk(baseDto, batch);
+        const messageId = Number(bulkResponse.msg_id);
 
-        // Aligo는 배치 단위로 응답하므로 각 phone에 대해 동일한 결과 적용
-        batch.forEach((v) => {
-          results.push({
-            success: Number(response.result_code) === 1,
-            error:
-              Number(response.result_code) !== 1
-                ? new Error(String(response.message) || 'Aligo send failed')
-                : undefined,
-            id: v.id,
-          });
-        });
+        numberOfSuccess += Number(bulkResponse.success_cnt) || 0;
+        numberOfFailure += Number(bulkResponse.error_cnt) || 0;
+        batchIds.push(messageId);
 
-        if (batches.length > 1) {
-          await this.delay(this.RETRY_DELAY_MS);
+        if (index < batches.length - 1) {
+          // delay between batches to avoid rate limiting
+          await delay(100);
         }
       } catch (error) {
+        numberOfFailure += batch.length;
         batch.forEach((v) => {
+          failedPhones.push(v.phone);
           results.push({
             success: false,
             error: error instanceof Error ? error : new Error(String(error)),
@@ -157,7 +209,43 @@ export class AligoService {
       }
     }
 
-    return results;
+    // 성공한 경우만 배치 ID를 사용하여 상세 조회
+    for (const batchId of batchIds) {
+      try {
+        const detailResponse = await this.detail({
+          mid: batchId,
+          page: 1,
+          page_size: 500,
+        });
+        const list = detailResponse.list || [];
+
+        list.forEach((v) => {
+          results.push({
+            success: v.sms_state === '발송완료',
+            error:
+              v.sms_state !== '발송완료'
+                ? new Error(String(v.sms_state) || 'Aligo send failed')
+                : undefined,
+            id: v.id,
+          });
+          if (v.sms_state !== '발송완료') {
+            failedPhones.push(v.receiver as string);
+          }
+        });
+      } catch (error) {
+        this.logger.error(
+          `Failed to fetch details for batch ID ${batchId}`,
+          error,
+        );
+      }
+    }
+
+    return {
+      results,
+      failedPhones,
+      successCount: numberOfSuccess,
+      failureCount: numberOfFailure,
+    };
   }
 
   private async postRequest(
@@ -245,7 +333,7 @@ export class AligoService {
    * 문자전송결과보기 상세
    */
   async detail(data: {
-    mid: string;
+    mid: number;
     page?: number;
     page_size?: number;
   }): Promise<any> {
@@ -262,7 +350,7 @@ export class AligoService {
   /**
    * 문자예약취소
    */
-  async cancel(data: { mid: string }): Promise<any> {
+  async cancel(data: { mid: number }): Promise<any> {
     return this.postRequest(data, '/cancel/');
   }
 }

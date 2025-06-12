@@ -1,7 +1,7 @@
 // s3 partitioning metadata
 export type PartitioningMeta = {
   type: NotificationType; // PING_SCHOOL, PING_CLASS, PING_OTHER, DISP_REGISTER, DISP_NEWS, DISP_SURVEY
-  school: string; // 학교아이디
+  schoolId: number; // 학교아이디
   role: string; // `PARENT` 또는 `INSTRUCTOR`
 };
 
@@ -32,6 +32,7 @@ export type FcmData = {
 
 // -------------------------------------------------------------------------- //
 
+export type SingleFcmInput = TokenPair & MessageBody & FcmData;
 export type SingleFcmMessage = TokenPair &
   MessageBody &
   FcmData &

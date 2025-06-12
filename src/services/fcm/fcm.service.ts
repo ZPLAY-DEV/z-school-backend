@@ -5,12 +5,10 @@ import { chunk } from 'src/helpers/array';
 import { delay } from 'src/helpers/time';
 import {
   BroadcastFcmMessage,
-  FcmData,
-  MessageBody,
   MultiFcmMessages,
   NotificationResult,
+  SingleFcmInput,
   SingleFcmMessage,
-  TokenPair,
 } from 'src/services/notification/types';
 
 export interface FcmBatchResult {
@@ -21,7 +19,6 @@ export interface FcmBatchResult {
 }
 
 // 타입 정의 추가
-type FcmMessageInput = TokenPair & MessageBody & FcmData;
 
 @Injectable()
 export class FcmService {
@@ -40,7 +37,7 @@ export class FcmService {
       });
 
       return {
-        results: [{ success: true }],
+        results: [{ success: true, id: data.id }],
         invalidTokens: [],
         successCount: 1,
         failureCount: 0,
@@ -74,9 +71,7 @@ export class FcmService {
 
     const tokenBatches = chunk(validTokens, 500);
 
-    for (let i = 0; i < tokenBatches.length; i++) {
-      const batch = tokenBatches[i];
-
+    for (const [index, batch] of tokenBatches.entries()) {
       try {
         const payload = this.buildMulticastMessage(
           batch,
@@ -114,8 +109,8 @@ export class FcmService {
           results.push(notificationResult);
         });
 
-        // Small delay between batches to avoid rate limiting
-        if (i < tokenBatches.length - 1) {
+        if (index < tokenBatches.length - 1) {
+          // delay between batches to avoid rate limiting
           await delay(100);
         }
       } catch (error) {
@@ -156,8 +151,8 @@ export class FcmService {
 
     for (const messages of messageGroups) {
       if (messages.length === 1) {
-        // Single message - use single destination method
-        const message = messages[0];
+        // Exclusive message
+        const message = messages[0]; // the only item
         const singleMessage: SingleFcmMessage = {
           id: message.id,
           token: message.token,
@@ -167,7 +162,7 @@ export class FcmService {
           page: message.page,
           args: message.args,
           type: data.type,
-          school: data.school,
+          schoolId: data.schoolId,
         };
 
         const result =
@@ -178,7 +173,7 @@ export class FcmService {
         successCount += result.successCount;
         failureCount += result.failureCount;
       } else {
-        // Multiple messages with same content - use batch method
+        // Multiple messages with same content
         const tokenPairs = messages
           .filter((message) => message.id !== undefined)
           .map((message) => ({
@@ -196,7 +191,7 @@ export class FcmService {
           page: firstMessage.page,
           args: firstMessage.args,
           type: data.type,
-          school: data.school,
+          schoolId: data.schoolId,
         };
 
         const result =
@@ -217,14 +212,24 @@ export class FcmService {
     };
   }
 
-  /**
-   * 같은 내용(title, body, role, page, args)의 메시지들을 그룹화합니다.
-   * 같은 내용의 메시지들은 배치로 묶어서 발송할 수 있습니다.
-   */
+  /*
+  [
+    [ // 그룹 1: title/body/role/page/args 동일
+      { id: 1, token: 'tokenA', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '123' },
+      { id: 2, token: 'tokenB', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '123' },
+    ],
+    [ // 그룹 2: 다른 title/body/role
+      { id: 3, token: 'tokenC', title: 'Alert', body: 'Another message', role: 'INSTRUCTOR' },
+    ],
+    [ // 그룹 3: args 다름
+      { id: 4, token: 'tokenD', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '456' },
+    ]
+  ]
+  */
   private groupMessagesByContent(
-    messages: FcmMessageInput[],
-  ): FcmMessageInput[][] {
-    const messageGroups = new Map<string, FcmMessageInput[]>();
+    messages: SingleFcmInput[],
+  ): SingleFcmInput[][] {
+    const messageGroups = new Map<string, SingleFcmInput[]>();
 
     for (const message of messages) {
       const contentKey = this.createContentKey(message);
@@ -239,10 +244,9 @@ export class FcmService {
   }
 
   /**
-   * 메시지의 내용을 기반으로 그룹화 키를 생성합니다.
-   * 같은 키를 가진 메시지들은 배치로 묶어서 발송할 수 있습니다.
+   * 메시지의 내용(title, body, role, page, args)을 기반으로 그룹화 키를 생성
    */
-  private createContentKey(message: FcmMessageInput): string {
+  private createContentKey(message: SingleFcmInput): string {
     return [
       message.title || '',
       message.body,
