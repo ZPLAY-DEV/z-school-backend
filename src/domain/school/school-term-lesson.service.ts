@@ -99,7 +99,7 @@ export class SchoolTermLessonService {
     return await paginate(query, queryBuilder, {
       relations: {
         samLessons: { sam: true },
-        groups: { sam: true },
+        groups: { sam: true, groupStudents: true },
         category: true,
       },
       sortableColumns: ['id', 'lessonName', 'termId', 'groups.weekday'],
