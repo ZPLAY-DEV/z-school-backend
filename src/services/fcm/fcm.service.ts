@@ -1,19 +1,13 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as firebaseAdmin from 'firebase-admin';
 import {
   BatchResponse,
   Notification,
   TokenMessage,
 } from 'firebase-admin/lib/messaging/messaging-api';
-import { AWS_SQS_CLIENT } from 'src/common/constants';
 import { IFcmData } from 'src/common/interfaces';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { SqsService } from 'src/services/aws/sqs.service';
+import { User } from 'src/domain/user/entities/user.entity';
+import { DataSource, Repository } from 'typeorm';
 
 interface FcmBatchResult {
   successCount: number;
@@ -25,14 +19,14 @@ interface FcmBatchResult {
 @Injectable()
 export class FcmService {
   private readonly logger = new Logger(FcmService.name);
+  private readonly userRepository: Repository<User>;
   private readonly MAX_TOKENS_PER_BATCH = 500;
   private readonly MAX_RETRY_ATTEMPTS = 3;
   private readonly RETRY_DELAY_MS = 1000;
 
-  constructor(
-    @Inject(AWS_SQS_CLIENT)
-    private readonly sqsClient: SqsService,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {
+    this.userRepository = this.dataSource.getRepository(User);
+  }
 
   /**
    * Send notification to a specific device token
@@ -44,9 +38,16 @@ export class FcmService {
       this.logger.log(`Message sent successfully to token: ${message.token}`);
       return result;
     } catch (error) {
-      await this.handleFcmError(error, 'sendToToken', {
-        token: message.token,
-      });
+      if (
+        error.code === 'messaging/invalid-registration-token' ||
+        error.code === 'messaging/registration-token-not-registered' ||
+        error.errorInfo?.code === 'messaging/invalid-registration-token' ||
+        error.errorInfo?.code === 'messaging/registration-token-not-registered'
+      ) {
+        this.nullifyToken(message.token).catch((error) => {
+          this.logger.warn(`Failed to nullify token ${message.token}`, error);
+        });
+      }
       throw error;
     }
   }
@@ -102,12 +103,8 @@ export class FcmService {
 
             if (this.isInvalidToken(errorCode)) {
               invalidTokens.push(token);
-              // Send SQS message to handle invalid token cleanup
-              this.handleInvalidToken(token).catch((error) => {
-                this.logger.warn(
-                  `Failed to send invalid token notification for ${token}`,
-                  error,
-                );
+              this.nullifyToken(token).catch((error) => {
+                this.logger.warn(`Failed to nullify token ${token}`, error);
               });
             } else {
               failedTokens.push(token);
@@ -138,7 +135,7 @@ export class FcmService {
 
     if (invalidTokens.length > 0) {
       this.logger.warn(
-        `Found ${invalidTokens.length} invalid tokens that will be cleaned up`,
+        `Found ${invalidTokens.length} invalid tokens to be cleaned up`,
       );
     }
 
@@ -241,45 +238,15 @@ export class FcmService {
     return errorCode ? invalidTokenCodes.includes(errorCode) : false;
   }
 
-  private async handleInvalidToken(token: string): Promise<void> {
-    try {
-      await this.sqsClient.sendMessage({
-        type: 'INVALID_USER_TOKEN',
-        data: {
-          token,
-        },
-      });
-    } catch (error) {
-      this.logger.warn(
-        'Failed to send invalid token notification to SQS',
-        error,
-      );
-    }
-  }
-
-  private async handleFcmError(
-    error: any,
-    method: string,
-    context?: Record<string, any>,
-  ): Promise<void> {
-    if (
-      error.code === 'messaging/invalid-registration-token' ||
-      error.code === 'messaging/registration-token-not-registered' ||
-      error.errorInfo?.code === 'messaging/invalid-registration-token' ||
-      error.errorInfo?.code === 'messaging/registration-token-not-registered'
-    ) {
-      if (context?.token && typeof context.token === 'string') {
-        await this.handleInvalidToken(context.token);
-      }
-
-      throw new BadRequestException(HttpErrorConstants.INVALID_PUSH_TOKEN);
-    }
-
-    this.logger.error(`FCM Error in ${method}`, {
-      error,
-      context,
-      stack: error?.stack,
-    });
+  private async nullifyToken(token: string): Promise<void> {
+    await this.userRepository.update(
+      {
+        pushToken: token,
+      },
+      {
+        pushToken: null,
+      },
+    );
   }
 
   private chunkArray<T>(array: T[], size: number): T[][] {

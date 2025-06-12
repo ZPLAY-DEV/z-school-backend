@@ -2,10 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { DEFAULT_AVATAR_URL } from 'src/common/constants';
 import { Board } from 'src/domain/board/entities/board.entity';
+import { Comment } from 'src/domain/board/entities/comment.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
-import { Comment } from 'src/domain/board/entities/comment.entity';
 import { Provider } from 'src/domain/user/entities/provider.entity';
 import { Token } from 'src/domain/user/entities/token.entity';
 import { Withdrawal } from 'src/domain/user/entities/withdrawal.entity';
@@ -56,7 +56,7 @@ export class User {
   @ApiProperty({ description: '🈳 avatar' })
   avatar: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
   @Exclude({ toPlainOnly: true })
   @ApiProperty({ description: '🈳 pushToken' })
   pushToken: string | null;

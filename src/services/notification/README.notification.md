@@ -217,35 +217,27 @@ async sendMixedMessages() {
     // 혼합 메시지 배열 (MixedPair)
     messages: [
       {
-        // FCM으로 발송될 사용자 (token이 있음)
+        // SMS로 발송될 사용자
         id: 1,
-        token: "valid_fcm_token",
-        phone: "01011111111", // phone도 있지만 token 우선
-        title: "김선생님께",
-        body: "1교시 수업 준비해 주세요",
-        role: "INSTRUCTOR",
-        target: "schedule",
-        targetArgs: "class-101"
+        token: "aaaaaaaaaaa",
+        phone: "01011110000", // phone도 있지만 token 우선
+        title: "첫째아들용",
+        body: "2학년 수업준비물 봐주세요.",
+        role: "PARENT",
+        target: "dispatches",
+        targetArgs: "dispatchId=1&studentId=1000" // postingId => nanoid xxxxxxxxx
       },
       {
-        // SMS로 발송될 사용자 (token이 없거나 무효)
-        id: 2,
-        token: null, // 또는 빈 문자열
-        phone: "01022222222",
-        title: "박선생님께", 
-        body: "2교시 수업 준비해 주세요",
-        role: "INSTRUCTOR",
-        target: "schedule",
-        targetArgs: "class-102"
+        // SMS로 발송될 사용자
+        id: 1,
+        token: "aaaaaaaaaaa",
+        phone: "01011110000",
+        title: "둘째아들용", 
+        body: "1학년 수업준비물 봐주세요.",
+        role: "PARENT",
+        target: "dispatches",
+        targetArgs: "dispatchId=2&studentId=2000" // postingId => nanoid yyyyyyyy
       },
-      {
-        // 발송 불가능한 사용자 (token도 phone도 없음)
-        id: 3,
-        token: null,
-        phone: null, // 이 사용자는 failure로 집계됨
-        body: "알림을 받을 수 없는 사용자",
-        role: "INSTRUCTOR"
-      }
     ],
     // PartitioningMeta
     type: "ping.class", 

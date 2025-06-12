@@ -1,20 +1,20 @@
 import {
-    BadRequestException,
-    ForbiddenException,
-    Injectable,
-    Logger,
-    NotFoundException,
-    UnprocessableEntityException,
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { TokenMessage } from 'firebase-admin/lib/messaging/messaging-api';
 import {
-    FilterOperator,
-    PaginateConfig,
-    PaginateQuery,
-    Paginated,
-    paginate,
+  FilterOperator,
+  PaginateConfig,
+  PaginateQuery,
+  Paginated,
+  paginate,
 } from 'nestjs-paginate';
 import * as random from 'randomstring';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
@@ -223,6 +223,15 @@ export class UserService {
     if (url) {
       await this.s3Service.delete(url);
     }
+  }
+
+  // Invalid FCM token 처리
+  async handleInvalidToken(invalidToken: string) {
+    // unique constraint 덕분에 정확히 하나의 사용자만 찾아짐
+    await this.userRepository.update(
+      { pushToken: invalidToken },
+      { pushToken: null },
+    );
   }
 
   // User 탈퇴
