@@ -26,8 +26,8 @@ export type MessageBody = {
 
 export type FcmData = {
   role: string; // `PARENT` 또는 `INSTRUCTOR`
-  target?: string; // for Client Routing
-  targetArgs?: string; // for Client Routing
+  page?: string; // for Client Routing
+  args?: string; // for Client Routing
 };
 
 // -------------------------------------------------------------------------- //
@@ -63,5 +63,5 @@ export type MultiMixedMessages = {
 export type NotificationResult = {
   success: boolean;
   error?: Error;
-  retryable?: boolean; // 재시도 가능한 에러인지 표시
+  id?: number;
 };

@@ -4,6 +4,7 @@ import { MessageType } from 'src/common/enums/message-type';
 import { NotificationType } from 'src/common/enums/notification-type';
 import { IFcmData } from 'src/common/interfaces';
 import { School } from 'src/domain/school/entities/school.entity';
+import { User } from 'src/domain/user/entities/user.entity';
 import { AligoService } from 'src/services/aligo/aligo-service';
 import { FirehoseService } from 'src/services/aws/firehose.service';
 import { FcmService } from 'src/services/fcm/fcm.service';
@@ -30,6 +31,7 @@ interface NotificationCounts {
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
   private readonly schoolRepository: Repository<School>;
+  private readonly userRepository: Repository<User>;
 
   constructor(
     private readonly dataSource: DataSource,
@@ -38,6 +40,269 @@ export class NotificationService {
     private readonly firehoseService: FirehoseService,
   ) {
     this.schoolRepository = this.dataSource.getRepository(School);
+    this.userRepository = this.dataSource.getRepository(User);
+  }
+
+  async send(
+    multiMixedMessages: MultiMixedMessages,
+  ): Promise<NotificationResult[]> {
+    const results: NotificationResult[] = [];
+    const allInvalidTokens: string[] = [];
+
+    // FCM 메시지와 SMS 메시지 분리
+    const fcmMessages = multiMixedMessages.messages.filter((msg) => msg.token);
+    const smsMessages = multiMixedMessages.messages.filter((msg) => msg.phone);
+
+    // FCM 전송
+    if (fcmMessages.length > 0) {
+      const multiFcmMessages: MultiFcmMessages = {
+        messages: fcmMessages.map((msg) => ({
+          id: msg.id,
+          token: msg.token!,
+          title: msg.title,
+          body: msg.body,
+          role: msg.role,
+          page: msg.page,
+          args: msg.args,
+        })),
+        type: multiMixedMessages.type,
+        school: multiMixedMessages.school,
+        role: multiMixedMessages.role,
+      };
+
+      const fcmResult =
+        await this.fcmService.sendMultipleMessagesToMultipleDestinations(
+          multiFcmMessages,
+        );
+
+      // FCM 결과를 NotificationResult 형식으로 변환
+      fcmResult.results.forEach((result) => {
+        results.push({
+          success: result.success,
+          error: result.error,
+        });
+      });
+
+      // Invalid tokens 수집
+      allInvalidTokens.push(...fcmResult.invalidTokens);
+    }
+
+    // SMS 전송
+    if (smsMessages.length > 0) {
+      for (const smsMessage of smsMessages) {
+        const smsResult =
+          await this.aligoService.sendSingleMessageToSingleDestination(
+            smsMessage.phone!,
+            smsMessage.title || '',
+            smsMessage.body,
+          );
+
+        results.push({
+          success: smsResult.success,
+          error: smsResult.error,
+        });
+      }
+    }
+
+    // Invalid tokens 일괄 무효화
+    if (allInvalidTokens.length > 0) {
+      await this.userService.invalidatePushTokens(allInvalidTokens);
+    }
+
+    return results;
+  }
+
+  async sendFcmOnly(
+    multiMixedMessages: MultiMixedMessages,
+  ): Promise<NotificationResult[]> {
+    const fcmMessages = multiMixedMessages.messages.filter((msg) => msg.token);
+
+    if (fcmMessages.length === 0) {
+      return [];
+    }
+
+    // 동일한 내용의 메시지들을 그룹화하여 최적화
+    const messageGroups = this.groupFcmMessagesByContent(
+      fcmMessages,
+      multiMixedMessages,
+    );
+    const results: NotificationResult[] = [];
+    const allInvalidTokens: string[] = [];
+
+    for (const group of messageGroups) {
+      let fcmResult;
+
+      if (group.tokenPairs.length === 1) {
+        // Single destination
+        const singleMessage: SingleFcmMessage = {
+          id: group.tokenPairs[0].id,
+          token: group.tokenPairs[0].token,
+          title: group.title,
+          body: group.body,
+          role: group.role,
+          page: group.page,
+          args: group.args,
+          type: multiMixedMessages.type,
+          school: multiMixedMessages.school,
+        };
+
+        const singleResult =
+          await this.fcmService.sendSingleMessageToSingleDestination(
+            singleMessage,
+          );
+
+        if (singleResult.invalidToken) {
+          allInvalidTokens.push(group.tokenPairs[0].token);
+        }
+
+        results.push({
+          success: singleResult.success,
+          error: singleResult.error,
+        });
+      } else {
+        // Multiple destinations with same content
+        const broadcastMessage: BroadcastFcmMessage = {
+          tokenPairs: group.tokenPairs,
+          title: group.title,
+          body: group.body,
+          role: group.role,
+          page: group.page,
+          args: group.args,
+          type: multiMixedMessages.type,
+          school: multiMixedMessages.school,
+        };
+
+        fcmResult =
+          await this.fcmService.sendSingleMessageToMultipleDestinations(
+            broadcastMessage,
+          );
+
+        // 결과를 NotificationResult 형식으로 변환
+        fcmResult.results.forEach((result) => {
+          results.push({
+            success: result.success,
+            error: result.error,
+          });
+        });
+
+        // Invalid tokens 수집
+        allInvalidTokens.push(
+          ...fcmResult.invalidTokens.map((item) => item.token),
+        );
+      }
+    }
+
+    // Invalid tokens 일괄 무효화
+    if (allInvalidTokens.length > 0) {
+      await this.userService.invalidatePushTokens(allInvalidTokens);
+    }
+
+    return results;
+  }
+
+  async sendSmsOnly(
+    multiMixedMessages: MultiMixedMessages,
+  ): Promise<NotificationResult[]> {
+    const smsMessages = multiMixedMessages.messages.filter((msg) => msg.phone);
+    const results: NotificationResult[] = [];
+
+    if (smsMessages.length === 0) {
+      return results;
+    }
+
+    // SMS는 그룹화하여 최적화
+    const messageGroups = this.groupSmsMessagesByContent(smsMessages);
+
+    for (const group of messageGroups) {
+      if (group.phones.length === 1) {
+        const result =
+          await this.aligoService.sendSingleMessageToSingleDestination(
+            group.phones[0],
+            group.title,
+            group.body,
+          );
+        results.push({
+          success: result.success,
+          error: result.error,
+        });
+      } else {
+        const batchResults =
+          await this.aligoService.sendSingleMessageToMultipleDestinations(
+            group.phones,
+            group.title,
+            group.body,
+          );
+
+        batchResults.forEach((result) => {
+          results.push({
+            success: result.success,
+            error: result.error,
+          });
+        });
+      }
+    }
+
+    return results;
+  }
+
+  private groupFcmMessagesByContent(messages: any[], meta: MultiMixedMessages) {
+    const groups = new Map<
+      string,
+      {
+        tokenPairs: Array<{ id: number; token: string }>;
+        title?: string;
+        body: string;
+        role: string;
+        page?: string;
+        args?: string;
+      }
+    >();
+
+    for (const msg of messages) {
+      const key = `${msg.title || ''}|${msg.body}|${msg.role}|${msg.page || ''}|${msg.args || ''}`;
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          tokenPairs: [],
+          title: msg.title,
+          body: msg.body,
+          role: msg.role,
+          page: msg.page,
+          args: msg.args,
+        });
+      }
+
+      groups.get(key)!.tokenPairs.push({ id: msg.id, token: msg.token });
+    }
+
+    return Array.from(groups.values());
+  }
+
+  private groupSmsMessagesByContent(messages: any[]) {
+    const groups = new Map<
+      string,
+      {
+        phones: string[];
+        title?: string;
+        body: string;
+      }
+    >();
+
+    for (const msg of messages) {
+      const key = `${msg.title || ''}|${msg.body}`;
+
+      if (!groups.has(key)) {
+        groups.set(key, {
+          phones: [],
+          title: msg.title,
+          body: msg.body,
+        });
+      }
+
+      groups.get(key)!.phones.push(msg.phone);
+    }
+
+    return Array.from(groups.values());
   }
 
   //? ---------------------------------------------------------------------- ?//
