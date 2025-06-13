@@ -21,10 +21,10 @@ export class NotificationService {
   private readonly userRepository: Repository<User>;
 
   constructor(
-    private readonly dataSource: DataSource,
     private readonly fcmService: FcmService,
     private readonly aligoService: AligoService,
     private readonly firehoseService: FirehoseService,
+    private readonly dataSource: DataSource,
   ) {
     this.schoolRepository = this.dataSource.getRepository(School);
     this.userRepository = this.dataSource.getRepository(User);
@@ -194,6 +194,7 @@ export class NotificationService {
       const now = new Date();
       const seoulTimeZone = 'Asia/Seoul';
 
+      console.log(`🔥 results: ${JSON.stringify(results)}`);
       const partitionedLogData = {
         // 기본 로그 정보 (원본 필드명 제거하고 파티션 필드명으로 통일)
         type: data.type, // 파티션 키
@@ -201,13 +202,13 @@ export class NotificationService {
         school_name: school.name, // 학교 이름
         title:
           data.messages.length > 1
-            ? `${data.messages[0].title} 외 ${data.messages.length - 1}건`
+            ? `${data.messages[0].title ?? school.name} 외 ${data.messages.length - 1}건`
             : data.messages[0].title, // 첫 번째 메시지의 title
         body:
           data.messages.length > 1
             ? `${data.messages[0].body} 외 ${data.messages.length - 1}건`
             : data.messages[0].body, // 첫 번째 메시지의 body
-        ids: results.map((v) => v.id), // 결과 배열의 id 필드 추출
+        ids: data.messages.map((v) => v.id), // 결과 배열의 id 필드 추출
         role: data.role, // PARENT or INSTRUCTOR (일반 컬럼)
 
         // 시간 기반 파티션 키
@@ -217,7 +218,7 @@ export class NotificationService {
         hour: formatInTimeZone(now, seoulTimeZone, 'HH'),
 
         // 성과 메트릭
-        total: results.length,
+        total: data.messages.length,
         success: results.filter((v) => v.success).length,
         failure: results.filter((v) => !v.success).length,
         fcm_success: fcmSuccessCount || 0,

@@ -224,8 +224,11 @@ export class AligoService {
         list.forEach((v) => {
           const success =
             v.sms_state === '발송완료' ||
+            v.sms_state === '전송완료' ||
             v.sms_state === '발송중' ||
-            v.sms_state === '발송예약'; // 알리고 문서가 clear 하지 않다.
+            v.sms_state === '전송중' ||
+            v.sms_state === '발송예약' ||
+            v.sms_state === '전송예약'; // 알리고 문서가 clear 하지 않다.
           results.push({
             success,
             error: !success
