@@ -35,6 +35,7 @@ export class TextController {
   }
 
   @Post('queue')
+  @HttpCode(200)
   async sendViaQueue(
     @Body()
     data: {

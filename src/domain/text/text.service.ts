@@ -46,9 +46,9 @@ export class TextService {
     schoolId: number;
     role: string;
   }): Promise<any> {
-    this.logger.log(`messages`, data.messages);
+    this.logger.log(`✋ data`, JSON.stringify(data, null, 2));
     const payload = {
-      type: 'SEND_NOTIFICATIONS',
+      type: 'SEND_MESSAGES',
       data: data,
     };
     try {
