@@ -1,24 +1,22 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
   UseInterceptors,
   ClassSerializerInterceptor,
+  Get,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { CreateDispatchDto } from './dto/create-dispatch.dto';
-import { UpdateDispatchDto } from './dto/update-dispatch.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { DispatchService } from './dispatch.service';
 
-@ApiTags('✅ Notifications ( 발송관리 ) --- 수강신청, 공지사항, 설문지')
+@ApiTags('✅ Dispatchs ( 발송관리 )')
 @ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
-@Controller('notifications')
+@Controller('dispatchs')
 export class DispatchController {
   constructor(private readonly dispatchService: DispatchService) {}
 
@@ -30,26 +28,14 @@ export class DispatchController {
     return this.dispatchService.create(createNotificationDto);
   }
 
-  @Get()
-  findAll() {
-    return this.dispatchService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.dispatchService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateDispatchDto: UpdateDispatchDto,
+  //? ---------------------------------------------------------------------- ?//
+  //? READ
+  //? ---------------------------------------------------------------------- ?//
+  @Get(':id/nanoid/:nanoid')
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('nanoid', ParseIntPipe) nanoid: string,
   ) {
-    return this.dispatchService.update(+id, updateDispatchDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.dispatchService.remove(+id);
+    // return this.dispatchService.read(id, nanoid);
   }
 }

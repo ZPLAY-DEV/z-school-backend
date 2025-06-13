@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { DispatchRead } from 'src/domain/dispatch/entities/dispatch-read.entity';
 import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
@@ -86,6 +87,11 @@ export class Parent {
     cascade: ['insert', 'update'],
   })
   nanoIds?: NanoId[];
+
+  @OneToMany(() => DispatchRead, (dispatchRead) => dispatchRead.parent, {
+    cascade: ['insert', 'update'],
+  })
+  dispatchReads: DispatchRead[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

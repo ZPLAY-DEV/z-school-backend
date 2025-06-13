@@ -1,6 +1,6 @@
 // import * as admin from 'firebase-admin';
 
-import { BookingStatus, Role, Weekday } from 'src/common/enums';
+import { BookingStatus, MainTarget, Role, Weekday } from 'src/common/enums';
 
 export interface IDatabaseConfig {
   engine: string;
@@ -281,4 +281,57 @@ export interface ICalendarDay {
   start: string;
   end: string;
   classOn: boolean; // 수업이 있는지 여부
+}
+
+//? ---------------------------------------------------------------------- ?//
+//? Dispatch Common Interface
+//? ---------------------------------------------------------------------- ?//
+
+/**
+ * 발송 대상자의 상세 유형
+ * @param mainTarget 발송 대상자의 상세 유형 ENUM ( 학년별, 강좌별, 학생별, 강사별 )
+ * @param detail 발송 대상자의 상세 유형 String[] ( 학년, 강좌, 학생, 강사 )
+ */
+export interface IDispatchTarget {
+  mainTarget: MainTarget;
+  /**
+   * @todo label으로 네이밍을 변경
+   */
+  detail: string[];
+}
+
+/**
+ * Mixed 발송 대상자의 상세 유형
+ * @param id parentId
+ * @param token parent.pushToken
+ * @param phone parent.phone
+ * @param title dto.title (선택적) -> title은 큰 의미 없음.
+ * @param body dto.title 실제 create-dispatch의 title 값을 삽입
+ * @param role ENUM으로 구분 필요
+ * @param target nanoId.target
+ * @param targetArgs nanoId.targetArgs ( sms redirection path )
+ */
+export interface IMixedTargetMessage {
+  id: number;
+  token: string;
+  phone: string;
+  title?: string;
+  body: string;
+  role: 'PARENT';
+  target: string;
+  targetArgs: string;
+}
+
+/**
+ * 발송 응답 인터페이스
+ * @param messages IMixedTargetMessage[]
+ * @param type 'ping.class'
+ * @param school 학교 아이디 ( toString으로 파싱해야함)
+ * @param role 'PARENT' | 'INSTRUCTOR'
+ */
+export interface IDispatchResponse {
+  messages: IMixedTargetMessage[];
+  type: 'ping.class';
+  school: string;
+  role: 'PARENT';
 }

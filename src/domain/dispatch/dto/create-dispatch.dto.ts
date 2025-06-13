@@ -6,11 +6,15 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   MaxLength,
+  Validate,
 } from 'class-validator';
-import { DispatchTarget, DispatchType, TargetGroup } from 'src/common/enums';
+import { DispatchMode, DispatchType, TargetGroup } from 'src/common/enums';
+import { TargetValidator } from '../validator/dispatch-target.validator';
+import { IDispatchTarget } from 'src/common/interfaces';
 
 export class CreateDispatchDto {
   @ApiProperty({
@@ -80,16 +84,19 @@ export class CreateDispatchDto {
   type: DispatchType;
 
   @ApiProperty({
-    description:
-      '🈵 발송 대상 유형 ( ALL_STUDENT, ALL_SAM, GRADE, GRADE_CLASS, GROUP_STUDENT, GROUP_SAM )',
-    enum: DispatchTarget,
-    example:
-      'ALL_STUDENTS --- 발송 대상 유형 ( ALL_STUDENT(모든 학생), ALL_SAM(모든 강사), GRADE(특정 학년), GRADE_CLASS(특정 반), GROUP_STUDENT(특정 수업(그룹)을 수강중인 학생), GROUP_SAM(특정 수업(그룹)을 강의중인 강사) )',
+    description: '🈵발송 대상자의 상세 유형',
+    example: `
+    {
+          "mainTarget": "학년별",
+          "detail": ["1학년", "2학년", "3학년"]
+    }`,
     required: true,
+    type: Object,
   })
   @IsNotEmpty()
-  @IsEnum(DispatchTarget)
-  target: DispatchTarget[];
+  @IsObject()
+  @Validate(TargetValidator)
+  target: IDispatchTarget;
 
   @ApiProperty({
     description: '🈵 발송 대상 유형 ( STUDENT, SAM )',
@@ -100,6 +107,17 @@ export class CreateDispatchDto {
   @IsNotEmpty()
   @IsEnum(TargetGroup)
   targetGroup: TargetGroup;
+
+  @ApiProperty({
+    description: '🈵 발송 상태 ( IMMEDIATE, SCHEDULED, DRAFT )',
+    enum: DispatchMode,
+    example:
+      'IMMEDIATE --- 발송 상태 ( IMMEDIATE(즉시 발송), SCHEDULED(예약 발송), DRAFT(발송X, 등록 ) )',
+    required: true,
+  })
+  @IsNotEmpty()
+  @IsEnum(DispatchMode)
+  mode: DispatchMode;
 
   @ApiProperty({
     description: '🈳 예약 시간 ( 예약 발송 시 사용 )',

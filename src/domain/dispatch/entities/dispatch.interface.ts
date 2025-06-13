@@ -1,6 +1,6 @@
 import {
   DispatchPlatform,
-  DispatchStatus,
+  DispatchState,
   DispatchType,
 } from 'src/common/enums';
 
@@ -14,7 +14,7 @@ export interface IDispatch extends IDispatchKey {
   targetId: number; // studentId or samId
   type: DispatchType;
   sentAt?: number;
-  status?: DispatchStatus;
+  state?: DispatchState;
   phone: string;
   requestId?: string;
   isRead?: boolean;

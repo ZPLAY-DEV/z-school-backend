@@ -35,6 +35,12 @@ import { SchoolPhoneController } from './school-phone.controller';
 import { SchoolPhoneService } from './school-phone.service';
 import { SchoolStudentController } from './school-student.controller';
 import { SchoolStudentService } from './school-student.service';
+import { SchoolDispatchService } from './school-dispatch.service';
+import { SchoolDispatchController } from './school-dispatch.controller';
+import { SqsModule } from 'src/services/aws/sqs.module';
+import { RedisModule } from 'src/services/redis/redis.module';
+import { SchedulerModule } from 'src/services/scheduler/scheduler.module';
+import { Dispatch } from '../dispatch/entities/dispatch.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -50,12 +56,16 @@ import { SchoolStudentService } from './school-student.service';
       Phone,
       Board,
       Comment,
+      Dispatch,
     ]),
     UploadModule,
     SlackModule,
     S3Module,
     NeisModule,
     LessonModule,
+    SqsModule,
+    RedisModule,
+    SchedulerModule,
   ],
   controllers: [
     SchoolController,
@@ -67,6 +77,7 @@ import { SchoolStudentService } from './school-student.service';
     SchoolTermOfferingController,
     SchoolPhoneController,
     SchoolBoardController,
+    SchoolDispatchController,
   ],
   providers: [
     SchoolService,
@@ -78,6 +89,7 @@ import { SchoolStudentService } from './school-student.service';
     SchoolTermOfferingService,
     SchoolPhoneService,
     SchoolBoardService,
+    SchoolDispatchService,
   ],
 })
 export class SchoolModule {}

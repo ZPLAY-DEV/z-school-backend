@@ -1,7 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { IsArray, IsEnum } from 'class-validator';
-import { DispatchTarget, DispatchType, TargetGroup } from 'src/common/enums';
+import { IsArray } from 'class-validator';
+import {
+  DispatchState,
+  DispatchMode,
+  DispatchType,
+  TargetGroup,
+} from 'src/common/enums';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
@@ -9,13 +14,18 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { DispatchRead } from './dispatch-read.entity';
+import { IDispatchTarget } from 'src/common/interfaces';
 
 @Entity('dispatchs')
+@Index(['schoolId', 'termId'])
 export class Dispatch {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -48,7 +58,7 @@ export class Dispatch {
   sentAt: Date | null;
 
   @ApiProperty({
-    description: '🈵 발송 유형 ( enrollment, announcement, survey )',
+    description: '🈵 발송 유형 ( enrollment, news, survey )',
   })
   @Column({
     type: 'enum',
@@ -57,10 +67,29 @@ export class Dispatch {
   })
   type: DispatchType;
 
-  @Column('json', { nullable: true })
-  @IsArray()
-  @IsEnum(DispatchTarget, { each: true })
-  target: DispatchTarget[];
+  @ApiProperty({ description: '🈵 알림 발송 유형' })
+  @Column({
+    type: 'enum',
+    enum: DispatchMode,
+    default: DispatchMode.IMMEDIATE,
+  })
+  mode: DispatchMode;
+
+  @ApiProperty({ description: '🈵 발송 상태' })
+  @Column({
+    type: 'enum',
+    enum: DispatchState,
+    default: DispatchState.READY,
+  })
+  state: DispatchState;
+
+  // @todo 네이밍 target -> tap으로 변경
+  @ApiProperty({
+    description:
+      '🈵 발송 대상자의 상세 유형 ( 1학년, 2학년.. | 강사 n명 | 전체강좌 .. )',
+  })
+  @Column('json', { nullable: false })
+  target: IDispatchTarget;
 
   @ApiProperty({
     description: '🈵 발송 대상 유형 ( student, sam )',
@@ -108,10 +137,12 @@ export class Dispatch {
   @JoinColumn({ name: 'termId' })
   term: Term;
 
-  // //* 1-to-M hasMany ------------------------------------------------------- *//
+  //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  // @OneToMany(() => Target, (target) => target.enrollment)
-  // targets: Target[];
+  @OneToMany(() => DispatchRead, (dispatchRead) => dispatchRead.dispatch, {
+    cascade: ['insert', 'update'],
+  })
+  dispatchReads: DispatchRead[];
 
   //? Constructor ---------------------------------------------------------- ?//
   constructor(partial: Partial<Dispatch>) {

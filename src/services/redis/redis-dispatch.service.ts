@@ -50,8 +50,8 @@ export class RedisDispatchService implements OnModuleInit {
     return await this.redisClient.ping();
   }
 
-  //? 학생별 열람 상태 초기화
-  async initStudentReadStatus(
+  //? 학부모별 열람 상태 초기화
+  async initParentReadStatus(
     keyValuePairs: Record<string, string>,
   ): Promise<void> {
     try {

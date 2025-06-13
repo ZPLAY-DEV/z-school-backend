@@ -2,7 +2,7 @@ import { Schema } from 'dynamoose';
 import {
   DispatchType,
   DispatchPlatform,
-  DispatchStatus,
+  DispatchState,
 } from 'src/common/enums';
 
 export const DispatchSchema = new Schema(
@@ -40,9 +40,9 @@ export const DispatchSchema = new Schema(
       required: false,
     },
 
-    status: {
+    state: {
       type: String,
-      enum: Object.values(DispatchStatus),
+      enum: Object.values(DispatchState),
       default: 'READY',
       required: true,
     },
