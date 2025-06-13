@@ -70,7 +70,11 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
     // 3. Slack 알림 발송
     if (term && oldStatus === null && newStatus !== null) {
       // todo. offerings 생성하기
-      await this.makeOfferings(term, event.manager);
+      try {
+        await this.makeOfferings(term, event.manager);
+      } catch (error) {
+        this.logger.error('Failed to make offerings', error);
+      }
       await event.manager
         .createQueryBuilder()
         .update('Term')
