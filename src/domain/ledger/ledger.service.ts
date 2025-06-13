@@ -10,7 +10,7 @@ import {
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateLedgerDto } from 'src/domain/ledger/dto/create-ledger.dto';
 import { UpdateLedgerDto } from 'src/domain/ledger/dto/update-ledger.dto';
-import { SlackService } from 'src/services/slack/slack-service';
+import { SlackService } from 'src/services/slack/slack.service';
 import { DataSource, Repository } from 'typeorm';
 import { Ledger } from './entities/ledger.entity';
 

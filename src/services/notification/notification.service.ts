@@ -3,7 +3,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { MessageType } from 'src/common/enums/message-type';
 import { School } from 'src/domain/school/entities/school.entity';
 import { User } from 'src/domain/user/entities/user.entity';
-import { AligoService } from 'src/services/aligo/aligo-service';
+import { AligoService } from 'src/services/aligo/aligo.service';
 import { FirehoseService } from 'src/services/aws/firehose.service';
 import { FcmService } from 'src/services/fcm/fcm.service';
 import {

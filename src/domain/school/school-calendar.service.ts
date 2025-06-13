@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { School } from 'src/domain/school/entities/school.entity';
-import { NeisService } from 'src/services/neis/neis-service';
+import { NeisService } from 'src/services/neis/neis.service';
 import { DataSource, Repository } from 'typeorm';
 
 //? neis API 계정 정보)

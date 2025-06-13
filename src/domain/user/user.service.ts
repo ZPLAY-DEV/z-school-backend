@@ -27,7 +27,7 @@ import { Provider } from 'src/domain/user/entities/provider.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { S3Service } from 'src/services/aws/s3.service';
 import { FcmService } from 'src/services/fcm/fcm.service';
-import { SlackService } from 'src/services/slack/slack-service';
+import { SlackService } from 'src/services/slack/slack.service';
 import { DataSource, DeepPartial, FindOneOptions } from 'typeorm';
 import { Repository } from 'typeorm/repository/Repository';
 

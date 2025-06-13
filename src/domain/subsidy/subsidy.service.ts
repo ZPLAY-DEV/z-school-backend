@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateSubsidyDto } from 'src/domain/subsidy/dto/create-subsidy.dto';
 import { UpdateSubsidyDto } from 'src/domain/subsidy/dto/update-subsidy.dto';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
-import { SlackService } from 'src/services/slack/slack-service';
+import { SlackService } from 'src/services/slack/slack.service';
 import { Repository } from 'typeorm/repository/Repository';
 
 @Injectable()

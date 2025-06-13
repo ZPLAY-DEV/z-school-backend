@@ -7,7 +7,7 @@ import {
   HttpErrorConstants,
   HttpErrorFormat,
 } from 'src/core/http/http-error-objects';
-import { SlackService } from 'src/services/slack/slack-service';
+import { SlackService } from 'src/services/slack/slack.service';
 import { EntityNotFoundError } from 'typeorm';
 
 // todo. Sentry DSN 를 v3 용으로 Sentry 콘솔에서 새로 발급하는 게 좋을듯.

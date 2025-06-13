@@ -3,7 +3,7 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { makeOfferingsFromLessons } from 'src/helpers/offering.util';
-import { SlackService } from 'src/services/slack/slack-service';
+import { SlackService } from 'src/services/slack/slack.service';
 import {
   DataSource,
   EntitySubscriberInterface,

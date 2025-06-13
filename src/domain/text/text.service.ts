@@ -9,7 +9,7 @@ import { AWS_SQS_CLIENT } from 'src/common/constants';
 import { NotificationType } from 'src/common/enums/notification-type';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { classifyMessage } from 'src/helpers/classify';
-import { AligoService } from 'src/services/aligo/aligo-service';
+import { AligoService } from 'src/services/aligo/aligo.service';
 import { AligoListResult } from 'src/services/aligo/types';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { NotificationService } from 'src/services/notification/notification.service';
