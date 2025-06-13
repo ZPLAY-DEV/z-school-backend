@@ -1,33 +1,50 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { SendBulkTextDto } from 'src/domain/text/dto/send-bulk-text.dto';
-import { SendTextDto } from 'src/domain/text/dto/send-text.dto';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { NotificationType } from 'src/common/enums/notification-type';
 import { TextService } from 'src/domain/text/text.service';
+import {
+  FcmData,
+  MessageBody,
+  MixedPair,
+} from 'src/services/notification/types';
 
 @Controller('texts')
 export class TextController {
   constructor(private readonly textService: TextService) {}
 
   @Post()
-  async send(@Body() dto: SendTextDto): Promise<any> {
-    const { sender, receiver, message, dryrun } = dto;
-    return await this.textService.send(sender, receiver, message, dryrun);
-  }
-
-  @Post('bulk')
-  async sendBulk(@Body() dto: SendBulkTextDto): Promise<any> {
-    const { sender, phones, message, dryrun } = dto;
-    return await this.textService.sendBulk(sender, phones, message, dryrun);
+  @HttpCode(200)
+  async send(
+    @Body()
+    data: {
+      messages: (MixedPair & MessageBody & FcmData)[];
+      type: NotificationType;
+      schoolId: number;
+      role: string;
+    },
+  ): Promise<any> {
+    return await this.textService.send(data);
   }
 
   @Post('queue')
-  async sendTextViaQueue(@Body() dto: SendTextDto): Promise<any> {
-    const { sender, receiver, message, dryrun } = dto;
-    return await this.textService.sendTextViaQueue(
-      sender,
-      receiver,
-      message,
-      dryrun,
-    );
+  async sendViaQueue(
+    @Body()
+    data: {
+      messages: (MixedPair & MessageBody & FcmData)[];
+      type: NotificationType;
+      schoolId: number;
+      role: string;
+    },
+  ): Promise<any> {
+    return await this.textService.sendViaQueue(data);
   }
 
   @Get()
@@ -52,7 +69,7 @@ export class TextController {
 
   @Get(':id')
   async detail(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Query('limit') limit?: number,
   ): Promise<any> {
     return await this.textService.detail(id, limit);

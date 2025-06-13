@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { format, fromZonedTime } from 'date-fns-tz';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
+import { NotificationType } from 'src/common/enums/notification-type';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 import {
@@ -83,10 +84,10 @@ export class GroupAttendanceService {
         };
       });
 
-    await this.notificationService.sendMixedMessages({
+    await this.notificationService.send({
       messages,
-      type: 'ping.class',
-      school: group.lesson.schoolId.toString(),
+      type: NotificationType.PING_CLASS,
+      schoolId: group.lesson.schoolId,
       role: 'PARENT',
     });
     await this.updateStatusesBulk(pendingItemKeys, AttendanceStatus.PRESENT);
@@ -115,8 +116,7 @@ export class GroupAttendanceService {
       .filter(
         (v) =>
           v.status === AttendanceStatus.PRESENT ||
-          v.status === AttendanceStatus.LATE ||
-          v.status === AttendanceStatus.EXCUSED_LATE,
+          v.status === AttendanceStatus.LATE,
       )
       .map((v) => v.studentId);
     students.filter((v) => studentIds.includes(v.id));
@@ -135,10 +135,10 @@ export class GroupAttendanceService {
       role: 'PARENT' as const,
     }));
 
-    await this.notificationService.sendMixedMessages({
+    await this.notificationService.send({
       messages: mixedMessages,
-      type: 'ping.class',
-      school: group.lesson.schoolId.toString(),
+      type: NotificationType.PING_CLASS,
+      schoolId: group.lesson.schoolId,
       role: 'PARENT',
     });
     return notifications.length;

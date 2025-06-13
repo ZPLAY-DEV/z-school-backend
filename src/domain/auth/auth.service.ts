@@ -26,7 +26,7 @@ import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Token } from 'src/domain/user/entities/token.entity';
 import { User } from 'src/domain/user/entities/user.entity';
-import { SlackService } from 'src/services/slack/slack-service';
+import { SlackService } from 'src/services/slack/slack.service';
 import { DataSource, MoreThan, Repository } from 'typeorm';
 import * as uuid from 'uuid';
 import { AuthUserDto } from './dto/auth-user.dto';

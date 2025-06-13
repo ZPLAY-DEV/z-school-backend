@@ -10,7 +10,7 @@ import {
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreatePayoutDto } from 'src/domain/payout/dto/create-payout.dto';
 import { UpdatePayoutDto } from 'src/domain/payout/dto/update-payout.dto';
-import { SlackService } from 'src/services/slack/slack-service';
+import { SlackService } from 'src/services/slack/slack.service';
 import { DataSource, Repository } from 'typeorm';
 import { Payout } from './entities/payout.entity';
 

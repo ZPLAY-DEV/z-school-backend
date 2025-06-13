@@ -38,7 +38,7 @@ import { TermModule } from 'src/domain/term/term.module';
 import { TextModule } from 'src/domain/text/text.module';
 import { UserModule } from 'src/domain/user/user.module';
 import { RedisModule } from 'src/services/redis/redis.module';
-import { SlackModule } from 'src/services/slack/slack-module';
+import { SlackModule } from 'src/services/slack/slack.module';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { OrmConfig } from './database/orm-config';
 import { BoardModule } from './domain/board/board.module';

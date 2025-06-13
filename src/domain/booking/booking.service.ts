@@ -68,6 +68,15 @@ export class BookingService {
         message,
       });
     } catch (error) {
+      if (
+        error.code === 'ER_DUP_ENTRY' ||
+        error.code === '23505' ||
+        error.code === 1062
+      ) {
+        throw new UnprocessableEntityException(
+          HttpErrorConstants.ALREADY_BOOKED,
+        );
+      }
       this.logger.error(`❌ Booking 실패`, error.stack);
       throw new InternalServerErrorException(
         HttpErrorConstants.INTERNAL_DATABASE_ERROR,

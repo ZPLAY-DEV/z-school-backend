@@ -10,7 +10,6 @@ import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
 import { Provider } from 'src/domain/user/entities/provider.entity';
 import { Secret } from 'src/domain/user/entities/secret.entity';
 import { User } from 'src/domain/user/entities/user.entity';
-import { UserNotificationListener } from 'src/domain/user/listeners/user-notification.listener';
 import { UserOtpController } from 'src/domain/user/user-otp.controller';
 import { UserOtpService } from 'src/domain/user/user-otp.service';
 import { UserController } from 'src/domain/user/user.controller';
@@ -18,7 +17,7 @@ import { UserService } from 'src/domain/user/user.service';
 import { S3Module } from 'src/services/aws/s3.module';
 import { SqsModule } from 'src/services/aws/sqs.module';
 import { FcmModule } from 'src/services/fcm/fcm.module';
-import { SlackModule } from 'src/services/slack/slack-module';
+import { SlackModule } from 'src/services/slack/slack.module';
 import { UploadModule } from 'src/services/upload/upload.module';
 import { UserRepository } from './user.repository';
 
@@ -48,7 +47,7 @@ import { UserRepository } from './user.repository';
     FcmModule,
   ],
   providers: [
-    UserNotificationListener, //? for event emitter
+    // UserNotificationListener,
     UserService,
     UserOtpService,
     UserRepository,

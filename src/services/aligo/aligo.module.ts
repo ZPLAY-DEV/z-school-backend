@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AligoService } from 'src/services/aligo/aligo-service';
+import { AligoService } from 'src/services/aligo/aligo.service';
 
 @Module({
   imports: [ConfigModule],
