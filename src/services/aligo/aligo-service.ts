@@ -43,7 +43,7 @@ export class AligoService {
         sender: sender || ZPLAY_SEOUL_NUMBER,
         receiver: data.phone,
         msg: data.body,
-        // msg_type: 'SMS',
+        msg_type: 'SMS',
         title: data.title,
       });
 
@@ -86,7 +86,7 @@ export class AligoService {
     }));
     const baseDto = {
       sender: sender || ZPLAY_SEOUL_NUMBER,
-      // msg_type: 'SMS',
+      msg_type: 'SMS',
     };
 
     const batches = chunk(dtos, 500);
@@ -173,7 +173,7 @@ export class AligoService {
     }));
     const baseDto = {
       sender: sender || ZPLAY_SEOUL_NUMBER,
-      // msg_type: 'SMS',
+      msg_type: 'SMS',
     };
 
     const batches = chunk(dtos, 500);
@@ -186,6 +186,7 @@ export class AligoService {
     for (const [index, batch] of batches.entries()) {
       try {
         const bulkResponse = await this.sendBulk(baseDto, batch);
+        console.log(`🔥 bulkResponse: ${JSON.stringify(bulkResponse)}`);
         const messageId = Number(bulkResponse.msg_id);
 
         numberOfSuccess += Number(bulkResponse.success_cnt) || 0;
@@ -217,18 +218,22 @@ export class AligoService {
           page: 1,
           page_size: 500,
         });
+        console.log(`🔥 detailResponse: ${JSON.stringify(detailResponse)}`);
         const list = detailResponse.list || [];
 
         list.forEach((v) => {
+          const success =
+            v.sms_state === '발송완료' ||
+            v.sms_state === '발송중' ||
+            v.sms_state === '발송예약'; // 알리고 문서가 clear 하지 않다.
           results.push({
-            success: v.sms_state === '발송완료',
-            error:
-              v.sms_state !== '발송완료'
-                ? new Error(String(v.sms_state) || 'Aligo send failed')
-                : undefined,
+            success,
+            error: !success
+              ? new Error(String(v.sms_state) || 'Aligo send failed')
+              : undefined,
             id: v.id,
           });
-          if (v.sms_state !== '발송완료') {
+          if (!success) {
             failedPhones.push(v.receiver as string);
           }
         });
@@ -304,6 +309,8 @@ export class AligoService {
     const dynamicDto: Record<string, any> = {
       ...baseDto,
       sender: baseDto.sender.replace(/[^0-9]/g, ''),
+      cnt: targets.length,
+      // testmode_yn: 'Y',
     };
 
     targets.forEach((target, index) => {
@@ -312,6 +319,7 @@ export class AligoService {
       dynamicDto[`msg_${idx}`] = target.body;
     });
 
+    console.log(`🔥 dynamicDto: ${JSON.stringify(dynamicDto)}`);
     return this.postRequest(dynamicDto, '/send_mass/');
   }
 

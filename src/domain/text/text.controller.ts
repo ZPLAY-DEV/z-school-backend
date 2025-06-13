@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Post,
@@ -20,6 +21,7 @@ export class TextController {
   constructor(private readonly textService: TextService) {}
 
   @Post()
+  @HttpCode(200)
   async send(
     @Body()
     data: {

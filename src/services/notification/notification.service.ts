@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { formatInTimeZone } from 'date-fns-tz';
+import { MessageType } from 'src/common/enums/message-type';
 import { School } from 'src/domain/school/entities/school.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { AligoService } from 'src/services/aligo/aligo-service';
@@ -38,11 +39,12 @@ export class NotificationService {
     let smsFailureCount: number = 0;
     const school = await this.getSchool(+data.schoolId);
 
-    // FCM 메시지와 SMS 메시지 분리
+    // todo. if type is DISPATCH_NEWS, dedupe may be needed
+    // it's considered as SMS if token is not available
     const fcmMessages = data.messages.filter((msg) => msg.token);
     const smsMessages = data.messages.filter((msg) => !msg.token);
 
-    // FCM 전송
+    //? FCM 전송
     if (fcmMessages.length > 0) {
       const multiFcmMessages: MultiFcmMessages = {
         messages: fcmMessages.map((msg) => ({
@@ -69,6 +71,7 @@ export class NotificationService {
         results.push({
           success: result.success,
           error: result.error,
+          id: result.id,
         });
       });
 
@@ -79,43 +82,68 @@ export class NotificationService {
       allInvalidTokens.push(...fcmResult.invalidTokens);
     }
 
-    // SMS 전송
-    if (smsMessages.length > 0) {
-      const multiSmsMessages: MultiSmsMessages = {
-        messages: smsMessages.map((msg) => ({
-          id: msg.id,
-          phone: msg.phone!,
-          title: (msg.title ?? school.name) as string | undefined,
-          body: msg.body,
-        })),
-        type: data.type,
-        schoolId: data.schoolId,
-        role: data.role,
-      };
-
-      const smsResult =
-        await this.aligoService.sendMultipleMessagesToMultipleDestinations(
-          multiSmsMessages,
-          school.phone,
-        );
-
-      smsResult.results.forEach((result) => {
-        results.push({
-          success: result.success,
-          error: result.error,
-        });
-      });
-
-      smsSuccessCount = smsResult.successCount;
-      smsFailureCount = smsResult.failureCount;
-    }
-
     // Invalid tokens 일괄 무효화
     if (allInvalidTokens.length > 0) {
       await this.nullifyUserPushTokens(allInvalidTokens);
     }
 
-    if (data.role === 'PARENT') {
+    //? SMS 전송
+    if (school.phone === null || school.messageType === MessageType.FCM) {
+      this.logger.log(
+        `🖐️ ${school.name} phone: ${school.phone}, mode: ${school.messageType}`,
+      );
+      // 모두 실패처리
+      smsMessages.map((msg) => {
+        results.push({
+          success: false,
+          error:
+            school.messageType === MessageType.FCM
+              ? new Error('School activates frugal mode')
+              : new Error('School phone is not set'),
+          id: msg.id,
+        });
+      });
+      smsSuccessCount = 0;
+      smsFailureCount = smsMessages.length;
+    } else {
+      this.logger.log(
+        `🖐️ ${smsMessages.length} sms messages sent from ${school.phone}`,
+      );
+
+      if (smsMessages.length > 0) {
+        const multiSmsMessages: MultiSmsMessages = {
+          messages: smsMessages.map((msg) => ({
+            id: msg.id,
+            phone: msg.phone!,
+            title: (msg.title ?? school.name) as string | undefined,
+            body: msg.body,
+          })),
+          type: data.type,
+          schoolId: data.schoolId,
+          role: data.role,
+        };
+
+        const smsResult =
+          await this.aligoService.sendMultipleMessagesToMultipleDestinations(
+            multiSmsMessages,
+            school.phone,
+          );
+        console.log(`🔥 smsResult: ${JSON.stringify(smsResult)}`);
+
+        smsResult.results.forEach((result) => {
+          results.push({
+            success: result.success,
+            error: result.error,
+            id: result.id,
+          });
+        });
+
+        smsSuccessCount = smsResult.successCount;
+        smsFailureCount = smsResult.failureCount;
+      }
+    }
+
+    if (data.role === 'PARENT' || smsMessages.length > 0) {
       await this.logToFirehose(
         data,
         school,
@@ -171,10 +199,16 @@ export class NotificationService {
         type: data.type, // 파티션 키
         school: `${data.schoolId}`, // 파티션 키
         school_name: school.name, // 학교 이름
-        title: data.messages[0].title, // 첫 번째 메시지의 title
-        body: data.messages[0].body, // 첫 번째 메시지의 body
+        title:
+          data.messages.length > 1
+            ? `${data.messages[0].title} 외 ${data.messages.length - 1}건`
+            : data.messages[0].title, // 첫 번째 메시지의 title
+        body:
+          data.messages.length > 1
+            ? `${data.messages[0].body} 외 ${data.messages.length - 1}건`
+            : data.messages[0].body, // 첫 번째 메시지의 body
         ids: results.map((v) => v.id), // 결과 배열의 id 필드 추출
-        role: 'PARENT', // 항상 PARENT로 고정 (일반 컬럼)
+        role: data.role, // PARENT or INSTRUCTOR (일반 컬럼)
 
         // 시간 기반 파티션 키
         year: formatInTimeZone(now, seoulTimeZone, 'yyyy'),
