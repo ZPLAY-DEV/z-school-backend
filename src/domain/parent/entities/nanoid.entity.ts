@@ -13,7 +13,7 @@ import {
 } from 'typeorm';
 
 @Entity('nanoids')
-@Unique(['parentId', 'target', 'targetArgs'])
+@Unique(['parentId', 'page', 'args'])
 export class NanoId {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
@@ -37,11 +37,11 @@ export class NanoId {
 
   @ApiProperty({ description: '🈵 routing 정보' })
   @Column({ type: 'varchar', nullable: true })
-  target: string;
+  page: string;
 
   @ApiProperty({ description: '🈵 routing 부가 args 정보' })
   @Column({ type: 'varchar', nullable: true })
-  targetArgs: string;
+  args: string;
 
   // ------------------------------------------------------------------------ //
 

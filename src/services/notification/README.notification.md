@@ -4,25 +4,10 @@ NotificationService는 **책임 분리 원칙**에 따라 FCM/SMS/Mixed 전송 �
 
 ## 📨 알림 전송 메서드들
 
-### FCM 전용 메서드
-1. **`sendFcmMessage()`** - 단일 FCM 푸시 알림
-2. **`broadcastFcmMessage()`** - FCM 동일 메시지 대량 발송
-3. **`sendFcmMessages()`** - FCM 개별 메시지 대량 발송
-
-### SMS 전용 메서드  
-4. **`sendSmsMessage()`** - 단일 SMS 발송
-5. **`broadcastSmsMessage()`** - SMS 동일 메시지 대량 발송
-6. **`sendSmsMessages()`** - SMS 개별 메시지 대량 발송
-
 ### 하이브리드 메서드
-7. **`sendMixedMessages()`** - FCM/SMS 혼합 개별 메시지 발송
+1. **`send()`** - FCM/SMS 혼합 메시지 발송
 
 ## 🚀 책임 분리 아키텍처
-
-각 메서드는 명확한 책임을 가집니다:
-- **FCM 메서드**: `token` 정보만 처리, 푸시 알림 전용
-- **SMS 메서드**: `phone` 정보만 처리, 문자 메시지 전용  
-- **Mixed 메서드**: `token`과 `phone` 모두 처리, 지능적 라우팅
 
 모든 알림 데이터는 S3 저장을 위해 AWS Firehose에 로깅됩니다.
 
@@ -49,201 +34,38 @@ export class YourModule {}
 
 ## 📚 사용법
 
-### 1. FCM 전용 메서드 사용법
-
-#### 단일 FCM 푸시 알림
-```typescript
-import { NotificationService } from 'src/services/notification/notification.service';
-
-@Injectable()
-export class YourService {
-  constructor(
-    private readonly notificationService: NotificationService,
-  ) {}
-
-  async sendSingleFcm() {
-    await this.notificationService.sendFcmMessage({
-      // TokenPair
-      id: 1,
-      token: "fcm_device_token_here",
-      // MessageBody
-      title: "중요 공지",
-      body: "새로운 메시지가 도착했습니다",
-      // FcmData  
-      role: "PARENT",
-      target: "announcements",
-      targetArgs: "announcement-123",
-      // PartitioningMeta
-      type: "ping.class",
-      school: "1",
-      role: "PARENT"
-    });
-  }
-}
-```
-
-#### FCM 동일 메시지 대량 발송
-```typescript
-async sendBulkFcm() {
-  await this.notificationService.broadcastFcmMessage({
-    // 토큰 배열 (TokenPair[])
-    tokenPairs: [
-      { id: 1, token: "token1" },
-      { id: 2, token: "token2" },
-      { id: 3, token: "token3" }
-    ],
-    // MessageBody (모든 대상에게 동일한 메시지)
-    title: "전체 공지",
-    body: "모든 부모님께 드리는 중요한 공지사항입니다",
-    // FcmData
-    role: "PARENT", 
-    target: "notices",
-    targetArgs: "notice-456",
-    // PartitioningMeta
-    type: "letter.notice",
-    school: "1",
-    role: "PARENT"
-  });
-}
-```
-
-#### FCM 개별 메시지 대량 발송
-```typescript
-async sendIndividualFcm() {
-  await this.notificationService.sendFcmMessages({
-    // 개별 메시지 배열
-    messages: [
-      {
-        id: 1, 
-        token: "token1",
-        title: "김철수 어머님께",
-        body: "철수 학생의 오늘 출결 현황입니다",
-        role: "PARENT",
-        target: "student-detail",
-        targetArgs: "student-123"
-      },
-      {
-        id: 2,
-        token: "token2", 
-        title: "이영희 아버님께",
-        body: "영희 학생의 오늘 출결 현황입니다",
-        role: "PARENT",
-        target: "student-detail", 
-        targetArgs: "student-124"
-      }
-    ],
-    // PartitioningMeta
-    type: "letter.report",
-    school: "1", 
-    role: "PARENT"
-  });
-}
-```
-
-### 2. SMS 전용 메서드 사용법
-
-#### 단일 SMS 발송
-```typescript
-async sendSingleSms() {
-  await this.notificationService.sendSmsMessage({
-    // PhonePair
-    id: 1,
-    phone: "01012345678",
-    // MessageBody
-    title: "긴급 안내", 
-    body: "학교에서 중요한 안내드립니다",
-    // PartitioningMeta
-    type: "ping.emergency",
-    school: "1",
-    role: "PARENT"
-  });
-}
-```
-
-#### SMS 동일 메시지 대량 발송
-```typescript
-async sendBulkSms() {
-  await this.notificationService.broadcastSmsMessage({
-    // 전화번호 배열 (PhonePair[])
-    phonePairs: [
-      { id: 1, phone: "01011111111" },
-      { id: 2, phone: "01022222222" },
-      { id: 3, phone: "01033333333" }
-    ],
-    // MessageBody (모든 대상에게 동일한 메시지)
-    title: "급식 안내",
-    body: "내일 급식 메뉴는 김치찌개입니다", 
-    // PartitioningMeta
-    type: "letter.meal",
-    school: "1",
-    role: "PARENT"
-  });
-}
-```
-
-#### SMS 개별 메시지 대량 발송  
-```typescript
-async sendIndividualSms() {
-  await this.notificationService.sendSmsMessages({
-    // 개별 메시지 배열
-    messages: [
-      {
-        id: 1,
-        phone: "01011111111",
-        title: "철수 어머님께",
-        body: "철수 학생 귀가 완료했습니다"
-      },
-      {
-        id: 2, 
-        phone: "01022222222",
-        title: "영희 아버님께",
-        body: "영희 학생 귀가 완료했습니다"
-      }
-    ],
-    // PartitioningMeta  
-    type: "ping.exit",
-    school: "1",
-    role: "PARENT"
-  });
-}
-```
-
-### 3. 하이브리드 메서드 (Mixed) 사용법
+### NotificationService.send() 사용법
 
 #### FCM/SMS 혼합 개별 메시지 발송
 ```typescript
-async sendMixedMessages() {
-  await this.notificationService.sendMixedMessages({
-    // 혼합 메시지 배열 (MixedPair)
-    messages: [
-      {
-        // SMS로 발송될 사용자
-        id: 1,
-        token: "aaaaaaaaaaa",
-        phone: "01011110000", // phone도 있지만 token 우선
-        title: "첫째아들용",
-        body: "2학년 수업준비물 봐주세요.",
-        role: "PARENT",
-        target: "dispatches",
-        targetArgs: "dispatchId=1&studentId=1000" // postingId => nanoid xxxxxxxxx
-      },
-      {
-        // SMS로 발송될 사용자
-        id: 1,
-        token: "aaaaaaaaaaa",
-        phone: "01011110000",
-        title: "둘째아들용", 
-        body: "1학년 수업준비물 봐주세요.",
-        role: "PARENT",
-        target: "dispatches",
-        targetArgs: "dispatchId=2&studentId=2000" // postingId => nanoid yyyyyyyy
-      },
-    ],
-    // PartitioningMeta
-    type: "ping.class", 
-    school: "1",
-    role: "INSTRUCTOR"
-  });
+async send() {
+  await this.notificationService.send(
+  {
+    "schoolId": 1,
+    "type": "DISPATCH_NEWS",
+    "role": "PARENT",
+    "messages": [
+        {
+            "id": 1,
+            "token": "c0pLM7WOQzahcC8609mxeN:APA91bEAsrk31P8iPFM7grcP5SHKbZcF6VGJrveCw4jbSt-KbLEnTBABw4aqNQfeupqFFdKI22r9JsuhoVY5t-OnWdDYnwZ5PLeAZiQje01pU-eDn-dO2J8",
+            "phone": "01094867415",
+            "body": "방송이 시작했습니다. https://youtube.com",
+            "role": "PARENT",
+            "page": "news",
+            "args": "newsId=1&parentId=1"
+        },
+        {
+            "id": 1,
+            "token": null,
+            "phone": "01094867415",
+            "body": "드라마가 시작했습니다. https://netflix.com",
+            "role": "PARENT",
+            "page": "news",
+            "args": "newsId=2&parentId=1"
+        }
+      ]
+    }
+  );
 }
 ```
 
@@ -265,120 +87,6 @@ async sendMixedMessages() {
 - `target`: FCM 데이터에 포함할 대상 페이지/섹션 (선택사항)
 - `targetArgs`: FCM 데이터에 포함할 대상 ID (선택사항)
 
-### FCM 메서드 파라미터
-
-#### `SingleFcmMessage`
-```typescript
-{
-  // TokenPair
-  id: number;           // 사용자 ID (로깅용)
-  token: string;        // FCM 토큰
-  
-  // MessageBody
-  title?: string;       // 알림 제목
-  body: string;         // 알림 내용
-  
-  // FcmData
-  role: string;         // PARENT 또는 INSTRUCTOR
-  target?: string;      // 클라이언트 라우팅용
-  targetArgs?: string;  // 클라이언트 라우팅 파라미터
-  
-  // PartitioningMeta
-  type: string;         // 메시지 타입
-  school: string;       // 학교 ID
-  role: string;         // 사용자 역할
-}
-```
-
-#### `BroadcastFcmMessage`
-```typescript
-{
-  // TokenPair 배열
-  tokenPairs: Array<{
-    id: number;         // 사용자 ID
-    token: string;      // FCM 토큰
-  }>;
-  
-  // 나머지는 SingleFcmMessage와 동일 (배열 제외)
-  // MessageBody + FcmData + PartitioningMeta
-}
-```
-
-#### `MultiFcmMessages` 
-```typescript
-{
-  // 개별 메시지 배열
-  messages: Array<{
-    id: number;         // 사용자 ID
-    token: string;      // FCM 토큰
-    title?: string;     // 개별 제목
-    body: string;       // 개별 내용
-    role: string;       // 개별 역할
-    target?: string;    // 개별 라우팅
-    targetArgs?: string; // 개별 라우팅 파라미터
-  }>;
-  
-  // PartitioningMeta (공통)
-  type: string;
-  school: string;
-  role: string;
-}
-```
-
-### SMS 메서드 파라미터
-
-#### `SingleSmsMessage`
-```typescript
-{
-  // PhonePair
-  id: number;           // 사용자 ID (로깅용)
-  phone: string;        // 전화번호
-  
-  // MessageBody + PartitioningMeta
-  title?: string;
-  body: string;
-  type: string;
-  school: string;
-  role: string;
-}
-```
-
-#### `BroadcastSmsMessage`
-```typescript
-{
-  // PhonePair 배열
-  phonePairs: Array<{
-    id: number;         // 사용자 ID  
-    phone: string;      // 전화번호
-  }>;
-  
-  // MessageBody + PartitioningMeta
-  title?: string;
-  body: string;
-  type: string;
-  school: string;
-  role: string;
-}
-```
-
-#### `MultiSmsMessages`
-```typescript
-{
-  // 개별 메시지 배열
-  messages: Array<{
-    id: number;         // 사용자 ID
-    phone: string;      // 전화번호
-    title?: string;     // 개별 제목
-    body: string;       // 개별 내용
-  }>;
-  
-  // PartitioningMeta (공통)
-  type: string;
-  school: string;
-  role: string;
-}
-```
-
 ### Mixed 메서드 파라미터
 
 #### `MultiMixedMessages`
@@ -392,10 +100,9 @@ async sendMixedMessages() {
     title?: string;     // 개별 제목
     body: string;       // 개별 내용
     role: string;       // 개별 역할
-    target?: string;    // FCM 라우팅 (FCM인 경우만)
-    targetArgs?: string; // FCM 라우팅 파라미터
+    page?: string;    // FCM 라우팅 (FCM인 경우만)
+    args?: string; // FCM 라우팅 파라미터
   }>;
-  
   // PartitioningMeta (공통)
   type: string;
   school: string;
@@ -408,8 +115,9 @@ async sendMixedMessages() {
 푸시 알림 클릭 시 앱 내비게이션을 위한 데이터:
 ```json
 {
-  "page": "announcements",        // 이동할 화면
-  "args": "{\"role\":\"PARENT\",\"targetArgs\":\"123\"}"  // 화면에 전달할 파라미터
+  "role": "PARENT",
+  "page": "announcements", // 이동할 페이지
+  "args": "123"            // 페이지에서 사용할 파라미터
 }
 ```
 

@@ -44,19 +44,19 @@ export class ParentNanoIdService {
         parentId: dto.parentId,
         nanoid: generatedNanoId,
         phone: parent.phone,
-        target: dto.target,
-        targetArgs: dto.targetArgs,
+        page: dto.page,
+        args: dto.args,
         expiresAt: expiresAt,
       },
-      ['parentId', 'target', 'targetArgs'],
+      ['parentId', 'page', 'args'],
     );
 
     // upsert 후 결과 조회 시 unique constraint 조합으로 정확히 조회
     const savedNanoId = await this.nanoIdRepository.findOne({
       where: {
         parentId: dto.parentId,
-        target: dto.target,
-        targetArgs: dto.targetArgs,
+        page: dto.page,
+        args: dto.args,
       },
     });
 
