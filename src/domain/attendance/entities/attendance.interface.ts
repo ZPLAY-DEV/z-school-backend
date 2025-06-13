@@ -13,13 +13,7 @@ export interface IAttendance extends IAttendanceKey {
   start?: string; // e.g. "14:00"
   end?: string; // e.g. "14:40"
   duration?: number; // e.g. 40
-  status?:
-    | 'PENDING'
-    | 'PRESENT'
-    | 'ABSENT'
-    | 'LATE'
-    | 'EXCUSED_ABSENT'
-    | 'EXCUSED_LATE';
+  status?: 'PENDING' | 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED_ABSENT';
   parentNote?: string;
   schoolNote?: string;
   isRead?: boolean;

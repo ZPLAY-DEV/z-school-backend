@@ -116,8 +116,7 @@ export class GroupAttendanceService {
       .filter(
         (v) =>
           v.status === AttendanceStatus.PRESENT ||
-          v.status === AttendanceStatus.LATE ||
-          v.status === AttendanceStatus.EXCUSED_LATE,
+          v.status === AttendanceStatus.LATE,
       )
       .map((v) => v.studentId);
     students.filter((v) => studentIds.includes(v.id));
