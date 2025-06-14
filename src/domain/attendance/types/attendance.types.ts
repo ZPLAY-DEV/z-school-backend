@@ -1,3 +1,4 @@
+import { AttendanceStatus } from 'src/common/enums';
 import { IAttendanceCore } from 'src/domain/attendance/entities/attendance.interface';
 
 export type WriteRequest = {
@@ -15,10 +16,11 @@ export type DeleteRequest = {
   };
 };
 
-export interface BatchResult {
-  total: number;
-  failedBatches: number;
-}
+export type AttendanceStatusRequest = {
+  groupKey: string;
+  dailyStudentKey: string;
+  status: AttendanceStatus;
+};
 
 export interface AttendanceReportItem {
   date: string;

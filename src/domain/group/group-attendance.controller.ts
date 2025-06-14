@@ -12,6 +12,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
+import { AttendanceStatusDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import { IAttendance } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
@@ -39,22 +40,22 @@ export class GroupAttendanceController {
 
   @StartAttendanceDocs()
   @HttpCode(200)
-  @Post(':groupId/attendances/:date/start')
+  @Post(':groupId/attendances/start')
   async start(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Param('date') date: string,
+    @Body() dtos: AttendanceStatusDto[],
   ): Promise<number> {
-    return await this.groupAttendancesService.notifyStart(groupId, date);
+    return await this.groupAttendancesService.notifyStart(groupId, dtos);
   }
 
   @EndAttendanceDocs()
   @HttpCode(200)
-  @Post(':groupId/attendances/:date/end')
+  @Post(':groupId/attendances/end')
   async end(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Param('date') date: string,
+    @Body() dtos: AttendanceStatusDto[],
   ): Promise<number> {
-    return await this.groupAttendancesService.notifyEnd(groupId, date);
+    return await this.groupAttendancesService.notifyEnd(groupId, dtos);
   }
 
   @UpsertAttendanceDocs()
