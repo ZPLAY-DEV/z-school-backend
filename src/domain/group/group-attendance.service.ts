@@ -146,17 +146,15 @@ export class GroupAttendanceService {
   //? ---------------------------------------------------------------------- ?//
 
   async upsert(
-    groupId: number,
     date: string, //! e.g. "2025-06-08" <- 하이픈 반드시 포함
-    studentId: number,
     dto: UpdateAttendanceDto,
   ): Promise<IAttendance> {
     const group = await this.groupRepository.findOneOrFail({
-      where: { id: groupId },
+      where: { id: dto.groupId },
       relations: ['lesson', 'schooldays'],
     });
     const student = await this.studentRepository.findOneOrFail({
-      where: { id: studentId },
+      where: { id: dto.studentId },
     });
     const schoolday = group.schooldays.find(
       (v) =>

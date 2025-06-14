@@ -1,22 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { EnrollmentRule } from 'src/common/enums';
+import { PickRule } from 'src/common/enums';
 import { ITimeRange } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
-  AfterLoad,
-  Column,
-  CreateDateColumn,
-  DeleteDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  Unique,
-  UpdateDateColumn,
+    AfterLoad,
+    Column,
+    CreateDateColumn,
+    DeleteDateColumn,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    Unique,
+    UpdateDateColumn,
 } from 'typeorm';
 
 //? 학교 수강신청 리스트 페이지에서 보여주는 아이템.
@@ -68,14 +68,14 @@ export class Offering {
 
   @ApiProperty({
     description: '수강신청 규칙 (enum)',
-    enum: EnrollmentRule,
+    enum: PickRule,
   })
   @Column({
     type: 'enum',
-    enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST,
+    enum: PickRule,
+    default: PickRule.FIRST,
   })
-  enrollmentRule: EnrollmentRule;
+  pickRule: PickRule;
 
   @ApiProperty({
     description: '수업 시간 정보 (could be multiple)',

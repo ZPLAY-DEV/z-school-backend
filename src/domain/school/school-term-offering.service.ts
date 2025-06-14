@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-  FilterOperator,
-  paginate,
-  Paginated,
-  PaginateQuery,
+    FilterOperator,
+    paginate,
+    Paginated,
+    PaginateQuery,
 } from 'nestjs-paginate';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -98,7 +98,7 @@ export class SchoolTermOfferingService {
       searchableColumns: ['lessonName', 'groupName'],
       defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
-        enrollmentRule: [FilterOperator.EQ, FilterOperator.IN],
+        pickRule: [FilterOperator.EQ, FilterOperator.IN],
         allowedGrades: [FilterOperator.EQ, FilterOperator.IN],
       },
     });

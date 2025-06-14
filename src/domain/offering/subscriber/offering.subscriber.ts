@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EnrollmentRule } from 'src/common/enums';
+import { PickRule } from 'src/common/enums';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import {
@@ -25,7 +25,7 @@ export class OfferingSubscriber implements EntitySubscriberInterface<Offering> {
     const offering = event.entity as Offering;
     // const prev = event.databaseEntity;
 
-    if (offering.enrollmentRule !== EnrollmentRule.FORMER) return;
+    if (offering.pickRule !== PickRule.FORMER) return;
 
     try {
       const termId = await this.findImmediatelyPreviousTermId(

@@ -58,6 +58,7 @@ export class GroupAttendanceController {
     return await this.groupAttendancesService.notifyEnd(groupId, dtos);
   }
 
+  //! assumed each day has only one class by the groupId
   @UpsertAttendanceDocs()
   @HttpCode(200)
   @Post(':groupId/attendances/:date/students/:studentId')
@@ -67,12 +68,11 @@ export class GroupAttendanceController {
     @Param('studentId', ParseIntPipe) studentId: number,
     @Body() dto: UpdateAttendanceDto,
   ): Promise<IAttendance> {
-    return await this.groupAttendancesService.upsert(
+    return await this.groupAttendancesService.upsert(date, {
+      ...dto,
       groupId,
-      date,
       studentId,
-      dto,
-    );
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -86,7 +86,10 @@ export class GroupAttendanceController {
     @Param('date') date: string,
   ): Promise<IAttendance[]> {
     const groupKey = generateGroupKey(groupId);
-    return await this.groupAttendancesService.findByDate(groupKey, date);
+    return await this.groupAttendancesService.findAttendancesByDate(
+      groupKey,
+      date,
+    );
   }
 
   @GetReportDocs()

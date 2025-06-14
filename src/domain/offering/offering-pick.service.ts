@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { format, toZonedTime } from 'date-fns-tz';
-import { BookingStatus, ClassStatus, EnrollmentRule } from 'src/common/enums';
+import { BookingStatus, ClassStatus, PickRule } from 'src/common/enums';
 import { IPickKeys } from 'src/common/interfaces';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
@@ -48,19 +48,19 @@ export class OfferingPickService {
         return { groupId, startedOn };
       });
 
-    if (offering.enrollmentRule === EnrollmentRule.FIRST) {
+    if (offering.pickRule === PickRule.FIRST) {
       selectedStudentIds = await this.pickFirstComeFirstServed(
         offeringId,
         offering.capacity,
         combo,
       );
-    } else if (offering.enrollmentRule === EnrollmentRule.FORMER) {
+    } else if (offering.pickRule === PickRule.FORMER) {
       selectedStudentIds = await this.pickFormerStudentsFirst(
         offeringId,
         offering.capacity,
         combo,
       );
-    } else if (offering.enrollmentRule === EnrollmentRule.RANDOM) {
+    } else if (offering.pickRule === PickRule.RANDOM) {
       selectedStudentIds = await this.pickRandomStudents(
         offeringId,
         offering.capacity,
@@ -81,7 +81,7 @@ export class OfferingPickService {
     //! - to set group.status to ACTIVE
 
     return new ResponsePickDto({
-      enrollmentRule: offering.enrollmentRule,
+      pickRule: offering.pickRule,
       offeringCapacity: offering.capacity,
       studentsEnrolled: selectedStudentIds.length,
       availableSlots:

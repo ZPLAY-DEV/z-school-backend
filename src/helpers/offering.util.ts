@@ -1,11 +1,11 @@
-import { EnrollmentRule } from 'src/common/enums';
+import { PickRule } from 'src/common/enums';
 import { ITimeRange } from 'src/common/interfaces';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import {
-  compressRangeFormat,
-  getBitmasks,
-  getSortedWeekdays,
+    compressRangeFormat,
+    getBitmasks,
+    getSortedWeekdays,
 } from 'src/helpers/parse';
 
 export function makeOfferingsFromLessons(
@@ -39,8 +39,8 @@ export function makeOfferingsFromLessons(
       }
       uniqueCombinations.add(uniqueKey);
 
-      const enrollmentRule =
-        group.capacity === 0 ? EnrollmentRule.ANYONE : EnrollmentRule.FIRST;
+      const pickRule =
+        group.capacity === 0 ? PickRule.ANYONE : PickRule.FIRST;
 
       const offering = new Offering({
         termId,
@@ -51,7 +51,7 @@ export function makeOfferingsFromLessons(
         groupName: group.groupName || `반 #${group.id}`,
         capacity: group.capacity,
         allowedGrades: group.allowedGrades.split(',').map(Number),
-        enrollmentRule,
+        pickRule,
         times: [timeRange],
         bitmasks: [],
         groupIds: [group.id],

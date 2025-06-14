@@ -6,10 +6,10 @@ export * from './calendar-type';
 export * from './category';
 export * from './class-status';
 export * from './document-type';
-export * from './enrollment-rule';
 export * from './gender';
 export * from './ledger-type';
 export * from './permission';
+export * from './pick-rule';
 export * from './platform-type';
 export * from './post-category';
 export * from './region';
@@ -20,3 +20,4 @@ export * from './subsidy-status';
 export * from './subsidy-type';
 export * from './time-unit';
 export * from './weekday';
+

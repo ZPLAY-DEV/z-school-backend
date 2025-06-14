@@ -54,7 +54,7 @@ export class TermController {
     return await this.termService.findById(id, [
       'lessons',
       'lessons.groups',
-      'lessons.groups.instructor',
+      'lessons.groups.sam',
       'offerings',
     ]);
   }
