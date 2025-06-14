@@ -1,9 +1,9 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiQuery,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
@@ -135,7 +135,7 @@ export const FetchAttendancesDocs = () => {
                     'PRESENT',
                     'ABSENT',
                     'LATE',
-                    'EXCUSED_ABSENT',
+                    'EXCUSED',
                   ],
                   example: 'PRESENT',
                   description: '출석 상태',
@@ -323,7 +323,7 @@ export const GetAttendanceDetailDocs = () => {
           },
           status: {
             type: 'string',
-            enum: ['PENDING', 'PRESENT', 'ABSENT', 'LATE', 'EXCUSED_ABSENT'],
+            enum: ['PENDING', 'PRESENT', 'ABSENT', 'LATE', 'EXCUSED'],
             example: 'PRESENT',
             description: '출석 상태',
           },
