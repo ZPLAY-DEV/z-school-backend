@@ -12,5 +12,5 @@ export class AuthParentDto {
 
   @Expose()
   @IsString()
-  pushToken: string | null;
+  phone: string | null;
 }
