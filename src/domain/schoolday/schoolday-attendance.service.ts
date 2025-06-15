@@ -23,8 +23,8 @@ import {
   generateDailyStudentKey,
   generateGroupKey,
 } from 'src/domain/attendance/utils/attendance.utils';
-import { Pick } from 'src/domain/pick/entities/pick.entity';
 import {
+  BuildAttendanceForStudentDto,
   CreateAttendanceResultDto,
   CreateDynamoRecordWithDateDto,
   CreateDynamoRecordWithRangeDto,
@@ -218,7 +218,7 @@ export class SchooldayAttendanceService {
   }
 
   /**
-   * 수업일 데이터로부터 출석부 아이템들을 구축합니다
+   * 수업일 아이템들로부터 출석부 아이템들을 구축합니다
    */
   private buildAttendances(schooldays: Schoolday[]): IAttendance[] {
     const attendances: IAttendance[] = [];
@@ -246,18 +246,19 @@ export class SchooldayAttendanceService {
         continue;
       }
 
-      const attendance = this.buildAttendancesForStudent(
+      const dto: BuildAttendanceForStudentDto = {
         pick,
         localDate,
-        Number(lessonId),
-        lesson?.lessonName,
-        Number(groupId),
-        String(groupName),
-        String(group.start),
-        String(group.end),
-        Number(duration),
+        lessonId,
+        lessonName: lesson?.lessonName,
+        groupId,
+        groupName,
+        start: group.start,
+        end: group.end,
+        duration,
         expires,
-      );
+      };
+      const attendance = this.buildAttendanceForStudent(dto);
 
       attendances.push(attendance);
     }
@@ -278,18 +279,21 @@ export class SchooldayAttendanceService {
   /**
    * 학생 한 명에 대한 출석부 아이템을 구축합니다
    */
-  private buildAttendancesForStudent(
-    pick: Pick,
-    localDate: string,
-    groupId: number,
-    groupName: string,
-    lessonId: number,
-    lessonName: string | undefined,
-    start: string,
-    end: string,
-    duration: number,
-    expires: number,
+  private buildAttendanceForStudent(
+    dto: BuildAttendanceForStudentDto,
   ): IAttendance {
+    const {
+      pick,
+      localDate,
+      lessonId,
+      lessonName,
+      groupId,
+      groupName,
+      start,
+      end,
+      duration,
+      expires,
+    } = dto;
     const groupKey = generateGroupKey(groupId);
     const dailyStudentKey = generateDailyStudentKey(
       localDate,

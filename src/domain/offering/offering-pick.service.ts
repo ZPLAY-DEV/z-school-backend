@@ -1,9 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { format, toZonedTime } from 'date-fns-tz';
-import { BookingStatus, ClassStatus, PickRule } from 'src/common/enums';
+import {
+  BookingStatus,
+  ClassStatus,
+  LimitedPickRule,
+  PickRule,
+} from 'src/common/enums';
 import { IPickKeys } from 'src/common/interfaces';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { formatDateInKST } from 'src/domain/attendance/utils/attendance.utils';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -36,55 +41,69 @@ export class OfferingPickService {
 
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
-      relations: ['lesson', 'lesson.groups', 'lesson.groups.schooldays'],
+      relations: [
+        'term', // to get basicPickRule and extraPickRule
+        'lesson',
+        'lesson.groups',
+        'lesson.groups.schooldays',
+      ],
     });
 
-    const combo: { groupId: number; startedOn: string }[] =
-      offering.lesson.groups?.map((v: Group) => {
-        const groupId = v.id;
-        const { startsAt } = v.schooldays[0];
-        const seoulTime = toZonedTime(startsAt, 'Asia/Seoul');
-        const startedOn = format(seoulTime, 'yyyy-MM-dd');
-        return { groupId, startedOn };
-      });
+    // console.log('🚀 offering', JSON.stringify(offering, null, 2));
+
+    const sameGradeGroups: { groupId: number; startedOn: string }[] =
+      offering.lesson.groups
+        ?.sort(
+          (a, b) =>
+            a.schooldays[0].startsAt.getTime() -
+            b.schooldays[0].startsAt.getTime(),
+        )
+        .filter((v: Group) => offering.groupIds.includes(v.id))
+        .map((v: Group) => {
+          const groupId = v.id;
+          const startedOn = formatDateInKST(v.schooldays[0].startsAt);
+          return { groupId, startedOn };
+        });
+
+    //console.log('🚀 combo', JSON.stringify(sameGradeGroups, null, 2));
 
     if (offering.pickRule === PickRule.FIRST) {
       selectedStudentIds = await this.pickFirstComeFirstServed(
         offeringId,
         offering.capacity,
-        combo,
+        sameGradeGroups,
+        offering.term.extraPickRule,
       );
     } else if (offering.pickRule === PickRule.FORMER) {
       selectedStudentIds = await this.pickFormerStudentsFirst(
         offeringId,
         offering.capacity,
-        combo,
+        sameGradeGroups,
+        offering.term.extraPickRule,
       );
     } else if (offering.pickRule === PickRule.RANDOM) {
       selectedStudentIds = await this.pickRandomStudents(
         offeringId,
         offering.capacity,
-        combo,
+        sameGradeGroups,
+        offering.term.extraPickRule,
       );
     } else {
       selectedStudentIds = await this.pickAnyone(
         offeringId,
         offering.capacity,
-        combo,
+        sameGradeGroups,
+        offering.term.extraPickRule,
       );
     }
 
-    console.log('🚀 picks', selectedStudentIds);
-    //! we still need
-    //! - to save vacancy somewhere
-    //! - to set lesson.status to ACTIVE
-    //! - to set group.status to ACTIVE
+    // console.log('🚀 picks', selectedStudentIds);
 
     return new ResponsePickDto({
       pickRule: offering.pickRule,
-      offeringCapacity: offering.capacity,
-      studentsEnrolled: selectedStudentIds.length,
-      availableSlots:
+      capacity: offering.capacity,
+      filled: selectedStudentIds.length,
+      unfilled:
         offering.capacity - selectedStudentIds.length < 0
           ? 0
           : offering.capacity - selectedStudentIds.length,
@@ -118,17 +137,18 @@ export class OfferingPickService {
   async pickFirstComeFirstServed(
     offeringId: number,
     capacity: number,
-    combo: { groupId: number; startedOn: string }[],
+    sameGradeGroups: { groupId: number; startedOn: string }[],
+    extraPickRule: LimitedPickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
     });
-    const allStudents = bookings.map((v) => v.studentId);
+    const allStudentIds = bookings.map((v) => v.studentId);
     // 선착순이므로 정원 내에서만 학생을 선택
-    const selectedStudentIds = allStudents.slice(0, capacity);
-    // 각 그룹에 동일한 학생을 할당
+    const selectedStudentIds = allStudentIds.slice(0, capacity);
+    // 같은 학년 group 들에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    combo.forEach(({ groupId, startedOn }) => {
+    sameGradeGroups.forEach(({ groupId, startedOn }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
@@ -137,7 +157,7 @@ export class OfferingPickService {
       }));
       items = items.concat(groupItems);
     });
-    const groupIds = combo.map((v) => v.groupId);
+    const groupIds = sameGradeGroups.map((v) => v.groupId);
     // raw query로 upsert 처리
     if (items.length > 0) {
       const values = items
@@ -174,17 +194,18 @@ export class OfferingPickService {
   async pickAnyone(
     offeringId: number,
     capacity: number,
-    combo: { groupId: number; startedOn: string }[],
+    sameGradeGroups: { groupId: number; startedOn: string }[],
+    extraPickRule: LimitedPickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
-      where: { offeringId, status: BookingStatus.ENROLLED },
+      where: { offeringId },
     });
-    const allStudents = bookings.map((v) => v.studentId);
+    const allStudentIds = bookings.map((v) => v.studentId);
     // 정원 제한 없이 전체 학생을 모두 선택
-    const selectedStudentIds = allStudents;
-    // 각 그룹에 동일한 학생을 할당
+    const selectedStudentIds = allStudentIds;
+    // 같은 학년 group 들에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    combo.forEach(({ groupId, startedOn }) => {
+    sameGradeGroups.forEach(({ groupId, startedOn }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
@@ -193,7 +214,7 @@ export class OfferingPickService {
       }));
       items = items.concat(groupItems);
     });
-    const groupIds = combo.map((v) => v.groupId);
+    const groupIds = sameGradeGroups.map((v) => v.groupId);
     // raw query로 upsert 처리
     if (items.length > 0) {
       const values = items
@@ -218,7 +239,6 @@ export class OfferingPickService {
     const lessonIds = [
       ...new Set(groups.map((g) => g.lessonId).filter(Boolean)),
     ];
-
     if (lessonIds.length > 0) {
       await this.lessonRepository.update(lessonIds, {
         status: ClassStatus.ACTIVE,
@@ -231,25 +251,30 @@ export class OfferingPickService {
   async pickRandomStudents(
     offeringId: number,
     capacity: number,
-    combo: { groupId: number; startedOn: string }[],
+    sameGradeGroups: { groupId: number; startedOn: string }[],
+    extraPickRule: LimitedPickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
     });
-    const allStudents = bookings.map((v) => v.studentId);
+    const allStudentIds = bookings.map((v) => v.studentId);
     let selectedStudentIds: number[];
-    if (capacity >= allStudents.length) {
+    if (capacity >= allStudentIds.length) {
       // 1. capacity가 전체 학생 수보다 크거나 같은 경우
-      selectedStudentIds = allStudents;
+      selectedStudentIds = allStudentIds;
     } else {
       // 2. capacity가 전체 학생 수보다 작은 경우
-      selectedStudentIds = [...allStudents]
-        .sort(() => Math.random() - 0.5)
-        .slice(0, capacity);
+      if (extraPickRule === LimitedPickRule.RANDOM) {
+        selectedStudentIds = [...allStudentIds]
+          .sort(() => Math.random() - 0.5)
+          .slice(0, capacity);
+      } else {
+        selectedStudentIds = allStudentIds.slice(0, capacity);
+      }
     }
-    // 각 그룹에 동일한 학생을 할당
+    // 같은 학년 group 들에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    combo.forEach(({ groupId, startedOn }) => {
+    sameGradeGroups.forEach(({ groupId, startedOn }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
@@ -258,7 +283,7 @@ export class OfferingPickService {
       }));
       items = items.concat(groupItems);
     });
-    const groupIds = combo.map((v) => v.groupId);
+    const groupIds = sameGradeGroups.map((v) => v.groupId);
     // raw query로 upsert 처리
     if (items.length > 0) {
       const values = items
@@ -295,7 +320,8 @@ export class OfferingPickService {
   async pickFormerStudentsFirst(
     offeringId: number,
     capacity: number,
-    combo: { groupId: number; startedOn: string }[],
+    sameGradeGroups: { groupId: number; startedOn: string }[],
+    extraPickRule: LimitedPickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
@@ -306,22 +332,39 @@ export class OfferingPickService {
     let selectedStudentIds: number[] = [];
     if (rebookings.length <= capacity) {
       // 1. rebookings 수가 capacity 이하인 경우
-      selectedStudentIds = [
-        ...rebookings.map((v) => v.studentId),
-        ...newbookings
-          .slice(0, capacity - rebookings.length)
-          .map((v) => v.studentId),
-      ];
+      if (extraPickRule === LimitedPickRule.RANDOM) {
+        selectedStudentIds = [
+          ...rebookings.map((v) => v.studentId),
+          ...newbookings
+            .sort(() => Math.random() - 0.5)
+            .slice(0, capacity - rebookings.length)
+            .map((v) => v.studentId),
+        ];
+      } else {
+        selectedStudentIds = [
+          ...rebookings.map((v) => v.studentId),
+          ...newbookings
+            .slice(0, capacity - rebookings.length)
+            .map((v) => v.studentId),
+        ];
+      }
     } else {
       // 2. rebookings 수가 capacity 초과인 경우
-      selectedStudentIds = rebookings
-        .slice(0, capacity)
-        .map((v) => v.studentId);
+      if (extraPickRule === LimitedPickRule.RANDOM) {
+        selectedStudentIds = rebookings
+          .sort(() => Math.random() - 0.5)
+          .slice(0, capacity)
+          .map((v) => v.studentId);
+      } else {
+        selectedStudentIds = rebookings
+          .slice(0, capacity)
+          .map((v) => v.studentId);
+      }
     }
 
     // 각 그룹에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    combo.forEach(({ groupId, startedOn }) => {
+    sameGradeGroups.forEach(({ groupId, startedOn }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
@@ -330,7 +373,7 @@ export class OfferingPickService {
       }));
       items = items.concat(groupItems);
     });
-    const groupIds = combo.map((v) => v.groupId);
+    const groupIds = sameGradeGroups.map((v) => v.groupId);
     // raw query로 upsert 처리
     if (items.length > 0) {
       const values = items
