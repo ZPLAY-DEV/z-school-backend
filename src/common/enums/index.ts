@@ -6,6 +6,7 @@ export * from './calendar-type';
 export * from './category';
 export * from './class-status';
 export * from './document-type';
+export * from './event-status';
 export * from './gender';
 export * from './ledger-type';
 export * from './permission';

@@ -41,6 +41,8 @@ export class AttendanceService {
   ) {}
 
   async init(): Promise<void> {
+    const now = new Date();
+    const ttl = Math.floor(now.getTime() / 1000) + 60 * 60 * 24; // 1 일
     await this.model.create({
       groupKey: generateGroupKey(1),
       dailyStudentKey: generateDailyStudentKey('2025-01-01', 1, '1', '1', 1),
@@ -54,6 +56,7 @@ export class AttendanceService {
       end: '15:00',
       duration: 60,
       status: AttendanceStatus.PENDING,
+      expires: ttl,
     });
   }
 

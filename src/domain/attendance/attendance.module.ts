@@ -7,7 +7,6 @@ import { AttendanceSchema } from 'src/domain/attendance/entities/attendance.sche
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { S3Module } from 'src/services/aws/s3.module';
 
 //! With correct module configuration, the local dynamoDB is populated automatically
 //! as soon as executing any creation method.
@@ -23,7 +22,6 @@ import { S3Module } from 'src/services/aws/s3.module';
         },
       },
     ]),
-    S3Module,
   ],
   providers: [AttendanceService],
   controllers: [AttendanceController],

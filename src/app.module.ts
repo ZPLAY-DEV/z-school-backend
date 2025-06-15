@@ -45,6 +45,8 @@ import { BoardModule } from './domain/board/board.module';
 import { PhoneModule } from './domain/phone/phone.module';
 import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
+import { AttendanceModule } from 'src/domain/attendance/attendance.module';
+import { EventModule } from 'src/domain/event/event.module';
 
 @Module({
   imports: [
@@ -90,10 +92,6 @@ import { UploadModule } from './services/upload/upload.module';
         };
       },
     }),
-
-    /**
-     * DynamoDB를 사용할지 말지 Fix 필요
-     * */
     DynamooseModule.forRoot({
       local:
         process.env.NODE_ENV === 'development'
@@ -110,8 +108,14 @@ import { UploadModule } from './services/upload/upload.module';
         suffix: '_table',
       },
     }),
+    HealthModule,
     RedisModule,
+    SlackModule,
+    UploadModule,
+    AttendanceModule,
+    EventModule,
     AuthModule,
+    BoardModule,
     BookingModule,
     CalendarModule,
     CategoryModule,
@@ -124,20 +128,16 @@ import { UploadModule } from './services/upload/upload.module';
     OfferingModule,
     ParentModule,
     PayoutModule,
+    PhoneModule,
     SamModule,
-    SchoolModule,
     SchooldayModule,
-    SlackModule,
+    SchoolModule,
     StatementModule,
     StudentModule,
     SubsidyModule,
     TermModule,
     TextModule,
     UserModule,
-    UploadModule,
-    HealthModule,
-    PhoneModule,
-    BoardModule,
   ],
   controllers: [AppController],
   providers: [
