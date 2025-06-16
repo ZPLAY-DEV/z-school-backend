@@ -6,6 +6,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Public } from 'src/common/decorators/public.decorator';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import {
   CreateAttendanceResultDto,
@@ -31,7 +32,9 @@ export class SchooldayAttendanceController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  //* CRON JOB 으로 새벽 2시에 호출된다.
   @CreateAttendanceOfSchooldayWithDateDocs()
+  @Public()
   @Post('attendances/date')
   async createWithDate(
     @Body() dto: CreateDynamoRecordWithDateDto,
@@ -40,6 +43,7 @@ export class SchooldayAttendanceController {
   }
 
   @CreateAttendanceOfSchooldayWithPeriodDocs()
+  @Public()
   @Post('attendances/period')
   async createWithPeriod(
     @Body() dto: CreateDynamoRecordWithRangeDto,

@@ -2,10 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
-import { MessageType } from 'src/common/enums/message-type';
-import { Dispatch } from 'src/domain/dispatch/entities/dispatch.entity';
 import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
+import { Dispatch } from 'src/domain/dispatch/entities/dispatch.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Phone } from 'src/domain/phone/entities/phone.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
@@ -108,13 +107,12 @@ export class School {
   @IsString({ each: true })
   promos: string[];
 
-  @ApiProperty({ description: '🈵 메시지 타입' })
+  @ApiProperty({ description: '🈵 절약모드 여부' })
   @Column({
-    type: 'enum',
-    enum: MessageType,
-    default: MessageType.ALL,
+    type: 'boolean',
+    default: false,
   })
-  messageType: MessageType;
+  isFrugal: boolean;
 
   // ------------------------------------------------------------------------ //
 

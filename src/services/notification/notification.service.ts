@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { formatInTimeZone } from 'date-fns-tz';
-import { MessageType } from 'src/common/enums/message-type';
 import { School } from 'src/domain/school/entities/school.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { AligoService } from 'src/services/aligo/aligo.service';
@@ -88,18 +87,17 @@ export class NotificationService {
     }
 
     //? SMS 전송
-    if (school.phone === null || school.messageType === MessageType.FCM) {
+    if (school.phone === null || school.isFrugal) {
       this.logger.log(
-        `🖐️ ${school.name} phone: ${school.phone}, mode: ${school.messageType}`,
+        `🖐️ ${school.name} phone: ${school.phone}, inFrugalMode: ${school.isFrugal}`,
       );
       // 모두 실패처리
       smsMessages.map((msg) => {
         results.push({
           success: false,
-          error:
-            school.messageType === MessageType.FCM
-              ? new Error('School activates frugal mode')
-              : new Error('School phone is not set'),
+          error: school.isFrugal
+            ? new Error('School activates frugal mode')
+            : new Error('School phone is not set'),
           id: msg.id,
         });
       });

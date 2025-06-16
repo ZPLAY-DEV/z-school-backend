@@ -106,6 +106,14 @@ export class Term {
   })
   isOfferingReady: boolean;
 
+  @ApiProperty({ description: '🈳 현재 학기', default: false })
+  @Column({
+    type: 'boolean',
+    default: false,
+    comment: '현재 학기 여부 (현재 학기만 자동으로 출석부가 생성된다.)',
+  })
+  isActive: boolean;
+
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: 'createdAt' })

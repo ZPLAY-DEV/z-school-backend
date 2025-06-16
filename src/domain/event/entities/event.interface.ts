@@ -2,7 +2,7 @@ import { EventStatus } from 'src/common/enums';
 
 export interface IEventKey {
   status: EventStatus; // partition key, e.g. "PENDING" | "SENT" | "FAILED"
-  timestamp: string; // sort key, ISO 8601 UTC format: "2025-05-01T14:00:00Z"
+  timestamp: string; // range key, ISO 8601 UTC format: "2025-05-01T14:00:00Z"
 }
 
 export interface IEvent extends IEventKey {
@@ -12,9 +12,4 @@ export interface IEvent extends IEventKey {
 }
 
 // Cron job related types
-export type CronJobType = 'EVERY_5MINS' | 'EVERYDAY@2AM' | 'EVERYDAY@3AM';
-
-export interface ICronJobEvent extends IEvent {
-  type: CronJobType;
-  executionTime: string; // ISO 8601 UTC: when this should be executed
-}
+// export type CronJobType = 'every_5mins' | 'everyday_at_1am' | 'everyday_at_2am';

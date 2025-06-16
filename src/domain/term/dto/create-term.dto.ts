@@ -81,11 +81,6 @@ export class CreateTermDto {
   @Type(() => Date)
   bookingEnd?: Date;
 
-  @ApiProperty({ description: '시간 중복 허용 여부', default: false })
-  @IsBoolean()
-  @IsOptional()
-  allowTimeOverlap?: boolean;
-
   @ApiProperty({
     description: '기본 선택방식',
     default: PickRule.RANDOM,
@@ -99,8 +94,22 @@ export class CreateTermDto {
       'extra 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
     default: LimitedPickRule.RANDOM,
   })
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   @IsEnum(LimitedPickRule)
   @IsOptional()
   extraPickRule?: LimitedPickRule;
+
+  @ApiProperty({ description: '시간 중복 허용 여부', default: false })
+  @IsBoolean()
+  @IsOptional()
+  allowTimeOverlap?: boolean;
+
+  @ApiProperty({ description: '수강신청 준비 상태', default: false })
+  @IsBoolean()
+  @IsOptional()
+  isOfferingReady?: boolean;
+
+  @ApiProperty({ description: '현재 학기 여부', default: false })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }

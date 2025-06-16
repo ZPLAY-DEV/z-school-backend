@@ -15,7 +15,7 @@ FCM/SMS를 지능적으로 선택하여 각 사용자에게 개별 메시지를 
 3. **발송 불가**: 둘 다 없는 경우 failure로 집계
 
 ### 학교별 SMS 설정 고려
-- **SMS 비활성화**: 학교가 `messageType`을 `FCM`으로 설정한 경우 SMS 발송 불가
+- **SMS 비활성화**: 학교가 `isFrugal`을 `true`로 설정한 경우 SMS 발송 불가
 - **발신번호 미설정**: 학교의 `phone`이 설정되지 않은 경우 SMS 발송 불가
 
 ## 🏗️ 아키텍처 특징
@@ -140,7 +140,7 @@ async sendNotifications() {
 - 성공/실패 개별 추적
 
 ### 3. SMS 발송 (토큰이 없는 경우)
-- 학교 SMS 설정 확인 (`messageType`, `phone`)
+- 학교 SMS 설정 확인 (`phone`, `isFrugal`)
 - AligoService를 통해 배치 발송
 - 학교 발신번호로 SMS 전송
 
@@ -360,7 +360,7 @@ export type NotificationResult = {
 - **병렬 처리**: FCM과 SMS가 동시에 처리되어 빠른 전송
 
 ### 제한사항
-- **학교 SMS 설정**: `messageType`이 `FCM`이면 SMS 발송 불가
+- **학교 SMS 설정**: `isFrugal`이 `true`이면 SMS 발송 불가
 - **발신번호**: 학교의 `phone`이 설정되지 않으면 SMS 발송 불가
 - **토큰 관리**: 무효한 FCM 토큰은 자동으로 DB에서 제거
 - **Firehose 로깅**: PARENT 역할 알림만 로깅되며, 실패해도 알림 발송은 계속됨

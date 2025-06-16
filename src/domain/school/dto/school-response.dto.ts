@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { MessageType } from 'src/common/enums/message-type';
 import { Permission } from 'src/common/enums/permission';
 
 export class SchoolResponseDto {
@@ -69,11 +68,10 @@ export class SchoolResponseDto {
   promos: string[];
 
   @ApiProperty({
-    description: '학교 옵션',
-    enum: MessageType,
-    example: MessageType.ALL,
+    description: '절약모드 여부',
+    example: false,
   })
-  messageType: MessageType;
+  isFrugal: boolean;
 
   @ApiProperty({
     description: '생성된 시기 (ISO 형식의 날짜 문자열)',

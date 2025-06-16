@@ -7,12 +7,12 @@ import {
   ApiOperation,
   ApiParam,
 } from '@nestjs/swagger';
-import { CreateSchoolDto } from '../dto/create-school.dto';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { StatusCodes } from 'http-status-codes';
-import { UpdateSchoolDto } from '../dto/update-school.dto';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
+import { CreateSchoolDto } from '../dto/create-school.dto';
 import { SchoolResponseDto } from '../dto/school-response.dto';
+import { UpdateSchoolDto } from '../dto/update-school.dto';
 import { School } from '../entities/school.entity';
 
 //? ---------------------------------------------------------------------- ?//
@@ -52,7 +52,7 @@ export const UpdateSchoolDocs = () => {
       summary: '✅ 학교 수정',
       description: `
       - 학교를 수정한다.
-      - 학교별 messageType은 최초 생성시 Default로 ALL로 설정되어 있으며, 학교에서 유동적으로 SMS, FCM 메시지 전송 여부를 선택할 수 있다.
+      - 학교별 isFrugal 최초 생성시 false 로 설정되어 있으며, 학교에서 true 로 절약모드를 선택할 수 있다.
       `,
     }),
     ApiParam({
@@ -67,7 +67,7 @@ export const UpdateSchoolDocs = () => {
       examples: {
         example1: {
           value: {
-            messageType: 'SMS',
+            isFrugal: true,
           },
         },
       },

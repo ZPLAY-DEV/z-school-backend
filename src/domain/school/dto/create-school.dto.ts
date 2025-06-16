@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -11,7 +12,6 @@ import {
   Min,
 } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
-import { MessageType } from 'src/common/enums/message-type';
 
 export class CreateSchoolDto {
   @ApiProperty({
@@ -111,13 +111,12 @@ export class CreateSchoolDto {
   promos?: string[];
 
   @ApiProperty({
-    description: '🈳 학교에서 지정한 발송 메시지 타입 ( ALL, SMS, FCM )',
-    example: MessageType.ALL,
-    enum: MessageType,
-    default: MessageType.ALL,
+    description: '🈳 절약모드 여부',
+    example: false,
+    default: false,
     required: false,
   })
-  @IsEnum(MessageType)
+  @IsBoolean()
   @IsOptional()
-  messageType?: MessageType;
+  isFrugal?: boolean;
 }
