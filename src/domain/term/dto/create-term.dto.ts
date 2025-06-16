@@ -106,11 +106,19 @@ export class CreateTermDto {
   allowTimeOverlap?: boolean;
 
   @ApiProperty({
-    description:
-      '2차 default 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
+    description: 'default 선택방식. 선착순이냐 아니면 추첨이냐? 둘중 하나',
     default: PickRule.RANDOM,
   })
   @IsEnum(PickRule)
   @IsOptional()
   defaultPickRule?: PickRule;
+
+  @ApiProperty({
+    description:
+      'extra 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
+    default: PickRule.RANDOM,
+  })
+  @IsEnum(PickRule)
+  @IsOptional()
+  extraPickRule?: PickRule;
 }

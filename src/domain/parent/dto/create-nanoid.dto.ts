@@ -29,13 +29,13 @@ export class CreateNanoIdDto {
   validity?: string;
 
   @ApiPropertyOptional({
-    description: '🈳 라우팅 정보',
+    description: '🈳 라우팅 page 정보',
     required: false,
     type: String,
   })
   @IsString()
   @IsOptional()
-  target?: string;
+  page?: string;
 
   @ApiPropertyOptional({
     description: '🈳 라우팅 부가 args 정보',
@@ -44,5 +44,5 @@ export class CreateNanoIdDto {
   })
   @IsString()
   @IsOptional()
-  targetArgs?: string;
+  args?: string;
 }

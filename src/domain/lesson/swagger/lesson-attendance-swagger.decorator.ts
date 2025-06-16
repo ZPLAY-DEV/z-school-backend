@@ -93,14 +93,7 @@ export const FindAttendanceByDateDocs = () => {
             },
             status: {
               type: 'string',
-              enum: [
-                'PENDING',
-                'PRESENT',
-                'ABSENT',
-                'LATE',
-                'EXCUSED_ABSENT',
-                'EXCUSED_LATE',
-              ],
+              enum: ['PENDING', 'PRESENT', 'ABSENT', 'LATE', 'EXCUSED_ABSENT'],
               description: '출석 상태',
               example: 'PRESENT',
             },
@@ -218,7 +211,6 @@ export const GetReportDocs = () => {
                       'ABSENT',
                       'LATE',
                       'EXCUSED_ABSENT',
-                      'EXCUSED_LATE',
                     ],
                     description: '출석 상태',
                     example: 'PRESENT',

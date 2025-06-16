@@ -1,158 +1,267 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as firebaseAdmin from 'firebase-admin';
+import { BatchResponse } from 'firebase-admin/lib/messaging/messaging-api';
+import { chunk } from 'src/helpers/array';
+import { delay } from 'src/helpers/time';
 import {
-  BatchResponse,
-  Notification,
-  TokenMessage,
-} from 'firebase-admin/lib/messaging/messaging-api';
-import { AWS_SQS_CLIENT } from 'src/common/constants';
-import { IFcmData } from 'src/common/interfaces';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { SqsService } from 'src/services/aws/sqs.service';
+  BroadcastFcmMessage,
+  MultiFcmMessages,
+  NotificationResult,
+  SingleFcmInput,
+  SingleFcmMessage,
+} from 'src/services/notification/types';
 
-interface FcmBatchResult {
+export interface FcmBatchResult {
+  results: NotificationResult[];
+  invalidTokens: string[];
   successCount: number;
   failureCount: number;
-  failedTokens?: string[];
-  invalidTokens?: string[];
 }
+
+// 타입 정의 추가
 
 @Injectable()
 export class FcmService {
   private readonly logger = new Logger(FcmService.name);
-  private readonly MAX_TOKENS_PER_BATCH = 500;
-  private readonly MAX_RETRY_ATTEMPTS = 3;
-  private readonly RETRY_DELAY_MS = 1000;
 
-  constructor(
-    @Inject(AWS_SQS_CLIENT)
-    private readonly sqsClient: SqsService,
-  ) {}
-
-  /**
-   * Send notification to a specific device token
-   */
-  async sendToToken(message: TokenMessage): Promise<string> {
+  async sendSingleMessageToSingleDestination(
+    data: SingleFcmMessage,
+  ): Promise<FcmBatchResult> {
     try {
-      this.validateTokenMessage(message);
-      const result = await firebaseAdmin.messaging().send(message);
-      this.logger.log(`Message sent successfully to token: ${message.token}`);
-      return result;
-    } catch (error) {
-      await this.handleFcmError(error, 'sendToToken', {
-        token: message.token,
+      await firebaseAdmin.messaging().send({
+        token: data.token,
+        ...this.buildFirebaseMessage(
+          { title: data.title, body: data.body },
+          { role: data.role, page: data.page, args: data.args },
+        ),
       });
-      throw error;
+
+      return {
+        results: [{ success: true, id: data.id }],
+        invalidTokens: [],
+        successCount: 1,
+        failureCount: 0,
+      };
+    } catch (error) {
+      const isInvalid = this.isInvalidTokenError(error);
+      return {
+        results: [
+          {
+            success: false,
+            error: error instanceof Error ? error : new Error(String(error)),
+          },
+        ],
+        invalidTokens: isInvalid ? [data.token] : [],
+        successCount: 0,
+        failureCount: 1,
+      };
     }
   }
 
-  /**
-   * Send notification to multiple tokens with automatic batching and retry
-   */
-  async sendMulticast(
-    tokens: string[],
-    notification: Notification,
-    data: IFcmData,
+  async sendSingleMessageToMultipleDestinations(
+    data: BroadcastFcmMessage,
   ): Promise<FcmBatchResult> {
-    if (!tokens || tokens.length === 0) {
-      throw new BadRequestException('No tokens provided');
-    }
-
-    this.validateNotification(notification);
-    this.validateData(data);
-
+    const tokens = data.tokenPairs.map((pair) => pair.token);
     const validTokens = tokens.filter((v) => v && v.trim());
-    if (validTokens.length === 0) {
-      throw new BadRequestException('No valid tokens provided');
-    }
 
     let totalSuccessCount = 0;
     let totalFailureCount = 0;
-    const failedTokens: string[] = [];
+    const results: NotificationResult[] = [];
     const invalidTokens: string[] = [];
 
-    const tokenBatches = this.chunkArray(
-      validTokens,
-      this.MAX_TOKENS_PER_BATCH,
-    );
+    const tokenBatches = chunk(validTokens, 500);
 
-    for (let i = 0; i < tokenBatches.length; i++) {
-      const batch = tokenBatches[i];
-      this.logger.log(
-        `Processing batch ${i + 1}/${tokenBatches.length} with ${batch.length} tokens`,
-      );
-
+    for (const [index, batch] of tokenBatches.entries()) {
       try {
-        const payload = this.buildMulticastMessage(batch, notification, data);
+        const payload = this.buildMulticastMessage(
+          batch,
+          { title: data.title, body: data.body },
+          { role: data.role, page: data.page, args: data.args },
+        );
         const result = await this.sendBatchWithRetry(payload);
 
         totalSuccessCount += result.successCount;
         totalFailureCount += result.failureCount;
 
-        // Collect failed and invalid tokens
+        // Collect invalid tokens
         result.responses.forEach((response, index) => {
+          const token = batch[index];
+          const tokenPair = data.tokenPairs.find(
+            (pair) => pair.token === token,
+          );
+
           if (!response.success) {
-            const token = batch[index];
             const errorCode = response.error?.code;
 
             if (this.isInvalidToken(errorCode)) {
               invalidTokens.push(token);
-              // Send SQS message to handle invalid token cleanup
-              this.handleInvalidToken(token).catch((error) => {
-                this.logger.warn(
-                  `Failed to send invalid token notification for ${token}`,
-                  error,
-                );
-              });
-            } else {
-              failedTokens.push(token);
             }
           }
+
+          const notificationResult: NotificationResult = {
+            success: response.success,
+            error: response.error
+              ? new Error(response.error.message || 'FCM send failed')
+              : undefined,
+            id: tokenPair?.id,
+          };
+
+          results.push(notificationResult);
         });
-        // Small delay between batches to avoid rate limiting
-        if (i < tokenBatches.length - 1) {
-          await this.delay(100);
+
+        if (index < tokenBatches.length - 1) {
+          // delay between batches to avoid rate limiting
+          await delay(100);
         }
       } catch (error) {
-        this.logger.error(`Batch ${i + 1} failed completely:`, error);
         totalFailureCount += batch.length;
-        failedTokens.push(...batch);
+
+        // Add failed results for each token in the batch
+        batch.forEach((token) => {
+          const tokenPair = data.tokenPairs.find(
+            (pair) => pair.token === token,
+          );
+          results.push({
+            success: false,
+            error: error instanceof Error ? error : new Error(String(error)),
+            id: tokenPair?.id,
+          });
+        });
       }
     }
 
-    const result: FcmBatchResult = {
+    return {
+      results,
+      invalidTokens,
       successCount: totalSuccessCount,
       failureCount: totalFailureCount,
-      failedTokens: failedTokens.length > 0 ? failedTokens : undefined,
-      invalidTokens: invalidTokens.length > 0 ? invalidTokens : undefined,
     };
-
-    this.logger.log(
-      `Multicast completed - Success: ${totalSuccessCount}, Failure: ${totalFailureCount}`,
-    );
-
-    if (invalidTokens.length > 0) {
-      this.logger.warn(
-        `Found ${invalidTokens.length} invalid tokens that will be cleaned up`,
-      );
-    }
-
-    return result;
   }
 
-  // Private helper methods
+  async sendMultipleMessagesToMultipleDestinations(
+    data: MultiFcmMessages,
+  ): Promise<FcmBatchResult> {
+    const results: NotificationResult[] = [];
+    const invalidTokens: string[] = [];
+    let successCount = 0;
+    let failureCount = 0;
+
+    // Group messages by their content (title, body, role, page, args)
+    const messageGroups = this.groupMessagesByContent(data.messages);
+
+    for (const messages of messageGroups) {
+      if (messages.length === 1) {
+        // Exclusive message
+        const message = messages[0]; // the only item
+        const singleMessage: SingleFcmMessage = {
+          id: message.id,
+          token: message.token,
+          title: message.title,
+          body: message.body,
+          role: message.role,
+          page: message.page,
+          args: message.args,
+          type: data.type,
+          schoolId: data.schoolId,
+        };
+
+        const result =
+          await this.sendSingleMessageToSingleDestination(singleMessage);
+
+        results.push(...result.results);
+        invalidTokens.push(...result.invalidTokens);
+        successCount += result.successCount;
+        failureCount += result.failureCount;
+      } else {
+        // Multiple messages with same content
+        const tokenPairs = messages
+          .filter((message) => message.id !== undefined)
+          .map((message) => ({
+            id: message.id,
+            token: message.token,
+          }));
+
+        // Use first message as representative for shared content
+        const firstMessage = messages[0];
+        const broadcastMessage: BroadcastFcmMessage = {
+          tokenPairs,
+          title: firstMessage.title,
+          body: firstMessage.body,
+          role: firstMessage.role,
+          page: firstMessage.page,
+          args: firstMessage.args,
+          type: data.type,
+          schoolId: data.schoolId,
+        };
+
+        const result =
+          await this.sendSingleMessageToMultipleDestinations(broadcastMessage);
+
+        results.push(...result.results);
+        invalidTokens.push(...result.invalidTokens);
+        successCount += result.successCount;
+        failureCount += result.failureCount;
+      }
+    }
+
+    return {
+      results,
+      invalidTokens,
+      successCount,
+      failureCount,
+    };
+  }
+
+  /*
+  [
+    [ // 그룹 1: title/body/role/page/args 동일
+      { id: 1, token: 'tokenA', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '123' },
+      { id: 2, token: 'tokenB', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '123' },
+    ],
+    [ // 그룹 2: 다른 title/body/role
+      { id: 3, token: 'tokenC', title: 'Alert', body: 'Another message', role: 'INSTRUCTOR' },
+    ],
+    [ // 그룹 3: args 다름
+      { id: 4, token: 'tokenD', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '456' },
+    ]
+  ]
+  */
+  private groupMessagesByContent(
+    messages: SingleFcmInput[],
+  ): SingleFcmInput[][] {
+    const messageGroups = new Map<string, SingleFcmInput[]>();
+
+    for (const message of messages) {
+      const contentKey = this.createContentKey(message);
+
+      if (!messageGroups.has(contentKey)) {
+        messageGroups.set(contentKey, []);
+      }
+      messageGroups.get(contentKey)!.push(message);
+    }
+
+    return Array.from(messageGroups.values());
+  }
+
+  /**
+   * 메시지의 내용(title, body, role, page, args)을 기반으로 그룹화 키를 생성
+   */
+  private createContentKey(message: SingleFcmInput): string {
+    return [
+      message.title || '',
+      message.body,
+      message.role,
+      message.page || '',
+      message.args || '',
+    ].join('|');
+  }
 
   private async sendBatchWithRetry(
     payload: firebaseAdmin.messaging.MulticastMessage,
   ): Promise<BatchResponse> {
     let lastError: any;
 
-    for (let attempt = 1; attempt <= this.MAX_RETRY_ATTEMPTS; attempt++) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         return await firebaseAdmin.messaging().sendEachForMulticast(payload);
       } catch (error) {
@@ -162,8 +271,8 @@ export class FcmService {
           error.message,
         );
 
-        if (attempt < this.MAX_RETRY_ATTEMPTS) {
-          await this.delay(this.RETRY_DELAY_MS * attempt);
+        if (attempt < 3) {
+          await delay(100 * attempt);
         }
       }
     }
@@ -171,22 +280,29 @@ export class FcmService {
     throw lastError;
   }
 
-  private buildMulticastMessage(
-    tokens: string[],
-    notification: Notification,
-    data: IFcmData,
-  ): firebaseAdmin.messaging.MulticastMessage {
+  private isInvalidToken(errorCode: string | undefined): boolean {
+    if (!errorCode) return false;
+
+    const invalidTokenCodes = [
+      'messaging/invalid-registration-token',
+      'messaging/registration-token-not-registered',
+      'messaging/invalid-argument',
+    ];
+
+    return invalidTokenCodes.includes(errorCode);
+  }
+
+  private getCommonFcmConfig() {
     return {
-      tokens,
-      notification,
-      data: {
-        page: data.page,
-        args: data.args,
+      android: {
+        priority: 'high' as const,
+        ttl: 60 * 60 * 24, // 24 hours
+        notification: {
+          priority: 'high' as const,
+          defaultSound: true,
+        },
       },
       apns: {
-        fcmOptions: {
-          imageUrl: notification?.imageUrl,
-        },
         payload: {
           aps: {
             badge: 1,
@@ -194,103 +310,64 @@ export class FcmService {
           },
         },
       },
-      android: {
-        priority: 'high',
-        ttl: 60 * 60 * 24, // 24 hours
-        notification: {
-          priority: 'high',
-          defaultSound: true,
-        },
-      },
     };
   }
 
-  private validateTokenMessage(message: TokenMessage): void {
-    if (!message.token) {
-      throw new BadRequestException('Token is required');
-    }
+  private buildMulticastMessage(
+    tokens: string[],
+    notification: { title?: string; body: string },
+    data: { role: string; page?: string; args?: string },
+  ): firebaseAdmin.messaging.MulticastMessage {
+    return {
+      tokens,
+      notification: {
+        title: notification.title,
+        body: notification.body || '',
+      },
+      data: {
+        role: data.role,
+        page: data.page || '',
+        args: data.args || '',
+      },
+      ...this.getCommonFcmConfig(),
+    };
   }
 
-  private validateNotification(notification: Notification): void {
-    if (!notification || typeof notification !== 'object') {
-      throw new BadRequestException('Notification payload is required');
-    }
-
-    if (!notification.title && !notification.body) {
-      throw new BadRequestException(
-        'Notification must have either title or body',
-      );
-    }
+  private buildFirebaseMessage(
+    notification: { title?: string; body: string },
+    data: { role: string; page?: string; args?: string },
+  ) {
+    return {
+      notification: {
+        title: notification.title,
+        body: notification.body || '',
+      },
+      data: {
+        role: data.role,
+        page: data.page || '',
+        args: data.args || '',
+      },
+      ...this.getCommonFcmConfig(),
+    };
   }
 
-  private validateData(data: IFcmData): void {
-    if (!data || typeof data !== 'object') {
-      throw new BadRequestException('Data payload is required');
-    }
+  private isInvalidTokenError(error: any): boolean {
+    if (!error) return false;
 
-    if (!data.page) {
-      throw new BadRequestException('Data.page is required');
-    }
-  }
+    const code = error?.code || error?.errorInfo?.code;
+    const message = error?.message || '';
 
-  private isInvalidToken(errorCode?: string): boolean {
     const invalidTokenCodes = [
       'messaging/invalid-registration-token',
       'messaging/registration-token-not-registered',
+      'messaging/invalid-argument',
     ];
-    return errorCode ? invalidTokenCodes.includes(errorCode) : false;
-  }
 
-  private async handleInvalidToken(token: string): Promise<void> {
-    try {
-      await this.sqsClient.sendMessage({
-        type: 'INVALID_USER_TOKEN',
-        data: {
-          token,
-        },
-      });
-    } catch (error) {
-      this.logger.warn(
-        'Failed to send invalid token notification to SQS',
-        error,
-      );
-    }
-  }
-
-  private async handleFcmError(
-    error: any,
-    method: string,
-    context?: Record<string, any>,
-  ): Promise<void> {
-    if (
-      error.code === 'messaging/invalid-registration-token' ||
-      error.code === 'messaging/registration-token-not-registered' ||
-      error.errorInfo?.code === 'messaging/invalid-registration-token' ||
-      error.errorInfo?.code === 'messaging/registration-token-not-registered'
-    ) {
-      if (context?.token && typeof context.token === 'string') {
-        await this.handleInvalidToken(context.token);
-      }
-
-      throw new BadRequestException(HttpErrorConstants.INVALID_PUSH_TOKEN);
-    }
-
-    this.logger.error(`FCM Error in ${method}`, {
-      error,
-      context,
-      stack: error?.stack,
-    });
-  }
-
-  private chunkArray<T>(array: T[], size: number): T[][] {
-    const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += size) {
-      chunks.push(array.slice(i, i + size));
-    }
-    return chunks;
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return Boolean(
+      (typeof code === 'string' && invalidTokenCodes.includes(code)) ||
+        message.includes('invalid-registration-token') ||
+        message.includes('registration-token-not-registered') ||
+        message.includes('Requested entity was not found'),
+    );
   }
 }

@@ -1,9 +1,6 @@
-import {
-  FirehoseClient,
-  PutRecordBatchCommand,
-  PutRecordCommand,
-} from '@aws-sdk/client-firehose';
+import { FirehoseClient, PutRecordCommand } from '@aws-sdk/client-firehose';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { delay } from 'src/helpers/time';
 
 export interface FirehoseRecord {
   [key: string]: any;
@@ -22,7 +19,6 @@ export class FirehoseService implements OnModuleInit {
   private readonly deliveryStreamName: string;
   private readonly maxRetries = 3;
   private readonly retryDelayMs = 1000;
-  private readonly maxBatchSize = 500; // Firehose limit is 500 records per batch
 
   constructor() {
     // Validate required environment variables
@@ -105,127 +101,6 @@ export class FirehoseService implements OnModuleInit {
       throw error;
     }
   }
-
-  /**
-   * Send multiple records to Firehose in batches
-   */
-  async sendRecords(records: FirehoseRecord[]): Promise<FirehoseBatchResult> {
-    if (records.length === 0) {
-      return { successCount: 0, failureCount: 0 };
-    }
-
-    const startTime = Date.now();
-    let totalSuccessCount = 0;
-    let totalFailureCount = 0;
-    const allFailedRecords: FirehoseRecord[] = [];
-
-    try {
-      // Split records into batches
-      const batches = this.chunkArray(records, this.maxBatchSize);
-
-      this.logger.log(
-        `Sending ${records.length} records in ${batches.length} batch(es) to Firehose`,
-      );
-
-      for (let i = 0; i < batches.length; i++) {
-        const batch = batches[i];
-        this.logger.debug(
-          `Processing batch ${i + 1}/${batches.length} with ${batch.length} records`,
-        );
-
-        try {
-          const result = await this.sendBatch(batch);
-          totalSuccessCount += result.successCount;
-          totalFailureCount += result.failureCount;
-
-          if (result.failedRecords) {
-            allFailedRecords.push(...result.failedRecords);
-          }
-
-          // Small delay between batches to avoid rate limiting
-          if (i < batches.length - 1) {
-            await this.delay(100);
-          }
-        } catch (error) {
-          this.logger.error(`Batch ${i + 1} failed completely:`, error);
-          totalFailureCount += batch.length;
-          allFailedRecords.push(...batch);
-        }
-      }
-
-      const duration = Date.now() - startTime;
-      this.logger.log(
-        `Batch processing completed (${duration}ms) - Success: ${totalSuccessCount}, Failure: ${totalFailureCount}`,
-      );
-
-      return {
-        successCount: totalSuccessCount,
-        failureCount: totalFailureCount,
-        failedRecords:
-          allFailedRecords.length > 0 ? allFailedRecords : undefined,
-      };
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      this.logger.error(
-        `Batch processing failed completely (${duration}ms)`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Send a single batch to Firehose
-   */
-  private async sendBatch(
-    records: FirehoseRecord[],
-  ): Promise<FirehoseBatchResult> {
-    try {
-      const requestEntries = records.map((record) => {
-        this.validateRecord(record);
-        return {
-          Data: Buffer.from(JSON.stringify(record) + '\n'), // Add newline for proper JSON Lines format
-        };
-      });
-
-      const command = new PutRecordBatchCommand({
-        DeliveryStreamName: this.deliveryStreamName,
-        Records: requestEntries,
-      });
-
-      const response = await this.executeWithRetry(async () => {
-        return await this.client.send(command);
-      });
-
-      const successCount =
-        response.RequestResponses?.filter((r) => !r.ErrorCode).length || 0;
-      const failureCount =
-        (response.RequestResponses?.length || 0) - successCount;
-
-      // Collect failed records
-      const failedRecords: FirehoseRecord[] = [];
-      if (response.RequestResponses) {
-        response.RequestResponses.forEach((resp, index) => {
-          if (resp.ErrorCode) {
-            failedRecords.push(records[index]);
-            this.logger.warn(
-              `Record ${index} failed: ${resp.ErrorCode} - ${resp.ErrorMessage}`,
-            );
-          }
-        });
-      }
-
-      return {
-        successCount,
-        failureCount,
-        failedRecords: failedRecords.length > 0 ? failedRecords : undefined,
-      };
-    } catch (error) {
-      this.logger.error(`Batch send failed:`, error);
-      throw error;
-    }
-  }
-
   /**
    * Execute operation with retry logic
    */
@@ -239,11 +114,11 @@ export class FirehoseService implements OnModuleInit {
         lastError = error;
 
         if (this.isRetryableError(error) && attempt < this.maxRetries) {
-          const delay = this.retryDelayMs * Math.pow(2, attempt - 1); // Exponential backoff
+          const delayMs = this.retryDelayMs * Math.pow(2, attempt - 1); // Exponential backoff
           this.logger.warn(
-            `Firehose operation attempt ${attempt} failed, retrying in ${delay}ms: ${error.message}`,
+            `Firehose operation attempt ${attempt} failed, retrying in ${delayMs}ms: ${error.message}`,
           );
-          await this.delay(delay);
+          await delay(delayMs);
         } else {
           break;
         }
@@ -290,23 +165,5 @@ export class FirehoseService implements OnModuleInit {
         `Record size (${sizeInBytes} bytes) exceeds Firehose limit (1000 KB)`,
       );
     }
-  }
-
-  /**
-   * Split array into chunks
-   */
-  private chunkArray<T>(array: T[], chunkSize: number): T[][] {
-    const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += chunkSize) {
-      chunks.push(array.slice(i, i + chunkSize));
-    }
-    return chunks;
-  }
-
-  /**
-   * Delay execution
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

@@ -1,7 +1,7 @@
 // s3 partitioning metadata
 export type PartitioningMeta = {
-  type: string; // ping | dispatch
-  school: string; // 학교아이디
+  type: NotificationType; // PING_SCHOOL, PING_CLASS, PING_OTHER, DISP_REGISTER, DISP_NEWS, DISP_SURVEY
+  schoolId: number; // 학교아이디
   role: string; // `PARENT` 또는 `INSTRUCTOR`
 };
 
@@ -26,12 +26,13 @@ export type MessageBody = {
 
 export type FcmData = {
   role: string; // `PARENT` 또는 `INSTRUCTOR`
-  target?: string; // for Client Routing
-  targetArgs?: string; // for Client Routing
+  page?: string; // for Client Routing
+  args?: string; // for Client Routing
 };
 
 // -------------------------------------------------------------------------- //
 
+export type SingleFcmInput = TokenPair & MessageBody & FcmData;
 export type SingleFcmMessage = TokenPair &
   MessageBody &
   FcmData &
@@ -63,5 +64,5 @@ export type MultiMixedMessages = {
 export type NotificationResult = {
   success: boolean;
   error?: Error;
-  retryable?: boolean; // 재시도 가능한 에러인지 표시
+  id?: number;
 };

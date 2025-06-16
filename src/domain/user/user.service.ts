@@ -1,23 +1,21 @@
 import {
-    BadRequestException,
-    ForbiddenException,
-    Injectable,
-    Logger,
-    NotFoundException,
-    UnprocessableEntityException,
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { TokenMessage } from 'firebase-admin/lib/messaging/messaging-api';
 import {
-    FilterOperator,
-    PaginateConfig,
-    PaginateQuery,
-    Paginated,
-    paginate,
+  FilterOperator,
+  PaginateConfig,
+  PaginateQuery,
+  Paginated,
+  paginate,
 } from 'nestjs-paginate';
 import * as random from 'randomstring';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { ChangePasswordDto } from 'src/domain/user/dto/change-password.dto';
@@ -29,7 +27,7 @@ import { Provider } from 'src/domain/user/entities/provider.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { S3Service } from 'src/services/aws/s3.service';
 import { FcmService } from 'src/services/fcm/fcm.service';
-import { SlackService } from 'src/services/slack/slack-service';
+import { SlackService } from 'src/services/slack/slack.service';
 import { DataSource, DeepPartial, FindOneOptions } from 'typeorm';
 import { Repository } from 'typeorm/repository/Repository';
 
@@ -150,6 +148,23 @@ export class UserService {
     const user = await this.userRepository.preload({ id, ...dto });
     if (!user) throw new NotFoundException('User not found');
     return await this.userRepository.save(user as DeepPartial<User>);
+  }
+
+  // FCM 토큰 무효화
+  async invalidatePushTokens(tokens: string[]): Promise<void> {
+    if (tokens.length === 0) return;
+
+    const users = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.pushToken IN (:...tokens)', { tokens })
+      .getMany();
+
+    for (const user of users) {
+      user.pushToken = null;
+      await this.userRepository.save(user);
+    }
+
+    this.logger.log(`Invalidated ${users.length} push tokens`);
   }
 
   //? User 닉네임 갱신 (비용이 발생할 수 있음)
@@ -421,49 +436,5 @@ reason = VALUES(`reason`)',
         );
       }),
     );
-  }
-
-  //* ---------------------------------------------------------------------- *//
-  //* Test
-  //* ---------------------------------------------------------------------- *//
-
-  async notifyUser(
-    userId: number,
-    dto: { title: string; message: string },
-  ): Promise<void> {
-    const user = await this.findById(userId, ['parent', 'instructor']);
-    if (!user.pushToken) {
-      throw new BadRequestException('pushToken is not set');
-    }
-    const payload: TokenMessage = {
-      token: user.pushToken,
-      data: {
-        target: `users`,
-        targetArgs: `${user.id}`,
-        role: user.parent ? 'parent' : 'instructor',
-      },
-      notification: {
-        title: dto.title,
-        body: dto.message,
-        // imageUrl: dto.imageUrl || 'https://cdn.whatsupkorea.com/icons/logo.png',
-      },
-    };
-    try {
-      await this.fcmService.sendToToken(payload);
-    } catch (error) {
-      // Check if error is related to invalid token
-      if (
-        error.code === 'messaging/invalid-registration-token' ||
-        error.code === 'messaging/registration-token-not-registered' ||
-        error.errorInfo?.code === 'messaging/invalid-registration-token' ||
-        error.errorInfo?.code === 'messaging/registration-token-not-registered'
-      ) {
-        // Nullify the invalid pushToken
-        await this.userRepository.update(userId, { pushToken: null });
-        throw new BadRequestException(HttpErrorConstants.INVALID_PUSH_TOKEN);
-      }
-
-      throw new BadRequestException(HttpErrorConstants.PUSH_FAILED);
-    }
   }
 }

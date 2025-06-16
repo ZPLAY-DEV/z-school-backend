@@ -73,8 +73,20 @@ export class Term {
   allowTimeOverlap: boolean;
 
   @ApiProperty({
+    description: '🈳 1차 default 선택방식. 학교에서 선호하는 기본 선택방법',
+    default: PickRule.RANDOM,
+  })
+  @Column({
+    type: 'enum',
+    enum: PickRule,
+    default: PickRule.RANDOM,
+    comment: '1차 default 선택방식. 학교에서 선호하는 기본 선택방법',
+  })
+  defaultPickRule: PickRule;
+
+  @ApiProperty({
     description:
-      '🈳 2차 default 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
+      '🈳 2차 extra 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
     default: PickRule.RANDOM,
   })
   @Column({
@@ -82,9 +94,9 @@ export class Term {
     enum: PickRule,
     default: PickRule.RANDOM,
     comment:
-      '2차 default 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
+      '2차 extra 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
   })
-  defaultPickRule: PickRule;
+  extraPickRule: PickRule;
 
   @ApiProperty({ description: '🈳 수강신청 준비 상태', default: false })
   @Column({

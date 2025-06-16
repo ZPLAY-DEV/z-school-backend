@@ -3,7 +3,7 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { makeOfferingsFromLessons } from 'src/helpers/offering.util';
-import { SlackService } from 'src/services/slack/slack-service';
+import { SlackService } from 'src/services/slack/slack.service';
 import {
   DataSource,
   EntitySubscriberInterface,
@@ -70,7 +70,11 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
     // 3. Slack 알림 발송
     if (term && oldStatus === null && newStatus !== null) {
       // todo. offerings 생성하기
-      await this.makeOfferings(term, event.manager);
+      try {
+        await this.makeOfferings(term, event.manager);
+      } catch (error) {
+        this.logger.error('Failed to make offerings', error);
+      }
       await event.manager
         .createQueryBuilder()
         .update('Term')

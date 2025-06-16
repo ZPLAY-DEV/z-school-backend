@@ -6,7 +6,7 @@ import { AuthService } from 'src/domain/auth/auth.service';
 import { FirebaseStrategy } from 'src/domain/auth/strategies/firebase.strategy';
 import { JwtAuthStrategy } from 'src/domain/auth/strategies/jwt-auth.strategy';
 import { JwtRefreshStrategy } from 'src/domain/auth/strategies/jwt-refresh.strategy';
-import { SlackModule } from 'src/services/slack/slack-module';
+import { SlackModule } from 'src/services/slack/slack.module';
 @Module({
   imports: [
     // configured the details in auth service instead of configuring 'em here

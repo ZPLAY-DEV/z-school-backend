@@ -6,79 +6,50 @@ import {
 } from '@nestjs/common';
 import { format } from 'date-fns';
 import { AWS_SQS_CLIENT } from 'src/common/constants';
+import { NotificationType } from 'src/common/enums/notification-type';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { classifyMessage } from 'src/helpers/classify';
-import { AligoService } from 'src/services/aligo/aligo-service';
+import { AligoService } from 'src/services/aligo/aligo.service';
 import { AligoListResult } from 'src/services/aligo/types';
 import { SqsService } from 'src/services/aws/sqs.service';
+import { NotificationService } from 'src/services/notification/notification.service';
+import {
+  FcmData,
+  MessageBody,
+  MixedPair,
+} from 'src/services/notification/types';
 
 @Injectable()
 export class TextService {
   private readonly logger = new Logger(TextService.name);
 
   constructor(
+    private readonly notificationService: NotificationService,
     private readonly aligoService: AligoService,
     @Inject(AWS_SQS_CLIENT)
     private readonly sqsClient: SqsService,
   ) {}
 
-  async send(
-    sender: string,
-    receiver: string,
-    message: string,
-    dryrun: boolean = false,
-  ): Promise<any> {
-    const dto = {
-      sender,
-      receiver,
-      msg: message,
-      msg_type: 'SMS',
-      testmode_yn: dryrun ? 'Y' : 'N',
-    };
-    console.log(`dto`, dto);
-    return await this.aligoService.send(dto);
+  async send(data: {
+    messages: (MixedPair & MessageBody & FcmData)[];
+    type: NotificationType;
+    schoolId: number;
+    role: string;
+  }): Promise<any> {
+    this.logger.log(`messages`, data.messages);
+    return await this.notificationService.send(data);
   }
 
-  async sendBulk(
-    sender: string,
-    phones: string[],
-    message: string,
-    dryrun: boolean = false,
-  ): Promise<any> {
-    const dto = {
-      sender,
-      msg_type: 'SMS',
-      testmode_yn: dryrun ? 'Y' : 'N',
-      cnt: phones.length,
-    };
-    console.log(`dto`, dto);
-
-    // AligoTextTarget 형태로 변환
-    const targets = phones.map((phone) => ({
-      phone,
-      body: message,
-    }));
-
-    return await this.aligoService.sendBulk(dto, targets);
-  }
-
-  async sendTextViaQueue(
-    sender: string,
-    receiver: string,
-    message: string,
-    dryrun: boolean = false,
-  ): Promise<any> {
-    const dto = {
-      sender,
-      receiver,
-      msg: message,
-      msg_type: 'SMS',
-      testmode_yn: dryrun ? 'Y' : 'N',
-    };
-    console.log(`dto`, dto);
+  async sendViaQueue(data: {
+    messages: (MixedPair & MessageBody & FcmData)[];
+    type: NotificationType;
+    schoolId: number;
+    role: string;
+  }): Promise<any> {
+    this.logger.log(`✋ data`, JSON.stringify(data, null, 2));
     const payload = {
-      type: 'SEND_TEXT',
-      data: dto,
+      type: 'SEND_MESSAGES',
+      data: data,
     };
     try {
       return await this.sqsClient.sendMessage(payload);
@@ -147,7 +118,7 @@ export class TextService {
     return await this.aligoService.remain();
   }
 
-  async detail(id: string, limit: number = 500): Promise<any> {
+  async detail(id: number, limit: number = 500): Promise<any> {
     const dto = {
       mid: id,
       page: 1,

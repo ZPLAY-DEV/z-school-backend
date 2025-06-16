@@ -44,3 +44,7 @@ export function parseValidityToDate(validity?: string): Date {
       throw new Error('Invalid validity unit. Use d, h, m, or s');
   }
 }
+
+export function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
