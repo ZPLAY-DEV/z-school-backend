@@ -19,7 +19,6 @@ import {
 import {
   buildAttendanceItem,
   calculateTtl,
-  formatDateInKST,
   generateDailyStudentKey,
   generateGroupKey,
 } from 'src/domain/attendance/utils/attendance.utils';
@@ -31,6 +30,7 @@ import {
 } from 'src/domain/schoolday/dto/create-dynamo-record.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { chunk } from 'src/helpers/array';
+import { formatDateInKST } from 'src/helpers/time';
 import { DynamoService } from 'src/services/aws/dynamo.service';
 import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 

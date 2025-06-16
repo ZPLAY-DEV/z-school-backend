@@ -9,7 +9,7 @@ export const EventSchema = new Schema(
       enum: Object.values(EventStatus),
       required: true,
     },
-    dateKey: {
+    timestamp: {
       type: String,
       rangeKey: true,
       required: true,

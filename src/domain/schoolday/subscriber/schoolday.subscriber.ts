@@ -7,12 +7,12 @@ import {
 import {
   buildAttendanceItem,
   calculateTtl,
-  formatDateInKST,
   generateDailyStudentKey,
   generateGroupKey,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
+import { formatDateInKST } from 'src/helpers/time';
 import { DataSource, EntitySubscriberInterface, UpdateEvent } from 'typeorm';
 
 @Injectable()

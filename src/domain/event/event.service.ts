@@ -15,7 +15,7 @@ export class EventService {
     const ttl = Math.floor(now.getTime() / 1000) + 60 * 60 * 24; // 1 일
     await this.model.create({
       status: EventStatus.PENDING,
-      dateKey: 'DATE#2025-01-01T10:00:00Z#ID#1',
+      timestamp: 'DATE#2025-01-01T10:00:00Z#ID#1',
       type: 'EVERY_5MINS',
       payload: { userId: 1, messages: ['Hello World'] },
       expires: ttl,

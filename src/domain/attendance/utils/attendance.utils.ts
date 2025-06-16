@@ -1,5 +1,3 @@
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
 import {
   IAttendance,
   IAttendanceCore,
@@ -35,13 +33,6 @@ export function calculateTtl(startsAt: Date): number {
   return (
     Math.floor(startsAt.getTime() / 1000) + 60 * 60 * 24 * 365 // 365일 TTL
   );
-}
-
-/**
- * Convert Date to local date string in Korean timezone
- */
-export function formatDateInKST(date: Date): string {
-  return format(toZonedTime(date, 'Asia/Seoul'), 'yyyy-MM-dd');
 }
 
 /**

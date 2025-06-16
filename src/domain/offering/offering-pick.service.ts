@@ -8,13 +8,13 @@ import {
 } from 'src/common/enums';
 import { IPickKeys } from 'src/common/interfaces';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { formatDateInKST } from 'src/domain/attendance/utils/attendance.utils';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { formatDateInKST } from 'src/helpers/time';
 import { In, Repository } from 'typeorm';
 
 @Injectable()
