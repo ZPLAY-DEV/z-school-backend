@@ -77,8 +77,6 @@ export class SchooldayAttendanceService {
       const startsAt = fromZonedTime(`${date}T00:00:00`, 'Asia/Seoul');
       const endsAt = fromZonedTime(`${date}T23:59:59`, 'Asia/Seoul');
 
-      console.log(`>>>>`, schoolId, termId, startsAt, endsAt);
-
       const result = await this.createAttendances(
         schoolId,
         termId,

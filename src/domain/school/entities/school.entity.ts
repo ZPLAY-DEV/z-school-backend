@@ -4,7 +4,7 @@ import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
 import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
-import { Dispatch } from 'src/domain/dispatch/entities/dispatch.entity';
+import { Letter } from 'src/domain/letter/entities/letter.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Phone } from 'src/domain/phone/entities/phone.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
@@ -136,6 +136,11 @@ export class School {
   })
   public terms: Term[];
 
+  @OneToMany(() => Letter, (letter) => letter.school, {
+    cascade: ['insert', 'update'],
+  })
+  public letters: Letter[];
+
   @OneToMany(() => Statement, (statement) => statement.school, {
     cascade: ['insert', 'update'],
   })
@@ -164,9 +169,6 @@ export class School {
     cascade: ['insert', 'update'],
   })
   public sams: Sam[];
-
-  @OneToMany(() => Dispatch, (dispatch) => dispatch.school)
-  public dispatch: Dispatch[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

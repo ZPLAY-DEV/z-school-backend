@@ -9,6 +9,7 @@ export * from './document-type';
 export * from './event-status';
 export * from './gender';
 export * from './ledger-type';
+export * from './letter';
 export * from './permission';
 export * from './pick-rule';
 export * from './platform-type';
@@ -21,5 +22,4 @@ export * from './subsidy-status';
 export * from './subsidy-type';
 export * from './time-unit';
 export * from './weekday';
-export * from './target-group';
-export * from './dispatch';
+

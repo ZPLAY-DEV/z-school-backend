@@ -14,16 +14,19 @@ import { AppService } from 'src/app.service';
 import { configuration } from 'src/common/config/configuration';
 import { SentryCatchAllFilter } from 'src/common/filters/sentry-catch-all.filter';
 import { DuplicateEntryErrorInterceptor } from 'src/common/interceptors/duplicate-entry-error.interceptor';
+import { AttendanceModule } from 'src/domain/attendance/attendance.module';
 import { AuthModule } from 'src/domain/auth/auth.module';
 import { JwtAuthGuard } from 'src/domain/auth/guards/jwt-auth.guard';
 import { BookingModule } from 'src/domain/booking/booking.module';
 import { CalendarModule } from 'src/domain/calendar/calendar.module';
 import { CategoryModule } from 'src/domain/category/category.module';
 import { DocumentModule } from 'src/domain/document/document.module';
+import { EventModule } from 'src/domain/event/event.module';
 import { GroupModule } from 'src/domain/group/group.module';
 import { InstructorModule } from 'src/domain/instructor/instructor.module';
 import { LedgerModule } from 'src/domain/ledger/ledger.module';
 import { LessonModule } from 'src/domain/lesson/lesson.module';
+import { LetterModule } from 'src/domain/letter/letter.module';
 import { ManagerModule } from 'src/domain/manager/manager.module';
 import { OfferingModule } from 'src/domain/offering/offering.module';
 import { ParentModule } from 'src/domain/parent/parent.module';
@@ -45,9 +48,6 @@ import { BoardModule } from './domain/board/board.module';
 import { PhoneModule } from './domain/phone/phone.module';
 import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
-import { DispatchModule } from './domain/dispatch/dispatch.module';
-import { AttendanceModule } from 'src/domain/attendance/attendance.module';
-import { EventModule } from 'src/domain/event/event.module';
 
 @Module({
   imports: [
@@ -109,41 +109,37 @@ import { EventModule } from 'src/domain/event/event.module';
         suffix: '_table',
       },
     }),
-    HealthModule,
-    RedisModule,
-    SlackModule,
-    UploadModule,
     AttendanceModule,
-    EventModule,
     AuthModule,
     BoardModule,
     BookingModule,
     CalendarModule,
     CategoryModule,
     DocumentModule,
+    EventModule,
     GroupModule,
+    HealthModule,
     InstructorModule,
     LedgerModule,
     LessonModule,
+    LetterModule,
     ManagerModule,
     OfferingModule,
     ParentModule,
     PayoutModule,
     PhoneModule,
+    RedisModule,
     SamModule,
     SchooldayModule,
     SchoolModule,
+    SlackModule,
     StatementModule,
     StudentModule,
     SubsidyModule,
     TermModule,
     TextModule,
-    UserModule,
     UploadModule,
-    HealthModule,
-    PhoneModule,
-    BoardModule,
-    DispatchModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [

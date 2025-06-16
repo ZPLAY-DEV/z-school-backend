@@ -2,15 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FilterOperator, paginate, PaginateQuery } from 'nestjs-paginate';
 import { DataSource, Repository } from 'typeorm';
-import { Dispatch } from '../dispatch/entities/dispatch.entity';
+import { Letter } from '../letter/entities/letter.entity';
 
 @Injectable()
-export class SchoolDispatchService {
-  private readonly logger = new Logger(SchoolDispatchService.name);
+export class SchoolLetterService {
+  private readonly logger = new Logger(SchoolLetterService.name);
 
   constructor(
-    @InjectRepository(Dispatch)
-    private readonly dispatchRepository: Repository<Dispatch>,
+    @InjectRepository(Letter)
+    private readonly dispatchRepository: Repository<Letter>,
     private dataSource: DataSource,
   ) {}
 
@@ -27,9 +27,9 @@ export class SchoolDispatchService {
       .createQueryBuilder('dispatch')
       .where('dispatch.schoolId = :schoolId', { schoolId })
       .andWhere('dispatch.termId = :termId', { termId });
-    return await paginate<Dispatch>(query, queryBuilder, {
+    return await paginate<Letter>(query, queryBuilder, {
       sortableColumns: ['id'],
-      searchableColumns: ['title', 'body', 'sentAt'],
+      searchableColumns: ['title', 'body'],
       defaultSortBy: [['id', 'ASC']],
       filterableColumns: {
         type: [FilterOperator.EQ, FilterOperator.IN],

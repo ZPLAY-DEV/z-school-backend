@@ -3,9 +3,9 @@ import { ITimeRange } from 'src/common/interfaces';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import {
-    compressRangeFormat,
-    getBitmasks,
-    getSortedWeekdays,
+  compressRangeFormat,
+  getBitmasks,
+  getSortedWeekdays,
 } from 'src/helpers/parse';
 
 export function makeOfferingsFromLessons(
@@ -39,8 +39,7 @@ export function makeOfferingsFromLessons(
       }
       uniqueCombinations.add(uniqueKey);
 
-      const pickRule =
-        group.capacity === 0 ? PickRule.ANYONE : PickRule.FIRST;
+      const pickRule = group.capacity === 0 ? PickRule.ANYONE : PickRule.FIRST;
 
       const offering = new Offering({
         termId,

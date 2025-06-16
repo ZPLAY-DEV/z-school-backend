@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { LimitedPickRule, PickRule } from 'src/common/enums';
-import { Dispatch } from 'src/domain/dispatch/entities/dispatch.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Letter } from 'src/domain/letter/entities/letter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import {
@@ -146,8 +146,8 @@ export class Term {
   })
   public offerings: Offering[];
 
-  @OneToMany(() => Dispatch, (dispatch) => dispatch.term)
-  public dispatch: Dispatch[];
+  @OneToMany(() => Letter, (letter) => letter.term)
+  public letters: Letter[];
 
   //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
 

@@ -85,7 +85,7 @@ export class GroupAttendanceService {
     await this.updateAttendanceStatusInBulk(dtos);
     await this.notificationService.send({
       messages,
-      type: NotificationType.PING_CLASS,
+      type: NotificationType.CLASS,
       schoolId: group.lesson.schoolId,
       role: 'PARENT',
     });
@@ -134,7 +134,7 @@ export class GroupAttendanceService {
     await this.updateAttendanceStatusInBulkOptimized(dtos);
     await this.notificationService.send({
       messages,
-      type: NotificationType.PING_CLASS,
+      type: NotificationType.CLASS,
       schoolId: group.lesson.schoolId,
       role: 'PARENT',
     });

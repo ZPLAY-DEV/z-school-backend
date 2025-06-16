@@ -2,10 +2,9 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { nanoid } from 'nanoid';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { CreateNanoIdDto } from 'src/domain/parent/dto/create-nanoid.dto';
+import { CreateNanoidDto } from 'src/domain/parent/dto/create-nanoid.dto';
 import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
-import { parseValidityToDate } from 'src/helpers/time';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -23,7 +22,7 @@ export class ParentNanoIdService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  async create(dto: CreateNanoIdDto): Promise<NanoId> {
+  async create(dto: CreateNanoidDto): Promise<NanoId> {
     // parent 정보 조회
     const parent = await this.parentRepository.findOne({
       where: { id: dto.parentId },
@@ -35,7 +34,7 @@ export class ParentNanoIdService {
 
     // nanoid 생성
     const generatedNanoId = nanoid();
-    const expiresAt = parseValidityToDate(dto.validity);
+    const expiresAt = dto.expiresAt;
 
     this.logger.log(`Generated nanoId: ${generatedNanoId}`);
 

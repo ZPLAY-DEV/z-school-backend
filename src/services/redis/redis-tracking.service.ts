@@ -2,29 +2,31 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   OnModuleInit,
 } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
-import { REDIS_DISPATCH_OPTIONS } from 'src/common/constants';
+import { REDIS_TRACKING_OPTIONS } from 'src/common/constants';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { RedisBookingService } from 'src/services/redis/redis-booking.service';
 
-interface RedisDispatchOptions {
+interface RedisTrackingOptions {
   host: string;
   port: number;
   password?: string;
+  keyPrefix?: string;
   db?: number;
 }
 
 @Injectable()
-export class RedisDispatchService implements OnModuleInit {
+export class RedisTrackingService implements OnModuleInit {
+  private readonly logger = new Logger(RedisBookingService.name);
   private redisClient: RedisClientType;
 
   constructor(
-    @Inject(REDIS_DISPATCH_OPTIONS)
-    private readonly redisOptions: RedisDispatchOptions,
-  ) {}
-
-  async onModuleInit() {
+    @Inject(REDIS_TRACKING_OPTIONS)
+    private readonly redisOptions: RedisTrackingOptions,
+  ) {
     this.redisClient = createClient({
       socket: {
         host: this.redisOptions.host,
@@ -34,20 +36,21 @@ export class RedisDispatchService implements OnModuleInit {
       database: this.redisOptions.db,
       legacyMode: false, // 최신 방식 사용
     });
-
-    this.redisClient.on('error', (err) =>
-      console.error('❌ Redis error:', err),
-    );
-
-    await this.redisClient.connect();
-    await this.ping();
-    console.log(
-      `✅ Redis connected: ${this.redisOptions.host}:${this.redisOptions.port}`,
-    );
+    // Connect to Redis when service is instantiated
+    this.redisClient.connect().catch((error) => {
+      console.error('❌ Failed to connect to Redis booking:', error);
+    });
   }
 
-  async ping(): Promise<string> {
-    return await this.redisClient.ping();
+  async onModuleInit() {
+    try {
+      await this.ping();
+      this.logger.log(
+        `Redis (Tracking) connected: ${this.redisOptions.host}:${this.redisOptions.port}`,
+      );
+    } catch (error) {
+      console.error('❌ Failed to connect to Redis cache:', error);
+    }
   }
 
   //? 학부모별 열람 상태 초기화
@@ -68,13 +71,19 @@ export class RedisDispatchService implements OnModuleInit {
     }
   }
 
-  //? 보상 로직: 특정 dispatchId에 대한 키 삭제
-  async clearStudentReadStatus(dispatchId: number): Promise<void> {
-    const keys = await this.redisClient.keys(
-      `dispatch:${dispatchId}:student:*`,
-    );
+  //? 보상 로직: 특정 letterId에 대한 키 삭제
+  async clearStudentReadStatus(letterId: number): Promise<void> {
+    const keys = await this.redisClient.keys(`letter:${letterId}:student:*`);
     if (keys.length > 0) {
       await this.redisClient.del(keys);
     }
+  }
+
+  async ping(): Promise<string> {
+    return await this.redisClient.ping();
+  }
+
+  getClient(): RedisClientType {
+    return this.redisClient;
   }
 }

@@ -4,7 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
 import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { CreateNanoIdDto } from 'src/domain/parent/dto/create-nanoid.dto';
+import { CreateNanoidDto } from 'src/domain/parent/dto/create-nanoid.dto';
 import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
 
 //? ---------------------------------------------------------------------- ?//
@@ -27,7 +27,7 @@ export const CreateNanoIdDocs = () => {
       required: true,
     }),
     ApiBody({
-      type: CreateNanoIdDto,
+      type: CreateNanoidDto,
     }),
     ApiCreatedResponseTemplate({
       description: '나노아이디 생성 완료',

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { DispatchRead } from 'src/domain/dispatch/entities/dispatch-read.entity';
+import { Letter } from 'src/domain/letter/entities/letter.entity';
 import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
@@ -10,6 +10,7 @@ import {
   DeleteDateColumn,
   Entity,
   JoinColumn,
+  ManyToMany,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -83,10 +84,9 @@ export class Parent {
   })
   nanoIds?: NanoId[];
 
-  @OneToMany(() => DispatchRead, (dispatchRead) => dispatchRead.parent, {
-    cascade: ['insert', 'update'],
-  })
-  dispatchReads: DispatchRead[];
+  //* N-to-M manyToMany ---------------------------------------------------- *//
+  @ManyToMany(() => Letter, (letter) => letter.parents)
+  letters: Letter[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

@@ -1,32 +1,27 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
 
-export class CreateNanoIdDto {
+export class CreateNanoidDto {
   @ApiProperty({
     description: '🈳 parent ID',
-    required: false,
     type: Number,
   })
   @IsNumber()
-  @IsOptional()
-  parentId?: number;
+  parentId: number;
 
   @ApiPropertyOptional({
     description: '🈳 학부모 전화번호',
-    required: false,
     type: String,
   })
   @IsString()
-  @IsOptional()
-  @MaxLength(16)
-  phone?: string;
+  nanoid: string;
 
-  @ApiProperty({
-    description: '🈳 나노아이디의 유효기간 ( 예: 1d, 1h, 1m, 1s )',
-    type: Date,
+  @ApiPropertyOptional({
+    description: '🈳 학부모 전화번호',
+    type: String,
   })
   @IsString()
-  validity?: string;
+  phone: string;
 
   @ApiPropertyOptional({
     description: '🈳 라우팅 page 정보',
@@ -45,4 +40,11 @@ export class CreateNanoIdDto {
   @IsString()
   @IsOptional()
   args?: string;
+
+  @ApiProperty({
+    description: '🈳 나노아이디의 유효기간',
+    type: Date,
+  })
+  @IsDate()
+  expiresAt: Date;
 }

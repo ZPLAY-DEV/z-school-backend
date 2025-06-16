@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { CreateNanoIdDto } from 'src/domain/parent/dto/create-nanoid.dto';
+import { CreateNanoidDto } from 'src/domain/parent/dto/create-nanoid.dto';
 import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
 import { ParentNanoIdService } from 'src/domain/parent/parent-nanoid.service';
 import { CreateNanoIdDocs } from 'src/domain/parent/swagger/parent-nanoid.swagger.decorator';
@@ -29,7 +29,7 @@ export class ParentNanoIdController {
   @Post(':parentId/nanoids')
   async create(
     @Param('parentId', ParseIntPipe) parentId: number,
-    @Body() dto: CreateNanoIdDto,
+    @Body() dto: CreateNanoidDto,
   ): Promise<NanoId> {
     return await this.parentNanoIdService.create({ ...dto, parentId });
   }

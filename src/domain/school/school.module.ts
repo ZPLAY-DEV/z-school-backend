@@ -13,6 +13,8 @@ import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { SchoolCalendarController } from 'src/domain/school/school-calendar.controller';
 import { SchoolCalendarService } from 'src/domain/school/school-calendar.service';
+import { SchoolLetterController } from 'src/domain/school/school-letter.controller';
+import { SchoolLetterService } from 'src/domain/school/school-letter.service';
 import { SchoolSamController } from 'src/domain/school/school-sam.controller';
 import { SchoolSamService } from 'src/domain/school/school-sam.service';
 import { SchoolTermLessonController } from 'src/domain/school/school-term-lesson.controller';
@@ -31,11 +33,9 @@ import { NeisModule } from 'src/services/neis/neis.module';
 import { RedisModule } from 'src/services/redis/redis.module';
 import { SlackModule } from 'src/services/slack/slack.module';
 import { UploadModule } from 'src/services/upload/upload.module';
-import { Dispatch } from '../dispatch/entities/dispatch.entity';
+import { Letter } from '../letter/entities/letter.entity';
 import { SchoolBoardController } from './school-board.controller';
 import { SchoolBoardService } from './school-board.service';
-import { SchoolDispatchController } from './school-dispatch.controller';
-import { SchoolDispatchService } from './school-dispatch.service';
 import { SchoolPhoneController } from './school-phone.controller';
 import { SchoolPhoneService } from './school-phone.service';
 import { SchoolStudentController } from './school-student.controller';
@@ -55,7 +55,7 @@ import { SchoolStudentService } from './school-student.service';
       Phone,
       Board,
       Comment,
-      Dispatch,
+      Letter,
     ]),
     UploadModule,
     SlackModule,
@@ -75,7 +75,7 @@ import { SchoolStudentService } from './school-student.service';
     SchoolTermOfferingController,
     SchoolPhoneController,
     SchoolBoardController,
-    SchoolDispatchController,
+    SchoolLetterController,
   ],
   providers: [
     SchoolService,
@@ -87,7 +87,7 @@ import { SchoolStudentService } from './school-student.service';
     SchoolTermOfferingService,
     SchoolPhoneService,
     SchoolBoardService,
-    SchoolDispatchService,
+    SchoolLetterService,
   ],
 })
 export class SchoolModule {}
