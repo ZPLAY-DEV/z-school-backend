@@ -6,7 +6,6 @@ import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { Letter } from 'src/domain/letter/entities/letter.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
-import { Phone } from 'src/domain/phone/entities/phone.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Statement } from 'src/domain/statement/entities/statement.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -158,9 +157,6 @@ export class School {
 
   @OneToMany(() => Calendar, (calendar) => calendar.school)
   public calendars: Calendar[];
-
-  @OneToMany(() => Phone, (phone) => phone.school)
-  public phones: Phone[];
 
   @OneToMany(() => Board, (board) => board.school)
   public boards: Board[];

@@ -45,7 +45,6 @@ import { SlackModule } from 'src/services/slack/slack.module';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { OrmConfig } from './database/orm-config';
 import { BoardModule } from './domain/board/board.module';
-import { PhoneModule } from './domain/phone/phone.module';
 import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
 
@@ -127,7 +126,6 @@ import { UploadModule } from './services/upload/upload.module';
     OfferingModule,
     ParentModule,
     PayoutModule,
-    PhoneModule,
     RedisModule,
     SamModule,
     SchooldayModule,

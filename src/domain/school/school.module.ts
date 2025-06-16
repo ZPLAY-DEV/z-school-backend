@@ -8,7 +8,6 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { LessonModule } from 'src/domain/lesson/lesson.module';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
-import { Phone } from 'src/domain/phone/entities/phone.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { SchoolCalendarController } from 'src/domain/school/school-calendar.controller';
@@ -34,12 +33,10 @@ import { RedisModule } from 'src/services/redis/redis.module';
 import { SlackModule } from 'src/services/slack/slack.module';
 import { UploadModule } from 'src/services/upload/upload.module';
 import { Letter } from '../letter/entities/letter.entity';
-import { SchoolBoardController } from './school-board.controller';
-import { SchoolBoardService } from './school-board.service';
-import { SchoolPhoneController } from './school-phone.controller';
-import { SchoolPhoneService } from './school-phone.service';
-import { SchoolStudentController } from './school-student.controller';
-import { SchoolStudentService } from './school-student.service';
+import { SchoolBoardController } from 'src/domain/school/school-board.controller';
+import { SchoolBoardService } from 'src/domain/school/school-board.service';
+import { SchoolStudentController } from 'src/domain/school/school-student.controller';
+import { SchoolStudentService } from 'src/domain/school/school-student.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -52,7 +49,6 @@ import { SchoolStudentService } from './school-student.service';
       Parent,
       Instructor,
       Sam,
-      Phone,
       Board,
       Comment,
       Letter,
@@ -73,7 +69,6 @@ import { SchoolStudentService } from './school-student.service';
     SchoolTermController,
     SchoolTermLessonController,
     SchoolTermOfferingController,
-    SchoolPhoneController,
     SchoolBoardController,
     SchoolLetterController,
   ],
@@ -85,7 +80,6 @@ import { SchoolStudentService } from './school-student.service';
     SchoolTermService,
     SchoolTermLessonService,
     SchoolTermOfferingService,
-    SchoolPhoneService,
     SchoolBoardService,
     SchoolLetterService,
   ],
