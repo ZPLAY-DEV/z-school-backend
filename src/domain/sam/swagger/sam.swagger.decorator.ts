@@ -1,18 +1,18 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { StatusCodes } from 'http-status-codes';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { CreateSamDto } from '../dto/create-sam.dto';
-import { CreateSamResponseDto } from '../dto/create-sam-response.dto';
+import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
+import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
-import { SamResponseDto } from '../dto/sam-response.dto';
-import { DeleteSamNoteDto } from '../dto/delete-sam-note.dto';
 import { DocumentResponseDto } from 'src/domain/document/dto/document-response.dto';
-import { SamRelationResponseDto } from '../dto/sam-relation-response.dto';
-import { GroupRelationResponseDto } from 'src/domain/group/dto/group-relation-response.dto';
+import { GroupPickResponseDto } from 'src/domain/group/dto/group-pick-response.dto';
 import { ScheduleResponseDto } from 'src/domain/group/dto/schedule-response.dto';
+import { CreateSamResponseDto } from '../dto/create-sam-response.dto';
+import { CreateSamDto } from '../dto/create-sam.dto';
+import { DeleteSamNoteDto } from '../dto/delete-sam-note.dto';
+import { SamRelationResponseDto } from '../dto/sam-relation-response.dto';
+import { SamResponseDto } from '../dto/sam-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create School Sam
@@ -154,7 +154,7 @@ export const GetSamGroupsDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '학교에 속한 강사의 반 & 학생 상세 조회',
-      type: GroupRelationResponseDto,
+      type: GroupPickResponseDto,
       isArray: true,
     }),
   );

@@ -76,7 +76,7 @@ export function generateSchooldays(
         termId: lesson.termId,
         lessonId: lesson.id,
         groupId: group.id,
-        name: '수업',
+        name: lesson.lessonName,
         duration: duration,
         startsAt: startsAt,
         endsAt: endsAt,

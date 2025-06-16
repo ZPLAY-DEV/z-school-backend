@@ -2,9 +2,9 @@ import { applyDecorators } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-  ApiOkPaginatedResponse,
-  ApiPaginationQuery,
-  PaginateConfig,
+    ApiOkPaginatedResponse,
+    ApiPaginationQuery,
+    PaginateConfig,
 } from 'nestjs-paginate';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
@@ -17,7 +17,7 @@ const TERM_OFFERING_CONFIG: PaginateConfig<Offering> = {
   searchableColumns: ['lessonName', 'groupName'],
   defaultSortBy: [['id', 'DESC']],
   filterableColumns: {
-    enrollmentRule: true,
+    pickRule: true,
     allowedGrades: true,
   },
 };

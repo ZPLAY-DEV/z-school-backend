@@ -1,21 +1,8 @@
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
-import { IAttendance } from 'src/domain/attendance/entities/attendance.interface';
 import {
-  ATTENDANCE_CONSTANTS,
-  AttendanceItem,
-  AttendanceReport,
-} from 'src/domain/attendance/types/attendance.types';
-
-/**
- * Convert Date to local date string in Korean timezone
- */
-export function formatToLocalDateString(date: Date): string {
-  return format(
-    toZonedTime(date, ATTENDANCE_CONSTANTS.TIME_ZONE),
-    'yyyy-MM-dd',
-  );
-}
+  IAttendance,
+  IAttendanceCore,
+} from 'src/domain/attendance/entities/attendance.interface';
+import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 
 /**
  * Generate group key for DynamoDB
@@ -44,22 +31,21 @@ export function generateDailyStudentKey(
  */
 export function calculateTtl(startsAt: Date): number {
   return (
-    Math.floor(startsAt.getTime() / 1000) +
-    60 * 60 * 24 * ATTENDANCE_CONSTANTS.TTL_DAYS
+    Math.floor(startsAt.getTime() / 1000) + 60 * 60 * 24 * 365 // 365일 TTL
   );
 }
 
 /**
  * Builds DynamoDB item by filtering out undefined values (NoSQL best practice)
  */
-export function buildAttendanceItem(item: AttendanceItem): AttendanceItem {
-  const result: Partial<AttendanceItem> = {};
+export function buildAttendanceItem(item: IAttendanceCore): IAttendanceCore {
+  const result: Partial<IAttendanceCore> = {};
   for (const [key, value] of Object.entries(item)) {
     if (value !== undefined) {
-      result[key as keyof AttendanceItem] = value;
+      result[key as keyof IAttendanceCore] = value;
     }
   }
-  return result as AttendanceItem;
+  return result as IAttendanceCore;
 }
 
 /**

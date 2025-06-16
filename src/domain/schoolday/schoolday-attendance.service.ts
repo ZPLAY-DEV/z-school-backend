@@ -5,27 +5,32 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { addDays } from 'date-fns';
 import { fromZonedTime } from 'date-fns-tz';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
 import {
-  ATTENDANCE_CONSTANTS,
-  AttendanceItem,
+  IAttendance,
+  IAttendanceCore,
+} from 'src/domain/attendance/entities/attendance.interface';
+import {
   DeleteRequest,
   WriteRequest,
 } from 'src/domain/attendance/types/attendance.types';
 import {
   buildAttendanceItem,
   calculateTtl,
-  formatToLocalDateString,
   generateDailyStudentKey,
   generateGroupKey,
 } from 'src/domain/attendance/utils/attendance.utils';
 import {
+  BuildAttendanceForStudentDto,
   CreateAttendanceResultDto,
   CreateDynamoRecordWithDateDto,
   CreateDynamoRecordWithRangeDto,
 } from 'src/domain/schoolday/dto/create-dynamo-record.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { chunk } from 'src/helpers/array';
+import { formatDateInKST } from 'src/helpers/time';
 import { DynamoService } from 'src/services/aws/dynamo.service';
 import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 
@@ -54,15 +59,15 @@ export class SchooldayAttendanceService {
    * @param dto - 학교ID, 학기ID, 날짜가 포함된 데이터
    * @returns 생성된 총 기록 수, 실패 수, 이미 존재하는 기록 수를 반환
    */
-  async createAttendanceForDate(
+  async createAttendancesForDate(
     dto: CreateDynamoRecordWithDateDto,
   ): Promise<CreateAttendanceResultDto> {
     const { schoolId, termId, date } = dto;
 
-    const startsAt = this.createTimezoneDate(date, '00:00:00');
-    const endsAt = this.createTimezoneDate(date, '23:59:59');
+    const startsAt = fromZonedTime(`${date}T00:00:00`, 'Asia/Seoul');
+    const endsAt = fromZonedTime(`${date}T23:59:59`, 'Asia/Seoul');
 
-    return this.processAttendanceCreation(schoolId, termId, startsAt, endsAt);
+    return this.createAttendances(schoolId, termId, startsAt, endsAt);
   }
 
   /**
@@ -70,15 +75,15 @@ export class SchooldayAttendanceService {
    * @param dto - 학교ID, 학기ID, 시작날짜, 종료날짜가 포함된 데이터
    * @returns 생성된 총 기록 수, 실패 수, 이미 존재하는 기록 수를 반환
    */
-  async createAttendanceForPeriod(
+  async createAttendancesForPeriod(
     dto: CreateDynamoRecordWithRangeDto,
   ): Promise<CreateAttendanceResultDto> {
     const { schoolId, termId, from, to } = dto;
 
-    const startsAt = this.createTimezoneDate(from, '00:00:00');
-    const endsAt = this.createTimezoneDate(to, '23:59:59');
+    const startsAt = fromZonedTime(`${from}T00:00:00`, 'Asia/Seoul');
+    const endsAt = fromZonedTime(`${to}T23:59:59`, 'Asia/Seoul');
 
-    return this.processAttendanceCreation(schoolId, termId, startsAt, endsAt);
+    return this.createAttendances(schoolId, termId, startsAt, endsAt);
   }
 
   //* ----------------------------------------------------------------------- */
@@ -102,7 +107,7 @@ export class SchooldayAttendanceService {
     }
 
     // 100개씩 청크로 나누어 처리 (TransactWriteItems 제한)
-    const chunks = this.chunkArray(items, 100);
+    const chunks = chunk(items, 100);
     let totalAlreadyExists = 0;
     let totalFailedBatches = 0;
 
@@ -118,7 +123,9 @@ export class SchooldayAttendanceService {
       alreadyExists: totalAlreadyExists,
     };
 
-    this.logBatchResult(result);
+    this.logger.log(
+      `Batch operation completed. Total: ${result.total}, Failed: ${result.failedBatches}, Already exists: ${result.alreadyExists}`,
+    );
     return result;
   }
 
@@ -144,7 +151,7 @@ export class SchooldayAttendanceService {
    * @param attendanceItems - 생성할 출석부 아이템 배열
    * @returns 쓰기 요청 객체 배열
    */
-  createPutRequestBatch(attendanceItems: AttendanceItem[]): WriteRequest[] {
+  createPutRequestBatch(attendanceItems: IAttendanceCore[]): WriteRequest[] {
     return attendanceItems.map((item) => ({
       PutRequest: {
         Item: buildAttendanceItem(item),
@@ -159,7 +166,7 @@ export class SchooldayAttendanceService {
   /**
    * 출석부 기록 생성의 메인 orchestration 메서드
    */
-  private async processAttendanceCreation(
+  private async createAttendances(
     schoolId: number | undefined,
     termId: number | undefined,
     startsAt: Date,
@@ -171,8 +178,8 @@ export class SchooldayAttendanceService {
       startsAt,
       endsAt,
     );
-    const attendanceItems = this.buildAttendanceItems(schooldays, startsAt);
-    const writeRequests = this.createPutRequestBatch(attendanceItems);
+    const attendances = this.buildAttendances(schooldays);
+    const writeRequests = this.createPutRequestBatch(attendances);
 
     return this.executeBatchOperations(writeRequests);
   }
@@ -186,12 +193,18 @@ export class SchooldayAttendanceService {
     startsAt: Date,
     endsAt: Date,
   ): Promise<Schoolday[]> {
-    const whereCondition = this.buildSchoolDayWhereCondition(
-      schoolId,
-      termId,
-      startsAt,
-      endsAt,
-    );
+    const whereCondition: any = {
+      startsAt: MoreThanOrEqual(startsAt),
+      endsAt: LessThanOrEqual(endsAt),
+    };
+
+    if (schoolId !== undefined) {
+      whereCondition.schoolId = schoolId;
+    }
+
+    if (termId !== undefined) {
+      whereCondition.termId = termId;
+    }
 
     return this.schooldayRepository.find({
       where: whereCondition,
@@ -205,98 +218,89 @@ export class SchooldayAttendanceService {
   }
 
   /**
-   * 수업일 데이터로부터 출석부 아이템들을 구축합니다
+   * 수업일 아이템들로부터 출석부 아이템들을 구축합니다
    */
-  private buildAttendanceItems(
-    schooldays: Schoolday[],
-    startsAt: Date,
-  ): AttendanceItem[] {
-    const attendanceItems: AttendanceItem[] = [];
-    const expires = calculateTtl(startsAt);
-
+  private buildAttendances(schooldays: Schoolday[]): IAttendance[] {
+    const attendances: IAttendance[] = [];
     for (const schoolday of schooldays) {
-      const schooldayItems = this.createAttendanceItemsForSchoolday(
-        schoolday,
-        expires,
-      );
-      attendanceItems.push(...schooldayItems);
+      const attendancesForTheDay = this.buildAttendancesForTheDay(schoolday);
+      attendances.push(...attendancesForTheDay);
     }
 
-    return attendanceItems;
+    return attendances;
   }
 
   /**
-   * 단일 수업일에 대한 출석부 아이템들을 생성합니다
+   * 단일 수업일에 대한 출석부 아이템들을 생성합니다.
+   * 당연한 이야기지만, picks (수강확정된 학생) 관계가 없으면 생성 안된다.
    */
-  private createAttendanceItemsForSchoolday(
-    schoolday: Schoolday,
-    expires: number,
-  ): AttendanceItem[] {
+  private buildAttendancesForTheDay(schoolday: Schoolday): IAttendance[] {
     const { group, startsAt, duration, lessonId, groupId } = schoolday;
     const { groupStudents: picks, groupName, lesson } = group;
-    const localDate = formatToLocalDateString(startsAt);
-    const items: AttendanceItem[] = [];
+    const localDate = formatDateInKST(startsAt);
+    const expires = calculateTtl(addDays(new Date(), 365));
+    const attendances: IAttendance[] = [];
 
     for (const pick of picks ?? []) {
-      if (this.shouldSkipStudentForSchoolday(pick, startsAt)) {
+      if (this.shouldSkipStudentForTheDay(pick, startsAt)) {
         continue;
       }
 
-      const attendanceItem = this.buildAttendanceItemForStudent(
+      const dto: BuildAttendanceForStudentDto = {
         pick,
         localDate,
-        Number(groupId),
-        String(groupName),
-        Number(lessonId),
-        lesson?.lessonName,
-        String(group.start),
-        String(group.end),
-        Number(duration),
+        lessonId,
+        lessonName: lesson?.lessonName,
+        groupId,
+        groupName,
+        start: group.start,
+        end: group.end,
+        duration,
         expires,
-      );
+      };
+      const attendance = this.buildAttendanceForStudent(dto);
 
-      items.push(attendanceItem);
+      attendances.push(attendance);
     }
 
-    return items;
+    return attendances;
   }
 
   /**
-   * 해당 수업일에 대해 학생을 제외할지 판단합니다
+   * 수업종료일이 설정된 학생이 있으면, 그 학생은 제외해야 한다.
    */
-  private shouldSkipStudentForSchoolday(pick: any, startsAt: Date): boolean {
+  private shouldSkipStudentForTheDay(pick: any, startsAt: Date): boolean {
     if (!pick.endedOn) return false;
 
-    const endDate = fromZonedTime(
-      `${pick.endedOn}T23:59:59`,
-      ATTENDANCE_CONSTANTS.TIME_ZONE,
-    );
-
+    const endDate = fromZonedTime(`${pick.endedOn}T23:59:59`, 'Asia/Seoul');
     return endDate < startsAt;
   }
 
   /**
    * 학생 한 명에 대한 출석부 아이템을 구축합니다
    */
-  private buildAttendanceItemForStudent(
-    pick: any,
-    localDate: string,
-    groupId: number,
-    groupName: string,
-    lessonId: number,
-    lessonName: string | undefined,
-    start: string,
-    end: string,
-    duration: number,
-    expires: number,
-  ): AttendanceItem {
+  private buildAttendanceForStudent(
+    dto: BuildAttendanceForStudentDto,
+  ): IAttendance {
+    const {
+      pick,
+      localDate,
+      lessonId,
+      lessonName,
+      groupId,
+      groupName,
+      start,
+      end,
+      duration,
+      expires,
+    } = dto;
     const groupKey = generateGroupKey(groupId);
     const dailyStudentKey = generateDailyStudentKey(
       localDate,
-      pick.student.id as number,
-      pick.student.grade as string,
-      pick.student.class as string,
-      pick.student.studentCode as number,
+      pick.student.id,
+      pick.student.grade,
+      pick.student.class,
+      pick.student.studentCode,
     );
 
     return {
@@ -313,7 +317,7 @@ export class SchooldayAttendanceService {
       duration,
       status: AttendanceStatus.PENDING,
       expires,
-    };
+    } as IAttendance;
   }
 
   /**
@@ -364,71 +368,16 @@ export class SchooldayAttendanceService {
    * Handles errors from DynamoDB operations
    */
   private handleOperationError(error: any): 'failed' | 'already_exists' {
-    if (this.isConditionalCheckFailure(error)) {
+    if (
+      error.name === 'ConditionalCheckFailedException' ||
+      error.code === 'ConditionalCheckFailedException'
+    ) {
       this.logger.log('Item already exists, skipping...');
       return 'already_exists';
     }
 
     this.logger.error('DynamoDB operation failed', error);
     return 'failed';
-  }
-
-  //* ----------------------------------------------------------------------- */
-  // UTILITY METHODS
-  //* ----------------------------------------------------------------------- */
-
-  /**
-   * 타임존을 고려한 날짜 객체를 생성합니다
-   */
-  private createTimezoneDate(dateString: string, timeString: string): Date {
-    return fromZonedTime(
-      `${dateString}T${timeString}`,
-      ATTENDANCE_CONSTANTS.TIME_ZONE,
-    );
-  }
-
-  /**
-   * 수업일 조회를 위한 WHERE 조건을 구축합니다
-   */
-  private buildSchoolDayWhereCondition(
-    schoolId: number | undefined,
-    termId: number | undefined,
-    startsAt: Date,
-    endsAt: Date,
-  ): any {
-    const whereCondition: any = {
-      startsAt: MoreThanOrEqual(startsAt),
-      endsAt: LessThanOrEqual(endsAt),
-    };
-
-    if (schoolId !== undefined) {
-      whereCondition.schoolId = schoolId;
-    }
-
-    if (termId !== undefined) {
-      whereCondition.termId = termId;
-    }
-
-    return whereCondition;
-  }
-
-  /**
-   * 에러가 조건 체크 실패인지 확인합니다
-   */
-  private isConditionalCheckFailure(error: any): boolean {
-    return (
-      error.name === 'ConditionalCheckFailedException' ||
-      error.code === 'ConditionalCheckFailedException'
-    );
-  }
-
-  /**
-   * 일괄 작업 결과를 로그로 기록합니다
-   */
-  private logBatchResult(result: CreateAttendanceResultDto): void {
-    this.logger.log(
-      `Batch operation completed. Total: ${result.total}, Failed: ${result.failedBatches}, Already exists: ${result.alreadyExists}`,
-    );
   }
 
   /**
@@ -469,7 +418,10 @@ export class SchooldayAttendanceService {
     } catch (error) {
       this.logger.error(`Transaction failed:`, error);
 
-      if (this.isTransactionCancelled(error)) {
+      if (
+        error.name === 'TransactionCanceledException' ||
+        error.code === 'TransactionCanceledException'
+      ) {
         // TransactionCanceledException의 경우 개별 처리로 fallback
         return this.fallbackToIndividualProcessing(items);
       }
@@ -498,26 +450,5 @@ export class SchooldayAttendanceService {
     }
 
     return { alreadyExists, failedBatches };
-  }
-
-  /**
-   * 배열을 지정된 크기의 청크로 나눕니다
-   */
-  private chunkArray<T>(array: T[], chunkSize: number): T[][] {
-    const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += chunkSize) {
-      chunks.push(array.slice(i, i + chunkSize));
-    }
-    return chunks;
-  }
-
-  /**
-   * TransactionCanceledException 여부를 확인합니다
-   */
-  private isTransactionCancelled(error: any): boolean {
-    return (
-      error.name === 'TransactionCanceledException' ||
-      error.code === 'TransactionCanceledException'
-    );
   }
 }

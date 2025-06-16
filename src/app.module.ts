@@ -46,6 +46,8 @@ import { PhoneModule } from './domain/phone/phone.module';
 import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
 import { DispatchModule } from './domain/dispatch/dispatch.module';
+import { AttendanceModule } from 'src/domain/attendance/attendance.module';
+import { EventModule } from 'src/domain/event/event.module';
 
 @Module({
   imports: [
@@ -91,10 +93,6 @@ import { DispatchModule } from './domain/dispatch/dispatch.module';
         };
       },
     }),
-
-    /**
-     * DynamoDB를 사용할지 말지 Fix 필요
-     * */
     DynamooseModule.forRoot({
       local:
         process.env.NODE_ENV === 'development'
@@ -111,8 +109,14 @@ import { DispatchModule } from './domain/dispatch/dispatch.module';
         suffix: '_table',
       },
     }),
+    HealthModule,
     RedisModule,
+    SlackModule,
+    UploadModule,
+    AttendanceModule,
+    EventModule,
     AuthModule,
+    BoardModule,
     BookingModule,
     CalendarModule,
     CategoryModule,
@@ -125,10 +129,10 @@ import { DispatchModule } from './domain/dispatch/dispatch.module';
     OfferingModule,
     ParentModule,
     PayoutModule,
+    PhoneModule,
     SamModule,
-    SchoolModule,
     SchooldayModule,
-    SlackModule,
+    SchoolModule,
     StatementModule,
     StudentModule,
     SubsidyModule,
@@ -159,10 +163,10 @@ import { DispatchModule } from './domain/dispatch/dispatch.module';
     //   provide: APP_INTERCEPTOR,
     //   useClass: HttpCacheInterceptor,
     // },
-    // {
-    //   provide: APP_FILTER,
-    //   useClass: SentryCatchAllFilter, // 500 이상오류, Sentry/Slack 보고
-    // },
+    {
+      provide: APP_FILTER,
+      useClass: SentryCatchAllFilter, // 500 이상오류, Sentry/Slack 보고
+    },
     AppService,
   ],
 })

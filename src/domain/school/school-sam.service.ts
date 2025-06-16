@@ -167,7 +167,6 @@ export class SchoolSamService {
               { id: instructor.id },
               {
                 userId: dto.instructor.userId,
-                pushToken: dto.instructor.pushToken,
                 termsAgreedAt: dto.instructor.termsAgreedAt,
               },
             );
@@ -177,7 +176,6 @@ export class SchoolSamService {
               userId: dto.instructor.userId,
               name: dto.instructor.name,
               phone: dto.instructor.phone,
-              pushToken: dto.instructor.pushToken,
               termsAgreedAt: dto.instructor.termsAgreedAt,
             });
             instructor = await manager.save(Instructor, instructor);

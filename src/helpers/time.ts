@@ -1,4 +1,5 @@
-import { add, differenceInMinutes, parse } from 'date-fns';
+import { add, differenceInMinutes, format, parse } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 
 /**
  * duration in minutes
@@ -47,4 +48,11 @@ export function parseValidityToDate(validity?: string): Date {
 
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Convert Date to local date string in Korean timezone
+ */
+export function formatDateInKST(date: Date): string {
+  return format(toZonedTime(date, 'Asia/Seoul'), 'yyyy-MM-dd');
 }

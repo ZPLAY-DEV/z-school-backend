@@ -7,12 +7,12 @@ import {
 import {
   buildAttendanceItem,
   calculateTtl,
-  formatToLocalDateString,
   generateDailyStudentKey,
   generateGroupKey,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
+import { formatDateInKST } from 'src/helpers/time';
 import { DataSource, EntitySubscriberInterface, UpdateEvent } from 'typeorm';
 
 @Injectable()
@@ -79,8 +79,8 @@ export class SchooldaySubscriber
       }
 
       // 3. 이전 날짜와 새 날짜 계산
-      const prevLocalDateStr = formatToLocalDateString(prev.startsAt);
-      const newLocalDateStr = formatToLocalDateString(schoolday.startsAt);
+      const prevLocalDateStr = formatDateInKST(prev.startsAt);
+      const newLocalDateStr = formatDateInKST(schoolday.startsAt);
 
       // 날짜가 실제로 변경되지 않았다면 처리하지 않음
       if (prevLocalDateStr === newLocalDateStr) {

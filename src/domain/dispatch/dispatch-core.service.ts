@@ -144,12 +144,12 @@ export class DispatchCoreService {
         phone: parent.phone,
         target: 'dispatches',
         targetArgs: `https://z-school.com/dispatchId=${dispatchId}&studentId=${student.id}&nanoid=${generatedNanoId}`,
-        expiresAt: parseValidityToDate('30d'), // 수강신청 끝나는 시점으로 지정 해야함.
+        expiresAt: parseValidityToDate('30d'), // @todo 수강신청 끝나는 시점으로 지정 해야함.
       };
 
       const message = {
         id: parent.id,
-        token: parent.pushToken ?? '',
+        token: parent?.user?.pushToken ?? '',
         phone: parent.phone,
         title: dto.title,
         body: dto.title,
@@ -241,7 +241,10 @@ export class DispatchCoreService {
   ): Promise<Student[]> {
     return await manager.find(Student, {
       where: { id: In(studentIds) },
-      select: { id: true, parent: { id: true, phone: true, pushToken: true } },
+      select: {
+        id: true,
+        parent: { id: true, phone: true, user: { pushToken: true } },
+      },
       relations: { parent: true },
     });
   }
@@ -255,7 +258,7 @@ export class DispatchCoreService {
       where: { id: In(samIds) },
       select: {
         id: true,
-        instructor: { id: true, phone: true, pushToken: true },
+        instructor: { id: true, phone: true, user: { pushToken: true } },
       },
       relations: { instructor: true },
     });

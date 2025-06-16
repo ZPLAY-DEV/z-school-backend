@@ -3,7 +3,7 @@ export interface IAttendanceKey {
   dailyStudentKey: string; // sort key, e.g. "DATE#2025-05-01#STUDENT#1학년1반-10"
 }
 
-export interface IAttendance extends IAttendanceKey {
+export interface IAttendanceCore extends IAttendanceKey {
   lessonId?: number;
   lessonName?: string;
   groupId?: number;
@@ -13,9 +13,12 @@ export interface IAttendance extends IAttendanceKey {
   start?: string; // e.g. "14:00"
   end?: string; // e.g. "14:40"
   duration?: number; // e.g. 40
-  status?: 'PENDING' | 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED_ABSENT';
+  status?: 'PENDING' | 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
+  expires?: number; // for TTL
+}
+
+export interface IAttendance extends IAttendanceCore {
   parentNote?: string;
   schoolNote?: string;
-  isRead?: boolean;
-  expires?: number;
+  isRead?: boolean; // do we even need this?
 }

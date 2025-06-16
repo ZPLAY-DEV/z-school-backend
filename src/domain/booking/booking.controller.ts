@@ -1,11 +1,11 @@
 import { Body, Controller, Delete, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { EnrollmentRule } from 'src/common/enums';
+import { PickRule } from 'src/common/enums';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { ResponseBookingDto } from 'src/domain/booking/dto/response-booking.dto';
 import {
-  CancelBookingSwagger,
-  CreateBookingSwagger,
+    CancelBookingSwagger,
+    CreateBookingSwagger,
 } from 'src/domain/booking/swagger/booking-swagger.decorator';
 import { BookingService } from './booking.service';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
@@ -24,7 +24,7 @@ export class BookingController {
   @Post()
   @CreateBookingSwagger()
   async create(@Body() dto: CreateBookingDto): Promise<ResponseBookingDto> {
-    if (dto.enrollmentRule === EnrollmentRule.FIRST) {
+    if (dto.pickRule === PickRule.FIRST) {
       return await this.bookingService.createWithRedis(dto);
     } else {
       return await this.bookingService.createWithDb(dto);
@@ -38,7 +38,7 @@ export class BookingController {
   @Delete()
   @CancelBookingSwagger()
   async cancel(@Body() dto: CancelBookingDto): Promise<number> {
-    if (dto.enrollmentRule === EnrollmentRule.FIRST) {
+    if (dto.pickRule === PickRule.FIRST) {
       return await this.bookingService.cancelWithRedis(dto);
     } else {
       return await this.bookingService.cancelWithDb(dto);

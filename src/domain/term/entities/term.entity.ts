@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { PickRule } from 'src/common/enums';
+import { LimitedPickRule, PickRule } from 'src/common/enums';
 import { Dispatch } from 'src/domain/dispatch/entities/dispatch.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -82,21 +82,21 @@ export class Term {
     default: PickRule.RANDOM,
     comment: '1차 default 선택방식. 학교에서 선호하는 기본 선택방법',
   })
-  defaultPickRule: PickRule;
+  basicPickRule: PickRule;
 
   @ApiProperty({
     description:
       '🈳 2차 extra 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
-    default: PickRule.RANDOM,
+    default: LimitedPickRule.RANDOM,
   })
   @Column({
     type: 'enum',
-    enum: PickRule,
-    default: PickRule.RANDOM,
+    enum: LimitedPickRule,
+    default: LimitedPickRule.RANDOM,
     comment:
       '2차 extra 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
   })
-  extraPickRule: PickRule;
+  extraPickRule: LimitedPickRule;
 
   @ApiProperty({ description: '🈳 수강신청 준비 상태', default: false })
   @Column({
@@ -139,7 +139,7 @@ export class Term {
   public offerings: Offering[];
 
   @OneToMany(() => Dispatch, (dispatch) => dispatch.term)
-  dispatch: Dispatch[];
+  public dispatch: Dispatch[];
 
   //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
 

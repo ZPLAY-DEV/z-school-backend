@@ -41,11 +41,6 @@ export class Parent {
   phone: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  @Exclude({ toPlainOnly: true })
-  @ApiProperty({ description: '** deprecated **' })
-  pushToken: string | null;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
   @ApiProperty({ description: '🈳 내용' })
   note: string | null;
 

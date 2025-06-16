@@ -12,5 +12,5 @@ export class AuthInstructorDto {
 
   @IsString()
   @Expose()
-  pushToken: string | null;
+  phone: string | null;
 }

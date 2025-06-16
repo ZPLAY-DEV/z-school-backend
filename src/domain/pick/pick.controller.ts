@@ -62,7 +62,10 @@ export class PickController {
   }
 
   @CreatePickBulkDocs()
-  @ApiOperation({ description: '여러 학생을 한 번에 반에 등록합니다' })
+  @ApiOperation({
+    description:
+      '@deprecated. 수동으로 여러명을 등록하는 usecase 가 있는지 모르겠음.',
+  })
   @Post('/bulk')
   async createBulk(@Body() dto: CreateBulkPickDto): Promise<Pick[]> {
     return await this.pickService.createBulk(dto);
