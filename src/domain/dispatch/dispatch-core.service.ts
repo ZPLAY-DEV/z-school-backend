@@ -5,25 +5,24 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateDispatchDto } from './dto/create-dispatch.dto';
-import { DataSource, EntityManager, In } from 'typeorm';
-import { School } from '../school/entities/school.entity';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { Term } from '../term/entities/term.entity';
-import { Phone } from '../phone/entities/phone.entity';
-import { DispatchMode } from 'src/common/enums';
-import { Dispatch } from './entities/dispatch.entity';
-import { Student } from '../student/entities/student.entity';
-import { SchedulerService } from 'src/services/scheduler/scheduler.service';
+import { nanoid } from 'nanoid';
 import { AWS_SQS_CLIENT, REDIS_DISPATCH_CLIENT } from 'src/common/constants';
+import { DispatchMode } from 'src/common/enums';
+import { IDispatchResponse, IMixedTargetMessage } from 'src/common/interfaces';
+import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { parseValidityToDate } from 'src/helpers/time';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisDispatchService } from 'src/services/redis/redis-dispatch.service';
-import { nanoid } from 'nanoid';
-import { parseValidityToDate } from 'src/helpers/time';
+import { DataSource, EntityManager, In } from 'typeorm';
 import { NanoId } from '../parent/entities/nanoid.entity';
-import { DispatchRead } from './entities/dispatch-read.entity';
+import { Phone } from '../phone/entities/phone.entity';
 import { Sam } from '../sam/entities/sam.entity';
-import { IDispatchResponse, IMixedTargetMessage } from 'src/common/interfaces';
+import { School } from '../school/entities/school.entity';
+import { Student } from '../student/entities/student.entity';
+import { Term } from '../term/entities/term.entity';
+import { CreateDispatchDto } from './dto/create-dispatch.dto';
+import { DispatchRead } from './entities/dispatch-read.entity';
+import { Dispatch } from './entities/dispatch.entity';
 
 @Injectable()
 export class DispatchCoreService {
@@ -34,7 +33,7 @@ export class DispatchCoreService {
     @Inject(REDIS_DISPATCH_CLIENT)
     private readonly redisDispatchService: RedisDispatchService,
     private readonly dataSource: DataSource,
-    private readonly schedulerService: SchedulerService,
+    // private readonly schedulerService: SchedulerService,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -341,37 +340,37 @@ export class DispatchCoreService {
     // const ruleName = `DispatchRule-${dispatch.id}-${Date.now()}`;
 
     // DispatchRule --> 이와 같은 Prefix를 별도로 지정 필요.
-    const ruleName = `DispatchRule-${dispatch.id}`;
-    const queueArn =
-      process.env.AWS_SQS_ARN || 'arn:aws:sqs:ap-northeast-2:000000000000:main';
+    // const ruleName = `DispatchRule-${dispatch.id}`;
+    // const queueArn =
+    //   process.env.AWS_SQS_ARN || 'arn:aws:sqs:ap-northeast-2:000000000000:main';
 
-    try {
-      const result = await this.schedulerService.schedule({
-        ruleName,
-        scheduleTime: dto.reservationDate,
-        targets: [
-          {
-            id: 'dispatch-sqs-target',
-            arn: queueArn,
-            input: {
-              type: 'SEND_DISPATCH',
-              // data: { ...dto, dispatchId: dispatch.id },
-              data: pushPayload,
-            },
-          },
-        ],
-        description: `학교에서 예약 발송건 등록 -> 발송 ID: ${dispatch.id}`,
-      });
+    // try {
+    //   const result = await this.schedulerService.schedule({
+    //     ruleName,
+    //     scheduleTime: dto.reservationDate,
+    //     targets: [
+    //       {
+    //         id: 'dispatch-sqs-target',
+    //         arn: queueArn,
+    //         input: {
+    //           type: 'SEND_DISPATCH',
+    //           // data: { ...dto, dispatchId: dispatch.id },
+    //           data: pushPayload,
+    //         },
+    //       },
+    //     ],
+    //     description: `학교에서 예약 발송건 등록 -> 발송 ID: ${dispatch.id}`,
+    //   });
 
-      this.logger.log(
-        `Scheduled dispatch ${dispatch.id} with rule ${ruleName}`,
-      );
-      return result;
-    } catch (error) {
-      this.logger.error(
-        `Failed to schedule dispatch ${dispatch.id}: ${error.message}`,
-      );
-      throw error;
-    }
+    //   this.logger.log(
+    //     `Scheduled dispatch ${dispatch.id} with rule ${ruleName}`,
+    //   );
+    //   return result;
+    // } catch (error) {
+    //   this.logger.error(
+    //     `Failed to schedule dispatch ${dispatch.id}: ${error.message}`,
+    //   );
+    //   throw error;
+    // }
   }
 }

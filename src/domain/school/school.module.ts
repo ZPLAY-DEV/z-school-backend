@@ -26,21 +26,20 @@ import { SchoolService } from 'src/domain/school/school.service';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { S3Module } from 'src/services/aws/s3.module';
+import { SqsModule } from 'src/services/aws/sqs.module';
 import { NeisModule } from 'src/services/neis/neis.module';
+import { RedisModule } from 'src/services/redis/redis.module';
 import { SlackModule } from 'src/services/slack/slack.module';
 import { UploadModule } from 'src/services/upload/upload.module';
+import { Dispatch } from '../dispatch/entities/dispatch.entity';
 import { SchoolBoardController } from './school-board.controller';
 import { SchoolBoardService } from './school-board.service';
+import { SchoolDispatchController } from './school-dispatch.controller';
+import { SchoolDispatchService } from './school-dispatch.service';
 import { SchoolPhoneController } from './school-phone.controller';
 import { SchoolPhoneService } from './school-phone.service';
 import { SchoolStudentController } from './school-student.controller';
 import { SchoolStudentService } from './school-student.service';
-import { SchoolDispatchService } from './school-dispatch.service';
-import { SchoolDispatchController } from './school-dispatch.controller';
-import { SqsModule } from 'src/services/aws/sqs.module';
-import { RedisModule } from 'src/services/redis/redis.module';
-import { SchedulerModule } from 'src/services/scheduler/scheduler.module';
-import { Dispatch } from '../dispatch/entities/dispatch.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -65,7 +64,6 @@ import { Dispatch } from '../dispatch/entities/dispatch.entity';
     LessonModule,
     SqsModule,
     RedisModule,
-    SchedulerModule,
   ],
   controllers: [
     SchoolController,
