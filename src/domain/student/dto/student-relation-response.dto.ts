@@ -13,5 +13,5 @@ export class StudentRelationResponseDto extends StudentResponseDto {
     isArray: true,
     nullable: true,
   })
-  groupStudents: GroupResponseDto[];
+  picks: GroupResponseDto[];
 }

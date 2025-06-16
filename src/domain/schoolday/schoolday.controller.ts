@@ -55,8 +55,8 @@ export class SchooldayController {
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Schoolday> {
     return await this.schooldayService.findById(id, [
       'group',
-      'group.groupStudents',
-      'group.groupStudents.student',
+      'group.picks',
+      'group.picks.student',
       'group.lesson',
     ]);
   }

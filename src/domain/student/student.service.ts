@@ -157,7 +157,7 @@ export class StudentService {
     const student = await this.studentRepository
       .createQueryBuilder('student')
       .leftJoinAndSelect('student.parent', 'parent')
-      .leftJoinAndSelect('student.groupStudents', 'groupStudents')
+      .leftJoinAndSelect('student.picks', 'picks')
       .where('student.id = :id', { id })
       .getOne();
 

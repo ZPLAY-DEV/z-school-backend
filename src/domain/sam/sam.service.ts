@@ -140,7 +140,7 @@ export class SamService {
   async groups(id: number): Promise<Group[]> {
     const sam = await this.samRepository.findOneOrFail({
       where: { id },
-      relations: ['groups', 'groups.groupStudents'],
+      relations: ['groups', 'groups.picks'],
     });
 
     return sam?.groups ?? [];

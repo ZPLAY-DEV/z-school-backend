@@ -62,7 +62,7 @@ export const StudentFindByIdDocs = () => {
       summary: '✅ 학생 상세 조회',
       description: `
       - 학생의 상세 정보를 조회한다.
-      - 학생 상세 정보에서 수강중인 강좌 수는 반환되는 groupStudents 객체의 length 값으로 처리해야한다.
+      - 학생 상세 정보에서 수강중인 강좌 수는 반환되는 picks 객체의 length 값으로 처리해야한다.
       - 학생 상세 정보에서 학부모앱 사용 여부는 반환되는 parent 객체의 userId 값이 null 값으로 존재 여부를 판별해야한다.
       `,
     }),

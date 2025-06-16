@@ -8,5 +8,5 @@ export class GroupPickResponseDto extends GroupResponseDto {
     type: PickResponseDto,
     isArray: true,
   })
-  groupStudents: PickResponseDto[];
+  picks: PickResponseDto[];
 }

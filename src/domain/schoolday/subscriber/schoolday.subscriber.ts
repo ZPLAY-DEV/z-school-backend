@@ -57,7 +57,7 @@ export class SchooldaySubscriber
           where: { id: schoolday.id },
           relations: {
             group: {
-              groupStudents: {
+              picks: {
                 student: true,
               },
               lesson: true,
@@ -71,7 +71,7 @@ export class SchooldaySubscriber
       }
 
       const { group } = schooldayWithRelations;
-      const { groupStudents: picks, lesson } = group;
+      const { picks, lesson } = group;
 
       if (!picks || picks.length === 0) {
         this.logger.warn(`No students found for schoolday ID: ${schoolday.id}`);

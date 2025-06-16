@@ -52,13 +52,13 @@ export class GroupAttendanceService {
       where: { id: groupId },
       relations: [
         'lesson',
-        'groupStudents',
-        'groupStudents.student',
-        'groupStudents.student.parent',
-        'groupStudents.student.parent.user',
+        'picks',
+        'picks.student',
+        'picks.student.parent',
+        'picks.student.parent.user',
       ],
     });
-    const allStudents = group.groupStudents.map((v) => v.student);
+    const allStudents = group.picks.map((v) => v.student);
     const studentIds = dtos.map((v) =>
       this.extractStudentIdFromRangeKey(v.dailyStudentKey),
     );
@@ -101,13 +101,13 @@ export class GroupAttendanceService {
       where: { id: groupId },
       relations: [
         'lesson',
-        'groupStudents',
-        'groupStudents.student',
-        'groupStudents.student.parent',
-        'groupStudents.student.parent.user',
+        'picks',
+        'picks.student',
+        'picks.student.parent',
+        'picks.student.parent.user',
       ],
     });
-    const allStudents = group.groupStudents.map((v) => v.student);
+    const allStudents = group.picks.map((v) => v.student);
     const studentIds = dtos.map((v) =>
       this.extractStudentIdFromRangeKey(v.dailyStudentKey),
     );

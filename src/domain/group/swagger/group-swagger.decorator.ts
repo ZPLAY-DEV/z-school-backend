@@ -67,13 +67,13 @@ export const FindGroupDocs = () => {
     }),
     ApiExtraModels(Group, Pick),
     ApiOkResponse({
-      description: '반 상세 조회 완료 (groupStudents 관계 포함)',
+      description: '반 상세 조회 완료 (picks 관계 포함)',
       schema: {
         allOf: [
           { $ref: getSchemaPath(Group) },
           {
             properties: {
-              groupStudents: {
+              picks: {
                 type: 'array',
                 items: { $ref: getSchemaPath(Pick) },
                 description: '연결된 학생 목록 포함됨',
@@ -123,7 +123,7 @@ export const UpdateGroupDocs = () => {
     }),
     ApiExtraModels(Group),
     ApiOkResponseTemplate({
-      description: '반 수정 완료 (groupStudents 관계 포함 안됨)',
+      description: '반 수정 완료 (picks 관계 포함 안됨)',
       type: Group,
     }),
     ApiErrorResponseTemplate([

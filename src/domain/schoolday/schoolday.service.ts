@@ -49,7 +49,7 @@ export class SchooldayService {
       },
       relations: {
         group: {
-          groupStudents: {
+          picks: {
             student: true,
           },
         },
@@ -67,7 +67,7 @@ export class SchooldayService {
     const queryBuilder = this.schooldayRepository
       .createQueryBuilder('schoolday')
       .leftJoinAndSelect('schoolday.group', 'group')
-      .leftJoinAndSelect('group.groupStudents', 'groupStudents');
+      .leftJoinAndSelect('group.picks', 'picks');
 
     return await queryBuilder.getMany();
   }

@@ -240,7 +240,7 @@ export class SchooldayAttendanceService {
       where: whereCondition,
       relations: {
         group: {
-          groupStudents: { student: true },
+          picks: { student: true },
           lesson: true,
         },
       },
@@ -266,7 +266,7 @@ export class SchooldayAttendanceService {
    */
   private buildAttendancesForTheDay(schoolday: Schoolday): IAttendance[] {
     const { group, startsAt, duration, lessonId, groupId } = schoolday;
-    const { groupStudents: picks, groupName, lesson } = group;
+    const { picks, groupName, lesson } = group;
     const localDate = formatDateInKST(startsAt);
     const expires = calculateTtl(addDays(new Date(), 365));
     const attendances: IAttendance[] = [];

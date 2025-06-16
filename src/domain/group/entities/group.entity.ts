@@ -143,7 +143,7 @@ export class Group {
     description: '🈳 연결된 학생 목록',
   })
   @OneToMany(() => Pick, (gs) => gs.group)
-  groupStudents: Pick[];
+  picks: Pick[];
 
   @OneToMany(() => Board, (board) => board.group)
   boards: Board[];

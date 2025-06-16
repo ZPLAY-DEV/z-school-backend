@@ -55,7 +55,7 @@ describe('calculateLessonDays', () => {
     schooldays: [],
     sam: undefined,
     lesson: undefined,
-    groupStudents: [],
+    picks: [],
     boards: [],
   });
 

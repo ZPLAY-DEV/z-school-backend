@@ -110,9 +110,9 @@ export class Pick {
   @DeleteDateColumn()
   deletedAt: Date | null;
 
-  @ManyToOne(() => Student, (student) => student.groupStudents)
+  @ManyToOne(() => Student, (student) => student.picks)
   student: Student;
 
-  @ManyToOne(() => Group, (group) => group.groupStudents)
+  @ManyToOne(() => Group, (group) => group.picks)
   group: Group;
 }
