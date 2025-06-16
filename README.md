@@ -45,7 +45,7 @@ $ pnpm run test:cov
 
 AWS 다양한 인프라를 사용하고 있기 때문에, 반드시 `docker-compose up -d` 해야만 정상동작이 가능하다. 기본적으로 /Users/Shared/docker 라는 절대경로로 지정한 폴더하위에 모든 데이터가 저장되도록 만들었으나, 일부 sqs 나 lambda 는 persist 되지 않아서 재부팅시 마다 다시 실행해야하는 경우도 있다.
 
-아래의 두개 폴더에서 람다함수를 각각 설치해야한다.
+아래의 두개 폴더에서 람다함수를 각각 설치해야한다. 설치설명은 각각의 리포 리드미 정보에서 찾아 볼 수 도 있다.
 
 - https://github.com/ZPLAY-DEV/v3-sqs-lambda
 - https://github.com/ZPLAY-DEV/v3-events-lambda
@@ -59,13 +59,7 @@ AWS 다양한 인프라를 사용하고 있기 때문에, 반드시 `docker-comp
 awslocal sqs create-queue --queue-name dead
 awslocal sqs create-queue --queue-name main --attributes '{"RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:ap-northeast-2:000000000000:dead\",\"maxReceiveCount\":\"2\"}"}'
 
-
-
-
 ```
-
-
-
 
 ## Swagger (Api Docs)
 
