@@ -21,4 +21,5 @@ export * from './subsidy-status';
 export * from './subsidy-type';
 export * from './time-unit';
 export * from './weekday';
-
+export * from './target-group';
+export * from './dispatch';

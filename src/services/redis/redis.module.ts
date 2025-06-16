@@ -7,12 +7,15 @@ import {
   REDIS_BOOKING_OPTIONS,
   REDIS_CACHE_CLIENT,
   REDIS_CACHE_OPTIONS,
+  REDIS_DISPATCH_CLIENT,
+  REDIS_DISPATCH_OPTIONS,
   REDIS_MESSAGE_CLIENT,
   REDIS_MESSAGE_OPTIONS,
 } from 'src/common/constants';
 import { RedisBookingService } from './redis-booking.service';
 import { RedisCacheService } from './redis-cache.service';
 import { RedisMessageService } from './redis-message.service';
+import { RedisDispatchService } from './redis-dispatch.service';
 
 @Module({
   providers: [
@@ -63,10 +66,22 @@ import { RedisMessageService } from './redis-message.service';
       }),
       inject: [ConfigService],
     },
+    // Dispatch options provider
+    {
+      provide: REDIS_DISPATCH_OPTIONS,
+      useFactory: (configService: ConfigService) => ({
+        host: configService.get<string>('redis.host', 'localhost'),
+        port: configService.get<number>('redis.port', 6379),
+        password: configService.get<string>('redis.password', ''),
+        db: configService.get<number>('redis.dispatchDb', 3),
+      }),
+      inject: [ConfigService],
+    },
     // Service providers
     RedisBookingService,
     RedisCacheService,
     RedisMessageService,
+    RedisDispatchService,
     // Booking service provider
     {
       provide: REDIS_BOOKING_CLIENT,
@@ -82,15 +97,22 @@ import { RedisMessageService } from './redis-message.service';
       provide: REDIS_MESSAGE_CLIENT,
       useExisting: RedisMessageService,
     },
+    // Dispatch client provider
+    {
+      provide: REDIS_DISPATCH_CLIENT,
+      useExisting: RedisDispatchService,
+    },
   ],
   exports: [
     KEYV_REDIS,
     REDIS_BOOKING_CLIENT,
     REDIS_CACHE_CLIENT,
     REDIS_MESSAGE_CLIENT,
+    REDIS_DISPATCH_CLIENT,
     RedisBookingService,
     RedisCacheService,
     RedisMessageService,
+    RedisDispatchService,
   ],
 })
 export class RedisModule {}

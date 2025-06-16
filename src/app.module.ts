@@ -45,6 +45,7 @@ import { BoardModule } from './domain/board/board.module';
 import { PhoneModule } from './domain/phone/phone.module';
 import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
+import { DispatchModule } from './domain/dispatch/dispatch.module';
 import { AttendanceModule } from 'src/domain/attendance/attendance.module';
 import { EventModule } from 'src/domain/event/event.module';
 
@@ -138,6 +139,11 @@ import { EventModule } from 'src/domain/event/event.module';
     TermModule,
     TextModule,
     UserModule,
+    UploadModule,
+    HealthModule,
+    PhoneModule,
+    BoardModule,
+    DispatchModule,
   ],
   controllers: [AppController],
   providers: [

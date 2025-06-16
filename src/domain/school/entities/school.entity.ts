@@ -3,6 +3,7 @@ import { Exclude } from 'class-transformer';
 import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
 import { MessageType } from 'src/common/enums/message-type';
+import { Dispatch } from 'src/domain/dispatch/entities/dispatch.entity';
 import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
@@ -165,6 +166,9 @@ export class School {
     cascade: ['insert', 'update'],
   })
   public sams: Sam[];
+
+  @OneToMany(() => Dispatch, (dispatch) => dispatch.school)
+  public dispatch: Dispatch[];
 
   //? Constructor ---------------------------------------------------------- ?//
 
