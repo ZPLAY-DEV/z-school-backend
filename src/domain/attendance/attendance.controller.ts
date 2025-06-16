@@ -16,12 +16,7 @@ import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AttendanceService } from 'src/domain/attendance/attendance.service';
 import { AttendanceKeyDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
-
 import { IAttendanceKey } from 'src/domain/attendance/entities/attendance.interface';
-import {
-  DeleteAttendanceDocs,
-  FetchAttendancesDocs
-} from 'src/domain/attendance/swagger/attendance-swagger.decorator';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 
 @ApiTags('✅ Attendances ( 출석 )')
@@ -38,7 +33,7 @@ export class AttendanceController {
   @ApiOperation({ summary: '⚙️ to initialize table' })
   @HttpCode(200)
   @Post('init')
-  async upsert(): Promise<void> {
+  async init(): Promise<void> {
     await this.attendancesService.init();
   }
 
@@ -46,7 +41,7 @@ export class AttendanceController {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  @FetchAttendancesDocs()
+  @ApiOperation({ summary: '출석목록 (미사용)' })
   @Get()
   async fetch(
     @Query('groupId', ParseIntPipe) groupId: number,
@@ -92,7 +87,7 @@ export class AttendanceController {
     };
   }
 
-  // @GetAttendanceDetailDocs()
+  // @ApiOperation({ summary: '출석상세 (미사용)' })
   // @Get('detail')
   // async getAttendanceById(
   //   @Query('groupId', ParseIntPipe) groupId: number,
@@ -110,8 +105,7 @@ export class AttendanceController {
   //? ---------------------------------------------------------------------- ?//
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
-
-  @DeleteAttendanceDocs()
+  @ApiOperation({ summary: '출석 삭제 (미사용)' })
   @Delete()
   async delete(@Body() dto: AttendanceKeyDto): Promise<void> {
     await this.attendancesService.delete(dto);

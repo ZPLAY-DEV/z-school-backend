@@ -1,17 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  ArrayNotEmpty,
-  IsArray,
-  IsEnum,
-  IsInt,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Length,
-  ValidateNested,
+    ArrayNotEmpty,
+    IsArray,
+    IsEnum,
+    IsInt,
+    IsNumber,
+    IsOptional,
+    IsString,
+    Length,
+    ValidateNested,
 } from 'class-validator';
-import { EnrollmentRule } from 'src/common/enums';
+import { PickRule } from 'src/common/enums';
 import { ClassTimeDto } from 'src/domain/offering/dto/class-time.dto';
 
 export class CreateOfferingDto {
@@ -47,11 +47,11 @@ export class CreateOfferingDto {
 
   @ApiProperty({
     description: '수강신청 방식',
-    enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST,
+    enum: PickRule,
+    default: PickRule.FIRST,
   })
-  @IsEnum(EnrollmentRule)
-  enrollmentRule: EnrollmentRule;
+  @IsEnum(PickRule)
+  pickRule: PickRule;
 
   @ApiProperty({
     description: '요일별 수업 시간 목록',

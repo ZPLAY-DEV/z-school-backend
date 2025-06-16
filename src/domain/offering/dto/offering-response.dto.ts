@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { EnrollmentRule } from 'src/common/enums';
+import { PickRule } from 'src/common/enums';
 import { ITimeRange } from 'src/common/interfaces';
 
 export class OfferingResponseDto {
@@ -31,8 +31,8 @@ export class OfferingResponseDto {
   })
   allowedGrades: number[];
 
-  @ApiProperty({ description: '수강신청 규칙 (enum)', enum: EnrollmentRule })
-  enrollmentRule: EnrollmentRule.FIRST;
+  @ApiProperty({ description: '수강신청 규칙 (enum)', enum: PickRule })
+  pickRule: PickRule.FIRST;
 
   @ApiProperty({
     description: '수업 시간 정보 (could be multiple)',

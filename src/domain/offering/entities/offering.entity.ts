@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { EnrollmentRule } from 'src/common/enums';
+import { PickRule } from 'src/common/enums';
 import { ITimeRange } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -68,14 +68,14 @@ export class Offering {
 
   @ApiProperty({
     description: '수강신청 규칙 (enum)',
-    enum: EnrollmentRule,
+    enum: PickRule,
   })
   @Column({
     type: 'enum',
-    enum: EnrollmentRule,
-    default: EnrollmentRule.FIRST,
+    enum: PickRule,
+    default: PickRule.FIRST,
   })
-  enrollmentRule: EnrollmentRule;
+  pickRule: PickRule;
 
   @ApiProperty({
     description: '수업 시간 정보 (could be multiple)',

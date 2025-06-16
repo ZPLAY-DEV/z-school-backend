@@ -93,6 +93,12 @@ export class Schoolday {
 
   // ------------------------------------------------------------------------ //
 
+  @Column({ type: 'timestamp', nullable: true })
+  startNotifiedAt: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  endNotifiedAt: Date | null;
+
   @Exclude()
   @ApiProperty({ description: 'createdAt' })
   @CreateDateColumn()

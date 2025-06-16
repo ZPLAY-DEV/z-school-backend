@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AWS_SQS_CLIENT, REDIS_BOOKING_CLIENT } from 'src/common/constants';
-import { BookingStatus, EnrollmentRule } from 'src/common/enums';
+import { BookingStatus, PickRule } from 'src/common/enums';
 import { IBookingSnapshotItem } from 'src/common/interfaces';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { SqsService } from 'src/services/aws/sqs.service';
@@ -38,7 +38,7 @@ export class BookingService {
       let waitingPosition: number;
       let message: string;
 
-      if (dto.enrollmentRule === EnrollmentRule.ANYONE) {
+      if (dto.pickRule === PickRule.ANYONE) {
         // 누구나
         status = BookingStatus.ENROLLED;
         waitingPosition = 0;
@@ -108,7 +108,7 @@ export class BookingService {
       studentId,
       lessonName,
       capacity,
-      enrollmentRule,
+      pickRule,
       isFormerStudent,
     } = dto;
     const timestamp = Date.now();
@@ -165,7 +165,7 @@ export class BookingService {
             studentId,
             lessonName,
             capacity,
-            enrollmentRule, // basically, this is going to be "선착순"
+            pickRule, // basically, this is going to be "선착순"
             isFormerStudent: isFormerStudent ?? false,
             waitingPosition: response.waitingPosition ?? 0,
             status: response.status,

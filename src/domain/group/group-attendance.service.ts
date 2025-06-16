@@ -10,6 +10,7 @@ import { AttendanceStatus } from 'src/common/enums';
 import { NotificationType } from 'src/common/enums/notification-type';
 import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
+import { AttendanceStatusDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
   IAttendance,
   IAttendanceKey,
@@ -45,7 +46,55 @@ export class GroupAttendanceService {
 
   async notifyStart(
     groupId: number, //! e.g. 48
-    date: string, //! e.g. "2025-06-09" <- 하이픈 반드시 포함
+    dtos: AttendanceStatusDto[],
+  ): Promise<number> {
+    const group = await this.groupRepository.findOneOrFail({
+      where: { id: groupId },
+      relations: [
+        'lesson',
+        'groupStudents',
+        'groupStudents.student',
+        'groupStudents.student.parent',
+        'groupStudents.student.parent.user',
+      ],
+    });
+    const allStudents = group.groupStudents.map((v) => v.student);
+    const studentIds = dtos.map((v) =>
+      this.extractStudentIdFromRangeKey(v.dailyStudentKey),
+    );
+    const statusMap = new Map<number, string>();
+    dtos.forEach((dto) => {
+      statusMap.set(
+        this.extractStudentIdFromRangeKey(dto.dailyStudentKey),
+        this.translateStatusInStartContext(dto.status),
+      );
+    });
+    const messages = allStudents
+      .filter((v) => studentIds.includes(v.id))
+      .map((v: Student) => {
+        return {
+          id: v.parent.id,
+          phone: v.parent.phone,
+          token: v.parent.user?.pushToken ?? null,
+          title: `${group.lesson.schoolName}`,
+          body: `${v.name} 학생이 ${group.lesson.lessonName} 수업 ${statusMap.get(v.id)}`,
+          role: 'PARENT',
+        };
+      });
+    // Dynamo 상태 업데이트 (무조건 모두 변경한다.)
+    await this.updateAttendanceStatusInBulk(dtos);
+    await this.notificationService.send({
+      messages,
+      type: NotificationType.PING_CLASS,
+      schoolId: group.lesson.schoolId,
+      role: 'PARENT',
+    });
+    return messages.length;
+  }
+
+  async notifyEnd(
+    groupId: number, //! e.g. 48
+    dtos: AttendanceStatusDto[],
   ): Promise<number> {
     // MySQL 읽고
     const group = await this.groupRepository.findOneOrFail({
@@ -59,89 +108,37 @@ export class GroupAttendanceService {
       ],
     });
     const allStudents = group.groupStudents.map((v) => v.student);
-    const groupKey = generateGroupKey(group.id);
-    // Dynamo 읽고
-    const items = await this.findByDate(groupKey, date);
-    const pendingStudentIds = items
-      .filter((v) => v.status === AttendanceStatus.PENDING)
-      .map((v) => v.studentId);
-    const pendingItemKeys: IAttendanceKey[] = items
-      .filter((v) => v.status === AttendanceStatus.PENDING)
-      .map((v) => ({
-        groupKey,
-        dailyStudentKey: v.dailyStudentKey,
-      }));
+    const studentIds = dtos.map((v) =>
+      this.extractStudentIdFromRangeKey(v.dailyStudentKey),
+    );
+    const statusMap = new Map<number, string>();
+    dtos.forEach((dto) => {
+      statusMap.set(
+        this.extractStudentIdFromRangeKey(dto.dailyStudentKey),
+        this.translateStatusInEndContext(dto.status),
+      );
+    });
     const messages = allStudents
-      .filter((v) => pendingStudentIds.includes(v.id))
+      .filter((v) => studentIds.includes(v.id))
       .map((v: Student) => {
         return {
           id: v.parent.id,
           phone: v.parent.phone,
-          token: v.parent.user?.pushToken,
+          token: v.parent.user?.pushToken ?? null,
           title: `${group.lesson.schoolName}`,
-          body: `${v.name} 학생 ${group.lesson.lessonName} 수업 시작했습니다.`,
+          body: `${v.name} 학생이 ${group.lesson.lessonName} 수업 ${statusMap.get(v.id)}`,
           role: 'PARENT',
         };
       });
-
+    // Dynamo 상태 업데이트 (변경이 필요한 것만 변경한다.)
+    await this.updateAttendanceStatusInBulkOptimized(dtos);
     await this.notificationService.send({
       messages,
       type: NotificationType.PING_CLASS,
       schoolId: group.lesson.schoolId,
       role: 'PARENT',
     });
-    await this.updateStatusesBulk(pendingItemKeys, AttendanceStatus.PRESENT);
     return messages.length;
-  }
-
-  async notifyEnd(
-    groupId: number, //! e.g. 48
-    date: string, //! e.g. "2025-06-09" <- 하이픈 반드시 포함
-  ): Promise<number> {
-    // MySQL 읽고
-    const group = await this.groupRepository.findOneOrFail({
-      where: { id: groupId },
-      relations: [
-        'lesson',
-        'groupStudents',
-        'groupStudents.student',
-        'groupStudents.student.parent',
-      ],
-    });
-    const students = group.groupStudents.map((v) => v.student);
-    const groupKey = generateGroupKey(group.id);
-    // Dynamo 읽고
-    const items = await this.findByDate(groupKey, date);
-    const studentIds = items
-      .filter(
-        (v) =>
-          v.status === AttendanceStatus.PRESENT ||
-          v.status === AttendanceStatus.LATE,
-      )
-      .map((v) => v.studentId);
-    students.filter((v) => studentIds.includes(v.id));
-    const notifications = students.map((v) => {
-      return {
-        id: v.parent.id,
-        title: `${group.lesson.schoolName}`,
-        body: `${v.name} 학생 ${group.lesson.lessonName} 수업 종료했습니다.`,
-      };
-    });
-    // Convert notifications to proper message format
-    const mixedMessages = notifications.map((notification) => ({
-      id: notification.id,
-      title: notification.title,
-      body: notification.body,
-      role: 'PARENT' as const,
-    }));
-
-    await this.notificationService.send({
-      messages: mixedMessages,
-      type: NotificationType.PING_CLASS,
-      schoolId: group.lesson.schoolId,
-      role: 'PARENT',
-    });
-    return notifications.length;
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -149,17 +146,15 @@ export class GroupAttendanceService {
   //? ---------------------------------------------------------------------- ?//
 
   async upsert(
-    groupId: number,
     date: string, //! e.g. "2025-06-08" <- 하이픈 반드시 포함
-    studentId: number,
     dto: UpdateAttendanceDto,
   ): Promise<IAttendance> {
     const group = await this.groupRepository.findOneOrFail({
-      where: { id: groupId },
+      where: { id: dto.groupId },
       relations: ['lesson', 'schooldays'],
     });
     const student = await this.studentRepository.findOneOrFail({
-      where: { id: studentId },
+      where: { id: dto.studentId },
     });
     const schoolday = group.schooldays.find(
       (v) =>
@@ -237,7 +232,10 @@ export class GroupAttendanceService {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  async findByDate(groupKey: string, date: string): Promise<IAttendance[]> {
+  async findAttendancesByDate(
+    groupKey: string,
+    date: string,
+  ): Promise<IAttendance[]> {
     try {
       const prefix = `DATE#${date}`;
       const result = await this.model
@@ -263,23 +261,159 @@ export class GroupAttendanceService {
   }
 
   //? ---------------------------------------------------------------------- ?//
-  //? Bulk Status Update
+  //? Utility Methods
   //? ---------------------------------------------------------------------- ?//
 
-  async updateStatusesBulk(
-    keys: IAttendanceKey[],
-    status: AttendanceStatus,
+  /**
+   * 기본 벌크 업데이트 - 모든 레코드를 무조건 업데이트
+   *
+   * 사용 시나리오:
+   * - 대부분의 레코드가 변경될 것으로 예상되는 경우
+   */
+  async updateAttendanceStatusInBulk(
+    dtos: AttendanceStatusDto[],
   ): Promise<IAttendance[]> {
     try {
-      const updatePromises = keys.map((key) =>
-        this.model.update(key, { status }),
+      const updatePromises = dtos.map((dto) =>
+        this.model.update(
+          {
+            groupKey: dto.groupKey,
+            dailyStudentKey: dto.dailyStudentKey,
+          },
+          { status: dto.status },
+        ),
       );
       const results = await Promise.all(updatePromises);
-      console.log(`✅ Bulk updated ${results.length} attendance records`);
+      console.log(
+        `✅ Bulk updated ${results.length} attendance records (unconditional)`,
+      );
       return results;
     } catch (error) {
       console.error(`[dynamodb] bulk update error`, error);
       throw new BadRequestException(HttpErrorConstants.DYNAMO_UPDATE);
     }
+  }
+
+  /**
+   * WCU 최적화된 벌크 업데이트 - 실제로 상태가 변경되는 경우에만 update 실행
+   *
+   * 사용 시나리오:
+   * - 변경률이 낮을 것으로 예상되는 경우 (변경률 < 80%)
+   * - WCU 비용 절약이 중요한 경우
+   * - 레코드 수가 많고 대부분 변경이 없을 것으로 예상되는 경우
+   */
+  async updateAttendanceStatusInBulkOptimized(
+    dtos: AttendanceStatusDto[],
+  ): Promise<{
+    updatedCount: number;
+    skippedCount: number;
+    results: IAttendance[];
+  }> {
+    try {
+      // 1. 현재 상태 조회
+      const currentRecords = await Promise.all(
+        dtos.map(async (dto) => {
+          try {
+            const record = await this.model.get({
+              groupKey: dto.groupKey,
+              dailyStudentKey: dto.dailyStudentKey,
+            });
+            return { dto, currentRecord: record };
+          } catch {
+            // 레코드가 없으면 새로 생성해야 하므로 업데이트 대상
+            return { dto, currentRecord: null };
+          }
+        }),
+      );
+
+      // 2. 상태가 실제로 변경되는 것만 필터링
+      const recordsToUpdate = currentRecords.filter(
+        ({ dto, currentRecord }) =>
+          !currentRecord || currentRecord.status !== dto.status,
+      );
+
+      if (recordsToUpdate.length === 0) {
+        console.log(
+          `⏭️ No status changes needed, skipping all ${dtos.length} records`,
+        );
+        return {
+          updatedCount: 0,
+          skippedCount: dtos.length,
+          results: currentRecords
+            .map((r) => r.currentRecord)
+            .filter(Boolean) as IAttendance[],
+        };
+      }
+
+      // 3. 변경이 필요한 것만 update 실행
+      const updatePromises = recordsToUpdate.map(({ dto }) =>
+        this.model.update(
+          {
+            groupKey: dto.groupKey,
+            dailyStudentKey: dto.dailyStudentKey,
+          },
+          { status: dto.status },
+        ),
+      );
+
+      const results = await Promise.all(updatePromises);
+      const skippedCount = dtos.length - recordsToUpdate.length;
+
+      console.log(
+        `✅ Optimized bulk update: ${results.length} updated, ${skippedCount} skipped (WCU saved: ${skippedCount})`,
+      );
+
+      return {
+        updatedCount: results.length,
+        skippedCount,
+        results,
+      };
+    } catch (error) {
+      console.error(`[dynamodb] optimized bulk update error`, error);
+      throw new BadRequestException(HttpErrorConstants.DYNAMO_UPDATE);
+    }
+  }
+
+  /**
+   * Extract student IDs from DTOs
+   * dailyStudentKey format: "DATE#2025-06-16#STUDENT#51#2-3-51"
+   */
+  private extractStudentIdFromRangeKey(dailyStudentKey: string): number {
+    const parts = dailyStudentKey.split('#');
+    return Number(parts[3]);
+  }
+
+  private translateStatusInStartContext(status: AttendanceStatus): string {
+    switch (status) {
+      case AttendanceStatus.PRESENT:
+        return '출석함';
+      case AttendanceStatus.LATE:
+        return '미출석함';
+      case AttendanceStatus.ABSENT:
+        return '미출석함';
+    }
+    return '??'; // 이건 나오면 안된다.
+  }
+
+  private translateStatusInEndContext(status: AttendanceStatus): string {
+    switch (status) {
+      case AttendanceStatus.PRESENT:
+        return '마침';
+      case AttendanceStatus.LATE:
+        return '지각함';
+      case AttendanceStatus.ABSENT:
+        return '결석함';
+    }
+    return '??'; // 이건 나오면 안된다.
+  }
+
+  /**
+   * Find attendance records by date
+   */
+  private async findByDate(
+    groupKey: string,
+    date: string,
+  ): Promise<IAttendance[]> {
+    return this.findAttendancesByDate(groupKey, date);
   }
 }

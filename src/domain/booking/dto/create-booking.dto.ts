@@ -1,12 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsBoolean,
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
+    IsBoolean,
+    IsEnum,
+    IsInt,
+    IsOptional,
+    IsString,
 } from 'class-validator';
-import { BookingStatus, EnrollmentRule } from 'src/common/enums';
+import { BookingStatus, PickRule } from 'src/common/enums';
 
 export class CreateBookingDto {
   @ApiProperty({ description: 'ID of the offering', example: 1 })
@@ -28,10 +28,10 @@ export class CreateBookingDto {
 
   @ApiProperty({
     description: '💡 entity 에 존재하지 않지만 신청 로직에서 반드시 필요.',
-    example: EnrollmentRule.FIRST,
+    example: PickRule.FIRST,
   })
-  @IsEnum(EnrollmentRule)
-  enrollmentRule: EnrollmentRule;
+  @IsEnum(PickRule)
+  pickRule: PickRule;
 
   @ApiProperty({ description: '수강신청 과목명', example: '마인드크래프트' })
   @IsString()

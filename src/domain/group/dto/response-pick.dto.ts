@@ -1,22 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { EnrollmentRule } from 'src/common/enums';
+import { PickRule } from 'src/common/enums';
 
 export class ResponsePickDto {
   @ApiProperty({
     description: '수강신청 규칙',
-    enum: EnrollmentRule,
-    example: EnrollmentRule.FIRST,
+    enum: PickRule,
+    example: PickRule.FIRST,
   })
-  enrollmentRule: EnrollmentRule;
+  pickRule: PickRule;
 
   @ApiProperty({ description: '정원수', example: 20 })
-  offeringCapacity: number;
+  capacity: number;
 
   @ApiProperty({ description: '수강확정 인원수', example: 18 })
-  studentsEnrolled: number;
+  filled: number;
 
   @ApiProperty({ description: '빈자리수', example: 2 })
-  availableSlots: number;
+  unfilled: number;
 
   constructor(partial: Partial<ResponsePickDto>) {
     Object.assign(this, partial);

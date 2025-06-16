@@ -67,11 +67,12 @@ docker 에서 사용하는 서비스들의 데이터 저장공간을 project fol
 4. 학기 생성 (Postman 의 학기)
 5. 늘봄분류 seed (Postman 의 늘봄분류)
 6. 학교 > 학생 seed (Postman 의 학교 > 학생 bulk 생성 seed)
-6. 학교 > 학생 seed (Postman 의 학교 > 학생 bulk 생성 seed)
 7. 학교 > 학사일정 생성 (Postman 의 학교 > 학사일정)
 8. 학교 > 늘봄학기 > 과목 bulk 생성 (Postman 의 학교 > 블봄학기 > 과목)
-9. 학교 > 늘봄학기 > 수강신청과목 bulk 생성 (Postman 의 수강신청과목)
-10. 학교 > 학생 bulk 생성 seed (Postman 의 수강신청과목)
+9. 학교 > 늘봄학기 > 수강신청과목 bulk 생성 (Postman 의 수강신청과목) 또는 Term > 늘봄학기 수정 (수강신청기간) 입력하면 해당 학교 해당 학기의 offerings 생성됨
+10. 수강신청입력 (각각 10건 20건 입력가능. 첫번째 사용자)
+  - `node test/booking-anyone.js`
+  - `node test/booking-first.js`
 
 ## Migration
 

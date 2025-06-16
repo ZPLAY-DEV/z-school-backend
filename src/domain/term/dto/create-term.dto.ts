@@ -2,20 +2,15 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsInt,
   IsOptional,
   IsPositive,
   IsString,
-  Length,
   MaxLength,
 } from 'class-validator';
-import { PickRule } from 'src/common/enums';
-import {
-  IsDateTimePriorToDate,
-  IsValidDateRange,
-  IsValidDateTimeRange,
-} from 'src/domain/term/validator/date-range.validator';
+import { LimitedPickRule, PickRule } from 'src/common/enums';
 
 export class CreateTermDto {
   @ApiProperty({ description: '🈳 DB의 학교ID', required: false })
@@ -55,8 +50,7 @@ export class CreateTermDto {
     example: '2025-03-01',
     required: true,
   })
-  @IsString()
-  @Length(10)
+  @IsDateString()
   start: string;
 
   @ApiProperty({
@@ -64,11 +58,7 @@ export class CreateTermDto {
     example: '2025-09-04',
     required: true,
   })
-  @IsString()
-  @Length(10)
-  @IsValidDateRange('start', {
-    message: 'end date must be a valid YYYY-MM-DD and not before start date',
-  })
+  @IsDateString()
   end: string;
 
   @ApiProperty({
@@ -79,9 +69,6 @@ export class CreateTermDto {
   })
   @IsOptional()
   @Type(() => Date)
-  @IsDateTimePriorToDate('start', {
-    message: 'bookingStart must be prior to start date',
-  })
   bookingStart?: Date;
 
   @ApiProperty({
@@ -92,12 +79,6 @@ export class CreateTermDto {
   })
   @IsOptional()
   @Type(() => Date)
-  @IsValidDateTimeRange('bookingStart', {
-    message: 'bookingEnd must be a valid date-time and not before bookingStart',
-  })
-  @IsDateTimePriorToDate('start', {
-    message: 'bookingEnd must be prior to start date',
-  })
   bookingEnd?: Date;
 
   @ApiProperty({ description: '시간 중복 허용 여부', default: false })
@@ -106,19 +87,20 @@ export class CreateTermDto {
   allowTimeOverlap?: boolean;
 
   @ApiProperty({
-    description: 'default 선택방식. 선착순이냐 아니면 추첨이냐? 둘중 하나',
+    description: '기본 선택방식',
     default: PickRule.RANDOM,
   })
   @IsEnum(PickRule)
   @IsOptional()
-  defaultPickRule?: PickRule;
+  basicPickRule?: PickRule;
 
   @ApiProperty({
     description:
       'extra 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
-    default: PickRule.RANDOM,
+    default: LimitedPickRule.RANDOM,
   })
-  @IsEnum(PickRule)
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  @IsEnum(LimitedPickRule)
   @IsOptional()
-  extraPickRule?: PickRule;
+  extraPickRule?: LimitedPickRule;
 }

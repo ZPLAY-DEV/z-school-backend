@@ -1,52 +1,50 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsNumber,
+  IsObject,
+  IsString,
+} from 'class-validator';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
 
-export class CreateDynamoRecordWithRangeDto {
-  @ApiPropertyOptional({ description: 'DB의 학교ID' })
+export class CreateDynamoRecordWithDateDto {
+  @ApiPropertyOptional({ description: '학교ID', example: 1 })
   @IsInt()
-  @Type(() => Number)
-  @IsOptional()
-  schoolId?: number;
+  schoolId: number;
 
-  @ApiPropertyOptional({ description: 'DB의 학기ID' })
+  @ApiPropertyOptional({ description: '학기ID', example: 1 })
   @IsInt()
-  @Type(() => Number)
-  @IsOptional()
-  termId?: number;
+  termId: number;
 
   @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
   @IsString()
+  @IsDateString()
+  date: string; // "2025-08-14" 형식으로 저장
+}
+
+export class CreateDynamoRecordWithRangeDto {
+  @ApiPropertyOptional({ description: '학교ID', example: 1 })
+  @IsInt()
+  schoolId: number;
+
+  @ApiPropertyOptional({ description: '학기ID', example: 1 })
+  @IsInt()
+  termId: number;
+
+  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @IsString()
+  @IsDateString()
   from: string; // "2025-08-14" 형식으로 저장
 
   @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
   @IsString()
+  @IsDateString()
   to: string; // "2025-08-14" 형식으로 저장
 }
 
-export class CreateDynamoRecordWithDateDto {
-  @ApiPropertyOptional({ description: 'DB의 학교ID' })
-  @IsInt()
-  @Type(() => Number)
-  @IsOptional()
-  schoolId?: number;
-
-  @ApiPropertyOptional({ description: 'DB의 학기ID' })
-  @IsInt()
-  @Type(() => Number)
-  @IsOptional()
-  termId?: number;
-
-  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
-  @IsString()
-  date: string; // "2025-08-14" 형식으로 저장
-}
-
 export class CreateAttendanceResultDto {
-  @ApiProperty({
-    description: '생성된 총 출석 기록 수',
-    example: 150,
-  })
+  @ApiProperty({ description: '생성된 총 출석 기록 수', example: 150 })
   total: number;
 
   @ApiProperty({
@@ -60,4 +58,49 @@ export class CreateAttendanceResultDto {
     example: 0,
   })
   alreadyExists?: number;
+}
+
+export class BuildAttendanceForStudentDto {
+  @ApiProperty({
+    description: 'pick',
+    example: '{ studentId: 1, groupId: 1, ... }',
+  })
+  @IsObject()
+  pick: Pick;
+
+  @ApiProperty({ description: 'localDate', example: '2025-08-14' })
+  @IsString()
+  localDate: string;
+
+  @ApiProperty({ description: 'lessonId', example: 40 })
+  @IsNumber()
+  lessonId: number;
+
+  @ApiProperty({ description: 'lessonName', example: '수학' })
+  @IsString()
+  lessonName: string;
+
+  @ApiProperty({ description: 'groupId', example: 40 })
+  @IsNumber()
+  groupId: number;
+
+  @ApiProperty({ description: 'groupName', example: '수학 A반' })
+  @IsString()
+  groupName: string;
+
+  @ApiProperty({ description: 'start', example: '11:00' })
+  @IsString()
+  start: string;
+
+  @ApiProperty({ description: 'end', example: '11:40' })
+  @IsString()
+  end: string;
+
+  @ApiProperty({ description: 'duration', example: 40 })
+  @IsNumber()
+  duration: number;
+
+  @ApiProperty({ description: 'expires', example: 1718438400 })
+  @IsNumber()
+  expires: number;
 }
