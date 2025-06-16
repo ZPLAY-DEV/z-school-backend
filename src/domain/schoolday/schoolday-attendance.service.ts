@@ -29,6 +29,7 @@ import {
   CreateDynamoRecordWithRangeDto,
 } from 'src/domain/schoolday/dto/create-dynamo-record.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
 import { formatDateInKST } from 'src/helpers/time';
 import { DynamoService } from 'src/services/aws/dynamo.service';
@@ -47,6 +48,8 @@ export class SchooldayAttendanceService {
   constructor(
     @InjectRepository(Schoolday)
     private readonly schooldayRepository: Repository<Schoolday>,
+    @InjectRepository(Term)
+    private readonly termRepository: Repository<Term>,
     private readonly dynamoService: DynamoService,
   ) {}
 
@@ -56,10 +59,39 @@ export class SchooldayAttendanceService {
 
   /**
    * 특정 날짜의 수업일 출석부를 생성합니다
-   * @param dto - 학교ID, 학기ID, 날짜가 포함된 데이터
+   * @param date `2025-08-14` 형식의 날짜 문자열
    * @returns 생성된 총 기록 수, 실패 수, 이미 존재하는 기록 수를 반환
    */
-  async createAttendancesForDate(
+  async createAllWithDate(date: string): Promise<CreateAttendanceResultDto[]> {
+    const terms = await this.termRepository.find({
+      where: {
+        isActive: true,
+      },
+    });
+
+    const results: CreateAttendanceResultDto[] = [];
+
+    for (const term of terms) {
+      const schoolId = term.schoolId;
+      const termId = term.id;
+      const startsAt = fromZonedTime(`${date}T00:00:00`, 'Asia/Seoul');
+      const endsAt = fromZonedTime(`${date}T23:59:59`, 'Asia/Seoul');
+
+      console.log(`>>>>`, schoolId, termId, startsAt, endsAt);
+
+      const result = await this.createAttendances(
+        schoolId,
+        termId,
+        startsAt,
+        endsAt,
+      );
+      results.push(result);
+    }
+
+    return results;
+  }
+
+  async createWithDate(
     dto: CreateDynamoRecordWithDateDto,
   ): Promise<CreateAttendanceResultDto> {
     const { schoolId, termId, date } = dto;
@@ -75,7 +107,7 @@ export class SchooldayAttendanceService {
    * @param dto - 학교ID, 학기ID, 시작날짜, 종료날짜가 포함된 데이터
    * @returns 생성된 총 기록 수, 실패 수, 이미 존재하는 기록 수를 반환
    */
-  async createAttendancesForPeriod(
+  async createWithPeriod(
     dto: CreateDynamoRecordWithRangeDto,
   ): Promise<CreateAttendanceResultDto> {
     const { schoolId, termId, from, to } = dto;

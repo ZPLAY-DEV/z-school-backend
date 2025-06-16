@@ -8,11 +8,12 @@ import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-atten
 import { SchooldayController } from 'src/domain/schoolday/schoolday.controller';
 import { SchooldayService } from 'src/domain/schoolday/schoolday.service';
 import { SchooldaySubscriber } from 'src/domain/schoolday/subscriber/schoolday.subscriber';
+import { Term } from 'src/domain/term/entities/term.entity';
 import { DynamoModule } from 'src/services/aws/dynamo.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([School, Schoolday]),
+    TypeOrmModule.forFeature([School, Term, Schoolday]),
     CalendarModule,
     DynamoModule, // to call dynamoDB directly
   ],

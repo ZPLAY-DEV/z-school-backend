@@ -33,23 +33,27 @@ export class SchooldayAttendanceController {
   //? ---------------------------------------------------------------------- ?//
 
   //* CRON JOB 으로 새벽 2시에 호출된다.
-  @CreateAttendanceOfSchooldayWithDateDocs()
   @Public()
+  @Post('attendances')
+  async createAllWithDate(
+    @Body('date') date: string,
+  ): Promise<CreateAttendanceResultDto[]> {
+    return await this.schooldayAttendanceService.createAllWithDate(date);
+  }
+
+  @CreateAttendanceOfSchooldayWithDateDocs()
   @Post('attendances/date')
   async createWithDate(
     @Body() dto: CreateDynamoRecordWithDateDto,
   ): Promise<CreateAttendanceResultDto> {
-    return await this.schooldayAttendanceService.createAttendancesForDate(dto);
+    return await this.schooldayAttendanceService.createWithDate(dto);
   }
 
   @CreateAttendanceOfSchooldayWithPeriodDocs()
-  @Public()
   @Post('attendances/period')
   async createWithPeriod(
     @Body() dto: CreateDynamoRecordWithRangeDto,
   ): Promise<CreateAttendanceResultDto> {
-    return await this.schooldayAttendanceService.createAttendancesForPeriod(
-      dto,
-    );
+    return await this.schooldayAttendanceService.createWithPeriod(dto);
   }
 }
