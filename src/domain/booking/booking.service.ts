@@ -10,7 +10,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { AWS_SQS_CLIENT, REDIS_BOOKING_CLIENT } from 'src/common/constants';
 import { BookingStatus, PickRule } from 'src/common/enums';
 import { IBookingSnapshotItem } from 'src/common/interfaces';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisBookingService } from 'src/services/redis/redis-booking.service';
 import { Repository } from 'typeorm';
@@ -74,7 +73,7 @@ export class BookingService {
         error.code === 1062
       ) {
         throw new UnprocessableEntityException(
-          HttpErrorConstants.ALREADY_BOOKED,
+          '이미 수강신청이 접수되었습니다.',
         );
       }
       this.logger.error(`❌ Booking 실패`, error.stack);
@@ -94,9 +93,7 @@ export class BookingService {
       return affected as number; // Assuming 1 row is affected
     } catch (error) {
       this.logger.error(`❌ Booking 취소 실패`, error.stack);
-      throw new InternalServerErrorException(
-        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-      );
+      throw new InternalServerErrorException(error.message);
     }
   }
 
@@ -179,7 +176,7 @@ export class BookingService {
       this.logger.error(`❌ Booking 실패`, error.stack);
       if (error instanceof Error && error.message === 'BOOKED') {
         throw new UnprocessableEntityException(
-          HttpErrorConstants.ALREADY_BOOKED,
+          '이미 수강신청이 접수되었습니다.',
         );
       }
 
@@ -188,9 +185,7 @@ export class BookingService {
         throw new InternalServerErrorException(error.message);
       }
 
-      throw new InternalServerErrorException(
-        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-      );
+      throw new InternalServerErrorException(error.message);
     }
   }
 
@@ -211,9 +206,7 @@ export class BookingService {
       return 0;
     } catch (error) {
       this.logger.error('❌ Redis booking 데이터 삭제 실패', error.stack);
-      throw new InternalServerErrorException(
-        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-      );
+      throw new InternalServerErrorException(error.message);
     }
   }
 
@@ -254,11 +247,11 @@ export class BookingService {
       this.logger.error(`❌ Booking 취소 실패`, error.stack);
 
       if (error instanceof Error && error.message === 'NOT_FOUND') {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+        throw new NotFoundException(
+          `Booking not found for offering ${offeringId} and student ${studentId}`,
+        );
       }
-      throw new InternalServerErrorException(
-        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-      );
+      throw new InternalServerErrorException(error.message);
     }
   }
 }

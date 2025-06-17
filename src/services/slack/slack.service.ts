@@ -43,9 +43,7 @@ export class SlackService {
         : this.configService.get<string>('slack.activityChannel');
 
     if (!channelId) {
-      throw new Error(
-        `Channel ID for ${channel} not found! Check your config.`,
-      );
+      throw new Error(`Channel of ${channel} not found! Check your config.`);
     }
 
     return channelId;

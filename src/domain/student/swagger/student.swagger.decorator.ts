@@ -7,19 +7,18 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CreateStudentDto } from '../dto/create-student.dto';
 
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { BookingStatus } from 'src/common/enums';
+import { BookingRelationResponseDto } from 'src/domain/booking/dto/booking-relation-response.dto';
+import { GroupSamResponseDto } from 'src/domain/group/dto/group-sam-response.dto';
+import { ScheduleResponseDto } from '../../group/dto/schedule-response.dto';
+import { StudentRelationResponseDto } from '../dto/student-relation-response.dto';
 import { StudentResponseDto } from '../dto/student-response.dto';
 import { UpdateStudentStatusDto } from '../dto/update-student-status.dto';
 import { UpdateStudentDto } from '../dto/update-student.dto';
-import { StudentRelationResponseDto } from '../dto/student-relation-response.dto';
-import { BookingStatus } from 'src/common/enums';
-import { BookingRelationResponseDto } from 'src/domain/booking/dto/booking-relation-response.dto';
-import { ScheduleResponseDto } from '../../group/dto/schedule-response.dto';
-import { GroupSamResponseDto } from 'src/domain/group/dto/group-sam-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학생 생성
@@ -40,16 +39,7 @@ export const CreateStudentDocs = () => {
       description: '학생 생성 완료',
       type: StudentResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_SCHOOL],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
   );
 };
 
@@ -75,12 +65,7 @@ export const StudentFindByIdDocs = () => {
       description: '학생 상세 조회 완료',
       type: StudentRelationResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_STUDENT],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -105,12 +90,7 @@ export const StudentDryRunDocs = () => {
       description: '학생 등록 시물레이션 결과',
       type: StudentResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -143,15 +123,7 @@ export const StudentStatusUpdateDocs = () => {
       description: '학생 재학 상태 업데이트 완료',
       type: StudentResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [
-          HttpErrorConstants.NOT_FOUND_STUDENT,
-          HttpErrorConstants.NOT_FOUND_SCHOOL,
-        ],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -179,19 +151,7 @@ export const StudentUpdateDocs = () => {
       description: '학생 정보 수정 완료',
       type: StudentRelationResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [
-          HttpErrorConstants.NOT_FOUND_STUDENT,
-          HttpErrorConstants.NOT_FOUND_SCHOOL,
-        ],
-      },
-      {
-        status: StatusCodes.CONFLICT,
-        errorFormatList: [HttpErrorConstants.CONFLICT_STUDENT],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.CONFLICT),
   );
 };
 
@@ -225,12 +185,7 @@ export const StudentGroupFindByIdDocs = () => {
       description: '학생의 수강/취소 강좌 조회 완료',
       type: GroupSamResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.STUDENT_COURSE_STATUS_NOT_FOUND],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 

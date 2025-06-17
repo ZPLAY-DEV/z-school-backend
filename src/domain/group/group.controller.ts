@@ -13,7 +13,6 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor, RemovalStatus } from 'src/common/enums';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
@@ -25,8 +24,8 @@ import {
   FindGroupDocs,
   UpdateGroupDocs,
 } from 'src/domain/group/swagger/group-swagger.decorator';
+
 @ApiTags('✅ Groups ( 반 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('groups')
 @UseInterceptors(ClassSerializerInterceptor)
 export class GroupController {

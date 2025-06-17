@@ -1,9 +1,8 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import {
   CreateAttendanceResultDto,
   CreateDynamoRecordWithDateDto,
@@ -88,27 +87,12 @@ export const CreateAttendanceOfSchooldayWithDateDocs = () => {
       description: '출석 데이터 생성 완료',
       type: CreateAttendanceResultDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [
-          HttpErrorConstants.VALIDATE_ERROR,
-          HttpErrorConstants.DYNAMO_CREATE,
-          HttpErrorConstants.DYNAMO_UPDATE,
-        ],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [
-          HttpErrorConstants.NOT_FOUND_SCHOOL,
-          HttpErrorConstants.NOT_FOUND_ENTITY,
-        ],
-      },
-      {
-        status: StatusCodes.INTERNAL_SERVER_ERROR,
-        errorFormatList: [HttpErrorConstants.INTERNAL_SERVER_ERROR],
-      },
-    ]),
+    ApiStatuses(
+      StatusCodes.BAD_REQUEST, // 400 - 잘못된 데이터
+      StatusCodes.NOT_FOUND, // 404 - 데이터 없음
+      StatusCodes.UNPROCESSABLE_ENTITY, // 422 - 처리 불가
+      StatusCodes.INTERNAL_SERVER_ERROR, // 500 - DB 오류
+    ),
   );
 };
 
@@ -212,26 +196,11 @@ export const CreateAttendanceOfSchooldayWithPeriodDocs = () => {
       description: '출석 데이터 생성 완료',
       type: CreateAttendanceResultDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [
-          HttpErrorConstants.VALIDATE_ERROR,
-          HttpErrorConstants.DYNAMO_CREATE,
-          HttpErrorConstants.DYNAMO_UPDATE,
-        ],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [
-          HttpErrorConstants.NOT_FOUND_SCHOOL,
-          HttpErrorConstants.NOT_FOUND_ENTITY,
-        ],
-      },
-      {
-        status: StatusCodes.INTERNAL_SERVER_ERROR,
-        errorFormatList: [HttpErrorConstants.INTERNAL_SERVER_ERROR],
-      },
-    ]),
+    ApiStatuses(
+      StatusCodes.BAD_REQUEST, // 400 - 잘못된 데이터
+      StatusCodes.NOT_FOUND, // 404 - 데이터 없음
+      StatusCodes.UNPROCESSABLE_ENTITY, // 422 - 처리 불가
+      StatusCodes.INTERNAL_SERVER_ERROR, // 500 - DB 오류
+    ),
   );
 };

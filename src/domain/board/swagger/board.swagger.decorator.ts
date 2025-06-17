@@ -1,19 +1,18 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
-import { CreateBoardDto } from '../dto/create-board.dto';
-import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
-import { BoardResponseDto } from '../dto/board-response.dto';
 import { StatusCodes } from 'http-status-codes';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { CreateCommentDto } from '../dto/create-comment.dto';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { RemovalStatus } from 'src/common/enums';
+import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
+import { ApiEnumResponseTemplate } from 'src/common/swagger/response/api-enum.response';
+import { BoardRelationResponseDto } from '../dto/board-relation-response.dto';
+import { BoardResponseDto } from '../dto/board-response.dto';
 import { CommentResponseDto } from '../dto/comment-response.dto';
+import { CreateBoardDto } from '../dto/create-board.dto';
+import { CreateCommentDto } from '../dto/create-comment.dto';
+import { GenerateS3UrlResponseDto } from '../dto/generate-s3url.response.dto';
 import { UpdateBoardDto } from '../dto/update-board.dto';
 import { UpdateCommentDto } from '../dto/update-comment.dto';
-import { RemovalStatus } from 'src/common/enums';
-import { ApiEnumResponseTemplate } from 'src/core/swagger/response/api-enum.response';
-import { BoardRelationResponseDto } from '../dto/board-relation-response.dto';
-import { GenerateS3UrlResponseDto } from '../dto/generate-s3url.response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Generate S3 Path
@@ -43,12 +42,7 @@ export const GenerateS3PathDocs = () => {
       description: 'S3 Presigned URL 반환 완료',
       type: GenerateS3UrlResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -73,23 +67,11 @@ export const CreateBoardDocs = () => {
       description: '게시글 생성 완료',
       type: BoardResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [
-          HttpErrorConstants.NOT_FOUND_GROUP,
-          HttpErrorConstants.NOT_FOUND_SCHOOL,
-        ],
-      },
-      {
-        status: StatusCodes.FORBIDDEN,
-        errorFormatList: [HttpErrorConstants.FORBIDDEN_USER_ROLE],
-      },
-    ]),
+    ApiStatuses(
+      StatusCodes.BAD_REQUEST,
+      StatusCodes.NOT_FOUND,
+      StatusCodes.FORBIDDEN,
+    ),
   );
 };
 
@@ -112,16 +94,7 @@ export const CreateCommentDocs = () => {
       description: '댓글 생성 완료',
       type: CommentResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_BOARD],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
   );
 };
 
@@ -150,20 +123,11 @@ export const UpdateBoardDocs = () => {
       description: '게시글 수정 완료',
       type: BoardResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_BOARD],
-      },
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-      {
-        status: StatusCodes.FORBIDDEN,
-        errorFormatList: [HttpErrorConstants.FORBIDDEN_USER_ROLE],
-      },
-    ]),
+    ApiStatuses(
+      StatusCodes.NOT_FOUND,
+      StatusCodes.BAD_REQUEST,
+      StatusCodes.FORBIDDEN,
+    ),
   );
 };
 
@@ -192,16 +156,7 @@ export const UpdateCommentDocs = () => {
       description: '댓글 수정 완료',
       type: CommentResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_COMMENT],
-      },
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -226,12 +181,7 @@ export const FindByIdBoardDocs = () => {
       description: '게시글 조회 상세 완료',
       type: BoardRelationResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_BOARD],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -258,16 +208,7 @@ export const DeleteBoardDocs = () => {
       description: '게시글 삭제 완료',
       type: RemovalStatus,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_BOARD],
-      },
-      {
-        status: StatusCodes.FORBIDDEN,
-        errorFormatList: [HttpErrorConstants.FORBIDDEN_USER_ROLE],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.FORBIDDEN),
   );
 };
 
@@ -293,11 +234,6 @@ export const DeleteCommentDocs = () => {
       description: '댓글 삭제 완료',
       type: RemovalStatus,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_COMMENT],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };

@@ -8,8 +8,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { CreateSchoolDto } from '../dto/create-school.dto';
 import { SchoolResponseDto } from '../dto/school-response.dto';
 import { UpdateSchoolDto } from '../dto/update-school.dto';
@@ -34,12 +33,7 @@ export const CreateSchoolDocs = () => {
       description: '학생 생성 완료',
       type: SchoolResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -77,15 +71,6 @@ export const UpdateSchoolDocs = () => {
       description: '학교 수정 완료',
       type: SchoolResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
   );
 };

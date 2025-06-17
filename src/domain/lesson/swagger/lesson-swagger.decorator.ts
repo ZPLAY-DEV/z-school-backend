@@ -7,10 +7,9 @@ import {
   getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CreateLessonDto } from '../dto/create-lesson.dto';
 import { UpdateLessonDto } from '../dto/update-lesson.dto';
 import { Lesson } from '../entities/lesson.entity';
@@ -34,12 +33,7 @@ export const CreateLessonDocs = () => {
       description: '과목 등록 완료',
       type: Lesson,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -68,12 +62,7 @@ export const CreateLessonDryRunDocs = () => {
         ],
       },
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -98,12 +87,7 @@ export const GetLessonByIdDocs = () => {
       description: '과목 상세 조회 완료',
       type: Lesson,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -140,16 +124,7 @@ export const UpdateLessonDocs = () => {
       description: '과목 업데이트 완료',
       type: Lesson,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
   );
 };
 
@@ -174,12 +149,7 @@ export const RemoveLessonDocs = () => {
       description: '과목 삭제 완료',
       type: Lesson,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -202,15 +172,6 @@ export const UpdateLessonDaysDocs = () => {
       description: '생성된 전체 수업일 수 반환',
       type: Number,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_LESSON],
-      },
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };

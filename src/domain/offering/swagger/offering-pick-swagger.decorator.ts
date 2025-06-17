@@ -1,9 +1,8 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiOperation, ApiParam } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
 
 //? ---------------------------------------------------------------------- ?//
@@ -30,15 +29,6 @@ export const CreateOfferingPickDocs = () => {
       description: '수강생 확정 완료',
       type: ResponsePickDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
-      },
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.DATABASE_QUERY_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };

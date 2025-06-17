@@ -12,7 +12,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { SchoolSamService } from 'src/domain/school/school-sam.service';
@@ -26,7 +26,6 @@ import {
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Schools > Sams ( 학교 > 강사 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('schools')
 export class SchoolSamController {
   constructor(

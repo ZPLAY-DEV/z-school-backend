@@ -13,13 +13,18 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { CreateLessonRequestDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import {
+  CreateSchoolTermLessonsBulkDocs,
+  CreateSchoolTermLessonsBulkDryRunDocs,
+  DeleteAllSchoolTermLessonsDocs,
+  SchoolTermLessonListDocs,
+  SchoolTermLessonPaginatedListDocs,
+} from 'src/domain/lesson/swagger/school-term-lesson-swagger.decorator';
 import { SchoolTermLessonService } from 'src/domain/school/school-term-lesson.service';
 
 @ApiTags('✅ Schools > Terms > Lessons ( 학교 > 학기 > 과목 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermLessonController {
@@ -31,6 +36,7 @@ export class SchoolTermLessonController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateSchoolTermLessonsBulkDocs()
   @Post(':schoolId/terms/:termId/lessons/bulk')
   @HttpCode(200)
   async createBulk(
@@ -50,6 +56,7 @@ export class SchoolTermLessonController {
   //! create() 의 모든 로직이 무사히 실행되는지 persist 하지 않고, 실험해보기 위한 것이
   //! dryrun() 인데, 그냥 중복 강좌 레코드가 있는지만 확인하고 말았다. ㅠ.ㅠ
 
+  @CreateSchoolTermLessonsBulkDryRunDocs()
   @Post(':schoolId/terms/:termId/lessons/bulk/dryrun')
   @HttpCode(200)
   async createBulkDryRun(
@@ -73,6 +80,7 @@ export class SchoolTermLessonController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @SchoolTermLessonPaginatedListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/lessons/paginated')
   @UseInterceptors(ClassSerializerInterceptor)
@@ -88,6 +96,7 @@ export class SchoolTermLessonController {
     );
   }
 
+  @SchoolTermLessonListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/lessons')
   @UseInterceptors(ClassSerializerInterceptor)
@@ -102,6 +111,7 @@ export class SchoolTermLessonController {
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
 
+  @DeleteAllSchoolTermLessonsDocs()
   @Delete(':schoolId/terms/:termId/lessons')
   async deleteAll(
     @Param('schoolId', ParseIntPipe) schoolId: number,

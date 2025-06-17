@@ -8,7 +8,6 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { SortOrder } from 'dynamoose/dist/General';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateWithStudentAndSchooldayDto } from 'src/domain/attendance/dto/create-with-student-and-schoolday.dto';
 import { UpsertAttendanceDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
@@ -75,7 +74,7 @@ export class AttendanceService {
       },
     });
     if (!student) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_STUDENT);
+      throw new NotFoundException('Student not found');
     }
     const schoolday = await this.schooldayRepository.findOne({
       where: {
@@ -84,7 +83,7 @@ export class AttendanceService {
       relations: ['group', 'group.lesson'],
     });
     if (!schoolday) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOLDAY);
+      throw new NotFoundException('Schoolday not found');
     }
     const expires = calculateTtl(schoolday.startsAt);
     const itemKey = {
@@ -138,11 +137,11 @@ export class AttendanceService {
           return result as unknown as IAttendance;
         } catch (updateError) {
           console.error(`[dynamodb] update error`, updateError);
-          throw new BadRequestException(HttpErrorConstants.DYNAMO_UPDATE);
+          throw new BadRequestException(updateError.message);
         }
       } else {
         console.error(`[dynamodb] error`, error);
-        throw new BadRequestException(HttpErrorConstants.DYNAMO_CREATE);
+        throw new BadRequestException(error.message);
       }
     }
   }
@@ -174,7 +173,7 @@ export class AttendanceService {
       (v) => formatInTimeZone(v.startsAt, 'Asia/Seoul', 'yyyy-MM-dd') === date,
     );
     if (!schoolday) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOLDAY);
+      throw new NotFoundException('Schoolday not found');
     }
     const expires = calculateTtl(schoolday.startsAt);
 
@@ -208,11 +207,11 @@ export class AttendanceService {
           return result as unknown as IAttendance;
         } catch (updateError) {
           console.error(`[dynamodb] update error`, updateError);
-          throw new BadRequestException(HttpErrorConstants.DYNAMO_UPDATE);
+          throw new BadRequestException(updateError.message);
         }
       } else {
         console.error(`[dynamodb] error`, error);
-        throw new BadRequestException(HttpErrorConstants.DYNAMO_CREATE);
+        throw new BadRequestException(error.message);
       }
     }
   }
@@ -250,7 +249,7 @@ export class AttendanceService {
       };
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(HttpErrorConstants.DYNAMO_READ);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -260,7 +259,7 @@ export class AttendanceService {
       return (await this.model.get(dto)) as IAttendance;
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(HttpErrorConstants.DYNAMO_READ);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -269,7 +268,7 @@ export class AttendanceService {
       await this.model.delete(dto);
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(HttpErrorConstants.DYNAMO_DELETE);
+      throw new BadRequestException(error.message);
     }
   }
 }

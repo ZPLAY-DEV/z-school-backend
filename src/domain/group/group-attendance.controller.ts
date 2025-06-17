@@ -10,7 +10,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 import { AttendanceStatusDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import { IAttendance } from 'src/domain/attendance/entities/attendance.interface';
@@ -26,7 +26,6 @@ import {
 } from 'src/domain/group/swagger/group-attendance-swagger.decorator';
 
 @ApiTags('✅ Groups > Attendance ( 반 > 출석부 조회 )')
-@ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('groups')
 export class GroupAttendanceController {

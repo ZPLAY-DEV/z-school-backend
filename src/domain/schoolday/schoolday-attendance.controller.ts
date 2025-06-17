@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import {
   CreateAttendanceResultDto,
   CreateDynamoRecordWithDateDto,
@@ -20,7 +19,6 @@ import {
 } from 'src/domain/schoolday/swagger/schoolday-attendance-swagger.decorator';
 
 @ApiTags('✅ Schooldays > Attendance ( 수업일 > 출석부 생성 )')
-@ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schooldays')
 export class SchooldayAttendanceController {

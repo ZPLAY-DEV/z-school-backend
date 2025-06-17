@@ -5,7 +5,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { School } from 'src/domain/school/entities/school.entity';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
 import { UpdateTermDto } from 'src/domain/term/dto/update-term.dto';
@@ -34,7 +33,7 @@ export class SchoolTermService {
     });
 
     if (!school) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+      throw new NotFoundException(`School with id ${dto.schoolId} not found`);
     }
 
     // 2. 학기 중복 여부 조회
@@ -47,7 +46,7 @@ export class SchoolTermService {
     });
 
     if (existingTerm) {
-      throw new BadRequestException(HttpErrorConstants.DUPLICATE_TERM);
+      throw new BadRequestException(`Term already exists for the given period`);
     }
 
     // 3. 생성
@@ -105,7 +104,7 @@ export class SchoolTermService {
       where: { id: termId, schoolId: dto.schoolId },
     });
     if (!term) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_TERM);
+      throw new NotFoundException(`Term not found`);
     }
     // 업데이트
     return this.termRepository.save({

@@ -11,7 +11,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { DeleteInstructorNoteDto } from 'src/domain/instructor/dto/delete-instructor-note.dto';
 import { UpdateInstructorDto } from 'src/domain/instructor/dto/update-instructor.dto';
 import { InstructorService } from 'src/domain/instructor/instructor.service';
@@ -21,7 +20,6 @@ import { SoftDeleteSchoolInstructorDocs } from './swagger/instructor.swagger.dec
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Instructors ( 강사 ≓ Parent )')
-@ApiCommonErrorResponseTemplate()
 @Controller('instructors')
 export class InstructorController {
   constructor(private readonly instructorService: InstructorService) {}

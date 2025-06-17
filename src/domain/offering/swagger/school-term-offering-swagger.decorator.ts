@@ -2,14 +2,13 @@ import { applyDecorators } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-    ApiOkPaginatedResponse,
-    ApiPaginationQuery,
-    PaginateConfig,
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  PaginateConfig,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { Offering } from '../entities/offering.entity';
 
 const TERM_OFFERING_CONFIG: PaginateConfig<Offering> = {
@@ -41,12 +40,7 @@ export const CreateSchoolTermOfferingsDocs = () => {
       type: Offering,
       isArray: true,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_TERM],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -65,12 +59,7 @@ export const SchoolTermOfferingPaginatedListDocs = () => {
     }),
     ApiPaginationQuery(TERM_OFFERING_CONFIG),
     ApiOkPaginatedResponse(Offering, TERM_OFFERING_CONFIG),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_TERM],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -92,12 +81,7 @@ export const SchoolTermOfferingListDocs = () => {
       type: Offering,
       isArray: true,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_TERM],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -122,15 +106,6 @@ export const DeleteAllSchoolTermOfferingsDocs = () => {
         description: '삭제된 수강신청과목의 수',
       },
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.CONDITION_NOT_MET],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_TERM],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
   );
 };

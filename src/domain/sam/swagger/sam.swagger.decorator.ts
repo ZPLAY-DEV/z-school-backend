@@ -1,10 +1,9 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { DocumentResponseDto } from 'src/domain/document/dto/document-response.dto';
 import { GroupPickResponseDto } from 'src/domain/group/dto/group-pick-response.dto';
 import { ScheduleResponseDto } from 'src/domain/group/dto/schedule-response.dto';
@@ -33,16 +32,7 @@ export const CreateSamDocs = () => {
       description: '학교에 속한 강사 생성 완료',
       type: CreateSamResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_SCHOOL],
-      },
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -67,12 +57,7 @@ export const SamDryRunDocs = () => {
       description: '학교에 속한 강사 등록 시물레이션 결과',
       type: SamResponseDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -101,12 +86,7 @@ export const SoftDeleteSamDocs = () => {
     ApiOkResponseTemplate({
       description: '학교에 속한 강사 소프트 삭제 완료',
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 

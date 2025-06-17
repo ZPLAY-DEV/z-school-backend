@@ -1,21 +1,20 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
-import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
 import { StatusCodes } from 'http-status-codes';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 
-import { CreateSamDto } from '../dto/create-sam.dto';
-import { CreateSamResponseDto } from '../dto/create-sam-response.dto';
-import { SamResponseDto } from '../dto/sam-response.dto';
-import { SamRelationResponseDto } from '../dto/sam-relation-response.dto';
 import {
   ApiOkPaginatedResponse,
   ApiPaginationQuery,
   FilterOperator,
 } from 'nestjs-paginate';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { DocumentResponseDto } from 'src/domain/document/dto/document-response.dto';
+import { CreateSamResponseDto } from '../dto/create-sam-response.dto';
+import { CreateSamDto } from '../dto/create-sam.dto';
+import { SamRelationResponseDto } from '../dto/sam-relation-response.dto';
+import { SamResponseDto } from '../dto/sam-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create School > Sam
@@ -43,16 +42,7 @@ export const CreateSchoolSamBulkDocs = () => {
       type: CreateSamResponseDto,
       isArray: true,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_SCHOOL],
-      },
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -84,12 +74,7 @@ export const CreateSchoolSamBulkDryRunDocs = () => {
       type: SamResponseDto,
       isArray: true,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 

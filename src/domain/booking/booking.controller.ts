@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PickRule } from 'src/common/enums';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+
 import { ResponseBookingDto } from 'src/domain/booking/dto/response-booking.dto';
 import {
   CancelBookingSwagger,
@@ -12,7 +12,6 @@ import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
 @ApiTags('✅ Booking ( 수강신청 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('bookings')
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}

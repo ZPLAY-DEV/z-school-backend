@@ -7,7 +7,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+
 import { IAttendance } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import { LessonAttendanceService } from 'src/domain/lesson/lesson-attendance.service';
@@ -17,7 +17,6 @@ import {
 } from 'src/domain/lesson/swagger/lesson-attendance-swagger.decorator';
 
 @ApiTags('✅ Lessons > Attendance ( 과목 > 출석부 조회 )')
-@ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('lessons')
 export class LessonAttendanceController {

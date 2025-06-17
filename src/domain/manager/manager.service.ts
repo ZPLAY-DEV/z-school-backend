@@ -6,7 +6,6 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateManagerDto } from 'src/domain/manager/dto/create-manager.dto';
 import { UpdateManagerDto } from 'src/domain/manager/dto/update-manager.dto';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
@@ -72,7 +71,7 @@ export class ManagerService {
           });
     } catch (error) {
       console.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(`Manager with not found`);
     }
   }
 
@@ -83,7 +82,7 @@ export class ManagerService {
   async update(id: number, dto: UpdateManagerDto): Promise<Manager> {
     const manager = await this.managerRepository.preload({ id, ...dto });
     if (!manager) {
-      throw new NotFoundException(`entity not found`);
+      throw new NotFoundException(`Manager not found`);
     }
     return await this.managerRepository.save(manager);
   }

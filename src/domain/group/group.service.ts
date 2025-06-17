@@ -13,7 +13,6 @@ import {
 } from 'nestjs-paginate';
 import { ClassStatus } from 'src/common/enums';
 import { RemovalStatus } from 'src/common/enums/removal-status';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -82,7 +81,7 @@ export class GroupService {
           });
     } catch (error) {
       this.logger.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(error.message);
     }
   }
 
@@ -105,7 +104,7 @@ export class GroupService {
       ...dto,
     });
     if (!group) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException('Group not found');
     }
     return await this.groupRepository.save(group);
   }
@@ -124,9 +123,7 @@ export class GroupService {
       }
     } catch (error) {
       this.logger.error(error);
-      throw new UnprocessableEntityException(
-        HttpErrorConstants.CONDITION_NOT_MET,
-      );
+      throw new UnprocessableEntityException('Condition not met');
     }
 
     if (group.status === ClassStatus.ACTIVE) {
@@ -139,9 +136,7 @@ export class GroupService {
     }
 
     if (group.picks?.length > 0) {
-      throw new UnprocessableEntityException(
-        HttpErrorConstants.CONDITION_NOT_MET,
-      );
+      throw new UnprocessableEntityException('Condition not met');
     }
     await this.groupRepository.update(id, {
       note: dto.note,

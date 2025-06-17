@@ -107,7 +107,7 @@ export class UserService {
           });
     } catch (error) {
       this.logger.error(error);
-      throw new NotFoundException('user not found');
+      throw new NotFoundException('User not found');
     }
   }
 
@@ -129,7 +129,7 @@ export class UserService {
         .getOneOrFail();
     } catch (error) {
       this.logger.error(error);
-      throw new NotFoundException('user not found');
+      throw new NotFoundException('User not found');
     }
   }
 
@@ -187,7 +187,7 @@ export class UserService {
         throw new UnprocessableEntityException(`a taken username`);
       }
       if (!user) {
-        throw new NotFoundException(`user not found`);
+        throw new NotFoundException(`User not found`);
       }
       user.username = dto.username;
 

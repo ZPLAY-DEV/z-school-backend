@@ -282,10 +282,13 @@ export interface ICalendarDay {
   end: string;
   classOn: boolean; // 수업이 있는지 여부
 }
+export interface HttpErrorFormat {
+  error: string;
+  description?: string;
+  message: string;
+}
 
-//? ---------------------------------------------------------------------- ?//
-//? Dispatch Common Interface
-//? ---------------------------------------------------------------------- ?//
+// todo. delete the followings
 
 export interface IMixedTargetMessage {
   id: number;

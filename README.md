@@ -2,6 +2,10 @@
 
 z-school backend application
 
+## AVOID OVER-ENGINEERING
+
+좋은 엔지니어링은 "완벽한 코드"가 아니라 "비즈니스 가치를 만드는 코드"입니다. 🚀
+
 ## Project setup
 
 ```bash

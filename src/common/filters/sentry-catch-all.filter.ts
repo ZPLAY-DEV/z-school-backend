@@ -3,10 +3,7 @@ import { BaseExceptionFilter } from '@nestjs/core';
 import { SentryExceptionCaptured } from '@sentry/nestjs';
 import * as Sentry from '@sentry/node';
 import { KnownBlock } from '@slack/types';
-import {
-  HttpErrorConstants,
-  HttpErrorFormat,
-} from 'src/core/http/http-error-objects';
+import { HttpErrorFormat } from 'src/common/interfaces';
 import { SlackService } from 'src/services/slack/slack.service';
 import { EntityNotFoundError } from 'typeorm';
 
@@ -42,18 +39,28 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
         };
       } else {
         if (httpStatus === 401) {
+          // 보안상 인증 오류는 고정 메시지 사용
           errorResponse = {
-            ...HttpErrorConstants.UNAUTHORIZED,
+            error: 'UNAUTHORIZED',
+            message: '인증 오류가 발생했습니다.',
             description: req.url,
           };
         } else if (httpStatus === 404) {
+          // 404는 구체적인 메시지 사용
           errorResponse = {
-            ...HttpErrorConstants.NOT_FOUND_ENTITY,
+            error: 'NOT_FOUND',
+            message:
+              typeof response === 'string'
+                ? response
+                : '리소스를 찾을 수 없습니다.',
             description: req.url,
           };
         } else {
+          // 일반 HTTP 예외는 실제 메시지 사용
           errorResponse = {
-            ...HttpErrorConstants.UNEXPECTED_HTTP_EXCEPTION,
+            error: 'HTTP_EXCEPTION',
+            message:
+              typeof response === 'string' ? response : exception.message,
             description: req.url,
           };
         }
@@ -67,21 +74,21 @@ export class SentryCatchAllFilter extends BaseExceptionFilter {
       if (exception instanceof EntityNotFoundError) {
         httpStatus = 404;
         errorResponse = {
-          ...HttpErrorConstants.NOT_FOUND_ENTITY,
+          error: 'ENTITY_NOT_FOUND',
+          message: exception.message || '요청하신 데이터를 찾을 수 없습니다.',
           description: req.url,
         };
       } else {
-        // 일반 오류 처리
+        // 일반 오류 처리 - 실제 error.message 사용
         httpStatus = 500;
         errorResponse = {
-          ...HttpErrorConstants.INTERNAL_SERVER_ERROR,
+          error: 'INTERNAL_SERVER_ERROR',
+          message:
+            exception instanceof Error
+              ? exception.message
+              : '알 수 없는 오류가 발생했습니다.',
           description: req.url,
         };
-
-        // 오류 메시지가 있는 경우 덮어쓰기
-        if (exception instanceof Error && exception.message) {
-          errorResponse.message = exception.message;
-        }
       }
     }
 

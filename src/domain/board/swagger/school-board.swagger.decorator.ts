@@ -1,12 +1,12 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
-import { BoardResponseDto } from '../dto/board-response.dto';
 import {
   ApiOkPaginatedResponse,
   ApiPaginationQuery,
   FilterOperator,
 } from 'nestjs-paginate';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
+import { BoardResponseDto } from '../dto/board-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학교에서 사용자가 작성한 게시글 목록 조회

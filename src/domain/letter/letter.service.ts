@@ -7,11 +7,9 @@ import {
 } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 import { AWS_SQS_CLIENT, REDIS_TRACKING_CLIENT } from 'src/common/constants';
-import { SendMode } from 'src/common/enums';
-import { IMixedTargetMessage } from 'src/common/interfaces';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateLetterDto } from 'src/domain/letter/dto/create-letter.dto';
 import { CreateNanoidDto } from 'src/domain/parent/dto/create-nanoid.dto';
+import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { chunk } from 'src/helpers/array';
 import { parseValidityToDate } from 'src/helpers/time';
 import { SqsService } from 'src/services/aws/sqs.service';
@@ -22,7 +20,6 @@ import { School } from '../school/entities/school.entity';
 import { Student } from '../student/entities/student.entity';
 import { Term } from '../term/entities/term.entity';
 import { Letter } from './entities/letter.entity';
-import { Parent } from 'src/domain/parent/entities/parent.entity';
 
 @Injectable()
 export class LetterService {
@@ -169,10 +166,10 @@ export class LetterService {
       where: { id: dto.schoolId },
     });
     if (!school) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+      throw new NotFoundException('School not found');
     }
     if (!school.phone) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_PHONE_IN_SCHOOL);
+      throw new NotFoundException('Missing phone info in school');
     }
   }
 
@@ -183,7 +180,7 @@ export class LetterService {
   ): Promise<void> {
     const term = await manager.findOne(Term, { where: { id: dto.termId } });
     if (!term) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_TERM);
+      throw new NotFoundException('Term not found');
     }
   }
 }

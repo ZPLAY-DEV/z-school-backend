@@ -12,7 +12,6 @@ import * as bcrypt from 'bcrypt';
 import { plainToClass } from 'class-transformer';
 import { THIRTY_DAYS } from 'src/common/constants';
 import { Role } from 'src/common/enums';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { AuthTokenDto } from 'src/domain/auth/dto/auth-token.dto';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
@@ -77,17 +76,17 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException(HttpErrorConstants.NOT_FOUND_USER);
+      throw new UnauthorizedException('User not found');
     }
 
     const hasRole = this.checkUserHasRole(user, role);
     if (!hasRole) {
-      throw new UnauthorizedException(HttpErrorConstants.INVALID_ROLE);
+      throw new UnauthorizedException('Invalid role');
     }
 
     const passwordMatches = await bcrypt.compare(password, user.password);
     if (!passwordMatches) {
-      throw new UnauthorizedException(HttpErrorConstants.INVALID_CREDENTIALS);
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     return user;
@@ -102,19 +101,19 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException(HttpErrorConstants.NOT_FOUND_USER);
+      throw new UnauthorizedException('User not found');
     }
 
     const hasRole = this.checkUserHasRole(user, role);
     if (!hasRole) {
-      throw new UnauthorizedException(HttpErrorConstants.INVALID_ROLE);
+      throw new UnauthorizedException('Invalid role');
     }
 
     if (
       user.parent?.nanoIds &&
       user.parent?.nanoIds.some((v) => v.nanoid === nanoid)
     ) {
-      throw new UnauthorizedException(HttpErrorConstants.INVALID_CREDENTIALS);
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     return user;
@@ -167,7 +166,7 @@ export class AuthService {
     try {
       // Validate manager role
       if (dto.role !== Role.MANAGER) {
-        throw new BadRequestException(HttpErrorConstants.INVALID_ROLE);
+        throw new BadRequestException('Invalid role');
       }
 
       // Check if user exists and create/update as needed
@@ -211,7 +210,7 @@ export class AuthService {
       }
 
       // For any other errors, throw a generic database error
-      throw new BadRequestException(HttpErrorConstants.INTERNAL_DATABASE_ERROR);
+      throw new BadRequestException('Internal database error');
     }
   }
 
@@ -305,13 +304,13 @@ export class AuthService {
       !tokenRecord ||
       !(await bcrypt.compare(refreshToken, tokenRecord.hashedToken))
     ) {
-      throw new UnauthorizedException(HttpErrorConstants.INVALID_TOKEN);
+      throw new UnauthorizedException('Invalid token');
     }
 
     const user = tokenRecord.user;
     const hasRole = this.checkUserHasRole(user, role);
     if (!hasRole) {
-      throw new UnauthorizedException(HttpErrorConstants.ACCESS_DENIED);
+      throw new UnauthorizedException('Access denied');
     }
 
     const accessToken = await this.generateAccessToken({
@@ -332,7 +331,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_PHONE);
+      throw new NotFoundException('Phone not found');
     }
 
     // OTP validation code commented out in original
@@ -350,7 +349,7 @@ export class AuthService {
     });
 
     if (!updatedUser) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_USER);
+      throw new NotFoundException('User not found');
     }
 
     return await this.userRepository.save(updatedUser);
@@ -389,7 +388,7 @@ export class AuthService {
         (dto.role === Role.INSTRUCTOR && user.instructor) ||
         (dto.role === Role.PARENT && user.parent)
       ) {
-        throw new ConflictException(HttpErrorConstants.ALREADY_REGISTERED);
+        throw new ConflictException('Already registered');
       }
 
       // Update password
@@ -402,9 +401,7 @@ export class AuthService {
       });
 
       if (!updatedUser) {
-        throw new BadRequestException(
-          HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-        );
+        throw new BadRequestException('Internal database error');
       }
 
       return updatedUser;
@@ -433,7 +430,7 @@ export class AuthService {
 
     if (user) {
       if (user.manager) {
-        throw new ConflictException(HttpErrorConstants.ALREADY_REGISTERED);
+        throw new ConflictException('Already registered');
       }
 
       // Update password
@@ -446,9 +443,7 @@ export class AuthService {
       });
 
       if (!updatedUser) {
-        throw new BadRequestException(
-          HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-        );
+        throw new BadRequestException('Internal database error');
       }
 
       return updatedUser;
@@ -483,7 +478,7 @@ export class AuthService {
       });
       await this.parentRepository.save(parent);
     } else {
-      throw new BadRequestException(HttpErrorConstants.INVALID_ROLE);
+      throw new BadRequestException('Invalid role');
     }
   }
 
@@ -507,7 +502,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new BadRequestException(HttpErrorConstants.INTERNAL_DATABASE_ERROR);
+      throw new BadRequestException('Internal database error');
     }
 
     return user;

@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, DeepPartial, FindOneOptions, Repository } from 'typeorm';
-import { User } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class UserRepository extends Repository<User> {
@@ -30,14 +29,14 @@ export class UserRepository extends Repository<User> {
           });
     } catch (error) {
       console.error('findById error:', error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_USER);
+      throw new NotFoundException(error.message);
     }
   }
 
   // User Info 갱신
   async updateUser(id: number, dto: UpdateUserDto): Promise<User> {
     const user = await this.preload({ id, ...dto });
-    if (!user) throw new NotFoundException(HttpErrorConstants.NOT_FOUND_USER);
+    if (!user) throw new NotFoundException('User not found');
     return await this.save(user as DeepPartial<User>);
   }
 }

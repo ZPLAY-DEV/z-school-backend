@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
 import { REDIS_TRACKING_OPTIONS } from 'src/common/constants';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { RedisBookingService } from 'src/services/redis/redis-booking.service';
 
 interface RedisTrackingOptions {
@@ -66,7 +65,7 @@ export class RedisTrackingService implements OnModuleInit {
        */
       // await this.clearStudentReadStatus(keyValuePairs);
       throw new InternalServerErrorException(
-        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
+        error.message || 'Database operation failed',
       );
     }
   }

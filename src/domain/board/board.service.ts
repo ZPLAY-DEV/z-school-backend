@@ -1,17 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateBoardDto } from './dto/create-board.dto';
-import { UpdateBoardDto } from './dto/update-board.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Board } from './entities/board.entity';
-import { DataSource, Repository } from 'typeorm';
-import { School } from '../school/entities/school.entity';
-import { Group } from '../group/entities/group.entity';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { RemovalStatus } from 'src/common/enums';
-import { Comment } from './entities/comment.entity';
+import { DataSource, Repository } from 'typeorm';
+import { Group } from '../group/entities/group.entity';
+import { School } from '../school/entities/school.entity';
+import { CreateBoardDto } from './dto/create-board.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
-
+import { UpdateBoardDto } from './dto/update-board.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { Board } from './entities/board.entity';
+import { Comment } from './entities/comment.entity';
 
 @Injectable()
 export class BoardService {
@@ -35,7 +33,7 @@ export class BoardService {
     });
 
     if (!school) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+      throw new NotFoundException('School not found');
     }
 
     // 2) 그룹 존재 여부 조회
@@ -46,7 +44,7 @@ export class BoardService {
     });
 
     if (!group) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_GROUP);
+      throw new NotFoundException('Group not found');
     }
 
     // 3) 게시글 생성
@@ -62,7 +60,7 @@ export class BoardService {
     });
 
     if (!board) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_BOARD);
+      throw new NotFoundException('Board not found');
     }
 
     const comment = this.commentRepository.create(dto);
@@ -85,7 +83,7 @@ export class BoardService {
           });
     } catch (error) {
       console.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_BOARD);
+      throw new NotFoundException('Board not found');
     }
   }
 
@@ -101,7 +99,7 @@ export class BoardService {
     });
 
     if (!board) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_BOARD);
+      throw new NotFoundException('Board not found');
     }
 
     await this.boardRepository.update(id, dto);
@@ -118,7 +116,7 @@ export class BoardService {
     });
 
     if (!comment) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_COMMENT);
+      throw new NotFoundException('Comment not found');
     }
 
     await this.commentRepository.update(id, dto);
@@ -140,7 +138,7 @@ export class BoardService {
       });
 
       if (!board) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_BOARD);
+        throw new NotFoundException('Board not found');
       }
 
       // 2) 댓글 삭제
@@ -159,7 +157,7 @@ export class BoardService {
     });
 
     if (!comment) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_COMMENT);
+      throw new NotFoundException('Comment not found');
     }
 
     await this.commentRepository.delete(id);

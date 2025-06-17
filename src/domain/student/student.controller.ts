@@ -16,11 +16,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+import { BookingStatus } from 'src/common/enums';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { StudentService } from 'src/domain/student/student.service';
 import { UploadService } from 'src/services/upload/upload.service';
+import { Booking } from '../booking/entities/booking.entity';
+import { Group } from '../group/entities/group.entity';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 import {
@@ -33,12 +35,8 @@ import {
   StudentStatusUpdateDocs,
   StudentUpdateDocs,
 } from './swagger/student.swagger.decorator';
-import { BookingStatus } from 'src/common/enums';
-import { Booking } from '../booking/entities/booking.entity';
-import { Group } from '../group/entities/group.entity';
 
 @ApiTags('✅ Students ( 학생 )')
-@ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('students')
 export class StudentController {

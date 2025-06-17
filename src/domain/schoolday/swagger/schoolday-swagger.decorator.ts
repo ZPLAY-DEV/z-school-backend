@@ -12,9 +12,8 @@ import {
   ApiPaginationQuery,
   FilterOperator,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { UpdateSchooldayTimeDto } from '../dto/update-schoolday.dto';
 import { Schoolday } from '../entities/schoolday.entity';
 
@@ -38,12 +37,7 @@ export const GetSchooldayListDocs = () => {
         items: { $ref: getSchemaPath(Schoolday) },
       },
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.INTERNAL_SERVER_ERROR,
-        errorFormatList: [HttpErrorConstants.INTERNAL_SERVER_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.INTERNAL_SERVER_ERROR),
   );
 };
 
@@ -90,12 +84,7 @@ export const GetSchooldayPaginatedListDocs = () => {
         endsAt: [FilterOperator.EQ, FilterOperator.GTE, FilterOperator.LTE],
       },
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -121,12 +110,7 @@ export const GetSchooldayByIdDocs = () => {
       description: '수업일 상세 조회 완료',
       type: Schoolday,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -165,15 +149,6 @@ export const UpdateSchooldayTimeDocs = () => {
       description: '수업일 시간 수정 완료',
       type: Schoolday,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
   );
 };

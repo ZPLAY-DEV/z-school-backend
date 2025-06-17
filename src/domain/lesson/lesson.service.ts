@@ -6,7 +6,6 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
@@ -87,7 +86,7 @@ export class LessonService {
           });
     } catch (error) {
       this.logger.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
+      throw new NotFoundException(error.message);
     }
   }
 
@@ -106,8 +105,7 @@ export class LessonService {
       where: { id },
       relations: ['groups', 'groups.schooldays'],
     });
-    if (!lesson)
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
+    if (!lesson) throw new NotFoundException('Lesson not found');
 
     if (lesson.start && lesson.end) {
       const offdays: string[] = await this.calendarService.findByDateRange(

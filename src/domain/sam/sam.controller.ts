@@ -15,13 +15,14 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+
+import { Document } from 'src/domain/document/entities/document.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { DeleteSamNoteDto } from 'src/domain/sam/dto/delete-sam-note.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
-import { Document } from 'src/domain/document/entities/document.entity';
 import { SamService } from 'src/domain/sam/sam.service';
+import { Group } from '../group/entities/group.entity';
 import {
   CreateSamDocs,
   GetSamByIdDocs,
@@ -31,11 +32,9 @@ import {
   SamScheduleFindByIdDocs,
   SoftDeleteSamDocs,
 } from './swagger/sam.swagger.decorator';
-import { Group } from '../group/entities/group.entity';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Sams ( 학교쌤 ≓ Student )')
-@ApiCommonErrorResponseTemplate()
 @Controller('sams')
 export class SamController {
   constructor(private readonly samService: SamService) {}

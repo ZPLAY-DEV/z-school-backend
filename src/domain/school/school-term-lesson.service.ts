@@ -6,7 +6,6 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -162,7 +161,9 @@ export class SchoolTermLessonService {
       return result || 0;
     } catch (error) {
       this.logger?.error(error);
-      throw new BadRequestException(HttpErrorConstants.CONDITION_NOT_MET);
+      throw new BadRequestException(
+        `Processing condition not met: ${error.message}`,
+      );
     }
   }
 }

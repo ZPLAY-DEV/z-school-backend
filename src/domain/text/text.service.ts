@@ -7,7 +7,6 @@ import {
 import { format } from 'date-fns';
 import { AWS_SQS_CLIENT } from 'src/common/constants';
 import { NotificationType } from 'src/common/enums/notification-type';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { classifyMessage } from 'src/helpers/classify';
 import { AligoService } from 'src/services/aligo/aligo.service';
 import { AligoListResult } from 'src/services/aligo/types';
@@ -55,7 +54,7 @@ export class TextService {
       return await this.sqsClient.sendMessage(payload);
     } catch (e) {
       console.log(e);
-      throw new BadRequestException(HttpErrorConstants.SQS_ERROR);
+      throw new BadRequestException(e.message);
     }
   }
 

@@ -1,12 +1,11 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-    FilterOperator,
-    paginate,
-    Paginated,
-    PaginateQuery,
+  FilterOperator,
+  paginate,
+  Paginated,
+  PaginateQuery,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -111,6 +110,8 @@ export class SchoolTermOfferingService {
   ): Promise<Offering[]> {
     const items = await this.offeringRepository
       .createQueryBuilder('offering')
+      .leftJoinAndSelect('offering.picks', 'picks')
+      .leftJoinAndSelect('offering.bookings', 'bookings')
       .where('offering.schoolId = :schoolId', { schoolId })
       .andWhere('offering.termId = :termId', { termId })
       .orderBy('offering.id', 'DESC')
@@ -148,7 +149,9 @@ export class SchoolTermOfferingService {
       return result || 0;
     } catch (error) {
       this.logger?.error(error);
-      throw new BadRequestException(HttpErrorConstants.CONDITION_NOT_MET);
+      throw new BadRequestException(
+        `Processing condition not met: ${error.message}`,
+      );
     }
   }
 }

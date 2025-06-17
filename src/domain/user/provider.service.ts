@@ -6,7 +6,6 @@ import {
   Paginated,
   paginate,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateProviderDto } from 'src/domain/user/dto/create-provider.dto';
 import { UpdateProviderDto } from 'src/domain/user/dto/update-provider.dto';
 import { Provider } from 'src/domain/user/entities/provider.entity';
@@ -56,7 +55,7 @@ export class ProviderService {
           });
     } catch (e) {
       this.logger.error(e);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(e.message);
     }
   }
 
@@ -73,7 +72,7 @@ export class ProviderService {
   async update(id: number, dto: UpdateProviderDto): Promise<Provider> {
     const provider = await this.repository.preload({ id, ...dto });
     if (!provider) {
-      throw new NotFoundException(`entity not found`);
+      throw new NotFoundException(`Provider not found`);
     }
     return await this.repository.save(provider);
   }

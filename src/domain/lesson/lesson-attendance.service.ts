@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import {
   IAttendance,
   IAttendanceKey,
@@ -34,7 +33,7 @@ export class LessonAttendanceService {
         relations: { groups: true },
       });
       if (!lesson) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
+        throw new NotFoundException(`Lesson not found`);
       }
 
       const groupKeys = lesson.groups.map((group) =>
@@ -57,7 +56,7 @@ export class LessonAttendanceService {
       return items.flat();
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(HttpErrorConstants.DYNAMO_READ);
+      throw new BadRequestException(`DynamoDB read error: ${error.message}`);
     }
   }
 
