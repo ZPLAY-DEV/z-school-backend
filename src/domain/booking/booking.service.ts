@@ -78,9 +78,7 @@ export class BookingService {
         );
       }
       this.logger.error(`❌ Booking 실패`, error.stack);
-      throw new InternalServerErrorException(
-        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-      );
+      throw new InternalServerErrorException(error.message);
     }
   }
 
@@ -184,6 +182,35 @@ export class BookingService {
           HttpErrorConstants.ALREADY_BOOKED,
         );
       }
+
+      if (error instanceof Error && error.message.includes('SQS')) {
+        this.logger.error(`❌ SQS 메시지 전송 실패`, error.stack);
+        throw new InternalServerErrorException(error.message);
+      }
+
+      throw new InternalServerErrorException(
+        HttpErrorConstants.INTERNAL_DATABASE_ERROR,
+      );
+    }
+  }
+
+  async purgeBookings(): Promise<number> {
+    try {
+      this.logger.log('🗑️ Redis booking 데이터 삭제 시작');
+
+      const redisClient = this.redisBookingService.getClient();
+
+      // offering: 패턴의 모든 키 찾기
+      const keys = await redisClient.keys('offering:*');
+
+      if (keys.length > 0) {
+        // 모든 예약 관련 키 삭제
+        await redisClient.del(keys);
+        return keys.length;
+      }
+      return 0;
+    } catch (error) {
+      this.logger.error('❌ Redis booking 데이터 삭제 실패', error.stack);
       throw new InternalServerErrorException(
         HttpErrorConstants.INTERNAL_DATABASE_ERROR,
       );

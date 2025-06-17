@@ -4,8 +4,8 @@ import { PickRule } from 'src/common/enums';
 import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { ResponseBookingDto } from 'src/domain/booking/dto/response-booking.dto';
 import {
-    CancelBookingSwagger,
-    CreateBookingSwagger,
+  CancelBookingSwagger,
+  CreateBookingSwagger,
 } from 'src/domain/booking/swagger/booking-swagger.decorator';
 import { BookingService } from './booking.service';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
@@ -43,5 +43,10 @@ export class BookingController {
     } else {
       return await this.bookingService.cancelWithDb(dto);
     }
+  }
+
+  @Delete('purge')
+  async reset(): Promise<number> {
+    return await this.bookingService.purgeBookings();
   }
 }
