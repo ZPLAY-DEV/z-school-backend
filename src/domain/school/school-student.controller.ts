@@ -12,7 +12,7 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { PlatformType, StudentStatus } from 'src/common/enums';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { UploadService } from 'src/services/upload/upload.service';
@@ -26,7 +26,6 @@ import { SchoolStudentService } from './school-student.service';
 // import { UpdateStudentStatusDto } from '../student/dto/update-student-status.dto';
 
 @ApiTags('✅ Schools > Students ( 학생관리 )')
-@ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schools')
 export class SchoolStudentController {

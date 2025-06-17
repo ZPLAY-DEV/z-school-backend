@@ -74,7 +74,7 @@ export class CalendarService {
   async update(id: number, dto: UpdateCalendarDto): Promise<Calendar> {
     const calendar = await this.calendarRepository.preload({ id, ...dto });
     if (!calendar) {
-      throw new NotFoundException(`entity not found`);
+      throw new NotFoundException(`Calendar not found`);
     }
     return await this.calendarRepository.save(calendar);
   }

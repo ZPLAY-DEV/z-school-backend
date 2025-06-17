@@ -1,7 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { Category } from 'src/common/enums';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { Category as CategoryEntity } from 'src/domain/category/entities/category.entity';
 
 //? ---------------------------------------------------------------------- ?//

@@ -7,7 +7,6 @@ import {
   PickRule,
 } from 'src/common/enums';
 import { IPickKeys } from 'src/common/interfaces';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -126,7 +125,7 @@ export class OfferingPickService {
           });
     } catch (error) {
       console.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(`Offering not found`);
     }
   }
 

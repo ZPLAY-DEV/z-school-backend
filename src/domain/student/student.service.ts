@@ -11,10 +11,12 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
+import { BookingStatus } from 'src/common/enums';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { getKoreanWeekday } from 'src/helpers/date';
+import { transformScheduleResponse } from 'src/helpers/group-schedule.util';
 import { S3Service } from 'src/services/aws/s3.service';
 import {
   DataSource,
@@ -26,17 +28,14 @@ import {
   Or,
   Repository,
 } from 'typeorm';
+import { Booking } from '../booking/entities/booking.entity';
+import { ScheduleResponseDto } from '../group/dto/schedule-response.dto';
+import { Group } from '../group/entities/group.entity';
+import { Pick } from '../pick/entities/pick.entity';
 import { School } from '../school/entities/school.entity';
+import { Schoolday } from '../schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
-import { BookingStatus } from 'src/common/enums';
-import { Pick } from '../pick/entities/pick.entity';
-import { Booking } from '../booking/entities/booking.entity';
-import { Group } from '../group/entities/group.entity';
-import { Schoolday } from '../schoolday/entities/schoolday.entity';
-import { getKoreanWeekday } from 'src/helpers/date';
-import { transformScheduleResponse } from 'src/helpers/group-schedule.util';
-import { ScheduleResponseDto } from '../group/dto/schedule-response.dto';
 
 @Injectable()
 export class StudentService {
@@ -69,7 +68,7 @@ export class StudentService {
     });
 
     if (!school) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+      throw new NotFoundException('School not found');
     }
 
     // 2. 보호자 존재 여부 확인 ( upsert )
@@ -162,7 +161,7 @@ export class StudentService {
       .getOne();
 
     if (!student) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException('Student not found');
     }
 
     return student;
@@ -179,9 +178,7 @@ export class StudentService {
       case BookingStatus.CANCELED:
         return await this.findCancelledGroups(id);
       default:
-        throw new BadRequestException(
-          HttpErrorConstants.STUDENT_COURSE_STATUS_NOT_FOUND,
-        );
+        throw new BadRequestException('Not supported option');
     }
   }
 
@@ -354,7 +351,7 @@ export class StudentService {
     });
 
     if (!school) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+      throw new NotFoundException('School not found');
     }
 
     // 2. Unique 제약 조건 확인 (학교-학년-반-번호) 기반
@@ -369,13 +366,13 @@ export class StudentService {
     });
 
     if (isStudent) {
-      throw new ConflictException(HttpErrorConstants.CONFLICT_STUDENT);
+      throw new ConflictException('Student already exists');
     }
 
     const student = await this.studentRepository.preload({ id, ...dto });
 
     if (!student) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException('Student not found');
     }
 
     return await this.studentRepository.save(student);
@@ -392,7 +389,7 @@ export class StudentService {
     });
 
     if (!school) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+      throw new NotFoundException('School not found');
     }
 
     // 2. 학생 존재 여부 확인
@@ -401,7 +398,7 @@ export class StudentService {
     });
 
     if (!student) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_STUDENT);
+      throw new NotFoundException('Student not found');
     }
 
     // 3. 학생 상태 업데이트
@@ -425,7 +422,7 @@ export class StudentService {
       where: { id },
     });
     if (!student) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_STUDENT);
+      throw new NotFoundException('Student not found');
     }
     return await this.studentRepository.remove(student);
   }

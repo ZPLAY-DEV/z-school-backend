@@ -1,10 +1,9 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CancelBookingDto } from 'src/domain/booking/dto/cancel-booking.dto';
 import { CreateBookingDto } from 'src/domain/booking/dto/create-booking.dto';
 import { ResponseBookingDto } from 'src/domain/booking/dto/response-booking.dto';
@@ -71,20 +70,11 @@ export const CreateBookingSwagger = () => {
       description: '선착순 수강신청 성공',
       type: ResponseBookingDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-      {
-        status: StatusCodes.UNPROCESSABLE_ENTITY,
-        errorFormatList: [HttpErrorConstants.ALREADY_BOOKED],
-      },
-      {
-        status: StatusCodes.INTERNAL_SERVER_ERROR,
-        errorFormatList: [HttpErrorConstants.INTERNAL_DATABASE_ERROR],
-      },
-    ]),
+    ApiStatuses(
+      StatusCodes.BAD_REQUEST,
+      StatusCodes.UNPROCESSABLE_ENTITY,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    ),
   );
 };
 
@@ -113,19 +103,10 @@ export const CancelBookingSwagger = () => {
       description: '선착순 수강신청취소 성공',
       type: Number,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
-      },
-      {
-        status: StatusCodes.INTERNAL_SERVER_ERROR,
-        errorFormatList: [HttpErrorConstants.INTERNAL_DATABASE_ERROR],
-      },
-    ]),
+    ApiStatuses(
+      StatusCodes.BAD_REQUEST,
+      StatusCodes.NOT_FOUND,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    ),
   );
 };

@@ -9,7 +9,6 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { Actor } from 'src/common/enums';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateBulkPickDto } from 'src/domain/pick/dto/create-bulk-pick.dto';
 import { CreatePickDto, EndPickDto } from 'src/domain/pick/dto/create-pick.dto';
@@ -45,7 +44,7 @@ export class PickService {
       relations: ['schooldays'],
     });
     if (!group.schooldays || group.schooldays.length === 0) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException('Group not found');
     }
     const { startsAt } = group.schooldays[0];
     const seoulTime = toZonedTime(startsAt, 'Asia/Seoul');
@@ -164,7 +163,7 @@ export class PickService {
       ...dto,
     });
     if (!group) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(`Pick not found`);
     }
     return await this.pickRepository.save(group);
   }

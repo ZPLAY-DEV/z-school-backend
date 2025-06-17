@@ -12,15 +12,12 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AttendanceService } from 'src/domain/attendance/attendance.service';
 import { AttendanceKeyDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import { IAttendanceKey } from 'src/domain/attendance/entities/attendance.interface';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 
 @ApiTags('✅ Attendances ( 출석 )')
-@ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('attendances')
 export class AttendanceController {
@@ -48,7 +45,7 @@ export class AttendanceController {
     @Query('cursor') cursor?: string,
   ): Promise<any> {
     if (!groupId) {
-      throw new BadRequestException(HttpErrorConstants.INVALID_QUERY_PARAMS);
+      throw new BadRequestException('groupId is required');
     }
     const groupKey = generateGroupKey(groupId);
 

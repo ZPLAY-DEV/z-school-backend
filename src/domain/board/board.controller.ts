@@ -12,25 +12,21 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
+import { ApiTags } from '@nestjs/swagger';
 import {
   CurrentUserId,
   CurrentUserIdAndRole,
 } from 'src/common/decorators/current-user-id.decorator';
 import { RemovalStatus, Role } from 'src/common/enums';
+import { IS3Urls } from 'src/common/interfaces';
+import { UploadService } from 'src/services/upload/upload.service';
+import { BoardService } from './board.service';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
-
+import { UpdateCommentDto } from './dto/update-comment.dto';
 import { Board } from './entities/board.entity';
 import { Comment } from './entities/comment.entity';
-
-import { ApiTags } from '@nestjs/swagger';
-import { IS3Urls } from 'src/common/interfaces';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { UploadService } from 'src/services/upload/upload.service';
-import { BoardService } from './board.service';
-import { UpdateCommentDto } from './dto/update-comment.dto';
 import {
   CreateBoardDocs,
   CreateCommentDocs,
@@ -44,7 +40,6 @@ import {
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Boards ( 게시판 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('boards')
 export class BoardController {
   constructor(
@@ -69,7 +64,7 @@ export class BoardController {
     @Body() dto: CreateBoardDto,
   ): Promise<Board> {
     if (user.role !== Role.INSTRUCTOR) {
-      throw new ForbiddenException(HttpErrorConstants.FORBIDDEN_USER_ROLE);
+      throw new ForbiddenException('Forbidden user role');
     }
     return await this.boardService.createBoard({
       ...dto,
@@ -111,7 +106,7 @@ export class BoardController {
     @Body() dto: UpdateBoardDto,
   ): Promise<Board> {
     if (user.role !== Role.INSTRUCTOR) {
-      throw new ForbiddenException(HttpErrorConstants.FORBIDDEN_USER_ROLE);
+      throw new ForbiddenException('Forbidden user role');
     }
     return this.boardService.updateBoard(id, {
       ...dto,
@@ -143,7 +138,7 @@ export class BoardController {
     @CurrentUserIdAndRole() user: { id: number; role: Role },
   ): Promise<RemovalStatus> {
     if (user.role !== Role.INSTRUCTOR) {
-      throw new ForbiddenException(HttpErrorConstants.FORBIDDEN_USER_ROLE);
+      throw new ForbiddenException('Forbidden user role');
     }
     return await this.boardService.removeBoard(id, user.id);
   }

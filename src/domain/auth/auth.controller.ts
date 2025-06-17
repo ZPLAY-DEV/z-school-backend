@@ -15,8 +15,6 @@ import { Request as ExpressRequest, Response } from 'express';
 import { ONE_HOUR, THIRTY_DAYS } from 'src/common/constants';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Role } from 'src/common/enums';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { AuthService } from 'src/domain/auth/auth.service';
 import { AuthTokenDto } from 'src/domain/auth/dto/auth-token.dto';
 import { AuthUserDto } from 'src/domain/auth/dto/auth-user.dto';
@@ -40,7 +38,6 @@ import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Auth ( 인증 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -195,13 +192,13 @@ export class AuthController {
         : null);
 
     if (!refreshToken) {
-      throw new UnauthorizedException(HttpErrorConstants.INVALID_TOKEN);
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
     const [, userId, role] = refreshToken.split('-') ?? [];
 
     if (!userId || !role) {
-      throw new UnauthorizedException(HttpErrorConstants.INVALID_TOKEN);
+      throw new UnauthorizedException('Invalid token');
     }
 
     const tokens = await this.authService.refreshToken(

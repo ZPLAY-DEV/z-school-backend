@@ -7,7 +7,6 @@ import {
   Paginated,
   paginate,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { School } from 'src/domain/school/entities/school.entity';
 import { UpdateSchooldayDto } from 'src/domain/schoolday/dto/update-schoolday.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
@@ -103,7 +102,7 @@ export class SchooldayService {
           });
     } catch (error) {
       this.logger.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(error.message);
     }
   }
 

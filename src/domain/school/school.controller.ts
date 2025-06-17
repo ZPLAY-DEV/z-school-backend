@@ -26,10 +26,8 @@ import {
   CreateSchoolDocs,
   UpdateSchoolDocs,
 } from './swagger/school.swagger.decorator';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 
 @ApiTags('✅ Schools ( 학교 )')
-@ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schools')
 export class SchoolController {

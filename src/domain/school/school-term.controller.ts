@@ -10,7 +10,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+
 import { SchoolTermService } from 'src/domain/school/school-term.service';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
 import { UpdateTermDto } from 'src/domain/term/dto/update-term.dto';
@@ -18,7 +18,6 @@ import { Term } from 'src/domain/term/entities/term.entity';
 import { ListTermDocs } from 'src/domain/term/swagger/shool-term-swagger.decorator';
 
 @ApiTags('✅ Schools > Terms ( 학교 > 학기 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermController {

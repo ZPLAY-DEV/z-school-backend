@@ -15,7 +15,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor } from 'src/common/enums';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { CreateBulkPickDto } from 'src/domain/pick/dto/create-bulk-pick.dto';
 import { EndPickDto, StartPickDto } from 'src/domain/pick/dto/create-pick.dto';
@@ -32,7 +32,6 @@ import {
 } from 'src/domain/pick/swagger/pick-swagger.decorator';
 
 @ApiTags('✅ Pick ( 확정수강생; pivot )')
-@ApiCommonErrorResponseTemplate()
 @Controller('picks')
 @UseInterceptors(ClassSerializerInterceptor)
 export class PickController {

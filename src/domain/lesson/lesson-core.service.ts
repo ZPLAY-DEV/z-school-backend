@@ -6,7 +6,6 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -57,7 +56,7 @@ export class LessonCoreService {
         where: { id: dto.schoolId },
       });
       if (!school) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+        throw new NotFoundException('School not found');
       }
 
       //? 2단계) 학기 정보 확인
@@ -65,7 +64,7 @@ export class LessonCoreService {
         where: { id: dto.termId },
       });
       if (!term) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_TERM);
+        throw new NotFoundException('Term not found');
       }
 
       if (
@@ -73,7 +72,7 @@ export class LessonCoreService {
           new Date(`${dto.start}T09:00:00+09:00`) < term.startDate) ||
         (dto.end && new Date(`${dto.end}T09:00:00+09:00`) > term.endDate)
       ) {
-        throw new BadRequestException(HttpErrorConstants.OUT_OF_RANGE);
+        throw new BadRequestException('Out of range');
       }
 
       //? 3단계) 같은 이름의 기존 강좌가 있는지 확인
@@ -199,7 +198,7 @@ export class LessonCoreService {
       },
     });
     if (!existingLesson) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_LESSON);
+      throw new NotFoundException('Lesson not found');
     }
 
     //? 1단계) 학교 정보 확인
@@ -207,7 +206,7 @@ export class LessonCoreService {
       where: { id: dto.schoolId },
     });
     if (!school) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+      throw new NotFoundException('School not found');
     }
 
     //? 2단계) 학기 정보 확인
@@ -273,9 +272,7 @@ export class LessonCoreService {
       })
       .catch((error) => {
         console.log(`🔴 허용하지 않는 입력 조합 오류`, error);
-        throw new UnprocessableEntityException(
-          HttpErrorConstants.INVALID_CONSTRAINT,
-        );
+        throw new UnprocessableEntityException('Invalid constraint');
       });
 
     //? 5단계) 반(Group)과 쌤(Sam) 정보 처리

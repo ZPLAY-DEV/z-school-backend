@@ -1,7 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { nanoid } from 'nanoid';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateNanoidDto } from 'src/domain/parent/dto/create-nanoid.dto';
 import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
@@ -29,7 +28,7 @@ export class ParentNanoIdService {
     });
 
     if (!parent) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException('Parent not found');
     }
 
     // nanoid 생성

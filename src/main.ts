@@ -11,9 +11,8 @@ import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import helmet from 'helmet';
 import { AppModule } from 'src/app.module';
 import { RedisIoAdapter } from 'src/common/adapters/redis-io-adapter';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { loadEnvConfig } from './common/config/env.config';
-import { initSwagger } from './core/swagger/swagger-config';
+import { initSwagger } from './common/swagger/swagger-config';
 import './instrument'; // import this first!
 // import { ConfigService } from '@nestjs/config';
 
@@ -46,7 +45,9 @@ async function bootstrap() {
       exceptionFactory: (e) => {
         console.log('error', e);
         // 상세 오류가 답답하면, validation-catch-all.filter.ts 를 전역필터로 적용.
-        return new BadRequestException(HttpErrorConstants.VALIDATE_ERROR);
+        return new BadRequestException(
+          '입력값이 유효하지 않습니다. 다시 확인해주세요.',
+        );
       },
     }),
   );

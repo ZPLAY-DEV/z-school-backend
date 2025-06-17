@@ -13,13 +13,12 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+
 import { CreateLessonRequestDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { SchoolTermLessonService } from 'src/domain/school/school-term-lesson.service';
 
 @ApiTags('✅ Schools > Terms > Lessons ( 학교 > 학기 > 과목 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermLessonController {

@@ -13,8 +13,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor } from 'src/common/enums';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+
 import { UpdateSchooldayTimeDto } from 'src/domain/schoolday/dto/update-schoolday.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayService } from './schoolday.service';
@@ -26,7 +25,6 @@ import {
 } from './swagger/schoolday-swagger.decorator';
 
 @ApiTags('✅ Schooldays ( 수업일 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('schooldays')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchooldayController {
@@ -82,7 +80,9 @@ export class SchooldayController {
       startsAt === dto.startsAt &&
       endsAt === dto.endsAt
     ) {
-      throw new BadRequestException(HttpErrorConstants.VALIDATE_ERROR);
+      throw new BadRequestException(
+        '입력값이 유효하지 않습니다. 다시 확인해주세요.',
+      );
     }
     const role =
       user.role === 'MANAGER'

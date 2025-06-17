@@ -7,7 +7,6 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { UpdateInstructorDto } from 'src/domain/instructor/dto/update-instructor.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
@@ -94,7 +93,7 @@ export class InstructorService {
           });
     } catch (e) {
       this.logger.error(e);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(`Instructor not found`);
     }
   }
 
@@ -115,7 +114,7 @@ export class InstructorService {
       id,
     });
     if (!instructor) {
-      throw new NotFoundException(`entity not found`);
+      throw new NotFoundException(`Instructor not found`);
     }
     return await this.instructorRepository.save(instructor);
   }

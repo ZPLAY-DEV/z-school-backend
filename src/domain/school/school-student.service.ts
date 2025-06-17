@@ -6,7 +6,6 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -39,7 +38,7 @@ export class SchoolStudentService {
     });
 
     if (!school) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+      throw new NotFoundException(`School not found`);
     }
 
     if (parentDto?.phone) {
@@ -100,7 +99,7 @@ export class SchoolStudentService {
         where: { id: schoolId },
       });
       if (!school) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+        throw new NotFoundException(`School not found`);
       }
 
       // Step 2: Upsert Parents

@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ZPLAY_SEOUL_NUMBER } from 'src/common/constants';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { chunk } from 'src/helpers/array';
 import { delay } from 'src/helpers/time';
 import {
@@ -284,7 +283,9 @@ export class AligoService {
       return await response.json();
     } catch (error) {
       this.logger.error(error);
-      throw new BadRequestException(HttpErrorConstants.ALIGO_FAILED);
+      throw new BadRequestException(
+        `Aligo SMS service call failed: ${error.message}`,
+      );
     }
   }
 

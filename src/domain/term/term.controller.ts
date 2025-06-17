@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
 import { UpdateTermDto } from 'src/domain/term/dto/update-term.dto';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -25,7 +24,6 @@ import {
 import { TermService } from 'src/domain/term/term.service';
 
 @ApiTags('✅ Terms ( 학기 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('terms')
 @UseInterceptors(ClassSerializerInterceptor)
 export class TermController {

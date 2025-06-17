@@ -1,18 +1,17 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { AuthTokenDto } from 'src/domain/auth/dto/auth-token.dto';
 import { AuthUserDto } from 'src/domain/auth/dto/auth-user.dto';
 import { LogoutDto } from 'src/domain/auth/dto/logout.dto';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
-    UserCredentialsDto,
-    UserCredentialsDtoWithPhone,
-    UserNanoIdDto,
+  UserCredentialsDto,
+  UserCredentialsDtoWithPhone,
+  UserNanoIdDto,
 } from 'src/domain/auth/dto/user-credentials.dto';
 
 //? ---------------------------------------------------------------------- ?//
@@ -41,16 +40,7 @@ export const RegisterDocs = () => {
       description: '부모/강사 회원가입 성공',
       type: AuthUserDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [
-          HttpErrorConstants.VALIDATE_ERROR,
-          HttpErrorConstants.ALREADY_REGISTERED,
-          HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-        ],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -77,16 +67,7 @@ export const RegisterManagerDocs = () => {
       description: '매니저 회원가입',
       type: AuthUserDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [
-          HttpErrorConstants.VALIDATE_ERROR,
-          HttpErrorConstants.ALREADY_REGISTERED,
-          HttpErrorConstants.INTERNAL_DATABASE_ERROR,
-        ],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -106,15 +87,7 @@ export const ResetPasswordDocs = () => {
     ApiBody({
       type: ResetPasswordDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [
-          HttpErrorConstants.NOT_FOUND_PHONE,
-          HttpErrorConstants.NOT_FOUND_USER,
-        ],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -137,20 +110,7 @@ export const LoginDocs = () => {
       description: '로그인 성공',
       type: AuthUserDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_PHONE],
-      },
-      {
-        status: StatusCodes.UNAUTHORIZED,
-        errorFormatList: [
-          HttpErrorConstants.ACCESS_DENIED,
-          HttpErrorConstants.NOT_FOUND_PASSWORD,
-          HttpErrorConstants.INVALID_CREDENTIALS,
-        ],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.UNAUTHORIZED),
   );
 };
 
@@ -174,19 +134,7 @@ export const LoginWithNanoIdDocs = () => {
       description: 'NanoId 로그인 성공',
       type: AuthUserDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_USER],
-      },
-      {
-        status: StatusCodes.UNAUTHORIZED,
-        errorFormatList: [
-          HttpErrorConstants.ACCESS_DENIED,
-          HttpErrorConstants.INVALID_CREDENTIALS,
-        ],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.UNAUTHORIZED),
   );
 };
 
@@ -207,15 +155,7 @@ export const RefreshDocs = () => {
       description: ' Access Token 재발급 성공 ',
       type: AuthTokenDto,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.UNAUTHORIZED,
-        errorFormatList: [
-          HttpErrorConstants.ACCESS_DENIED,
-          HttpErrorConstants.INVALID_SIGNATURE,
-        ],
-      },
-    ]),
+    ApiStatuses(StatusCodes.UNAUTHORIZED),
   );
 };
 
@@ -238,13 +178,8 @@ export const LogOutDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '로그아웃 성공',
-      type: AuthTokenDto,
+      type: String,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_USER],
-      },
-    ]),
+    ApiStatuses(StatusCodes.UNAUTHORIZED),
   );
 };

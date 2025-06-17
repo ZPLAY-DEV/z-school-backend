@@ -9,13 +9,11 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Category as CategoryEnum } from 'src/common/enums';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { CategoryService } from './category.service';
 import { GetCategoryListDocs } from './swagger/category-swagger.decorator';
 
 @ApiTags('✅ Categories ( 분류 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('categories')
 @UseInterceptors(ClassSerializerInterceptor)
 export class CategoryController {

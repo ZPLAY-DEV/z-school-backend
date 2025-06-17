@@ -7,10 +7,7 @@ import {
 import { BaseExceptionFilter } from '@nestjs/core';
 import * as Sentry from '@sentry/node';
 import { ValidationError } from 'class-validator';
-import {
-  HttpErrorConstants,
-  HttpErrorFormat,
-} from 'src/core/http/http-error-objects';
+import { HttpErrorFormat } from 'src/common/interfaces';
 
 @Catch()
 export class ValidationCatchAllFilter extends BaseExceptionFilter {
@@ -33,7 +30,8 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
     ) {
       httpStatus = exception.getStatus();
       errorResponse = {
-        ...HttpErrorConstants.VALIDATE_ERROR,
+        error: 'VALIDATION_ERROR',
+        message: '입력 데이터 유효성 검사에 실패했습니다.',
         description: req.url,
       };
 
@@ -57,12 +55,14 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
       } else {
         if (httpStatus === 401) {
           errorResponse = {
-            ...HttpErrorConstants.UNAUTHORIZED,
+            error: 'UNAUTHORIZED',
+            message: '인증 오류가 발생했습니다.',
             description: req.url,
           };
         } else {
           errorResponse = {
-            ...HttpErrorConstants.UNEXPECTED_HTTP_EXCEPTION,
+            error: 'UNEXPECTED_HTTP_EXCEPTION',
+            message: '예상치 못한 HTTP 오류가 발생했습니다.',
             description: req.url,
           };
         }
@@ -75,7 +75,11 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
       // General error handling
       httpStatus = 500;
       errorResponse = {
-        ...HttpErrorConstants.INTERNAL_SERVER_ERROR,
+        error: 'INTERNAL_SERVER_ERROR',
+        message:
+          exception instanceof Error
+            ? exception.message
+            : '알 수 없는 오류가 발생했습니다.',
         description: req.url,
       };
 

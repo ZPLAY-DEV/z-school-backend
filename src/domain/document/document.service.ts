@@ -1,6 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Document } from 'src/domain/document/entities/document.entity';
 import { Repository } from 'typeorm';
 import { CreateDocumentDto } from './dto/create-document.dto';
@@ -40,7 +39,7 @@ export class DocumentService {
           });
     } catch (error) {
       this.logger.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(error.message);
     }
   }
 
@@ -54,7 +53,7 @@ export class DocumentService {
       ...dto,
     });
     if (!document) {
-      throw new NotFoundException(`entity not found`);
+      throw new NotFoundException(`Document not found`);
     }
     return await this.documentRepository.save(document);
   }

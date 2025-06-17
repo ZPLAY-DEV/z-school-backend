@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -42,7 +41,7 @@ export class OfferingService {
           });
     } catch (error) {
       console.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(`Offering not found`);
     }
   }
 
@@ -53,7 +52,7 @@ export class OfferingService {
   async update(id: number, dto: UpdateOfferingDto): Promise<Offering> {
     const offering = await this.offeringRepository.preload({ id, ...dto });
     if (!offering) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(`Offering not found`);
     }
     return await this.offeringRepository.save(offering);
   }
@@ -102,9 +101,9 @@ export class OfferingService {
       return studentIds.length;
     } catch (error) {
       if (error instanceof EntityNotFoundError || error instanceof Error) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+        throw new NotFoundException(`Offering not found`);
       }
-      throw new BadRequestException(HttpErrorConstants.DATABASE_QUERY_ERROR);
+      throw new BadRequestException(error.message);
     }
   }
 

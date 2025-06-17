@@ -10,11 +10,10 @@ import {
 } from '@nestjs/common';
 
 import { ApiTags } from '@nestjs/swagger';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
-import { SchoolBoardService } from './school-board.service';
+
+import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
 import { Board } from '../board/entities/board.entity';
-import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import {
   SchoolBoardListDocs,
   SchoolBoardListPaginatedDocs,
@@ -23,10 +22,10 @@ import {
   SchoolBoardTargetListDocs,
   SchoolBoardTargetListPaginatedDocs,
 } from '../board/swagger/school-board.swagger.decorator';
+import { SchoolBoardService } from './school-board.service';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Schools > Board ( 학교 > 게시판 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('schools')
 export class SchoolBoardController {
   constructor(private readonly schoolBoardService: SchoolBoardService) {}

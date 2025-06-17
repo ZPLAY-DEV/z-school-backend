@@ -1,8 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOperation } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create School Calendar
@@ -32,19 +31,10 @@ export const CreateSchoolCalendarDocs = () => {
         description: '생성/업데이트된 캘린더 항목 수',
       },
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_SCHOOL],
-      },
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-      {
-        status: StatusCodes.INTERNAL_SERVER_ERROR,
-        errorFormatList: [HttpErrorConstants.INTERNAL_SERVER_ERROR],
-      },
-    ]),
+    ApiStatuses(
+      StatusCodes.NOT_FOUND,
+      StatusCodes.BAD_REQUEST,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    ),
   );
 };

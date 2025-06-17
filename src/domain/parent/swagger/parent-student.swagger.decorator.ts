@@ -1,7 +1,7 @@
-import { ApiOperation, ApiParam } from '@nestjs/swagger';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
-import { ParentRelationResponseDto } from '../dto/parent-relation-response.dto';
 import { applyDecorators } from '@nestjs/common';
+import { ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
+import { ParentRelationResponseDto } from '../dto/parent-relation-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학부모의 자식 리스트 조회

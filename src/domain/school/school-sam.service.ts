@@ -6,7 +6,6 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Document } from 'src/domain/document/entities/document.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
@@ -41,7 +40,7 @@ export class SchoolSamService {
         where: { id: schoolId },
       });
       if (!school) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+        throw new NotFoundException(`School not found`);
       }
 
       // 2. instructor 존재 여부 확인 (upsert)
@@ -126,7 +125,7 @@ export class SchoolSamService {
       });
 
       if (!school) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+        throw new NotFoundException(`School not found`);
       }
 
       // 2. phone 기반 기존 강사 Entity 조회

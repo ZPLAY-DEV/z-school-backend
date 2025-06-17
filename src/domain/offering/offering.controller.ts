@@ -11,7 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+
 import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -26,7 +26,6 @@ import {
 
 //! 단일 Offering 엔터티 작업
 @ApiTags('✅ Offerings ( 수강신청과목 )')
-@ApiCommonErrorResponseTemplate()
 @Controller('offerings')
 @UseInterceptors(ClassSerializerInterceptor)
 export class OfferingController {

@@ -8,7 +8,6 @@ import { format, fromZonedTime } from 'date-fns-tz';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
 import { NotificationType } from 'src/common/enums/notification-type';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 import { AttendanceStatusDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
@@ -162,7 +161,7 @@ export class GroupAttendanceService {
         `${date}`,
     );
     if (!schoolday) {
-      throw new NotFoundException(HttpErrorConstants.NO_CLASS_DAY);
+      throw new NotFoundException('해당일에 수업이 없습니다.');
     }
 
     const duration = getDuration(group.start, group.end);
@@ -219,11 +218,11 @@ export class GroupAttendanceService {
           return result;
         } catch (updateError) {
           console.error(`[dynamodb] update error`, updateError);
-          throw new BadRequestException(HttpErrorConstants.DYNAMO_UPDATE);
+          throw new BadRequestException('출석 정보 업데이트에 실패했습니다.');
         }
       } else {
         console.error(`[dynamodb] update error`, error);
-        throw new BadRequestException(HttpErrorConstants.DYNAMO_CREATE);
+        throw new BadRequestException('출석 정보 생성에 실패했습니다.');
       }
     }
   }
@@ -247,7 +246,7 @@ export class GroupAttendanceService {
       return result as IAttendance[];
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(HttpErrorConstants.DYNAMO_READ);
+      throw new BadRequestException('출석 정보 조회에 실패했습니다.');
     }
   }
 
@@ -290,7 +289,7 @@ export class GroupAttendanceService {
       return results;
     } catch (error) {
       console.error(`[dynamodb] bulk update error`, error);
-      throw new BadRequestException(HttpErrorConstants.DYNAMO_UPDATE);
+      throw new BadRequestException('출석 정보 일괄 업데이트에 실패했습니다.');
     }
   }
 
@@ -370,7 +369,9 @@ export class GroupAttendanceService {
       };
     } catch (error) {
       console.error(`[dynamodb] optimized bulk update error`, error);
-      throw new BadRequestException(HttpErrorConstants.DYNAMO_UPDATE);
+      throw new BadRequestException(
+        '출석 정보 최적화 일괄 업데이트에 실패했습니다.',
+      );
     }
   }
 

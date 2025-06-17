@@ -40,7 +40,7 @@ export class SubsidyService {
       ...dto,
     });
     if (!order) {
-      throw new NotFoundException(`entity not found`);
+      throw new NotFoundException(`Subsidy not found`);
     }
     return await this.subsidyRepository.save(order);
   }

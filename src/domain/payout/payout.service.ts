@@ -7,7 +7,6 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { CreatePayoutDto } from 'src/domain/payout/dto/create-payout.dto';
 import { UpdatePayoutDto } from 'src/domain/payout/dto/update-payout.dto';
 import { SlackService } from 'src/services/slack/slack.service';
@@ -72,7 +71,7 @@ export class PayoutService {
           });
     } catch (error) {
       console.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(`Payout not found`);
     }
   }
 

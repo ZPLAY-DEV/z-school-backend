@@ -7,7 +7,6 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { Region } from 'src/common/enums';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { School } from 'src/domain/school/entities/school.entity';
 import { S3Service } from 'src/services/aws/s3.service';
 import { DataSource, In, Repository } from 'typeorm';
@@ -99,7 +98,7 @@ export class SchoolService {
           });
     } catch (error) {
       this.logger.error(error);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(`School not found`);
     }
   }
 
@@ -121,7 +120,7 @@ export class SchoolService {
     });
 
     if (!school) {
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException(`School not found`);
     }
 
     return await this.schoolRepository.save(school);

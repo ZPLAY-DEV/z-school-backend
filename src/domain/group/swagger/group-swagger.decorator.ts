@@ -8,12 +8,11 @@ import {
   getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { RemovalStatus } from 'src/common/enums';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiCreatedResponseTemplate } from 'src/core/swagger/response/api-created.response';
-import { ApiEnumResponseTemplate } from 'src/core/swagger/response/api-enum.response';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
-import { ApiOkResponseTemplate } from 'src/core/swagger/response/api-ok-response';
+import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
+import { ApiEnumResponseTemplate } from 'src/common/swagger/response/api-enum.response';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
@@ -39,12 +38,7 @@ export const CreateGroupDocs = () => {
       description: '반 등록 완료',
       type: Group,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -83,12 +77,7 @@ export const FindGroupDocs = () => {
         ],
       },
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -126,12 +115,7 @@ export const UpdateGroupDocs = () => {
       description: '반 수정 완료 (picks 관계 포함 안됨)',
       type: Group,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_ENTITY],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -160,11 +144,6 @@ export const DeleteGroupDocs = () => {
       description: '상태 리턴',
       type: RemovalStatus,
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.UNPROCESSABLE_ENTITY,
-        errorFormatList: [HttpErrorConstants.CONDITION_NOT_MET],
-      },
-    ]),
+    ApiStatuses(StatusCodes.UNPROCESSABLE_ENTITY),
   );
 };

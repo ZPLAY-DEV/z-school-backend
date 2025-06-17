@@ -1,8 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
-import { ApiErrorResponseTemplate } from 'src/core/swagger/response/api-error.response';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 
 //? ---------------------------------------------------------------------- ?//
 //? Find Attendance By Date
@@ -131,16 +130,7 @@ export const FindAttendanceByDateDocs = () => {
         },
       },
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_LESSON],
-      },
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -205,13 +195,7 @@ export const GetReportDocs = () => {
                   },
                   status: {
                     type: 'string',
-                    enum: [
-                      'PENDING',
-                      'PRESENT',
-                      'ABSENT',
-                      'LATE',
-                      'EXCUSED',
-                    ],
+                    enum: ['PENDING', 'PRESENT', 'ABSENT', 'LATE', 'EXCUSED'],
                     description: '출석 상태',
                     example: 'PRESENT',
                   },
@@ -222,15 +206,6 @@ export const GetReportDocs = () => {
         },
       },
     }),
-    ApiErrorResponseTemplate([
-      {
-        status: StatusCodes.NOT_FOUND,
-        errorFormatList: [HttpErrorConstants.NOT_FOUND_LESSON],
-      },
-      {
-        status: StatusCodes.BAD_REQUEST,
-        errorFormatList: [HttpErrorConstants.VALIDATE_ERROR],
-      },
-    ]),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };

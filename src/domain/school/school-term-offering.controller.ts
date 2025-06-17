@@ -12,7 +12,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
-import { ApiCommonErrorResponseTemplate } from 'src/core/swagger/response/api-error-common.response';
+
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import {
   CreateSchoolTermOfferingsDocs,
@@ -24,7 +24,6 @@ import { SchoolTermOfferingService } from 'src/domain/school/school-term-offerin
 
 @Controller('schools')
 @ApiTags('✅ Schools > Terms > Offerings ( 학교 > 학기 > 수강신청과목 )')
-@ApiCommonErrorResponseTemplate()
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermOfferingController {
   constructor(

@@ -1,18 +1,17 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { HttpErrorConstants } from 'src/core/http/http-error-objects';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { DeleteInstructorNoteDto } from 'src/domain/instructor/dto/delete-instructor-note.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { School } from 'src/domain/school/entities/school.entity';
-import { DataSource, EntityManager, Repository } from 'typeorm';
-import { Sam } from './entities/sam.entity';
-import { Document } from '../document/entities/document.entity';
 import { getKoreanWeekday } from 'src/helpers/date';
 import { transformScheduleResponse } from 'src/helpers/group-schedule.util';
+import { DataSource, EntityManager, Repository } from 'typeorm';
+import { Document } from '../document/entities/document.entity';
 import { Schoolday } from '../schoolday/entities/schoolday.entity';
+import { Sam } from './entities/sam.entity';
 @Injectable()
 export class SamService {
   private readonly logger = new Logger(SamService.name);
@@ -40,7 +39,7 @@ export class SamService {
       });
 
       if (!school) {
-        throw new NotFoundException(HttpErrorConstants.NOT_FOUND_SCHOOL);
+        throw new NotFoundException('School not found');
       }
 
       // 2. instructor 존재 여부 확인
@@ -158,7 +157,7 @@ export class SamService {
           });
     } catch (e) {
       this.logger.error(e);
-      throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
+      throw new NotFoundException('Sam not found');
     }
   }
 
@@ -268,7 +267,7 @@ export class SamService {
       id,
     });
     if (!sam) {
-      throw new NotFoundException(`entity not found`);
+      throw new NotFoundException(`Sam not found`);
     }
     return await this.samRepository.save(sam);
   }

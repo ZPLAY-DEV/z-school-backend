@@ -102,7 +102,7 @@ export class UserOtpService {
 
     const dbUser = await this.userRepository.findOne({ where });
     if (!dbUser) {
-      throw new NotFoundException('user not found');
+      throw new NotFoundException('User not found');
     }
 
     const key = phone ? phone : email;
@@ -167,7 +167,7 @@ export class UserOtpService {
     const user = await this.userRepository.findOne({ where });
 
     if (!user) {
-      throw new NotFoundException('user not found');
+      throw new NotFoundException('User not found');
     }
 
     if (phone) {
