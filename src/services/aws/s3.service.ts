@@ -53,6 +53,10 @@ export class S3Service implements OnModuleInit {
     }
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Server upload 방식: 클라이언트 → 서버 → S3
+  //? ---------------------------------------------------------------------- ?//
+
   async upload(
     data: Buffer | Readable,
     path: string,
@@ -94,6 +98,10 @@ export class S3Service implements OnModuleInit {
     }
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Server upload 방식: 클라이언트 → 서버 → S3
+  //? ---------------------------------------------------------------------- ?//
+
   async delete(path: string): Promise<S3DeleteResult> {
     if (!path || path.trim() === '') {
       throw new Error('Path is required and cannot be empty');
@@ -124,6 +132,10 @@ export class S3Service implements OnModuleInit {
       throw new Error(`Unexpected error during S3 delete: ${error.message}`);
     }
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Presigned URL 방식: 클라이언트 → S3 (직접)
+  //? ---------------------------------------------------------------------- ?//
 
   async generateSignedUrl(
     path: string,

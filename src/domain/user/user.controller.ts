@@ -50,12 +50,16 @@ export class UserController {
     return await this.userService.create(dto);
   }
 
-  @Post(':id/avatar/s3urls')
+  @Post(':id/s3urls')
   async generateS3Urls(
     @Param('id', ParseIntPipe) id: number,
-    @Body('mime') mime: string,
+    @Body()
+    dto: {
+      mimeType: string;
+    },
   ): Promise<IS3Urls> {
-    return await this.uploadService.generateUserAvatarUrls(id, mime);
+    const path = [`users`, `${id}`, `avatar`].join('/');
+    return await this.uploadService.generateUploadUrls(path, dto.mimeType);
   }
 
   //? ---------------------------------------------------------------------- ?//

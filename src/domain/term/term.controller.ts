@@ -12,22 +12,29 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
+import { IS3Urls } from 'src/common/interfaces';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
 import { UpdateTermDto } from 'src/domain/term/dto/update-term.dto';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   CreateTermDocs,
+  DeleteFileDocs,
   DeleteTermDocs,
   FindTermDocs,
+  GenerateS3UrlsDocs,
   UpdateTermDocs,
 } from 'src/domain/term/swagger/term-swagger.decorator';
 import { TermService } from 'src/domain/term/term.service';
+import { UploadService } from 'src/services/upload/upload.service';
 
 @ApiTags('✅ Terms ( 학기 )')
 @Controller('terms')
 @UseInterceptors(ClassSerializerInterceptor)
 export class TermController {
-  constructor(private readonly termService: TermService) {}
+  constructor(
+    private readonly termService: TermService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? Create
@@ -80,5 +87,29 @@ export class TermController {
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<Term> {
     return await this.termService.softRemove(id);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Extras
+  //? ---------------------------------------------------------------------- ?//
+
+  @GenerateS3UrlsDocs()
+  @Post('s3urls')
+  async generateS3Urls(
+    @Body()
+    dto: {
+      schoolId: number;
+      mimeType: string;
+    },
+  ): Promise<IS3Urls> {
+    const year = new Date().getFullYear();
+    const path = [`schools`, `${dto.schoolId}`, `${year}`, `terms`].join('/');
+    return await this.uploadService.generateUploadUrls(path, dto.mimeType);
+  }
+
+  @DeleteFileDocs()
+  @Delete('file')
+  async deleteFile(@Body() dto: { url: string }): Promise<void> {
+    await this.uploadService.deleteFile(dto.url);
   }
 }

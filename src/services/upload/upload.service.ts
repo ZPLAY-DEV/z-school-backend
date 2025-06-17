@@ -45,7 +45,7 @@ export class UploadService {
     }
 
     const filename = randomImageName('file', mimeType);
-    const fullPath = `${path}/${filename}`;
+    const fullPath = `${this.environment}/${path}/${filename}`;
     const expiresIn = options?.expiresIn ?? this.DEFAULT_EXPIRES_IN;
 
     try {
@@ -74,17 +74,18 @@ export class UploadService {
   /**
    * 파일 삭제
    */
-  async deleteFile(imageUrl: string): Promise<boolean> {
-    if (!this.isValidImageUrl(imageUrl)) {
+  async deleteFile(url: string): Promise<boolean> {
+    if (!this.isValidUrl(url)) {
       throw new Error('Invalid image URL provided');
     }
 
     try {
-      const result = await this.s3Service.delete(imageUrl);
+      const path = this.extractPathFromUrl(url);
+      const result = await this.s3Service.delete(path);
       this.logger.log(`Successfully deleted file: ${result.key}`);
       return result.success;
     } catch (error) {
-      this.logger.error(`Failed to delete file: ${imageUrl}`, error);
+      this.logger.error(`Failed to delete file: ${url}`, error);
       throw new Error(`Failed to delete file: ${error.message}`);
     }
   }
@@ -92,103 +93,34 @@ export class UploadService {
   /**
    * 파일 존재 여부 확인
    */
-  async fileExists(imageUrl: string): Promise<boolean> {
-    if (!this.isValidImageUrl(imageUrl)) {
+  async fileExists(url: string): Promise<boolean> {
+    if (!this.isValidUrl(url)) {
       return false;
     }
 
     try {
-      const path = this.extractPathFromUrl(imageUrl);
+      const path = this.extractPathFromUrl(url);
       return await this.s3Service.fileExists(path);
     } catch (error) {
-      this.logger.error(`Failed to check file existence: ${imageUrl}`, error);
+      this.logger.error(`Failed to check file existence: ${url}`, error);
       return false;
     }
-  }
-
-  //* ---------------------------------------------------------------------- *//
-  //* Static Path Helper Methods
-  //* ---------------------------------------------------------------------- *//
-
-  /**
-   * 통합 업로드 경로 생성
-   */
-  static createPath(
-    userId: number,
-    type: string,
-    environment?: string,
-  ): string {
-    const segments: string[] = [];
-    if (environment) {
-      segments.push(environment);
-    }
-    segments.push(String(userId), type);
-    return segments.join('/');
-  }
-
-  //* ---------------------------------------------------------------------- *//
-  //* Convenience Methods (최적화)
-  //* ---------------------------------------------------------------------- *//
-
-  /**
-   * 편지 이미지 URL 생성
-   */
-  async generateLetterImageUrls(
-    userId: number,
-    mimeType: string,
-    options?: UploadOptions,
-  ): Promise<IS3Urls> {
-    return this.generateUploadUrls(
-      UploadService.createPath(userId, 'letter', this.environment),
-      mimeType,
-      options,
-    );
-  }
-
-  /**
-   * 포스트 이미지 URL 생성
-   */
-  async generatePostImageUrls(
-    userId: number,
-    mimeType: string,
-    options?: UploadOptions,
-  ): Promise<IS3Urls> {
-    return this.generateUploadUrls(
-      UploadService.createPath(userId, 'post', this.environment),
-      mimeType,
-      options,
-    );
-  }
-
-  /**
-   * 사용자 아바타 URL 생성 (환경 포함)
-   */
-  async generateUserAvatarUrls(
-    userId: number,
-    mimeType: string,
-    options?: UploadOptions,
-  ): Promise<IS3Urls> {
-    return this.generateUploadUrls(
-      UploadService.createPath(userId, 'avatar', this.environment),
-      mimeType,
-      options,
-    );
   }
 
   //* ---------------------------------------------------------------------- *//
   //* Private Helper Methods
   //* ---------------------------------------------------------------------- *//
 
-  private isValidImageUrl(imageUrl: string): boolean {
+  private isValidUrl(url: string): boolean {
     return !!(
-      imageUrl?.trim() &&
+      url?.trim() &&
       this.cloudFrontUrl &&
-      imageUrl.includes(this.cloudFrontUrl)
+      url.includes(this.cloudFrontUrl)
     );
   }
 
-  private extractPathFromUrl(imageUrl: string): string {
-    return imageUrl.replace(`${this.cloudFrontUrl}/`, '');
+  private extractPathFromUrl(url: string): string {
+    return url.replace(`${this.cloudFrontUrl}/`, '');
   }
 
   private isValidMimeType(mimeType: string): boolean {

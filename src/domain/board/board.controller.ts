@@ -53,8 +53,16 @@ export class BoardController {
 
   @GenerateS3PathDocs()
   @Post('s3urls')
-  async generateS3Urls(@Body('mime') mime: string): Promise<IS3Urls> {
-    return await this.uploadService.generateBoardImageUrls(mime);
+  async generateS3Urls(
+    @Body()
+    dto: {
+      schoolId: number;
+      mimeType: string;
+    },
+  ): Promise<IS3Urls> {
+    const year = new Date().getFullYear();
+    const path = [`schools`, `${dto.schoolId}`, `${year}`, `boards`].join('/');
+    return await this.uploadService.generateUploadUrls(path, dto.mimeType);
   }
 
   @CreateBoardDocs()

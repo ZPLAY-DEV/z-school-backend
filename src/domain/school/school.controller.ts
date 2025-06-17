@@ -16,7 +16,6 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Region } from 'src/common/enums';
-import { IS3Urls } from 'src/common/interfaces';
 import { School } from 'src/domain/school/entities/school.entity';
 import { UploadService } from 'src/services/upload/upload.service';
 import { CreateSchoolDto } from './dto/create-school.dto';
@@ -45,21 +44,6 @@ export class SchoolController {
   @Post()
   async create(@Body() createSchoolDto: CreateSchoolDto): Promise<School> {
     return await this.schoolService.create(createSchoolDto);
-  }
-
-  @ApiOperation({ description: '이미지 URL 생성' })
-  @Post(':id/s3urls')
-  async generateS3Urls(
-    @Param('id', ParseIntPipe) id: number,
-    @Body('mime') mime: string,
-  ): Promise<IS3Urls> {
-    return await this.uploadService.generateNewsImageUrls(id, mime);
-  }
-
-  @ApiOperation({ description: 'News 이미지 삭제' })
-  @Post('/image/delete')
-  async deleteImages(@Body('url') url: string): Promise<void> {
-    return await this.schoolService.deleteImages(url);
   }
 
   //? ---------------------------------------------------------------------- ?//

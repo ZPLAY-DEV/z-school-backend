@@ -74,6 +74,28 @@ export class TermService {
     }
   }
 
+  // async infiniteList(
+  //   schoolId: number,
+  //   query: PaginateQuery,
+  // ): Promise<Paginated<Term>> {
+  //   const queryBuilder = this.termRepository
+  //     .createQueryBuilder('term')
+  //     .where('term.schoolId = :schoolId', { schoolId });
+
+  //   return await paginate(query, queryBuilder, {
+  //     sortableColumns: ['schoolYear', 'start'],
+  //     searchableColumns: ['schoolYear', 'termName'],
+  //     defaultSortBy: [
+  //       ['schoolYear', 'ASC'],
+  //       ['start', 'ASC'],
+  //     ],
+  //     filterableColumns: {
+  //       schoolYear: [FilterOperator.EQ],
+  //       name: [FilterOperator.EQ, FilterOperator.ILIKE],
+  //     },
+  //   });
+  // }
+
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
