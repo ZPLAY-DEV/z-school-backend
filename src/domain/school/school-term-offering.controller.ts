@@ -12,7 +12,6 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
-
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import {
   CreateSchoolTermOfferingsDocs,

@@ -2,12 +2,14 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { Actor } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
@@ -109,6 +111,14 @@ export class Pick {
   @ApiProperty({ description: '🈳 deletedAt' })
   @DeleteDateColumn()
   deletedAt: Date | null;
+
+  //* M-to-1 belongsTo ----------------------------------------------------- *//
+
+  @ManyToOne(() => Offering, (offering) => offering.picks)
+  @JoinColumn({ name: 'offeringId' })
+  offering: Offering;
+
+  //* M-to-1 belongsTo ----------------------------------------------------- *//
 
   @ManyToOne(() => Student, (student) => student.picks)
   student: Student;

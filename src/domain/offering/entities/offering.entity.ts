@@ -1,9 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { PickRule } from 'src/common/enums';
+import { ClassStatus, PickRule } from 'src/common/enums';
 import { ITimeRange } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   AfterLoad,
@@ -25,6 +26,7 @@ import {
 @Entity('offerings')
 @Unique(['schoolId', 'termId', 'lessonId', 'groupName'])
 export class Offering {
+  @ApiProperty({ description: '🈵 ID', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
@@ -113,11 +115,24 @@ export class Offering {
   @ApiProperty({
     description:
       '해당 수강신청과목 취소하면, full sync 가 이뤄지는데, 이를 처리하는데 필요한 version 정보를 저장',
-    type: 'array',
-    isArray: true,
+    type: 'number',
   })
-  @Column({ type: 'bigint', unsigned: true, default: 0 })
+  @Column({
+    type: 'bigint',
+    unsigned: true,
+    default: 0,
+    comment:
+      '해당 수강신청과목 취소하면, full sync 가 이뤄지는데, 이를 처리하는데 필요한 version 정보',
+  })
   lastSyncTimestamp: number;
+
+  @ApiProperty({ description: '🈵 상태' })
+  @Column({
+    type: 'enum',
+    enum: ClassStatus,
+    default: ClassStatus.PENDING,
+  })
+  status: ClassStatus;
 
   // ------------------------------------------------------------------------ //
 
@@ -148,6 +163,11 @@ export class Offering {
 
   @OneToMany(() => Booking, (booking) => booking.student)
   bookings: Booking[];
+
+  //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @OneToMany(() => Pick, (pick) => pick.offering)
+  picks: Pick[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

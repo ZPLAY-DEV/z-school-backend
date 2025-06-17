@@ -110,6 +110,8 @@ export class SchoolTermOfferingService {
   ): Promise<Offering[]> {
     const items = await this.offeringRepository
       .createQueryBuilder('offering')
+      .leftJoinAndSelect('offering.picks', 'picks')
+      .leftJoinAndSelect('offering.bookings', 'bookings')
       .where('offering.schoolId = :schoolId', { schoolId })
       .andWhere('offering.termId = :termId', { termId })
       .orderBy('offering.id', 'DESC')

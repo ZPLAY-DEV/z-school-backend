@@ -173,19 +173,17 @@ export class OfferingPickService {
       await this.pickRepository.query(query);
     }
 
-    // group 과 lesson 의 상태를 ACTIVE 로 변경
+    // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
+    await this.offeringRepository.update(offeringId, {
+      status: ClassStatus.ACTIVE,
+    });
     await this.groupRepository.update(groupIds, { status: ClassStatus.ACTIVE });
     const groups = await this.groupRepository.find({
       where: { id: In(groupIds) },
     });
-    const lessonIds = [
-      ...new Set(groups.map((g) => g.lessonId).filter(Boolean)),
-    ];
-    if (lessonIds.length > 0) {
-      await this.lessonRepository.update(lessonIds, {
-        status: ClassStatus.ACTIVE,
-      });
-    }
+    await this.lessonRepository.update(groups[0].lessonId, {
+      status: ClassStatus.ACTIVE,
+    });
 
     return selectedStudentIds;
   }
@@ -230,19 +228,17 @@ export class OfferingPickService {
       await this.pickRepository.query(query);
     }
 
-    // group 과 lesson 의 상태를 ACTIVE 로 변경
+    // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
+    await this.offeringRepository.update(offeringId, {
+      status: ClassStatus.ACTIVE,
+    });
     await this.groupRepository.update(groupIds, { status: ClassStatus.ACTIVE });
     const groups = await this.groupRepository.find({
       where: { id: In(groupIds) },
     });
-    const lessonIds = [
-      ...new Set(groups.map((g) => g.lessonId).filter(Boolean)),
-    ];
-    if (lessonIds.length > 0) {
-      await this.lessonRepository.update(lessonIds, {
-        status: ClassStatus.ACTIVE,
-      });
-    }
+    await this.lessonRepository.update(groups[0].lessonId, {
+      status: ClassStatus.ACTIVE,
+    });
 
     return selectedStudentIds;
   }
@@ -299,19 +295,17 @@ export class OfferingPickService {
       await this.pickRepository.query(query);
     }
 
-    // group 과 lesson 의 상태를 ACTIVE 로 변경
+    // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
+    await this.offeringRepository.update(offeringId, {
+      status: ClassStatus.ACTIVE,
+    });
     await this.groupRepository.update(groupIds, { status: ClassStatus.ACTIVE });
     const groups = await this.groupRepository.find({
       where: { id: In(groupIds) },
     });
-    const lessonIds = [
-      ...new Set(groups.map((g) => g.lessonId).filter(Boolean)),
-    ];
-    if (lessonIds.length > 0) {
-      await this.lessonRepository.update(lessonIds, {
-        status: ClassStatus.ACTIVE,
-      });
-    }
+    await this.lessonRepository.update(groups[0].lessonId, {
+      status: ClassStatus.ACTIVE,
+    });
 
     return selectedStudentIds;
   }
@@ -389,19 +383,17 @@ export class OfferingPickService {
       await this.pickRepository.query(query);
     }
 
-    // group 과 lesson 의 상태를 ACTIVE 로 변경
+    // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
+    await this.offeringRepository.update(offeringId, {
+      status: ClassStatus.ACTIVE,
+    });
     await this.groupRepository.update(groupIds, { status: ClassStatus.ACTIVE });
     const groups = await this.groupRepository.find({
       where: { id: In(groupIds) },
     });
-    const lessonIds = [
-      ...new Set(groups.map((g) => g.lessonId).filter(Boolean)),
-    ];
-    if (lessonIds.length > 0) {
-      await this.lessonRepository.update(lessonIds, {
-        status: ClassStatus.ACTIVE,
-      });
-    }
+    await this.lessonRepository.update(groups[0].lessonId, {
+      status: ClassStatus.ACTIVE,
+    });
 
     return selectedStudentIds;
   }
