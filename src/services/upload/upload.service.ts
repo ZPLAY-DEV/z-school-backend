@@ -4,31 +4,9 @@ import { IS3Urls } from 'src/common/interfaces';
 import { randomImageName } from 'src/helpers/random-filename';
 import { S3Service } from 'src/services/aws/s3.service';
 
-// 업로드 타입 정의
-export enum UploadType {
-  NEWS = 'news',
-  BOARD = 'boards',
-  AVATAR = 'avatar',
-  POST = 'posts',
-}
-
-// 경로 빌더 인터페이스
-export interface PathConfig {
-  type: UploadType;
-  entityId?: number;
-  useEnvironment?: boolean;
-}
-
-// 업로드 옵션
+// 업로드 옵션 (단순화)
 export interface UploadOptions {
   expiresIn?: number; // seconds (default: 600)
-  maxFileSize?: number; // bytes (default: 5MB)
-}
-
-// 파일 정보
-export interface FileInfo {
-  mimeType: string;
-  entityName?: string;
 }
 
 @Injectable()
@@ -36,10 +14,7 @@ export class UploadService {
   private readonly logger = new Logger(UploadService.name);
   private readonly environment: string;
   private readonly cloudFrontUrl: string;
-
-  // 기본 설정
   private readonly DEFAULT_EXPIRES_IN = 600; // 10분
-  private readonly DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
   constructor(
     private readonly configService: ConfigService,
@@ -48,26 +23,52 @@ export class UploadService {
     this.environment = this.configService.get('nodeEnv', 'development');
     this.cloudFrontUrl = this.configService.get('aws.cloudFrontUrl', '');
 
-    this.validateConfiguration();
+    if (!this.cloudFrontUrl) {
+      this.logger.warn('AWS CloudFront URL is not configured');
+    }
+
     this.logger.log(
       `UploadService initialized for environment: ${this.environment}`,
     );
   }
 
   /**
-   * 메인 업로드 URL 생성 메서드
+   * 메인 업로드 URL 생성 메서드 (경로 기반)
    */
   async generateUploadUrls(
-    pathConfig: PathConfig,
-    fileInfo: FileInfo,
-    options: UploadOptions = {},
+    path: string,
+    mimeType: string,
+    options?: UploadOptions,
   ): Promise<IS3Urls> {
-    this.validateInputs(pathConfig, fileInfo);
+    if (!this.isValidMimeType(mimeType)) {
+      throw new Error(`Unsupported MIME type: ${mimeType}`);
+    }
 
-    const path = this.buildPath(pathConfig, fileInfo);
-    const finalOptions = this.mergeOptions(options);
+    const filename = randomImageName('file', mimeType);
+    const fullPath = `${path}/${filename}`;
+    const expiresIn = options?.expiresIn ?? this.DEFAULT_EXPIRES_IN;
 
-    return await this.createSignedUrls(path, finalOptions);
+    try {
+      const uploadUrl = await this.s3Service.generateSignedUrl(
+        fullPath,
+        expiresIn,
+      );
+
+      if (!this.cloudFrontUrl) {
+        throw new Error('CloudFront URL is not configured');
+      }
+
+      const imageUrl = `${this.cloudFrontUrl}/${fullPath}`;
+
+      this.logger.log(`Generated upload URLs for path: ${fullPath}`);
+      return { uploadUrl, imageUrl };
+    } catch (error) {
+      this.logger.error(
+        `Failed to generate signed URL for path: ${fullPath}`,
+        error,
+      );
+      throw new Error(`Failed to generate upload URLs: ${error.message}`);
+    }
   }
 
   /**
@@ -106,40 +107,61 @@ export class UploadService {
   }
 
   //* ---------------------------------------------------------------------- *//
-  //* 편의 메서드들 (Convenience Methods)
+  //* Static Path Helper Methods
   //* ---------------------------------------------------------------------- *//
 
   /**
-   * 뉴스 이미지 URL 생성
+   * 통합 업로드 경로 생성
    */
-  async generateNewsImageUrls(
-    newsId: number,
+  static createPath(
+    userId: number,
+    type: string,
+    environment?: string,
+  ): string {
+    const segments: string[] = [];
+    if (environment) {
+      segments.push(environment);
+    }
+    segments.push(String(userId), type);
+    return segments.join('/');
+  }
+
+  //* ---------------------------------------------------------------------- *//
+  //* Convenience Methods (최적화)
+  //* ---------------------------------------------------------------------- *//
+
+  /**
+   * 편지 이미지 URL 생성
+   */
+  async generateLetterImageUrls(
+    userId: number,
     mimeType: string,
     options?: UploadOptions,
   ): Promise<IS3Urls> {
     return this.generateUploadUrls(
-      { type: UploadType.NEWS, entityId: newsId },
-      { mimeType, entityName: 'news' },
+      UploadService.createPath(userId, 'letter', this.environment),
+      mimeType,
       options,
     );
   }
 
   /**
-   * 게시판 이미지 URL 생성
+   * 포스트 이미지 URL 생성
    */
-  async generateBoardImageUrls(
+  async generatePostImageUrls(
+    userId: number,
     mimeType: string,
     options?: UploadOptions,
   ): Promise<IS3Urls> {
     return this.generateUploadUrls(
-      { type: UploadType.BOARD },
-      { mimeType, entityName: 'board' },
+      UploadService.createPath(userId, 'post', this.environment),
+      mimeType,
       options,
     );
   }
 
   /**
-   * 사용자 아바타 URL 생성
+   * 사용자 아바타 URL 생성 (환경 포함)
    */
   async generateUserAvatarUrls(
     userId: number,
@@ -147,23 +169,8 @@ export class UploadService {
     options?: UploadOptions,
   ): Promise<IS3Urls> {
     return this.generateUploadUrls(
-      { type: UploadType.AVATAR, entityId: userId, useEnvironment: true },
-      { mimeType, entityName: 'avatar' },
-      options,
-    );
-  }
-
-  /**
-   * 사용자 포스트 이미지 URL 생성
-   */
-  async generateUserPostImageUrls(
-    userId: number,
-    mimeType: string,
-    options?: UploadOptions,
-  ): Promise<IS3Urls> {
-    return this.generateUploadUrls(
-      { type: UploadType.POST, entityId: userId, useEnvironment: true },
-      { mimeType, entityName: 'post' },
+      UploadService.createPath(userId, 'avatar', this.environment),
+      mimeType,
       options,
     );
   }
@@ -171,112 +178,6 @@ export class UploadService {
   //* ---------------------------------------------------------------------- *//
   //* Private Helper Methods
   //* ---------------------------------------------------------------------- *//
-
-  private validateConfiguration(): void {
-    if (!this.cloudFrontUrl) {
-      this.logger.warn('AWS CloudFront URL is not configured');
-    }
-  }
-
-  private validateInputs(pathConfig: PathConfig, fileInfo: FileInfo): void {
-    if (!pathConfig?.type) {
-      throw new Error('Upload type is required');
-    }
-
-    if (!fileInfo?.mimeType?.trim()) {
-      throw new Error('MIME type is required');
-    }
-
-    if (pathConfig.entityId !== undefined && pathConfig.entityId <= 0) {
-      throw new Error('Entity ID must be a positive number');
-    }
-
-    if (!this.isValidMimeType(fileInfo.mimeType)) {
-      throw new Error(`Unsupported MIME type: ${fileInfo.mimeType}`);
-    }
-  }
-
-  private buildPath(pathConfig: PathConfig, fileInfo: FileInfo): string {
-    const pathSegments: string[] = [];
-
-    // 환경 추가 (필요한 경우)
-    if (pathConfig.useEnvironment) {
-      pathSegments.push(this.environment);
-    }
-
-    // 타입별 경로 구성
-    switch (pathConfig.type) {
-      case UploadType.NEWS:
-        pathSegments.push('news');
-        if (pathConfig.entityId) {
-          pathSegments.push(String(pathConfig.entityId));
-        }
-        break;
-
-      case UploadType.BOARD:
-        pathSegments.push('boards');
-        break;
-
-      case UploadType.AVATAR:
-        if (pathConfig.entityId) {
-          pathSegments.push(String(pathConfig.entityId));
-        }
-        break;
-
-      case UploadType.POST:
-        if (pathConfig.entityId) {
-          pathSegments.push(String(pathConfig.entityId));
-          pathSegments.push('posts');
-        }
-        break;
-
-      default:
-        throw new Error(
-          'Unsupported upload type: ' + (pathConfig.type as string),
-        );
-    }
-
-    // 랜덤 파일명 생성
-    const entityName = fileInfo.entityName || pathConfig.type;
-    const filename = randomImageName(entityName, fileInfo.mimeType);
-    pathSegments.push(filename);
-
-    return pathSegments.join('/');
-  }
-
-  private mergeOptions(options: UploadOptions) {
-    return {
-      expiresIn: options.expiresIn ?? this.DEFAULT_EXPIRES_IN,
-      maxFileSize: options.maxFileSize ?? this.DEFAULT_MAX_FILE_SIZE,
-    };
-  }
-
-  private async createSignedUrls(
-    path: string,
-    options: { expiresIn: number; maxFileSize: number },
-  ): Promise<IS3Urls> {
-    try {
-      const uploadUrl = await this.s3Service.generateSignedUrl(
-        path,
-        options.expiresIn,
-      );
-
-      if (!this.cloudFrontUrl) {
-        throw new Error('CloudFront URL is not configured');
-      }
-
-      const imageUrl = `${this.cloudFrontUrl}/${path}`;
-
-      this.logger.log(`Generated upload URLs for path: ${path}`);
-      return { uploadUrl, imageUrl };
-    } catch (error) {
-      this.logger.error(
-        `Failed to generate signed URL for path: ${path}`,
-        error,
-      );
-      throw new Error(`Failed to generate upload URLs: ${error.message}`);
-    }
-  }
 
   private isValidImageUrl(imageUrl: string): boolean {
     return !!(
@@ -297,23 +198,8 @@ export class UploadService {
       'image/png',
       'image/gif',
       'image/webp',
+      'application/pdf',
     ];
     return allowedTypes.includes(mimeType.toLowerCase());
-  }
-
-  //* ---------------------------------------------------------------------- *//
-  //* Public Getter Methods
-  //* ---------------------------------------------------------------------- *//
-
-  getEnvironment(): string {
-    return this.environment;
-  }
-
-  getCloudFrontUrl(): string {
-    return this.cloudFrontUrl;
-  }
-
-  getSupportedMimeTypes(): string[] {
-    return ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
   }
 }

@@ -1,5 +1,6 @@
 import {
   DeleteObjectCommand,
+  HeadObjectCommand,
   ObjectCannedACL,
   PutObjectCommand,
   S3Client,
@@ -8,6 +9,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Readable } from 'stream';
 
 export interface S3UploadResult {
   key: string;
@@ -26,11 +28,17 @@ export class S3Service implements OnModuleInit {
   private readonly s3: S3Client;
   private readonly bucket: string;
   private readonly region: string;
+  private readonly cloudfrontUrl: string;
 
   constructor(@Inject(ConfigService) private configService: ConfigService) {
-    this.bucket = this.configService.get<string>('aws.bucketName') ?? 'zulu';
+    this.bucket =
+      this.configService.get<string>('aws.bucketName') ??
+      'afterschool-images-bucket';
     this.region =
       this.configService.get<string>('aws.defaultRegion') ?? 'ap-northeast-2';
+    this.cloudfrontUrl =
+      this.configService.get<string>('aws.cloudfrontUrl') ??
+      'https://d1234567890.cloudfront.net';
 
     this.s3 = new S3Client({
       region: this.region,
@@ -45,9 +53,13 @@ export class S3Service implements OnModuleInit {
     }
   }
 
-  async upload(buffer: Buffer, path: string): Promise<S3UploadResult> {
-    if (!buffer || buffer.length === 0) {
-      throw new Error('Buffer is empty or invalid');
+  async upload(
+    data: Buffer | Readable,
+    path: string,
+    contentType?: string,
+  ): Promise<S3UploadResult> {
+    if (!data) {
+      throw new Error('Data is required and cannot be empty');
     }
 
     if (!path || path.trim() === '') {
@@ -56,9 +68,10 @@ export class S3Service implements OnModuleInit {
 
     const bucketParams = {
       Bucket: this.bucket,
-      Body: buffer,
+      Body: data,
       Key: path,
       ACL: ObjectCannedACL.private,
+      ContentType: contentType || 'application/octet-stream',
     };
 
     try {
@@ -86,8 +99,7 @@ export class S3Service implements OnModuleInit {
       throw new Error('Path is required and cannot be empty');
     }
 
-    // CloudFront URL이 포함된 경우 key만 추출
-    const key = path.replace(`${process.env.AWS_CLOUDFRONT_URL}/`, '');
+    const key = path.replace(`${this.cloudfrontUrl}/`, '');
 
     const bucketParams = {
       Bucket: this.bucket,
@@ -151,17 +163,18 @@ export class S3Service implements OnModuleInit {
     }
   }
 
-  // 헬퍼 메서드: 파일 존재 여부 확인
+  // 파일 존재 여부 확인
   async fileExists(path: string): Promise<boolean> {
     if (!path || path.trim() === '') {
-      return false;
+      throw new Error('Path is required and cannot be empty');
     }
 
+    const key = path.replace(`${this.cloudfrontUrl}/`, '');
+
     try {
-      const { HeadObjectCommand } = await import('@aws-sdk/client-s3');
       const command = new HeadObjectCommand({
         Bucket: this.bucket,
-        Key: path,
+        Key: key,
       });
       await this.s3.send(command);
       return true;
@@ -172,7 +185,7 @@ export class S3Service implements OnModuleInit {
       ) {
         return false;
       }
-      this.logger.error(`Error checking file existence: ${path}`, error);
+      this.logger.error(`Error checking file existence: ${key}`, error);
       throw new Error(`Failed to check file existence: ${error.message}`);
     }
   }
