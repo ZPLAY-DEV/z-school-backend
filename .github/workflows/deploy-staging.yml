@@ -23,4 +23,4 @@ jobs:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Deploy to macOS server
-      run: ssh -o StrictHostKeyChecking=no zplaydev@10.186.26.28 -p 2019 "bash ~/code/z-school-backend/deploy.sh"
+      run: ssh zplaydev@10.186.26.28 -p 2019 "bash ~/code/z-school-backend/deploy.sh"
