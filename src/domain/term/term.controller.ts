@@ -82,6 +82,12 @@ export class TermController {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
+  @DeleteFileDocs()
+  @Delete('file')
+  async deleteFile(@Body() dto: { url: string }): Promise<void> {
+    await this.uploadService.deleteFile(dto.url);
+  }
+
   @DeleteTermDocs()
   @ApiOperation({ description: '학기(Term) 삭제' })
   @Delete(':id')
@@ -107,11 +113,5 @@ export class TermController {
       '/',
     );
     return await this.uploadService.generateUploadUrls(path, dto.mimeType);
-  }
-
-  @DeleteFileDocs()
-  @Delete('file')
-  async deleteFile(@Body() dto: { url: string }): Promise<void> {
-    await this.uploadService.deleteFile(dto.url);
   }
 }

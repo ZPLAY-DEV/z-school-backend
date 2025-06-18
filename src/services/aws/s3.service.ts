@@ -43,6 +43,7 @@ export class S3Service implements OnModuleInit {
     this.s3 = new S3Client({
       endpoint: this.configService.get<string>('aws.s3Endpoint'),
       region: this.region,
+      forcePathStyle: process.env.NODE_ENV === 'development', // localstack 사용 시 필요
     });
   }
 

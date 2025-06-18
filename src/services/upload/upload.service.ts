@@ -62,7 +62,7 @@ export class UploadService {
       }
 
       const fileUrl = `${this.cloudFrontUrl}/${fullPath}`;
-      console.log('imageUrl', fileUrl);
+      console.log('📎 fileUrl', fileUrl);
 
       this.logger.log(`Generated upload URLs for path: ${fullPath}`);
       return { uploadUrl, fileUrl };
