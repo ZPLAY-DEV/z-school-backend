@@ -26,6 +26,7 @@ export class SchoolTermSamService {
       .where('school.id = :schoolId', { schoolId })
       .andWhere('term.id = :termId', { termId })
       .orderBy('sam.id', 'DESC')
+      .distinct(true)
       .getMany();
   }
 }
