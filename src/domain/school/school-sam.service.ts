@@ -6,7 +6,6 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { Document } from 'src/domain/document/entities/document.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { DeleteSamNoteDto } from 'src/domain/sam/dto/delete-sam-note.dto';
@@ -18,12 +17,6 @@ export class SchoolSamService {
   private readonly logger = new Logger(SchoolSamService.name);
 
   constructor(
-    @InjectRepository(Instructor)
-    private instructorRepository: Repository<Instructor>,
-    @InjectRepository(School)
-    private schoolRepository: Repository<School>,
-    @InjectRepository(Document)
-    private documentRepository: Repository<Document>,
     @InjectRepository(Sam)
     private samRepository: Repository<Sam>,
     private dataSource: DataSource,
