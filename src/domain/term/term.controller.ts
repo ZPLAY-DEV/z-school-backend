@@ -99,11 +99,13 @@ export class TermController {
     @Body()
     dto: {
       schoolId: number;
+      termId: number;
       mimeType: string;
     },
   ): Promise<IS3Urls> {
-    const year = new Date().getFullYear();
-    const path = [`schools`, `${dto.schoolId}`, `${year}`, `terms`].join('/');
+    const path = [`schools`, `${dto.schoolId}`, `terms`, `${dto.termId}`].join(
+      '/',
+    );
     return await this.uploadService.generateUploadUrls(path, dto.mimeType);
   }
 

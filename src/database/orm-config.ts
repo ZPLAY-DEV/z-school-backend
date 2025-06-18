@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
 import { getAwsDatabaseConfig } from 'src/common/config/aws-database';
-import { IAwsConfig, IDatabaseConfig } from 'src/common/interfaces';
+import { IAwsConfig, IRdbConfig } from 'src/common/interfaces';
 
 @Injectable()
 export class OrmConfig implements TypeOrmOptionsFactory {
   constructor(private readonly configService: ConfigService) {}
   async createTypeOrmOptions(): Promise<TypeOrmModuleOptions> {
     // const nodeEnv = this.configService.getOrThrow<string>('nodeEnv');
-    const isProduction = process.env.NODE_ENV === 'production' ? true : false;
+    const isProduction = process.env.NODE_ENV === 'production';
     const awsConfig = this.configService.getOrThrow<IAwsConfig>('aws');
 
     // if (nodeEnv === 'ecs' && !awsConfig) {
@@ -19,10 +19,9 @@ export class OrmConfig implements TypeOrmOptionsFactory {
       throw new Error('AWS configuration is required in ECS environment');
     }
 
-    const databaseConfig =
-      isProduction === true
-        ? await getAwsDatabaseConfig(awsConfig)
-        : this.configService.getOrThrow<IDatabaseConfig>('database');
+    const databaseConfig = isProduction
+      ? await getAwsDatabaseConfig(awsConfig)
+      : this.configService.getOrThrow<IRdbConfig>('database');
 
     if (!databaseConfig) {
       throw new Error('Database configuration is not defined');

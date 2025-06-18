@@ -2,13 +2,29 @@
 
 import { BookingStatus, Role, Weekday } from 'src/common/enums';
 
-export interface IDatabaseConfig {
+export interface IAwsConfig {
+  defaultRegion: string;
+  accessKey: string;
+  secretAccessKey: string;
+  secretsManagerEndpoint: string;
+  secretsDbArn: string;
+  cloudfrontUrl: string;
+  s3Endpoint: string;
+  s3FilesBucket: string;
+  s3LogsBucket: string;
+  sqsEndpoint: string;
+  sqsPrimaryUrl: string;
+  sqsDeadLetterUrl: string;
+  firehoseEndpoint: string;
+  firehoseStreamName: string;
+}
+export interface IRdbConfig {
   engine: string;
   host: string;
   port: number;
+  dbname: string;
   username: string;
   password: string;
-  dbname: string;
 }
 export interface IRmqConfig {
   user: string;
@@ -33,23 +49,15 @@ export interface IFirebaseConfig {
   privateKey: string;
   clientEmail: string;
 }
-export interface IAwsConfig {
-  accessKey: string;
-  secretAccessKey: string;
-  defaultRegion: string;
-  bucketName: string;
-  cloudFrontUrl: string;
-  dbSecretsArn: string;
-}
-export interface INaverConfig {
-  accessKey: string;
-  secretKey: string;
-  smsServiceId: string;
-  smsSecretKey: string;
-  smsphone: string;
-  alimtalkServiceId: string;
-  plusFriendId: string;
-}
+// export interface INaverConfig {
+//   accessKey: string;
+//   secretKey: string;
+//   smsServiceId: string;
+//   smsSecretKey: string;
+//   smsphone: string;
+//   alimtalkServiceId: string;
+//   plusFriendId: string;
+// }
 export interface IMessageEvent {
   data: string | object;
   id?: string;
@@ -197,7 +205,7 @@ export interface IUploadedFile {
 
 export interface IS3Urls {
   uploadUrl: string;
-  imageUrl: string;
+  fileUrl: string;
 }
 
 // S3 관련 확장 인터페이스들

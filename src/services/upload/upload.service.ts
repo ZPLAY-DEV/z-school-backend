@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IS3Urls } from 'src/common/interfaces';
-import { randomImageName } from 'src/helpers/random-filename';
+import { randomFileName } from 'src/helpers/random-filename';
 import { S3Service } from 'src/services/aws/s3.service';
 
 // 업로드 옵션 (단순화)
@@ -20,8 +20,11 @@ export class UploadService {
     private readonly configService: ConfigService,
     private readonly s3Service: S3Service,
   ) {
-    this.environment = this.configService.get('nodeEnv', 'development');
-    this.cloudFrontUrl = this.configService.get('aws.cloudFrontUrl', '');
+    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.cloudFrontUrl = this.configService.get<string>(
+      'aws.cloudfrontUrl',
+      'https://localhost.localstack.cloud:4566', // fallback url
+    );
 
     if (!this.cloudFrontUrl) {
       this.logger.warn('AWS CloudFront URL is not configured');
@@ -44,7 +47,7 @@ export class UploadService {
       throw new Error(`Unsupported MIME type: ${mimeType}`);
     }
 
-    const filename = randomImageName('file', mimeType);
+    const filename = randomFileName('file', mimeType);
     const fullPath = `${this.environment}/${path}/${filename}`;
     const expiresIn = options?.expiresIn ?? this.DEFAULT_EXPIRES_IN;
 
@@ -58,10 +61,11 @@ export class UploadService {
         throw new Error('CloudFront URL is not configured');
       }
 
-      const imageUrl = `${this.cloudFrontUrl}/${fullPath}`;
+      const fileUrl = `${this.cloudFrontUrl}/${fullPath}`;
+      console.log('imageUrl', fileUrl);
 
       this.logger.log(`Generated upload URLs for path: ${fullPath}`);
-      return { uploadUrl, imageUrl };
+      return { uploadUrl, fileUrl };
     } catch (error) {
       this.logger.error(
         `Failed to generate signed URL for path: ${fullPath}`,

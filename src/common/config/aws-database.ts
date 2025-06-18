@@ -2,18 +2,21 @@ import {
   GetSecretValueCommand,
   SecretsManagerClient,
 } from '@aws-sdk/client-secrets-manager';
-import { IAwsConfig, IDatabaseConfig } from 'src/common/interfaces';
+import { IAwsConfig, IRdbConfig } from 'src/common/interfaces';
 
 export const getAwsDatabaseConfig = async (
   awsConfig: IAwsConfig,
-): Promise<IDatabaseConfig> => {
+): Promise<IRdbConfig> => {
+  console.log("✅✅✅✅✅ this shouldn't be called");
   const client = new SecretsManagerClient({
     region: awsConfig.defaultRegion,
+    endpoint: awsConfig.secretsManagerEndpoint,
   });
-  const command = new GetSecretValueCommand({
-    SecretId: awsConfig.dbSecretsArn,
+  const getSecretValues = new GetSecretValueCommand({
+    SecretId: awsConfig.secretsDbArn,
   });
-  const { SecretString } = await client.send(command);
+  const { SecretString } = await client.send(getSecretValues);
   if (!SecretString) throw new Error('Secret string is undefined');
-  return JSON.parse(SecretString) as IDatabaseConfig;
+
+  return JSON.parse(SecretString) as IRdbConfig;
 };

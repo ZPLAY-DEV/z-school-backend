@@ -1,3 +1,5 @@
+import { IAwsConfig, IRdbConfig } from 'src/common/interfaces';
+
 /**
  * @Todo
  * - validator or joi
@@ -15,7 +17,7 @@ export const configuration = () => ({
     dbname: process.env.DB_NAME ?? 'school',
     username: process.env.DB_USERNAME ?? 'root',
     password: process.env.DB_PASSWORD ?? 'secret',
-  },
+  } as IRdbConfig,
   redis: {
     host: process.env.REDIS_CACHE_HOST ?? 'localhost',
     port: process.env.REDIS_CACHE_PORT
@@ -59,23 +61,27 @@ export const configuration = () => ({
     defaultRegion: process.env.AWS_DEFAULT_REGION,
     accessKey: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    secretsManagerEndpoint: process.env.AWS_SECRETS_MANAGER_ENDPOINT,
+    secretsDbArn: process.env.AWS_SECRETS_DB_ARN,
     cloudfrontUrl: process.env.AWS_CLOUDFRONT_URL,
-    imageBucketName: process.env.AWS_IMG_BUCKET_NAME,
-    logBucketName: process.env.AWS_LOG_BUCKET_NAME,
-    dbSecretsArn: process.env.AWS_DB_SECRETS_ARN,
+    s3Endpoint: process.env.AWS_S3_ENDPOINT,
+    s3FilesBucket: process.env.AWS_S3_FILES_BUCKET,
+    s3LogsBucket: process.env.AWS_S3_LOGS_BUCKET,
     sqsEndpoint: process.env.AWS_SQS_ENDPOINT,
     sqsPrimaryUrl: process.env.AWS_SQS_PQ_URL,
     sqsDeadLetterUrl: process.env.AWS_SQS_DLQ_URL,
-  },
-  naver: {
-    accessKey: process.env.NAVER_ACCESS_KEY,
-    secretKey: process.env.NAVER_SECRET_KEY,
-    smsServiceId: process.env.NAVER_SMS_SERVICE_ID,
-    smsSecretKey: process.env.NAVER_SMS_SECRET_KEY,
-    smsphone: process.env.NAVER_SMS_PHONE_NUMBER,
-    alimtalkServiceId: process.env.NAVER_ALIMTALK_SERVICE_ID,
-    plusFriendId: process.env.NAVER_PLUS_FRIEND_ID,
-  },
+    firehoseEndpoint: process.env.AWS_FIREHOSE_ENDPOINT,
+    firehoseStreamName: process.env.AWS_FIREHOSE_STREAM_NAME,
+  } as IAwsConfig,
+  // naver: {
+  //   accessKey: process.env.NAVER_ACCESS_KEY,
+  //   secretKey: process.env.NAVER_SECRET_KEY,
+  //   smsServiceId: process.env.NAVER_SMS_SERVICE_ID,
+  //   smsSecretKey: process.env.NAVER_SMS_SECRET_KEY,
+  //   smsphone: process.env.NAVER_SMS_PHONE_NUMBER,
+  //   alimtalkServiceId: process.env.NAVER_ALIMTALK_SERVICE_ID,
+  //   plusFriendId: process.env.NAVER_PLUS_FRIEND_ID,
+  // },
   slack: {
     token: process.env.SLACK_TOKEN,
     activityChannel: process.env.SLACK_CHANNEL_ACTIVITY,

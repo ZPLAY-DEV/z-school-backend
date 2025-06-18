@@ -1,11 +1,11 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiExtraModels,
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    getSchemaPath,
+  ApiBody,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -168,13 +168,18 @@ export const GenerateS3UrlsDocs = () => {
             description: '학교 ID',
             example: 1,
           },
+          termId: {
+            type: 'number',
+            description: '학기 ID',
+            example: 1,
+          },
           mimeType: {
             type: 'string',
             description: '업로드할 파일의 MIME 타입',
             example: 'image/jpeg',
           },
         },
-        required: ['schoolId', 'mimeType'],
+        required: ['schoolId', 'termId', 'mimeType'],
       },
     }),
     ApiOkResponse({

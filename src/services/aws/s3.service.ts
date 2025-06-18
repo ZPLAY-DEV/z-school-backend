@@ -32,15 +32,16 @@ export class S3Service implements OnModuleInit {
 
   constructor(@Inject(ConfigService) private configService: ConfigService) {
     this.bucket =
-      this.configService.get<string>('aws.bucketName') ??
-      'afterschool-images-bucket';
+      this.configService.get<string>('aws.filesBucket') ??
+      'afterschool-files-bucket';
     this.region =
       this.configService.get<string>('aws.defaultRegion') ?? 'ap-northeast-2';
     this.cloudfrontUrl =
       this.configService.get<string>('aws.cloudfrontUrl') ??
-      'https://d1234567890.cloudfront.net';
+      'https://localhost.localstack.cloud:4566';
 
     this.s3 = new S3Client({
+      endpoint: this.configService.get<string>('aws.s3Endpoint'),
       region: this.region,
     });
   }
