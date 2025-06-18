@@ -37,21 +37,25 @@ import { SchoolBoardController } from 'src/domain/school/school-board.controller
 import { SchoolBoardService } from 'src/domain/school/school-board.service';
 import { SchoolStudentController } from 'src/domain/school/school-student.controller';
 import { SchoolStudentService } from 'src/domain/school/school-student.service';
+import { SchoolTermSamController } from 'src/domain/school/school-term-sam.controller';
+import { SchoolTermStudentController } from 'src/domain/school/school-term-student.controller';
+import { SchoolTermSamService } from 'src/domain/school/school-term-sam.service';
+import { SchoolTermStudentService } from 'src/domain/school/school-term-student.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      School,
-      Student,
-      Lesson,
-      Document,
-      Term,
-      Offering,
-      Parent,
-      Instructor,
-      Sam,
       Board,
       Comment,
+      Document,
+      Instructor,
+      Lesson,
       Letter,
+      Offering,
+      Parent,
+      Sam,
+      School,
+      Student,
+      Term,
     ]),
     UploadModule,
     SlackModule,
@@ -68,6 +72,8 @@ import { SchoolStudentService } from 'src/domain/school/school-student.service';
     SchoolStudentController,
     SchoolTermController,
     SchoolTermLessonController,
+    SchoolTermSamController,
+    SchoolTermStudentController,
     SchoolTermOfferingController,
     SchoolBoardController,
     SchoolLetterController,
@@ -79,6 +85,8 @@ import { SchoolStudentService } from 'src/domain/school/school-student.service';
     SchoolStudentService,
     SchoolTermService,
     SchoolTermLessonService,
+    SchoolTermSamService,
+    SchoolTermStudentService,
     SchoolTermOfferingService,
     SchoolBoardService,
     SchoolLetterService,

@@ -60,6 +60,7 @@ export class TermController {
       'lessons',
       'lessons.groups',
       'lessons.groups.sam',
+      'lessons.groups.picks',
       'offerings',
     ]);
   }
