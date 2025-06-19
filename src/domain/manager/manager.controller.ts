@@ -17,15 +17,11 @@ import { CreateManagerDto } from 'src/domain/manager/dto/create-manager.dto';
 import { UpdateManagerDto } from 'src/domain/manager/dto/update-manager.dto';
 import { Manager as ManagerEntity } from 'src/domain/manager/entities/manager.entity';
 import { ManagerService } from 'src/domain/manager/manager.service';
-import { UploadService } from 'src/services/upload/upload.service';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('managers')
 export class ManagerController {
-  constructor(
-    private readonly managerService: ManagerService,
-    private readonly uploadService: UploadService,
-  ) {}
+  constructor(private readonly managerService: ManagerService) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? CREATE

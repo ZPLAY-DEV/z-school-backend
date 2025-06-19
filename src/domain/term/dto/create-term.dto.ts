@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -112,4 +113,9 @@ export class CreateTermDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @ApiProperty({ description: '학기 이미지', type: [String] })
+  @IsOptional()
+  @IsArray()
+  images?: string[];
 }
