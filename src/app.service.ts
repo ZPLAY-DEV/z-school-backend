@@ -51,7 +51,7 @@ export class AppService {
     }
   }
 
-  async purgeTracking(): Promise<number> {
+  async purgeTrackings(): Promise<number> {
     try {
       const redisClient = this.redisTrackingService.getClient();
       const keys = await redisClient.keys('tracking:*');
