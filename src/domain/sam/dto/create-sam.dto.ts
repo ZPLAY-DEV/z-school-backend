@@ -4,7 +4,6 @@ import {
   IsBoolean,
   IsDefined,
   IsInt,
-  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -15,22 +14,18 @@ import { CreateInstructorDto } from 'src/domain/instructor/dto/create-instructor
 
 export class CreateSamDto {
   @ApiProperty({
-    description: '🈳 강사 ID',
+    description: '🈳 InstructorId',
     type: Number,
-    required: false,
-    example: '1 --- 앱으로 가입한 강사의 id',
+    example: 1,
   })
   @IsInt()
-  @IsOptional()
-  instructorId?: number;
+  instructorId: number;
 
   @ApiProperty({
     description: '🈵 School ID (number)',
     type: Number,
-    required: true,
-    example: '1 --- 학교의 id',
+    example: 1,
   })
-  @IsNotEmpty()
   @IsInt()
   schoolId: number;
 
@@ -46,9 +41,9 @@ export class CreateSamDto {
 
   @ApiProperty({
     description: '🈳 강사 평가점수',
-    example: '80 --- 학교에서 평가한 강사의 평가점수',
+    example: 80,
     type: Number,
-    required: true,
+    required: false,
   })
   @IsNumber()
   @IsOptional()

@@ -15,16 +15,12 @@ import {
 
 @Entity('managers')
 export class Manager {
+  @ApiProperty({ description: '🈵 id' })
   @PrimaryGeneratedColumn('increment', { type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈳 userId' })
-  @Column({
-    type: 'int',
-    unique: true,
-    unsigned: true,
-    default: null,
-  })
+  @ApiProperty({ description: '🈵 userId' })
+  @Column({ type: 'int', unique: true, unsigned: true })
   userId: number | null;
 
   @ApiProperty({ description: '🈳 schoolId' })

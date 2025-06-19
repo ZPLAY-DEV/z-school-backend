@@ -84,7 +84,7 @@ export class Student {
   })
   nextStop: string | null;
 
-  @ApiProperty({ description: '' })
+  @ApiProperty({ description: '학생의 상태. 유효, 전학' })
   @Column({
     type: 'enum',
     enum: StudentStatus,

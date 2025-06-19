@@ -1,12 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
-import { PlatformType } from 'src/common/enums';
+import { IsInt, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateParentDto {
   @ApiProperty({
@@ -39,18 +32,6 @@ export class CreateParentDto {
   @IsString()
   @MaxLength(16)
   phone: string;
-
-  @ApiProperty({
-    description: '🈳 마지막 로그인 기기 web, ios, or android',
-    enum: PlatformType,
-    default: PlatformType.WEB,
-    example: 'WEB --- 마지막 로그인 기기',
-    required: false,
-    type: String,
-  })
-  @IsOptional()
-  @IsEnum(PlatformType)
-  platform?: PlatformType;
 
   @ApiProperty({
     description: '🈳 내용',

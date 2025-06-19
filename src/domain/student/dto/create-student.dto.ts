@@ -1,13 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsEnum,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-  ValidateNested,
+    IsEnum,
+    IsInt,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+    MaxLength,
+    ValidateNested,
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
 import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
@@ -152,5 +152,5 @@ export class CreateStudentDto {
   })
   @ValidateNested()
   @Type(() => CreateParentDto)
-  parent: CreateParentDto = {} as CreateParentDto;
+  parent: CreateParentDto;
 }

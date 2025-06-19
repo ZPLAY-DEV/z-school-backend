@@ -7,11 +7,10 @@ import { SamController } from 'src/domain/sam/sam.controller';
 import { SamService } from 'src/domain/sam/sam.service';
 import { SlackModule } from 'src/services/slack/slack.module';
 import { UploadModule } from 'src/services/upload/upload.module';
-import { Document } from '../document/entities/document.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Sam, Group, Instructor, Document]),
+    TypeOrmModule.forFeature([Sam, Group, Instructor]),
     UploadModule,
     SlackModule,
   ],

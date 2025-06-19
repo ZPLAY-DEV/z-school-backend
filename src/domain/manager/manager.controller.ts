@@ -9,7 +9,7 @@ import {
   Post,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
@@ -17,9 +17,18 @@ import { CreateManagerDto } from 'src/domain/manager/dto/create-manager.dto';
 import { UpdateManagerDto } from 'src/domain/manager/dto/update-manager.dto';
 import { Manager as ManagerEntity } from 'src/domain/manager/entities/manager.entity';
 import { ManagerService } from 'src/domain/manager/manager.service';
+import {
+  CreateManagerDocs,
+  DeleteManagerDocs,
+  GetActiveManagersDocs,
+  GetManagerByIdDocs,
+  GetManagersPaginatedDocs,
+  UpdateManagerDocs,
+} from './swagger/manager.swagger.decorator';
 
-@UseInterceptors(ClassSerializerInterceptor)
+@ApiTags('✅ Managers ( 관리자 )')
 @Controller('managers')
+@UseInterceptors(ClassSerializerInterceptor)
 export class ManagerController {
   constructor(private readonly managerService: ManagerService) {}
 
@@ -27,7 +36,7 @@ export class ManagerController {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Manager 생성' })
+  @CreateManagerDocs()
   @Post()
   async create(
     @CurrentUserId() userId: number,
@@ -40,33 +49,33 @@ export class ManagerController {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Manager 리스트 w/ Pagination' })
+  @GetManagersPaginatedDocs()
   @Public()
   @Get('paginated')
-  async getAdminManager(
+  async infiniteList(
     @Paginate() query: PaginateQuery,
   ): Promise<Paginated<ManagerEntity>> {
-    return await this.managerService.findAll(query);
+    return await this.managerService.infiniteList(query);
   }
 
-  @ApiOperation({ description: '모든 active 배너 리스트' })
+  @GetActiveManagersDocs()
   @Public()
   @Get()
-  async getActiveManager(): Promise<ManagerEntity[]> {
-    return await this.managerService.find();
+  async list(): Promise<ManagerEntity[]> {
+    return await this.managerService.list();
   }
 
-  @ApiOperation({ description: 'Manager 상세보기' })
+  @GetManagerByIdDocs()
   @Get(':id')
   async getManagerById(@Param('id') id: number): Promise<ManagerEntity> {
-    return await this.managerService.findById(id, [`user`, `comments`]);
+    return await this.managerService.findById(id, [`user`, `school`]);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Manager 수정' })
+  @UpdateManagerDocs()
   @Patch(':id')
   async update(
     @Param('id') id: number,
@@ -80,7 +89,7 @@ export class ManagerController {
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Manager 삭제' })
+  @DeleteManagerDocs()
   @Delete(':id')
   async remove(@Param('id') id: number): Promise<ManagerEntity> {
     return await this.managerService.remove(id);

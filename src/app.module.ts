@@ -20,7 +20,6 @@ import { JwtAuthGuard } from 'src/domain/auth/guards/jwt-auth.guard';
 import { BookingModule } from 'src/domain/booking/booking.module';
 import { CalendarModule } from 'src/domain/calendar/calendar.module';
 import { CategoryModule } from 'src/domain/category/category.module';
-import { DocumentModule } from 'src/domain/document/document.module';
 import { EventModule } from 'src/domain/event/event.module';
 import { GroupModule } from 'src/domain/group/group.module';
 import { InstructorModule } from 'src/domain/instructor/instructor.module';
@@ -45,7 +44,6 @@ import { SlackModule } from 'src/services/slack/slack.module';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { OrmConfig } from './database/orm-config';
 import { BoardModule } from './domain/board/board.module';
-import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
 
 @Module({
@@ -114,10 +112,8 @@ import { UploadModule } from './services/upload/upload.module';
     BookingModule,
     CalendarModule,
     CategoryModule,
-    DocumentModule,
     EventModule,
     GroupModule,
-    HealthModule,
     InstructorModule,
     LedgerModule,
     LessonModule,

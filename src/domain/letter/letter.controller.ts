@@ -10,8 +10,8 @@ import { CreateLetterDto } from './dto/create-letter.dto';
 import { LetterService } from './letter.service';
 
 @ApiTags('✅ Letters ( 공지사항 )')
-@UseInterceptors(ClassSerializerInterceptor)
 @Controller('letters')
+@UseInterceptors(ClassSerializerInterceptor)
 export class LetterController {
   constructor(private readonly letterService: LetterService) {}
 
