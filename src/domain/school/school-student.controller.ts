@@ -63,14 +63,7 @@ export class SchoolStudentController {
 
       const dto = new CreateStudentDto();
       dto.schoolId = schoolId;
-      dto.grade = koreanFaker.helpers.arrayElement([
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-      ]);
+      dto.grade = koreanFaker.helpers.arrayElement([1, 2, 3, 4, 5, 6]);
       dto.class = koreanFaker.helpers.arrayElement(['1', '2', '3', '4']);
       dto.studentCode = i + 1;
       dto.name = koreanName;

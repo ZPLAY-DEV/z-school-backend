@@ -38,8 +38,8 @@ export class Student {
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '학년' })
-  @Column({ type: 'varchar', length: 8, default: `1학년` })
-  grade: string;
+  @Column({ type: 'tinyint', unsigned: true, default: 1 })
+  grade: number;
 
   @ApiProperty({
     description: '반',

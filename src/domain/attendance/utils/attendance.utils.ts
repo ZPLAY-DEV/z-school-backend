@@ -17,7 +17,7 @@ export function generateGroupKey(groupId: number): string {
 export function generateDailyStudentKey(
   localDateStr: string,
   studentId: number,
-  grade: string,
+  grade: number,
   klass: string,
   studentCode: number,
 ): string {

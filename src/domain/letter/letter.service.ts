@@ -15,11 +15,11 @@ import { parseValidityToDate } from 'src/helpers/time';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisTrackingService } from 'src/services/redis/redis-tracking.service';
 import { DataSource, EntityManager, In } from 'typeorm';
-import { NanoId } from '../parent/entities/nanoid.entity';
-import { School } from '../school/entities/school.entity';
-import { Student } from '../student/entities/student.entity';
-import { Term } from '../term/entities/term.entity';
-import { Letter } from './entities/letter.entity';
+import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
+import { School } from 'src/domain/school/entities/school.entity';
+import { Student } from 'src/domain/student/entities/student.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
+import { Letter } from 'src/domain/letter/entities/letter.entity';
 
 @Injectable()
 export class LetterService {
@@ -44,10 +44,10 @@ export class LetterService {
       await this.validateSchool(manager, dto);
       await this.validateTerm(manager, dto);
 
-      // 2. 발송 정보 생성
+      // 2. 뉴스레터 생성
       const letter = await this.createLetter(manager, dto);
 
-      // 3. 학생 정보 조회
+      // 3. 대상학생 정보조회
       const students = await this.getStudents(manager, dto.ids);
 
       // 4. unique parents 추출
@@ -55,7 +55,7 @@ export class LetterService {
 
       students.forEach((student) => {
         const parent = student.parent;
-        parentsMap.set(parent.id, parent);
+        parentsMap.set(student.id, parent);
       });
 
       const parents = Array.from(parentsMap.values());

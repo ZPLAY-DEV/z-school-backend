@@ -44,7 +44,7 @@ export class AttendanceService {
     const ttl = Math.floor(now.getTime() / 1000) + 60 * 60 * 24; // 1 일
     await this.model.create({
       groupKey: generateGroupKey(1),
-      dailyStudentKey: generateDailyStudentKey('2025-01-01', 1, '1', '1', 1),
+      dailyStudentKey: generateDailyStudentKey('2025-01-01', 1, 1, '1', 1),
       lessonId: 1,
       lessonName: '수학',
       groupId: 1,
