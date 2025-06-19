@@ -197,8 +197,8 @@ export class UserOtpService {
     const pass = otp ?? random.generate({ length: 6, charset: 'numeric' });
     await this.userRepository.manager.query(
       "INSERT IGNORE INTO secret (`key`, `otp`) \
-VALUES (?, ?) \
-ON DUPLICATE KEY UPDATE `key`=VALUES(`key`), `otp`=VALUES(`otp`), updatedAt=(CONVERT_TZ(NOW(), 'UTC', 'Asia/Seoul'))",
+VALUES (?, ?) AS new_secret(`key`, `otp`) \
+ON DUPLICATE KEY UPDATE `key`=new_secret.`key`, `otp`=new_secret.`otp`, updatedAt=(CONVERT_TZ(NOW(), 'UTC', 'Asia/Seoul'))",
       [key, pass],
     );
     return pass as string;

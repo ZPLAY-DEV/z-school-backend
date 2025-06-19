@@ -11,7 +11,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { SchoolTermComboResponseDto } from 'src/domain/school/dto/school-term-combo-response.dto';
 import { SchoolTermComboService } from 'src/domain/school/school-term-combo.service';
 
-@ApiTags('✅ Schools > Terms > Lessons-Sams-Students ( 학교 > 학기 > LSS콤보 )')
+@ApiTags('✅ Schools > Terms > Combo ( 학교 > 학기 > 콤보 )')
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermComboController {

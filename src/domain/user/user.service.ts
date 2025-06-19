@@ -423,15 +423,15 @@ export class UserService {
       [id],
     );
 
-    // add a withdrawal entry
+    // add a withdrawal entry (MySQL 8.0+ alias 문법 사용)
     await Promise.all(
       user.providers.map(async (v: Provider) => {
         await this.userRepository.manager.query(
-          'INSERT IGNORE INTO `withdrawal` (userId, providerId, reason) VALUES (?, ?, ?) \
+          'INSERT IGNORE INTO `withdrawal` (userId, providerId, reason) VALUES (?, ?, ?) AS new_withdrawal(userId, providerId, reason) \
 ON DUPLICATE KEY UPDATE \
-userId = VALUES(`userId`), \
-providerId = VALUES(`providerId`), \
-reason = VALUES(`reason`)',
+userId = new_withdrawal.userId, \
+providerId = new_withdrawal.providerId, \
+reason = new_withdrawal.reason',
           [v.providerId, message, id],
         );
       }),

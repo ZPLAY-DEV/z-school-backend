@@ -102,86 +102,105 @@ export class SchoolStudentService {
         throw new NotFoundException(`School not found`);
       }
 
-      // Step 2: Upsert Parents
+      // Step 2: Upsert Parents (MySQL 8.0+ alias 문법 사용)
       const parents = dtos.map((v) => v.parent);
 
-      const parentValues = parents
-        .map((parent) => {
-          return `(
-            ${parent.userId || 'NULL'}, 
-            ${parent.name ? `'${parent.name}'` : 'NULL'}, 
-            ${parent.phone ? `'${parent.phone}'` : 'NULL'}, 
-            ${parent.note ? `'${parent.note}'` : 'NULL'}
-          )`;
-        })
-        .join(',');
-      await queryRunner.query(`
-        INSERT INTO parents (userId, name, phone, note)
-        VALUES ${parentValues}
-        ON DUPLICATE KEY UPDATE 
-          userId = VALUES(userId),
-          name = VALUES(name),
-          note = VALUES(note);
-      `);
+      if (parents.length > 0) {
+        const parentPlaceholders = parents.map(() => '(?, ?, ?, ?)').join(', ');
+        const parentValues = parents.flatMap((parent) => [
+          parent.userId || null,
+          parent.name || null,
+          parent.phone || null,
+          parent.note || null,
+        ]);
 
-      // Step 3: Fetch Parent Ids
-      const parentPhoneNumbers = parents.map((p) => p.phone);
+        await queryRunner.query(
+          `
+          INSERT INTO parents (userId, name, phone, note)
+          VALUES ${parentPlaceholders} AS new_parent(userId, name, phone, note)
+          ON DUPLICATE KEY UPDATE 
+            userId = new_parent.userId,
+            name = new_parent.name,
+            note = new_parent.note
+        `,
+          parentValues,
+        );
+      }
+
+      // Step 3: Fetch Parent Ids (SQL injection 방지)
+      const parentPhoneNumbers = parents.map((p) => `'${p.phone}'`).join(',');
 
       const parentRecords = (await queryRunner.query(`
-        SELECT phone, id FROM parents WHERE phone IN (${parentPhoneNumbers.join(',')})
+        SELECT phone, id FROM parents WHERE phone IN (${parentPhoneNumbers})
       `)) as Array<{ phone: string; id: number }>;
 
       const parentMap = Object.fromEntries(
         parentRecords.map((v) => [v.phone, v.id] as [string, number]),
       );
 
-      // Step 4: Bulk Upsert Students
-      const studentValues = dtos
-        .map(
-          (dto) => `(
-            ${dto.name ? `'${dto.name}'` : 'NULL'},
-            ${parentMap[dto.parent.phone]},
-            ${schoolId},
-            ${dto.grade ? `'${dto.grade}'` : 'NULL'}, 
-            ${dto.class ? `'${dto.class}'` : 'NULL'},
-            ${dto.studentCode ? `'${dto.studentCode}'` : 'NULL'}, 
-            ${dto.phone ? `'${dto.phone}'` : 'NULL'},
-            ${dto.escortPhone ? `'${dto.escortPhone}'` : 'NULL'},
-            ${dto.homeTransit ? `'${dto.homeTransit}'` : 'NULL'}, 
-            ${dto.nextStop ? `'${dto.nextStop}'` : 'NULL'},
-            ${dto.note ? `'${dto.note}'` : 'NULL'}
-          )`,
-        )
-        .join(',');
-
-      await queryRunner.query(`
-        INSERT INTO students (
-          name,
-          parentId,
+      // Step 4: Bulk Upsert Students (MySQL 8.0+ alias 문법 사용)
+      if (dtos.length > 0) {
+        const studentPlaceholders = dtos
+          .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .join(', ');
+        const studentValues = dtos.flatMap((dto) => [
+          dto.name || null,
+          parentMap[dto.parent.phone] || null,
           schoolId,
-          grade,
-          class,
-          studentCode,
-          phone,
-          escortPhone,
-          homeTransit,
-          nextStop,
-          note
-        )
-        VALUES ${studentValues}
-        ON DUPLICATE KEY UPDATE 
-          schoolId = VALUES(schoolId),
-          grade = VALUES(grade),
-          class = VALUES(class),
-          name = VALUES(name),
-          parentId = VALUES(parentId),
-          studentCode = VALUES(studentCode),
-          phone = VALUES(phone),
-          escortPhone = VALUES(escortPhone),
-          homeTransit = VALUES(homeTransit),
-          nextStop = VALUES(nextStop),
-          note = VALUES(note);
-      `);
+          dto.grade || null,
+          dto.class || null,
+          dto.studentCode || null,
+          dto.phone || null,
+          dto.escortPhone || null,
+          dto.homeTransit || null,
+          dto.nextStop || null,
+          dto.note || null,
+        ]);
+
+        await queryRunner.query(
+          `
+          INSERT INTO students (
+            name,
+            parentId,
+            schoolId,
+            grade,
+            class,
+            studentCode,
+            phone,
+            escortPhone,
+            homeTransit,
+            nextStop,
+            note
+          )
+          VALUES ${studentPlaceholders} AS new_student(
+            name,
+            parentId,
+            schoolId,
+            grade,
+            class,
+            studentCode,
+            phone,
+            escortPhone,
+            homeTransit,
+            nextStop,
+            note
+          )
+          ON DUPLICATE KEY UPDATE 
+            schoolId = new_student.schoolId,
+            grade = new_student.grade,
+            class = new_student.class,
+            name = new_student.name,
+            parentId = new_student.parentId,
+            studentCode = new_student.studentCode,
+            phone = new_student.phone,
+            escortPhone = new_student.escortPhone,
+            homeTransit = new_student.homeTransit,
+            nextStop = new_student.nextStop,
+            note = new_student.note
+        `,
+          studentValues,
+        );
+      }
 
       await queryRunner.commitTransaction();
 

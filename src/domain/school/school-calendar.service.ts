@@ -36,36 +36,45 @@ export class SchoolCalendarService {
       schoolId: schoolId,
     });
 
+    // 데이터가 없으면 0 반환
+    if (!dtos || dtos.length === 0) {
+      this.logger.warn(`No calendar data found for school ${schoolId}`);
+      return 0;
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const queryValues = dtos
-        .map((dto) => {
-          return `(
-          ${dto.schoolId},
-          ${dto.date ? `'${dto.date}'` : 'NULL'},
-          ${dto.name ? `'${dto.name}'` : 'NULL'},
-          ${dto.status ? `'${dto.status}'` : 'NULL'},
-          ${dto.note ? `'${dto.note}'` : 'NULL'}
-        )`;
-        })
-        .join(',');
+      // MySQL 8.0+ 새로운 alias 문법 사용 (bulk insert)
+      const placeholders = dtos.map(() => '(?, ?, ?, ?, ?)').join(', ');
+      const values = dtos.flatMap((dto) => [
+        dto.schoolId,
+        dto.date || null,
+        dto.name || null,
+        dto.status || null,
+        dto.note || null,
+      ]);
 
-      await queryRunner.query(`
+      const insertQuery = `
         INSERT INTO calendars (schoolId, date, name, status, note)
-        VALUES ${queryValues}
+        VALUES ${placeholders} AS new_calendar(schoolId, date, name, status, note)
         ON DUPLICATE KEY UPDATE 
-          name = VALUES(name),
-          status = VALUES(status),
-          note = VALUES(note)
-      `);
+          name = new_calendar.name,
+          status = new_calendar.status,
+          note = new_calendar.note
+      `;
+
+      await queryRunner.query(insertQuery, values);
 
       await queryRunner.commitTransaction();
       return dtos.length;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      this.logger.error(error);
+      this.logger.error(
+        `Calendar creation failed for school ${schoolId}:`,
+        error,
+      );
       throw error;
     } finally {
       // queryRunner가 release 되었는지 확인

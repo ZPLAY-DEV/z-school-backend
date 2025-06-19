@@ -137,6 +137,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     sameGradeGroups: { groupId: number; startedOn: string }[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     extraPickRule: LimitedPickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
@@ -145,6 +146,7 @@ export class OfferingPickService {
     const allStudentIds = bookings.map((v) => v.studentId);
     // 선착순이므로 정원 내에서만 학생을 선택
     const selectedStudentIds = allStudentIds.slice(0, capacity);
+
     // 같은 학년 group 들에 동일한 학생을 할당
     let items: IPickKeys[] = [];
     sameGradeGroups.forEach(({ groupId, startedOn }) => {
@@ -157,20 +159,24 @@ export class OfferingPickService {
       items = items.concat(groupItems);
     });
     const groupIds = sameGradeGroups.map((v) => v.groupId);
-    // raw query로 upsert 처리
+
+    // raw query로 upsert 처리 (MySQL 8.0+ alias 문법 사용)
     if (items.length > 0) {
-      const values = items
-        .map(
-          (item) =>
-            `(${item.studentId},${item.groupId},${item.offeringId},'${item.startedOn}')`,
-        )
-        .join(',');
+      const placeholders = items.map(() => '(?, ?, ?, ?)').join(', ');
+      const values = items.flatMap((item) => [
+        item.studentId,
+        item.groupId,
+        item.offeringId,
+        item.startedOn,
+      ]);
+
       const query = `
         INSERT INTO picks (studentId, groupId, offeringId, startedOn)
-        VALUES ${values}
-        ON DUPLICATE KEY UPDATE startedOn=VALUES(startedOn)
+        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, startedOn)
+        ON DUPLICATE KEY UPDATE 
+          startedOn = new_pick.startedOn
       `;
-      await this.pickRepository.query(query);
+      await this.pickRepository.query(query, values);
     }
 
     // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
@@ -181,9 +187,11 @@ export class OfferingPickService {
     const groups = await this.groupRepository.find({
       where: { id: In(groupIds) },
     });
-    await this.lessonRepository.update(groups[0].lessonId, {
-      status: ClassStatus.ACTIVE,
-    });
+    if (groups.length > 0) {
+      await this.lessonRepository.update(groups[0].lessonId, {
+        status: ClassStatus.ACTIVE,
+      });
+    }
 
     return selectedStudentIds;
   }
@@ -192,6 +200,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     sameGradeGroups: { groupId: number; startedOn: string }[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     extraPickRule: LimitedPickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
@@ -200,6 +209,7 @@ export class OfferingPickService {
     const allStudentIds = bookings.map((v) => v.studentId);
     // 정원 제한 없이 전체 학생을 모두 선택
     const selectedStudentIds = allStudentIds;
+
     // 같은 학년 group 들에 동일한 학생을 할당
     let items: IPickKeys[] = [];
     sameGradeGroups.forEach(({ groupId, startedOn }) => {
@@ -212,20 +222,24 @@ export class OfferingPickService {
       items = items.concat(groupItems);
     });
     const groupIds = sameGradeGroups.map((v) => v.groupId);
-    // raw query로 upsert 처리
+
+    // raw query로 upsert 처리 (MySQL 8.0+ alias 문법 사용)
     if (items.length > 0) {
-      const values = items
-        .map(
-          (item) =>
-            `(${item.studentId},${item.groupId},${item.offeringId},'${item.startedOn}')`,
-        )
-        .join(',');
+      const placeholders = items.map(() => '(?, ?, ?, ?)').join(', ');
+      const values = items.flatMap((item) => [
+        item.studentId,
+        item.groupId,
+        item.offeringId,
+        item.startedOn,
+      ]);
+
       const query = `
         INSERT INTO picks (studentId, groupId, offeringId, startedOn)
-        VALUES ${values}
-        ON DUPLICATE KEY UPDATE startedOn=VALUES(startedOn)
+        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, startedOn)
+        ON DUPLICATE KEY UPDATE 
+          startedOn = new_pick.startedOn
       `;
-      await this.pickRepository.query(query);
+      await this.pickRepository.query(query, values);
     }
 
     // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
@@ -236,9 +250,11 @@ export class OfferingPickService {
     const groups = await this.groupRepository.find({
       where: { id: In(groupIds) },
     });
-    await this.lessonRepository.update(groups[0].lessonId, {
-      status: ClassStatus.ACTIVE,
-    });
+    if (groups.length > 0) {
+      await this.lessonRepository.update(groups[0].lessonId, {
+        status: ClassStatus.ACTIVE,
+      });
+    }
 
     return selectedStudentIds;
   }
@@ -267,6 +283,7 @@ export class OfferingPickService {
         selectedStudentIds = allStudentIds.slice(0, capacity);
       }
     }
+
     // 같은 학년 group 들에 동일한 학생을 할당
     let items: IPickKeys[] = [];
     sameGradeGroups.forEach(({ groupId, startedOn }) => {
@@ -279,20 +296,24 @@ export class OfferingPickService {
       items = items.concat(groupItems);
     });
     const groupIds = sameGradeGroups.map((v) => v.groupId);
-    // raw query로 upsert 처리
+
+    // raw query로 upsert 처리 (MySQL 8.0+ alias 문법 사용)
     if (items.length > 0) {
-      const values = items
-        .map(
-          (item) =>
-            `(${item.studentId},${item.groupId},${item.offeringId},'${item.startedOn}')`,
-        )
-        .join(',');
+      const placeholders = items.map(() => '(?, ?, ?, ?)').join(', ');
+      const values = items.flatMap((item) => [
+        item.studentId,
+        item.groupId,
+        item.offeringId,
+        item.startedOn,
+      ]);
+
       const query = `
         INSERT INTO picks (studentId, groupId, offeringId, startedOn)
-        VALUES ${values}
-        ON DUPLICATE KEY UPDATE startedOn=VALUES(startedOn)
+        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, startedOn)
+        ON DUPLICATE KEY UPDATE 
+          startedOn = new_pick.startedOn
       `;
-      await this.pickRepository.query(query);
+      await this.pickRepository.query(query, values);
     }
 
     // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
@@ -303,9 +324,11 @@ export class OfferingPickService {
     const groups = await this.groupRepository.find({
       where: { id: In(groupIds) },
     });
-    await this.lessonRepository.update(groups[0].lessonId, {
-      status: ClassStatus.ACTIVE,
-    });
+    if (groups.length > 0) {
+      await this.lessonRepository.update(groups[0].lessonId, {
+        status: ClassStatus.ACTIVE,
+      });
+    }
 
     return selectedStudentIds;
   }
@@ -367,20 +390,24 @@ export class OfferingPickService {
       items = items.concat(groupItems);
     });
     const groupIds = sameGradeGroups.map((v) => v.groupId);
-    // raw query로 upsert 처리
+
+    // raw query로 upsert 처리 (MySQL 8.0+ alias 문법 사용)
     if (items.length > 0) {
-      const values = items
-        .map(
-          (item) =>
-            `(${item.studentId},${item.groupId},${item.offeringId},'${item.startedOn}')`,
-        )
-        .join(',');
+      const placeholders = items.map(() => '(?, ?, ?, ?)').join(', ');
+      const values = items.flatMap((item) => [
+        item.studentId,
+        item.groupId,
+        item.offeringId,
+        item.startedOn,
+      ]);
+
       const query = `
         INSERT INTO picks (studentId, groupId, offeringId, startedOn)
-        VALUES ${values}
-        ON DUPLICATE KEY UPDATE startedOn=VALUES(startedOn)
+        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, startedOn)
+        ON DUPLICATE KEY UPDATE 
+          startedOn = new_pick.startedOn
       `;
-      await this.pickRepository.query(query);
+      await this.pickRepository.query(query, values);
     }
 
     // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
@@ -391,9 +418,11 @@ export class OfferingPickService {
     const groups = await this.groupRepository.find({
       where: { id: In(groupIds) },
     });
-    await this.lessonRepository.update(groups[0].lessonId, {
-      status: ClassStatus.ACTIVE,
-    });
+    if (groups.length > 0) {
+      await this.lessonRepository.update(groups[0].lessonId, {
+        status: ClassStatus.ACTIVE,
+      });
+    }
 
     return selectedStudentIds;
   }

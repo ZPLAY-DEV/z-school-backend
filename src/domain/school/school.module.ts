@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { SchoolCoreModule } from './modules/school-core.module';
-import { SchoolTermModule } from './modules/school-term.module';
-import { SchoolStudentModule } from './modules/school-student.module';
-import { SchoolBoardModule } from './modules/school-board.module';
-import { SchoolResourceModule } from './modules/school-resource.module';
+import { SchoolBoardModule } from 'src/domain/school/features/school-board.module';
+import { SchoolCoreModule } from 'src/domain/school/features/school-core.module';
+import { SchoolResourceModule } from 'src/domain/school/features/school-resource.module';
+import { SchoolStudentModule } from 'src/domain/school/features/school-student.module';
+import { SchoolTermModule } from 'src/domain/school/features/school-term.module';
 
 @Module({
   imports: [
