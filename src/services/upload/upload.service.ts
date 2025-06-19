@@ -14,6 +14,7 @@ export class UploadService {
   private readonly logger = new Logger(UploadService.name);
   private readonly environment: string;
   private readonly cloudFrontUrl: string;
+  private readonly s3FilesBucket: string;
   private readonly DEFAULT_EXPIRES_IN = 600; // 10분
 
   constructor(
@@ -24,6 +25,10 @@ export class UploadService {
     this.cloudFrontUrl = this.configService.get<string>(
       'aws.cloudfrontUrl',
       'https://localhost.localstack.cloud:4566', // fallback url
+    );
+    this.s3FilesBucket = this.configService.get<string>(
+      'aws.s3FilesBucket',
+      'afterschool-files-bucket',
     );
 
     if (!this.cloudFrontUrl) {
@@ -61,7 +66,11 @@ export class UploadService {
         throw new Error('CloudFront URL is not configured');
       }
 
-      const fileUrl = `${this.cloudFrontUrl}/${fullPath}`;
+      const fileUrl =
+        process.env.NODE_ENV === 'development'
+          ? `${this.cloudFrontUrl}/${this.s3FilesBucket}/${fullPath}`
+          : `${this.cloudFrontUrl}/${fullPath}`;
+
       console.log('📎 fileUrl', fileUrl);
 
       this.logger.log(`Generated upload URLs for path: ${fullPath}`);

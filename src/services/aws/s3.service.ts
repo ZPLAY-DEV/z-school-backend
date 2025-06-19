@@ -52,18 +52,6 @@ export class S3Service implements OnModuleInit {
       region: this.region,
       forcePathStyle: process.env.NODE_ENV === 'development',
     });
-
-    // presigned URL용 S3 클라이언트 (외부 접근 가능한 endpoint 사용)
-    const presignedEndpoint =
-      process.env.NODE_ENV === 'development'
-        ? this.cloudfrontUrl
-        : this.s3Endpoint;
-
-    this.s3ForPresigned = new S3Client({
-      endpoint: presignedEndpoint,
-      region: this.region,
-      forcePathStyle: process.env.NODE_ENV === 'development',
-    });
   }
 
   onModuleInit() {
@@ -181,13 +169,26 @@ export class S3Service implements OnModuleInit {
         `Generating signed URL for: ${path}, expires in: ${expiresIn}s`,
       );
       const command = new PutObjectCommand(params);
-      // presigned URL용 클라이언트 사용 (외부 접근 가능한 endpoint)
-      const signedUrl = await getSignedUrl(this.s3ForPresigned, command, {
+      // localstack에서 presigned URL 생성
+      const signedUrl = await getSignedUrl(this.s3, command, {
         expiresIn,
       });
 
+      // development 환경에서 localstack URL을 ngrok URL로 변환
+      let finalUrl = signedUrl;
+      if (
+        process.env.NODE_ENV === 'development' &&
+        this.cloudfrontUrl !== this.s3Endpoint
+      ) {
+        // localhost:4566을 ngrok URL로 교체
+        finalUrl = signedUrl.replace(this.s3Endpoint, this.cloudfrontUrl);
+        this.logger.log(
+          `Converted URL from ${this.s3Endpoint} to ${this.cloudfrontUrl}`,
+        );
+      }
+
       this.logger.log(`Successfully generated signed URL for: ${path}`);
-      return signedUrl;
+      return finalUrl;
     } catch (error) {
       this.logger.error(`Failed to generate signed URL for: ${path}`, error);
       if (error instanceof S3ServiceException) {
