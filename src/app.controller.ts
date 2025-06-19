@@ -17,15 +17,25 @@ export class AppController {
   }
 
   @Public()
-  @Get('/bust')
-  bust(): string {
-    return this.appService.cacheBust();
+  @Get('/purge/bookings')
+  async purgeBookings(): Promise<void> {
+    await this.appService.purgeBookings();
+  }
+  @Public()
+  @Get('/purge/trackings')
+  async purgeTrackings(): Promise<void> {
+    await this.appService.purgeTracking();
+  }
+  @Public()
+  @Get('/purge/cache')
+  purgeCache(): Promise<number> {
+    return this.appService.purgeCache();
   }
 
   @Public()
-  @Get('sentry')
+  @Get('error')
   getError() {
-    throw new Error('My first Sentry error for testing!');
+    throw new Error('My first error for Sentry testing!');
   }
 }
 

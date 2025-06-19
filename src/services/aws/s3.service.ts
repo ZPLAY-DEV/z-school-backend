@@ -26,13 +26,15 @@ export interface S3DeleteResult {
 export class S3Service implements OnModuleInit {
   private readonly logger = new Logger(S3Service.name);
   private readonly s3: S3Client;
+  private readonly s3ForPresigned: S3Client; // presigned URL용 별도 클라이언트
   private readonly bucket: string;
   private readonly region: string;
   private readonly cloudfrontUrl: string;
+  private readonly s3Endpoint: string;
 
   constructor(@Inject(ConfigService) private configService: ConfigService) {
     this.bucket =
-      this.configService.get<string>('aws.filesBucket') ??
+      this.configService.get<string>('aws.s3FilesBucket') ??
       'afterschool-files-bucket';
     this.region =
       this.configService.get<string>('aws.defaultRegion') ?? 'ap-northeast-2';
@@ -40,10 +42,27 @@ export class S3Service implements OnModuleInit {
       this.configService.get<string>('aws.cloudfrontUrl') ??
       'https://localhost.localstack.cloud:4566';
 
+    this.s3Endpoint =
+      this.configService.get<string>('aws.s3Endpoint') ??
+      'http://localhost:4566';
+
+    // 일반 작업용 S3 클라이언트 (localstack 내부 호출)
     this.s3 = new S3Client({
-      endpoint: this.configService.get<string>('aws.s3Endpoint'),
+      endpoint: this.s3Endpoint,
       region: this.region,
-      forcePathStyle: process.env.NODE_ENV === 'development', // localstack 사용 시 필요
+      forcePathStyle: process.env.NODE_ENV === 'development',
+    });
+
+    // presigned URL용 S3 클라이언트 (외부 접근 가능한 endpoint 사용)
+    const presignedEndpoint =
+      process.env.NODE_ENV === 'development'
+        ? this.cloudfrontUrl
+        : this.s3Endpoint;
+
+    this.s3ForPresigned = new S3Client({
+      endpoint: presignedEndpoint,
+      region: this.region,
+      forcePathStyle: process.env.NODE_ENV === 'development',
     });
   }
 
@@ -162,7 +181,10 @@ export class S3Service implements OnModuleInit {
         `Generating signed URL for: ${path}, expires in: ${expiresIn}s`,
       );
       const command = new PutObjectCommand(params);
-      const signedUrl = await getSignedUrl(this.s3, command, { expiresIn });
+      // presigned URL용 클라이언트 사용 (외부 접근 가능한 endpoint)
+      const signedUrl = await getSignedUrl(this.s3ForPresigned, command, {
+        expiresIn,
+      });
 
       this.logger.log(`Successfully generated signed URL for: ${path}`);
       return signedUrl;

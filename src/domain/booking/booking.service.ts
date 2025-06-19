@@ -189,27 +189,6 @@ export class BookingService {
     }
   }
 
-  async purgeBookings(): Promise<number> {
-    try {
-      this.logger.log('🗑️ Redis booking 데이터 삭제 시작');
-
-      const redisClient = this.redisBookingService.getClient();
-
-      // offering: 패턴의 모든 키 찾기
-      const keys = await redisClient.keys('offering:*');
-
-      if (keys.length > 0) {
-        // 모든 예약 관련 키 삭제
-        await redisClient.del(keys);
-        return keys.length;
-      }
-      return 0;
-    } catch (error) {
-      this.logger.error('❌ Redis booking 데이터 삭제 실패', error.stack);
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-
   //? my goal: upsert entire data in one go with snapshot for idempotency.
   async cancelWithRedis(dto: CancelBookingDto): Promise<number> {
     const { offeringId, studentId, lessonName, note } = dto;

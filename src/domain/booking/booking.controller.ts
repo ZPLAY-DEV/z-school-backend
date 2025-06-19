@@ -43,9 +43,4 @@ export class BookingController {
       return await this.bookingService.cancelWithDb(dto);
     }
   }
-
-  @Delete('purge')
-  async reset(): Promise<number> {
-    return await this.bookingService.purgeBookings();
-  }
 }
