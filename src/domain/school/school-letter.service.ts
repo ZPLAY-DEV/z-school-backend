@@ -34,7 +34,7 @@ export class SchoolLetterService {
       filterableColumns: {
         type: [FilterOperator.EQ, FilterOperator.IN],
         mode: [FilterOperator.EQ, FilterOperator.IN],
-        sentAt: [FilterOperator.EQ, FilterOperator.ILIKE],
+        sendAt: [FilterOperator.EQ, FilterOperator.ILIKE],
       },
     });
   }

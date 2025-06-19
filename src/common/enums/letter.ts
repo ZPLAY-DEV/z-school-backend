@@ -1,13 +1,13 @@
-export enum LetterTarget {
-  GRADE = '학년별',
-  COURSE = '강좌별',
-  STUDENT = '학생별',
-}
-
 export enum LetterType {
   ENROLLMENT = 'ENROLLMENT',
   NEWS = 'NEWS',
   SURVEY = 'SURVEY',
+}
+
+export enum LetterTarget {
+  GRADE = '학년별',
+  LESSON = '강좌별',
+  STUDENT = '학생별',
 }
 
 export enum LetterStatus {

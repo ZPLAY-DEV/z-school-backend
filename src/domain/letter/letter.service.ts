@@ -50,18 +50,8 @@ export class LetterService {
       // 3. 대상학생 정보조회
       const students = await this.getStudents(manager, dto.ids);
 
-      // 4. unique parents 추출
-      const parentsMap = new Map<number, Parent>();
-
-      students.forEach((student) => {
-        const parent = student.parent;
-        parentsMap.set(student.id, parent);
-      });
-
-      const parents = Array.from(parentsMap.values());
-
-      // 5. Nanoid 벌크 upsert
-      const dtos = this.buildCreateNanoidDtos(parents, letter.id);
+      // 4. Nanoid 벌크 upsert
+      const dtos = this.buildCreateNanoidDtos(students, letter.id);
       await this.upsertNanoIds(manager, dtos);
 
       // 1. mysql pivot 셋팅
@@ -90,19 +80,19 @@ export class LetterService {
   // ------------------------------------------------------------------------ //
 
   private buildCreateNanoidDtos(
-    parents: Parent[],
+    students: Student[],
     letterId: number,
   ): CreateNanoidDto[] {
     const dtos: CreateNanoidDto[] = [];
 
-    for (const parent of parents) {
+    for (const student of students) {
       const dto: CreateNanoidDto = {
-        parentId: parent.id,
+        parentId: student.parent.id,
         nanoid: nanoid(),
-        phone: parent.phone,
+        phone: student.parent.phone,
         page: 'letters',
-        args: `letterId=${letterId}&parentId=${parent.id}`,
-        expiresAt: parseValidityToDate('10d'), // @todo 수강신청 끝나는 시점으로 지정 해야함.
+        args: `letterId=${letterId}&studentId=${student.id}&parentId=${student.parent.id}`,
+        expiresAt: parseValidityToDate('30d'), // @todo 수강신청 끝나는 시점으로 지정 해야함.
       };
 
       dtos.push(dto);
@@ -143,11 +133,7 @@ export class LetterService {
   ): Promise<Student[]> {
     const students = await manager.find(Student, {
       where: { id: In(studentIds) },
-      select: {
-        id: true,
-        parent: { id: true, phone: true, user: { pushToken: true } },
-      },
-      relations: { parent: true },
+      relations: { parent: { user: true } },
     });
 
     if (!students.length) {
