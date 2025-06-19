@@ -14,10 +14,6 @@ export class AppService {
     return packageJson.version;
   }
 
-  //? ---------------------------------------------------------------------- ?//
-  //? cache bust
-  //? ---------------------------------------------------------------------- ?//
-
   cacheBust(): string {
     //! POSTMAN 에서 x-clear-cache 헤더 추가하기 떄문에 REDIS 캐시삭제가 동작함.
     return `🗑️ cleared Redis cache`;

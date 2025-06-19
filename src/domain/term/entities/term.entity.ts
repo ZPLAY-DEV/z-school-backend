@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { IsArray } from 'class-validator';
 import { LimitedPickRule, PickRule } from 'src/common/enums';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Letter } from 'src/domain/letter/entities/letter.entity';
@@ -113,6 +114,11 @@ export class Term {
     comment: '현재 학기 여부 (현재 학기만 자동으로 출석부가 생성된다.)',
   })
   isActive: boolean;
+
+  @Column('simple-array', { nullable: true, comment: '학기 이미지' })
+  @ApiProperty({ description: '학기 이미지' })
+  @IsArray()
+  images: string[] | null;
 
   // ------------------------------------------------------------------------ //
 
