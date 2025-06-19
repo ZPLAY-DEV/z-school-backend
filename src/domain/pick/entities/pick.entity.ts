@@ -121,8 +121,10 @@ export class Pick {
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
   @ManyToOne(() => Student, (student) => student.picks)
+  @JoinColumn({ name: 'studentId' })
   student: Student;
 
   @ManyToOne(() => Group, (group) => group.picks)
+  @JoinColumn({ name: 'groupId' })
   group: Group;
 }
