@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
+import { Nanoid } from 'src/domain/parent/entities/nanoid.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
-import { ParentNanoIdController } from 'src/domain/parent/parent-nanoid.controller';
-import { ParentNanoIdService } from 'src/domain/parent/parent-nanoid.service';
+import { ParentNanoidController } from 'src/domain/parent/parent-nanoid.controller';
+import { ParentNanoidService } from 'src/domain/parent/parent-nanoid.service';
 import { ParentController } from 'src/domain/parent/parent.controller';
 import { ParentService } from 'src/domain/parent/parent.service';
 import { S3Module } from 'src/services/aws/s3.module';
@@ -12,12 +12,12 @@ import { ParentStudentController } from './parent-student.controller';
 import { ParentStudentService } from './parent-student.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Parent, NanoId]), S3Module, SlackModule],
+  imports: [TypeOrmModule.forFeature([Parent, Nanoid]), S3Module, SlackModule],
   controllers: [
     ParentController,
     ParentStudentController,
-    ParentNanoIdController,
+    ParentNanoidController,
   ],
-  providers: [ParentService, ParentStudentService, ParentNanoIdService],
+  providers: [ParentService, ParentStudentService, ParentNanoidService],
 })
 export class ParentModule {}

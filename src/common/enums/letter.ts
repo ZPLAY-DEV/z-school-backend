@@ -1,16 +1,16 @@
-export enum LetterType {
+export enum NewsletterType {
   ENROLLMENT = 'ENROLLMENT',
   NEWS = 'NEWS',
   SURVEY = 'SURVEY',
 }
 
-export enum LetterTarget {
+export enum NewsletterTarget {
   GRADE = '학년별',
   LESSON = '강좌별',
   STUDENT = '학생별',
 }
 
-export enum LetterStatus {
+export enum NewsletterStatus {
   READY = 'READY',
   SUCCESS = 'SUCCESS',
   FAILED = 'FAILED',

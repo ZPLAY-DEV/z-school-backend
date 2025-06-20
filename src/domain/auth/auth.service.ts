@@ -17,11 +17,11 @@ import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
   UserCredentialsDto,
   UserCredentialsDtoWithPhone,
-  UserNanoIdDto,
 } from 'src/domain/auth/dto/user-credentials.dto';
 import { UserDto } from 'src/domain/auth/dto/user.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
+import { Nanoid } from 'src/domain/parent/entities/nanoid.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Token } from 'src/domain/user/entities/token.entity';
 import { User } from 'src/domain/user/entities/user.entity';
@@ -49,6 +49,7 @@ export class AuthService {
   private readonly parentRepository: Repository<Parent>;
   private readonly managerRepository: Repository<Manager>;
   private readonly tokenRepository: Repository<Token>;
+  private readonly nanoidRepository: Repository<Nanoid>;
 
   constructor(
     private readonly jwtService: JwtService,
@@ -61,6 +62,7 @@ export class AuthService {
     this.parentRepository = this.dataSource.getRepository(Parent);
     this.managerRepository = this.dataSource.getRepository(Manager);
     this.tokenRepository = this.dataSource.getRepository(Token);
+    this.nanoidRepository = this.dataSource.getRepository(Nanoid);
   }
 
   /**
@@ -92,31 +94,17 @@ export class AuthService {
     return user;
   }
 
-  async validateUserWithNanoId(dto: UserNanoIdDto): Promise<User> {
-    const { username, nanoid, role } = dto;
-
-    const user = await this.userRepository.findOne({
-      where: { username },
-      relations: ['parent', 'parent.nanoIds'],
+  async validateUserWithNanoid(id: string): Promise<User> {
+    const nanoid = await this.nanoidRepository.findOneOrFail({
+      where: { nanoid: id },
+      relations: ['parent', 'parent.user'],
     });
 
-    if (!user) {
+    if (!nanoid.parent?.user) {
       throw new UnauthorizedException('User not found');
     }
 
-    const hasRole = this.checkUserHasRole(user, role);
-    if (!hasRole) {
-      throw new UnauthorizedException('Invalid role');
-    }
-
-    if (
-      user.parent?.nanoIds &&
-      user.parent?.nanoIds.some((v) => v.nanoid === nanoid)
-    ) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    return user;
+    return nanoid.parent.user;
   }
 
   /**
@@ -234,15 +222,15 @@ export class AuthService {
   /**
    * Log in a user and generate auth tokens
    */
-  async loginWithNanoId(dto: UserNanoIdDto): Promise<AuthUserDto> {
-    const user = await this.validateUserWithNanoId(dto);
-    const { accessToken, refreshToken } = await this.generateTokensWithNanoId(
+  async loginWithNanoid(nanoid: string): Promise<AuthUserDto> {
+    const user = await this.validateUserWithNanoid(nanoid);
+    const { accessToken, refreshToken } = await this.generateTokensWithNanoid(
       user,
-      dto.role,
+      Role.PARENT,
     );
     return {
       user: plainToClass(UserDto, user, { excludeExtraneousValues: true }),
-      role: dto.role,
+      role: Role.PARENT,
       accessToken,
       refreshToken,
     };
@@ -560,7 +548,7 @@ export class AuthService {
   /**
    * Generate both access and refresh tokens
    */
-  private async generateTokensWithNanoId(
+  private async generateTokensWithNanoid(
     user: User,
     role: Role,
   ): Promise<TokenData> {

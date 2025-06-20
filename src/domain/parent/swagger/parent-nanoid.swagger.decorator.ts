@@ -4,13 +4,13 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { CreateNanoidDto } from 'src/domain/parent/dto/create-nanoid.dto';
-import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
+import { Nanoid } from 'src/domain/parent/entities/nanoid.entity';
 
 //? ---------------------------------------------------------------------- ?//
-//? Create NanoId
+//? Create Nanoid
 //? ---------------------------------------------------------------------- ?//
 
-export const CreateNanoIdDocs = () => {
+export const CreateNanoidDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '나노아이디 👈 생성',
@@ -30,7 +30,7 @@ export const CreateNanoIdDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: '나노아이디 생성 완료',
-      type: NanoId,
+      type: Nanoid,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );

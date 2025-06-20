@@ -14,7 +14,7 @@ export interface IAwsConfig {
   s3LogsBucket: string;
   sqsEndpoint: string;
   sqsPrimaryUrl: string;
-  sqsDeadLetterUrl: string;
+  sqsDeadNewsletterUrl: string;
   firehoseEndpoint: string;
   firehoseStreamName: string;
 }
@@ -288,7 +288,7 @@ export interface IPickKeys {
 export interface ICalendarDay {
   start: string;
   end: string;
-  classOn: boolean; // 수업이 있는지 여부
+  isClassDay: boolean; // 수업이 있는지 여부
 }
 export interface HttpErrorFormat {
   error: string;

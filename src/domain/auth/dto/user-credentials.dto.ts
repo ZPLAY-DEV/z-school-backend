@@ -42,21 +42,3 @@ export class UserCredentialsDtoWithPhone extends UserCredentialsDto {
   @IsString()
   phone: string;
 }
-
-export class UserNanoIdDto {
-  @ApiProperty({ description: '🈵 username' })
-  @IsNotEmpty()
-  @IsString()
-  username: string;
-
-  @ApiProperty({ description: '🈵 21자리 나노아이디 값' })
-  @IsString()
-  nanoid: string;
-
-  @ApiProperty({
-    description: '🈵 사용자 역할 parent, instructor, manager, admin',
-  })
-  @IsNotEmpty()
-  @IsEnum(Role)
-  role: Role;
-}

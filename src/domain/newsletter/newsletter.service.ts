@@ -7,23 +7,22 @@ import {
 } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 import { AWS_SQS_CLIENT, REDIS_TRACKING_CLIENT } from 'src/common/constants';
-import { CreateLetterDto } from 'src/domain/letter/dto/create-letter.dto';
+import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
+import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { CreateNanoidDto } from 'src/domain/parent/dto/create-nanoid.dto';
-import { Parent } from 'src/domain/parent/entities/parent.entity';
+import { Nanoid } from 'src/domain/parent/entities/nanoid.entity';
+import { School } from 'src/domain/school/entities/school.entity';
+import { Student } from 'src/domain/student/entities/student.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
 import { parseValidityToDate } from 'src/helpers/time';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisTrackingService } from 'src/services/redis/redis-tracking.service';
 import { DataSource, EntityManager, In } from 'typeorm';
-import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
-import { School } from 'src/domain/school/entities/school.entity';
-import { Student } from 'src/domain/student/entities/student.entity';
-import { Term } from 'src/domain/term/entities/term.entity';
-import { Letter } from 'src/domain/letter/entities/letter.entity';
 
 @Injectable()
-export class LetterService {
-  private readonly logger = new Logger(LetterService.name);
+export class NewsletterService {
+  private readonly logger = new Logger(NewsletterService.name);
   constructor(
     @Inject(AWS_SQS_CLIENT)
     private readonly sqsClient: SqsService,
@@ -38,21 +37,21 @@ export class LetterService {
   //? ---------------------------------------------------------------------- ?//
 
   //? 학생 대상 발송
-  async create(dto: CreateLetterDto): Promise<Letter> {
+  async create(dto: CreateNewsletterDto): Promise<Newsletter> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       // 1. 유효성 검증
       await this.validateSchool(manager, dto);
       await this.validateTerm(manager, dto);
 
       // 2. 뉴스레터 생성
-      const letter = await this.createLetter(manager, dto);
+      const letter = await this.createNewsletter(manager, dto);
 
       // 3. 대상학생 정보조회
       const students = await this.getStudents(manager, dto.ids);
 
       // 4. Nanoid 벌크 upsert
       const dtos = this.buildCreateNanoidDtos(students, letter.id);
-      await this.upsertNanoIds(manager, dtos);
+      await this.upsertNanoids(manager, dtos);
 
       // 1. mysql pivot 셋팅
       // 2. redis 2개 set 설정
@@ -67,11 +66,11 @@ export class LetterService {
   //? ---------------------------------------------------------------------- ?//
 
   //? 발송 정보 생성
-  private async createLetter(
+  private async createNewsletter(
     manager: EntityManager,
-    dto: CreateLetterDto,
-  ): Promise<Letter> {
-    const letter = manager.create(Letter, dto);
+    dto: CreateNewsletterDto,
+  ): Promise<Newsletter> {
+    const letter = manager.create(Newsletter, dto);
     return await manager.save(letter);
   }
 
@@ -89,9 +88,8 @@ export class LetterService {
       const dto: CreateNanoidDto = {
         parentId: student.parent.id,
         nanoid: nanoid(),
-        phone: student.parent.phone,
-        page: 'letters',
-        args: `letterId=${letterId}&studentId=${student.id}&parentId=${student.parent.id}`,
+        page: 'newsletters',
+        args: `id=${letterId}&studentId=${student.id}&parentId=${student.parent.id}`,
         expiresAt: parseValidityToDate('30d'), // @todo 수강신청 끝나는 시점으로 지정 해야함.
       };
 
@@ -101,7 +99,7 @@ export class LetterService {
     return dtos;
   }
 
-  private async upsertNanoIds(
+  private async upsertNanoids(
     manager: EntityManager,
     dtos: CreateNanoidDto[],
   ): Promise<void> {
@@ -112,7 +110,7 @@ export class LetterService {
         await manager
           .createQueryBuilder()
           .insert()
-          .into(NanoId)
+          .into(Nanoid)
           .values(batch)
           .orUpdate(
             ['nanoid', 'phone', 'expiresAt'],
@@ -120,8 +118,8 @@ export class LetterService {
           )
           .execute();
       } catch (error) {
-        this.logger.error(`Failed to upsert NanoIds: ${error.message}`);
-        throw new InternalServerErrorException('Failed to upsert NanoIds');
+        this.logger.error(`Failed to upsert Nanoids: ${error.message}`);
+        throw new InternalServerErrorException('Failed to upsert Nanoids');
       }
     }
   }
@@ -146,7 +144,7 @@ export class LetterService {
   //? 학교 유효성 검증
   private async validateSchool(
     manager: EntityManager,
-    dto: CreateLetterDto,
+    dto: CreateNewsletterDto,
   ): Promise<void> {
     const school = await manager.findOne(School, {
       where: { id: dto.schoolId },
@@ -162,7 +160,7 @@ export class LetterService {
   //? 학교 유효성 검증
   private async validateTerm(
     manager: EntityManager,
-    dto: CreateLetterDto,
+    dto: CreateNewsletterDto,
   ): Promise<void> {
     const term = await manager.findOne(Term, { where: { id: dto.termId } });
     if (!term) {

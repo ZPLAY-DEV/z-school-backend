@@ -2,17 +2,17 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { nanoid } from 'nanoid';
 import { CreateNanoidDto } from 'src/domain/parent/dto/create-nanoid.dto';
-import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
+import { Nanoid } from 'src/domain/parent/entities/nanoid.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
-export class ParentNanoIdService {
-  private readonly logger = new Logger(ParentNanoIdService.name);
+export class ParentNanoidService {
+  private readonly logger = new Logger(ParentNanoidService.name);
 
   constructor(
-    @InjectRepository(NanoId)
-    private readonly nanoIdRepository: Repository<NanoId>,
+    @InjectRepository(Nanoid)
+    private readonly nanoidRepository: Repository<Nanoid>,
     @InjectRepository(Parent)
     private readonly parentRepository: Repository<Parent>,
   ) {}
@@ -21,7 +21,7 @@ export class ParentNanoIdService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  async create(dto: CreateNanoidDto): Promise<NanoId> {
+  async create(dto: CreateNanoidDto): Promise<Nanoid> {
     // parent 정보 조회
     const parent = await this.parentRepository.findOne({
       where: { id: dto.parentId },
@@ -32,16 +32,15 @@ export class ParentNanoIdService {
     }
 
     // nanoid 생성
-    const generatedNanoId = nanoid();
+    const generatedNanoid = nanoid();
     const expiresAt = dto.expiresAt;
 
-    this.logger.log(`Generated nanoId: ${generatedNanoId}`);
+    this.logger.log(`Generated nanoid: ${generatedNanoid}`);
 
-    await this.nanoIdRepository.upsert(
+    await this.nanoidRepository.upsert(
       {
         parentId: dto.parentId,
-        nanoid: generatedNanoId,
-        phone: parent.phone,
+        nanoid: generatedNanoid,
         page: dto.page,
         args: dto.args,
         expiresAt: expiresAt,
@@ -50,7 +49,7 @@ export class ParentNanoIdService {
     );
 
     // upsert 후 결과 조회 시 unique constraint 조합으로 정확히 조회
-    const savedNanoId = await this.nanoIdRepository.findOne({
+    const savedNanoid = await this.nanoidRepository.findOne({
       where: {
         parentId: dto.parentId,
         page: dto.page,
@@ -58,11 +57,11 @@ export class ParentNanoIdService {
       },
     });
 
-    if (!savedNanoId) {
-      throw new Error('Failed to create or update NanoId');
+    if (!savedNanoid) {
+      throw new Error('Failed to create or update Nanoid');
     }
 
-    return savedNanoId;
+    return savedNanoid;
   }
 
   //? ---------------------------------------------------------------------- ?//

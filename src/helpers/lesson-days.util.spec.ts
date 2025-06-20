@@ -65,20 +65,20 @@ describe('calculateLessonDays', () => {
     expect(result[0]).toMatchObject({
       start: '2024-06-03 10:00',
       end: '2024-06-03 12:00',
-      classOn: true,
+      isClassDay: true,
     });
     expect(result[1].start).toContain('2024-06-10');
     expect(result[2].start).toContain('2024-06-17');
   });
 
-  it('월요일 3주, 중간에 휴일이 있으면 classOn이 false', () => {
+  it('월요일 3주, 중간에 휴일이 있으면 isClassDay false', () => {
     const offdays = ['2024-06-10'];
     const result = calculateLessonDays(baseLesson, baseGroup, offdays);
     expect(result).toHaveLength(3);
     expect(result[1]).toMatchObject({
       start: '2024-06-10 10:00',
       end: '2024-06-10 12:00',
-      classOn: false,
+      isClassDay: false,
     });
   });
 

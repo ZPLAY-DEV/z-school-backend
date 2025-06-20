@@ -14,11 +14,11 @@ import {
 
 @Entity('nanoids')
 @Unique(['parentId', 'page', 'args'])
-export class NanoId {
+export class Nanoid {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 
-  @ApiProperty({ description: '🈳 로그인 사용자ID' })
+  @ApiProperty({ description: '🈵 로그인하려는 학부모ID' })
   @Column({
     type: 'int',
     unsigned: true,
@@ -31,9 +31,9 @@ export class NanoId {
   @Column({ type: 'varchar', length: 32 })
   nanoid: string;
 
-  @ApiProperty({ description: '🈵 전화번호 (숫자만)' })
-  @Column({ type: 'varchar', length: 16 })
-  phone: string;
+  // @ApiProperty({ description: '🈵 전화번호 (숫자만)' })
+  // @Column({ type: 'varchar', length: 16 })
+  // phone: string;
 
   @ApiProperty({ description: '🈵 routing 정보' })
   @Column({ type: 'varchar', nullable: true })
@@ -64,14 +64,14 @@ export class NanoId {
 
   //* 1-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Parent, (parent) => parent.nanoIds, {
+  @ManyToOne(() => Parent, (parent) => parent.nanoids, {
     onDelete: 'CASCADE',
   })
   parent: Parent;
 
   //? Constructor ---------------------------------------------------------- ?//
 
-  constructor(partial: Partial<NanoId>) {
+  constructor(partial: Partial<Nanoid>) {
     Object.assign(this, partial);
   }
 }

@@ -25,8 +25,8 @@ import { GroupModule } from 'src/domain/group/group.module';
 import { InstructorModule } from 'src/domain/instructor/instructor.module';
 import { LedgerModule } from 'src/domain/ledger/ledger.module';
 import { LessonModule } from 'src/domain/lesson/lesson.module';
-import { LetterModule } from 'src/domain/letter/letter.module';
 import { ManagerModule } from 'src/domain/manager/manager.module';
+import { NewsletterModule } from 'src/domain/newsletter/newsletter.module';
 import { OfferingModule } from 'src/domain/offering/offering.module';
 import { ParentModule } from 'src/domain/parent/parent.module';
 import { PayoutModule } from 'src/domain/payout/payout.module';
@@ -117,7 +117,7 @@ import { UploadModule } from './services/upload/upload.module';
     InstructorModule,
     LedgerModule,
     LessonModule,
-    LetterModule,
+    NewsletterModule,
     ManagerModule,
     OfferingModule,
     ParentModule,

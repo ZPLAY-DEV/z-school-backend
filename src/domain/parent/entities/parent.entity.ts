@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { Letter } from 'src/domain/letter/entities/letter.entity';
-import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
+import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { Nanoid } from 'src/domain/parent/entities/nanoid.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
@@ -80,14 +80,14 @@ export class Parent {
   })
   students: Student[];
 
-  @OneToOne(() => NanoId, (nanoId) => nanoId.parent, {
+  @OneToOne(() => Nanoid, (nanoid) => nanoid.parent, {
     cascade: ['insert', 'update'],
   })
-  nanoIds?: NanoId[];
+  nanoids?: Nanoid[];
 
   //* N-to-M manyToMany ---------------------------------------------------- *//
-  @ManyToMany(() => Letter, (letter) => letter.parents)
-  letters: Letter[];
+  @ManyToMany(() => Newsletter, (letter) => letter.parents)
+  letters: Newsletter[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

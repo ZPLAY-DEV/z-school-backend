@@ -4,8 +4,8 @@ import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
 import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
-import { Letter } from 'src/domain/letter/entities/letter.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
+import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Statement } from 'src/domain/statement/entities/statement.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -135,10 +135,10 @@ export class School {
   })
   public terms: Term[];
 
-  @OneToMany(() => Letter, (letter) => letter.school, {
+  @OneToMany(() => Newsletter, (newsletter) => newsletter.school, {
     cascade: ['insert', 'update'],
   })
-  public letters: Letter[];
+  public newsletters: Newsletter[];
 
   @OneToMany(() => Statement, (statement) => statement.school, {
     cascade: ['insert', 'update'],

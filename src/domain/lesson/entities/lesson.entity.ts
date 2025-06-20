@@ -71,6 +71,17 @@ export class Lesson {
   @Column({ type: 'varchar', length: 10 })
   end: string;
 
+  @ApiProperty({ description: 'weekly frequency' })
+  @Column({
+    type: 'tinyint',
+    unsigned: true,
+    default: 1,
+    comment: 'weekly frequency',
+  })
+  frequency: number;
+
+  // ------------------------------------------------------------------------ //
+
   // todo: 어떻게 finalizing 할 지 나중에 결정할 것
   @ApiProperty({ description: '🈵 수업료 합계 (A+B+C+D)' })
   @Column({ type: 'int', unsigned: true, default: 0 })
@@ -94,13 +105,14 @@ export class Lesson {
   @Column('json', { nullable: true })
   materialFees: FeeItemDto[] | null;
 
-  // todo: 어떻게 finalizing 할 지 나중에 결정할 것
   @ApiProperty({
     description: '🈵 D. 수용비; 학교시설 이용경비',
     example: 1000,
   })
   @Column({ type: 'int', unsigned: true, default: 0 })
   operationFee: number;
+
+  // ------------------------------------------------------------------------ //
 
   @ApiProperty({
     description: '🈵 CO-xxx 변경없이 동일비용 적용, MC/MF 비율로 계산',

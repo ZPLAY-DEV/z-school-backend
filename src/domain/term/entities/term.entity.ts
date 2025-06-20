@@ -3,7 +3,7 @@ import { Exclude } from 'class-transformer';
 import { IsArray } from 'class-validator';
 import { LimitedPickRule, PickRule } from 'src/common/enums';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
-import { Letter } from 'src/domain/letter/entities/letter.entity';
+import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import {
@@ -144,16 +144,16 @@ export class Term {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @OneToMany(() => Lesson, (lesson) => lesson.term)
+  @OneToMany(() => Lesson, (lesson: Lesson) => lesson.term)
   lessons: Lesson[];
 
-  @OneToMany(() => Offering, (offering) => offering.term, {
+  @OneToMany(() => Offering, (offering: Offering) => offering.term, {
     cascade: ['insert', 'update'],
   })
   public offerings: Offering[];
 
-  @OneToMany(() => Letter, (letter) => letter.term)
-  public letters: Letter[];
+  @OneToMany(() => Newsletter, (newsletter: Newsletter) => newsletter.term)
+  public newsletters: Newsletter[];
 
   //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
 

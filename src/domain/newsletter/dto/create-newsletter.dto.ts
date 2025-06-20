@@ -1,23 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsArray,
-  IsDate,
-  IsEnum,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
+    IsArray,
+    IsDate,
+    IsEnum,
+    IsInt,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+    MaxLength,
 } from 'class-validator';
 import {
-  EventStatus,
-  LetterTarget,
-  LetterType,
-  SendMode,
+    EventStatus,
+    NewsletterTarget,
+    NewsletterType,
+    SendMode,
 } from 'src/common/enums';
 
-export class CreateLetterDto {
+export class CreateNewsletterDto {
   @ApiProperty({
     description: '🈵 School ID',
     type: Number,
@@ -60,12 +60,12 @@ export class CreateLetterDto {
 
   @ApiProperty({
     description: '🈵 뉴스레터 종류',
-    enum: LetterType,
+    enum: NewsletterType,
     required: true,
   })
   @IsNotEmpty()
-  @IsEnum(LetterType)
-  type: LetterType;
+  @IsEnum(NewsletterType)
+  type: NewsletterType;
 
   @ApiProperty({
     description: '🈵 뉴스레터 발송상태',
@@ -78,8 +78,8 @@ export class CreateLetterDto {
 
   @ApiProperty({ description: '🈵 뉴스레터 대상', required: true })
   @IsNotEmpty()
-  @IsEnum(LetterTarget)
-  targetGroup: LetterTarget;
+  @IsEnum(NewsletterTarget)
+  targetGroup: NewsletterTarget;
 
   @ApiProperty({ description: '🈵 뉴스레터 대상 아이템들', required: true })
   @IsNotEmpty()

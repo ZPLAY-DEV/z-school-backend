@@ -94,6 +94,7 @@ export class LessonCoreService {
         start: dto.start ?? term.start,
         end: dto.end ?? term.end,
         schoolName: school.name,
+        frequency: dto.frequency ?? 1,
         operationFeeRule: school.operationFeeRule,
         requiredDocuments: dto.requiredDocuments || [],
       });

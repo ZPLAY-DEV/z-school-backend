@@ -5,7 +5,6 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsPositive,
   IsString,
@@ -82,19 +81,24 @@ export class CreateLessonDto {
   end?: string;
 
   @ApiProperty({
+    description: '🈳 frequency',
+    default: 1,
+  })
+  @IsInt()
+  @IsPositive()
+  frequency?: number;
+
+  @ApiProperty({
     description: '🈳 수업료 합계 (A - D)',
     required: false,
     default: 0,
   })
-  @IsOptional()
-  @IsNumber()
   @IsInt()
   @IsPositive()
   total?: number;
 
   @ApiProperty({ description: '🈳 A. 1회 수강료', required: false, default: 0 })
   @IsOptional()
-  @IsNumber()
   @IsInt()
   @IsPositive()
   instructorFee?: number;
@@ -119,11 +123,8 @@ export class CreateLessonDto {
 
   @ApiProperty({
     description: '🈳 D. 수용비; 매수업별 학교시설 이용경비',
-    required: false,
     default: 0,
   })
-  @IsOptional()
-  @IsNumber()
   @IsInt()
   @IsPositive()
   operationFee?: number;

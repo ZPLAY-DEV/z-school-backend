@@ -17,13 +17,6 @@ export class CreateNanoidDto {
   nanoid: string;
 
   @ApiPropertyOptional({
-    description: '🈳 학부모 전화번호',
-    type: String,
-  })
-  @IsString()
-  phone: string;
-
-  @ApiPropertyOptional({
     description: '🈳 라우팅 page 정보',
     required: false,
     type: String,

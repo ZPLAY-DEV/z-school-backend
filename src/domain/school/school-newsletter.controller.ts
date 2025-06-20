@@ -12,15 +12,17 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, PaginateQuery } from 'nestjs-paginate';
 
-import { SchoolLetterService } from 'src/domain/school/school-letter.service';
+import { SchoolNewsletterService } from 'src/domain/school/school-newsletter.service';
 
 // import { Paginate } from 'nestjs-paginate';
 
 @ApiTags('✅ Schools > Dispatch ( 학교 > 발송 )')
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
-export class SchoolLetterController {
-  constructor(private readonly schoolLetterService: SchoolLetterService) {}
+export class SchoolNewsletterController {
+  constructor(
+    private readonly schoolNewsletterService: SchoolNewsletterService,
+  ) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? Create
@@ -36,6 +38,10 @@ export class SchoolLetterController {
     @Param('termId', ParseIntPipe) termId: number,
     @Paginate() query: PaginateQuery,
   ) {
-    return await this.schoolLetterService.infiniteList(schoolId, termId, query);
+    return await this.schoolNewsletterService.infiniteList(
+      schoolId,
+      termId,
+      query,
+    );
   }
 }
