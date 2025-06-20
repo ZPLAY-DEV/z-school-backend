@@ -26,6 +26,10 @@ export class Category {
   @Column({ length: 32 })
   name: string;
 
+  @ApiProperty({ description: '🈳 비고' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  note: string | null;
+
   @ApiProperty({ description: 'total count' })
   @Column({ type: 'int', unsigned: true, default: 0 })
   count: number;
