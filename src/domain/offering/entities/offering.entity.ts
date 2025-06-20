@@ -161,7 +161,7 @@ export class Offering {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @OneToMany(() => Booking, (booking) => booking.student)
+  @OneToMany(() => Booking, (booking) => booking.offering)
   bookings: Booking[];
 
   //* 1-to-M hasMany ------------------------------------------------------- *//

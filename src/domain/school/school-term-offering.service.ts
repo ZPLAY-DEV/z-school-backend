@@ -89,18 +89,22 @@ export class SchoolTermOfferingService {
   ): Promise<Paginated<Offering>> {
     const queryBuilder = this.offeringRepository
       .createQueryBuilder('offering')
+      .leftJoinAndSelect('offering.picks', 'picks')
+      .leftJoinAndSelect('offering.bookings', 'bookings')
       .where('offering.schoolId = :schoolId', { schoolId })
       .andWhere('offering.termId = :termId', { termId });
 
-    return await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'lessonName', 'groupName'],
-      searchableColumns: ['lessonName', 'groupName'],
-      defaultSortBy: [['id', 'DESC']],
+    const result = await paginate(query, queryBuilder, {
+      sortableColumns: ['id', 'lessonName', 'groupName'] as const,
+      searchableColumns: ['lessonName', 'groupName'] as const,
+      defaultSortBy: [['id', 'DESC']] as const,
       filterableColumns: {
         pickRule: [FilterOperator.EQ, FilterOperator.IN],
         allowedGrades: [FilterOperator.EQ, FilterOperator.IN],
       },
     });
+
+    return result;
   }
 
   async list(
@@ -116,6 +120,7 @@ export class SchoolTermOfferingService {
       .andWhere('offering.termId = :termId', { termId })
       .orderBy('offering.id', 'DESC')
       .getMany();
+
     if (grade) {
       return items.filter((item: Offering) =>
         item.allowedGrades.includes(+grade),
