@@ -15,9 +15,3 @@ export enum NewsletterStatus {
   SUCCESS = 'SUCCESS',
   FAILED = 'FAILED',
 }
-
-export enum SendMode {
-  IMMEDIATE = 'IMMEDIATE',
-  SCHEDULED = 'SCHEDULED',
-  DRAFT = 'DRAFT',
-}
