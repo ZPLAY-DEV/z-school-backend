@@ -6,7 +6,7 @@ export interface IEventKey {
 }
 
 export interface IEvent extends IEventKey {
-  type: string; // e.g. "EVERYDAY@2AM" | "EVERYDAY@3AM" | "EVERY_5MINS"
+  type: string; // e.g. "NEWSLAETER"
   payload: any;
   expires?: number; // for TTL
 }

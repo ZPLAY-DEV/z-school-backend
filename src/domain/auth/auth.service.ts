@@ -101,7 +101,7 @@ export class AuthService {
     });
 
     if (!shortlink.parent?.user) {
-      throw new UnauthorizedException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     return shortlink.parent.user;

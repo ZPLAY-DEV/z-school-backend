@@ -87,7 +87,7 @@ export class Newsletter {
   ids: number[];
 
   @ApiProperty({ description: '🈳 발송 예약 시간 (YYYY-MM-DD HH:mm:ss)' })
-  @Column({ type: 'datetime', nullable: true, comment: '발송 시간' })
+  @Column({ type: 'timestamp', nullable: true, comment: '발송 시간' })
   scheduledAt: Date | null;
 
   // ------------------------------------------------------------------------ //

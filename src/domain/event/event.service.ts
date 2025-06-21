@@ -21,4 +21,8 @@ export class EventService {
       expires: ttl,
     });
   }
+
+  async createEvent(eventData: IEvent): Promise<IEvent> {
+    return await this.model.create(eventData);
+  }
 }

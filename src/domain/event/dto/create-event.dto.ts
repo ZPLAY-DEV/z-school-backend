@@ -21,7 +21,7 @@ export class CreateEventDto {
 
   @ApiProperty({
     description: '날짜 키 (sort key)',
-    example: 'DATE#2025-01-15T10:00:00Z#ID#123',
+    example: '2025-01-15T10:00:00Z',
   })
   @IsString()
   @IsNotEmpty()
@@ -29,7 +29,7 @@ export class CreateEventDto {
 
   @ApiProperty({
     description: '이벤트 타입',
-    example: 'EVERYDAY@2AM',
+    example: 'NEWSLETTER',
   })
   @IsString()
   @IsNotEmpty()
