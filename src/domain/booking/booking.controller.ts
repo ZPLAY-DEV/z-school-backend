@@ -11,7 +11,7 @@ import { BookingService } from './booking.service';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
-@ApiTags('✅ Booking ( 수강신청 )')
+@ApiTags('✅ Bookings ( 수강신청 )')
 @Controller('bookings')
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}

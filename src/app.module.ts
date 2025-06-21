@@ -33,6 +33,7 @@ import { PayoutModule } from 'src/domain/payout/payout.module';
 import { SamModule } from 'src/domain/sam/sam.module';
 import { SchoolModule } from 'src/domain/school/school.module';
 import { SchooldayModule } from 'src/domain/schoolday/schoolday.module';
+import { ShortlinkModule } from 'src/domain/shortlink/shortlink.module';
 import { StatementModule } from 'src/domain/statement/statement.module';
 import { StudentModule } from 'src/domain/student/student.module';
 import { SubsidyModule } from 'src/domain/subsidy/subsidy.module';
@@ -126,6 +127,7 @@ import { UploadModule } from './services/upload/upload.module';
     SamModule,
     SchooldayModule,
     SchoolModule,
+    ShortlinkModule,
     SlackModule,
     StatementModule,
     StudentModule,

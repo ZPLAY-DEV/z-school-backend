@@ -14,9 +14,9 @@ import { DeleteSamNoteDto } from 'src/domain/sam/dto/delete-sam-note.dto';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { ShortlinkService } from 'src/domain/shortlink/shortlink.service';
 
-@UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('✅ Shortlink ( a newletter short-link )')
+@ApiTags('✅ Shortlinks ( 숏링크 )')
 @Controller('shortlinks')
+@UseInterceptors(ClassSerializerInterceptor)
 export class ShortlinkController {
   constructor(private readonly shortlinkService: ShortlinkService) {}
 

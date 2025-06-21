@@ -31,7 +31,7 @@ import {
   UpdatePickDocs,
 } from 'src/domain/pick/swagger/pick-swagger.decorator';
 
-@ApiTags('✅ Pick ( 확정수강생; pivot )')
+@ApiTags('✅ Picks ( 확정수강생; pivot )')
 @Controller('picks')
 @UseInterceptors(ClassSerializerInterceptor)
 export class PickController {
