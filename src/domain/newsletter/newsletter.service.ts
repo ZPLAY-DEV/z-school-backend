@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -10,8 +11,8 @@ import { AWS_SQS_CLIENT, REDIS_TRACKING_CLIENT } from 'src/common/constants';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { CreateNanoidDto } from 'src/domain/parent/dto/create-nanoid.dto';
-import { Nanoid } from 'src/domain/parent/entities/nanoid.entity';
 import { School } from 'src/domain/school/entities/school.entity';
+import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
@@ -39,17 +40,16 @@ export class NewsletterService {
   //? 학생 대상 발송
   async create(dto: CreateNewsletterDto): Promise<Newsletter> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      // 1. 유효성 검증
-      await this.validateSchool(manager, dto);
-      await this.validateTerm(manager, dto);
+      // 유효성 검증
+      await this.validateConditions(manager, dto);
 
-      // 2. 뉴스레터 생성
+      // 뉴스레터 생성
       const letter = await this.createNewsletter(manager, dto);
 
-      // 3. 대상학생 정보조회
-      const students = await this.getStudents(manager, dto.ids);
+      // 대상학생 정보조회
+      const students = await this.getStudents(manager, dto);
 
-      // 4. Nanoid 벌크 upsert
+      // nanoid 벌크생성
       const dtos = this.buildCreateNanoidDtos(students, letter.id);
       await this.upsertNanoids(manager, dtos);
 
@@ -110,7 +110,7 @@ export class NewsletterService {
         await manager
           .createQueryBuilder()
           .insert()
-          .into(Nanoid)
+          .into(Shortlink)
           .values(batch)
           .orUpdate(
             ['nanoid', 'phone', 'expiresAt'],
@@ -127,10 +127,10 @@ export class NewsletterService {
   //? 학부모 정보 조회
   private async getStudents(
     manager: EntityManager,
-    studentIds: number[],
+    dto: CreateNewsletterDto,
   ): Promise<Student[]> {
     const students = await manager.find(Student, {
-      where: { id: In(studentIds) },
+      where: { id: In(dto.ids) },
       relations: { parent: { user: true } },
     });
 
@@ -142,7 +142,7 @@ export class NewsletterService {
   }
 
   //? 학교 유효성 검증
-  private async validateSchool(
+  private async validateConditions(
     manager: EntityManager,
     dto: CreateNewsletterDto,
   ): Promise<void> {
@@ -153,15 +153,8 @@ export class NewsletterService {
       throw new NotFoundException('School not found');
     }
     if (!school.phone) {
-      throw new NotFoundException('Missing phone info in school');
+      throw new BadRequestException('Missing phone info in school');
     }
-  }
-
-  //? 학교 유효성 검증
-  private async validateTerm(
-    manager: EntityManager,
-    dto: CreateNewsletterDto,
-  ): Promise<void> {
     const term = await manager.findOne(Term, { where: { id: dto.termId } });
     if (!term) {
       throw new NotFoundException('Term not found');

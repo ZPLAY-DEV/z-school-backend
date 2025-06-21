@@ -21,8 +21,8 @@ import {
 import { UserDto } from 'src/domain/auth/dto/user.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
-import { Nanoid } from 'src/domain/parent/entities/nanoid.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
+import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { Token } from 'src/domain/user/entities/token.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { SlackService } from 'src/services/slack/slack.service';
@@ -49,7 +49,7 @@ export class AuthService {
   private readonly parentRepository: Repository<Parent>;
   private readonly managerRepository: Repository<Manager>;
   private readonly tokenRepository: Repository<Token>;
-  private readonly nanoidRepository: Repository<Nanoid>;
+  private readonly shortlinkRepository: Repository<Shortlink>;
 
   constructor(
     private readonly jwtService: JwtService,
@@ -62,7 +62,7 @@ export class AuthService {
     this.parentRepository = this.dataSource.getRepository(Parent);
     this.managerRepository = this.dataSource.getRepository(Manager);
     this.tokenRepository = this.dataSource.getRepository(Token);
-    this.nanoidRepository = this.dataSource.getRepository(Nanoid);
+    this.shortlinkRepository = this.dataSource.getRepository(Shortlink);
   }
 
   /**
@@ -95,16 +95,16 @@ export class AuthService {
   }
 
   async validateUserWithNanoid(id: string): Promise<User> {
-    const nanoid = await this.nanoidRepository.findOneOrFail({
+    const shortlink = await this.shortlinkRepository.findOneOrFail({
       where: { nanoid: id },
       relations: ['parent', 'parent.user'],
     });
 
-    if (!nanoid.parent?.user) {
+    if (!shortlink.parent?.user) {
       throw new UnauthorizedException('User not found');
     }
 
-    return nanoid.parent.user;
+    return shortlink.parent.user;
   }
 
   /**

@@ -30,23 +30,23 @@ export class Offering {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈵 학기ID' })
-  @Column({ type: 'int', unsigned: true })
-  termId: number;
-
-  // ------------------------------------------------------------------------ //
-
   @ApiProperty({ description: '🈵 학교ID (relation용 아님)' })
   @Column({ type: 'int', unsigned: true, nullable: true })
   schoolId: number | null;
 
-  @ApiProperty({ description: '학교명' })
-  @Column({ type: 'varchar', length: 24 })
-  schoolName: string;
+  @ApiProperty({ description: '🈵 학기ID' })
+  @Column({ type: 'int', unsigned: true })
+  termId: number;
 
   @ApiProperty({ description: '🈵 과목ID' })
   @Column({ type: 'int', unsigned: true, nullable: true })
   lessonId: number | null;
+
+  // ------------------------------------------------------------------------ //
+
+  @ApiProperty({ description: '학교명' })
+  @Column({ type: 'varchar', length: 24 })
+  schoolName: string;
 
   @ApiProperty({ description: '과목이름' })
   @Column({ type: 'varchar', length: 24 })

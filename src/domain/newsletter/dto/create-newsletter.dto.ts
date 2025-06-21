@@ -1,40 +1,33 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-    IsArray,
-    IsDate,
-    IsEnum,
-    IsInt,
-    IsNotEmpty,
-    IsOptional,
-    IsString,
-    MaxLength,
+  IsArray,
+  IsDate,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
 } from 'class-validator';
 import {
-    EventStatus,
-    NewsletterTarget,
-    NewsletterType,
-    SendMode,
+  EventStatus,
+  NewsletterTarget,
+  NewsletterType
 } from 'src/common/enums';
 
 export class CreateNewsletterDto {
-  @ApiProperty({
-    description: '🈵 School ID',
-    type: Number,
-    required: true,
-  })
-  @IsNotEmpty()
+  @ApiProperty({ description: '🈵 schoolId', type: Number, example: 1 })
   @IsInt()
   schoolId: number;
 
-  @ApiProperty({
-    description: '🈵 Term ID',
-    type: Number,
-    required: true,
-  })
-  @IsNotEmpty()
+  @ApiProperty({ description: '🈵 termId', type: Number, example: 1 })
   @IsInt()
   termId: number;
+
+  @ApiProperty({ description: '🈵 studentId', type: Number, example: 1 })
+  @IsInt()
+  studentId: number;
 
   @ApiProperty({
     description: '🈵 게시글 제목',
@@ -103,11 +96,6 @@ export class CreateNewsletterDto {
   @IsInt({ each: true })
   ids: number[];
 
-  @ApiProperty({ description: '🈵 전송 방식', enum: SendMode, required: true })
-  @IsNotEmpty()
-  @IsEnum(SendMode)
-  sendMode: SendMode;
-
   @ApiProperty({
     description: '🈳 발송 시간 ( 즉시 발송 시 사용 )',
     example: '2025-06-05T00:30:00Z',
@@ -116,5 +104,5 @@ export class CreateNewsletterDto {
   @IsOptional()
   @IsDate()
   @Type(() => Date)
-  sendAt?: Date | null;
+  scheduledAt?: Date | null;
 }

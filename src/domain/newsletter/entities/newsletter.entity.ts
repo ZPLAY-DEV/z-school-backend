@@ -5,10 +5,10 @@ import {
   EventStatus,
   NewsletterTarget,
   NewsletterType,
-  SendMode,
 } from 'src/common/enums';
-import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { School } from 'src/domain/school/entities/school.entity';
+import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
+import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
@@ -17,9 +17,8 @@ import {
   Entity,
   Index,
   JoinColumn,
-  JoinTable,
-  ManyToMany,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -30,13 +29,17 @@ export class Newsletter {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈵 School ID' })
+  @ApiProperty({ description: '🈵 SchoolId' })
   @Column({ type: 'int', unsigned: true })
   schoolId: number;
 
-  @ApiProperty({ description: '🈵 Term ID' })
+  @ApiProperty({ description: '🈵 TermId' })
   @Column({ type: 'int', unsigned: true })
   termId: number;
+
+  @ApiProperty({ description: '🈵 StudentId' })
+  @Column({ type: 'int', unsigned: true })
+  studentId: number;
 
   // ------------------------------------------------------------------------ //
 
@@ -80,7 +83,7 @@ export class Newsletter {
   targetGroupItems: string[];
 
   @ApiProperty({ description: '🈵 발송 대상 유형' })
-  @Column({ type: 'varchar', length: 64 })
+  @Column({ type: 'varchar', length: 128 })
   targetGroupLabel: string;
 
   @ApiProperty({ description: '🈵 발송 대상자 id' })
@@ -90,21 +93,9 @@ export class Newsletter {
   })
   ids: number[];
 
-  @ApiProperty({ description: '🈵 알림 발송 유형' })
-  @Column({
-    type: 'enum',
-    enum: SendMode,
-    default: SendMode.IMMEDIATE,
-  })
-  sendMode: SendMode;
-
-  @ApiProperty({ description: '🈳 발송 시간 (YYYY-MM-DD HH:mm:ss)' })
+  @ApiProperty({ description: '🈳 발송 예약 시간 (YYYY-MM-DD HH:mm:ss)' })
   @Column({ type: 'datetime', nullable: true, comment: '발송 시간' })
-  sendAt: Date | null;
-
-  @ApiProperty({ description: '🈳 예약 시간 (YYYY-MM-DD HH:mm:ss)' })
-  @Column({ type: 'datetime', nullable: true, comment: '발송 시간' })
-  scheduleAt: Date | null;
+  scheduledAt: Date | null;
 
   // ------------------------------------------------------------------------ //
 
@@ -131,22 +122,16 @@ export class Newsletter {
   @JoinColumn({ name: 'termId' })
   term: Term;
 
-  //* N-to-M manyToMany ---------------------------------------------------- *//
+  @ManyToOne(() => Student, (student: Student) => student.newsletters)
+  @JoinColumn({ name: 'studentId' })
+  student: Student;
 
-  @ManyToMany(() => Parent, (parent) => parent.letters)
-  @JoinTable({
-    // ownership 관계) newsletter 가 대상자를 선택하므로 주인으로 본다.
-    name: 'newsletter_parent',
-    joinColumn: {
-      name: 'newsletterId',
-      referencedColumnName: 'id',
-    },
-    inverseJoinColumn: {
-      name: 'parentId',
-      referencedColumnName: 'id',
-    },
+  //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @OneToMany(() => Shortlink, (shortlink) => shortlink.newsletter, {
+    cascade: ['insert', 'update'],
   })
-  parents: Parent[];
+  shortlinks: Shortlink[];
 
   //? Constructor ---------------------------------------------------------- ?//
   constructor(partial: Partial<Newsletter>) {
