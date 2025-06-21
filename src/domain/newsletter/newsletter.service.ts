@@ -10,13 +10,12 @@ import { nanoid } from 'nanoid';
 import { AWS_SQS_CLIENT, REDIS_TRACKING_CLIENT } from 'src/common/constants';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
-import { CreateNanoidDto } from 'src/domain/parent/dto/create-nanoid.dto';
 import { School } from 'src/domain/school/entities/school.entity';
+import { CreateShortlinkDto } from 'src/domain/shortlink/dto/create-shortlink.dto';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
-import { parseValidityToDate } from 'src/helpers/time';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisTrackingService } from 'src/services/redis/redis-tracking.service';
 import { DataSource, EntityManager, In } from 'typeorm';
@@ -42,104 +41,24 @@ export class NewsletterService {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       // 유효성 검증
       await this.validateConditions(manager, dto);
-
       // 뉴스레터 생성
       const letter = await this.createNewsletter(manager, dto);
-
       // 대상학생 정보조회
       const students = await this.getStudents(manager, dto);
-
       // nanoid 벌크생성
-      const dtos = this.buildCreateNanoidDtos(students, letter.id);
-      await this.upsertNanoids(manager, dtos);
+      const shortlinks = await this.createShortlinks(manager, letter, students);
 
-      // 1. mysql pivot 셋팅
-      // 2. redis 2개 set 설정
-      // 3. if (sendMode === 'IMMEDIATE') { 발송 }
+      console.log(`❇️`, shortlinks);
+      // // events 생성
+      // mysql pivot 셋팅, tracking 용 redis 2개 set 설정
 
       return letter;
     });
   }
 
-  //? ---------------------------------------------------------------------- ?//
-  //? Private Methods
-  //? ---------------------------------------------------------------------- ?//
-
-  //? 발송 정보 생성
-  private async createNewsletter(
-    manager: EntityManager,
-    dto: CreateNewsletterDto,
-  ): Promise<Newsletter> {
-    const letter = manager.create(Newsletter, dto);
-    return await manager.save(letter);
-  }
-
   // ------------------------------------------------------------------------ //
   // private methods
   // ------------------------------------------------------------------------ //
-
-  private buildCreateNanoidDtos(
-    students: Student[],
-    letterId: number,
-  ): CreateNanoidDto[] {
-    const dtos: CreateNanoidDto[] = [];
-
-    for (const student of students) {
-      const dto: CreateNanoidDto = {
-        parentId: student.parent.id,
-        nanoid: nanoid(),
-        page: 'newsletters',
-        args: `id=${letterId}&studentId=${student.id}&parentId=${student.parent.id}`,
-        expiresAt: parseValidityToDate('30d'), // @todo 수강신청 끝나는 시점으로 지정 해야함.
-      };
-
-      dtos.push(dto);
-    }
-
-    return dtos;
-  }
-
-  private async upsertNanoids(
-    manager: EntityManager,
-    dtos: CreateNanoidDto[],
-  ): Promise<void> {
-    const batches = chunk(dtos, 500);
-
-    for (const batch of batches) {
-      try {
-        await manager
-          .createQueryBuilder()
-          .insert()
-          .into(Shortlink)
-          .values(batch)
-          .orUpdate(
-            ['nanoid', 'phone', 'expiresAt'],
-            ['parentId', 'page', 'args'],
-          )
-          .execute();
-      } catch (error) {
-        this.logger.error(`Failed to upsert Nanoids: ${error.message}`);
-        throw new InternalServerErrorException('Failed to upsert Nanoids');
-      }
-    }
-  }
-
-  //? 학부모 정보 조회
-  private async getStudents(
-    manager: EntityManager,
-    dto: CreateNewsletterDto,
-  ): Promise<Student[]> {
-    const students = await manager.find(Student, {
-      where: { id: In(dto.ids) },
-      relations: { parent: { user: true } },
-    });
-
-    if (!students.length) {
-      throw new NotFoundException('No students found for the given IDs');
-    }
-
-    return students;
-  }
 
   //? 학교 유효성 검증
   private async validateConditions(
@@ -159,5 +78,99 @@ export class NewsletterService {
     if (!term) {
       throw new NotFoundException('Term not found');
     }
+  }
+
+  //? 발송 정보 생성
+  private async createNewsletter(
+    manager: EntityManager,
+    dto: CreateNewsletterDto,
+  ): Promise<Newsletter> {
+    const letter = manager.create(Newsletter, dto);
+    return await manager.save(letter);
+  }
+
+  //? 학생 정보 조회
+  private async getStudents(
+    manager: EntityManager,
+    dto: CreateNewsletterDto,
+  ): Promise<Student[]> {
+    const students = await manager.find(Student, {
+      where: { id: In(dto.ids) },
+      relations: { parent: { user: true } },
+    });
+
+    if (!students.length) {
+      throw new NotFoundException('No students found for the given IDs');
+    }
+
+    return students;
+  }
+
+  private async createShortlinks(
+    manager: EntityManager,
+    newsletter: Newsletter,
+    students: Student[],
+  ): Promise<Shortlink[]> {
+    const dtos: CreateShortlinkDto[] = [];
+
+    for (const student of students) {
+      const dto: CreateShortlinkDto = {
+        parentId: student.parent.id,
+        newsletterId: newsletter.id,
+        nanoid: nanoid(),
+        page: 'newsletters',
+        args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
+      };
+      dtos.push(dto);
+    }
+
+    const batches = chunk(dtos, 500);
+
+    for (const batch of batches) {
+      try {
+        await manager
+          .createQueryBuilder()
+          .insert()
+          .into(Shortlink)
+          .values(batch)
+          .orUpdate(
+            ['nanoid', 'page', 'args', 'note'],
+            ['parentId', 'newsletterId'],
+          )
+          .execute();
+      } catch (error) {
+        this.logger.error(`Failed to upsert Shortlinks: ${error.message}`);
+        throw new InternalServerErrorException('Failed to upsert Shortlinks');
+      }
+    }
+
+    // 생성된 shortlinks 조회하여 반환
+    const shortlinks = await manager.find(Shortlink, {
+      where: { newsletterId: newsletter.id },
+      relations: { parent: true },
+    });
+
+    return shortlinks;
+  }
+
+  //? 이벤트 생성
+  private createEvents(shortlinks: Shortlink[], students: Student[]): void {
+    // TODO: 이벤트 생성 로직 구현
+    this.logger.log(`Creating events for ${shortlinks.length} shortlinks`);
+    console.log(`❇️`, shortlinks);
+    console.log(`❇️`, students);
+  }
+
+  //? 트래킹 엔트리 생성
+  private createTrackingEntries(
+    shortlinks: Shortlink[],
+    students: Student[],
+  ): void {
+    // TODO: 트래킹 엔트리 생성 로직 구현
+    this.logger.log(
+      `Creating tracking entries for ${shortlinks.length} shortlinks`,
+    );
+    console.log(`❇️`, shortlinks);
+    console.log(`❇️`, students);
   }
 }

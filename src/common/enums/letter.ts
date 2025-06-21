@@ -1,13 +1,13 @@
 export enum NewsletterType {
-  ENROLLMENT = 'ENROLLMENT',
+  REGISTRATION = 'REGISTRATION',
   NEWS = 'NEWS',
   SURVEY = 'SURVEY',
 }
 
 export enum NewsletterTarget {
-  GRADE = '학년별',
-  LESSON = '강좌별',
-  STUDENT = '학생별',
+  GRADE = 'GRADE',
+  LESSON = 'LESSON',
+  GROUP = 'GROUP',
 }
 
 export enum NewsletterStatus {

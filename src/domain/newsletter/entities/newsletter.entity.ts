@@ -8,7 +8,6 @@ import {
 } from 'src/common/enums';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
-import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
@@ -38,10 +37,6 @@ export class Newsletter {
   @Column({ type: 'int', unsigned: true })
   termId: number;
 
-  @ApiProperty({ description: '🈵 StudentId' })
-  @Column({ type: 'int', unsigned: true })
-  studentId: number;
-
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈵 게시글 제목' })
@@ -58,12 +53,12 @@ export class Newsletter {
   images: string[] | null;
 
   @ApiProperty({
-    description: '🈵 발송 유형 ( enrollment, news, survey )',
+    description: '발송 유형 ( REGISTRATION, NEWS, SURVEY )',
   })
   @Column({
     type: 'enum',
     enum: NewsletterType,
-    comment: ' 발송 유형 ( 수강신청, 공지사항, 설문지 )',
+    comment: '발송 유형 ( 수강신청, 공지사항, 설문지 )',
   })
   type: NewsletterType;
 
@@ -77,21 +72,18 @@ export class Newsletter {
 
   @ApiProperty({ description: '🈵 발송 대상 유형; GRADE, COURSE, STUDENT' })
   @Column({ type: 'enum', enum: NewsletterTarget })
-  targetGroup: NewsletterTarget;
+  target: NewsletterTarget;
 
   @ApiProperty({ description: '🈵 발송 대상 유형' })
   @Column({ type: 'simple-array', comment: '' })
-  targetGroupItems: string[];
+  targetItems: string[];
 
   @ApiProperty({ description: '🈵 발송 대상 유형' })
   @Column({ type: 'varchar', length: 128 })
-  targetGroupLabel: string;
+  targetLabel: string;
 
-  @ApiProperty({ description: '🈵 발송 대상자 id' })
-  @Column({
-    type: 'simple-array',
-    comment: '발송 대상자 유형 ( 학생, 강사 )에 맞는 ids',
-  })
+  @ApiProperty({ description: '🈵 관련 대상학생 ids' })
+  @Column({ type: 'simple-array', comment: '관련 대상학생 Ids' })
   ids: number[];
 
   @ApiProperty({ description: '🈳 발송 예약 시간 (YYYY-MM-DD HH:mm:ss)' })
@@ -122,10 +114,6 @@ export class Newsletter {
   @ManyToOne(() => Term, (term: Term) => term.newsletters)
   @JoinColumn({ name: 'termId' })
   term: Term;
-
-  @ManyToOne(() => Student, (student: Student) => student.newsletters)
-  @JoinColumn({ name: 'studentId' })
-  student: Student;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 

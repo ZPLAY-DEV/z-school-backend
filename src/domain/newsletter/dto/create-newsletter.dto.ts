@@ -13,7 +13,7 @@ import {
 import {
   EventStatus,
   NewsletterTarget,
-  NewsletterType
+  NewsletterType,
 } from 'src/common/enums';
 
 export class CreateNewsletterDto {
@@ -24,10 +24,6 @@ export class CreateNewsletterDto {
   @ApiProperty({ description: '🈵 termId', type: Number, example: 1 })
   @IsInt()
   termId: number;
-
-  @ApiProperty({ description: '🈵 studentId', type: Number, example: 1 })
-  @IsInt()
-  studentId: number;
 
   @ApiProperty({
     description: '🈵 게시글 제목',
@@ -55,6 +51,7 @@ export class CreateNewsletterDto {
     description: '🈵 뉴스레터 종류',
     enum: NewsletterType,
     required: true,
+    example: NewsletterType.REGISTRATION,
   })
   @IsNotEmpty()
   @IsEnum(NewsletterType)
@@ -64,6 +61,7 @@ export class CreateNewsletterDto {
     description: '🈵 뉴스레터 발송상태',
     enum: EventStatus,
     required: true,
+    example: EventStatus.PENDING,
   })
   @IsNotEmpty()
   @IsEnum(EventStatus)
@@ -72,18 +70,18 @@ export class CreateNewsletterDto {
   @ApiProperty({ description: '🈵 뉴스레터 대상', required: true })
   @IsNotEmpty()
   @IsEnum(NewsletterTarget)
-  targetGroup: NewsletterTarget;
+  target: NewsletterTarget;
 
   @ApiProperty({ description: '🈵 뉴스레터 대상 아이템들', required: true })
   @IsNotEmpty()
   @IsArray()
   @Type(() => String)
-  targetGroupItems: string[];
+  targetItems: string[];
 
   @ApiProperty({ description: '🈵 뉴스레터 대상 레이블', required: true })
   @IsNotEmpty()
   @IsString()
-  targetGroupLabel: string;
+  targetLabel: string;
 
   @ApiProperty({
     description: '🈵 발송 대상자 ids',

@@ -1,92 +1,47 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  IsBoolean,
-  IsDefined,
-  IsInt,
-  IsNumber,
-  IsOptional,
-  IsString,
-  MaxLength,
-  ValidateNested,
-} from 'class-validator';
-import { CreateInstructorDto } from 'src/domain/instructor/dto/create-instructor.dto';
+import { IsInt, IsOptional, IsString } from 'class-validator';
 
-export class CreateSamDto {
-  @ApiProperty({
-    description: '🈳 InstructorId',
-    type: Number,
-    example: 1,
-  })
+export class CreateShortlinkDto {
+  @ApiProperty({ description: '🈳 parentId', example: 1 })
   @IsInt()
-  instructorId: number;
+  parentId: number;
 
-  @ApiProperty({
-    description: '🈵 School ID (number)',
-    type: Number,
-    example: 1,
-  })
+  @ApiProperty({ description: '🈳 newsletterId', example: 1 })
   @IsInt()
-  schoolId: number;
+  newsletterId: number;
 
   @ApiProperty({
-    description: '🈵 강사 학교별 별칭',
-    example: '퉁퉁쌤 --- 학교에서 추가시킬 강사의 별칭(이름)',
+    description: '🈵 21자리 나노아이디 값',
+    example: '1234567890',
     type: String,
-    required: true,
   })
   @IsString()
-  @MaxLength(16)
-  alias: string;
+  nanoid: string;
 
   @ApiProperty({
-    description: '🈳 강사 평가점수',
-    example: 80,
-    type: Number,
-    required: false,
+    description: '🈵 routing 정보',
+    example: 'newsletters',
+    type: String,
   })
-  @IsNumber()
-  @IsOptional()
-  score?: number;
+  @IsString()
+  page: string;
 
   @ApiProperty({
-    description: '🈳 교재/재료비 수정 권한 여부',
-    example: 'true --- 학교에서 부여할 교재/재료비 수정 권한 여부',
-    type: Boolean,
+    description: '🈵 부가 정보',
+    example: 'id=1&studentId=1&parentId=1',
+    type: String,
     required: false,
   })
-  @IsBoolean()
+  @IsString()
   @IsOptional()
-  editFeePermission?: boolean;
-
-  @ApiProperty({
-    description: '🈳 수강 추가/취소 권한 여부',
-    example: 'true --- 학교에서 부여할 수강 추가/취소 권한 여부',
-    type: Boolean,
-    required: false,
-  })
-  @IsBoolean()
-  @IsOptional()
-  editEnrollmentPermission?: boolean;
+  args?: string;
 
   @ApiProperty({
     description: '🈳 내용',
-    example: '특이사항 없음 --- 학교에서 부여할 비고',
     type: String,
     required: false,
   })
   @IsString()
-  @MaxLength(255)
   @IsOptional()
-  note?: string | null;
-
-  @ApiProperty({
-    description: '🈵 강사 정보',
-    type: CreateInstructorDto,
-    required: true,
-  })
-  @ValidateNested()
-  @IsDefined()
-  @Type(() => CreateInstructorDto)
-  instructor: CreateInstructorDto;
+  note?: string;
 }

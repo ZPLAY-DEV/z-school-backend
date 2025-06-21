@@ -10,10 +10,12 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('shortlinks')
+@Unique(['parentId', 'newsletterId'])
 export class Shortlink {
   @ApiProperty({ description: 'shortlinkId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
@@ -40,11 +42,11 @@ export class Shortlink {
   nanoid: string;
 
   @ApiProperty({ description: '🈵 routing 정보' })
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', length: 32, nullable: true })
   page: string;
 
   @ApiProperty({ description: '🈵 routing 부가 args 정보' })
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   args: string;
 
   @ApiProperty({ description: '🈳 비고', example: '비고' })
