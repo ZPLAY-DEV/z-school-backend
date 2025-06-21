@@ -17,12 +17,15 @@ import {
 @Entity('sam_lesson')
 @Unique(['samId', 'lessonId'])
 export class SamLesson {
+  @ApiProperty({ description: 'samLessonId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
+  @ApiProperty({ description: 'samId', example: 1 })
   @Column({ type: 'int', unsigned: true })
   samId: number;
 
+  @ApiProperty({ description: 'lessonId', example: 1 })
   @Column({ type: 'int', unsigned: true })
   lessonId: number;
 

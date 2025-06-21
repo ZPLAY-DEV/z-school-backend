@@ -14,6 +14,7 @@ import {
 
 @Entity('comments')
 export class Comment {
+  @ApiProperty({ description: 'commentId' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

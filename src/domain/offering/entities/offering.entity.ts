@@ -5,6 +5,7 @@ import { ITimeRange } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   AfterLoad,
@@ -26,11 +27,11 @@ import {
 @Entity('offerings')
 @Unique(['schoolId', 'termId', 'lessonId', 'groupName'])
 export class Offering {
-  @ApiProperty({ description: '🈵 ID', example: 1 })
+  @ApiProperty({ description: 'offeringId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈵 학교ID (relation용 아님)' })
+  @ApiProperty({ description: '🈵 학교ID' })
   @Column({ type: 'int', unsigned: true, nullable: true })
   schoolId: number | null;
 
@@ -150,6 +151,10 @@ export class Offering {
   deletedAt: Date | null;
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
+
+  @ManyToOne(() => School, (school) => school.offerings)
+  @JoinColumn({ name: 'schoolId' })
+  school: School;
 
   @ManyToOne(() => Term, (term) => term.offerings)
   @JoinColumn({ name: 'termId' })

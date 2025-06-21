@@ -26,6 +26,7 @@ import {
 @Entity('newsletters')
 @Index(['schoolId', 'termId'])
 export class Newsletter {
+  @ApiProperty({ description: 'newsletterId' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

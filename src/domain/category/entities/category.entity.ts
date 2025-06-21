@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 @Entity('categories')
 export class Category {
+  @ApiProperty({ description: 'categoryId' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

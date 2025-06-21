@@ -18,7 +18,7 @@ import {
 
 @Entity('instructors')
 export class Instructor {
-  @ApiProperty({ description: 'instructor`s id' })
+  @ApiProperty({ description: 'instructorId' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

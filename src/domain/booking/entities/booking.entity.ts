@@ -18,6 +18,7 @@ import {
 @Entity('bookings')
 @Unique(['offeringId', 'studentId'])
 export class Booking {
+  @ApiProperty({ description: 'bookingId' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

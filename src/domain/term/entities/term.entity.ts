@@ -22,6 +22,7 @@ import {
 @Entity('terms')
 @Unique(['schoolId', 'schoolYear', 'termName'])
 export class Term {
+  @ApiProperty({ description: 'termId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

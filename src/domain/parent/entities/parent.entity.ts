@@ -17,7 +17,7 @@ import {
 
 @Entity('parents')
 export class Parent {
-  @ApiProperty({ description: 'parent`s id' })
+  @ApiProperty({ description: 'parentId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 

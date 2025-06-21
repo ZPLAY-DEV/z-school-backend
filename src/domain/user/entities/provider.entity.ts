@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
   Column,
@@ -11,15 +12,19 @@ import {
 @Entity('providers')
 @Unique(['providerName', 'providerId'])
 export class Provider {
+  @ApiProperty({ description: 'providerId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
+  @ApiProperty({ description: 'userId', example: 1 })
   @Column({ type: 'int', unsigned: true })
   userId: number; // to make it available to Repository.
 
+  @ApiProperty({ description: 'providerName', example: 'google' })
   @Column({ type: 'varchar', length: 16, nullable: true })
   providerName: string | null;
 
+  @ApiProperty({ description: 'providerId', example: '1234567890' })
   @Column({ type: 'varchar', length: 128, nullable: true })
   providerId: string | null;
 

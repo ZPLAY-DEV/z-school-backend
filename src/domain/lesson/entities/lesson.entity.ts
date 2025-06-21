@@ -24,15 +24,15 @@ import {
 @Entity('lessons')
 @Unique(['termId', 'schoolId', 'lessonName'])
 export class Lesson {
-  @ApiProperty({ description: '🈵 ID', example: 1 })
+  @ApiProperty({ description: '🈵 lessonId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈵 학기ID', example: 1 })
+  @ApiProperty({ description: '🈵 termId', example: 1 })
   @Column({ type: 'int', unsigned: true })
   termId: number;
 
-  @ApiProperty({ description: '🈵 분류ID', example: 1 })
+  @ApiProperty({ description: '🈵 categoryId', example: 1 })
   @Column({ type: 'int', unsigned: true })
   categoryId: number;
 

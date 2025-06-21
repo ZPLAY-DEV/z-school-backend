@@ -6,6 +6,7 @@ import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Statement } from 'src/domain/statement/entities/statement.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -22,6 +23,7 @@ import {
 
 @Entity('schools')
 export class School {
+  @ApiProperty({ description: 'schoolId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
@@ -135,15 +137,15 @@ export class School {
   })
   public terms: Term[];
 
+  @OneToMany(() => Offering, (offering) => offering.school, {
+    cascade: ['insert', 'update'],
+  })
+  public offerings: Offering[];
+
   @OneToMany(() => Newsletter, (newsletter) => newsletter.school, {
     cascade: ['insert', 'update'],
   })
   public newsletters: Newsletter[];
-
-  @OneToMany(() => Statement, (statement) => statement.school, {
-    cascade: ['insert', 'update'],
-  })
-  public statements: Statement[];
 
   @OneToMany(() => Student, (student) => student.school, {
     cascade: ['insert', 'update'],
@@ -155,16 +157,21 @@ export class School {
   })
   public managers: Manager[];
 
+  @OneToMany(() => Sam, (sam) => sam.school, {
+    cascade: ['insert', 'update'],
+  })
+  public sams: Sam[];
+
   @OneToMany(() => Calendar, (calendar) => calendar.school)
   public calendars: Calendar[];
 
   @OneToMany(() => Board, (board) => board.school)
   public boards: Board[];
 
-  @OneToMany(() => Sam, (sam) => sam.school, {
+  @OneToMany(() => Statement, (statement) => statement.school, {
     cascade: ['insert', 'update'],
   })
-  public sams: Sam[];
+  public statements: Statement[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

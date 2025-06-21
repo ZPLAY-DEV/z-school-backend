@@ -10,12 +10,12 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('shortlinks')
 export class Shortlink {
-  @ApiProperty({ description: 'Shortlink' })
+  @ApiProperty({ description: 'shortlinkId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

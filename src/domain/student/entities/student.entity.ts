@@ -24,7 +24,7 @@ import {
 @Entity('students')
 @Unique(['schoolId', 'grade', 'class', 'studentCode'])
 export class Student {
-  @ApiProperty({ description: 'student`s id' })
+  @ApiProperty({ description: 'studentId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 

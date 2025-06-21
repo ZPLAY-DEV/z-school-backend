@@ -23,6 +23,7 @@ import {
 @Entity('groups')
 @Unique(['lessonId', 'groupName'])
 export class Group {
+  @ApiProperty({ description: 'groupId' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

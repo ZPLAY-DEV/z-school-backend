@@ -14,6 +14,7 @@ import {
 
 @Entity('ledgers')
 export class Ledger {
+  @ApiProperty({ description: 'ledgerId' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

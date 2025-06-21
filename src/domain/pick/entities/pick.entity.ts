@@ -19,6 +19,7 @@ import {
 @Entity('picks')
 @Unique(['studentId', 'groupId', 'offeringId'])
 export class Pick {
+  @ApiProperty({ description: 'pickId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 

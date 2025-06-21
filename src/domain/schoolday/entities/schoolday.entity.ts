@@ -33,6 +33,7 @@ import {
   'endsAt',
 ])
 export class Schoolday {
+  @ApiProperty({ description: 'schooldayId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
