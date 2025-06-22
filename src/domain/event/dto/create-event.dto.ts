@@ -11,13 +11,22 @@ import { EventStatus } from 'src/common/enums';
 
 export class CreateEventDto {
   @ApiProperty({
-    description: '이벤트 상태 (partition key)',
-    enum: EventStatus,
-    example: EventStatus.PENDING,
+    description: '학교 ID',
+    type: Number,
+    example: 1,
   })
-  @IsEnum(EventStatus)
+  @IsNumber()
   @IsNotEmpty()
-  status: EventStatus;
+  schoolId: number;
+
+  @ApiProperty({
+    description: '뉴스레터 ID',
+    type: Number,
+    example: 1,
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  newsletterId: number;
 
   @ApiProperty({
     description: '날짜 키 (sort key)',
@@ -25,7 +34,16 @@ export class CreateEventDto {
   })
   @IsString()
   @IsNotEmpty()
-  dateKey: string;
+  timestamp: string;
+
+  @ApiProperty({
+    description: '이벤트 상태',
+    enum: EventStatus,
+    example: EventStatus.PENDING,
+  })
+  @IsEnum(EventStatus)
+  @IsOptional()
+  status?: EventStatus;
 
   @ApiProperty({
     description: '이벤트 타입',

@@ -9,7 +9,7 @@ export * from './document-type';
 export * from './event-status';
 export * from './gender';
 export * from './ledger-type';
-export * from './newsletter';
+export * from './newsletter-type';
 export * from './permission';
 export * from './pick-rule';
 export * from './platform-type';

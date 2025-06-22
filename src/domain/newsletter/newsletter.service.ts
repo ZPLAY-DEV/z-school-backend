@@ -20,6 +20,7 @@ import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
+import { translateNewsletterType } from 'src/helpers/translate';
 import { RedisTrackingService } from 'src/services/redis/redis-tracking.service';
 import { DataSource, EntityManager, In } from 'typeorm';
 
@@ -136,7 +137,7 @@ export class NewsletterService {
 
     const batches = chunk(dtos, 500);
 
-    // parentId 와 newsletterId 가 중복되는 경우, 이전 데이터를 덮어쓴다.
+    // a compound unique key constraint with parentId and newsletterId
     for (const batch of batches) {
       try {
         await manager
@@ -164,7 +165,7 @@ export class NewsletterService {
     return shortlinks;
   }
 
-  //? 이벤트 생성
+  //? 이벤트 생성 (보내는 날짜 기준 30일 동안만 보관)
   private async createEvent(
     newsletter: Newsletter,
     shortlinks: Shortlink[],
@@ -172,16 +173,20 @@ export class NewsletterService {
   ): Promise<void> {
     const now = new Date();
     const scheduledTime = newsletter.scheduledAt || now;
-    const ttl = Math.floor(scheduledTime.getTime() / 1000) + 60 * 60 * 24 * 7; // 7일 TTL
+    const ttl = Math.floor(scheduledTime.getTime() / 1000) + 60 * 60 * 24 * 30; // 30일 TTL
 
-    const eventItem = {
-      status: EventStatus.PENDING,
+    const event = {
+      eventKey: `SCHOOL#${newsletter.schoolId}#NEWSLETTER#${newsletter.id}`,
       timestamp: scheduledTime.toISOString(),
       type: 'NEWSLETTER',
+      newsletterId: newsletter.id,
+      schoolId: newsletter.schoolId,
+      status: EventStatus.PENDING,
       payload: {
-        newsletterId: newsletter.id,
+        type: newsletter.type as string,
         schoolId: newsletter.schoolId,
-        items: students.map((student) => {
+        role: 'PARENT',
+        messages: students.map((student) => {
           const shortlink = shortlinks.find(
             (shortlink) => shortlink.parentId === student.parent.id,
           );
@@ -191,7 +196,7 @@ export class NewsletterService {
             id: student.parent.id,
             phone: student.parent.phone,
             token: student.parent?.user?.pushToken,
-            title: newsletter.title,
+            title: translateNewsletterType(newsletter.type),
             body: isFcm
               ? `${newsletter.title}`
               : `${newsletter.title} ${url}/${shortlink?.nanoid}`,
@@ -200,13 +205,10 @@ export class NewsletterService {
             args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
           };
         }),
-        length: students.length,
       },
       expires: ttl,
     };
-
-    // DynamoDB에 이벤트 생성
-    await this.model.create(eventItem);
+    await this.model.create(event);
 
     this.logger.log(
       `✅ Created event for newsletter ${newsletter.id} with ${students.length} recipients`,
@@ -218,7 +220,6 @@ export class NewsletterService {
     shortlinks: Shortlink[],
     students: Student[],
   ): void {
-    // TODO: 트래킹 엔트리 생성 로직 구현
     this.logger.log(
       `Creating tracking entries for ${shortlinks.length} shortlinks`,
     );

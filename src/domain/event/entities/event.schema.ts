@@ -3,10 +3,9 @@ import { EventStatus } from 'src/common/enums';
 
 export const EventSchema = new Schema(
   {
-    status: {
+    eventKey: {
       type: String,
       hashKey: true,
-      enum: Object.values(EventStatus),
       required: true,
     },
     timestamp: {
@@ -17,6 +16,20 @@ export const EventSchema = new Schema(
     type: {
       type: String,
       required: true,
+    },
+    newsletterId: {
+      type: Number,
+      required: true,
+    },
+    schoolId: {
+      type: Number,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: Object.values(EventStatus),
+      required: true,
+      default: EventStatus.PENDING,
     },
     payload: {
       type: Object,

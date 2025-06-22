@@ -7,6 +7,7 @@ import { IAwsConfig, IRdbConfig } from 'src/common/interfaces';
 @Injectable()
 export class OrmConfig implements TypeOrmOptionsFactory {
   constructor(private readonly configService: ConfigService) {}
+
   async createTypeOrmOptions(): Promise<TypeOrmModuleOptions> {
     // const nodeEnv = this.configService.getOrThrow<string>('nodeEnv');
     const isProduction = process.env.NODE_ENV === 'production';
@@ -16,7 +17,7 @@ export class OrmConfig implements TypeOrmOptionsFactory {
     //   throw new Error('AWS configuration is required in ECS environment');
     // }
     if (isProduction && !awsConfig) {
-      throw new Error('AWS configuration is required in ECS environment');
+      throw new Error('AWS configuration is not defined.');
     }
 
     const databaseConfig = isProduction
