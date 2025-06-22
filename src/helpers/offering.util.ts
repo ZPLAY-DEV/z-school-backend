@@ -10,6 +10,7 @@ import {
 
 export function makeOfferingsFromLessons(
   termId: number,
+  defaultRule: PickRule,
   schoolId: number,
   lessons: Lesson[],
 ): Offering[] {
@@ -37,7 +38,8 @@ export function makeOfferingsFromLessons(
         continue;
       }
 
-      const pickRule = group.capacity === 0 ? PickRule.ANYONE : PickRule.FIRST;
+      const pickRule: PickRule =
+        group.capacity === 0 ? PickRule.ANYONE : defaultRule;
 
       const offering = new Offering({
         termId,

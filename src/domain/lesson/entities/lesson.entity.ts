@@ -7,6 +7,7 @@ import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
 import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { SamLesson } from 'src/domain/sam/entities/sam-lesson.entity';
+import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
@@ -22,11 +23,15 @@ import {
 } from 'typeorm';
 
 @Entity('lessons')
-@Unique(['termId', 'schoolId', 'lessonName'])
+@Unique(['schoolId', 'termId', 'lessonName'])
 export class Lesson {
   @ApiProperty({ description: '🈵 lessonId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
+
+  @ApiProperty({ description: '🈵 schoolId', example: 1 })
+  @Column({ type: 'int', unsigned: true })
+  schoolId: number; // 관리자 편의를 위한 Column.
 
   @ApiProperty({ description: '🈵 termId', example: 1 })
   @Column({ type: 'int', unsigned: true })
@@ -37,10 +42,6 @@ export class Lesson {
   categoryId: number;
 
   // ------------------------------------------------------------------------ //
-
-  @ApiProperty({ description: '🈵 학교ID (relation용 아님)', example: 1 })
-  @Column({ type: 'int', unsigned: true })
-  schoolId: number; // 관리자 편의를 위한 Column.
 
   @ApiProperty({
     description: '🈳 학교명',
@@ -154,6 +155,12 @@ export class Lesson {
   deletedAt: Date | null;
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
+
+  @ManyToOne(() => School, (school) => school.lessons, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'schoolId' })
+  school: School;
 
   @ManyToOne(() => Term, (term) => term.lessons, {
     onDelete: 'CASCADE',

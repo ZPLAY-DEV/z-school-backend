@@ -281,10 +281,6 @@ export class NewsletterService {
       expires: ttl,
     };
     await this.model.create(event);
-
-    this.logger.log(
-      `✅ Created event for newsletter ${newsletter.id} with ${students.length} recipients`,
-    );
   }
 
   //? 트래킹 엔트리 생성 (읽지 않은 상태로 초기화)

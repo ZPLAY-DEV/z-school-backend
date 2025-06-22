@@ -37,7 +37,16 @@ export class SchoolTermOfferingService {
       .orderBy('lesson.id', 'ASC')
       .getMany();
 
-    const offerings = makeOfferingsFromLessons(termId, schoolId, lessons);
+    const term = await this.termRepository.findOneOrFail({
+      where: { id: termId },
+    });
+
+    const offerings = makeOfferingsFromLessons(
+      termId,
+      term.pickRule,
+      schoolId,
+      lessons,
+    );
 
     // 기존 offerings 조회 (unique constraint 기준)
     const existingOfferings = await this.offeringRepository.find({

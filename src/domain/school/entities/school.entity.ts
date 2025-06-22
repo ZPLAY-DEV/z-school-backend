@@ -4,6 +4,7 @@ import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
 import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
+import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -137,6 +138,11 @@ export class School {
   })
   public terms: Term[];
 
+  @OneToMany(() => Lesson, (lesson) => lesson.school, {
+    cascade: ['insert', 'update'],
+  })
+  public lessons: Lesson[];
+
   @OneToMany(() => Offering, (offering) => offering.school, {
     cascade: ['insert', 'update'],
   })
@@ -165,13 +171,13 @@ export class School {
   @OneToMany(() => Calendar, (calendar) => calendar.school)
   public calendars: Calendar[];
 
-  @OneToMany(() => Board, (board) => board.school)
-  public boards: Board[];
-
   @OneToMany(() => Statement, (statement) => statement.school, {
     cascade: ['insert', 'update'],
   })
   public statements: Statement[];
+
+  @OneToMany(() => Board, (board) => board.school)
+  public boards: Board[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

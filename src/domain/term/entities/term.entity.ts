@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { IsArray } from 'class-validator';
-import { LimitedPickRule, PickRule } from 'src/common/enums';
+import { PickRule, TermType } from 'src/common/enums';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -75,30 +75,25 @@ export class Term {
   allowTimeOverlap: boolean;
 
   @ApiProperty({
-    description: '🈳 1차 default 선택방식. 학교에서 선호하는 기본 선택방법',
+    description: '🈳 학생확정방식',
     default: PickRule.RANDOM,
   })
   @Column({
     type: 'enum',
     enum: PickRule,
     default: PickRule.RANDOM,
-    comment: '1차 default 선택방식. 학교에서 선호하는 기본 선택방법',
+    comment: '학생확정방식',
   })
-  basicPickRule: PickRule;
+  pickRule: PickRule;
 
-  @ApiProperty({
-    description:
-      '🈳 2차 extra 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
-    default: LimitedPickRule.RANDOM,
-  })
+  @ApiProperty({ description: '🈳 현재 학기', default: false })
   @Column({
     type: 'enum',
-    enum: LimitedPickRule,
-    default: LimitedPickRule.RANDOM,
-    comment:
-      '2차 extra 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
+    enum: TermType,
+    default: TermType.REGULAR,
+    comment: '현재 학기 여부 (현재 학기만 자동으로 출석부가 생성된다.)',
   })
-  extraPickRule: LimitedPickRule;
+  type: TermType;
 
   @ApiProperty({ description: '🈳 수강신청 준비 상태', default: false })
   @Column({

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PickRule } from 'src/common/enums';
+import { PickRule, TermType } from 'src/common/enums';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import {
@@ -25,7 +25,7 @@ export class OfferingSubscriber implements EntitySubscriberInterface<Offering> {
     const offering = event.entity as Offering;
     // const prev = event.databaseEntity;
 
-    if (offering.pickRule !== PickRule.FORMER) return;
+    if (offering.pickRule !== PickRule.ANYONE) return;
 
     try {
       const termId = await this.findImmediatelyPreviousTermId(
@@ -95,6 +95,7 @@ export class OfferingSubscriber implements EntitySubscriberInterface<Offering> {
     // Sort terms by start date in descending order
     const sortedTerms = [...term.school.terms]
       .filter((t) => t.id !== term.id) // Exclude current term
+      .filter((t) => t.type === TermType.SPECIAL) // Exclude current term
       .sort((a, b) => {
         const aStartDate = new Date(a.start);
         const bStartDate = new Date(b.start);
