@@ -6,6 +6,7 @@ import {
   NewsletterTarget,
   NewsletterType,
 } from 'src/common/enums';
+import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -16,6 +17,8 @@ import {
   Entity,
   Index,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -121,6 +124,16 @@ export class Newsletter {
     cascade: ['insert', 'update'],
   })
   shortlinks: Shortlink[];
+
+  //* M-to-M --------------------------------------------------------------- *//
+
+  @ManyToMany(() => Parent, (parent) => parent.unreadNewsletters)
+  @JoinTable({
+    name: 'newsletter_parent_unread',
+    joinColumn: { name: 'newsletterId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'parentId', referencedColumnName: 'id' },
+  })
+  unreadParents: Parent[];
 
   //? Constructor ---------------------------------------------------------- ?//
   constructor(partial: Partial<Newsletter>) {

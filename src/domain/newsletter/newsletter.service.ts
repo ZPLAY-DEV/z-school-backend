@@ -14,6 +14,7 @@ import { EventStatus } from 'src/common/enums';
 import { IEvent, IEventKey } from 'src/domain/event/entities/event.interface';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { CreateShortlinkDto } from 'src/domain/shortlink/dto/create-shortlink.dto';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
@@ -46,24 +47,94 @@ export class NewsletterService {
       await this.validateConditions(manager, dto);
       // 뉴스레터 생성
       const letter = await this.createNewsletter(manager, dto);
-      // 대상학생 조회 (dedups parentId)
+      // deduped 학생정보 리턴
       const students = await this.getStudents(manager, dto);
-      // nanoid 벌크생성
+      // 숏링크 생성
       const shortlinks = await this.createShortlinks(manager, letter, students);
-      // dynamodb events 생성
+      // dynamodb 이벤트 생성 (보내는 날짜 기준 30일 동안만 보관)
       await this.createEvent(letter, shortlinks, students);
-
-      // tracking 용 mysql pivot 셋팅, redis 2개 set 설정
+      // 트래킹 엔트리 생성 (읽지 않은 상태로 초기화)
+      await this.createTrackingEntries(manager, letter, students);
 
       return letter;
     });
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? 읽음 처리 (ManyToMany 관계에서 제거)
+  //? ---------------------------------------------------------------------- ?//
+
+  async markAsRead(newsletterId: number, parentId: number): Promise<void> {
+    const newsletter = await this.dataSource.getRepository(Newsletter).findOne({
+      where: { id: newsletterId },
+      relations: { unreadParents: true },
+    });
+
+    if (!newsletter) {
+      throw new NotFoundException('Newsletter not found');
+    }
+
+    const parentIndex = newsletter.unreadParents.findIndex(
+      (parent) => parent.id === parentId,
+    );
+
+    if (parentIndex === -1) {
+      throw new NotFoundException(
+        'Parent not found in unread list or already read',
+      );
+    }
+
+    // unreadParents에서 해당 parent 제거
+    newsletter.unreadParents.splice(parentIndex, 1);
+    await this.dataSource.getRepository(Newsletter).save(newsletter);
+
+    this.logger.log(
+      `✅ Marked newsletter ${newsletterId} as read by parent ${parentId}`,
+    );
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? 읽지 않은 부모 목록 조회
+  //? ---------------------------------------------------------------------- ?//
+
+  async getUnreadParents(newsletterId: number): Promise<Parent[]> {
+    const newsletter = await this.dataSource.getRepository(Newsletter).findOne({
+      where: { id: newsletterId },
+      relations: { unreadParents: true },
+    });
+
+    if (!newsletter) {
+      throw new NotFoundException('Newsletter not found');
+    }
+
+    return newsletter.unreadParents;
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? 읽음 상태 확인
+  //? ---------------------------------------------------------------------- ?//
+
+  async isReadByParent(
+    newsletterId: number,
+    parentId: number,
+  ): Promise<boolean> {
+    const newsletter = await this.dataSource.getRepository(Newsletter).findOne({
+      where: { id: newsletterId },
+      relations: { unreadParents: true },
+    });
+
+    if (!newsletter) {
+      throw new NotFoundException('Newsletter not found');
+    }
+
+    return !newsletter.unreadParents.some((parent) => parent.id === parentId);
   }
 
   // ------------------------------------------------------------------------ //
   // private methods
   // ------------------------------------------------------------------------ //
 
-  //? 학교 유효성 검증
+  //? 유효성 검증
   private async validateConditions(
     manager: EntityManager,
     dto: CreateNewsletterDto,
@@ -83,7 +154,7 @@ export class NewsletterService {
     }
   }
 
-  //? 발송 정보 생성
+  //? 뉴스레터 생성
   private async createNewsletter(
     manager: EntityManager,
     dto: CreateNewsletterDto,
@@ -92,7 +163,7 @@ export class NewsletterService {
     return await manager.save(letter);
   }
 
-  //? 학생 정보 조회
+  //? deduped 학생정보 리턴
   private async getStudents(
     manager: EntityManager,
     dto: CreateNewsletterDto,
@@ -117,6 +188,7 @@ export class NewsletterService {
     return Array.from(parentIdMap.values());
   }
 
+  //? 숏링크 생성
   private async createShortlinks(
     manager: EntityManager,
     newsletter: Newsletter,
@@ -165,7 +237,7 @@ export class NewsletterService {
     return shortlinks;
   }
 
-  //? 이벤트 생성 (보내는 날짜 기준 30일 동안만 보관)
+  //? dynamodb 이벤트 생성 (보내는 날짜 기준 30일 동안만 보관)
   private async createEvent(
     newsletter: Newsletter,
     shortlinks: Shortlink[],
@@ -215,15 +287,17 @@ export class NewsletterService {
     );
   }
 
-  //? 트래킹 엔트리 생성
-  private createTrackingEntries(
-    shortlinks: Shortlink[],
+  //? 트래킹 엔트리 생성 (읽지 않은 상태로 초기화)
+  private async createTrackingEntries(
+    manager: EntityManager,
+    newsletter: Newsletter,
     students: Student[],
-  ): void {
-    this.logger.log(
-      `Creating tracking entries for ${shortlinks.length} shortlinks`,
-    );
-    console.log(`❇️`, shortlinks);
-    console.log(`❇️`, students);
+  ): Promise<void> {
+    // 중복 제거된 parent들 추출
+    const parents = students.map((student) => student.parent);
+
+    // newsletter의 unreadParents에 추가
+    newsletter.unreadParents = parents;
+    await manager.save(newsletter);
   }
 }

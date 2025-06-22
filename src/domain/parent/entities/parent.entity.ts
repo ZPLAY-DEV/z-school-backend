@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
@@ -9,6 +10,7 @@ import {
   DeleteDateColumn,
   Entity,
   JoinColumn,
+  ManyToMany,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -82,6 +84,11 @@ export class Parent {
     cascade: ['insert', 'update'],
   })
   shortlinks: Shortlink[];
+
+  //* M-to-M --------------------------------------------------------------- *//
+
+  @ManyToMany(() => Newsletter, (newsletter) => newsletter.unreadParents)
+  unreadNewsletters: Newsletter[];
 
   //? Constructor ---------------------------------------------------------- ?//
 
