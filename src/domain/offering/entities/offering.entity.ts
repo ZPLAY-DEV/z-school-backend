@@ -61,6 +61,10 @@ export class Offering {
   @Column({ type: 'int', unsigned: true, default: 20 })
   capacity: number;
 
+  @ApiProperty({ description: '🈳 prepicked size' })
+  @Column({ type: 'tinyint', unsigned: true, default: 0 })
+  prepicked: number;
+
   @ApiProperty({
     description: '수강가능한 학년들 (배열)',
     type: 'array',
@@ -111,7 +115,7 @@ export class Offering {
     isArray: true,
   })
   @Column('simple-array')
-  formerStudentIds: number[];
+  prepickedStudentIds: number[];
 
   @ApiProperty({
     description:
@@ -185,7 +189,7 @@ export class Offering {
     if (this.allowedGrades) this.allowedGrades = this.allowedGrades.map(Number);
     if (this.bitmasks) this.bitmasks = this.bitmasks.map(Number);
     if (this.groupIds) this.groupIds = this.groupIds.map(Number);
-    if (this.formerStudentIds)
-      this.formerStudentIds = this.formerStudentIds.map(Number);
+    if (this.prepickedStudentIds)
+      this.prepickedStudentIds = this.prepickedStudentIds.map(Number);
   }
 }

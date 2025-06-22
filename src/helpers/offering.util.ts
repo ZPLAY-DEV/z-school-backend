@@ -54,7 +54,7 @@ export function makeOfferingsFromLessons(
         times: [timeRange],
         bitmasks: [],
         groupIds: [group.id],
-        formerStudentIds: [],
+        prepickedStudentIds: [],
       });
 
       offerings.push(offering);

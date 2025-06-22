@@ -1,10 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  BookingStatus,
-  ClassStatus,
-  PickRule
-} from 'src/common/enums';
+import { BookingStatus, ClassStatus, PickRule } from 'src/common/enums';
 import { IPickKeys } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
@@ -31,7 +27,7 @@ export class OfferingPickService {
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? CREATE
+  //? CREATE (pick 확정짓기)
   //? ---------------------------------------------------------------------- ?//
 
   async create(offeringId: number): Promise<ResponsePickDto> {

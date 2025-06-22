@@ -17,23 +17,31 @@ import {
 } from 'typeorm';
 
 @Entity('picks')
-@Unique(['offeringId', 'studentId', 'groupId'])
+@Unique(['groupId', 'offeringId', 'studentId'])
 export class Pick {
   @ApiProperty({ description: 'pickId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 
-  @ApiProperty({ description: 'offeringId', example: 1 })
+  // 어떤 반에
+  @ApiProperty({ description: 'groupId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
-  offeringId: number;
+  groupId: number;
 
+  // 어떤 학생이 선택되었는지를 저장
   @ApiProperty({ description: 'studentId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   studentId: number;
 
-  @ApiProperty({ description: 'groupId', example: 1 })
+  // 관리때문에 추가)
+  @ApiProperty({ description: 'offeringId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
-  groupId: number;
+  offeringId: number;
+
+  // 관리때문에 추가) 재수강생 고를때 필요함
+  @ApiProperty({ description: 'lessonId', example: 1 })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  lessonId: number;
 
   // ------------------------------------------------------------------------ //
 

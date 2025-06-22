@@ -1,19 +1,20 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { TermType } from 'src/common/enums';
 import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
-import { EntityNotFoundError, Repository } from 'typeorm';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { Student } from 'src/domain/student/entities/student.entity';
+import { In, Repository } from 'typeorm';
 
 @Injectable()
 export class OfferingService {
   constructor(
     @InjectRepository(Offering)
     private readonly offeringRepository: Repository<Offering>,
+    @InjectRepository(Pick)
+    private readonly pickRepository: Repository<Pick>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -45,6 +46,24 @@ export class OfferingService {
     }
   }
 
+  async findFormerStudents(offeringId: number): Promise<Student[]> {
+    try {
+      const { termId, lessonName } =
+        await this.findLessonNameAndPreviousTermId(offeringId);
+      const offerings = await this.offeringRepository.find({
+        where: { termId, lessonName },
+      });
+      const picks = await this.pickRepository.find({
+        where: { offeringId: In(offerings.map((offering) => offering.id)) },
+        relations: ['student'],
+      });
+      return picks.map((pick) => pick.student);
+    } catch (error) {
+      console.error(error);
+      throw new NotFoundException(`Offering not found`);
+    }
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
@@ -55,56 +74,6 @@ export class OfferingService {
       throw new NotFoundException(`Offering not found`);
     }
     return await this.offeringRepository.save(offering);
-  }
-
-  async updateFormerStudentIds(
-    id: number,
-    lessonName: string,
-  ): Promise<number> {
-    const formerStudentIds: number[] = [];
-    try {
-      const previousTermId = await this.findImmediatelyPreviousTermId(id);
-      const offerings = await this.offeringRepository.find({
-        where: { termId: previousTermId, lessonName },
-      });
-
-      if (!offerings || offerings.length === 0) {
-        throw new Error('no offerings');
-      }
-      // dedupe lessonIds
-      const lessonIds = [
-        ...new Set(offerings.map((offering) => offering.lessonId)),
-      ];
-      const query = `
-        SELECT DISTINCT p.studentId
-        FROM picks p
-        JOIN \`groups\` g ON p.groupId = g.id
-        WHERE g.lessonId IN (${lessonIds.join(',')})
-        AND p.deletedAt IS NULL
-      `;
-
-      const rows = await this.offeringRepository.query(query);
-      rows.forEach((result: { studentId: number }) => {
-        if (result.studentId) {
-          formerStudentIds.push(result.studentId);
-        }
-      });
-
-      const offering = await this.offeringRepository.findOneOrFail({
-        where: { id },
-      });
-
-      const studentIds = [...new Set(formerStudentIds)];
-      offering.formerStudentIds = studentIds;
-      await this.offeringRepository.save(offering);
-
-      return studentIds.length;
-    } catch (error) {
-      if (error instanceof EntityNotFoundError || error instanceof Error) {
-        throw new NotFoundException(`Offering not found`);
-      }
-      throw new BadRequestException(error.message);
-    }
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -125,7 +94,10 @@ export class OfferingService {
   // private methods
   // ------------------------------------------------------------------------ //
 
-  async findImmediatelyPreviousTermId(offeringId: number): Promise<number> {
+  async findLessonNameAndPreviousTermId(offeringId: number): Promise<{
+    termId: number;
+    lessonName: string;
+  }> {
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
       relations: ['term', 'term.school', 'term.school.terms'],
@@ -140,21 +112,19 @@ export class OfferingService {
     // Sort terms by start date in descending order
     const sortedTerms = [...term.school.terms]
       .filter((t) => t.id !== term.id) // Exclude current term
+      .filter((t) => t.type === TermType.REGULAR) // Exclude current term
       .sort((a, b) => {
         const aStartDate = new Date(a.start);
         const bStartDate = new Date(b.start);
         return bStartDate.getTime() - aStartDate.getTime(); // Descending
       });
-
-    // Find the term that starts most recently before the current term starts
-    const currentTermStart = new Date(term.start);
-    const previousTerm = sortedTerms.find((t) => {
-      const termStartDate = new Date(t.start);
-      return termStartDate < currentTermStart;
-    });
+    const previousTerm = sortedTerms[0];
 
     if (previousTerm) {
-      return previousTerm.id;
+      return {
+        termId: previousTerm.id,
+        lessonName: offering.lessonName,
+      };
     } else {
       throw new Error(`no term`);
     }

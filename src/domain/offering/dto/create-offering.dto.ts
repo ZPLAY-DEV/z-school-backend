@@ -75,7 +75,7 @@ export class CreateOfferingDto {
   @ApiProperty({ description: '이전 수강자 ID 목록', type: [Number] })
   @IsArray()
   @ArrayNotEmpty()
-  formerStudentIds: number[];
+  prepickedStudentIds: number[];
 
   @ApiProperty({ description: '마지막 동기화 시간', type: Number })
   @IsNumber()
