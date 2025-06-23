@@ -64,23 +64,20 @@ export class OfferingPickService {
     if (offering.pickRule === PickRule.FIRST) {
       selectedStudentIds = await this.pickFirstComeFirstServed(
         offeringId,
-        offering.capacity,
+        offering.capacity - offering.prepicked,
         sameGradeGroups,
-        offering.term.pickRule,
       );
     } else if (offering.pickRule === PickRule.RANDOM) {
       selectedStudentIds = await this.pickRandomStudents(
         offeringId,
-        offering.capacity,
+        offering.capacity - offering.prepicked,
         sameGradeGroups,
-        offering.term.pickRule,
       );
     } else {
       selectedStudentIds = await this.pickAnyone(
         offeringId,
-        offering.capacity,
+        offering.capacity - offering.prepicked,
         sameGradeGroups,
-        offering.term.pickRule,
       );
     }
 
@@ -125,8 +122,6 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     sameGradeGroups: { groupId: number; startedOn: string }[],
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    extraPickRule: PickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
@@ -188,8 +183,6 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     sameGradeGroups: { groupId: number; startedOn: string }[],
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    extraPickRule: PickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
@@ -251,7 +244,6 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     sameGradeGroups: { groupId: number; startedOn: string }[],
-    extraPickRule: PickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
@@ -262,14 +254,9 @@ export class OfferingPickService {
       // 1. capacity가 전체 학생 수보다 크거나 같은 경우
       selectedStudentIds = allStudentIds;
     } else {
-      // 2. capacity가 전체 학생 수보다 작은 경우
-      if (extraPickRule === PickRule.RANDOM) {
-        selectedStudentIds = [...allStudentIds]
-          .sort(() => Math.random() - 0.5)
-          .slice(0, capacity);
-      } else {
-        selectedStudentIds = allStudentIds.slice(0, capacity);
-      }
+      selectedStudentIds = [...allStudentIds]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, capacity);
     }
 
     // 같은 학년 group 들에 동일한 학생을 할당
