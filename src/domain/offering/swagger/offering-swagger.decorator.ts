@@ -9,6 +9,7 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
+import { Student } from '../../student/entities/student.entity';
 import { CreateOfferingDto } from '../dto/create-offering.dto';
 import { UpdateOfferingDto } from '../dto/update-offering.dto';
 import { Offering } from '../entities/offering.entity';
@@ -121,6 +122,33 @@ export const RemoveOfferingDocs = () => {
     ApiOkResponseTemplate({
       description: '수강신청과목 삭제 완료',
       type: Offering,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Get Former Students
+//? ---------------------------------------------------------------------- ?//
+
+export const GetFormerStudentsDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '수강신청과목 👈 이전 수강생 목록 조회',
+      description: `
+      - 해당 수강신청과목의 이전 수강생 목록을 조회합니다.
+      - 이전 학기에 동일한 과목을 수강했던 학생들의 정보를 반환합니다.
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      description: '수강신청과목 ID',
+      type: 'number',
+      example: 123,
+    }),
+    ApiOkResponse({
+      description: '이전 수강생 목록 조회 완료',
+      type: [Student],
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
   );
