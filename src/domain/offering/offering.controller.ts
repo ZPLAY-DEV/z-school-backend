@@ -18,6 +18,7 @@ import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { OfferingService } from 'src/domain/offering/offering.service';
 import {
   CreateOfferingDocs,
+  GetFormerStudentsDocs,
   GetOfferingByIdDocs,
   RemoveOfferingDocs,
   UpdateOfferingDocs,
@@ -53,6 +54,7 @@ export class OfferingController {
     return await this.offeringService.findById(id, ['bookings']);
   }
 
+  @GetFormerStudentsDocs()
   @Get(':id/former-students')
   async getFormerStudents(
     @Param('id', ParseIntPipe) id: number,
