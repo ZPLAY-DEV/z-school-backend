@@ -1,13 +1,17 @@
 import { EventStatus } from 'src/common/enums';
 
 export interface IEventKey {
-  status: EventStatus; // partition key, e.g. "PENDING" | "SENT" | "FAILED"
+  eventKey: string; // "SCHOOL#{schoolId}#NEWSLETTER#{newsletterId}" 형태
   timestamp: string; // range key, ISO 8601 UTC format: "2025-05-01T14:00:00Z"
 }
 
 export interface IEvent extends IEventKey {
-  type: string; // e.g. "EVERYDAY@2AM" | "EVERYDAY@3AM" | "EVERY_5MINS"
+  type: string; // e.g. "NEWSLETTER"
+  newsletterId: number; // 조회 편의를 위해 별도 필드로 유지
+  schoolId: number; // 조회 편의를 위해 별도 필드로 유지
+  status: EventStatus;
   payload: any;
+  isRead?: boolean;
   expires?: number; // for TTL
 }
 

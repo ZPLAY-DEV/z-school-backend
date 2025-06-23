@@ -9,7 +9,6 @@ import {
 import { CreateManagerDto } from 'src/domain/manager/dto/create-manager.dto';
 import { UpdateManagerDto } from 'src/domain/manager/dto/update-manager.dto';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
-import { User } from 'src/domain/user/entities/user.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -17,8 +16,6 @@ export class ManagerService {
   constructor(
     @InjectRepository(Manager)
     private readonly managerRepository: Repository<Manager>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -34,11 +31,11 @@ export class ManagerService {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  async findAll(query: PaginateQuery): Promise<Paginated<Manager>> {
+  async infiniteList(query: PaginateQuery): Promise<Paginated<Manager>> {
     const queryBuilder = this.managerRepository
       .createQueryBuilder('manager')
       .leftJoinAndSelect('manager.user', 'user')
-      .loadRelationCountAndMap('manager.commentCount', 'manager.comments')
+      .leftJoinAndSelect('manager.school', 'school')
       .orderBy('manager.id', 'DESC');
 
     return await paginate(query, queryBuilder, {
@@ -52,10 +49,12 @@ export class ManagerService {
     });
   }
 
-  async find(): Promise<Manager[]> {
+  async list(): Promise<Manager[]> {
     return await this.managerRepository
       .createQueryBuilder('manager')
-      .orderBy('id', 'DESC')
+      .leftJoinAndSelect('manager.user', 'user')
+      .leftJoinAndSelect('manager.school', 'school')
+      .orderBy('manager.id', 'DESC')
       .getMany();
   }
 

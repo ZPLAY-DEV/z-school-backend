@@ -12,6 +12,7 @@ import {
 
 @Entity('payouts')
 export class Payout {
+  @ApiProperty({ description: 'payoutId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

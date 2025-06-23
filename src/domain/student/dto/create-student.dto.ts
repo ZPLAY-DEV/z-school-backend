@@ -17,7 +17,7 @@ export class CreateStudentDto {
     description: '🈳 학부모 ID',
     type: Number,
     required: false,
-    example: '1 --- 학부모의 id',
+    example: 1,
   })
   @IsInt()
   @IsOptional()
@@ -27,7 +27,7 @@ export class CreateStudentDto {
     description: '🈵 School ID (number)',
     type: Number,
     required: true,
-    example: '1 --- 학교의 id',
+    example: 1,
   })
   @IsNotEmpty()
   @IsInt()
@@ -36,13 +36,12 @@ export class CreateStudentDto {
   @ApiProperty({
     description: '🈵 학년 (up to 8 characters)',
     required: true,
-    type: String,
-    example: '1 --- 학년',
+    type: Number,
+    example: 1,
   })
-  @IsString()
+  @IsInt()
   @IsNotEmpty()
-  @MaxLength(8)
-  grade: string;
+  grade: number;
 
   @ApiProperty({
     description: '🈳 반 (up to 8 characters)',
@@ -152,5 +151,5 @@ export class CreateStudentDto {
   })
   @ValidateNested()
   @Type(() => CreateParentDto)
-  parent: CreateParentDto = {} as CreateParentDto;
+  parent: CreateParentDto;
 }

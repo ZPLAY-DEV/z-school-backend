@@ -13,6 +13,7 @@ import {
 
 @Entity('statements')
 export class Statement {
+  @ApiProperty({ description: 'statementId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

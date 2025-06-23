@@ -3,6 +3,7 @@ import {
   ClassSerializerInterceptor,
   Controller,
   HttpCode,
+  Param,
   Patch,
   Post,
   Req,
@@ -23,11 +24,10 @@ import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
   UserCredentialsDto,
   UserCredentialsDtoWithPhone,
-  UserNanoIdDto,
 } from 'src/domain/auth/dto/user-credentials.dto';
 import {
   LoginDocs,
-  LoginWithNanoIdDocs,
+  LoginWithNanoidDocs,
   LogOutDocs,
   RefreshDocs,
   RegisterDocs,
@@ -144,15 +144,15 @@ export class AuthController {
     return tokens;
   }
 
-  @LoginWithNanoIdDocs()
+  @LoginWithNanoidDocs()
   @HttpCode(200)
   @Public()
-  @Post('login/nanoid')
-  async loginWithNanoId(
-    @Body() dto: UserNanoIdDto,
+  @Post('login/nanoid/:id')
+  async loginWithNanoid(
+    @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthUserDto> {
-    const tokens = await this.authService.loginWithNanoId(dto);
+    const tokens = await this.authService.loginWithNanoid(id);
 
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,

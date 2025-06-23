@@ -23,6 +23,7 @@ import {
 @Entity('groups')
 @Unique(['lessonId', 'groupName'])
 export class Group {
+  @ApiProperty({ description: 'groupId' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
@@ -44,7 +45,7 @@ export class Group {
   location: string | null;
 
   @ApiProperty({ description: '🈳 class size' })
-  @Column({ type: 'int', unsigned: true, default: 20 })
+  @Column({ type: 'tinyint', unsigned: true, default: 20 })
   capacity: number;
 
   @ApiProperty({ description: '🈳 a comma separated string format' })

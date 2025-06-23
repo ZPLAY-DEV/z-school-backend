@@ -49,7 +49,7 @@ const data = [
         materialFees: [],
         note: '교재비만 있는 수업',
         categoryId: 1,
-        enrollmentRule: '선착순',
+        frequency: 1,
         groups: [
           {
             instructorName: '김사과',
@@ -83,7 +83,7 @@ const data = [
         materialFees: [],
         note: '교재비와 재료비가 없는 수업',
         categoryId: 1,
-        enrollmentRule: '선착순',
+        frequency: 1,
         groups: [
           {
             instructorName: '미정',
@@ -128,7 +128,7 @@ const data = [
         materialFees: [{ name: '독서재료비', amount: 5000 }],
         note: '교재비와 재료비가 있는 수업',
         categoryId: 2,
-        enrollmentRule: '선착순',
+        frequency: 2,
         groups: [
           {
             instructorName: '미정',
@@ -195,7 +195,7 @@ const data = [
         materialFees: [],
         note: '교재비와 재료비가 없는 수업',
         categoryId: 1,
-        enrollmentRule: '선착순',
+        frequency: 1,
         groups: [
           {
             instructorName: '미정',
@@ -243,7 +243,7 @@ const data = [
         materialFees: [],
         note: '교재비와 재료비가 있는 수업',
         categoryId: 2,
-        enrollmentRule: '선착순',
+        frequency: 2,
         groups: [
           {
             instructorName: '미정',
@@ -330,7 +330,7 @@ const data = [
         ],
         note: '재료비만 있는 수업',
         categoryId: 2,
-        enrollmentRule: '선착순',
+        frequency: 1,
         groups: [
           {
             instructorName: '미정',
@@ -364,7 +364,7 @@ const data = [
         materialFees: [{ name: '재료비', amount: 16000 }],
         note: '재료비만 있는 수업',
         categoryId: 2,
-        enrollmentRule: '선착순',
+        frequency: 1,
         groups: [
           {
             instructorName: '미정',
@@ -431,7 +431,7 @@ const data = [
         materialFees: [],
         note: '교재비와 재료비가 없는 수업',
         categoryId: 1,
-        enrollmentRule: '선착순',
+        frequency: 1,
         groups: [
           {
             instructorName: '미정',
@@ -509,7 +509,7 @@ const data = [
         materialFees: [{ name: '미술재료비', amount: 10000 }],
         note: '재료비만 있는 수업',
         categoryId: 2,
-        enrollmentRule: '선착순',
+        frequency: 1,
         groups: [
           {
             instructorName: '미정',
@@ -537,13 +537,13 @@ const data = [
       },
       {
         lessonName: '배드민턴 & 뉴스포츠',
-        description: '매드민턴 익히기 / 뉴스포츠 배우기',
+        description: '배드민턴 익히기 / 뉴스포츠 배우기',
         instructorFee: 30000,
         bookFees: [],
         materialFees: [],
         note: '배드민턴 라켓, 샤틀콕 개별준비',
         categoryId: 2,
-        enrollmentRule: '선착순',
+        frequency: 2,
         groups: [
           {
             instructorName: '미정',
@@ -599,7 +599,7 @@ const data = [
         materialFees: [],
         note: '편한 운동화',
         categoryId: 2,
-        enrollmentRule: '선착순',
+        frequency: 2,
         groups: [
           {
             instructorName: '미정',
@@ -631,9 +631,9 @@ const data = [
         instructorFee: 30000,
         bookFees: [],
         materialFees: [],
-        note: '편한 운동화',
+        note: '비영리 업체 위탁 운영',
         categoryId: 2,
-        enrollmentRule: '선착순',
+        frequency: 5,
         groups: [
           {
             instructorName: '미정',
@@ -700,7 +700,7 @@ const data = [
         materialFees: [],
         note: '',
         categoryId: 1,
-        enrollmentRule: '누구나',
+        frequency: 1,
         groups: [
           {
             instructorName: '미정',
@@ -723,7 +723,7 @@ const data = [
         materialFees: [],
         note: '',
         categoryId: 1,
-        enrollmentRule: '누구나',
+        frequency: 1,
         groups: [
           {
             instructorName: '미정',
@@ -746,7 +746,7 @@ const data = [
         materialFees: [],
         note: '',
         categoryId: 1,
-        enrollmentRule: '누구나',
+        frequency: 10,
         groups: [
           {
             instructorName: '강희숙',
@@ -813,7 +813,7 @@ const data = [
         materialFees: [],
         note: '',
         categoryId: 1,
-        enrollmentRule: '누구나',
+        frequency: 10,
         groups: [
           {
             instructorName: '마선희',
@@ -880,7 +880,7 @@ const data = [
         materialFees: [],
         note: '',
         categoryId: 1,
-        enrollmentRule: '누구나',
+        frequency: 10,
         groups: [
           {
             instructorName: '탁은혜',
@@ -947,7 +947,7 @@ const data = [
         materialFees: [],
         note: '',
         categoryId: 1,
-        enrollmentRule: '누구나',
+        frequency: 10,
         groups: [
           {
             instructorName: '김정이',
@@ -1014,7 +1014,7 @@ const data = [
         materialFees: [],
         note: '',
         categoryId: 1,
-        enrollmentRule: '누구나',
+        frequency: 10,
         groups: [
           {
             instructorName: '구현미',
@@ -1081,7 +1081,7 @@ const data = [
         materialFees: [],
         note: '',
         categoryId: 1,
-        enrollmentRule: '누구나',
+        frequency: 10,
         groups: [
           {
             instructorName: '정경임',
@@ -1148,7 +1148,7 @@ const data = [
         materialFees: [],
         note: '',
         categoryId: 1,
-        enrollmentRule: '누구나',
+        frequency: 2,
         groups: [
           {
             instructorName: '미확정',

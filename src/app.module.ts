@@ -20,20 +20,20 @@ import { JwtAuthGuard } from 'src/domain/auth/guards/jwt-auth.guard';
 import { BookingModule } from 'src/domain/booking/booking.module';
 import { CalendarModule } from 'src/domain/calendar/calendar.module';
 import { CategoryModule } from 'src/domain/category/category.module';
-import { DocumentModule } from 'src/domain/document/document.module';
 import { EventModule } from 'src/domain/event/event.module';
 import { GroupModule } from 'src/domain/group/group.module';
 import { InstructorModule } from 'src/domain/instructor/instructor.module';
 import { LedgerModule } from 'src/domain/ledger/ledger.module';
 import { LessonModule } from 'src/domain/lesson/lesson.module';
-import { LetterModule } from 'src/domain/letter/letter.module';
 import { ManagerModule } from 'src/domain/manager/manager.module';
+import { NewsletterModule } from 'src/domain/newsletter/newsletter.module';
 import { OfferingModule } from 'src/domain/offering/offering.module';
 import { ParentModule } from 'src/domain/parent/parent.module';
 import { PayoutModule } from 'src/domain/payout/payout.module';
 import { SamModule } from 'src/domain/sam/sam.module';
 import { SchoolModule } from 'src/domain/school/school.module';
 import { SchooldayModule } from 'src/domain/schoolday/schoolday.module';
+import { ShortlinkModule } from 'src/domain/shortlink/shortlink.module';
 import { StatementModule } from 'src/domain/statement/statement.module';
 import { StudentModule } from 'src/domain/student/student.module';
 import { SubsidyModule } from 'src/domain/subsidy/subsidy.module';
@@ -45,7 +45,6 @@ import { SlackModule } from 'src/services/slack/slack.module';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { OrmConfig } from './database/orm-config';
 import { BoardModule } from './domain/board/board.module';
-import { HealthModule } from './services/health/health.module';
 import { UploadModule } from './services/upload/upload.module';
 
 @Module({
@@ -114,14 +113,12 @@ import { UploadModule } from './services/upload/upload.module';
     BookingModule,
     CalendarModule,
     CategoryModule,
-    DocumentModule,
     EventModule,
     GroupModule,
-    HealthModule,
     InstructorModule,
     LedgerModule,
     LessonModule,
-    LetterModule,
+    NewsletterModule,
     ManagerModule,
     OfferingModule,
     ParentModule,
@@ -130,6 +127,7 @@ import { UploadModule } from './services/upload/upload.module';
     SamModule,
     SchooldayModule,
     SchoolModule,
+    ShortlinkModule,
     SlackModule,
     StatementModule,
     StudentModule,

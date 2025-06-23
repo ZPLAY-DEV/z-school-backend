@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { PlatformType, StudentStatus } from 'src/common/enums';
+import { StudentStatus } from 'src/common/enums';
 
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -63,14 +63,7 @@ export class SchoolStudentController {
 
       const dto = new CreateStudentDto();
       dto.schoolId = schoolId;
-      dto.grade = koreanFaker.helpers.arrayElement([
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-      ]);
+      dto.grade = koreanFaker.helpers.arrayElement([1, 2, 3, 4, 5, 6]);
       dto.class = koreanFaker.helpers.arrayElement(['1', '2', '3', '4']);
       dto.studentCode = i + 1;
       dto.name = koreanName;
@@ -78,11 +71,6 @@ export class SchoolStudentController {
       dto.status = StudentStatus.ATTENDING;
       dto.parent = {
         phone: parentPhone,
-        platform: koreanFaker.helpers.arrayElement([
-          PlatformType.ANDROID,
-          PlatformType.IOS,
-          PlatformType.WEB,
-        ]),
       };
 
       return dto;

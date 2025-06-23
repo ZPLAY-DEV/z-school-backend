@@ -17,22 +17,31 @@ import {
 } from 'typeorm';
 
 @Entity('picks')
-@Unique(['studentId', 'groupId', 'offeringId'])
+@Unique(['groupId', 'offeringId', 'studentId'])
 export class Pick {
+  @ApiProperty({ description: 'pickId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 
-  @ApiProperty({ description: '학생 아이디', example: 1 })
-  @Column({ type: 'int', unsigned: true, nullable: true })
-  studentId: number;
-
-  @ApiProperty({ description: '그룹 아이디', example: 1 })
+  // 어떤 반에
+  @ApiProperty({ description: 'groupId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   groupId: number;
 
-  @ApiProperty({ description: '수강신청과목 아이디', example: 1 })
+  // 어떤 학생이 선택되었는지를 저장
+  @ApiProperty({ description: 'studentId', example: 1 })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  studentId: number;
+
+  // 관리때문에 추가)
+  @ApiProperty({ description: 'offeringId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   offeringId: number;
+
+  // 관리때문에 추가) 재수강생 고를때 필요함
+  @ApiProperty({ description: 'lessonId', example: 1 })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  lessonId: number;
 
   // ------------------------------------------------------------------------ //
 
@@ -117,8 +126,6 @@ export class Pick {
   @ManyToOne(() => Offering, (offering) => offering.picks)
   @JoinColumn({ name: 'offeringId' })
   offering: Offering;
-
-  //* M-to-1 belongsTo ----------------------------------------------------- *//
 
   @ManyToOne(() => Student, (student) => student.picks)
   @JoinColumn({ name: 'studentId' })

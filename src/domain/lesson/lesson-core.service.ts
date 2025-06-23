@@ -94,6 +94,7 @@ export class LessonCoreService {
         start: dto.start ?? term.start,
         end: dto.end ?? term.end,
         schoolName: school.name,
+        frequency: dto.frequency ?? 1,
         operationFeeRule: school.operationFeeRule,
         requiredDocuments: dto.requiredDocuments || [],
       });
@@ -117,13 +118,13 @@ export class LessonCoreService {
 
       //? 6단계) 학업요일 days 정보 및 schooldays 처리
       for (const group of savedLesson.groups) {
-        // 1. 기존 schooldays를 key-value로 변환 (startsAt+endsAt 기준)
+        // 1. 기존 schooldays를 key-value로 변환 (unique constraint 기준)
         const existingSchooldays = await manager
           .getRepository('Schoolday')
           .find({ where: { groupId: group.id } });
         const existingMap = new Map<string, Schoolday>();
         for (const sd of existingSchooldays) {
-          const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
+          const key = `${sd.schoolId}|${sd.termId}|${sd.lessonId}|${sd.groupId}|${sd.name || ''}|${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
           existingMap.set(key, sd as Schoolday);
         }
 
@@ -135,7 +136,7 @@ export class LessonCoreService {
         );
         const newMap = new Map<string, Schoolday>();
         for (const sd of newSchooldays) {
-          const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
+          const key = `${sd.schoolId}|${sd.termId}|${sd.lessonId}|${sd.groupId}|${sd.name || ''}|${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
           newMap.set(key, sd);
         }
 
@@ -149,14 +150,24 @@ export class LessonCoreService {
           .filter(([key]) => !newMap.has(key))
           .map(([, sd]) => sd);
 
-        // 5. 실제 DB 반영 (update는 불필요하므로 생략)
+        // 5. 실제 DB 반영
         if (toDelete.length > 0) {
           await manager
             .getRepository('Schoolday')
             .delete(toDelete.map((sd) => sd.id));
         }
         if (toInsert.length > 0) {
-          await manager.getRepository('Schoolday').save(toInsert as any);
+          await manager
+            .getRepository(Schoolday)
+            .upsert(toInsert, [
+              'schoolId',
+              'termId',
+              'lessonId',
+              'groupId',
+              'name',
+              'startsAt',
+              'endsAt',
+            ]);
         }
 
         // 6. group.days 갱신
@@ -299,13 +310,13 @@ export class LessonCoreService {
 
     //? 6단계) 학업요일 days 정보 및 schooldays 처리
     for (const group of finalLesson.groups) {
-      // 1. 기존 schooldays를 key-value로 변환 (startsAt+endsAt 기준)
+      // 1. 기존 schooldays를 key-value로 변환 (unique constraint 기준)
       const existingSchooldays = await manager
         .getRepository('Schoolday')
         .find({ where: { groupId: group.id } });
       const existingMap = new Map<string, Schoolday>();
       for (const sd of existingSchooldays) {
-        const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
+        const key = `${sd.schoolId}|${sd.termId}|${sd.lessonId}|${sd.groupId}|${sd.name || ''}|${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
         existingMap.set(key, sd as Schoolday);
       }
 
@@ -317,7 +328,7 @@ export class LessonCoreService {
       );
       const newMap = new Map<string, Schoolday>();
       for (const sd of newSchooldays) {
-        const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
+        const key = `${sd.schoolId}|${sd.termId}|${sd.lessonId}|${sd.groupId}|${sd.name || ''}|${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
         newMap.set(key, sd);
       }
 
@@ -338,7 +349,17 @@ export class LessonCoreService {
           .delete(toDelete.map((sd) => sd.id));
       }
       if (toInsert.length > 0) {
-        await manager.getRepository('Schoolday').save(toInsert as any);
+        await manager
+          .getRepository(Schoolday)
+          .upsert(toInsert, [
+            'schoolId',
+            'termId',
+            'lessonId',
+            'groupId',
+            'name',
+            'startsAt',
+            'endsAt',
+          ]);
       }
 
       // 6. group.days 갱신

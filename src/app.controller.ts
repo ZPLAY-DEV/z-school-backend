@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { ApiHeader, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { AppService } from './app.service';
@@ -17,19 +17,27 @@ export class AppController {
   }
 
   @Public()
-  @Get('/purge/bookings')
+  @HttpCode(200)
+  @Post('/purge/bookings')
   async purgeBookings(): Promise<void> {
+    console.log('🔥 purgeBookings');
     await this.appService.purgeBookings();
   }
+
   @Public()
-  @Get('/purge/trackings')
+  @HttpCode(200)
+  @Post('/purge/trackings')
   async purgeTrackings(): Promise<void> {
-    await this.appService.purgeTracking();
+    console.log('🔥 purgeTrackings');
+    await this.appService.purgeTrackings();
   }
+
   @Public()
-  @Get('/purge/cache')
-  purgeCache(): Promise<number> {
-    return this.appService.purgeCache();
+  @HttpCode(200)
+  @Post('/purge/cache')
+  async purgeCache(): Promise<void> {
+    console.log('🔥 purgeCache');
+    await this.appService.purgeCache();
   }
 
   @Public()

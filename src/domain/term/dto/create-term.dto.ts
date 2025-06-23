@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -10,7 +11,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-import { LimitedPickRule, PickRule } from 'src/common/enums';
+import { PickRule, TermType } from 'src/common/enums';
 
 export class CreateTermDto {
   @ApiProperty({ description: '🈳 DB의 학교ID', required: false })
@@ -82,21 +83,20 @@ export class CreateTermDto {
   bookingEnd?: Date;
 
   @ApiProperty({
-    description: '기본 선택방식',
+    description: '학생확정방식',
     default: PickRule.RANDOM,
   })
   @IsEnum(PickRule)
   @IsOptional()
-  basicPickRule?: PickRule;
+  pickRule?: PickRule;
 
   @ApiProperty({
-    description:
-      'extra 선택방식. 재수강생이 정원보다 많은 경우 또는 재수강생이 정원보다 적은 경우 나머지 인원 선택방법',
-    default: LimitedPickRule.RANDOM,
+    description: '학기종류',
+    default: TermType.REGULAR,
   })
-  @IsEnum(LimitedPickRule)
+  @IsEnum(TermType)
   @IsOptional()
-  extraPickRule?: LimitedPickRule;
+  type?: TermType;
 
   @ApiProperty({ description: '시간 중복 허용 여부', default: false })
   @IsBoolean()
@@ -112,4 +112,9 @@ export class CreateTermDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @ApiProperty({ description: '학기 이미지', type: [String] })
+  @IsOptional()
+  @IsArray()
+  images?: string[];
 }

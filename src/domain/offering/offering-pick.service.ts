@@ -1,11 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  BookingStatus,
-  ClassStatus,
-  LimitedPickRule,
-  PickRule,
-} from 'src/common/enums';
+import { BookingStatus, ClassStatus, PickRule } from 'src/common/enums';
 import { IPickKeys } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
@@ -32,7 +27,7 @@ export class OfferingPickService {
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? CREATE
+  //? CREATE (pick 확정짓기)
   //? ---------------------------------------------------------------------- ?//
 
   async create(offeringId: number): Promise<ResponsePickDto> {
@@ -71,28 +66,21 @@ export class OfferingPickService {
         offeringId,
         offering.capacity,
         sameGradeGroups,
-        offering.term.extraPickRule,
-      );
-    } else if (offering.pickRule === PickRule.FORMER) {
-      selectedStudentIds = await this.pickFormerStudentsFirst(
-        offeringId,
-        offering.capacity,
-        sameGradeGroups,
-        offering.term.extraPickRule,
+        offering.term.pickRule,
       );
     } else if (offering.pickRule === PickRule.RANDOM) {
       selectedStudentIds = await this.pickRandomStudents(
         offeringId,
         offering.capacity,
         sameGradeGroups,
-        offering.term.extraPickRule,
+        offering.term.pickRule,
       );
     } else {
       selectedStudentIds = await this.pickAnyone(
         offeringId,
         offering.capacity,
         sameGradeGroups,
-        offering.term.extraPickRule,
+        offering.term.pickRule,
       );
     }
 
@@ -138,7 +126,7 @@ export class OfferingPickService {
     capacity: number,
     sameGradeGroups: { groupId: number; startedOn: string }[],
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    extraPickRule: LimitedPickRule,
+    extraPickRule: PickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
@@ -201,7 +189,7 @@ export class OfferingPickService {
     capacity: number,
     sameGradeGroups: { groupId: number; startedOn: string }[],
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    extraPickRule: LimitedPickRule,
+    extraPickRule: PickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
@@ -263,7 +251,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     sameGradeGroups: { groupId: number; startedOn: string }[],
-    extraPickRule: LimitedPickRule,
+    extraPickRule: PickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
@@ -275,7 +263,7 @@ export class OfferingPickService {
       selectedStudentIds = allStudentIds;
     } else {
       // 2. capacity가 전체 학생 수보다 작은 경우
-      if (extraPickRule === LimitedPickRule.RANDOM) {
+      if (extraPickRule === PickRule.RANDOM) {
         selectedStudentIds = [...allStudentIds]
           .sort(() => Math.random() - 0.5)
           .slice(0, capacity);
@@ -337,7 +325,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     sameGradeGroups: { groupId: number; startedOn: string }[],
-    extraPickRule: LimitedPickRule,
+    extraPickRule: PickRule,
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
@@ -348,7 +336,7 @@ export class OfferingPickService {
     let selectedStudentIds: number[] = [];
     if (rebookings.length <= capacity) {
       // 1. rebookings 수가 capacity 이하인 경우
-      if (extraPickRule === LimitedPickRule.RANDOM) {
+      if (extraPickRule === PickRule.RANDOM) {
         selectedStudentIds = [
           ...rebookings.map((v) => v.studentId),
           ...newbookings
@@ -366,7 +354,7 @@ export class OfferingPickService {
       }
     } else {
       // 2. rebookings 수가 capacity 초과인 경우
-      if (extraPickRule === LimitedPickRule.RANDOM) {
+      if (extraPickRule === PickRule.RANDOM) {
         selectedStudentIds = rebookings
           .sort(() => Math.random() - 0.5)
           .slice(0, capacity)

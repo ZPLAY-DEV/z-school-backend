@@ -7,6 +7,7 @@ import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
 import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { SamLesson } from 'src/domain/sam/entities/sam-lesson.entity';
+import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
@@ -22,25 +23,25 @@ import {
 } from 'typeorm';
 
 @Entity('lessons')
-@Unique(['termId', 'schoolId', 'lessonName'])
+@Unique(['schoolId', 'termId', 'lessonName'])
 export class Lesson {
-  @ApiProperty({ description: '🈵 ID', example: 1 })
+  @ApiProperty({ description: '🈵 lessonId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈵 학기ID', example: 1 })
+  @ApiProperty({ description: '🈵 schoolId', example: 1 })
+  @Column({ type: 'int', unsigned: true })
+  schoolId: number; // 관리자 편의를 위한 Column.
+
+  @ApiProperty({ description: '🈵 termId', example: 1 })
   @Column({ type: 'int', unsigned: true })
   termId: number;
 
-  @ApiProperty({ description: '🈵 분류ID', example: 1 })
+  @ApiProperty({ description: '🈵 categoryId', example: 1 })
   @Column({ type: 'int', unsigned: true })
   categoryId: number;
 
   // ------------------------------------------------------------------------ //
-
-  @ApiProperty({ description: '🈵 학교ID (relation용 아님)', example: 1 })
-  @Column({ type: 'int', unsigned: true })
-  schoolId: number; // 관리자 편의를 위한 Column.
 
   @ApiProperty({
     description: '🈳 학교명',
@@ -71,6 +72,17 @@ export class Lesson {
   @Column({ type: 'varchar', length: 10 })
   end: string;
 
+  @ApiProperty({ description: 'weekly frequency' })
+  @Column({
+    type: 'tinyint',
+    unsigned: true,
+    default: 1,
+    comment: 'weekly frequency',
+  })
+  frequency: number;
+
+  // ------------------------------------------------------------------------ //
+
   // todo: 어떻게 finalizing 할 지 나중에 결정할 것
   @ApiProperty({ description: '🈵 수업료 합계 (A+B+C+D)' })
   @Column({ type: 'int', unsigned: true, default: 0 })
@@ -94,13 +106,14 @@ export class Lesson {
   @Column('json', { nullable: true })
   materialFees: FeeItemDto[] | null;
 
-  // todo: 어떻게 finalizing 할 지 나중에 결정할 것
   @ApiProperty({
     description: '🈵 D. 수용비; 학교시설 이용경비',
     example: 1000,
   })
   @Column({ type: 'int', unsigned: true, default: 0 })
   operationFee: number;
+
+  // ------------------------------------------------------------------------ //
 
   @ApiProperty({
     description: '🈵 CO-xxx 변경없이 동일비용 적용, MC/MF 비율로 계산',
@@ -142,6 +155,12 @@ export class Lesson {
   deletedAt: Date | null;
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
+
+  @ManyToOne(() => School, (school) => school.lessons, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'schoolId' })
+  school: School;
 
   @ManyToOne(() => Term, (term) => term.lessons, {
     onDelete: 'CASCADE',

@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { Document } from 'src/domain/document/entities/document.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Payout } from 'src/domain/payout/entities/payout.entity';
@@ -20,9 +19,9 @@ import {
 } from 'typeorm';
 
 @Entity('sams')
-@Unique(['instructorId', 'schoolId'])
+@Unique(['schoolId', 'instructorId'])
 export class Sam {
-  @ApiProperty({ description: 'sam`s id' })
+  @ApiProperty({ description: 'samId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
@@ -114,9 +113,6 @@ export class Sam {
   school: School;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
-
-  @OneToMany(() => Document, (document) => document.sam)
-  documents: Document[]; // 문서
 
   @OneToMany(() => Group, (group) => group.sam)
   groups: Group[]; // 가르치는 반

@@ -1,5 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBody, ApiOperation } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
@@ -11,7 +11,6 @@ import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
   UserCredentialsDto,
   UserCredentialsDtoWithPhone,
-  UserNanoIdDto,
 } from 'src/domain/auth/dto/user-credentials.dto';
 
 //? ---------------------------------------------------------------------- ?//
@@ -115,23 +114,27 @@ export const LoginDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Login with NanoId
+//? Login with Nanoid
 //? ---------------------------------------------------------------------- ?//
 
-export const LoginWithNanoIdDocs = () => {
+export const LoginWithNanoidDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: 'NanoId 로그인',
+      summary: 'Nanoid 로그인',
       description: `
-      - NanoId를 사용한 로그인 방식.
+      - Nanoid를 사용한 로그인 방식.
+      - Path parameter로 nanoid를 전달.
       - httpOnly 쿠키 및 Response 로 accessToken 과 refreshToken 을 반환.
       `,
     }),
-    ApiBody({
-      type: UserNanoIdDto,
+    ApiParam({
+      name: 'id',
+      description: 'Nanoid 값',
+      type: String,
+      example: 'abc123def456',
     }),
     ApiCreatedResponseTemplate({
-      description: 'NanoId 로그인 성공',
+      description: 'Nanoid 로그인 성공',
       type: AuthUserDto,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.UNAUTHORIZED),

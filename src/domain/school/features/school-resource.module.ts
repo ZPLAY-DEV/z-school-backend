@@ -1,15 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Letter } from 'src/domain/letter/entities/letter.entity';
-import { Document } from 'src/domain/document/entities/document.entity';
-import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
-import { SchoolLetterController } from 'src/domain/school/school-letter.controller';
-import { SchoolLetterService } from 'src/domain/school/school-letter.service';
+import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
+import { SchoolNewsletterController } from 'src/domain/school/school-newsletter.controller';
+import { SchoolNewsletterService } from 'src/domain/school/school-newsletter.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Letter, Document, Instructor])],
-  controllers: [SchoolLetterController],
-  providers: [SchoolLetterService],
-  exports: [SchoolLetterService],
+  imports: [TypeOrmModule.forFeature([Newsletter, Sam])],
+  controllers: [SchoolNewsletterController],
+  providers: [SchoolNewsletterService],
+  exports: [SchoolNewsletterService],
 })
-export class SchoolResourceModule {} 
+export class SchoolResourceModule {}

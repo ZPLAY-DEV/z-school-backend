@@ -1,40 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
-  Min,
 } from 'class-validator';
-import { PlatformType } from 'src/common/enums';
+import { DocumentType } from 'src/common/enums';
 
 export class CreateInstructorDto {
   @ApiProperty({
-    description: '🈳 사용자 ID',
-    example: '1 --- 앱으로 가입한 강사의 userId',
+    description: '🈳 UserId',
     type: Number,
-    required: false,
+    example: 1,
   })
-  @IsOptional()
   @IsInt()
-  @Type(() => Number)
-  @Min(1)
-  userId?: number;
-
-  @ApiProperty({
-    description: '🈳 School ID (number)',
-    required: false,
-    type: Number,
-    example: '1 --- 앱으로 가입한 강사의 학교의 id',
-  })
-  @IsOptional()
-  @IsInt()
-  @Type(() => Number)
-  @Min(1)
-  schoolId: number;
+  userId: number;
 
   @ApiProperty({
     description: '🈳 강사 이름',
@@ -59,27 +42,6 @@ export class CreateInstructorDto {
   phone: string;
 
   @ApiProperty({
-    description: '🈳 마지막 로그인 기기 web, ios, or android',
-    example: 'WEB --- 앱으로 가입한 강사의 마지막 로그인 기기',
-    type: String,
-    required: false,
-  })
-  @IsEnum(PlatformType)
-  @IsOptional()
-  platform?: PlatformType = PlatformType.WEB;
-
-  @ApiProperty({
-    description: '🈳 pushToken',
-    example: 'wxyz... --- 앱으로 가입한 강사의 pushToken',
-    type: String,
-    required: false,
-  })
-  @IsString()
-  @MaxLength(255)
-  @IsOptional()
-  pushToken?: string | null;
-
-  @ApiProperty({
     description: '🈳 내용',
     example: '특이사항 없음 --- 앱으로 가입한 강사의 비고',
     type: String,
@@ -89,6 +51,18 @@ export class CreateInstructorDto {
   @MaxLength(255)
   @IsOptional()
   note?: string | null;
+
+  @ApiProperty({
+    description: '🈵 강사가 등록한 문서 타입들',
+    example: ['RESUME', 'CERTIFICATE'],
+    type: [String],
+    enum: DocumentType,
+    required: false,
+  })
+  @IsArray()
+  @IsEnum(DocumentType, { each: true })
+  @IsOptional()
+  registeredDocuments?: DocumentType[];
 
   @ApiProperty({
     description: '🈳 Terms agreed date',

@@ -1,15 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-    ArrayNotEmpty,
-    IsArray,
-    IsEnum,
-    IsInt,
-    IsNumber,
-    IsOptional,
-    IsString,
-    Length,
-    ValidateNested,
+  ArrayNotEmpty,
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  ValidateNested,
 } from 'class-validator';
 import { PickRule } from 'src/common/enums';
 import { ClassTimeDto } from 'src/domain/offering/dto/class-time.dto';
@@ -75,7 +75,7 @@ export class CreateOfferingDto {
   @ApiProperty({ description: '이전 수강자 ID 목록', type: [Number] })
   @IsArray()
   @ArrayNotEmpty()
-  formerStudentIds: number[];
+  prepickedStudentIds: number[];
 
   @ApiProperty({ description: '마지막 동기화 시간', type: Number })
   @IsNumber()

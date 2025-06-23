@@ -23,58 +23,59 @@ import {
 
 @Entity('users')
 export class User {
+  @ApiProperty({ description: 'userId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @Column({ type: 'varchar', length: 32, unique: true })
   @ApiProperty({ description: '🈵 username' })
+  @Column({ type: 'varchar', length: 32, unique: true })
   username: string;
 
-  @Column({ type: 'varchar', length: 32, unique: true, nullable: true })
   @ApiProperty({ description: '🈳 phone' })
+  @Column({ type: 'varchar', length: 32, unique: true, nullable: true })
   phone: string | null;
 
-  @Column({ type: 'varchar', length: 64, unique: true, nullable: true })
   @ApiProperty({ description: '🈳 email' })
+  @Column({ type: 'varchar', length: 64, unique: true, nullable: true })
   email: string | null;
 
-  @Column({ type: 'varchar', length: 64, nullable: true })
   @Exclude()
   @ApiProperty({ description: '🈵 password' })
+  @Column({ type: 'varchar', length: 64, nullable: true })
   password: string;
 
   // @Column({ type: 'enum', enum: Gender, nullable: true })
   // @ApiProperty({ description: '성별' })
   // gender: Gender | null;
 
+  @ApiProperty({ description: '🈳 avatar' })
   @Column({
     type: 'varchar',
     length: 255,
     nullable: true,
     default: DEFAULT_AVATAR_URL,
   })
-  @ApiProperty({ description: '🈳 avatar' })
   avatar: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
   @Exclude({ toPlainOnly: true })
   @ApiProperty({ description: '🈳 pushToken' })
+  @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
   pushToken: string | null;
 
   // ------------------------------------------------------------------------ //
 
-  @CreateDateColumn()
   @ApiProperty({ description: '🈵 createdAt' })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn()
   @Exclude()
   @ApiProperty({ description: '🈵 updatedAt' })
+  @UpdateDateColumn()
   updatedAt: Date;
 
-  @DeleteDateColumn()
   @Exclude()
   @ApiProperty({ description: '🈳 deletedAt' })
+  @DeleteDateColumn()
   deletedAt: Date | null;
 
   //* 1-to-1 hasOne -------------------------------------------------------- *//

@@ -9,7 +9,7 @@ export * from './document-type';
 export * from './event-status';
 export * from './gender';
 export * from './ledger-type';
-export * from './letter';
+export * from './newsletter-type';
 export * from './permission';
 export * from './pick-rule';
 export * from './platform-type';
@@ -20,6 +20,7 @@ export * from './role';
 export * from './student-status';
 export * from './subsidy-status';
 export * from './subsidy-type';
+export * from './term-type';
 export * from './time-unit';
 export * from './weekday';
 

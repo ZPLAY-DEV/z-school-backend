@@ -14,6 +14,7 @@ import {
 
 @Entity('subsidies')
 export class Subsidy {
+  @ApiProperty({ description: 'subsidyId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

@@ -12,27 +12,16 @@ import {
 } from 'class-validator';
 import {
   EventStatus,
-  LetterTarget,
-  LetterType,
-  SendMode,
+  NewsletterTarget,
+  NewsletterType,
 } from 'src/common/enums';
 
-export class CreateLetterDto {
-  @ApiProperty({
-    description: '🈵 School ID',
-    type: Number,
-    required: true,
-  })
-  @IsNotEmpty()
+export class CreateNewsletterDto {
+  @ApiProperty({ description: '🈵 schoolId', type: Number, example: 1 })
   @IsInt()
   schoolId: number;
 
-  @ApiProperty({
-    description: '🈵 Term ID',
-    type: Number,
-    required: true,
-  })
-  @IsNotEmpty()
+  @ApiProperty({ description: '🈵 termId', type: Number, example: 1 })
   @IsInt()
   termId: number;
 
@@ -59,38 +48,40 @@ export class CreateLetterDto {
   images?: string[];
 
   @ApiProperty({
-    description: '🈵 발송 유형',
-    enum: LetterType,
+    description: '🈵 뉴스레터 종류',
+    enum: NewsletterType,
     required: true,
+    example: NewsletterType.REGISTRATION,
   })
   @IsNotEmpty()
-  @IsEnum(LetterType)
-  type: LetterType;
+  @IsEnum(NewsletterType)
+  type: NewsletterType;
 
   @ApiProperty({
-    description: '🈵 발송 유형',
+    description: '🈵 뉴스레터 발송상태',
     enum: EventStatus,
     required: true,
+    example: EventStatus.PENDING,
   })
   @IsNotEmpty()
   @IsEnum(EventStatus)
   status: EventStatus;
 
-  @ApiProperty({ description: '🈵 발송 대상 유형', required: true })
+  @ApiProperty({ description: '🈵 뉴스레터 대상', required: true })
   @IsNotEmpty()
-  @IsEnum(LetterTarget)
-  targetGroup: LetterTarget;
+  @IsEnum(NewsletterTarget)
+  target: NewsletterTarget;
 
-  @ApiProperty({ description: '🈵 발송 대상 유형', required: true })
+  @ApiProperty({ description: '🈵 뉴스레터 대상 아이템들', required: true })
   @IsNotEmpty()
   @IsArray()
   @Type(() => String)
-  targetGroupItems: string[];
+  targetItems: string[];
 
-  @ApiProperty({ description: '🈵 발송 대상 유형', required: true })
+  @ApiProperty({ description: '🈵 뉴스레터 대상 레이블', required: true })
   @IsNotEmpty()
   @IsString()
-  targetGroupLabel: string;
+  targetLabel: string;
 
   @ApiProperty({
     description: '🈵 발송 대상자 ids',
@@ -103,11 +94,6 @@ export class CreateLetterDto {
   @IsInt({ each: true })
   ids: number[];
 
-  @ApiProperty({ description: '🈵 전송 방식', enum: SendMode, required: true })
-  @IsNotEmpty()
-  @IsEnum(SendMode)
-  sendMode: SendMode;
-
   @ApiProperty({
     description: '🈳 발송 시간 ( 즉시 발송 시 사용 )',
     example: '2025-06-05T00:30:00Z',
@@ -116,15 +102,5 @@ export class CreateLetterDto {
   @IsOptional()
   @IsDate()
   @Type(() => Date)
-  sendAt?: Date | null;
-
-  @ApiProperty({
-    description: '🈳 예약 시간 ( 예약 발송 시 사용 )',
-    example: '2025-06-05T00:30:00Z',
-    required: false,
-  })
-  @IsOptional()
-  @IsDate()
-  @Type(() => Date)
-  scheduleAt?: Date | null;
+  scheduledAt?: Date | null;
 }

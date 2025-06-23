@@ -16,14 +16,24 @@ import {
 } from 'typeorm';
 
 @Entity('schooldays')
+//? 아래 조합의 쿼리를 많이 사용하여, 일부러 unique 키 이외에 인덱스를 추가함.
 @Index('idx_school_term_start_end', [
   'schoolId',
   'termId',
   'startsAt',
   'endsAt',
 ])
-@Unique(['schoolId', 'termId', 'lessonId', 'groupId', 'startsAt', 'endsAt'])
+@Unique([
+  'schoolId',
+  'termId',
+  'lessonId',
+  'groupId',
+  'name',
+  'startsAt',
+  'endsAt',
+])
 export class Schoolday {
+  @ApiProperty({ description: 'schooldayId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

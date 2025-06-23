@@ -47,7 +47,7 @@ export class YourModule {}
 ```typescript
 async sendNotifications() {
   const result = await this.notificationService.send({
-    type: "DISPATCH_NEWS",
+    type: "REGISTRATION",
     schoolId: 1,
     role: "PARENT",
     messages: [
@@ -91,7 +91,7 @@ async sendNotifications() {
 ```typescript
 {
   // 공통 메타데이터
-  type: NotificationType;    // PING_SCHOOL, PING_CLASS, PING_OTHER, DISPATCH_REGISTER, DISPATCH_NEWS, DISPATCH_SURVEY
+  type: NotificationType;    // REGISTRATION, NEWS, SURVEY, SCHOOL, CLASS, OTHER
   schoolId: number;          // 학교 ID
   role: string;              // "PARENT" 또는 "INSTRUCTOR"
   
@@ -110,12 +110,12 @@ async sendNotifications() {
 ```
 
 ### 알림 타입 (NotificationType)
-- `PING_SCHOOL`: 학교 전체 알림
-- `PING_CLASS`: 반별 알림  
-- `PING_OTHER`: 기타 알림
-- `DISP_REGISTER`: 가입 관련 알림
-- `DISP_NEWS`: 소식/공지 알림
-- `DISP_SURVEY`: 설문 관련 알림
+- `REGISTRATION`: 수강신청 알림
+- `NEWS`: 공지사항 알림
+- `SURVEY`: 설문조사 알림
+- `SCHOOL`: 학교 전체 알림
+- `CLASS`: 반별 알림  
+- `OTHER`: 기타 알림
 
 ## 🎯 FCM 데이터 구조
 
@@ -169,7 +169,7 @@ async sendNotifications() {
 ```
 🖐️ 3 sms messages sent from 01012345678
 🔥 smsResult: {"results":[...], "successCount":2, "failureCount":1}
-A DISPATCH_NEWS log sent to Firehose
+A SURVEY log sent to Firehose
 ```
 
 ### Firehose 로그 형식
@@ -178,7 +178,7 @@ A DISPATCH_NEWS log sent to Firehose
 
 ```json
 {
-  "type": "DISPATCH_NEWS",
+  "type": "SURVEY",
   "school": "1",
   "school_name": "삼척초등학교",
   "title": "방송 알림 외 1건",
@@ -206,7 +206,7 @@ A DISPATCH_NEWS log sent to Firehose
 ```typescript
 // 모든 부모에게 동일한 급식 공지 (FCM 우선, SMS 대체)
 await notificationService.send({
-  type: "DISP_NEWS",
+  type: "NEWS",
   schoolId: 1,
   role: "PARENT",
   messages: parents.map(parent => ({
@@ -226,7 +226,7 @@ await notificationService.send({
 ```typescript
 // 각 부모에게 자녀별 개별 성적 알림
 await notificationService.send({
-  type: "DISP_NEWS",
+  type: "REGISTRATION",
   schoolId: 1,
   role: "PARENT",
   messages: [
@@ -258,7 +258,7 @@ await notificationService.send({
 ```typescript
 // 긴급상황 - 최대 도달률을 위해 FCM/SMS 모두 활용
 await notificationService.send({
-  type: "PING_SCHOOL",
+  type: "SCHOOL",
   schoolId: 1,
   role: "PARENT",
   messages: allParents.map(parent => ({
@@ -278,7 +278,7 @@ await notificationService.send({
 ```typescript
 // 각 부모에게 자녀별 개별 귀가 SMS (토큰 없이 SMS만)
 await notificationService.send({
-  type: "PING_OTHER",
+  type: "CLASS",
   schoolId: 1,
   role: "PARENT",
   messages: [

@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 @Entity('categories')
 export class Category {
+  @ApiProperty({ description: 'categoryId' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
@@ -25,6 +26,10 @@ export class Category {
   @ApiProperty({ description: 'name' })
   @Column({ length: 32 })
   name: string;
+
+  @ApiProperty({ description: '🈳 비고' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  note: string | null;
 
   @ApiProperty({ description: 'total count' })
   @Column({ type: 'int', unsigned: true, default: 0 })

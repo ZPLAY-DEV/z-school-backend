@@ -10,11 +10,11 @@ import {
 
 export function makeOfferingsFromLessons(
   termId: number,
+  defaultRule: PickRule,
   schoolId: number,
   lessons: Lesson[],
 ): Offering[] {
   const offerings: Offering[] = [];
-  const uniqueCombinations = new Set<string>();
 
   for (const lesson of lessons) {
     for (const group of lesson.groups) {
@@ -24,22 +24,22 @@ export function makeOfferingsFromLessons(
         end: group.end,
       };
 
-      const uniqueKey = `${lesson.id}-${group.allowedGrades}`;
-      if (uniqueCombinations.has(uniqueKey)) {
-        const existingOffering = offerings.find(
-          (o) =>
-            o.lessonName === (lesson.lessonName || `과목 #${lesson.id}`) &&
-            o.allowedGrades.join(',') === group.allowedGrades,
-        );
-        if (existingOffering) {
-          existingOffering.times.push(timeRange);
-          existingOffering.groupIds.push(group.id);
-        }
+      // 기존 offering 중에서 frequency 제한을 만족하는 것 찾기
+      const availableOffering = offerings.find(
+        (o) =>
+          o.lessonName === (lesson.lessonName || `과목 #${lesson.id}`) &&
+          o.allowedGrades.join(',') === group.allowedGrades &&
+          o.times.length < lesson.frequency,
+      );
+
+      if (availableOffering) {
+        availableOffering.times.push(timeRange);
+        availableOffering.groupIds.push(group.id);
         continue;
       }
-      uniqueCombinations.add(uniqueKey);
 
-      const pickRule = group.capacity === 0 ? PickRule.ANYONE : PickRule.FIRST;
+      const pickRule: PickRule =
+        group.capacity === 0 ? PickRule.ANYONE : defaultRule;
 
       const offering = new Offering({
         termId,
@@ -54,7 +54,7 @@ export function makeOfferingsFromLessons(
         times: [timeRange],
         bitmasks: [],
         groupIds: [group.id],
-        formerStudentIds: [],
+        prepickedStudentIds: [],
       });
 
       offerings.push(offering);
@@ -76,7 +76,7 @@ export function makeOfferingsFromLessons(
       [...offering.times].map((v) => v.weekday),
     );
     const gradez = compressRangeFormat(offering.allowedGrades.join(','));
-    offering.groupName = `${offering.lessonName} ${weekdayz}반 (${gradez}학년)`;
+    offering.groupName = `${offering.lessonName} ${weekdayz}요일반 (${gradez}학년)`;
   }
 
   return offerings;

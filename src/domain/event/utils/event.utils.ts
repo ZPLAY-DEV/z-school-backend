@@ -1,6 +1,16 @@
 import { IEvent } from 'src/domain/event/entities/event.interface';
 
 /**
+ * Generate group key for DynamoDB
+ */
+export function generateEventKey(
+  schoolId: number,
+  newsletterId: number,
+): string {
+  return `SCHOOL#${schoolId}#NEWSLETTER#${newsletterId}`;
+}
+
+/**
  * Calculate TTL expiration timestamp
  */
 export function calculateTtl(startsAt: Date): number {

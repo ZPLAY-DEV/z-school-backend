@@ -5,13 +5,12 @@ import { DeleteInstructorNoteDto } from 'src/domain/instructor/dto/delete-instru
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { getKoreanWeekday } from 'src/helpers/date';
 import { transformScheduleResponse } from 'src/helpers/group-schedule.util';
 import { DataSource, EntityManager, Repository } from 'typeorm';
-import { Document } from '../document/entities/document.entity';
-import { Schoolday } from '../schoolday/entities/schoolday.entity';
-import { Sam } from './entities/sam.entity';
 @Injectable()
 export class SamService {
   private readonly logger = new Logger(SamService.name);
@@ -23,8 +22,6 @@ export class SamService {
     private readonly instructorRepository: Repository<Instructor>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
-    @InjectRepository(Document)
-    private readonly documentRepository: Repository<Document>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -159,14 +156,6 @@ export class SamService {
       this.logger.error(e);
       throw new NotFoundException('Sam not found');
     }
-  }
-
-  async getDocuments(samId: number): Promise<Document[]> {
-    return await this.documentRepository.find({
-      where: {
-        samId,
-      },
-    });
   }
 
   async findBySchedule(id: number, dates: string[]) {

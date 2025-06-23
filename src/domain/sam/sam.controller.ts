@@ -16,21 +16,19 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { Document } from 'src/domain/document/entities/document.entity';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { DeleteSamNoteDto } from 'src/domain/sam/dto/delete-sam-note.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { SamService } from 'src/domain/sam/sam.service';
-import { Group } from '../group/entities/group.entity';
 import {
   CreateSamDocs,
   GetSamByIdDocs,
   GetSamGroupsDocs,
-  SamDocumentsDocs,
   SamDryRunDocs,
   SamScheduleFindByIdDocs,
-  SoftDeleteSamDocs,
+  SoftDeleteSamDocs
 } from './swagger/sam.swagger.decorator';
 
 @UseInterceptors(ClassSerializerInterceptor)
@@ -73,15 +71,6 @@ export class SamController {
   @Get(':id/groups')
   async groups(@Param('id', ParseIntPipe) id: number): Promise<Group[]> {
     return await this.samService.groups(id);
-  }
-
-  //? 학교에 속한 강사(쌤)이 제출한 문서 리스트
-  @SamDocumentsDocs()
-  @Get(':id/documents')
-  async getDocuments(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<Document[]> {
-    return await this.samService.getDocuments(id);
   }
 
   //? 학교에 속한 강사(쌤)의 강의 일정 조회 ( 주단위 )

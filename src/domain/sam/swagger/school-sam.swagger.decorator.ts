@@ -10,7 +10,6 @@ import {
   FilterOperator,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
-import { DocumentResponseDto } from 'src/domain/document/dto/document-response.dto';
 import { CreateSamResponseDto } from '../dto/create-sam-response.dto';
 import { CreateSamDto } from '../dto/create-sam.dto';
 import { SamRelationResponseDto } from '../dto/sam-relation-response.dto';
@@ -143,36 +142,6 @@ export const SchoolSamPaginatedDocs = () => {
         editFeePermission: [FilterOperator.EQ],
         editEnrollmentPermission: [FilterOperator.EQ],
       },
-    }),
-  );
-};
-
-//? ---------------------------------------------------------------------- ?//
-//? Read School > Sam Documents
-//? ---------------------------------------------------------------------- ?//
-export const SchoolSamDocumentsDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '✅ 학교 > 강사 문서 조회',
-      description: `
-      - 학교에 속한 특정 강사가 제출한 문서를 조회한다.
-      - 페이징 x
-      `,
-    }),
-    ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID',
-    }),
-    ApiParam({
-      name: 'samId',
-      type: Number,
-      description: '강사 ID',
-    }),
-    ApiOkResponseTemplate({
-      description: '학교에 속한 강사의 문서 조회',
-      type: DocumentResponseDto,
-      isArray: true,
     }),
   );
 };

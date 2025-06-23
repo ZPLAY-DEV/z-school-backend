@@ -69,7 +69,7 @@ export const configuration = () => ({
     s3LogsBucket: process.env.AWS_S3_LOGS_BUCKET,
     sqsEndpoint: process.env.AWS_SQS_ENDPOINT,
     sqsPrimaryUrl: process.env.AWS_SQS_PQ_URL,
-    sqsDeadLetterUrl: process.env.AWS_SQS_DLQ_URL,
+    sqsDeadNewsletterUrl: process.env.AWS_SQS_DLQ_URL,
     firehoseEndpoint: process.env.AWS_FIREHOSE_ENDPOINT,
     firehoseStreamName: process.env.AWS_FIREHOSE_STREAM_NAME,
   } as IAwsConfig,

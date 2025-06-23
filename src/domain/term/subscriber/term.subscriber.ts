@@ -111,6 +111,7 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
     const schoolId = lessons[0]?.schoolId as number;
     const offerings = makeOfferingsFromLessons(
       term.id,
+      term.pickRule,
       schoolId,
       lessons as Lesson[],
     );

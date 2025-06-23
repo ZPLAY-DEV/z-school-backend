@@ -11,10 +11,11 @@ import {
 } from 'typeorm';
 @Entity('withdrawals')
 export class Withdrawal {
+  @ApiProperty({ description: 'withdrawalId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: 'userId' })
+  @ApiProperty({ description: 'userId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   userId: number | null; // to make it available to Repository.
 

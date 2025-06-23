@@ -20,9 +20,9 @@ import {
   CreateOfferingDocs,
   GetOfferingByIdDocs,
   RemoveOfferingDocs,
-  SetFormerStudentIdsDocs,
   UpdateOfferingDocs,
 } from 'src/domain/offering/swagger/offering-swagger.decorator';
+import { Student } from 'src/domain/student/entities/student.entity';
 
 //! 단일 Offering 엔터티 작업
 @ApiTags('✅ Offerings ( 수강신청과목 )')
@@ -53,6 +53,13 @@ export class OfferingController {
     return await this.offeringService.findById(id, ['bookings']);
   }
 
+  @Get(':id/former-students')
+  async getFormerStudents(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Student[]> {
+    return await this.offeringService.findFormerStudents(id);
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
@@ -64,15 +71,6 @@ export class OfferingController {
     @Body() dto: UpdateOfferingDto,
   ): Promise<Offering> {
     return await this.offeringService.update(id, dto);
-  }
-
-  @SetFormerStudentIdsDocs()
-  @Patch(':id/former-student-ids')
-  async setFormerStudentIds(
-    @Param('id', ParseIntPipe) id: number,
-    @Body(`lessonName`) lessonName: string,
-  ): Promise<number> {
-    return await this.offeringService.updateFormerStudentIds(id, lessonName);
   }
 
   //? ---------------------------------------------------------------------- ?//

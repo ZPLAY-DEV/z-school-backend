@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { Letter } from 'src/domain/letter/entities/letter.entity';
-import { NanoId } from 'src/domain/parent/entities/nanoid.entity';
+import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
@@ -19,6 +19,7 @@ import {
 
 @Entity('parents')
 export class Parent {
+  @ApiProperty({ description: 'parentId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 
@@ -79,14 +80,15 @@ export class Parent {
   })
   students: Student[];
 
-  @OneToOne(() => NanoId, (nanoId) => nanoId.parent, {
+  @OneToMany(() => Shortlink, (shortlink) => shortlink.parent, {
     cascade: ['insert', 'update'],
   })
-  nanoIds?: NanoId[];
+  shortlinks: Shortlink[];
 
-  //* N-to-M manyToMany ---------------------------------------------------- *//
-  @ManyToMany(() => Letter, (letter) => letter.parents)
-  letters: Letter[];
+  //* M-to-M --------------------------------------------------------------- *//
+
+  @ManyToMany(() => Newsletter, (newsletter) => newsletter.unreadParents)
+  unreadNewsletters: Newsletter[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

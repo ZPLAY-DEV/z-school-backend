@@ -45,8 +45,8 @@ export function calculateLessonDays(
       const endTime = new Date(date);
       endTime.setHours(endHour, endMinute, 0, 0);
       const end = format(toZonedTime(endTime, timeZone), 'yyyy-MM-dd HH:mm');
-      const classOn = offdays.includes(start.split(' ')[0]) ? false : true;
-      calendarDays.push({ start, end, classOn });
+      const isClassDay = offdays.includes(start.split(' ')[0]) ? false : true;
+      calendarDays.push({ start, end, isClassDay });
     }
   }
 
@@ -64,7 +64,7 @@ export function generateSchooldays(
     offdays,
   );
   return calendarDays
-    .filter((day) => day.classOn)
+    .filter((day) => day.isClassDay)
     .map((day) => {
       const [startDateStr, startTimeStr] = day.start.split(' ');
       const [endDateStr, endTimeStr] = day.end.split(' ');

@@ -4,7 +4,6 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { DocumentResponseDto } from 'src/domain/document/dto/document-response.dto';
 import { GroupPickResponseDto } from 'src/domain/group/dto/group-pick-response.dto';
 import { ScheduleResponseDto } from 'src/domain/group/dto/schedule-response.dto';
 import { CreateSamResponseDto } from '../dto/create-sam-response.dto';
@@ -135,30 +134,6 @@ export const GetSamGroupsDocs = () => {
     ApiOkResponseTemplate({
       description: '학교에 속한 강사의 반 & 학생 상세 조회',
       type: GroupPickResponseDto,
-      isArray: true,
-    }),
-  );
-};
-//? ---------------------------------------------------------------------- ?//
-//? Get Sam Documents
-//? ---------------------------------------------------------------------- ?//
-export const SamDocumentsDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '✅ 학교에 속한 강사의 문서 조회',
-      description: `
-      - 학교에 속한 특정 강사가 제출한 문서를 조회한다.
-      - 페이징 x
-      `,
-    }),
-    ApiParam({
-      name: 'samId',
-      type: Number,
-      description: '강사 ID',
-    }),
-    ApiOkResponseTemplate({
-      description: '학교에 속한 강사의 문서 조회',
-      type: DocumentResponseDto,
       isArray: true,
     }),
   );

@@ -41,7 +41,8 @@ export class Token {
 
   // ------------------------------------------------------------------------ //
 
-  @Column({ type: 'timestamp' })
+  @ApiProperty({ description: '토큰 만료 시간' })
+  @Column({ type: 'timestamp', comment: '토큰 만료 시간' })
   expiresAt: Date;
 
   @CreateDateColumn()
