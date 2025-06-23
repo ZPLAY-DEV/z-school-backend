@@ -51,7 +51,10 @@ export class OfferingController {
   async getOfferingById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Offering> {
-    return await this.offeringService.findById(id, ['bookings']);
+    return await this.offeringService.findById(id, [
+      'bookings',
+      'bookings.student',
+    ]);
   }
 
   @GetFormerStudentsDocs()

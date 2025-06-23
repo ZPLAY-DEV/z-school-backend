@@ -98,14 +98,7 @@ export class BookingService {
   }
 
   async createWithRedis(dto: CreateBookingDto): Promise<ResponseBookingDto> {
-    const {
-      offeringId,
-      studentId,
-      lessonName,
-      capacity,
-      pickRule,
-      isFormerStudent,
-    } = dto;
+    const { offeringId, studentId, lessonName, capacity, pickRule } = dto;
     const timestamp = Date.now();
 
     this.logger.log(
@@ -161,7 +154,6 @@ export class BookingService {
             lessonName,
             capacity,
             pickRule, // basically, this is going to be "선착순"
-            isFormerStudent: isFormerStudent ?? false,
             waitingPosition: response.waitingPosition ?? 0,
             status: response.status,
             timestamp,

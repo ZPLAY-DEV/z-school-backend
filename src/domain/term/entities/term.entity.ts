@@ -91,7 +91,7 @@ export class Term {
     type: 'enum',
     enum: TermType,
     default: TermType.REGULAR,
-    comment: '현재 학기 여부 (현재 학기만 자동으로 출석부가 생성된다.)',
+    comment: '현재 학기의 종류',
   })
   type: TermType;
 

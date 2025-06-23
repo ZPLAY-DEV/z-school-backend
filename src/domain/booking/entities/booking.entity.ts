@@ -40,10 +40,6 @@ export class Booking {
   @Column({ type: 'smallint', nullable: false, default: 0 })
   waitingPosition: number;
 
-  @ApiProperty({ description: '우선 선정기준인 재수강생 여부' })
-  @Column({ type: 'boolean', default: false })
-  isFormerStudent: boolean;
-
   @ApiProperty({ description: '수강확정 여부' })
   @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.PENDING })
   status: BookingStatus;

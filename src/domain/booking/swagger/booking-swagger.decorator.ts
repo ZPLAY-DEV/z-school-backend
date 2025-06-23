@@ -42,7 +42,6 @@ export const CreateBookingSwagger = () => {
             studentId: 11,
             capacity: 20,
             pickRule: '재수강우선',
-            isFormerStudent: true,
             lessonName: '마인드크래프트',
           },
         },

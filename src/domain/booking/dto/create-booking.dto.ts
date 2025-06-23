@@ -1,10 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-    IsBoolean,
-    IsEnum,
-    IsInt,
-    IsOptional,
-    IsString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString
 } from 'class-validator';
 import { BookingStatus, PickRule } from 'src/common/enums';
 
@@ -36,15 +35,6 @@ export class CreateBookingDto {
   @ApiProperty({ description: '수강신청 과목명', example: '마인드크래프트' })
   @IsString()
   lessonName: string;
-
-  @ApiProperty({
-    description: '재수강생 여부 (!)',
-    default: false,
-    required: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  isFormerStudent?: boolean;
 
   @ApiProperty({ description: '대기순번' })
   @IsInt()
