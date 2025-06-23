@@ -8,8 +8,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AWS_SQS_CLIENT, REDIS_BOOKING_CLIENT } from 'src/common/constants';
-import { BookingStatus, PickRule } from 'src/common/enums';
+import { BookingStatus, ClassStatus, PickRule } from 'src/common/enums';
 import { IBookingSnapshotItem } from 'src/common/interfaces';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisBookingService } from 'src/services/redis/redis-booking.service';
 import { Repository } from 'typeorm';
@@ -25,17 +26,35 @@ export class BookingService {
   constructor(
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
+    @InjectRepository(Offering)
+    private readonly offeringRepository: Repository<Offering>,
     @Inject(AWS_SQS_CLIENT)
     private readonly sqsClient: SqsService,
     @Inject(REDIS_BOOKING_CLIENT)
     private readonly redisBookingService: RedisBookingService,
   ) {}
 
+  async validateOfferingStatus(offeringId: number): Promise<void> {
+    const offering = await this.offeringRepository.findOne({
+      where: { id: offeringId },
+    });
+
+    if (!offering) {
+      throw new NotFoundException('수강신청과목을 찾을 수 없습니다.');
+    }
+
+    if (offering.status === ClassStatus.CANCELED) {
+      throw new UnprocessableEntityException('삭제된 수강신청과목 입니다.');
+    }
+  }
+
   async createWithDb(dto: CreateBookingDto): Promise<ResponseBookingDto> {
     try {
       let status: BookingStatus;
       let waitingPosition: number;
       let message: string;
+
+      await this.validateOfferingStatus(dto.offeringId);
 
       if (dto.pickRule === PickRule.ANYONE) {
         // 누구나
@@ -84,6 +103,8 @@ export class BookingService {
   async cancelWithDb(cancelBookingDto: CancelBookingDto): Promise<number> {
     const { offeringId, studentId, note } = cancelBookingDto;
 
+    await this.validateOfferingStatus(offeringId);
+
     try {
       const { affected } = await this.bookingRepository.update(
         { offeringId, studentId },
@@ -100,6 +121,8 @@ export class BookingService {
   async createWithRedis(dto: CreateBookingDto): Promise<ResponseBookingDto> {
     const { offeringId, studentId, lessonName, capacity, pickRule } = dto;
     const timestamp = Date.now();
+
+    await this.validateOfferingStatus(offeringId);
 
     this.logger.log(
       '🚀 Redis booking payload',
@@ -185,6 +208,8 @@ export class BookingService {
   async cancelWithRedis(dto: CancelBookingDto): Promise<number> {
     const { offeringId, studentId, lessonName, note } = dto;
     const timestamp = Date.now();
+
+    await this.validateOfferingStatus(offeringId);
 
     try {
       const result = await this.redisBookingService.executeCancelScript(

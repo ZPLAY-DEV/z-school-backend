@@ -41,6 +41,8 @@ export class GroupAttendanceService {
 
   //? ---------------------------------------------------------------------- ?//
   //? Notify
+  //? 미발송 case 들은 아래 문서를 참고.
+  //? https://www.notion.so/v3-DynamoDB-1fb4351cd47a80519649db17d05763d2
   //? ---------------------------------------------------------------------- ?//
 
   async notifyStart(
@@ -58,9 +60,12 @@ export class GroupAttendanceService {
       ],
     });
     const allStudents = group.picks.map((v) => v.student);
-    const studentIds = dtos.map((v) =>
-      this.extractStudentIdFromRangeKey(v.dailyStudentKey),
-    );
+    const studentIds = dtos
+      .filter((v) => v.status !== AttendanceStatus.PENDING)
+      .filter((v) => v.status !== AttendanceStatus.ABSENT)
+      .filter((v) => v.status !== AttendanceStatus.EXCUSED_ABSENT)
+      .filter((v) => v.status !== AttendanceStatus.EXCUSED_LATE)
+      .map((v) => this.extractStudentIdFromRangeKey(v.dailyStudentKey));
     const statusMap = new Map<number, string>();
     dtos.forEach((dto) => {
       statusMap.set(
@@ -76,7 +81,7 @@ export class GroupAttendanceService {
           phone: v.parent.phone,
           token: v.parent.user?.pushToken ?? null,
           title: `${group.lesson.schoolName}`,
-          body: `${v.name} 학생이 ${group.lesson.lessonName} 수업 ${statusMap.get(v.id)}`,
+          body: `${v.name} 학생 ${group.lesson.lessonName} : ${statusMap.get(v.id)}`,
           role: 'PARENT',
         };
       });
@@ -107,9 +112,12 @@ export class GroupAttendanceService {
       ],
     });
     const allStudents = group.picks.map((v) => v.student);
-    const studentIds = dtos.map((v) =>
-      this.extractStudentIdFromRangeKey(v.dailyStudentKey),
-    );
+    const studentIds = dtos
+      .filter((v) => v.status !== AttendanceStatus.PENDING)
+      .filter((v) => v.status !== AttendanceStatus.LEFT)
+      .filter((v) => v.status !== AttendanceStatus.EXCUSED_ABSENT)
+      .filter((v) => v.status !== AttendanceStatus.EXCUSED_LEFT)
+      .map((v) => this.extractStudentIdFromRangeKey(v.dailyStudentKey));
     const statusMap = new Map<number, string>();
     dtos.forEach((dto) => {
       statusMap.set(
@@ -125,7 +133,7 @@ export class GroupAttendanceService {
           phone: v.parent.phone,
           token: v.parent.user?.pushToken ?? null,
           title: `${group.lesson.schoolName}`,
-          body: `${v.name} 학생이 ${group.lesson.lessonName} 수업 ${statusMap.get(v.id)}`,
+          body: `${v.name} 학생 ${group.lesson.lessonName} : ${statusMap.get(v.id)}`,
           role: 'PARENT',
         };
       });
@@ -386,26 +394,44 @@ export class GroupAttendanceService {
 
   private translateStatusInStartContext(status: AttendanceStatus): string {
     switch (status) {
+      case AttendanceStatus.PENDING:
+        return '출석체크 이전';
       case AttendanceStatus.PRESENT:
-        return '출석함';
-      case AttendanceStatus.LATE:
-        return '미출석함';
+        return '출석';
       case AttendanceStatus.ABSENT:
-        return '미출석함';
+        return '미출석';
+      case AttendanceStatus.LATE:
+        return '미출석';
+      case AttendanceStatus.LEFT:
+        return '조퇴';
+      case AttendanceStatus.EXCUSED_ABSENT:
+        return '선통보 결석';
+      case AttendanceStatus.EXCUSED_LATE:
+        return '선통보 지각';
+      case AttendanceStatus.EXCUSED_LEFT:
+        return '선통보 조퇴';
     }
-    return '??'; // 이건 나오면 안된다.
   }
 
   private translateStatusInEndContext(status: AttendanceStatus): string {
     switch (status) {
+      case AttendanceStatus.PENDING:
+        return '출석채크 이전';
       case AttendanceStatus.PRESENT:
-        return '마침';
-      case AttendanceStatus.LATE:
-        return '지각함';
+        return '종료';
       case AttendanceStatus.ABSENT:
-        return '결석함';
+        return '결석';
+      case AttendanceStatus.LATE:
+        return '지각';
+      case AttendanceStatus.LEFT:
+        return '조퇴';
+      case AttendanceStatus.EXCUSED_ABSENT:
+        return '결석 선통보';
+      case AttendanceStatus.EXCUSED_LATE:
+        return '지각 선통보';
+      case AttendanceStatus.EXCUSED_LEFT:
+        return '조퇴 선통보';
     }
-    return '??'; // 이건 나오면 안된다.
   }
 
   /**

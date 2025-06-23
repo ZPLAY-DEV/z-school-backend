@@ -20,8 +20,7 @@ import {
   CreateOfferingDocs,
   GetFormerStudentsDocs,
   GetOfferingByIdDocs,
-  RemoveOfferingDocs,
-  UpdateOfferingDocs,
+  RemoveOfferingDocs
 } from 'src/domain/offering/swagger/offering-swagger.decorator';
 import { Student } from 'src/domain/student/entities/student.entity';
 
@@ -69,12 +68,13 @@ export class OfferingController {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  @UpdateOfferingDocs()
+  // @UpdateOfferingDocs()
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateOfferingDto,
   ): Promise<Offering> {
+    console.log(`🈳 ${id}`, dto);
     return await this.offeringService.update(id, dto);
   }
 

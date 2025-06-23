@@ -11,7 +11,7 @@ import {
   Length,
   ValidateNested,
 } from 'class-validator';
-import { PickRule } from 'src/common/enums';
+import { ClassStatus, PickRule } from 'src/common/enums';
 import { ClassTimeDto } from 'src/domain/offering/dto/class-time.dto';
 
 export class CreateOfferingDto {
@@ -19,6 +19,15 @@ export class CreateOfferingDto {
   @IsInt()
   @IsOptional()
   schoolId?: number;
+
+  @ApiProperty({ description: '🈳 DB의 학기ID' })
+  @IsInt()
+  termId: number;
+
+  @ApiProperty({ description: '🈳 DB의 학기ID' })
+  @IsInt()
+  @IsOptional()
+  lessonId?: number;
 
   @ApiProperty({ description: '학교명' })
   @IsString()
@@ -39,6 +48,11 @@ export class CreateOfferingDto {
   @IsInt()
   @IsOptional()
   capacity?: number;
+
+  @ApiProperty({ description: '재수강우선 선확정 학생수' })
+  @IsInt()
+  @IsOptional()
+  prepicked?: number;
 
   @ApiProperty({ description: '허용 학년 목록', type: [Number] })
   @IsArray()
@@ -81,4 +95,12 @@ export class CreateOfferingDto {
   @IsNumber()
   @IsOptional()
   lastSyncTimestamp?: number;
+
+  @ApiProperty({
+    description: '수강신청 방식',
+    enum: ClassStatus,
+    default: ClassStatus.PENDING,
+  })
+  @IsEnum(ClassStatus)
+  status: ClassStatus;
 }
