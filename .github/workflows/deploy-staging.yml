@@ -11,7 +11,7 @@ on:
 jobs:
   deploy:
     name: Deploy via SSH
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
     - name: Checkout Repository
@@ -22,5 +22,5 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Deploy to macOS server
-      run: ssh -o StrictHostKeyChecking=no -p 443 zplaydev@gnat-fleet-sheep.ngrok-free.app "bash ~/code/z-school-backend/deploy.sh"
+    - name: Deploy on macOS
+      run: bash ~/code/z-school-backend/deploy.sh
