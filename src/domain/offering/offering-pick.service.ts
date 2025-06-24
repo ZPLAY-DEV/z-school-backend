@@ -44,7 +44,7 @@ export class OfferingPickService {
     });
 
     // console.log('🚀 offering', JSON.stringify(offering, null, 2));
-
+    // offerings 는 같은 학년 group 이 여러개 있을 수 있음
     const sameGradeGroups: { groupId: number; startedOn: string }[] =
       offering.lesson.groups
         ?.sort(
