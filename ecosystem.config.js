@@ -16,7 +16,7 @@ module.exports = {
       },
     },
     {
-      name: 'ngrok-tunnel',
+      name: 'ngrok',
       script: 'ngrok', // ngrok 명령 실행
       args: 'start --all --config=/Users/zplaydev/.ngrok2/ngrok.yml',
       interpreter: 'none', // Node.js 인터프리터 사용 안함

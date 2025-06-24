@@ -58,6 +58,35 @@ AWS 다양한 인프라를 사용하고 있기 때문에, 반드시 `docker-comp
 
 - http://localhost:3001/api-docs
 
+## ngrok 으로 실행
+
+1. pm2 start ecosystem.config.js 로 2개 application 실행
+  - v3
+  - ngrok
+
+2. ngrok tunnel 이 2개 필요하기 때문에, 이를 ~/.ngrok2/ngrok.yml 에서 아래와 같이 지정
+  ```yaml
+  version: "2"
+  tunnels:
+    web_app:
+      proto: http
+      addr: 3001
+      domain: gnat-fleet-sheep.ngrok-free.app
+    localstack:
+      proto: http
+      addr: 4566
+  ```
+  2번째 터널을 지정할때, `hostname: localstack-gnat-fleet-sheep.ngrok-free.app` 처럼 subdomain 을 지정하면 편리한데, 이는 유료기능이다.
+  무료계정의 경우, 위와 같이 hostname 을 지정하지 말아야 한다. 그럼 https://abb1-58-122-170-34.ngrok-free.app 와 같은 랜덤 주소가 생성된다.
+  이 주소를 알아내려면, `curl http://localhost:4040/api/tunnels` 라고 입력하면 알 수 있다. 
+
+3. 위 4566 포트로 터널링하는 랜덤주소를 .env.development 의 AWS_CLOUDFRONT_URL 에 값으로 사용하면 된다.
+
+4. 아래와 같이 v3 로 명명된 nestjs application 만 reload 한다. (전체 reload 하면 주소가 바뀌어져 버린다.)
+
+```bash
+pm2 reload v3
+```
 
 ## Deployment
 
