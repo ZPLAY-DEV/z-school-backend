@@ -10,6 +10,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { SchoolTermComboResponseDto } from 'src/domain/school/dto/school-term-combo-response.dto';
 import { SchoolTermComboService } from 'src/domain/school/school-term-combo.service';
+import { GetSchoolTermComboDocs } from './swagger/school-term-combo-swagger.decorator';
 
 @ApiTags('✅ Schools > Terms > Combo ( 학교 > 학기 > 콤보 )')
 @Controller('schools')
@@ -23,6 +24,7 @@ export class SchoolTermComboController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @GetSchoolTermComboDocs()
   @Public()
   @Get(':schoolId/terms/:termId/combo')
   @UseInterceptors(ClassSerializerInterceptor)

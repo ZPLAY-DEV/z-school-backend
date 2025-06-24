@@ -5,7 +5,7 @@ import {
   Post,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import {
   CreateAttendanceResultDto,
@@ -30,7 +30,7 @@ export class SchooldayAttendanceController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  //* CRON JOB 으로 새벽 2시에 호출된다.
+  @ApiOperation({ summary: '⚙️ Cronjob 용 모든 학교 출석부 생성' })
   @Public()
   @Post('attendances')
   async createAllWithDate(

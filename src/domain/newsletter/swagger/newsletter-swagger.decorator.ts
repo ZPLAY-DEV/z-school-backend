@@ -62,6 +62,33 @@ export const CreateNewsletterDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
+//? Find Newsletter By ID
+//? ---------------------------------------------------------------------- ?//
+
+export const FindNewsletterByIdDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '뉴스레터 상세 조회',
+      description: `
+      - 특정 ID로 뉴스레터의 상세 정보를 조회합니다.
+      - 읽지 않은 부모(unreadParents) 정보도 함께 조회됩니다.
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '뉴스레터 ID',
+      example: 1,
+    }),
+    ApiOkResponseTemplate({
+      description: '뉴스레터 상세 조회 완료',
+      type: Newsletter,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
 //? Update Newsletter
 //? ---------------------------------------------------------------------- ?//
 

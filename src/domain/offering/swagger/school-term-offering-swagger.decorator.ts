@@ -4,20 +4,21 @@ import { StatusCodes } from 'http-status-codes';
 import {
   ApiOkPaginatedResponse,
   ApiPaginationQuery,
+  FilterOperator,
   PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { Offering } from '../entities/offering.entity';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 
-const TERM_OFFERING_CONFIG: PaginateConfig<Offering> = {
-  sortableColumns: ['id', 'lessonName', 'groupName'],
-  searchableColumns: ['lessonName', 'groupName'],
-  defaultSortBy: [['id', 'DESC']],
+const SCHOOL_TERM_OFFERING_CONFIG: PaginateConfig<Offering> = {
+  sortableColumns: ['id', 'lessonName', 'groupName'] as const,
+  searchableColumns: ['lessonName', 'groupName'] as const,
+  defaultSortBy: [['id', 'DESC']] as const,
   filterableColumns: {
-    pickRule: true,
-    allowedGrades: true,
+    pickRule: [FilterOperator.EQ, FilterOperator.IN],
+    allowedGrades: [FilterOperator.EQ, FilterOperator.IN],
   },
 };
 
@@ -57,8 +58,8 @@ export const SchoolTermOfferingPaginatedListDocs = () => {
       - 정렬, 필터링, 검색 기능 제공
       `,
     }),
-    ApiPaginationQuery(TERM_OFFERING_CONFIG),
-    ApiOkPaginatedResponse(Offering, TERM_OFFERING_CONFIG),
+    ApiPaginationQuery(SCHOOL_TERM_OFFERING_CONFIG),
+    ApiOkPaginatedResponse(Offering, SCHOOL_TERM_OFFERING_CONFIG),
     ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };

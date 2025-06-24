@@ -21,13 +21,14 @@ import { NewsletterService } from './newsletter.service';
 import {
   CheckReadStatusDocs,
   CreateNewsletterDocs,
+  FindNewsletterByIdDocs,
   GenerateNewsletterS3UrlsDocs,
   GetUnreadParentsDocs,
   MarkAsReadDocs,
   UpdateNewsletterDocs,
 } from './swagger/newsletter-swagger.decorator';
 
-@ApiTags('✅ Newsletters ( 공지사항 )')
+@ApiTags('✅ Newsletters ( 뉴스레터 )')
 @Controller('newsletters')
 @UseInterceptors(ClassSerializerInterceptor)
 export class NewsletterController {
@@ -44,6 +45,16 @@ export class NewsletterController {
   @Post()
   create(@Body() dto: CreateNewsletterDto) {
     return this.newsletterService.create(dto);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? READ
+  //? ---------------------------------------------------------------------- ?//
+
+  @FindNewsletterByIdDocs()
+  @Get(':id')
+  async findById(@Param('id', ParseIntPipe) id: number): Promise<Newsletter> {
+    return await this.newsletterService.findById(id, ['unreadParents']);
   }
 
   //? ---------------------------------------------------------------------- ?//

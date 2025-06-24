@@ -69,6 +69,23 @@ export class NewsletterService {
   }
 
   //? ---------------------------------------------------------------------- ?//
+  //? READ
+  //? ---------------------------------------------------------------------- ?//
+
+  async findById(id: number, relations?: string[]): Promise<Newsletter> {
+    const newsletter = await this.newsletterRepository.findOne({
+      where: { id },
+      relations: relations ? relations : undefined,
+    });
+
+    if (!newsletter) {
+      throw new NotFoundException('Newsletter not found');
+    }
+
+    return newsletter as Newsletter;
+  }
+
+  //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
 

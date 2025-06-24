@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FilterOperator, paginate, PaginateQuery } from 'nestjs-paginate';
+import { NewsletterType } from 'src/common/enums/newsletter-type';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
-import { DataSource, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class SchoolNewsletterService {
@@ -10,8 +11,7 @@ export class SchoolNewsletterService {
 
   constructor(
     @InjectRepository(Newsletter)
-    private readonly dispatchRepository: Repository<Newsletter>,
-    private dataSource: DataSource,
+    private readonly newsletterRepository: Repository<Newsletter>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -22,11 +22,45 @@ export class SchoolNewsletterService {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  async infiniteList(schoolId: number, termId: number, query: PaginateQuery) {
-    const queryBuilder = this.dispatchRepository
-      .createQueryBuilder('dispatch')
-      .where('dispatch.schoolId = :schoolId', { schoolId })
-      .andWhere('dispatch.termId = :termId', { termId });
+  async list(
+    schoolId: number,
+    termId?: number,
+    type?: NewsletterType,
+  ): Promise<Newsletter[]> {
+    const whereCondition: any = { schoolId };
+
+    if (termId !== undefined) {
+      whereCondition.termId = termId;
+    }
+
+    if (type !== undefined) {
+      whereCondition.type = type;
+    }
+
+    return await this.newsletterRepository.find({
+      where: whereCondition,
+      order: { id: 'ASC' },
+    });
+  }
+
+  async infiniteList(
+    schoolId: number,
+    query: PaginateQuery,
+    termId?: number,
+    type?: NewsletterType,
+  ) {
+    const queryBuilder = this.newsletterRepository
+      .createQueryBuilder('newsletter')
+      .where('newsletter.schoolId = :schoolId', { schoolId });
+
+    if (termId !== undefined) {
+      queryBuilder.andWhere('newsletter.termId = :termId', { termId });
+    }
+
+    if (type !== undefined) {
+      queryBuilder.andWhere('newsletter.type = :type', { type });
+    }
+
     return await paginate<Newsletter>(query, queryBuilder, {
       sortableColumns: ['id'],
       searchableColumns: ['title', 'body'],
@@ -34,7 +68,6 @@ export class SchoolNewsletterService {
       filterableColumns: {
         type: [FilterOperator.EQ, FilterOperator.IN],
         mode: [FilterOperator.EQ, FilterOperator.IN],
-        sendAt: [FilterOperator.EQ, FilterOperator.ILIKE],
       },
     });
   }

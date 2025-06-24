@@ -14,7 +14,7 @@ import { EndPickDto, StartPickDto } from '../dto/create-pick.dto';
 import { UpdatePickDto } from '../dto/update-pick.dto';
 import { Pick } from '../entities/pick.entity';
 
-const PIC_OFFERING_CONFIG: PaginateConfig<Pick> = {
+const PICK_OFFERING_CONFIG: PaginateConfig<Pick> = {
   sortableColumns: ['id'],
   searchableColumns: ['note'],
   defaultSortBy: [['id', 'DESC']],
@@ -124,7 +124,7 @@ export const PaginatedListPicksDocs = () =>
       description:
         '특정 학생이 속한 반 목록 또는 반에 속한 학생 목록을 페이지네이션으로 조회합니다.',
     }),
-    ApiPaginationQuery(PIC_OFFERING_CONFIG),
-    ApiOkPaginatedResponse(Pick, PIC_OFFERING_CONFIG),
+    ApiPaginationQuery(PICK_OFFERING_CONFIG),
+    ApiOkPaginatedResponse(Pick, PICK_OFFERING_CONFIG),
     ApiStatuses(StatusCodes.NOT_FOUND),
   );

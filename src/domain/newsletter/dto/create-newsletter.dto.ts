@@ -7,7 +7,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  MaxLength
+  MaxLength,
 } from 'class-validator';
 import {
   EventStatus,

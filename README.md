@@ -54,17 +54,6 @@ AWS 다양한 인프라를 사용하고 있기 때문에, 반드시 `docker-comp
 - https://github.com/ZPLAY-DEV/v3-sqs-lambda
 - https://github.com/ZPLAY-DEV/v3-events-lambda
 
-### sqs 설정
-
-- 아래 명령들을 cli 형태로 입력.
-
-
-```bash
-awslocal sqs create-queue --queue-name dead
-awslocal sqs create-queue --queue-name main --attributes '{"RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:ap-northeast-2:000000000000:dead\",\"maxReceiveCount\":\"2\"}"}'
-
-```
-
 ## Swagger (Api Docs)
 
 - http://localhost:3001/api-docs
