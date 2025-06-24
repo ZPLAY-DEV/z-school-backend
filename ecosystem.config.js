@@ -18,7 +18,7 @@ module.exports = {
     {
       name: 'ngrok-tunnel',
       script: 'ngrok', // ngrok 명령 실행
-      args: 'http --domain=gnat-fleet-sheep.ngrok-free.app 3001',
+      args: 'start --all --config=/Users/zplaydev/.ngrok2/ngrok.yml',
       interpreter: 'none', // Node.js 인터프리터 사용 안함
       autorestart: true,
       watch: false,
@@ -26,7 +26,7 @@ module.exports = {
       out_file: '~/.pm2/logs/ngrok-access.log',
       error_file: '~/.pm2/logs/ngrok-error.log',
       env: {
-        NGROK_AUTHTOKEN: 'your-ngrok-auth-token', // 이미 설정돼 있다면 생략 가능
+        NGROK_AUTHTOKEN: '2ychfJzYcCOl5IwWnKSmo1BVfNJ_3jmzBC9NdMT8ApqrVin8o', // 이미 설정돼 있다면 생략 가능
       },
     },
   ],
