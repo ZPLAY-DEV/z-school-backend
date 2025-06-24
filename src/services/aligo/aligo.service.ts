@@ -86,6 +86,7 @@ export class AligoService {
     const baseDto = {
       sender: sender || ZPLAY_SEOUL_NUMBER,
       msg_type: 'SMS',
+      testmode_yn: process.env.NODE_ENV === 'production' ? 'N' : 'Y', // todo. remove this line
     };
 
     const batches = chunk(dtos, 500);
@@ -173,6 +174,7 @@ export class AligoService {
     const baseDto = {
       sender: sender || ZPLAY_SEOUL_NUMBER,
       msg_type: 'SMS',
+      testmode_yn: process.env.NODE_ENV === 'production' ? 'N' : 'Y', // todo. remove this line
     };
 
     const batches = chunk(dtos, 500);
@@ -307,14 +309,13 @@ export class AligoService {
   }
 
   private async sendBulk(
-    baseDto: { sender: string; msg_type?: string },
+    baseDto: { sender: string; msg_type?: string; testmode_yn?: string },
     targets: Array<{ phone: string; title?: string; body: string; id: number }>,
   ): Promise<any> {
     const dynamicDto: Record<string, any> = {
       ...baseDto,
       sender: baseDto.sender.replace(/[^0-9]/g, ''),
       cnt: targets.length,
-      // testmode_yn: 'Y',
     };
 
     targets.forEach((target, index) => {
