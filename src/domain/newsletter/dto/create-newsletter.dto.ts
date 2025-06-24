@@ -66,6 +66,7 @@ export class CreateNewsletterDto {
   status?: EventStatus;
 
   @ApiProperty({ description: '🈵 뉴스레터 대상', required: true })
+  @IsOptional()
   @IsEnum(NewsletterTarget)
   target?: NewsletterTarget;
 

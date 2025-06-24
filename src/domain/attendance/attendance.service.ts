@@ -42,21 +42,25 @@ export class AttendanceService {
   async init(): Promise<void> {
     const now = new Date();
     const ttl = Math.floor(now.getTime() / 1000) + 60 * 60 * 24; // 1 일
-    await this.model.create({
-      groupKey: generateGroupKey(1),
-      dailyStudentKey: generateDailyStudentKey('2025-01-01', 1, 1, '1', 1),
-      lessonId: 1,
-      lessonName: '수학',
-      groupId: 1,
-      groupName: '1학년1반',
-      studentId: 1,
-      studentName: '김철수',
-      start: '14:00',
-      end: '15:00',
-      duration: 60,
-      status: AttendanceStatus.PENDING,
-      expires: ttl,
-    });
+    try {
+      await this.model.create({
+        groupKey: generateGroupKey(1),
+        dailyStudentKey: generateDailyStudentKey('2025-01-01', 1, 1, '1', 1),
+        lessonId: 1,
+        lessonName: '수학',
+        groupId: 1,
+        groupName: '1학년1반',
+        studentId: 1,
+        studentName: '김철수',
+        start: '14:00',
+        end: '15:00',
+        duration: 60,
+        status: AttendanceStatus.PENDING,
+        expires: ttl,
+      });
+    } catch (error) {
+      console.error(`🚨`, error);
+    }
   }
 
   //? notice that even if you provide createdAt and updatedAt in the payload

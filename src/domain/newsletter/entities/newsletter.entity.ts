@@ -73,21 +73,27 @@ export class Newsletter {
   })
   status: EventStatus;
 
-  @ApiProperty({ description: '🈵 발송 대상 유형; GRADE, COURSE, STUDENT' })
-  @Column({ type: 'enum', enum: NewsletterTarget })
-  target: NewsletterTarget;
+  @ApiProperty({
+    description: '🈵 발송 대상 유형; SCHOOL, GRADE, LESSON, GROUP, OTHER',
+  })
+  @Column({ type: 'enum', enum: NewsletterTarget, default: null })
+  target: NewsletterTarget | null;
 
   @ApiProperty({ description: '🈵 발송 대상 유형' })
-  @Column({ type: 'simple-array', comment: '' })
-  targetItems: string[];
+  @Column({ type: 'simple-array', comment: '', nullable: true })
+  targetItems: string[] | null;
 
   @ApiProperty({ description: '🈵 발송 대상 유형' })
-  @Column({ type: 'varchar', length: 128 })
-  targetLabel: string;
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  targetLabel: string | null;
 
   @ApiProperty({ description: '🈵 관련 대상학생 ids' })
-  @Column({ type: 'simple-array', comment: '관련 대상학생 Ids' })
-  ids: number[];
+  @Column({
+    type: 'simple-array',
+    comment: '관련 대상학생 Ids',
+    nullable: true,
+  })
+  ids: number[] | null;
 
   @ApiProperty({ description: '🈳 발송 예약 시간 (YYYY-MM-DD HH:mm:ss)' })
   @Column({ type: 'timestamp', nullable: true, comment: '발송 시간' })

@@ -14,16 +14,20 @@ export class EventService {
   async init(): Promise<void> {
     const now = new Date();
     const ttl = Math.floor(now.getTime() / 1000) + 60 * 60 * 24; // 1 일
-    await this.model.create({
-      eventKey: 'SCHOOL#1#NEWSLETTER#1',
-      timestamp: 'DATE#2025-01-01T10:00:00Z#ID#1',
-      type: 'EVERY_5MINS',
-      newsletterId: 1,
-      schoolId: 1,
-      status: EventStatus.PENDING,
-      payload: { userId: 1, messages: ['Hello World'] },
-      expires: ttl,
-    });
+    try {
+      await this.model.create({
+        eventKey: 'SCHOOL#1#NEWSLETTER#1',
+        timestamp: '2025-01-01T10:00:00Z',
+        type: 'EVERY_5MINS',
+        newsletterId: 1,
+        schoolId: 1,
+        status: EventStatus.PENDING,
+        payload: {},
+        expires: ttl,
+      });
+    } catch (error) {
+      console.error(`🚨`, error);
+    }
   }
 
   async createEvent(eventData: IEvent): Promise<IEvent> {
