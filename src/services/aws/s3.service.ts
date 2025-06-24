@@ -176,15 +176,13 @@ export class S3Service implements OnModuleInit {
 
       // development 환경에서 localstack URL을 ngrok URL로 변환
       let finalUrl = signedUrl;
-      if (
-        process.env.NODE_ENV === 'development' &&
-        this.cloudfrontUrl !== this.s3Endpoint
-      ) {
-        // localhost:4566을 ngrok URL로 교체
-        finalUrl = signedUrl.replace(this.s3Endpoint, this.cloudfrontUrl);
-        this.logger.log(
-          `Converted URL from ${this.s3Endpoint} to ${this.cloudfrontUrl}`,
-        );
+      if (process.env.NODE_ENV === 'development') {
+        // ngrok URL이 설정되어 있고, localhost:4566이 포함된 경우 변환
+        const ngrokUrl = process.env.AWS_CLOUDFRONT_URL || this.cloudfrontUrl;
+        if (signedUrl.includes('localhost:4566')) {
+          finalUrl = signedUrl.replace('http://localhost:4566', ngrokUrl);
+          this.logger.log(`🔄 LocalStack URL → ngrok: ${finalUrl}`);
+        }
       }
 
       this.logger.log(`Successfully generated signed URL for: ${path}`);
