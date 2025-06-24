@@ -6,34 +6,80 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+import { IS3Urls } from 'src/common/interfaces';
+import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
+import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { UploadService } from 'src/services/upload/upload.service';
 import { CreateNewsletterDto } from './dto/create-newsletter.dto';
 import { NewsletterService } from './newsletter.service';
+import {
+  CheckReadStatusDocs,
+  CreateNewsletterDocs,
+  GenerateNewsletterS3UrlsDocs,
+  GetUnreadParentsDocs,
+  MarkAsReadDocs,
+  UpdateNewsletterDocs,
+} from './swagger/newsletter-swagger.decorator';
 
 @ApiTags('✅ Newsletters ( 공지사항 )')
 @Controller('newsletters')
 @UseInterceptors(ClassSerializerInterceptor)
 export class NewsletterController {
-  constructor(private readonly newsletterService: NewsletterService) {}
+  constructor(
+    private readonly newsletterService: NewsletterService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
+
+  @CreateNewsletterDocs()
   @Post()
-  @ApiOperation({ summary: '뉴스레터 생성' })
   create(@Body() dto: CreateNewsletterDto) {
     return this.newsletterService.create(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
+  @UpdateNewsletterDocs()
+  @Patch(':id')
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateNewsletterDto,
+  ): Promise<Newsletter> {
+    return await this.newsletterService.update(id, dto);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
   //? TRACKING
   //? ---------------------------------------------------------------------- ?//
+
+  @GetUnreadParentsDocs()
+  @Get(':newsletterId/unread-parents')
+  getUnreadParents(@Param('newsletterId', ParseIntPipe) newsletterId: number) {
+    return this.newsletterService.getUnreadParents(newsletterId);
+  }
+
+  @CheckReadStatusDocs()
+  @Get(':newsletterId/read-status')
+  isReadByParent(
+    @Param('newsletterId', ParseIntPipe) newsletterId: number,
+    @Query('parentId', ParseIntPipe) parentId: number,
+  ) {
+    return this.newsletterService.isReadByParent(newsletterId, parentId);
+  }
+
+  @MarkAsReadDocs()
   @Delete(':newsletterId/read')
-  @ApiOperation({ summary: '뉴스레터 읽음 처리' })
   markAsRead(
     @Param('newsletterId', ParseIntPipe) newsletterId: number,
     @Query('parentId', ParseIntPipe) parentId: number,
@@ -41,18 +87,26 @@ export class NewsletterController {
     return this.newsletterService.markAsRead(newsletterId, parentId);
   }
 
-  @Get(':newsletterId/unread-parents')
-  @ApiOperation({ summary: '읽지 않은 부모 목록 조회' })
-  getUnreadParents(@Param('newsletterId', ParseIntPipe) newsletterId: number) {
-    return this.newsletterService.getUnreadParents(newsletterId);
-  }
+  //? ---------------------------------------------------------------------- ?//
+  //? Extras
+  //? ---------------------------------------------------------------------- ?//
 
-  @Get(':newsletterId/read-status')
-  @ApiOperation({ summary: '읽음 상태 확인' })
-  isReadByParent(
-    @Param('newsletterId', ParseIntPipe) newsletterId: number,
-    @Query('parentId', ParseIntPipe) parentId: number,
-  ) {
-    return this.newsletterService.isReadByParent(newsletterId, parentId);
+  @GenerateNewsletterS3UrlsDocs()
+  @Post('s3urls')
+  async generateS3Urls(
+    @Body()
+    dto: {
+      schoolId: number;
+      newsletterId: number;
+      mimeType: string;
+    },
+  ): Promise<IS3Urls> {
+    const path = [
+      `schools`,
+      `${dto.schoolId}`,
+      `newsletters`,
+      `${dto.newsletterId}`,
+    ].join('/');
+    return await this.uploadService.generateUploadUrls(path, dto.mimeType);
   }
 }

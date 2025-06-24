@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -9,10 +8,10 @@ import {
 import { nanoid } from 'nanoid';
 import { Model } from 'nestjs-dynamoose';
 import { InjectModel } from 'nestjs-dynamoose/dist/common';
-import { REDIS_TRACKING_CLIENT } from 'src/common/constants';
-import { EventStatus } from 'src/common/enums';
+import { EventStatus, NewsletterTarget } from 'src/common/enums';
 import { IEvent, IEventKey } from 'src/domain/event/entities/event.interface';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
+import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { School } from 'src/domain/school/entities/school.entity';
@@ -22,19 +21,21 @@ import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
 import { translateNewsletterType } from 'src/helpers/translate';
-import { RedisTrackingService } from 'src/services/redis/redis-tracking.service';
 import { DataSource, EntityManager, In } from 'typeorm';
 
 @Injectable()
 export class NewsletterService {
+  private readonly newsletterRepository;
   private readonly logger = new Logger(NewsletterService.name);
   constructor(
     @InjectModel('Event')
     private readonly model: Model<IEvent, IEventKey>,
-    @Inject(REDIS_TRACKING_CLIENT)
-    private readonly redisTrackingService: RedisTrackingService,
     private readonly dataSource: DataSource,
-  ) {}
+    // @Inject(REDIS_TRACKING_CLIENT)
+    // private readonly redisTrackingService: RedisTrackingService,
+  ) {
+    this.newsletterRepository = this.dataSource.getRepository(Newsletter);
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? CREATE
@@ -46,18 +47,41 @@ export class NewsletterService {
       // 유효성 검증
       await this.validateConditions(manager, dto);
       // 뉴스레터 생성
-      const letter = await this.createNewsletter(manager, dto);
-      // deduped 학생정보 리턴
-      const students = await this.getStudents(manager, dto);
-      // 숏링크 생성
-      const shortlinks = await this.createShortlinks(manager, letter, students);
-      // dynamodb 이벤트 생성 (보내는 날짜 기준 30일 동안만 보관)
-      await this.createEvent(letter, shortlinks, students);
-      // 트래킹 엔트리 생성 (읽지 않은 상태로 초기화)
-      await this.createTrackingEntries(manager, letter, students);
+      const newsletter = await this.createNewsletter(manager, dto);
 
-      return letter;
+      if (dto.scheduledAt) {
+        // deduped 학생정보 리턴
+        const students = await this.getStudents(manager, dto);
+        // 숏링크 생성
+        const shortlinks = await this.createShortlinks(
+          manager,
+          newsletter,
+          students,
+        );
+        // dynamodb 이벤트 생성 (보내는 날짜 기준 30일 동안만 보관)
+        await this.createEvent(newsletter, shortlinks, students);
+        // 트래킹 엔트리 생성 (읽지 않은 상태로 초기화)
+        await this.createTrackingEntries(manager, newsletter, students);
+      }
+
+      return newsletter;
     });
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
+  async update(id: number, dto: UpdateNewsletterDto): Promise<Newsletter> {
+    const newsletter = await this.newsletterRepository.preload({
+      id,
+      ...dto,
+    });
+    if (!newsletter) {
+      throw new NotFoundException('Newsletter not found');
+    }
+    // 업데이트
+    return this.newsletterRepository.save(newsletter) as Promise<Newsletter>;
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -168,7 +192,20 @@ export class NewsletterService {
     manager: EntityManager,
     dto: CreateNewsletterDto,
   ): Promise<Student[]> {
-    const students = await manager.find(Student, {
+    if (!dto.ids) {
+      throw new NotFoundException('No studentIds are given');
+    }
+
+    let students: Student[] = [];
+    if (dto.target === NewsletterTarget.SCHOOL) {
+      students = await manager.getRepository(Student).find({
+        where: { schoolId: dto.schoolId },
+        relations: ['parent', 'parent.user'],
+      });
+      return students;
+    }
+
+    students = await manager.find(Student, {
       where: { id: In(dto.ids) },
       relations: { parent: { user: true } },
     });

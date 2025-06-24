@@ -8,6 +8,7 @@ import { NewsletterService } from 'src/domain/newsletter/newsletter.service';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { SqsModule } from 'src/services/aws/sqs.module';
 import { RedisModule } from 'src/services/redis/redis.module';
+import { UploadModule } from 'src/services/upload/upload.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { RedisModule } from 'src/services/redis/redis.module';
         },
       },
     ]),
+    UploadModule,
     SqsModule,
     RedisModule,
   ],

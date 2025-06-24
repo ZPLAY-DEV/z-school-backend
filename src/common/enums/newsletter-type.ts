@@ -1,7 +1,9 @@
 export enum NewsletterTarget {
-  GRADE = 'GRADE',
-  LESSON = 'LESSON',
-  GROUP = 'GROUP',
+  SCHOOL = 'SCHOOL', // 학교 전체
+  GRADE = 'GRADE', // 학년선택가능
+  LESSON = 'LESSON', // 과목선택가능
+  GROUP = 'GROUP', // 반선택가능
+  OTHER = 'OTHER', // 기타 학생 아이디로 지정
 }
 
 export enum NewsletterStatus {

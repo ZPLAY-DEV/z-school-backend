@@ -5,10 +5,9 @@ import {
   IsDate,
   IsEnum,
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsString,
-  MaxLength,
+  MaxLength
 } from 'class-validator';
 import {
   EventStatus,
@@ -53,7 +52,6 @@ export class CreateNewsletterDto {
     required: true,
     example: NewsletterType.REGISTRATION,
   })
-  @IsNotEmpty()
   @IsEnum(NewsletterType)
   type: NewsletterType;
 
@@ -63,25 +61,24 @@ export class CreateNewsletterDto {
     required: true,
     example: EventStatus.PENDING,
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(EventStatus)
-  status: EventStatus;
+  status?: EventStatus;
 
   @ApiProperty({ description: '🈵 뉴스레터 대상', required: true })
-  @IsNotEmpty()
   @IsEnum(NewsletterTarget)
-  target: NewsletterTarget;
+  target?: NewsletterTarget;
 
   @ApiProperty({ description: '🈵 뉴스레터 대상 아이템들', required: true })
-  @IsNotEmpty()
+  @IsOptional()
   @IsArray()
   @Type(() => String)
-  targetItems: string[];
+  targetItems?: string[];
 
   @ApiProperty({ description: '🈵 뉴스레터 대상 레이블', required: true })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  targetLabel: string;
+  targetLabel?: string;
 
   @ApiProperty({
     description: '🈵 발송 대상자 ids',
@@ -89,10 +86,10 @@ export class CreateNewsletterDto {
     example: [1, 2, 3],
     required: true,
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsArray()
   @IsInt({ each: true })
-  ids: number[];
+  ids?: number[];
 
   @ApiProperty({
     description: '🈳 발송 시간 ( 즉시 발송 시 사용 )',

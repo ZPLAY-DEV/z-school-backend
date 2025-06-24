@@ -70,7 +70,6 @@ export class TermController {
   //? ---------------------------------------------------------------------- ?//
 
   @UpdateTermDocs()
-  @ApiOperation({ description: '학기(Term) 수정' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -90,7 +89,6 @@ export class TermController {
   }
 
   @DeleteTermDocs()
-  @ApiOperation({ description: '학기(Term) 삭제' })
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number): Promise<Term> {
     return await this.termService.softRemove(id);
