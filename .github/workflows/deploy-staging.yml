@@ -23,4 +23,4 @@ jobs:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Deploy on macOS
-      run: bash ~/code/z-school-backend/deploy.sh
+      run: bash ~/code/z-school-backend/scripts/deploy.sh
