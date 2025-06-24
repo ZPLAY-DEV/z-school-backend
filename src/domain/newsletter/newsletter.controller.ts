@@ -108,15 +108,16 @@ export class NewsletterController {
     @Body()
     dto: {
       schoolId: number;
-      newsletterId: number;
+      termId: number;
       mimeType: string;
     },
   ): Promise<IS3Urls> {
     const path = [
       `schools`,
       `${dto.schoolId}`,
+      `terms`,
+      `${dto.termId}`,
       `newsletters`,
-      `${dto.newsletterId}`,
     ].join('/');
     return await this.uploadService.generateUploadUrls(path, dto.mimeType);
   }
