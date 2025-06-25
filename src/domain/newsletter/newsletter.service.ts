@@ -85,6 +85,21 @@ export class NewsletterService {
     return newsletter as Newsletter;
   }
 
+  async findRegistration(
+    schoolId: number,
+    termId: number,
+  ): Promise<Newsletter> {
+    const newsletter = await this.newsletterRepository.findOne({
+      where: { schoolId, termId },
+    });
+
+    if (!newsletter) {
+      throw new NotFoundException('Newsletter not found');
+    }
+
+    return newsletter as Newsletter;
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
