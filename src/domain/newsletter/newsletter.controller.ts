@@ -75,6 +75,7 @@ export class NewsletterController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateNewsletterDto,
   ): Promise<Newsletter> {
+    console.log(dto);
     return await this.newsletterService.update(id, dto);
   }
 

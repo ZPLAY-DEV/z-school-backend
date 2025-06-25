@@ -80,17 +80,6 @@ export class CreateNewsletterDto {
   @IsString()
   targetLabel?: string;
 
-  // @ApiProperty({
-  //   description: '🈳 뉴스레터 대상 학생아이디 ids',
-  //   type: [Number],
-  //   example: [1, 2, 3],
-  //   required: false,
-  // })
-  // @IsOptional()
-  // @IsArray()
-  // @IsInt({ each: true })
-  // ids?: number[];
-
   @ApiProperty({
     description: '🈳 발송 시간 ( 즉시 발송 시 사용 )',
     example: '2025-06-05T00:30:00Z',

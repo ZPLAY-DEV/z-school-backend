@@ -3,7 +3,7 @@ export enum NewsletterTarget {
   GRADE = 'GRADE', // 학년선택가능
   LESSON = 'LESSON', // 과목선택가능
   GROUP = 'GROUP', // 반선택가능
-  OTHER = 'OTHER', // 기타 학생 아이디로 지정
+  STUDENT = 'STUDENT', // 기타 학생 아이디로 지정
 }
 
 export enum NewsletterStatus {
