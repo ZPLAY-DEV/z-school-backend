@@ -66,31 +66,30 @@ export class CreateNewsletterDto {
   status?: EventStatus;
 
   @ApiProperty({ description: '🈵 뉴스레터 대상', required: true })
-  @IsOptional()
   @IsEnum(NewsletterTarget)
-  target?: NewsletterTarget;
+  target: NewsletterTarget;
 
-  @ApiProperty({ description: '🈵 뉴스레터 대상 아이템들', required: true })
+  @ApiProperty({ description: '🈳 뉴스레터 대상 아이템들', required: false })
   @IsOptional()
   @IsArray()
-  @Type(() => String)
-  targetItems?: string[];
+  @Type(() => Number)
+  targetItems?: number[];
 
-  @ApiProperty({ description: '🈵 뉴스레터 대상 레이블', required: true })
+  @ApiProperty({ description: '🈳 뉴스레터 대상 레이블', required: false })
   @IsOptional()
   @IsString()
   targetLabel?: string;
 
-  @ApiProperty({
-    description: '🈵 발송 대상자 ids',
-    type: [Number],
-    example: [1, 2, 3],
-    required: true,
-  })
-  @IsOptional()
-  @IsArray()
-  @IsInt({ each: true })
-  ids?: number[];
+  // @ApiProperty({
+  //   description: '🈳 뉴스레터 대상 학생아이디 ids',
+  //   type: [Number],
+  //   example: [1, 2, 3],
+  //   required: false,
+  // })
+  // @IsOptional()
+  // @IsArray()
+  // @IsInt({ each: true })
+  // ids?: number[];
 
   @ApiProperty({
     description: '🈳 발송 시간 ( 즉시 발송 시 사용 )',

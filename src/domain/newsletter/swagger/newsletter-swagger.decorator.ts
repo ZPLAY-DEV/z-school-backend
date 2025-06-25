@@ -28,8 +28,18 @@ export const CreateNewsletterDocs = () => {
       description: `
       - 학교의 학기에 귀속된 뉴스레터를 생성합니다.
       - 뉴스레터 종류: REGISTRATION(수강신청), NEWS(공지사항), SURVEY(설문지)
-      - 발송 대상: SCHOOL(전교생), GRADE(학년), LESSON(강좌), GROUP(반), OTHER(학생 아이디로 지정)
-      - scheduledAt을 설정하면 예약 발송이 가능합니다. 즉시 발송은 현재 시간으로 설정합니다.
+      - scheduledAt을 생성시 지정하거나 수정해서 입력하면 발송예약됩니다.
+      - 예약하더라도 최대 5분의 지연이 있습니다.
+      - 즉시 발송도 scheduledAt을 현재 시간으로 설정한 발송예약처럼 동작합니다.
+      - target: SCHOOL(전교생), GRADE(학년), LESSON(강좌), GROUP(반), OTHER(학생 아이디로 지정)
+      - targetItems?:
+        - target이 SCHOOL인 경우 null
+        - target이 GRADE인 경우 학년 아이디 배열 number[]
+        - target이 LESSON인 경우 강좌 아이디 배열 number[]
+        - target이 GROUP인 경우 반 아이디 배열 number[]
+        - target이 OTHER인 경우 학생 아이디 배열 number[]
+      - targetLabel?: 발송대상을 사람이 읽기 좋게 설명한 글 string|null
+      - images: 뉴스레터 첨부 이미지 배열
       `,
     }),
     ApiBody({

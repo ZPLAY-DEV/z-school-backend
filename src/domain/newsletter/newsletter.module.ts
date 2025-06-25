@@ -5,6 +5,7 @@ import { EventSchema } from 'src/domain/event/entities/event.schema';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { NewsletterController } from 'src/domain/newsletter/newsletter.controller';
 import { NewsletterService } from 'src/domain/newsletter/newsletter.service';
+import { NewsletterSubscriber } from 'src/domain/newsletter/subscriber/newsletter.subscriber';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { SqsModule } from 'src/services/aws/sqs.module';
 import { RedisModule } from 'src/services/redis/redis.module';
@@ -27,6 +28,6 @@ import { UploadModule } from 'src/services/upload/upload.module';
     RedisModule,
   ],
   controllers: [NewsletterController],
-  providers: [NewsletterService],
+  providers: [NewsletterService, NewsletterSubscriber],
 })
 export class NewsletterModule {}

@@ -81,19 +81,19 @@ export class Newsletter {
 
   @ApiProperty({ description: '🈵 발송 대상 유형' })
   @Column({ type: 'simple-array', comment: '', nullable: true })
-  targetItems: string[] | null;
+  targetItems: number[] | null;
 
   @ApiProperty({ description: '🈵 발송 대상 유형' })
   @Column({ type: 'varchar', length: 128, nullable: true })
   targetLabel: string | null;
 
-  @ApiProperty({ description: '🈵 관련 대상학생 ids' })
-  @Column({
-    type: 'simple-array',
-    comment: '관련 대상학생 Ids',
-    nullable: true,
-  })
-  ids: number[] | null;
+  // @ApiProperty({ description: '🈵 관련 대상학생 ids' })
+  // @Column({
+  //   type: 'simple-array',
+  //   comment: '관련 대상학생 Ids',
+  //   nullable: true,
+  // })
+  // ids: number[] | null;
 
   @ApiProperty({ description: '🈳 발송 예약 시간 (YYYY-MM-DD HH:mm:ss)' })
   @Column({ type: 'timestamp', nullable: true, comment: '발송 시간' })
