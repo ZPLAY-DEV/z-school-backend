@@ -99,10 +99,15 @@ export class NewsletterService {
       // 기존 뉴스레터 조회
       const existingNewsletter = await manager.findOne(Newsletter, {
         where: { id },
+        relations: { school: true },
       });
 
       if (!existingNewsletter) {
         throw new NotFoundException('Newsletter not found');
+      }
+
+      if (dto.scheduledAt && !existingNewsletter?.school?.phone) {
+        throw new BadRequestException('Missing phone info in school');
       }
 
       // 업데이트할 데이터로 preload
@@ -215,7 +220,8 @@ export class NewsletterService {
     if (!school) {
       throw new NotFoundException('School not found');
     }
-    if (!school.phone) {
+
+    if (dto.scheduledAt && !school.phone) {
       throw new BadRequestException('Missing phone info in school');
     }
     const term = await manager.findOne(Term, { where: { id: dto.termId } });
@@ -459,6 +465,8 @@ export class NewsletterService {
       },
       expires: ttl,
     };
+
+    console.log(`✳️ event`, event);
 
     // DynamoDB upsert: 동일한 key면 자동으로 기존 레코드 덮어씀
     await this.model.create(event);

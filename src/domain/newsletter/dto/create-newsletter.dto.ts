@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsDate,
@@ -58,7 +58,7 @@ export class CreateNewsletterDto {
   @ApiProperty({
     description: '🈵 뉴스레터 발송상태',
     enum: EventStatus,
-    required: true,
+    required: false,
     example: EventStatus.PENDING,
   })
   @IsOptional()
@@ -81,12 +81,26 @@ export class CreateNewsletterDto {
   targetLabel?: string;
 
   @ApiProperty({
-    description: '🈳 발송 시간 ( 즉시 발송 시 사용 )',
+    description:
+      '🈳 발송 시간 (예: "2025-06-24 10:00:00" 또는 "2025-06-24T10:00:00Z")',
     example: '2025-06-05T00:30:00Z',
     required: false,
   })
   @IsOptional()
   @IsDate()
-  @Type(() => Date)
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      // "YYYY-MM-DD HH:mm:ss" 형식을 ISO 형식으로 변환
+      const dateStr = value.replace(' ', 'T');
+      if (!dateStr.includes('T')) {
+        return new Date(value);
+      }
+      if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+        return new Date(dateStr + 'Z');
+      }
+      return new Date(dateStr);
+    }
+    return value as Date | null | undefined;
+  })
   scheduledAt?: Date | null;
 }
