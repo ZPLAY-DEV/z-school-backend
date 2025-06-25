@@ -13,6 +13,7 @@ module.exports = {
       exec_mode: 'cluster',
       env: {
         NODE_ENV: 'development',
+        AWS_CLOUDFRONT_URL: '',
       },
     },
     {
