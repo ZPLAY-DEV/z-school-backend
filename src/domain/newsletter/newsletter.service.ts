@@ -452,7 +452,7 @@ export class NewsletterService {
             (shortlink) => shortlink.parentId === student.parent.id,
           );
           const isFcm = !!student.parent?.user?.pushToken;
-          const url = `http://localhost:3000/newsletters`;
+          const url = `http://afters.kr`;
           return {
             id: student.parent.id,
             phone: student.parent.phone,
@@ -470,7 +470,7 @@ export class NewsletterService {
       expires: ttl,
     };
 
-    console.log(`✳️ event`, event);
+    console.log(`✳️ event`, JSON.stringify(event, null, 2));
 
     // DynamoDB upsert: 동일한 key면 자동으로 기존 레코드 덮어씀
     await this.model.create(event);

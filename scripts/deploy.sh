@@ -12,14 +12,14 @@ pnpm install --frozen-lockfile
 echo "👉 Building app..."
 pnpm build
 
-echo "👉 Setting up environment variable..."
-TUNNEL_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.name == "localstack") | .public_url')
-if [ -z "$TUNNEL_URL" ]; then
-  echo "Failed to get localstack tunnel URL"
-  exit 1
-fi
+# echo "👉 Setting up environment variable..."
+# TUNNEL_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.name == "localstack") | .public_url')
+# if [ -z "$TUNNEL_URL" ]; then
+#   echo "Failed to get localstack tunnel URL"
+#   exit 1
+# fi
 
-echo "👉 Restarting server via PM2 with updated environment variable..."
-pm2 restart ecosystem.config.js --env development --update-env --env AWS_CLOUDFRONT_URL=$TUNNEL_URL
+echo "👉 Restarting server via PM2..."
+pm2 restart ecosystem.config.js --env development
 
-echo "✅ Completed"
+echo "✅ Done Staging Local Mac Server"

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# create notification-logs-bucket
+awslocal --endpoint-url=http://localhost:4566 s3 mb s3://notification-logs-bucket
+
 ## create s3 bucket
 awslocal --endpoint-url=http://localhost:4566 s3 mb s3://afterschool-files-bucket
 
