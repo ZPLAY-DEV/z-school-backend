@@ -33,7 +33,6 @@ export const EventSchema = new Schema(
     },
     payload: {
       type: Object,
-      required: true,
     },
     isRead: {
       type: Boolean,
@@ -49,6 +48,7 @@ export const EventSchema = new Schema(
     },
   },
   {
+    saveUnknown: true,
     timestamps: {
       createdAt: {
         createdAt: {

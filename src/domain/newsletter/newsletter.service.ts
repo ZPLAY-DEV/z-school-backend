@@ -262,12 +262,16 @@ export class NewsletterService {
       // deduped 학생정보 가져오기
       const students = await this.getDedupedStudents(manager, newsletter);
 
+      console.log(`✳️ students`, students);
+
       // 숏링크 생성
       const shortlinks = await this.createShortlinks(
         manager,
         newsletter,
         students,
       );
+
+      console.log(`✳️ shortlinks`, shortlinks);
 
       // dynamodb 이벤트 생성 (upsert 방식으로 자동 처리)
       await this.createEvent(newsletter, shortlinks, students);
@@ -418,7 +422,7 @@ export class NewsletterService {
     // 생성된 shortlinks 조회하여 반환
     const shortlinks = await manager.find(Shortlink, {
       where: { newsletterId: newsletter.id },
-      relations: { parent: true },
+      relations: { parent: true, newsletter: true },
     });
 
     return shortlinks;
