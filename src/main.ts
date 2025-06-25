@@ -43,7 +43,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true, // 정의되지 않은 속성 금지
       validateCustomDecorators: true, // 커스텀 데코레이터 유효성 검사
       exceptionFactory: (e) => {
-        console.log('error', e);
+        console.log('❌ error', e);
         // 상세 오류가 답답하면, validation-catch-all.filter.ts 를 전역필터로 적용.
         return new BadRequestException(
           '입력값이 유효하지 않습니다. 다시 확인해주세요.',

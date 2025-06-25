@@ -76,7 +76,12 @@ export class Newsletter {
   @ApiProperty({
     description: '🈵 발송 대상 유형; SCHOOL, GRADE, LESSON, GROUP, OTHER',
   })
-  @Column({ type: 'enum', enum: NewsletterTarget, default: null })
+  @Column({
+    type: 'enum',
+    enum: NewsletterTarget,
+    default: NewsletterTarget.SCHOOL,
+    nullable: true,
+  })
   target: NewsletterTarget | null;
 
   @ApiProperty({ description: '🈵 발송 대상 유형' })
