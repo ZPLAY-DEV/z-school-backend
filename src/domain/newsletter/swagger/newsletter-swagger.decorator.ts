@@ -12,6 +12,7 @@ import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-crea
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CreateNewsletterDto } from '../dto/create-newsletter.dto';
 import { GenerateS3UrlsDto } from '../dto/generate-s3-urls.dto';
+import { NewsletterDetailResponseDto } from '../dto/newsletter-detail.response.dto';
 import { UpdateNewsletterDto } from '../dto/update-newsletter.dto';
 import { Newsletter } from '../entities/newsletter.entity';
 
@@ -35,7 +36,7 @@ export const CreateNewsletterDocs = () => {
         - target이 GRADE인 경우 학년 아이디 배열 number[]
         - target이 LESSON인 경우 강좌 아이디 배열 number[]
         - target이 GROUP인 경우 반 아이디 배열 number[]
-        - target이 OTHER인 경우 학생 아이디 배열 number[]
+        - target이 STUDENT인 경우 학생 아이디 배열 number[]
       - targetLabel?: 발송대상을 사람이 읽기 좋게 설명한 글 string|null
       - images: 뉴스레터 첨부 이미지 배열
       `,
@@ -69,6 +70,40 @@ export const CreateNewsletterDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
+//? Find Registration Newsletter
+//? ---------------------------------------------------------------------- ?//
+
+export const FindRegistrationNewsletterDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '수강신청 뉴스레터 조회',
+      description: `
+      - 특정 학교와 학기의 수강신청 타입 뉴스레터를 조회합니다.
+      - schoolId와 termId를 필수로 입력받습니다.
+      - 해당 학교와 학기에 등록된 수강신청 뉴스레터가 반환됩니다.
+      `,
+    }),
+    ApiQuery({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+      example: 1,
+    }),
+    ApiQuery({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID',
+      example: 1,
+    }),
+    ApiOkResponseTemplate({
+      description: '수강신청 뉴스레터 조회 완료',
+      type: Newsletter,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
 //? Find Newsletter By ID
 //? ---------------------------------------------------------------------- ?//
 
@@ -78,7 +113,8 @@ export const FindNewsletterByIdDocs = () => {
       summary: '뉴스레터 상세 조회',
       description: `
       - 특정 ID로 뉴스레터의 상세 정보를 조회합니다.
-      - 읽지 않은 부모(unreadParents) 정보도 함께 조회됩니다.
+      - 뉴스레터 기본 정보와 함께 관련 학생 정보도 조회됩니다.
+      - 수강신청 타입의 경우 학생 목록과 총 학생 수가 포함됩니다.
       `,
     }),
     ApiParam({
@@ -89,7 +125,7 @@ export const FindNewsletterByIdDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '뉴스레터 상세 조회 완료',
-      type: Newsletter,
+      type: NewsletterDetailResponseDto,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
   );
