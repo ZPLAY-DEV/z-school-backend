@@ -1,11 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { IsArray } from 'class-validator';
-import {
-  EventStatus,
-  NewsletterTarget,
-  NewsletterType,
-} from 'src/common/enums';
+import { NewsletterTarget, NewsletterType } from 'src/common/enums';
+import { NotificationStatus } from 'src/common/enums/notification-status';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
@@ -79,10 +76,10 @@ export class Newsletter {
   @ApiProperty({ description: '🈵 발송 상태' })
   @Column({
     type: 'enum',
-    enum: EventStatus,
-    default: EventStatus.PENDING,
+    enum: NotificationStatus,
+    default: NotificationStatus.PENDING,
   })
-  status: EventStatus;
+  status: NotificationStatus;
 
   @ApiProperty({
     description: '🈵 발송 대상 유형; SCHOOL, GRADE, LESSON, GROUP, OTHER',

@@ -14,7 +14,8 @@ import {
   NewsletterType,
   StudentStatus,
 } from 'src/common/enums';
-import { StudentReadInfo } from 'src/common/interfaces';
+import { NotificationStatus } from 'src/common/enums/notification-status';
+import { StudentNotificationInfo } from 'src/common/interfaces';
 import { IEvent, IEventKey } from 'src/domain/event/entities/event.interface';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { NewsletterDetailResponseDto } from 'src/domain/newsletter/dto/newsletter-detail.response.dto';
@@ -79,6 +80,19 @@ export class NewsletterService {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
+  async findById(id: number, relations?: string[]): Promise<Newsletter> {
+    const newsletter = await this.newsletterRepository.findOne({
+      where: { id },
+      relations: relations ? relations : undefined,
+    });
+
+    if (!newsletter) {
+      throw new NotFoundException('Newsletter not found');
+    }
+
+    return newsletter as Newsletter;
+  }
+
   async detail(id: number): Promise<NewsletterDetailResponseDto> {
     const newsletter: Newsletter = await this.newsletterRepository.findOne({
       where: { id },
@@ -95,11 +109,7 @@ export class NewsletterService {
     // unreadParents 관계 제거 (응답에서 제외)
     delete newsletter.unreadParents;
 
-    if (
-      newsletter.type === NewsletterType.REGISTRATION &&
-      newsletter.studentIds &&
-      newsletter.studentIds.length > 0
-    ) {
+    if (newsletter.studentIds && newsletter.studentIds.length > 0) {
       const students = await this.dataSource
         .getRepository(Student)
         .createQueryBuilder('student')
@@ -109,11 +119,23 @@ export class NewsletterService {
         })
         .getMany();
 
-      const studentReadInfos: StudentReadInfo[] = students.map((student) => ({
-        id: student.id,
-        name: student.name,
-        read: !unreadParentIds.includes(student.parent.id),
-      }));
+      const studentReadInfos: StudentNotificationInfo[] =
+        newsletter.type === NewsletterType.REGISTRATION
+          ? students.map((student) => ({
+              id: student.id,
+              name: student.name,
+              grade: student.grade,
+              class: student.class,
+              studentCode: student.studentCode,
+              read: !unreadParentIds.includes(student.parent.id),
+            }))
+          : students.map((student) => ({
+              id: student.id,
+              grade: student.grade,
+              class: student.class,
+              studentCode: student.studentCode,
+              name: student.name,
+            }));
 
       return new NewsletterDetailResponseDto(
         newsletter,
@@ -123,19 +145,6 @@ export class NewsletterService {
     }
 
     return new NewsletterDetailResponseDto(newsletter);
-  }
-
-  async findById(id: number, relations?: string[]): Promise<Newsletter> {
-    const newsletter = await this.newsletterRepository.findOne({
-      where: { id },
-      relations: relations ? relations : undefined,
-    });
-
-    if (!newsletter) {
-      throw new NotFoundException('Newsletter not found');
-    }
-
-    return newsletter as Newsletter;
   }
 
   async findRegistration(
@@ -375,24 +384,26 @@ export class NewsletterService {
       // console.log(`✳️ students`, JSON.stringify(students, null, 2));
       const studentIds = students.map((student) => student.id);
 
+      const dedupedStudents = this.dedupeStudents(students);
+
       // 숏링크 생성
       const shortlinks = await this.createShortlinks(
         manager,
         newsletter,
-        students,
+        dedupedStudents,
       );
       // console.log(`✳️ shortlinks`, JSON.stringify(shortlinks, null, 2));
 
       // dynamodb 이벤트 생성 (upsert 방식으로 자동 처리)
-      await this.createEvent(newsletter, shortlinks, students);
+      await this.createEvent(newsletter, shortlinks, dedupedStudents);
 
       // 트래킹 엔트리 생성 (읽지 않은 상태로 초기화)
-      if (newsletter.type !== NewsletterType.REGISTRATION) {
-        await this.createTrackingEntries(manager, newsletter, students);
+      if (newsletter.type === NewsletterType.REGISTRATION) {
+        await this.createTrackingEntries(manager, newsletter, dedupedStudents);
       }
 
       // newsletter 업데이트
-      newsletter.status = EventStatus.SENT;
+      newsletter.status = NotificationStatus.SENT;
       newsletter.studentIds = studentIds;
       await manager.save(newsletter);
 
@@ -406,6 +417,16 @@ export class NewsletterService {
       );
       throw error;
     }
+  }
+
+  private dedupeStudents(students: Student[]): Student[] {
+    const parentIdMap = new Map<number, Student>();
+    students.forEach((student) => {
+      if (!parentIdMap.has(student.parent.id)) {
+        parentIdMap.set(student.parent.id, student);
+      }
+    });
+    return Array.from(parentIdMap.values());
   }
 
   private async checkExistingEvent(
