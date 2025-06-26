@@ -54,11 +54,11 @@ export class NewsletterController {
 
   @FindRegistrationNewsletterDocs()
   @Get('registration')
-  async findRegistration(
+  async findOnlyRegistration(
     @Query('schoolId', ParseIntPipe) schoolId: number,
     @Query('termId', ParseIntPipe) termId: number,
   ): Promise<Newsletter> {
-    return await this.newsletterService.findRegistration(schoolId, termId);
+    return await this.newsletterService.findOnlyRegistration(schoolId, termId);
   }
 
   @FindNewsletterByIdDocs()
@@ -66,7 +66,7 @@ export class NewsletterController {
   async findById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<NewsletterDetailResponseDto> {
-    return await this.newsletterService.detail(id);
+    return await this.newsletterService.findDetail(id);
   }
 
   //? ---------------------------------------------------------------------- ?//

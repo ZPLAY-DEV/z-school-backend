@@ -93,7 +93,7 @@ export class NewsletterService {
     return newsletter as Newsletter;
   }
 
-  async detail(id: number): Promise<NewsletterDetailResponseDto> {
+  async findDetail(id: number): Promise<NewsletterDetailResponseDto> {
     const newsletter: Newsletter = await this.newsletterRepository.findOne({
       where: { id },
       relations: ['unreadParents'],
@@ -147,7 +147,7 @@ export class NewsletterService {
     return new NewsletterDetailResponseDto(newsletter);
   }
 
-  async findRegistration(
+  async findOnlyRegistration(
     schoolId: number,
     termId: number,
   ): Promise<Newsletter> {
