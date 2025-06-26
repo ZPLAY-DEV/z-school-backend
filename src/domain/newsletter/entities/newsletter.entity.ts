@@ -42,8 +42,19 @@ export class Newsletter {
 
   // ------------------------------------------------------------------------ //
 
+  @ApiProperty({
+    description: '🈳 학교명',
+    example: '홍익대학교 사범대학 부속 초등학교',
+  })
+  @Column({ type: 'varchar', length: 24 })
+  schoolName: string; // 관리자 편의를 위한 Column.
+
+  @ApiProperty({ description: '늘봄학교 수강기간명', example: '2025-1학기' })
+  @Column({ type: 'varchar', length: 16 })
+  termName: string;
+
   @ApiProperty({ description: '🈵 게시글 제목' })
-  @Column({ type: 'varchar', length: 32 })
+  @Column({ type: 'varchar', length: 64 })
   title: string;
 
   @ApiProperty({ description: '🈳 게시글 본문' })
@@ -92,13 +103,13 @@ export class Newsletter {
   @Column({ type: 'varchar', length: 128, nullable: true })
   targetLabel: string | null;
 
-  // @ApiProperty({ description: '🈵 관련 대상학생 ids' })
-  // @Column({
-  //   type: 'simple-array',
-  //   comment: '관련 대상학생 Ids',
-  //   nullable: true,
-  // })
-  // ids: number[] | null;
+  @ApiProperty({ description: '🈵 관련 모든 studentIds' })
+  @Column({
+    type: 'simple-array',
+    comment: '관련 모든 studentIds',
+    nullable: true,
+  })
+  studentIds: number[] | null;
 
   @ApiProperty({ description: '🈳 발송 예약 시간 (YYYY-MM-DD HH:mm:ss)' })
   @Column({ type: 'timestamp', nullable: true, comment: '발송 시간' })
@@ -144,7 +155,7 @@ export class Newsletter {
     joinColumn: { name: 'newsletterId', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'parentId', referencedColumnName: 'id' },
   })
-  unreadParents: Parent[];
+  unreadParents?: Parent[];
 
   //? Constructor ---------------------------------------------------------- ?//
   constructor(partial: Partial<Newsletter>) {

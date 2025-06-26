@@ -296,29 +296,8 @@ export interface HttpErrorFormat {
   message: string;
 }
 
-// todo. delete the followings
-
-export interface IMixedTargetMessage {
+export type StudentReadInfo = {
   id: number;
-  token: string;
-  phone: string;
-  title?: string;
-  body: string;
-  role: 'PARENT';
-  page: string;
-  args: string;
-}
-
-/**
- * 발송 응답 인터페이스
- * @param messages IMixedTargetMessage[]
- * @param type 'ping.class'
- * @param school 학교 아이디 ( toString으로 파싱해야함)
- * @param role 'PARENT' | 'INSTRUCTOR'
- */
-export interface IDispatchResponse {
-  messages: IMixedTargetMessage[];
-  type: 'ping.class';
-  school: string;
-  role: 'PARENT';
-}
+  name: string;
+  read: boolean;
+};

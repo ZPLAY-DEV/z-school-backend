@@ -29,9 +29,9 @@ export class School {
   id: number;
 
   @ApiProperty({ description: '🈳 학교 이름' })
-  @Column({ type: 'varchar', length: 32, nullable: true, comment: '학교 이름' })
+  @Column({ type: 'varchar', length: 24, comment: '학교 이름' })
   @IsString()
-  name: string | null;
+  name: string;
 
   @ApiProperty({ description: '🈵 학교 코드' })
   @Column({

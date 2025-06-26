@@ -6,16 +6,10 @@ export enum NewsletterTarget {
   STUDENT = 'STUDENT', // 기타 학생 아이디로 지정
 }
 
-export enum NewsletterStatus {
-  READY = 'READY',
-  SUCCESS = 'SUCCESS',
-  FAILED = 'FAILED',
-}
-
 export enum NewsletterType {
-  REGISTRATION = 'REGISTRATION',
   NEWS = 'NEWS',
   SURVEY = 'SURVEY',
+  REGISTRATION = 'REGISTRATION',
 }
 
 // ex) NewsletterTypeLabels[NewsletterType.RESUME] returns "이력서"

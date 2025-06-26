@@ -9,21 +9,21 @@ import {
   IsString,
   Length,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
 
 export class CreateSchoolDto {
   @ApiProperty({
-    description: '🈳 School name',
-    example: '제트학교',
-    maxLength: 32,
-    required: false,
+    description: '🈳 관리자 편의를 위한 학교명',
+    example: '홍익대학교 사범대학 부속 초등학교',
+    required: true,
+    maxLength: 24,
   })
   @IsString()
-  @Length(1, 32)
-  @IsOptional()
-  name?: string;
+  @MaxLength(24) // '홍익대학교 사범대학 부속 초등학교'
+  name: string;
 
   @ApiProperty({
     description: '🈵 Unique school code',

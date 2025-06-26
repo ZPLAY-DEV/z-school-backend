@@ -25,6 +25,28 @@ export class CreateNewsletterDto {
   termId: number;
 
   @ApiProperty({
+    description: '🈳 관리자 편의를 위한 학교명',
+    example: '홍익대학교 사범대학 부속 초등학교',
+    required: true,
+    maxLength: 24,
+  })
+  @IsOptional() //! 자동 입력 예정이라 Optional
+  @IsString()
+  @MaxLength(24)
+  schoolName?: string;
+
+  @ApiProperty({
+    description: '🈵 학기명',
+    example: '1학기',
+    required: true,
+    maxLength: 16,
+  })
+  @IsOptional() //! 자동 입력 예정이라 Optional
+  @IsString()
+  @MaxLength(16)
+  termName?: string;
+
+  @ApiProperty({
     description: '🈵 게시글 제목',
     type: String,
     required: true,
@@ -80,6 +102,12 @@ export class CreateNewsletterDto {
   @IsOptional()
   @IsString()
   targetLabel?: string;
+
+  @ApiProperty({ description: '🈳 관련 모든 studentIds', required: false })
+  @IsOptional() //! 자동 입력 예정이라 Optional
+  @IsArray()
+  @Type(() => Number)
+  studentIds?: number[];
 
   @ApiProperty({
     description:

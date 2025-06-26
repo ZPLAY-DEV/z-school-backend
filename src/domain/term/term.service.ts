@@ -117,7 +117,10 @@ export class TermService {
   //? ---------------------------------------------------------------------- ?//
 
   async softRemove(id: number): Promise<Term> {
-    const term = await this.findById(id);
+    const term = await this.findById(id, ['lessons']);
+    if (term.lessons.length > 0) {
+      throw new BadRequestException('Term has lessons');
+    }
     return await this.termRepository.softRemove(term);
   }
 }

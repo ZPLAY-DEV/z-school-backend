@@ -21,15 +21,14 @@ export class CreateTermDto {
   schoolId?: number;
 
   @ApiProperty({
-    description: '🈳 학교명',
-    required: false,
+    description: '🈳 관리자 편의를 위한 학교명',
     example: '홍익대학교 사범대학 부속 초등학교',
-    maxLength: 16,
+    required: true,
+    maxLength: 24,
   })
-  @IsOptional()
   @IsString()
-  @MaxLength(24)
-  schoolName?: string | null;
+  @MaxLength(24) // '홍익대학교 사범대학 부속 초등학교'
+  schoolName: string;
 
   @ApiProperty({ description: '🈵 학사년도', example: 2025, required: true })
   @IsInt()

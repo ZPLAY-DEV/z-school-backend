@@ -6,7 +6,7 @@ export interface IEventKey {
 }
 
 export interface IEvent extends IEventKey {
-  type: string; // e.g. "NEWSLETTER"
+  type: string; // e.g. "REGISTRATION"
   newsletterId: number; // 조회 편의를 위해 별도 필드로 유지
   schoolId: number; // 조회 편의를 위해 별도 필드로 유지
   status: EventStatus;

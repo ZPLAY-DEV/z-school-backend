@@ -18,7 +18,6 @@ import { UpdateTermDto } from 'src/domain/term/dto/update-term.dto';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   CreateTermDocs,
-  DeleteFileDocs,
   DeleteTermDocs,
   FindTermDocs,
   GenerateS3UrlsDocs,
@@ -81,12 +80,6 @@ export class TermController {
   //? ---------------------------------------------------------------------- ?//
   //? Delete
   //? ---------------------------------------------------------------------- ?//
-
-  @DeleteFileDocs()
-  @Delete('file')
-  async deleteFile(@Body() dto: { url: string }): Promise<void> {
-    await this.uploadService.deleteFile(dto.url);
-  }
 
   @DeleteTermDocs()
   @Delete(':id')

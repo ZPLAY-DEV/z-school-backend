@@ -1,0 +1,34 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { StudentReadInfo } from 'src/common/interfaces';
+import { Newsletter } from '../entities/newsletter.entity';
+
+export class NewsletterDetailResponseDto extends Newsletter {
+  @ApiProperty({
+    description: '관련 학생 정보 (수강신청 타입일 때만)',
+    type: [Object],
+    example: [{ id: 1, name: '홍길동', read: true }],
+    required: false,
+  })
+  students?: StudentReadInfo[];
+
+  @ApiProperty({
+    description: '총 학생 수 (수강신청 타입일 때만)',
+    required: false,
+    example: 10,
+  })
+  total?: number;
+
+  constructor(
+    newsletter: Newsletter,
+    students?: StudentReadInfo[],
+    total?: number,
+  ) {
+    super(newsletter);
+    if (students) {
+      this.students = students;
+    }
+    if (total !== undefined) {
+      this.total = total;
+    }
+  }
+}

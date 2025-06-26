@@ -11,21 +11,26 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { IS3Urls } from 'src/common/interfaces';
+import { NewsletterDetailResponseDto } from 'src/domain/newsletter/dto/newsletter-detail.response.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { UploadService } from 'src/services/upload/upload.service';
 import { CreateNewsletterDto } from './dto/create-newsletter.dto';
+import { GenerateS3UrlsDto } from './dto/generate-s3-urls.dto';
 import { NewsletterService } from './newsletter.service';
 import {
-  CheckReadStatusDocs,
   CreateNewsletterDocs,
-  FindNewsletterByIdDocs,
   GenerateNewsletterS3UrlsDocs,
-  GetUnreadParentsDocs,
   MarkAsReadDocs,
-  UpdateNewsletterDocs,
+  UpdateNewsletterDocs
 } from './swagger/newsletter-swagger.decorator';
 
 @ApiTags('✅ Newsletters ( 뉴스레터 )')
@@ -43,7 +48,7 @@ export class NewsletterController {
 
   @CreateNewsletterDocs()
   @Post()
-  create(@Body() dto: CreateNewsletterDto) {
+  create(@Body() dto: CreateNewsletterDto): Promise<Newsletter> {
     return this.newsletterService.create(dto);
   }
 
@@ -51,6 +56,31 @@ export class NewsletterController {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
+  @ApiOperation({
+    summary: '수강신청 뉴스레터 조회',
+    description: '특정 학교와 학기의 수강신청 뉴스레터를 조회합니다.',
+  })
+  @ApiQuery({
+    name: 'schoolId',
+    type: Number,
+    description: '학교 ID',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'termId',
+    type: Number,
+    description: '학기 ID',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '수강신청 뉴스레터 조회 성공',
+    type: Newsletter,
+  })
+  @ApiResponse({
+    status: 404,
+    description: '뉴스레터를 찾을 수 없습니다',
+  })
   @Get('registration')
   async findRegistration(
     @Query('schoolId', ParseIntPipe) schoolId: number,
@@ -59,10 +89,31 @@ export class NewsletterController {
     return await this.newsletterService.findRegistration(schoolId, termId);
   }
 
-  @FindNewsletterByIdDocs()
+  @ApiOperation({
+    summary: '뉴스레터 상세 조회',
+    description:
+      '뉴스레터 ID로 상세 정보를 조회합니다. 수강신청 타입의 경우 학생 목록과 읽음 상태가 포함됩니다.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: '뉴스레터 ID',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '뉴스레터 상세 조회 성공',
+    type: NewsletterDetailResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: '뉴스레터를 찾을 수 없습니다',
+  })
   @Get(':id')
-  async findById(@Param('id', ParseIntPipe) id: number): Promise<Newsletter> {
-    return await this.newsletterService.findById(id, ['unreadParents']);
+  async findById(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<NewsletterDetailResponseDto> {
+    return await this.newsletterService.detail(id);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -83,27 +134,12 @@ export class NewsletterController {
   //? TRACKING
   //? ---------------------------------------------------------------------- ?//
 
-  @GetUnreadParentsDocs()
-  @Get(':newsletterId/unread-parents')
-  getUnreadParents(@Param('newsletterId', ParseIntPipe) newsletterId: number) {
-    return this.newsletterService.getUnreadParents(newsletterId);
-  }
-
-  @CheckReadStatusDocs()
-  @Get(':newsletterId/read-status')
-  isReadByParent(
-    @Param('newsletterId', ParseIntPipe) newsletterId: number,
-    @Query('parentId', ParseIntPipe) parentId: number,
-  ) {
-    return this.newsletterService.isReadByParent(newsletterId, parentId);
-  }
-
   @MarkAsReadDocs()
   @Delete(':newsletterId/read')
   markAsRead(
     @Param('newsletterId', ParseIntPipe) newsletterId: number,
     @Query('parentId', ParseIntPipe) parentId: number,
-  ) {
+  ): Promise<void> {
     return this.newsletterService.markAsRead(newsletterId, parentId);
   }
 
@@ -113,14 +149,7 @@ export class NewsletterController {
 
   @GenerateNewsletterS3UrlsDocs()
   @Post('s3urls')
-  async generateS3Urls(
-    @Body()
-    dto: {
-      schoolId: number;
-      termId: number;
-      mimeType: string;
-    },
-  ): Promise<IS3Urls> {
+  async generateS3Urls(@Body() dto: GenerateS3UrlsDto): Promise<IS3Urls> {
     const path = [
       `schools`,
       `${dto.schoolId}`,
