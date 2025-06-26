@@ -29,7 +29,7 @@ export const CreateNewsletterDocs = () => {
       - scheduledAt을 생성시 지정하거나 수정해서 입력하면 발송예약됩니다.
       - 예약하더라도 최대 5분의 지연이 있습니다.
       - 즉시 발송도 scheduledAt을 현재 시간으로 설정한 발송예약처럼 동작합니다.
-      - target: SCHOOL(전교생), GRADE(학년), LESSON(강좌), GROUP(반), OTHER(학생 아이디로 지정)
+      - target: SCHOOL(전교생), GRADE(학년), LESSON(강좌), GROUP(반), STUDENT(학생 아이디로 지정)
       - targetItems?:
         - target이 SCHOOL인 경우 null
         - target이 GRADE인 경우 학년 아이디 배열 number[]
