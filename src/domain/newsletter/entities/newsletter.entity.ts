@@ -77,7 +77,7 @@ export class Newsletter {
   @Column({
     type: 'enum',
     enum: NotificationStatus,
-    default: NotificationStatus.PENDING,
+    default: NotificationStatus.INIT,
   })
   status: NotificationStatus;
 

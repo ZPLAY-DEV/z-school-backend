@@ -419,16 +419,6 @@ export class NewsletterService {
     }
   }
 
-  private dedupeStudents(students: Student[]): Student[] {
-    const parentIdMap = new Map<number, Student>();
-    students.forEach((student) => {
-      if (!parentIdMap.has(student.parent.id)) {
-        parentIdMap.set(student.parent.id, student);
-      }
-    });
-    return Array.from(parentIdMap.values());
-  }
-
   private async checkExistingEvent(
     eventKey: string,
     scheduledAt: Date,
@@ -509,15 +499,16 @@ export class NewsletterService {
     );
 
     return students;
+  }
 
-    // parentId 기준으로 중복 제거 (동일한 부모의 학생은 하나만 유지)
-    // const parentIdMap = new Map<number, Student>();
-    // students.forEach((student) => {
-    //   if (!parentIdMap.has(student.parent.id)) {
-    //     parentIdMap.set(student.parent.id, student);
-    //   }
-    // });
-    // return Array.from(parentIdMap.values());
+  private dedupeStudents(students: Student[]): Student[] {
+    const parentIdMap = new Map<number, Student>();
+    students.forEach((student) => {
+      if (!parentIdMap.has(student.parent.id)) {
+        parentIdMap.set(student.parent.id, student);
+      }
+    });
+    return Array.from(parentIdMap.values());
   }
 
   private async createShortlinks(
@@ -579,7 +570,7 @@ export class NewsletterService {
     const event = {
       eventKey: `SCHOOL#${newsletter.schoolId}#NEWSLETTER#${newsletter.id}`,
       timestamp: scheduledTime.toISOString(),
-      type: 'NEWSLETTER',
+      type: newsletter.type as string,
       newsletterId: newsletter.id,
       schoolId: newsletter.schoolId,
       status: EventStatus.PENDING,

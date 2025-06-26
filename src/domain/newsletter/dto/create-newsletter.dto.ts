@@ -78,7 +78,7 @@ export class CreateNewsletterDto {
     description: '🈵 뉴스레터 발송상태',
     enum: NotificationStatus,
     required: false,
-    example: NotificationStatus.PENDING,
+    example: NotificationStatus.INIT,
   })
   @IsOptional()
   @IsEnum(NotificationStatus)
