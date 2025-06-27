@@ -220,8 +220,7 @@ export class NewsletterService {
       id,
       status: SendStatus.CANCELED,
     });
-    // 재발송 기능이 있기 때문에 shortlinks 삭제는 하면 안됨.
-    // remove events for the newsletter
+    // 재발송 때문에 shortlinks 삭제 안함.
     await this.deleteEvent(newsletter);
 
     return (await this.newsletterRepository.save(newsletter)) as Newsletter;
@@ -272,6 +271,8 @@ export class NewsletterService {
 
   async deleteNewsletter(id: number): Promise<Newsletter> {
     const newsletter = await this.findById(id);
+    await this.deleteShortlinks(newsletter);
+    await this.deleteEvent(newsletter);
     return (await this.newsletterRepository.softRemove(
       newsletter,
     )) as Newsletter;
@@ -295,6 +296,8 @@ export class NewsletterService {
     newsletter: Newsletter,
     manager: EntityManager,
   ): Promise<void> {
+    console.log(`✳️ handleSendingNewsletter`, newsletter);
+
     try {
       const students = await this.getStudents(manager, newsletter);
       const studentIds = students.map((student) => student.id);
@@ -464,6 +467,18 @@ export class NewsletterService {
     });
   }
 
+  private async deleteShortlinks(newsletter: Newsletter): Promise<void> {
+    try {
+      await this.dataSource
+        .getRepository(Shortlink)
+        .delete({ newsletterId: newsletter.id });
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to delete shortlinks for newsletter ${newsletter.id}: ${error.message}`,
+      );
+    }
+  }
+
   // ------------------------------------------------------------------------ //
   // validations
   // ------------------------------------------------------------------------ //
@@ -511,9 +526,15 @@ export class NewsletterService {
       // }
       if (
         dto.type === NewsletterType.REGISTRATION &&
-        newsletters.some((newsletter) => newsletter.status === SendStatus.SENT)
+        newsletters.some(
+          (newsletter) =>
+            newsletter.status === SendStatus.SENT ||
+            newsletter.status === SendStatus.SCHEDULED,
+        )
       ) {
-        throw new BadRequestException('Registration newsletter already sent.');
+        throw new BadRequestException(
+          'Registration newsletter already sent or scheduled.',
+        );
       }
     }
   }
@@ -528,11 +549,16 @@ export class NewsletterService {
     students: Student[],
   ): Promise<void> {
     const scheduledTime = newsletter.scheduledAt!;
-    const ttl = Math.floor(scheduledTime.getTime() / 1000) + 60 * 60 * 24 * 30; // 30일 TTL
+    const scheduledTimestamp = scheduledTime.getTime();
+
+    console.log(`✳️ scheduledTime`, scheduledTime);
+    console.log(`✳️ scheduledTimestamp`, scheduledTimestamp);
+
+    const ttl = Math.floor(scheduledTimestamp / 1000) + 60 * 60 * 24 * 30; // 30일 TTL
 
     const event = {
       eventKey: generateEventKey(newsletter.schoolId, newsletter.type),
-      eventTime: scheduledTime,
+      eventTime: scheduledTimestamp,
       newsletterId: newsletter.id,
       status: EventStatus.SCHEDULED,
       payload: {
@@ -574,18 +600,24 @@ export class NewsletterService {
     const eventKey = generateEventKey(dto.schoolId, dto.type); // 예) 특정학교의 REGISTRATION 타입 이벤트 조회
 
     // query로 해당 eventKey의 과거 이벤트들을 조회 (현시각보다 작은 것만)
-    const now = new Date();
-    const events = await this.model
-      .query('eventKey')
-      .eq(eventKey)
-      .where('eventTime')
-      .lt(now)
-      .exec();
+    const nowTimestamp = Date.now();
 
-    if (events && events.length > 0) {
-      if (events.some((event) => event.status === 'SENT')) {
-        throw new BadRequestException('Registration event already sent.');
+    try {
+      const events = await this.model
+        .query('eventKey')
+        .eq(eventKey)
+        .where('eventTime')
+        .lt(nowTimestamp)
+        .exec();
+
+      if (events && events.length > 0) {
+        if (events.some((event) => event.status === 'SENT')) {
+          throw new BadRequestException('Registration event already sent.');
+        }
       }
+    } catch (error) {
+      this.logger.error(`❌ Failed to check previous event: ${error.message}`);
+      throw error;
     }
   }
 
@@ -595,20 +627,20 @@ export class NewsletterService {
     }
 
     const eventKey = generateEventKey(newsletter.schoolId, newsletter.type);
-    const scheduledTime = newsletter.scheduledAt;
+    const scheduledTimestamp = newsletter.scheduledAt.getTime();
     const event = await this.model.get({
       eventKey,
-      eventTime: scheduledTime,
+      eventTime: scheduledTimestamp,
     });
 
     if (event) {
       await this.model.delete({
         eventKey,
-        eventTime: scheduledTime,
+        eventTime: scheduledTimestamp,
       });
     } else {
       this.logger.warn(
-        `⚠️ No event found for newsletter ${newsletter.id} at ${scheduledTime.toISOString()}`,
+        `⚠️ No event found for newsletter ${newsletter.id} at ${newsletter.scheduledAt.toISOString()}`,
       );
     }
   }

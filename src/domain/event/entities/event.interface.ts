@@ -1,6 +1,6 @@
 export interface IEventKey {
   eventKey: string; // composite key (규칙: "SCHOOL#{schoolId}#{type}")
-  eventTime: Date; // Date 타입으로 변경
+  eventTime: number; // unix timestamp
 }
 export interface IEvent extends IEventKey {
   newsletterId: number; // 조회 편의를 위해 별도 필드로 유지

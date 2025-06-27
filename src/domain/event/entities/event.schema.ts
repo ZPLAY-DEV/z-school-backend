@@ -8,7 +8,7 @@ export const EventSchema = new Schema(
       required: true,
     },
     eventTime: {
-      type: Date, // Date 타입으로 변경
+      type: Number, // unix timestamp
       rangeKey: true,
       required: true,
     },

@@ -75,10 +75,6 @@ export class School {
   @Column({ type: 'varchar', length: 64, nullable: true })
   address: string | null;
 
-  // @ApiProperty({ description: '🈳 문자메시지 발송번호 (숫자만 입력)' })
-  // @Column({ type: 'varchar', length: 16, nullable: true })
-  // phone: string;
-
   @ApiProperty({
     description: '🈵 CO 변경없이 동일비용 적용, MC/MF 비율로 계산',
   })

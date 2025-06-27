@@ -31,9 +31,17 @@ export class CreateSchoolDto {
     maxLength: 16,
   })
   @IsString()
-  @Length(1, 16)
   @IsNotEmpty()
   schoolCode: string;
+
+  @ApiProperty({
+    description: '🈵 Unique school code',
+    example: '212121',
+    maxLength: 16,
+  })
+  @IsString()
+  @IsOptional()
+  phone?: string;
 
   @ApiProperty({
     description: '🈵 Unique school authority code',
@@ -41,8 +49,7 @@ export class CreateSchoolDto {
     maxLength: 16,
   })
   @IsString()
-  @Length(1, 16)
-  @IsNotEmpty()
+  @IsOptional()
   authorityCode?: string;
 
   @ApiProperty({
@@ -63,7 +70,6 @@ export class CreateSchoolDto {
     required: false,
   })
   @IsString()
-  @Length(1, 64)
   @IsOptional()
   address?: string;
 

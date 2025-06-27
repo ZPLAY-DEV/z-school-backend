@@ -15,8 +15,8 @@ export class EventService {
     const ttl = Math.floor(now.getTime() / 1000) + 60 * 60 * 24; // 1 일
     try {
       await this.model.create({
-        eventKey: 'SCHOOL#1#NEWSLETTER#1',
-        eventTime: new Date('2025-01-01T10:00:00Z'),
+        eventKey: 'SCHOOL#1#REGISTRATION#1',
+        eventTime: Date.now(),
         newsletterId: 1,
         status: EventStatus.SCHEDULED,
         payload: {},
@@ -52,7 +52,7 @@ export class EventService {
   async updateEventStatus(
     schoolId: number,
     newsletterId: number,
-    eventTime: Date,
+    eventTime: number,
     status: EventStatus,
   ): Promise<IEvent> {
     const eventKey = `SCHOOL#${schoolId}#NEWSLETTER#${newsletterId}`;
@@ -67,7 +67,7 @@ export class EventService {
   async getEvent(
     schoolId: number,
     newsletterId: number,
-    eventTime: Date,
+    eventTime: number,
   ): Promise<IEvent | null> {
     try {
       const eventKey = `SCHOOL#${schoolId}#NEWSLETTER#${newsletterId}`;
