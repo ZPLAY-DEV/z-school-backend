@@ -12,6 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { NewsletterType } from 'src/common/enums';
 import { IS3Urls } from 'src/common/interfaces';
 import { NewsletterDetailResponseDto } from 'src/domain/newsletter/dto/newsletter-detail.response.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
@@ -19,12 +20,18 @@ import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { UploadService } from 'src/services/upload/upload.service';
 import { CreateNewsletterDto } from './dto/create-newsletter.dto';
 import { GenerateS3UrlsDto } from './dto/generate-s3-urls.dto';
+import { ResendNewsletterDto } from './dto/resend-newsletter.dto';
 import { NewsletterService } from './newsletter.service';
 import {
+  CancelNewsletterDocs,
   CreateNewsletterDocs,
+  DeleteNewsletterDocs,
   FindNewsletterByIdDocs,
+  FindNewslettersDocs,
   FindRegistrationNewsletterDocs,
   GenerateNewsletterS3UrlsDocs,
+  MarkAsReadDocs,
+  ResendNewsletterDocs,
   UpdateNewsletterDocs,
 } from './swagger/newsletter-swagger.decorator';
 
@@ -50,6 +57,16 @@ export class NewsletterController {
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
+
+  @FindNewslettersDocs()
+  @Get()
+  async find(
+    @Query('schoolId', ParseIntPipe) schoolId: number,
+    @Query('termId', ParseIntPipe) termId: number,
+    @Query('type') type?: NewsletterType,
+  ): Promise<Newsletter[]> {
+    return await this.newsletterService.find(schoolId, termId, type);
+  }
 
   @FindRegistrationNewsletterDocs()
   @Get('registration')
@@ -81,6 +98,7 @@ export class NewsletterController {
     return await this.newsletterService.update(id, dto);
   }
 
+  @CancelNewsletterDocs()
   @Patch(':id/cancel')
   async cancelNewsletter(
     @Param('id', ParseIntPipe) id: number,
@@ -88,13 +106,16 @@ export class NewsletterController {
     return await this.newsletterService.cancelNewsletter(id);
   }
 
+  @ResendNewsletterDocs()
   @Patch(':id/resend')
   async resendNewsletter(
     @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ResendNewsletterDto,
   ): Promise<Newsletter> {
-    return await this.newsletterService.resendNewsletter(id);
+    return await this.newsletterService.resendNewsletter(id, dto.scheduledAt);
   }
 
+  @MarkAsReadDocs()
   @Patch(':id/parents/:parentId/read')
   async markAsRead(
     @Param('id', ParseIntPipe) newsletterId: number,
@@ -107,6 +128,7 @@ export class NewsletterController {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
+  @DeleteNewsletterDocs()
   @Delete(':id')
   async deleteNewsletter(
     @Param('id', ParseIntPipe) id: number,

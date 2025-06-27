@@ -13,6 +13,7 @@ import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-respon
 import { CreateNewsletterDto } from '../dto/create-newsletter.dto';
 import { GenerateS3UrlsDto } from '../dto/generate-s3-urls.dto';
 import { NewsletterDetailResponseDto } from '../dto/newsletter-detail.response.dto';
+import { ResendNewsletterDto } from '../dto/resend-newsletter.dto';
 import { UpdateNewsletterDto } from '../dto/update-newsletter.dto';
 import { Newsletter } from '../entities/newsletter.entity';
 
@@ -64,6 +65,49 @@ export const CreateNewsletterDocs = () => {
     ApiCreatedResponseTemplate({
       description: '뉴스레터 생성 완료',
       type: Newsletter,
+    }),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Find Newsletters
+//? ---------------------------------------------------------------------- ?//
+
+export const FindNewslettersDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '뉴스레터 목록 조회',
+      description: `
+      - 특정 학교와 학기의 뉴스레터 목록을 조회합니다.
+      - schoolId와 termId를 필수로 입력받습니다.
+      - type 파라미터는 선택사항으로, 특정 타입의 뉴스레터만 필터링할 수 있습니다.
+      - 결과는 ID 내림차순으로 정렬됩니다.
+      `,
+    }),
+    ApiQuery({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+      example: 1,
+    }),
+    ApiQuery({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID',
+      example: 1,
+    }),
+    ApiQuery({
+      name: 'type',
+      enum: ['REGISTRATION', 'NEWS', 'SURVEY'],
+      description: '뉴스레터 타입 (선택사항)',
+      required: false,
+      example: 'REGISTRATION',
+    }),
+    ApiOkResponse({
+      description: '뉴스레터 목록 조회 완료',
+      type: Newsletter,
+      isArray: true,
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST),
   );
@@ -162,6 +206,75 @@ export const UpdateNewsletterDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
+//? Cancel Newsletter
+//? ---------------------------------------------------------------------- ?//
+
+export const CancelNewsletterDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '뉴스레터 발송 취소',
+      description: `
+      - 예약된 뉴스레터의 발송을 취소합니다.
+      - 뉴스레터 상태가 CANCELED로 변경됩니다.
+      - DynamoDB에서 해당 이벤트도 삭제됩니다.
+      - 재발송 기능이 있기 때문에 shortlinks는 삭제하지 않습니다.
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '뉴스레터 ID',
+      example: 1,
+    }),
+    ApiOkResponseTemplate({
+      description: '뉴스레터 발송 취소 완료',
+      type: Newsletter,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Resend Newsletter
+//? ---------------------------------------------------------------------- ?//
+
+export const ResendNewsletterDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '뉴스레터 재발송',
+      description: `
+      - 취소되었거나 실패한 뉴스레터를 다시 발송 예약합니다.
+      - 새로운 발송 시간을 지정해야 합니다.
+      - 뉴스레터 상태가 SCHEDULED로 변경됩니다.
+      - 기존 학생 목록과 shortlinks를 사용하여 새로운 이벤트를 생성합니다.
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '뉴스레터 ID',
+      example: 1,
+    }),
+    ApiBody({
+      type: ResendNewsletterDto,
+      examples: {
+        example1: {
+          summary: '뉴스레터 재발송 예제',
+          value: {
+            scheduledAt: '2025-06-05T00:30:00Z',
+          },
+        },
+      },
+    }),
+    ApiOkResponseTemplate({
+      description: '뉴스레터 재발송 예약 완료',
+      type: Newsletter,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
 //? Mark As Read
 //? ---------------------------------------------------------------------- ?//
 
@@ -171,16 +284,17 @@ export const MarkAsReadDocs = () => {
       summary: '뉴스레터 읽음 처리',
       description: `
       - 특정 부모가 특정 뉴스레터를 읽음으로 처리합니다.
-      - 읽지 않은 부모 목록에서 해당 부모를 제거합니다.
+      - 해당하는 shortlink의 isRead 플래그를 true로 변경합니다.
+      - 뉴스레터 상세 조회 시 읽음 상태에 반영됩니다.
       `,
     }),
     ApiParam({
-      name: 'newsletterId',
+      name: 'id',
       type: Number,
       description: '뉴스레터 ID',
       example: 1,
     }),
-    ApiQuery({
+    ApiParam({
       name: 'parentId',
       type: Number,
       description: '부모 ID',
@@ -188,21 +302,36 @@ export const MarkAsReadDocs = () => {
     }),
     ApiOkResponse({
       description: '읽음 처리 완료',
-      schema: {
-        type: 'object',
-        properties: {
-          success: {
-            type: 'boolean',
-            example: true,
-          },
-          message: {
-            type: 'string',
-            example: '뉴스레터를 읽음으로 처리했습니다.',
-          },
-        },
-      },
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Delete Newsletter
+//? ---------------------------------------------------------------------- ?//
+
+export const DeleteNewsletterDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '뉴스레터 삭제',
+      description: `
+      - 뉴스레터를 소프트 삭제합니다.
+      - 실제로는 deletedAt 필드가 설정되어 논리적으로 삭제됩니다.
+      - 관련된 shortlinks와 이벤트는 그대로 유지됩니다.
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '뉴스레터 ID',
+      example: 1,
+    }),
+    ApiOkResponseTemplate({
+      description: '뉴스레터 삭제 완료',
+      type: Newsletter,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 

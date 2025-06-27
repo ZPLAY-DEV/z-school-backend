@@ -98,6 +98,40 @@ export class NewsletterService {
     return newsletter as Newsletter;
   }
 
+  async find(
+    schoolId: number,
+    termId: number,
+    type?: NewsletterType,
+  ): Promise<Newsletter[]> {
+    const whereCondition: any = { schoolId, termId };
+
+    if (type) {
+      whereCondition.type = type;
+    }
+
+    const newsletters = await this.newsletterRepository.find({
+      where: whereCondition,
+      order: { id: 'DESC' },
+    });
+
+    return newsletters as Newsletter[];
+  }
+
+  async findOnlyRegistration(
+    schoolId: number,
+    termId: number,
+  ): Promise<Newsletter> {
+    const newsletter = await this.newsletterRepository.findOne({
+      where: { schoolId, termId },
+    });
+
+    if (!newsletter) {
+      throw new NotFoundException('Newsletter not found');
+    }
+
+    return newsletter as Newsletter;
+  }
+
   async findDetail(id: number): Promise<NewsletterDetailResponseDto> {
     const newsletter: Newsletter = await this.newsletterRepository.findOne({
       where: { id },
@@ -141,21 +175,6 @@ export class NewsletterService {
     return new NewsletterDetailResponseDto(newsletter);
   }
 
-  async findOnlyRegistration(
-    schoolId: number,
-    termId: number,
-  ): Promise<Newsletter> {
-    const newsletter = await this.newsletterRepository.findOne({
-      where: { schoolId, termId },
-    });
-
-    if (!newsletter) {
-      throw new NotFoundException('Newsletter not found');
-    }
-
-    return newsletter as Newsletter;
-  }
-
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
@@ -197,40 +216,35 @@ export class NewsletterService {
   }
 
   async cancelNewsletter(id: number): Promise<Newsletter> {
-    const newsletter = await this.newsletterRepository.preload({
+    const newsletter: Newsletter = await this.newsletterRepository.preload({
       id,
       status: SendStatus.CANCELED,
     });
-    // todo remove shortlinks for the newsletter
-    // 재발송 기능이 있기 때문에 필요없다고 함.
-    // todo remove events for the newsletter
-    // 재발송 기능이 있기 때문에 필요없다고 함.
+    // 재발송 기능이 있기 때문에 shortlinks 삭제는 하면 안됨.
+    // remove events for the newsletter
+    await this.deleteEvent(newsletter);
 
     return (await this.newsletterRepository.save(newsletter)) as Newsletter;
   }
 
-  async resendNewsletter(id: number): Promise<Newsletter> {
-    const newsletter = await this.newsletterRepository.preload({
-      id,
-      status: SendStatus.CANCELED,
+  async resendNewsletter(id: number, scheduledAt: Date): Promise<Newsletter> {
+    return await this.dataSource.transaction(async (manager: EntityManager) => {
+      const newsletter = await manager.preload(Newsletter, {
+        id,
+        status: SendStatus.SCHEDULED,
+        scheduledAt,
+      });
+      const updatedNewsletter = (await manager.save(newsletter)) as Newsletter;
+
+      const students = await this.getStudents(manager, updatedNewsletter);
+      const dedupedStudents = this.dedupeStudents(students);
+      const shortlinks = await this.fetchShortlinks(manager, updatedNewsletter);
+
+      await this.createEvent(updatedNewsletter, shortlinks, dedupedStudents);
+
+      return updatedNewsletter;
     });
-    return (await this.newsletterRepository.save(newsletter)) as Newsletter;
   }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Delete
-  //? ---------------------------------------------------------------------- ?//
-
-  async deleteNewsletter(id: number): Promise<Newsletter> {
-    const newsletter = await this.findById(id);
-    return (await this.newsletterRepository.softRemove(
-      newsletter,
-    )) as Newsletter;
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? 읽음 처리 (ManyToMany 관계에서 제거)
-  //? ---------------------------------------------------------------------- ?//
 
   async markAsRead(newsletterId: number, parentId: number): Promise<void> {
     const result = await this.dataSource
@@ -252,14 +266,19 @@ export class NewsletterService {
     }
   }
 
-  // ------------------------------------------------------------------------ //
-  // private methods for validations
-  // ------------------------------------------------------------------------ //
+  //? ---------------------------------------------------------------------- ?//
+  //? Delete
+  //? ---------------------------------------------------------------------- ?//
 
-  //? 유효성 검증
-  // for create
+  async deleteNewsletter(id: number): Promise<Newsletter> {
+    const newsletter = await this.findById(id);
+    return (await this.newsletterRepository.softRemove(
+      newsletter,
+    )) as Newsletter;
+  }
+
   // ------------------------------------------------------------------------ //
-  // private methods for create, update, delete
+  // private methods for newsletters
   // ------------------------------------------------------------------------ //
 
   //? 뉴스레터 생성
@@ -304,6 +323,10 @@ export class NewsletterService {
       throw error;
     }
   }
+
+  // ------------------------------------------------------------------------ //
+  // private methods for students
+  // ------------------------------------------------------------------------ //
 
   private async getStudents(
     manager: EntityManager,
@@ -383,6 +406,10 @@ export class NewsletterService {
     return Array.from(parentIdMap.values());
   }
 
+  // ------------------------------------------------------------------------ //
+  // private methods for shortlinks
+  // ------------------------------------------------------------------------ //
+
   private async createShortlinks(
     manager: EntityManager,
     newsletter: Newsletter,
@@ -423,59 +450,23 @@ export class NewsletterService {
     }
 
     // 생성된 shortlinks 조회하여 반환
-    const shortlinks = await manager.find(Shortlink, {
-      where: { newsletterId: newsletter.id },
-      relations: { parent: true, newsletter: true },
-    });
-
+    const shortlinks = await this.fetchShortlinks(manager, newsletter);
     return shortlinks;
   }
 
-  private async createEvent(
+  private async fetchShortlinks(
+    manager: EntityManager,
     newsletter: Newsletter,
-    shortlinks: Shortlink[],
-    students: Student[],
-  ): Promise<void> {
-    const scheduledTime = newsletter.scheduledAt!;
-    const ttl = Math.floor(scheduledTime.getTime() / 1000) + 60 * 60 * 24 * 30; // 30일 TTL
-
-    const event = {
-      eventKey: `SCHOOL#${newsletter.schoolId}#NEWSLETTER#${newsletter.id}`,
-      eventTime: scheduledTime,
-      newsletterId: newsletter.id,
-      status: EventStatus.SCHEDULED,
-      payload: {
-        type: newsletter.type as string,
-        schoolId: newsletter.schoolId,
-        role: 'PARENT',
-        messages: students.map((student) => {
-          const shortlink = shortlinks.find(
-            (shortlink) => shortlink.parentId === student.parent.id,
-          );
-          const isFcm = !!student.parent?.user?.pushToken;
-          const url = `http://afters.kr`;
-          return {
-            id: student.parent.id,
-            phone: student.parent.phone,
-            token: student.parent?.user?.pushToken,
-            title: translateNewsletterType(newsletter.type),
-            body: isFcm
-              ? `${newsletter.title}`
-              : `${newsletter.title} ${url}/${shortlink?.nanoid}`,
-            role: 'PARENT',
-            page: 'newsletters',
-            args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
-          };
-        }),
-      },
-      expires: ttl,
-    };
-
-    console.log(`✳️ event`, JSON.stringify(event, null, 2));
-
-    // DynamoDB upsert: 동일한 key면 자동으로 기존 레코드 덮어씀
-    await this.model.create(event);
+  ): Promise<Shortlink[]> {
+    return await manager.find(Shortlink, {
+      where: { newsletterId: newsletter.id },
+      relations: { parent: true, newsletter: true },
+    });
   }
+
+  // ------------------------------------------------------------------------ //
+  // validations
+  // ------------------------------------------------------------------------ //
 
   private async checkSchoolValidity(dto: CreateNewsletterDto): Promise<School> {
     const school = await this.dataSource.getRepository(School).findOne({
@@ -531,6 +522,52 @@ export class NewsletterService {
   // private methods for dynamodb
   // ------------------------------------------------------------------------ //
 
+  private async createEvent(
+    newsletter: Newsletter,
+    shortlinks: Shortlink[],
+    students: Student[],
+  ): Promise<void> {
+    const scheduledTime = newsletter.scheduledAt!;
+    const ttl = Math.floor(scheduledTime.getTime() / 1000) + 60 * 60 * 24 * 30; // 30일 TTL
+
+    const event = {
+      eventKey: generateEventKey(newsletter.schoolId, newsletter.type),
+      eventTime: scheduledTime,
+      newsletterId: newsletter.id,
+      status: EventStatus.SCHEDULED,
+      payload: {
+        type: newsletter.type as string,
+        schoolId: newsletter.schoolId,
+        role: 'PARENT',
+        messages: students.map((student) => {
+          const shortlink = shortlinks.find(
+            (shortlink) => shortlink.parentId === student.parent.id,
+          );
+          const isFcm = !!student.parent?.user?.pushToken;
+          const url = `http://afters.kr`;
+          return {
+            id: student.parent.id,
+            phone: student.parent.phone,
+            token: student.parent?.user?.pushToken,
+            title: translateNewsletterType(newsletter.type),
+            body: isFcm
+              ? `${newsletter.title}`
+              : `${newsletter.title} ${url}/${shortlink?.nanoid}`,
+            role: 'PARENT',
+            page: 'newsletters',
+            args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
+          };
+        }),
+      },
+      expires: ttl,
+    };
+
+    console.log(`✳️ event`, JSON.stringify(event, null, 2));
+
+    // DynamoDB upsert: 동일한 key면 자동으로 기존 레코드 덮어씀
+    await this.model.create(event);
+  }
+
   private async checkPreviousEventWithDto(
     dto: CreateNewsletterDto,
   ): Promise<void> {
@@ -547,25 +584,32 @@ export class NewsletterService {
 
     if (events && events.length > 0) {
       if (events.some((event) => event.status === 'SENT')) {
-        throw new BadRequestException('Registration newsletter already sent.');
+        throw new BadRequestException('Registration event already sent.');
       }
     }
   }
 
-  private async checkExistingEventWithEntity(
-    newsletter: Newsletter,
-    scheduledAt: Date,
-  ): Promise<IEvent | null> {
-    try {
-      const eventKey = generateEventKey(newsletter.schoolId, newsletter.type);
-      const event = await this.model.get({
+  private async deleteEvent(newsletter: Newsletter): Promise<void> {
+    if (!newsletter.scheduledAt) {
+      return;
+    }
+
+    const eventKey = generateEventKey(newsletter.schoolId, newsletter.type);
+    const scheduledTime = newsletter.scheduledAt;
+    const event = await this.model.get({
+      eventKey,
+      eventTime: scheduledTime,
+    });
+
+    if (event) {
+      await this.model.delete({
         eventKey,
-        eventTime: scheduledAt,
+        eventTime: scheduledTime,
       });
-      return event;
-    } catch {
-      // 레코드가 없는 경우 null 반환
-      return null;
+    } else {
+      this.logger.warn(
+        `⚠️ No event found for newsletter ${newsletter.id} at ${scheduledTime.toISOString()}`,
+      );
     }
   }
 }
