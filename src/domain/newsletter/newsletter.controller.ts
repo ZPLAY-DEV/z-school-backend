@@ -25,7 +25,6 @@ import {
   FindNewsletterByIdDocs,
   FindRegistrationNewsletterDocs,
   GenerateNewsletterS3UrlsDocs,
-  MarkAsReadDocs,
   UpdateNewsletterDocs,
 } from './swagger/newsletter-swagger.decorator';
 
@@ -79,21 +78,40 @@ export class NewsletterController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateNewsletterDto,
   ): Promise<Newsletter> {
-    console.log(dto);
     return await this.newsletterService.update(id, dto);
   }
 
+  @Patch(':id/cancel')
+  async cancelNewsletter(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Newsletter> {
+    return await this.newsletterService.cancelNewsletter(id);
+  }
+
+  @Patch(':id/resend')
+  async resendNewsletter(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Newsletter> {
+    return await this.newsletterService.resendNewsletter(id);
+  }
+
+  @Patch(':id/parents/:parentId/read')
+  async markAsRead(
+    @Param('id', ParseIntPipe) newsletterId: number,
+    @Param('parentId', ParseIntPipe) parentId: number,
+  ): Promise<void> {
+    return await this.newsletterService.markAsRead(newsletterId, parentId);
+  }
+
   //? ---------------------------------------------------------------------- ?//
-  //? TRACKING
+  //? Delete
   //? ---------------------------------------------------------------------- ?//
 
-  @MarkAsReadDocs()
-  @Delete(':newsletterId/read')
-  markAsRead(
-    @Param('newsletterId', ParseIntPipe) newsletterId: number,
-    @Query('parentId', ParseIntPipe) parentId: number,
-  ): Promise<void> {
-    return this.newsletterService.markAsRead(newsletterId, parentId);
+  @Delete(':id')
+  async deleteNewsletter(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Newsletter> {
+    return await this.newsletterService.deleteNewsletter(id);
   }
 
   //? ---------------------------------------------------------------------- ?//

@@ -39,7 +39,7 @@ export class CreateEventDto {
   @ApiProperty({
     description: '이벤트 상태',
     enum: EventStatus,
-    example: EventStatus.PENDING,
+    example: EventStatus.SCHEDULED,
   })
   @IsEnum(EventStatus)
   @IsOptional()

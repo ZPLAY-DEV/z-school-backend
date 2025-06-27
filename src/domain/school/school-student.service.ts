@@ -265,6 +265,34 @@ export class SchoolStudentService {
     return await queryBuilder.getMany();
   }
 
+  async grades(
+    schoolId: number,
+  ): Promise<{ grade: number; classes: string[] }[]> {
+    const result = await this.studentRepository.query(
+      'SELECT grade, class \
+FROM students \
+WHERE schoolId = ? \
+GROUP BY grade, class \
+ORDER BY grade, class',
+      [schoolId],
+    );
+
+    // grade별로 그룹화하여 classes 배열로 변환
+    const gradeMap = new Map<number, string[]>();
+
+    result.forEach((row: { grade: number; class: string }) => {
+      if (!gradeMap.has(row.grade)) {
+        gradeMap.set(row.grade, []);
+      }
+      gradeMap.get(row.grade)!.push(row.class);
+    });
+
+    // Map을 배열로 변환하고 grade 순으로 정렬
+    return Array.from(gradeMap.entries())
+      .map(([grade, classes]) => ({ grade, classes }))
+      .sort((a, b) => a.grade - b.grade);
+  }
+
   /**
    * Check for existing Students that would be overwritten based on the compound unique key
    * (schoolId, grade, class, studentCode)

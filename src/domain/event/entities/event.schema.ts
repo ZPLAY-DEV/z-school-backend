@@ -29,7 +29,7 @@ export const EventSchema = new Schema(
       type: String,
       enum: Object.values(EventStatus),
       required: true,
-      default: EventStatus.PENDING,
+      default: EventStatus.SCHEDULED,
     },
     payload: {
       type: Object,

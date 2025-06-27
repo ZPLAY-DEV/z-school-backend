@@ -17,6 +17,7 @@ import {
 import { NotificationStatus } from 'src/common/enums/notification-status';
 import { StudentNotificationInfo } from 'src/common/interfaces';
 import { IEvent, IEventKey } from 'src/domain/event/entities/event.interface';
+import { generateEventKey } from 'src/domain/event/utils/event.utils';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { NewsletterDetailResponseDto } from 'src/domain/newsletter/dto/newsletter-detail.response.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
@@ -55,18 +56,21 @@ export class NewsletterService {
 
   //? 학생 대상 발송
   async create(dto: CreateNewsletterDto): Promise<Newsletter> {
+    // 모든 validation을 transaction 밖에서 처리 (Auto-increment ID 낭비 방지)
+    const school = await this.checkSchoolValidityOutsideTransaction(dto);
+    const term = await this.checkTermValidityOutsideTransaction(dto);
+    // await this.checkExistingEventWithDto(dto);
+    await this.checkExistingRegistrationNewsletterOutsideTransaction(dto);
+
+    // Transaction: 순수 데이터 변경 작업만
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      // 유효성 검증
-      const school = await this.checkSchoolValidity(manager, dto);
-      const term = await this.checkTermValidity(manager, dto);
-      await this.checkExistingRegistrationNewsletter(manager, dto); // mysql record 검사후 거절
-      await this.checkExistingRegistrationEvent(dto); // dynamodb record 스캔후 거절
       // 뉴스레터 생성
       const newsletter = await this.createNewsletter(manager, {
         ...dto,
         schoolName: school.name,
         termName: term.termName,
       });
+
       // scheduledAt이 설정된 경우 이벤트 처리
       if (newsletter.scheduledAt) {
         await this.handleSendingNewsletter(newsletter, manager);
@@ -96,18 +100,16 @@ export class NewsletterService {
   async findDetail(id: number): Promise<NewsletterDetailResponseDto> {
     const newsletter: Newsletter = await this.newsletterRepository.findOne({
       where: { id },
-      relations: ['unreadParents'],
+      relations: ['shortlinks'],
     });
 
     if (!newsletter) {
       throw new NotFoundException('Newsletter not found');
     }
 
-    const unreadParentIds: number[] =
-      newsletter.unreadParents?.map((parent) => parent.id) ?? [];
-
-    // unreadParents 관계 제거 (응답에서 제외)
-    delete newsletter.unreadParents;
+    const readParentIds: number[] =
+      newsletter.shortlinks?.filter((v) => v.isRead).map((v) => v.parentId) ??
+      [];
 
     if (newsletter.studentIds && newsletter.studentIds.length > 0) {
       const students = await this.dataSource
@@ -119,23 +121,16 @@ export class NewsletterService {
         })
         .getMany();
 
-      const studentReadInfos: StudentNotificationInfo[] =
-        newsletter.type === NewsletterType.REGISTRATION
-          ? students.map((student) => ({
-              id: student.id,
-              name: student.name,
-              grade: student.grade,
-              class: student.class,
-              studentCode: student.studentCode,
-              read: !unreadParentIds.includes(student.parent.id),
-            }))
-          : students.map((student) => ({
-              id: student.id,
-              grade: student.grade,
-              class: student.class,
-              studentCode: student.studentCode,
-              name: student.name,
-            }));
+      const studentReadInfos: StudentNotificationInfo[] = students.map(
+        (student) => ({
+          id: student.id,
+          name: student.name,
+          grade: student.grade,
+          class: student.class,
+          studentCode: student.studentCode,
+          read: readParentIds.includes(student.parent.id),
+        }),
+      );
 
       return new NewsletterDetailResponseDto(
         newsletter,
@@ -187,11 +182,6 @@ export class NewsletterService {
         id,
         ...dto,
       });
-
-      if (!newsletter) {
-        throw new NotFoundException('Newsletter not found');
-      }
-
       // 저장
       const updatedNewsletter = (await manager.save(newsletter)) as Newsletter;
 
@@ -207,162 +197,115 @@ export class NewsletterService {
     });
   }
 
+  async cancelNewsletter(id: number): Promise<Newsletter> {
+    const newsletter = await this.newsletterRepository.preload({
+      id,
+      status: NotificationStatus.CANCELED,
+    });
+    // todo remove shortlinks for the newsletter
+    // 재발송 기능이 있기 때문에 필요없다고 함.
+    // todo remove events for the newsletter
+    // 재발송 기능이 있기 때문에 필요없다고 함.
+
+    return (await this.newsletterRepository.save(newsletter)) as Newsletter;
+  }
+
+  async resendNewsletter(id: number): Promise<Newsletter> {
+    const newsletter = await this.newsletterRepository.preload({
+      id,
+      status: NotificationStatus.CANCELED,
+    });
+    return (await this.newsletterRepository.save(newsletter)) as Newsletter;
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Delete
+  //? ---------------------------------------------------------------------- ?//
+
+  async deleteNewsletter(id: number): Promise<Newsletter> {
+    const newsletter = await this.findById(id);
+    return (await this.newsletterRepository.softRemove(
+      newsletter,
+    )) as Newsletter;
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? 읽음 처리 (ManyToMany 관계에서 제거)
   //? ---------------------------------------------------------------------- ?//
 
   async markAsRead(newsletterId: number, parentId: number): Promise<void> {
-    const newsletter = await this.dataSource.getRepository(Newsletter).findOne({
-      where: { id: newsletterId },
-      relations: { unreadParents: true },
-    });
+    const result = await this.dataSource
+      .getRepository(Shortlink)
+      .createQueryBuilder()
+      .update(Shortlink)
+      .set({ isRead: true })
+      .where('newsletterId = :newsletterId AND parentId = :parentId', {
+        newsletterId,
+        parentId,
+      })
+      .execute();
 
-    if (!newsletter) {
-      throw new NotFoundException('Newsletter not found');
-    }
-
-    const parentIndex =
-      newsletter.unreadParents?.findIndex((parent) => parent.id === parentId) ??
-      -1;
-
-    if (parentIndex === -1) {
-      throw new NotFoundException(
-        'Parent not found in unread list or already read',
+    if (result.affected === 0) {
+      this.logger.warn(
+        `⚠️ No shortlink found for for newsletter ${newsletterId}, parent ${parentId}`,
       );
+      return;
     }
-
-    // unreadParents에서 해당 parent 제거
-    newsletter.unreadParents?.splice(parentIndex, 1);
-    await this.dataSource.getRepository(Newsletter).save(newsletter);
-
-    this.logger.log(
-      `✅ Marked newsletter ${newsletterId} as read by parent ${parentId}`,
-    );
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? 읽음 상태 확인
-  //? ---------------------------------------------------------------------- ?//
-
-  async isReadByParent(
-    newsletterId: number,
-    parentId: number,
-  ): Promise<boolean> {
-    const newsletter = await this.dataSource.getRepository(Newsletter).findOne({
-      where: { id: newsletterId },
-      relations: { unreadParents: true },
-    });
-
-    if (!newsletter) {
-      throw new NotFoundException('Newsletter not found');
-    }
-
-    return !newsletter.unreadParents?.some((parent) => parent.id === parentId);
   }
 
   // ------------------------------------------------------------------------ //
-  // private methods
+  // private methods for validations
   // ------------------------------------------------------------------------ //
 
   //? 유효성 검증
-  private async checkSchoolValidity(
-    manager: EntityManager,
-    dto: CreateNewsletterDto,
-  ): Promise<School> {
-    const school = await manager.findOne(School, {
-      where: { id: dto.schoolId },
-    });
-    if (!school) {
-      throw new NotFoundException('School not found');
-    }
-    if (dto.scheduledAt && !school.phone) {
-      throw new BadRequestException('Missing phone info in school');
-    }
-    return school;
-  }
-
-  private async checkTermValidity(
-    manager: EntityManager,
-    dto: CreateNewsletterDto,
-  ): Promise<Term> {
-    const term = await manager.findOne(Term, { where: { id: dto.termId } });
-    if (!term) {
-      throw new NotFoundException('Term not found');
-    }
-    return term;
-  }
-
-  private async checkExistingRegistrationNewsletter(
-    manager: EntityManager,
-    dto: CreateNewsletterDto,
-  ): Promise<Newsletter | null> {
-    let newsletter: Newsletter | null = null;
-    if (dto.type === NewsletterType.REGISTRATION) {
-      newsletter = await manager.findOne(Newsletter, {
-        where: {
-          schoolId: dto.schoolId,
-          termId: dto.termId,
-          type: NewsletterType.REGISTRATION,
-        },
-      });
-      if (newsletter) {
-        throw new BadRequestException('Registration newsletter already exists');
-      }
-    }
-    return newsletter;
-  }
-
   // for create
-  private async checkExistingRegistrationEvent(
+  private async checkExistingEventWithDto(
     dto: CreateNewsletterDto,
   ): Promise<boolean> {
-    // REGISTRATION 타입이 아닌 경우 검사하지 않음
-    if (dto.type !== NewsletterType.REGISTRATION) {
-      return false;
-    }
-
     // event 테이블에서 동일한 schoolId, termId, type이 REGISTRATION인 이벤트 스캔
     const scanResult = await this.model
       .scan({
         FilterExpression:
-          '#schoolId = :schoolId AND #termId = :termId AND #type = :type',
+          '#schoolId = :schoolId AND #newsletterId = :newsletterId AND #status = :status',
         ExpressionAttributeNames: {
           '#schoolId': 'schoolId',
-          '#termId': 'termId',
-          '#type': 'type',
+          '#newsletterId': 'newsletterId',
+          '#status': 'status',
         },
         ExpressionAttributeValues: {
           ':schoolId': dto.schoolId,
           ':termId': dto.termId,
-          ':type': 'REGISTRATION',
+          ':status': EventStatus.SCHEDULED,
         },
       })
       .exec();
 
     if (scanResult && scanResult.length > 0) {
-      throw new BadRequestException('Registration event already exists');
+      throw new BadRequestException('Already scheduled');
     }
     return false;
   }
 
-  // for update
-  private async checkEventValidity(
-    manager: EntityManager,
+  private async checkExistingEventWithEntity(
     newsletter: Newsletter,
-  ): Promise<void> {
-    // 기존 이벤트가 SENT 상태인지만 확인
-    const eventKey = `SCHOOL#${newsletter.schoolId}#NEWSLETTER#${newsletter.id}`;
-    const existingEvent = await this.checkExistingEvent(
-      eventKey,
-      newsletter.scheduledAt!,
-    );
-    // todo. SENT 상태인 경우에만 에러 발생한다. 그렇다면, FAILED 는 어쩔건데?
-    if (existingEvent?.status === EventStatus.SENT) {
-      throw new BadRequestException(
-        '뉴스레터가 이미 발송된 상태입니다. 수정할 수 없습니다.',
-      );
+    scheduledAt: Date,
+  ): Promise<IEvent | null> {
+    try {
+      const eventKey = generateEventKey(newsletter.schoolId, newsletter.id);
+      const event = await this.model.get({
+        eventKey,
+        timestamp: scheduledAt.toISOString(),
+      });
+      return event;
+    } catch {
+      // 레코드가 없는 경우 null 반환
+      return null;
     }
   }
+
+  // ------------------------------------------------------------------------ //
+  // private methods for create, update, delete
+  // ------------------------------------------------------------------------ //
 
   //? 뉴스레터 생성
   private async createNewsletter(
@@ -379,31 +322,19 @@ export class NewsletterService {
     manager: EntityManager,
   ): Promise<void> {
     try {
-      // deduped 학생정보 가져오기
       const students = await this.getStudents(manager, newsletter);
-      // console.log(`✳️ students`, JSON.stringify(students, null, 2));
       const studentIds = students.map((student) => student.id);
-
       const dedupedStudents = this.dedupeStudents(students);
-
       // 숏링크 생성
       const shortlinks = await this.createShortlinks(
         manager,
         newsletter,
         dedupedStudents,
       );
-      // console.log(`✳️ shortlinks`, JSON.stringify(shortlinks, null, 2));
-
-      // dynamodb 이벤트 생성 (upsert 방식으로 자동 처리)
+      // dynamodb 이벤트 레코드 생성
       await this.createEvent(newsletter, shortlinks, dedupedStudents);
-
-      // 트래킹 엔트리 생성 (읽지 않은 상태로 초기화)
-      if (newsletter.type === NewsletterType.REGISTRATION) {
-        await this.createTrackingEntries(manager, newsletter, dedupedStudents);
-      }
-
       // newsletter 업데이트
-      newsletter.status = NotificationStatus.SENT;
+      newsletter.status = NotificationStatus.SCHEDULED;
       newsletter.studentIds = studentIds;
       await manager.save(newsletter);
 
@@ -416,22 +347,6 @@ export class NewsletterService {
         `❌ Failed to handle scheduled newsletter: ${error.message}`,
       );
       throw error;
-    }
-  }
-
-  private async checkExistingEvent(
-    eventKey: string,
-    scheduledAt: Date,
-  ): Promise<IEvent | null> {
-    try {
-      const event = await this.model.get({
-        eventKey,
-        timestamp: scheduledAt.toISOString(),
-      });
-      return event;
-    } catch {
-      // 레코드가 없는 경우 null 반환
-      return null;
     }
   }
 
@@ -573,7 +488,7 @@ export class NewsletterService {
       type: newsletter.type as string,
       newsletterId: newsletter.id,
       schoolId: newsletter.schoolId,
-      status: EventStatus.PENDING,
+      status: EventStatus.SCHEDULED,
       payload: {
         type: newsletter.type as string,
         schoolId: newsletter.schoolId,
@@ -607,16 +522,49 @@ export class NewsletterService {
     await this.model.create(event);
   }
 
-  private async createTrackingEntries(
-    manager: EntityManager,
-    newsletter: Newsletter,
-    students: Student[],
-  ): Promise<void> {
-    // 중복 제거된 parent들 추출
-    const parents = students.map((student) => student.parent);
+  private async checkSchoolValidityOutsideTransaction(
+    dto: CreateNewsletterDto,
+  ): Promise<School> {
+    const school = await this.dataSource.getRepository(School).findOne({
+      where: { id: dto.schoolId },
+    });
+    if (!school) {
+      throw new NotFoundException('School not found');
+    }
+    if (dto.scheduledAt && !school.phone) {
+      throw new BadRequestException('Missing phone info in school');
+    }
+    return school;
+  }
 
-    // newsletter의 unreadParents에 추가
-    newsletter.unreadParents = parents;
-    await manager.save(newsletter);
+  private async checkTermValidityOutsideTransaction(
+    dto: CreateNewsletterDto,
+  ): Promise<Term> {
+    const term = await this.dataSource
+      .getRepository(Term)
+      .findOne({ where: { id: dto.termId } });
+    if (!term) {
+      throw new NotFoundException('Term not found');
+    }
+    return term;
+  }
+
+  private async checkExistingRegistrationNewsletterOutsideTransaction(
+    dto: CreateNewsletterDto,
+  ): Promise<void> {
+    if (dto.type === NewsletterType.REGISTRATION) {
+      const existingNewsletter = await this.dataSource
+        .getRepository(Newsletter)
+        .findOne({
+          where: {
+            schoolId: dto.schoolId,
+            termId: dto.termId,
+            type: NewsletterType.REGISTRATION,
+          },
+        });
+      if (existingNewsletter) {
+        throw new BadRequestException('Registration newsletter already exists');
+      }
+    }
   }
 }

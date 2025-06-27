@@ -18,10 +18,10 @@ export class EventService {
       await this.model.create({
         eventKey: 'SCHOOL#1#NEWSLETTER#1',
         timestamp: '2025-01-01T10:00:00Z',
-        type: 'EVERY_5MINS',
+        type: 'REGISTRATION',
         newsletterId: 1,
         schoolId: 1,
-        status: EventStatus.PENDING,
+        status: EventStatus.SCHEDULED,
         payload: {},
         expires: ttl,
       });

@@ -1,5 +1,6 @@
 export enum EventStatus {
   SENT = 'SENT',
-  PENDING = 'PENDING',
   FAILED = 'FAILED',
+  CANCELED = 'CANCELED',
+  SCHEDULED = 'SCHEDULED', // used to be PENDING
 }

@@ -53,6 +53,10 @@ export class Shortlink {
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
 
+  @ApiProperty({ description: '🈳 열람 여부' })
+  @Column({ type: 'boolean', default: false })
+  isRead: boolean;
+
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈵 createdAt' })

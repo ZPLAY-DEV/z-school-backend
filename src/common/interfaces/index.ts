@@ -302,5 +302,5 @@ export type StudentNotificationInfo = {
   grade: number;
   class: string;
   studentCode: number;
-  read?: boolean;
+  read: boolean;
 };

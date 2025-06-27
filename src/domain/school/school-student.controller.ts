@@ -91,9 +91,16 @@ export class SchoolStudentController {
     return await this.schoolStudentService.createBulk(schoolId, dtos, true);
   }
 
+  @Get(':schoolId/students/grades')
+  async grades(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+  ): Promise<{ grade: number; classes: string[] }[]> {
+    return await this.schoolStudentService.grades(schoolId);
+  }
+
   @SchoolStudentListPaginatedDocs()
   @Get(':schoolId/students/paginated')
-  async list(
+  async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Paginate() query: PaginateQuery,
   ): Promise<Paginated<Student>> {
@@ -102,7 +109,7 @@ export class SchoolStudentController {
 
   @SchoolStudentListDocs()
   @Get(':schoolId/students')
-  async infiniteList(
+  async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
   ): Promise<Student[]> {
     return await this.schoolStudentService.list(schoolId);
