@@ -146,6 +146,8 @@ export class NewsletterService {
       newsletter.shortlinks?.filter((v) => v.isRead).map((v) => v.parentId) ??
       [];
 
+    (newsletter as any).shortlinks = undefined;
+
     if (newsletter.studentIds && newsletter.studentIds.length > 0) {
       const students = await this.dataSource
         .getRepository(Student)
