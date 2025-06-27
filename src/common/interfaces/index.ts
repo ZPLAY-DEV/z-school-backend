@@ -296,7 +296,7 @@ export interface HttpErrorFormat {
   message: string;
 }
 
-export type StudentNotificationInfo = {
+export type StudentReadInfo = {
   id: number;
   name: string;
   grade: number;

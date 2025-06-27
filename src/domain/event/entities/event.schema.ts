@@ -1,42 +1,29 @@
 import { Schema } from 'dynamoose';
-import { EventStatus } from 'src/common/enums';
 
 export const EventSchema = new Schema(
   {
     eventKey: {
-      type: String,
+      type: String, // (e.g., "SCHOOL#{schoolId}#{type}")
       hashKey: true,
       required: true,
     },
-    timestamp: {
-      type: String,
+    eventTime: {
+      type: Date, // Date 타입으로 변경
       rangeKey: true,
-      required: true,
-    },
-    type: {
-      type: String,
       required: true,
     },
     newsletterId: {
       type: Number,
       required: true,
     },
-    schoolId: {
-      type: Number,
-      required: true,
-    },
     status: {
       type: String,
-      enum: Object.values(EventStatus),
+      enum: ['SCHEDULED', 'SENT', 'FAILED', 'CANCELED'],
       required: true,
-      default: EventStatus.SCHEDULED,
     },
     payload: {
       type: Object,
-    },
-    isRead: {
-      type: Boolean,
-      default: false,
+      required: true,
     },
     expires: {
       type: {

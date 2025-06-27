@@ -1,3 +1,4 @@
+import { NewsletterType } from 'src/common/enums';
 import { IEvent } from 'src/domain/event/entities/event.interface';
 
 /**
@@ -5,9 +6,9 @@ import { IEvent } from 'src/domain/event/entities/event.interface';
  */
 export function generateEventKey(
   schoolId: number,
-  newsletterId: number,
+  type: NewsletterType,
 ): string {
-  return `SCHOOL#${schoolId}#NEWSLETTER#${newsletterId}`;
+  return `SCHOOL#${schoolId}#${type}`;
 }
 
 /**

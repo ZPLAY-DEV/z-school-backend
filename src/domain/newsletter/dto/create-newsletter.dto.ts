@@ -10,7 +10,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { NewsletterTarget, NewsletterType } from 'src/common/enums';
-import { NotificationStatus } from 'src/common/enums/notification-status';
+import { SendStatus } from 'src/common/enums/send-status';
 
 export class CreateNewsletterDto {
   @ApiProperty({ description: '🈵 schoolId', type: Number, example: 1 })
@@ -76,13 +76,13 @@ export class CreateNewsletterDto {
 
   @ApiProperty({
     description: '🈵 뉴스레터 발송상태',
-    enum: NotificationStatus,
+    enum: SendStatus,
     required: false,
-    example: NotificationStatus.INIT,
+    example: SendStatus.INIT,
   })
   @IsOptional()
-  @IsEnum(NotificationStatus)
-  status?: NotificationStatus;
+  @IsEnum(SendStatus)
+  status?: SendStatus;
 
   @ApiProperty({ description: '🈵 뉴스레터 대상', required: false })
   @IsOptional()

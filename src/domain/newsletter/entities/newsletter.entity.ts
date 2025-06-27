@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { IsArray } from 'class-validator';
 import { NewsletterTarget, NewsletterType } from 'src/common/enums';
-import { NotificationStatus } from 'src/common/enums/notification-status';
+import { SendStatus } from 'src/common/enums/send-status';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -16,7 +16,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('newsletters')
@@ -73,10 +73,10 @@ export class Newsletter {
   @ApiProperty({ description: '🈵 발송 상태' })
   @Column({
     type: 'enum',
-    enum: NotificationStatus,
-    default: NotificationStatus.INIT,
+    enum: SendStatus,
+    default: SendStatus.INIT,
   })
-  status: NotificationStatus;
+  status: SendStatus;
 
   @ApiProperty({
     description: '🈵 발송 대상 유형; SCHOOL, GRADE, LESSON, GROUP, OTHER',

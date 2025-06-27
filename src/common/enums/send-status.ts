@@ -1,4 +1,4 @@
-export enum NotificationStatus {
+export enum SendStatus {
   INIT = 'INIT',
   SENT = 'SENT',
   SCHEDULED = 'SCHEDULED',

@@ -14,8 +14,8 @@ import {
   NewsletterType,
   StudentStatus,
 } from 'src/common/enums';
-import { NotificationStatus } from 'src/common/enums/notification-status';
-import { StudentNotificationInfo } from 'src/common/interfaces';
+import { SendStatus } from 'src/common/enums/send-status';
+import { StudentReadInfo } from 'src/common/interfaces';
 import { IEvent, IEventKey } from 'src/domain/event/entities/event.interface';
 import { generateEventKey } from 'src/domain/event/utils/event.utils';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
@@ -57,12 +57,13 @@ export class NewsletterService {
   //? 학생 대상 발송
   async create(dto: CreateNewsletterDto): Promise<Newsletter> {
     // 모든 validation을 transaction 밖에서 처리 (Auto-increment ID 낭비 방지)
-    const school = await this.checkSchoolValidityOutsideTransaction(dto);
-    const term = await this.checkTermValidityOutsideTransaction(dto);
-    // await this.checkExistingEventWithDto(dto);
-    await this.checkExistingRegistrationNewsletterOutsideTransaction(dto);
+    const school = await this.checkSchoolValidity(dto);
+    const term = await this.checkTermValidity(dto);
+    if (dto.type === NewsletterType.REGISTRATION) {
+      await this.checkPreviousEventWithDto(dto);
+      await this.checkExistingNewsletterWithDto(dto);
+    }
 
-    // Transaction: 순수 데이터 변경 작업만
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       // 뉴스레터 생성
       const newsletter = await this.createNewsletter(manager, {
@@ -121,16 +122,14 @@ export class NewsletterService {
         })
         .getMany();
 
-      const studentReadInfos: StudentNotificationInfo[] = students.map(
-        (student) => ({
-          id: student.id,
-          name: student.name,
-          grade: student.grade,
-          class: student.class,
-          studentCode: student.studentCode,
-          read: readParentIds.includes(student.parent.id),
-        }),
-      );
+      const studentReadInfos: StudentReadInfo[] = students.map((student) => ({
+        id: student.id,
+        name: student.name,
+        grade: student.grade,
+        class: student.class,
+        studentCode: student.studentCode,
+        read: readParentIds.includes(student.parent.id),
+      }));
 
       return new NewsletterDetailResponseDto(
         newsletter,
@@ -200,7 +199,7 @@ export class NewsletterService {
   async cancelNewsletter(id: number): Promise<Newsletter> {
     const newsletter = await this.newsletterRepository.preload({
       id,
-      status: NotificationStatus.CANCELED,
+      status: SendStatus.CANCELED,
     });
     // todo remove shortlinks for the newsletter
     // 재발송 기능이 있기 때문에 필요없다고 함.
@@ -213,7 +212,7 @@ export class NewsletterService {
   async resendNewsletter(id: number): Promise<Newsletter> {
     const newsletter = await this.newsletterRepository.preload({
       id,
-      status: NotificationStatus.CANCELED,
+      status: SendStatus.CANCELED,
     });
     return (await this.newsletterRepository.save(newsletter)) as Newsletter;
   }
@@ -259,50 +258,6 @@ export class NewsletterService {
 
   //? 유효성 검증
   // for create
-  private async checkExistingEventWithDto(
-    dto: CreateNewsletterDto,
-  ): Promise<boolean> {
-    // event 테이블에서 동일한 schoolId, termId, type이 REGISTRATION인 이벤트 스캔
-    const scanResult = await this.model
-      .scan({
-        FilterExpression:
-          '#schoolId = :schoolId AND #newsletterId = :newsletterId AND #status = :status',
-        ExpressionAttributeNames: {
-          '#schoolId': 'schoolId',
-          '#newsletterId': 'newsletterId',
-          '#status': 'status',
-        },
-        ExpressionAttributeValues: {
-          ':schoolId': dto.schoolId,
-          ':termId': dto.termId,
-          ':status': EventStatus.SCHEDULED,
-        },
-      })
-      .exec();
-
-    if (scanResult && scanResult.length > 0) {
-      throw new BadRequestException('Already scheduled');
-    }
-    return false;
-  }
-
-  private async checkExistingEventWithEntity(
-    newsletter: Newsletter,
-    scheduledAt: Date,
-  ): Promise<IEvent | null> {
-    try {
-      const eventKey = generateEventKey(newsletter.schoolId, newsletter.id);
-      const event = await this.model.get({
-        eventKey,
-        timestamp: scheduledAt.toISOString(),
-      });
-      return event;
-    } catch {
-      // 레코드가 없는 경우 null 반환
-      return null;
-    }
-  }
-
   // ------------------------------------------------------------------------ //
   // private methods for create, update, delete
   // ------------------------------------------------------------------------ //
@@ -334,7 +289,7 @@ export class NewsletterService {
       // dynamodb 이벤트 레코드 생성
       await this.createEvent(newsletter, shortlinks, dedupedStudents);
       // newsletter 업데이트
-      newsletter.status = NotificationStatus.SCHEDULED;
+      newsletter.status = SendStatus.SCHEDULED;
       newsletter.studentIds = studentIds;
       await manager.save(newsletter);
 
@@ -373,12 +328,13 @@ export class NewsletterService {
       if (!newsletter.targetItems) {
         throw new BadRequestException('발송 대상 강좌 정보가 없습니다.');
       }
-      // lesson → groups → students 관계를 QueryBuilder로 조회
+      // lesson → groups → picks → students 관계를 QueryBuilder로 조회
       students = await manager
         .createQueryBuilder(Student, 'student')
         .leftJoinAndSelect('student.parent', 'parent')
         .leftJoinAndSelect('parent.user', 'user')
-        .leftJoin('student.groups', 'group')
+        .leftJoin('student.picks', 'pick')
+        .leftJoin('pick.group', 'group')
         .leftJoin('group.lesson', 'lesson')
         .where('lesson.id IN (:...lessonIds)', {
           lessonIds: newsletter.targetItems,
@@ -388,12 +344,13 @@ export class NewsletterService {
       if (!newsletter.targetItems) {
         throw new BadRequestException('발송 대상 반 정보가 없습니다.');
       }
-      // group → students 관계를 QueryBuilder로 조회
+      // group → picks → students 관계를 QueryBuilder로 조회
       students = await manager
         .createQueryBuilder(Student, 'student')
         .leftJoinAndSelect('student.parent', 'parent')
         .leftJoinAndSelect('parent.user', 'user')
-        .leftJoin('student.groups', 'group')
+        .leftJoin('student.picks', 'pick')
+        .leftJoin('pick.group', 'group')
         .where('group.id IN (:...groupIds)', {
           groupIds: newsletter.targetItems,
         })
@@ -484,10 +441,8 @@ export class NewsletterService {
 
     const event = {
       eventKey: `SCHOOL#${newsletter.schoolId}#NEWSLETTER#${newsletter.id}`,
-      timestamp: scheduledTime.toISOString(),
-      type: newsletter.type as string,
+      eventTime: scheduledTime,
       newsletterId: newsletter.id,
-      schoolId: newsletter.schoolId,
       status: EventStatus.SCHEDULED,
       payload: {
         type: newsletter.type as string,
@@ -522,9 +477,7 @@ export class NewsletterService {
     await this.model.create(event);
   }
 
-  private async checkSchoolValidityOutsideTransaction(
-    dto: CreateNewsletterDto,
-  ): Promise<School> {
+  private async checkSchoolValidity(dto: CreateNewsletterDto): Promise<School> {
     const school = await this.dataSource.getRepository(School).findOne({
       where: { id: dto.schoolId },
     });
@@ -537,9 +490,7 @@ export class NewsletterService {
     return school;
   }
 
-  private async checkTermValidityOutsideTransaction(
-    dto: CreateNewsletterDto,
-  ): Promise<Term> {
+  private async checkTermValidity(dto: CreateNewsletterDto): Promise<Term> {
     const term = await this.dataSource
       .getRepository(Term)
       .findOne({ where: { id: dto.termId } });
@@ -549,22 +500,72 @@ export class NewsletterService {
     return term;
   }
 
-  private async checkExistingRegistrationNewsletterOutsideTransaction(
+  private async checkExistingNewsletterWithDto(
     dto: CreateNewsletterDto,
   ): Promise<void> {
-    if (dto.type === NewsletterType.REGISTRATION) {
-      const existingNewsletter = await this.dataSource
-        .getRepository(Newsletter)
-        .findOne({
-          where: {
-            schoolId: dto.schoolId,
-            termId: dto.termId,
-            type: NewsletterType.REGISTRATION,
-          },
-        });
-      if (existingNewsletter) {
-        throw new BadRequestException('Registration newsletter already exists');
+    const newsletters = await this.dataSource.getRepository(Newsletter).find({
+      where: {
+        schoolId: dto.schoolId,
+        termId: dto.termId,
+      },
+    });
+
+    if (newsletters && newsletters.length > 0) {
+      // if (
+      //   newsletters.some(
+      //     (newsletter) => newsletter.status === SendStatus.SCHEDULED,
+      //   )
+      // ) {
+      //   throw new BadRequestException('Already scheduled.');
+      // }
+      if (
+        dto.type === NewsletterType.REGISTRATION &&
+        newsletters.some((newsletter) => newsletter.status === SendStatus.SENT)
+      ) {
+        throw new BadRequestException('Registration newsletter already sent.');
       }
+    }
+  }
+
+  // ------------------------------------------------------------------------ //
+  // private methods for dynamodb
+  // ------------------------------------------------------------------------ //
+
+  private async checkPreviousEventWithDto(
+    dto: CreateNewsletterDto,
+  ): Promise<void> {
+    const eventKey = generateEventKey(dto.schoolId, dto.type); // 예) 특정학교의 REGISTRATION 타입 이벤트 조회
+
+    // query로 해당 eventKey의 과거 이벤트들을 조회 (현시각보다 작은 것만)
+    const now = new Date();
+    const events = await this.model
+      .query('eventKey')
+      .eq(eventKey)
+      .where('eventTime')
+      .lt(now)
+      .exec();
+
+    if (events && events.length > 0) {
+      if (events.some((event) => event.status === 'SENT')) {
+        throw new BadRequestException('Registration newsletter already sent.');
+      }
+    }
+  }
+
+  private async checkExistingEventWithEntity(
+    newsletter: Newsletter,
+    scheduledAt: Date,
+  ): Promise<IEvent | null> {
+    try {
+      const eventKey = generateEventKey(newsletter.schoolId, newsletter.type);
+      const event = await this.model.get({
+        eventKey,
+        eventTime: scheduledAt,
+      });
+      return event;
+    } catch {
+      // 레코드가 없는 경우 null 반환
+      return null;
     }
   }
 }

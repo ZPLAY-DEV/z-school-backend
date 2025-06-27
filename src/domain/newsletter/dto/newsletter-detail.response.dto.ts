@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { StudentNotificationInfo } from 'src/common/interfaces';
+import { StudentReadInfo } from 'src/common/interfaces';
 import { Newsletter } from '../entities/newsletter.entity';
 
 export class NewsletterDetailResponseDto extends Newsletter {
@@ -18,7 +18,7 @@ export class NewsletterDetailResponseDto extends Newsletter {
     ],
     required: false,
   })
-  students?: StudentNotificationInfo[];
+  students?: StudentReadInfo[];
 
   @ApiProperty({
     description: '총 학생 수 (수강신청 타입일 때만)',
@@ -29,7 +29,7 @@ export class NewsletterDetailResponseDto extends Newsletter {
 
   constructor(
     newsletter: Newsletter,
-    students?: StudentNotificationInfo[],
+    students?: StudentReadInfo[],
     total?: number,
   ) {
     super(newsletter);
