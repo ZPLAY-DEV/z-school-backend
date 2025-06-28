@@ -319,7 +319,7 @@ export class NewsletterService {
 
       await this.slack.sendMessage({
         channel: 'activity',
-        text: `${newsletter.schoolName}에서 뉴스레터 작성\n- 이름:${newsletter.title}\n- 분류:${translateNewsletterType(newsletter.type)}\n- 대상:${translateNewsletterTarget(newsletter.target)} ${newsletter.studentIds.length}명`,
+        text: `${newsletter.schoolName}에서 뉴스레터 발송예약\n- 이름:${newsletter.title}\n- 분류:${translateNewsletterType(newsletter.type)}\n- 대상:${translateNewsletterTarget(newsletter.target)} ${newsletter.studentIds.length}명`,
       });
     } catch (error) {
       this.logger.error(
