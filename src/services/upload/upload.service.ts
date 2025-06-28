@@ -31,10 +31,6 @@ export class UploadService {
       'afterschool-files-bucket',
     );
 
-    if (!this.cloudFrontUrl) {
-      this.logger.warn('AWS CloudFront URL is not configured');
-    }
-
     this.logger.log(
       `UploadService initialized for environment: ${this.environment}`,
     );
