@@ -1,7 +1,7 @@
 import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
+    BadRequestException,
+    Injectable,
+    NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { format, fromZonedTime } from 'date-fns-tz';
@@ -11,15 +11,15 @@ import { NotificationType } from 'src/common/enums/notification-type';
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 import { AttendanceStatusDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
-  IAttendance,
-  IAttendanceKey,
+    IAttendance,
+    IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
-  calculateTtl,
-  generateDailyStudentKey,
-  generateGroupKey,
-  processAttendanceReport,
+    calculateTtl,
+    generateDailyStudentKey,
+    generateGroupKey,
+    processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -61,7 +61,7 @@ export class GroupAttendanceService {
     });
     const allStudents = group.picks.map((v) => v.student);
     const studentIds = dtos
-      .filter((v) => v.status !== AttendanceStatus.PENDING)
+      .filter((v) => v.status !== AttendanceStatus.INIT)
       .filter((v) => v.status !== AttendanceStatus.ABSENT)
       .filter((v) => v.status !== AttendanceStatus.EXCUSED_ABSENT)
       .filter((v) => v.status !== AttendanceStatus.EXCUSED_LATE)
@@ -113,7 +113,7 @@ export class GroupAttendanceService {
     });
     const allStudents = group.picks.map((v) => v.student);
     const studentIds = dtos
-      .filter((v) => v.status !== AttendanceStatus.PENDING)
+      .filter((v) => v.status !== AttendanceStatus.INIT)
       .filter((v) => v.status !== AttendanceStatus.LEFT)
       .filter((v) => v.status !== AttendanceStatus.EXCUSED_ABSENT)
       .filter((v) => v.status !== AttendanceStatus.EXCUSED_LEFT)
@@ -394,7 +394,7 @@ export class GroupAttendanceService {
 
   private translateStatusInStartContext(status: AttendanceStatus): string {
     switch (status) {
-      case AttendanceStatus.PENDING:
+      case AttendanceStatus.INIT:
         return '출석체크 이전';
       case AttendanceStatus.PRESENT:
         return '출석';
@@ -415,7 +415,7 @@ export class GroupAttendanceService {
 
   private translateStatusInEndContext(status: AttendanceStatus): string {
     switch (status) {
-      case AttendanceStatus.PENDING:
+      case AttendanceStatus.INIT:
         return '출석채크 이전';
       case AttendanceStatus.PRESENT:
         return '종료';

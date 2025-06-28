@@ -55,7 +55,7 @@ export class AttendanceService {
         start: '14:00',
         end: '15:00',
         duration: 60,
-        status: AttendanceStatus.PENDING,
+        status: AttendanceStatus.INIT,
         expires: ttl,
       });
     } catch (error) {

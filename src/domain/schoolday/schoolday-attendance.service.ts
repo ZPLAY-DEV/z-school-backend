@@ -1,7 +1,7 @@
 import {
-  DeleteCommand,
-  PutCommand,
-  TransactWriteCommand,
+    DeleteCommand,
+    PutCommand,
+    TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,24 +9,24 @@ import { addDays } from 'date-fns';
 import { fromZonedTime } from 'date-fns-tz';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
 import {
-  IAttendance,
-  IAttendanceCore,
+    IAttendance,
+    IAttendanceCore,
 } from 'src/domain/attendance/entities/attendance.interface';
 import {
-  DeleteRequest,
-  WriteRequest,
+    DeleteRequest,
+    WriteRequest,
 } from 'src/domain/attendance/types/attendance.types';
 import {
-  buildAttendanceItem,
-  calculateTtl,
-  generateDailyStudentKey,
-  generateGroupKey,
+    buildAttendanceItem,
+    calculateTtl,
+    generateDailyStudentKey,
+    generateGroupKey,
 } from 'src/domain/attendance/utils/attendance.utils';
 import {
-  BuildAttendanceForStudentDto,
-  CreateAttendanceResultDto,
-  CreateDynamoRecordWithDateDto,
-  CreateDynamoRecordWithRangeDto,
+    BuildAttendanceForStudentDto,
+    CreateAttendanceResultDto,
+    CreateDynamoRecordWithDateDto,
+    CreateDynamoRecordWithRangeDto,
 } from 'src/domain/schoolday/dto/create-dynamo-record.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -345,7 +345,7 @@ export class SchooldayAttendanceService {
       start,
       end,
       duration,
-      status: AttendanceStatus.PENDING,
+      status: AttendanceStatus.INIT,
       expires,
     } as IAttendance;
   }

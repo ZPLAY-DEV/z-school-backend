@@ -21,7 +21,7 @@ export class CreateWithStudentAndSchooldayDto {
 
   @ApiProperty({
     description: '🈵 출석 상태',
-    default: AttendanceStatus.PENDING,
+    default: AttendanceStatus.INIT,
     required: false,
     enum: AttendanceStatus,
     example: AttendanceStatus.PRESENT,
