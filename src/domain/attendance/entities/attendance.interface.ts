@@ -22,5 +22,4 @@ export interface IAttendanceCore extends IAttendanceKey {
 export interface IAttendance extends IAttendanceCore {
   parentNote?: string;
   schoolNote?: string;
-  isRead?: boolean; // do we even need this?
 }

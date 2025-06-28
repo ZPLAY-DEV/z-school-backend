@@ -46,10 +46,103 @@ export const FindAttendanceByDateDocs = () => {
       description: '조회할 날짜 (YYYY-MM-DD)',
       example: '2025-01-15',
     }),
-    ApiOkResponseTemplate({
+    ApiOkResponse({
       description: '출석 정보 조회 성공',
-      type: Object,
-      isArray: true,
+      schema: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            groupKey: {
+              type: 'string',
+              description: '반 키 (예: GROUP#123)',
+              example: 'GROUP#123',
+            },
+            dailyStudentKey: {
+              type: 'string',
+              description:
+                '일별 학생 키 (예: DATE#2025-01-15#STUDENT#1학년1반-10)',
+              example: 'DATE#2025-01-15#STUDENT#1학년1반-10',
+            },
+            lessonId: {
+              type: 'number',
+              description: '수업 ID',
+              example: 456,
+            },
+            lessonName: {
+              type: 'string',
+              description: '수업명',
+              example: '수학',
+            },
+            groupId: {
+              type: 'number',
+              description: '반 ID',
+              example: 123,
+            },
+            groupName: {
+              type: 'string',
+              description: '반 이름',
+              example: '1학년 1반',
+            },
+            studentId: {
+              type: 'number',
+              description: '학생 ID',
+              example: 789,
+            },
+            studentName: {
+              type: 'string',
+              description: '학생명',
+              example: '홍길동',
+            },
+            start: {
+              type: 'string',
+              description: '수업 시작 시간',
+              example: '14:00',
+            },
+            end: {
+              type: 'string',
+              description: '수업 종료 시간',
+              example: '14:40',
+            },
+            duration: {
+              type: 'number',
+              description: '수업 시간 (분)',
+              example: 40,
+            },
+            status: {
+              type: 'string',
+              enum: [
+                'INIT',
+                'PRESENT',
+                'ABSENT',
+                'LATE',
+                'LEFT',
+                'EXCUSED_ABSENT',
+                'EXCUSED_LATE',
+                'EXCUSED_LEFT',
+              ],
+              description: '출석 상태',
+              example: 'PRESENT',
+            },
+            expires: {
+              type: 'number',
+              description: 'TTL (Time To Live)',
+              example: 1640995200,
+            },
+            parentNote: {
+              type: 'string',
+              description: '학부모 메모',
+              example: '병원 방문으로 인한 조퇴',
+            },
+            schoolNote: {
+              type: 'string',
+              description: '학교 메모',
+              example: '담임 확인 완료',
+            },
+          },
+          required: ['groupKey', 'dailyStudentKey'],
+        },
+      },
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
   );
@@ -180,12 +273,12 @@ export const GetReportDocs = () => {
           properties: {
             studentKey: {
               type: 'string',
-              description: '학생 고유 키',
-              example: '4-4-55',
+              description: '학생 키',
+              example: 'STUDENT#1학년1반-10',
             },
             studentName: {
               type: 'string',
-              description: '학생명',
+              description: '학생 이름',
               example: '홍길동',
             },
             attendances: {
@@ -196,19 +289,30 @@ export const GetReportDocs = () => {
                 properties: {
                   date: {
                     type: 'string',
-                    description: '출석 날짜',
+                    description: '출석 날짜 (YYYY-MM-DD)',
                     example: '2025-01-15',
                   },
                   status: {
                     type: 'string',
-                    enum: ['PENDING', 'PRESENT', 'ABSENT', 'LATE', 'EXCUSED'],
+                    enum: [
+                      'INIT',
+                      'PRESENT',
+                      'ABSENT',
+                      'LATE',
+                      'LEFT',
+                      'EXCUSED_ABSENT',
+                      'EXCUSED_LATE',
+                      'EXCUSED_LEFT',
+                    ],
                     description: '출석 상태',
                     example: 'PRESENT',
                   },
                 },
+                required: ['date', 'status'],
               },
             },
           },
+          required: ['studentKey', 'studentName', 'attendances'],
         },
       },
     }),
@@ -225,19 +329,21 @@ export const StartAttendanceDocs = () => {
     ApiOperation({
       summary: '출석 시작 알림 👈 수업 시작',
       description: `
-      - 특정 반의 특정 날짜에 수업 시작을 알립니다.
+      - 특정 반의 수업 시작을 알립니다.
       - 출석 체크를 시작하고 관련 학생들에게 알림을 전송합니다.
       
       ### 매개변수:
       - \`groupId\`: 반의 ID (숫자)
-      - \`date\`: 수업 날짜 (YYYY-MM-DD 형식)
+      
+      ### 요청 본문:
+      - \`AttendanceStatusDto[]\`: 학생별 출석 상태 정보 배열
       
       ### 응답 데이터:
       - 알림이 전송된 학생 수
       
       ### 주요 기능:
       - 해당 반 학생들에게 출석 체크 시작 알림 전송
-      - 출석 상태를 PENDING으로 초기화
+      - 출석 상태를 INIT으로 초기화
       - 실시간 알림 시스템 활성화
       `,
     }),
@@ -246,12 +352,6 @@ export const StartAttendanceDocs = () => {
       type: 'number',
       description: '반 ID',
       example: 123,
-    }),
-    ApiParam({
-      name: 'date',
-      type: 'string',
-      description: '수업 날짜 (YYYY-MM-DD)',
-      example: '2025-01-15',
     }),
     ApiOkResponseTemplate({
       description: '출석 시작 알림 전송 성공',
@@ -271,15 +371,17 @@ export const EndAttendanceDocs = () => {
     ApiOperation({
       summary: '출석 종료 알림 👈 수업 종료',
       description: `
-      - 특정 반의 특정 날짜에 수업 종료를 알립니다.
+      - 특정 반의 수업 종료를 알립니다.
       - 출석 체크를 마감하고 최종 출석 현황을 정리합니다.
       
       ### 매개변수:
       - \`groupId\`: 반의 ID (숫자)
-      - \`date\`: 수업 날짜 (YYYY-MM-DD 형식)
+      
+      ### 요청 본문:
+      - \`AttendanceStatusDto[]\`: 학생별 출석 상태 정보 배열
       
       ### 응답 데이터:
-      - 출석 마감 처리 결과
+      - 출석 마감 처리 결과 (숫자)
       
       ### 주요 기능:
       - 해당 반의 출석 체크 마감
@@ -294,15 +396,9 @@ export const EndAttendanceDocs = () => {
       description: '반 ID',
       example: 123,
     }),
-    ApiParam({
-      name: 'date',
-      type: 'string',
-      description: '수업 날짜 (YYYY-MM-DD)',
-      example: '2025-01-15',
-    }),
     ApiOkResponseTemplate({
       description: '출석 종료 처리 성공',
-      type: Object,
+      type: Number,
       isArray: false,
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),

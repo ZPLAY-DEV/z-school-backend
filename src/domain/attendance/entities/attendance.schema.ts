@@ -62,10 +62,6 @@ export const AttendanceSchema = new Schema(
       type: String,
       required: false,
     },
-    isRead: {
-      type: Boolean,
-      default: false,
-    },
     expires: {
       type: {
         value: Number,
