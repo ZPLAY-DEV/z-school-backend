@@ -7,7 +7,7 @@ services:
       - "4510-4559:4510-4559" # 외부 서비스 포트 범위
     environment:
       - DEFAULT_REGION=ap-northeast-2
-      - SERVICES=sqs,events,lambda,dynamodb,firehose,s3,cloudfront,cloudwatch,secretsmanager,logs
+      - SERVICES=sqs,events,lambda,dynamodb,firehose,s3,cloudfront,cloudwatch,secretsmanager,logs,apigateway
       - ENFORCE_IAM=0
       - DYNAMODB_SHARE_DB=1
       - DEBUG=1

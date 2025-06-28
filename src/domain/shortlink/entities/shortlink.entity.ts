@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -38,6 +39,7 @@ export class Shortlink {
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈵 21자리 나노아이디 값' })
+  @Index()
   @Column({ type: 'varchar', length: 32 })
   nanoid: string;
 
