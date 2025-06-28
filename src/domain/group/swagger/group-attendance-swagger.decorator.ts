@@ -24,11 +24,14 @@ export const FindAttendanceByDateDocs = () => {
       - 각 출석 정보에는 학생 정보, 수업 정보, 출석 상태가 포함됩니다.
       
       ### 출석 상태:
-      - \`PENDING\`: 대기 중
-      - \`PRESENT\`: 출석
-      - \`ABSENT\`: 결석
-      - \`LATE\`: 지각
-      - \`EXCUSED\`: 사전 결석 신고
+      -  INIT = 'INIT', // 시작전
+      -  PRESENT = 'PRESENT', // 출석
+      -  ABSENT = 'ABSENT', // 결석
+      -  LATE = 'LATE', // 지각
+      -  LEFT = 'LEFT', // 조퇴
+      -  EXCUSED_ABSENT = 'EXCUSED_ABSENT', // 선결석통보
+      -  EXCUSED_LATE = 'EXCUSED_LATE', // 선지각통보
+      -  EXCUSED_LEFT = 'EXCUSED_LEFT', // 선조퇴통보
       `,
     }),
     ApiParam({
@@ -73,11 +76,14 @@ export const UpsertAttendanceDocs = () => {
       - 출석 상태 및 관련 정보를 포함한 DTO
       
       ### 출석 상태:
-      - \`PENDING\`: 대기 중
+      - \`INIT\`: 시작전
       - \`PRESENT\`: 출석
       - \`ABSENT\`: 결석
-      - \`LATE\`: 지각
-      - \`EXCUSED\`: 사전 결석 신고
+      - \`LATE\`: 지각 
+      - \`LEFT\`: 조퇴
+      - \`EXCUSED_ABSENT\`: 선결석통보
+      - \`EXCUSED_LATE\`: 선지각통보
+      - \`EXCUSED_LEFT\`: 선조퇴통보
       
       ### 응답 데이터:
       - 등록/수정된 출석 정보 객체
@@ -143,11 +149,14 @@ export const GetReportDocs = () => {
       - 학부모 리포트 생성
       
       ### 출석 상태:
-      - \`PENDING\`: 대기 중
-      - \`PRESENT\`: 출석
-      - \`ABSENT\`: 결석
-      - \`LATE\`: 지각
-      - \`EXCUSED\`: 사전 결석 신고
+      -  INIT = 'INIT', // 시작전
+      -  PRESENT = 'PRESENT', // 출석
+      -  ABSENT = 'ABSENT', // 결석
+      -  LATE = 'LATE', // 지각
+      -  LEFT = 'LEFT', // 조퇴
+      -  EXCUSED_ABSENT = 'EXCUSED_ABSENT', // 선결석통보
+      -  EXCUSED_LATE = 'EXCUSED_LATE', // 선지각통보
+      -  EXCUSED_LEFT = 'EXCUSED_LEFT', // 선조퇴통보
       `,
     }),
     ApiParam({

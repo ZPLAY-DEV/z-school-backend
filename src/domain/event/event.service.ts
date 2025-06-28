@@ -15,7 +15,7 @@ export class EventService {
     const ttl = Math.floor(now.getTime() / 1000) + 60 * 60 * 24; // 1 일
     try {
       await this.model.create({
-        eventKey: 'SCHOOL#1#REGISTRATION#1',
+        eventKey: 'SCHOOL#1#REGISTRATION',
         eventTime: Date.now(),
         newsletterId: 1,
         status: EventStatus.SCHEDULED,
