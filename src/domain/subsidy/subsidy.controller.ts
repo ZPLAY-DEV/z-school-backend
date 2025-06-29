@@ -6,12 +6,13 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateSubsidyDto } from 'src/domain/subsidy/dto/create-subsidy.dto';
 import { UpdateSubsidyDto } from 'src/domain/subsidy/dto/update-subsidy.dto';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
 import { SubsidyService } from 'src/domain/subsidy/subsidy.service';
 
+@ApiTags('⚠️ Subsidys ( 학생지원금 )')
 @Controller('subsidys')
 export class SubsidyController {
   constructor(private readonly subsidyService: SubsidyService) {}

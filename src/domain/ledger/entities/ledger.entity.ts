@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiTags } from '@nestjs/swagger';
 import { LedgerType } from 'src/common/enums';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -12,6 +12,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+@ApiTags('⚠️ Ledgers ( 학생비용내역 )')
 @Entity('ledgers')
 export class Ledger {
   @ApiProperty({ description: 'ledgerId' })

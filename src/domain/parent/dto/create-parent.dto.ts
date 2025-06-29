@@ -1,11 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class CreateParentDto {
   @ApiProperty({
-    description: '🈳 User ID',
-    example: '1 --- 학부모 앱으로 가입한 유저 id',
-    required: false,
+    description: '🈳 User ID. seed 데이터 생성시 비워야 함. 가입시에만 필요',
+    example: 1,
+    required: true,
     type: Number,
   })
   @IsOptional()
@@ -13,43 +14,54 @@ export class CreateParentDto {
   userId?: number;
 
   @ApiPropertyOptional({
-    description: '🈳 학부모 성함',
-    example: '홍길동 --- 학부모 성함',
+    description: '🈳 학부모 이름',
+    example: '홍길동',
     required: false,
     type: String,
   })
   @IsOptional()
   @IsString()
-  @MaxLength(16)
   name?: string;
 
   @ApiProperty({
     description: '🈵 전화번호 (숫자만)',
-    example: '01012345678 --- 학부모 전화번호',
+    example: '01012345678',
     required: true,
     type: String,
   })
   @IsString()
-  @MaxLength(16)
   phone: string;
 
   @ApiProperty({
     description: '🈳 내용',
-    example: '특이사항 없음 --- 학부모 비고',
+    example: '비고',
     required: false,
     type: String,
   })
   @IsOptional()
   @IsString()
-  @MaxLength(255)
   note?: string;
 
   @ApiProperty({
-    description: '🈳 약관 동의 일시',
-    example: '2025-01-01 12:00:00 --- 약관 동의 일시',
+    description: '🈳 약관동의 시각',
+    example: '2025-01-01T12:00:00Z',
     required: false,
     type: Date,
   })
   @IsOptional()
+  @IsDate()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const dateStr = value.replace(' ', 'T');
+      if (!dateStr.includes('T')) {
+        return new Date(value);
+      }
+      if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+        return new Date(dateStr + 'Z');
+      }
+      return new Date(dateStr);
+    }
+    return value as Date;
+  })
   termsAgreedAt?: Date;
 }

@@ -7,10 +7,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  Length,
-  Max,
-  MaxLength,
-  Min,
 } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
 
@@ -19,16 +15,13 @@ export class CreateSchoolDto {
     description: '🈳 관리자 편의를 위한 학교명',
     example: '홍익대학교 사범대학 부속 초등학교',
     required: true,
-    maxLength: 24,
   })
   @IsString()
-  @MaxLength(24) // '홍익대학교 사범대학 부속 초등학교'
   name: string;
 
   @ApiProperty({
     description: '🈵 Unique school code',
-    example: '212121',
-    maxLength: 16,
+    example: '7872025',
   })
   @IsString()
   @IsNotEmpty()
@@ -81,7 +74,6 @@ export class CreateSchoolDto {
     required: false,
   })
   @IsString()
-  @Length(1, 16)
   @IsOptional()
   operationFeeRule?: string;
 
@@ -92,8 +84,6 @@ export class CreateSchoolDto {
     required: false,
   })
   @IsInt()
-  @Min(0)
-  @Max(100)
   @IsOptional()
   payoutRate?: number;
 
@@ -109,7 +99,7 @@ export class CreateSchoolDto {
 
   @ApiProperty({
     description: '🈳 Promotional video URLs',
-    example: ['https://cdn.z-school.com/xxxx'],
+    example: ['https://cdn.zschool.com/schools/promos/1.mp4'],
     required: false,
     type: [String],
   })
@@ -117,7 +107,7 @@ export class CreateSchoolDto {
   promos?: string[];
 
   @ApiProperty({
-    description: '🈳 절약모드 여부',
+    description: '🈳 절약모드 여부. 절약모드 시 SMS 발송하지 않는다.',
     example: false,
     default: false,
     required: false,

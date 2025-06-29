@@ -108,7 +108,7 @@ export class S3Service implements OnModuleInit {
   }
 
   //? ---------------------------------------------------------------------- ?//
-  //? Server upload 방식: 클라이언트 → 서버 → S3
+  //? delete with full CDN path
   //? ---------------------------------------------------------------------- ?//
 
   async delete(path: string): Promise<S3DeleteResult> {

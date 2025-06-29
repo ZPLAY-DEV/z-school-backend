@@ -8,12 +8,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Paginate, PaginateQuery, Paginated } from 'nestjs-paginate';
 import { CreatePayoutDto } from 'src/domain/payout/dto/create-payout.dto';
 import { UpdatePayoutDto } from 'src/domain/payout/dto/update-payout.dto';
 import { Payout } from './entities/payout.entity';
 import { PayoutService } from './payout.service';
+
+@ApiTags('⚠️ Payouts ( 강사급여내역 )')
 @Controller('payouts')
 export class PayoutController {
   constructor(private readonly payoutService: PayoutService) {}

@@ -8,12 +8,13 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Paginate, PaginateQuery, Paginated } from 'nestjs-paginate';
 import { CreateStatementDto } from 'src/domain/statement/dto/create-statement.dto';
 import { UpdateStatementDto } from 'src/domain/statement/dto/update-statement.dto';
 import { Statement } from './entities/statement.entity';
 import { StatementService } from './statement.service';
+@ApiTags('⚠️ Statements ( 학교영수내역 )')
 @Controller('statements')
 export class StatementController {
   constructor(private readonly statementService: StatementService) {}

@@ -8,12 +8,13 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Paginate, PaginateQuery, Paginated } from 'nestjs-paginate';
 import { CreateLedgerDto } from 'src/domain/ledger/dto/create-ledger.dto';
 import { UpdateLedgerDto } from 'src/domain/ledger/dto/update-ledger.dto';
 import { Ledger } from './entities/ledger.entity';
 import { LedgerService } from './ledger.service';
+@ApiTags('⚠️ Ledgers ( 학생비용내역 )')
 @Controller('ledgers')
 export class LedgerController {
   constructor(private readonly ledgerService: LedgerService) {}

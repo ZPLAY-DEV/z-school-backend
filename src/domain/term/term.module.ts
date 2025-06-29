@@ -14,8 +14,8 @@ import { UploadModule } from 'src/services/upload/upload.module';
   imports: [
     TypeOrmModule.forFeature([Term, Lesson, School]),
     UploadModule,
-    SlackModule,
     S3Module,
+    SlackModule,
   ],
   providers: [TermService, TermSubscriber],
   controllers: [TermController],

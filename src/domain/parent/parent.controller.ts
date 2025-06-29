@@ -1,66 +1,53 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
   Param,
   ParseIntPipe,
   Patch,
-  Post,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { Public } from 'src/common/decorators/public.decorator';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
-import { CreateParentDto } from './dto/create-parent.dto';
 import { UpdateParentDto } from './dto/update-parent.dto';
 import { ParentService } from './parent.service';
+import {
+  DeleteParentDocs,
+  FindAllParentDocs,
+  FindParentDocs,
+  UpdateParentDocs,
+} from './swagger/parent-swagger.decorator';
 
+@ApiTags('✅ Parents ( 학부모 )')
 @Controller('parents')
+@UseInterceptors(ClassSerializerInterceptor)
 export class ParentController {
   constructor(private readonly parentService: ParentService) {}
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Create
-  //? ---------------------------------------------------------------------- ?//
-
-  @ApiOperation({ description: 'parent 생성' })
-  @Post()
-  async create(@Body() dto: CreateParentDto) {
-    return this.parentService.create(dto);
-  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'parent paginated 리스트' })
+  @FindAllParentDocs()
   @Get('paginated')
   async findAll(@Paginate() query: PaginateQuery): Promise<Paginated<Parent>> {
     return this.parentService.findAll(query);
   }
 
-  @Public()
-  @ApiOperation({ description: 'parent detail 조회' })
+  @FindParentDocs()
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    return this.parentService.findById(id, [
-      'payment',
-      'user',
-      'user.profile',
-      'items',
-      'items.review',
-      'items.delivery',
-      'items.supports',
-      'items.supports.replies',
-    ]);
+    return this.parentService.findById(id, ['students']);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'parent 수정' })
+  @UpdateParentDocs()
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -73,7 +60,7 @@ export class ParentController {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'parent 삭제' })
+  @DeleteParentDocs()
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<Parent> {
     return this.parentService.remove(id);

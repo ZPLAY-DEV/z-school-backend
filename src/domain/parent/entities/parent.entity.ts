@@ -21,7 +21,7 @@ export class Parent {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 
-  @ApiProperty({ description: '🈳 로그인 사용자ID' })
+  @ApiProperty({ description: '🈳 userId', example: 1 })
   @Column({
     type: 'int',
     unique: true,
@@ -32,23 +32,23 @@ export class Parent {
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '🈳 성함' })
+  @ApiProperty({ description: '🈳 이름', example: '홍길동' })
   @Column({ type: 'varchar', length: 16, nullable: true })
   name: string | null;
 
-  @ApiProperty({ description: '🈵 전화번호 (숫자만)' })
+  @ApiProperty({ description: '🈵 전화번호 (숫자만)', example: '01012345678' })
   @Column({ type: 'varchar', unique: true, length: 16 })
   phone: string;
 
+  @ApiProperty({ description: '🈳 비고', nullable: true, example: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
-  @ApiProperty({ description: '🈳 내용' })
   note: string | null;
 
-  // ------------------------------------------------------------------------ //
-
-  @ApiProperty({ description: '🈳 termsAgreedAt' })
+  @ApiProperty({ description: '🈳 termsAgreedAt', nullable: true })
   @Column({ type: 'datetime', nullable: true })
   termsAgreedAt: Date | null;
+
+  // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈵 createdAt' })
   @CreateDateColumn()

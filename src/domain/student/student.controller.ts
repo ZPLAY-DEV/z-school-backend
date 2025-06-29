@@ -25,16 +25,6 @@ import { Booking } from '../booking/entities/booking.entity';
 import { Group } from '../group/entities/group.entity';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
-import {
-  CreateStudentDocs,
-  StudentBookingFindByIdDocs,
-  StudentDryRunDocs,
-  StudentFindByIdDocs,
-  StudentGroupFindByIdDocs,
-  StudentScheduleFindByIdDocs,
-  StudentStatusUpdateDocs,
-  StudentUpdateDocs,
-} from './swagger/student.swagger.decorator';
 
 @ApiTags('✅ Students ( 학생 )')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -49,7 +39,6 @@ export class StudentController {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  @CreateStudentDocs()
   @ApiOperation({ description: 'Student 생성' })
   @Post()
   async create(@Body() dto: CreateStudentDto): Promise<Student> {
@@ -60,7 +49,6 @@ export class StudentController {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  @StudentDryRunDocs()
   @HttpCode(HttpStatus.OK)
   @Post('dryrun')
   async dryRun(@Body() dto: CreateStudentDto): Promise<Student | null> {
@@ -68,14 +56,12 @@ export class StudentController {
   }
 
   //? 학생 상세 정보 조회
-  @StudentFindByIdDocs()
   @Get(':id')
   async findById(@Param('id') id: number): Promise<Student> {
     return await this.studentService.findById(id);
   }
 
   //? 수강중인 강좌 / 수강취소 강좌 조회
-  @StudentGroupFindByIdDocs()
   @Get(':id/groups')
   async findByIdWithStatus(
     @Param('id', ParseIntPipe) id: number,
@@ -85,7 +71,6 @@ export class StudentController {
   }
 
   //? 요일별 학생 수업 일정 조회
-  @StudentScheduleFindByIdDocs()
   @Get(':id/schedule')
   async findBySchedule(
     @Param('id', ParseIntPipe) id: number,
@@ -96,7 +81,6 @@ export class StudentController {
   }
 
   //? 특정 학생의 수강 신청 내역 조회
-  @StudentBookingFindByIdDocs()
   @Get(':id/bookings')
   async findBookings(
     @Param('id', ParseIntPipe) id: number,
@@ -107,7 +91,6 @@ export class StudentController {
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
-  @StudentUpdateDocs()
   @ApiOperation({ description: 'Student 수정' })
   @Patch(':id')
   async update(
@@ -117,7 +100,6 @@ export class StudentController {
     return await this.studentService.update(id, dto);
   }
 
-  @StudentStatusUpdateDocs()
   @Patch(':schoolId/students/:studentId/status')
   async updateStudentStatus(
     @Param('schoolId', ParseIntPipe) schoolId: number,

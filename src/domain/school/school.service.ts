@@ -9,7 +9,7 @@ import {
 import { Region } from 'src/common/enums';
 import { School } from 'src/domain/school/entities/school.entity';
 import { S3Service } from 'src/services/aws/s3.service';
-import { DataSource, In, Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
 
@@ -21,16 +21,14 @@ export class SchoolService {
     @InjectRepository(School)
     private readonly schoolRepository: Repository<School>,
     private readonly s3Service: S3Service,
-    private dataSource: DataSource, // for transaction
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? Create (basically Upsert)
+  //? Create
   //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateSchoolDto): Promise<School> {
     if (dto.schoolCode) {
-      // If id is provided, try to find the existing school
       const existingSchool = await this.schoolRepository.findOne({
         where: { schoolCode: dto.schoolCode },
       });
@@ -40,10 +38,7 @@ export class SchoolService {
       }
     }
 
-    const school = this.schoolRepository.create({
-      ...dto,
-      permissions: dto.permissions,
-    });
+    const school = this.schoolRepository.create(dto);
     return await this.schoolRepository.save(school);
   }
 
@@ -51,7 +46,7 @@ export class SchoolService {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  // 카테고리(slug)별 전체 리스트
+  // regions별 전체 리스트
   async list(region: Region | null): Promise<School[]> {
     const queryBuilder = region
       ? this.schoolRepository
@@ -67,13 +62,12 @@ export class SchoolService {
 
   async infiniteList(query: PaginateQuery): Promise<Paginated<School>> {
     const queryBuilder = this.schoolRepository.createQueryBuilder('school');
-    //.where('school.isActive = :isActive', { isActive: true });
 
     return await paginate(query, queryBuilder, {
       relations: {
         terms: true,
         statements: true,
-        // instructorSchools: true,
+        calendars: true,
       },
       sortableColumns: ['id', 'name'],
       searchableColumns: ['name'],
@@ -81,7 +75,6 @@ export class SchoolService {
       filterableColumns: {
         region: [FilterOperator.EQ],
         name: [FilterOperator.EQ, FilterOperator.ILIKE],
-        // 'category.id': [FilterOperator.IN],
       },
     });
   }
@@ -135,8 +128,7 @@ export class SchoolService {
     return await this.schoolRepository.remove(school);
   }
 
-  // note that this is hard-delete
-  async deleteImages(url: string): Promise<void> {
+  async deleteFromS3(url: string): Promise<void> {
     await this.s3Service.delete(url);
   }
 }
