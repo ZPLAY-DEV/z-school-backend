@@ -143,24 +143,8 @@ export class OfferingPickService {
     });
     const groupIds = sameGradeGroups.map((v) => v.groupId);
 
-    // raw query로 upsert 처리 (MySQL 8.0+ alias 문법 사용)
-    if (items.length > 0) {
-      const placeholders = items.map(() => '(?, ?, ?, ?)').join(', ');
-      const values = items.flatMap((item) => [
-        item.studentId,
-        item.groupId,
-        item.offeringId,
-        item.startedOn,
-      ]);
-
-      const query = `
-        INSERT INTO picks (studentId, groupId, offeringId, startedOn)
-        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, startedOn)
-        ON DUPLICATE KEY UPDATE 
-          startedOn = new_pick.startedOn
-      `;
-      await this.pickRepository.query(query, values);
-    }
+    // 정교한 picks 관리: 기존 데이터와 비교하여 정확한 처리
+    await this.managePicks(offeringId, groupIds, selectedStudentIds, items);
 
     // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
     await this.offeringRepository.update(offeringId, {
@@ -204,24 +188,8 @@ export class OfferingPickService {
     });
     const groupIds = sameGradeGroups.map((v) => v.groupId);
 
-    // raw query로 upsert 처리 (MySQL 8.0+ alias 문법 사용)
-    if (items.length > 0) {
-      const placeholders = items.map(() => '(?, ?, ?, ?)').join(', ');
-      const values = items.flatMap((item) => [
-        item.studentId,
-        item.groupId,
-        item.offeringId,
-        item.startedOn,
-      ]);
-
-      const query = `
-        INSERT INTO picks (studentId, groupId, offeringId, startedOn)
-        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, startedOn)
-        ON DUPLICATE KEY UPDATE 
-          startedOn = new_pick.startedOn
-      `;
-      await this.pickRepository.query(query, values);
-    }
+    // 정교한 picks 관리: 기존 데이터와 비교하여 정확한 처리
+    await this.managePicks(offeringId, groupIds, selectedStudentIds, items);
 
     // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
     await this.offeringRepository.update(offeringId, {
@@ -272,26 +240,8 @@ export class OfferingPickService {
     });
     const groupIds = sameGradeGroups.map((v) => v.groupId);
 
-    // raw query로 upsert 처리 (MySQL 8.0+ alias 문법 사용)
-    if (items.length > 0) {
-      const placeholders = items.map(() => '(?, ?, ?, ?)').join(', ');
-      const values = items.flatMap((item) => [
-        item.studentId,
-        item.groupId,
-        item.offeringId,
-        item.startedOn,
-      ]);
-
-      const query = `
-        INSERT INTO picks (studentId, groupId, offeringId, startedOn)
-        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, startedOn)
-        ON DUPLICATE KEY UPDATE 
-          startedOn = new_pick.startedOn
-      `;
-      await this.pickRepository.query(query, values);
-    }
-
-    // todo. 죽은 데이터가 삭제되는지 확인.
+    // 정교한 picks 관리: 기존 데이터와 비교하여 정확한 처리
+    await this.managePicks(offeringId, groupIds, selectedStudentIds, items);
 
     // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
     await this.offeringRepository.update(offeringId, {
@@ -308,5 +258,59 @@ export class OfferingPickService {
     }
 
     return selectedStudentIds;
+  }
+
+  /**
+   * 기존 picks와 새로운 선택을 비교하여 정교하게 관리
+   * - 새로운 picks는 upsert
+   * - 선택되지 않은 기존 picks는 삭제
+   * - 데이터 정합성 보장 및 불필요한 작업 최소화
+   */
+  private async managePicks(
+    offeringId: number,
+    groupIds: number[],
+    selectedStudentIds: number[],
+    newItems: IPickKeys[],
+  ): Promise<void> {
+    // 1. 기존 picks 조회
+    const existingPicks = await this.pickRepository.find({
+      where: {
+        offeringId,
+        groupId: In(groupIds),
+      },
+      select: ['id', 'studentId', 'groupId'],
+    });
+
+    // 2. 새로운 picks upsert
+    if (newItems.length > 0) {
+      const placeholders = newItems.map(() => '(?, ?, ?, ?)').join(', ');
+      const values = newItems.flatMap((item) => [
+        item.studentId,
+        item.groupId,
+        item.offeringId,
+        item.startedOn,
+      ]);
+
+      const query = `
+        INSERT INTO picks (studentId, groupId, offeringId, startedOn)
+        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, startedOn)
+        ON DUPLICATE KEY UPDATE 
+          startedOn = new_pick.startedOn
+      `;
+      await this.pickRepository.query(query, values);
+    }
+
+    // 3. 선택되지 않은 기존 picks 찾아서 삭제
+    const currentSelectedSet = new Set(selectedStudentIds);
+    const picksToDelete = existingPicks.filter(
+      (pick) => !currentSelectedSet.has(pick.studentId),
+    );
+
+    if (picksToDelete.length > 0) {
+      const idsToDelete = picksToDelete.map((pick) => pick.id);
+      await this.pickRepository.delete({
+        id: In(idsToDelete),
+      });
+    }
   }
 }

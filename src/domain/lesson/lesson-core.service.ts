@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CalendarService } from 'src/domain/calendar/calendar.service';
+import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
@@ -488,7 +489,39 @@ export class LessonCoreService {
       where: { lessonId: lesson.id, deletedAt: IsNull() },
     });
 
-    // Contract 관계 upsert
+    // Contract 관계를 정교하게 관리: 기존 데이터와 비교하여 정확한 처리
+    await this.manageContracts(
+      lesson.id,
+      uniqueSams,
+      lesson.groups,
+      dto,
+      lesson,
+      manager,
+    );
+  }
+
+  /**
+   * Contract 관계를 정교하게 관리
+   * - 기존 contracts와 새로운 계약을 비교하여 정확한 처리
+   * - 새로운 contracts는 upsert
+   * - 삭제된 sam이나 group과 연관된 기존 contracts는 삭제
+   * - 데이터 정합성 보장 및 불필요한 작업 최소화
+   */
+  private async manageContracts(
+    lessonId: number,
+    uniqueSams: Map<string, number>,
+    groups: Group[],
+    dto: CreateLessonDto | UpdateLessonDto,
+    lesson: Lesson,
+    manager: EntityManager,
+  ): Promise<void> {
+    // 1. 기존 contracts 조회
+    const existingContracts = await manager.getRepository(Contract).find({
+      where: { lessonId },
+      select: ['id', 'samId', 'groupId'],
+    });
+
+    // 2. 새로운 contract 데이터 생성
     const contractData: Array<{
       samId: number;
       lessonId: number;
@@ -499,10 +532,10 @@ export class LessonCoreService {
 
     const samIds = Array.from(uniqueSams.values());
     for (const samId of samIds) {
-      for (const group of lesson.groups) {
+      for (const group of groups) {
         contractData.push({
           samId,
-          lessonId: lesson.id,
+          lessonId,
           groupId: group.id,
           startedOn: dto.start ?? lesson.start,
           endedOn: dto.end ?? lesson.end,
@@ -510,24 +543,46 @@ export class LessonCoreService {
       }
     }
 
+    // 3. 새로운 contracts upsert
     if (contractData.length > 0) {
-      const values = contractData
-        .map(
-          (data) =>
-            `(${data.samId}, ${data.lessonId}, ${data.groupId}, '${data.startedOn}', ${data.endedOn})`,
-        )
-        .join(', ');
+      const placeholders = contractData.map(() => '(?, ?, ?, ?, ?)').join(', ');
+      const values = contractData.flatMap((data) => [
+        data.samId,
+        data.lessonId,
+        data.groupId,
+        data.startedOn,
+        data.endedOn,
+      ]);
 
       const upsertQuery = `
         INSERT INTO contracts (samId, lessonId, groupId, startedOn, endedOn)
-        VALUES ${values}
+        VALUES ${placeholders} AS new_contract(samId, lessonId, groupId, startedOn, endedOn)
         ON DUPLICATE KEY UPDATE
-          startedOn = VALUES(startedOn),
-          endedOn = VALUES(endedOn),
+          startedOn = new_contract.startedOn,
+          endedOn = new_contract.endedOn,
           updatedAt = CURRENT_TIMESTAMP
       `;
+      await manager.query(upsertQuery, values);
+    }
 
-      await manager.query(upsertQuery);
+    // 4. 현재 유효한 sam-group 조합 생성
+    const currentValidCombinations = new Set<string>();
+    for (const samId of samIds) {
+      for (const group of groups) {
+        currentValidCombinations.add(`${samId}-${group.id}`);
+      }
+    }
+
+    // 5. 삭제해야 할 기존 contracts 찾기
+    const contractsToDelete = existingContracts.filter((contract) => {
+      const combination = `${contract.samId}-${contract.groupId}`;
+      return !currentValidCombinations.has(combination);
+    });
+
+    // 6. 불필요한 contracts 삭제
+    if (contractsToDelete.length > 0) {
+      const idsToDelete = contractsToDelete.map((contract) => contract.id);
+      await manager.getRepository(Contract).delete(idsToDelete);
     }
   }
 }
