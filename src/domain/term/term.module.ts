@@ -6,17 +6,10 @@ import { Term } from 'src/domain/term/entities/term.entity';
 import { TermSubscriber } from 'src/domain/term/subscriber/term.subscriber';
 import { TermController } from 'src/domain/term/term.controller';
 import { TermService } from 'src/domain/term/term.service';
-import { S3Module } from 'src/services/aws/s3.module';
 import { SlackModule } from 'src/services/slack/slack.module';
-import { UploadModule } from 'src/services/upload/upload.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Term, Lesson, School]),
-    UploadModule,
-    S3Module,
-    SlackModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Term, Lesson, School]), SlackModule],
   providers: [TermService, TermSubscriber],
   controllers: [TermController],
 })

@@ -38,7 +38,7 @@ import {
   UpdateCommentDocs,
 } from './swagger/board.swagger.decorator';
 
-@ApiTags('✅ Boards ( 게시판 )')
+@ApiTags('⚠️ Boards ( 게시판 )')
 @Controller('boards')
 @UseInterceptors(ClassSerializerInterceptor)
 export class BoardController {

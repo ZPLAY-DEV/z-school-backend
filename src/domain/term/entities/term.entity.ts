@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { IsArray } from 'class-validator';
 import { PickRule, TermType } from 'src/common/enums';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
@@ -52,20 +51,6 @@ export class Term {
   @Column({ type: 'varchar', length: 10 })
   end: string;
 
-  @ApiProperty({
-    description: '수강신청 시작일시 (ISO 8601)',
-    example: '2025-03-06 00:00:00',
-  })
-  @Column({ type: 'timestamp', nullable: true, comment: '수강신청 시작일시' })
-  bookingStart: Date | null;
-
-  @ApiProperty({
-    description: '수강신청 종료일시 (ISO 8601)',
-    example: '2025-03-10 00:00:00',
-  })
-  @Column({ type: 'timestamp', nullable: true, comment: '수강신청 종료일시' })
-  bookingEnd: Date | null;
-
   @ApiProperty({ description: '🈳 시간 중복 허용 여부', default: false })
   @Column({
     type: 'boolean',
@@ -111,12 +96,21 @@ export class Term {
   })
   isActive: boolean;
 
-  @Column('simple-array', { nullable: true, comment: '학기 이미지' })
-  @ApiProperty({ description: '학기 이미지' })
-  @IsArray()
-  images: string[] | null;
-
   // ------------------------------------------------------------------------ //
+
+  @ApiProperty({
+    description: '수강신청 시작일시 (ISO 8601)',
+    example: '2025-03-06 00:00:00',
+  })
+  @Column({ type: 'timestamp', nullable: true, comment: '수강신청 시작일시' })
+  bookingStart: Date | null;
+
+  @ApiProperty({
+    description: '수강신청 종료일시 (ISO 8601)',
+    example: '2025-03-10 00:00:00',
+  })
+  @Column({ type: 'timestamp', nullable: true, comment: '수강신청 종료일시' })
+  bookingEnd: Date | null;
 
   @ApiProperty({ description: 'createdAt' })
   @CreateDateColumn()

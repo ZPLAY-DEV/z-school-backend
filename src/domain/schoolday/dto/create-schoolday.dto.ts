@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsDate,
   IsEnum,
@@ -70,4 +70,50 @@ export class CreateSchooldayDto {
   @IsString()
   @MaxLength(255)
   note?: string | null;
+
+  @ApiProperty({
+    description: '🈳 시작 알림 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
+    required: false,
+  })
+  @IsOptional()
+  @IsDate()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      // "YYYY-MM-DD HH:mm:ss" 형식이면 ISO 형식으로 변환
+      const dateStr = value.replace(' ', 'T');
+      if (!dateStr.includes('T')) {
+        return new Date(value);
+      }
+      if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+        return new Date(dateStr + 'Z');
+      }
+      return new Date(dateStr);
+    }
+    return value as Date | null | undefined;
+  })
+  startNotifiedAt?: Date | null;
+
+  @ApiProperty({
+    description: '🈳 종료 알림 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
+    required: false,
+  })
+  @IsOptional()
+  @IsDate()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      // "YYYY-MM-DD HH:mm:ss" 형식이면 ISO 형식으로 변환
+      const dateStr = value.replace(' ', 'T');
+      if (!dateStr.includes('T')) {
+        return new Date(value);
+      }
+      if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+        return new Date(dateStr + 'Z');
+      }
+      return new Date(dateStr);
+    }
+    return value as Date | null | undefined;
+  })
+  endNotifiedAt?: Date | null;
 }

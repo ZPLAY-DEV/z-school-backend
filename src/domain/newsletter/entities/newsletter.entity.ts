@@ -79,7 +79,8 @@ export class Newsletter {
   status: SendStatus;
 
   @ApiProperty({
-    description: '🈵 발송 대상 유형; SCHOOL, GRADE, LESSON, GROUP, OTHER',
+    description: '🈵 발송 대상 유형; SCHOOL, GRADE, LESSON, GROUP, STUDENT',
+    example: NewsletterTarget.SCHOOL,
   })
   @Column({
     type: 'enum',
@@ -97,7 +98,7 @@ export class Newsletter {
   @Column({ type: 'varchar', length: 128, nullable: true })
   targetLabel: string | null;
 
-  @ApiProperty({ description: '🈵 관련 모든 studentIds' })
+  @ApiProperty({ description: '🈵 관련 모든 studentIds', example: [1, 2, 3] })
   @Column({
     type: 'simple-array',
     comment: '관련 모든 studentIds',
@@ -105,8 +106,11 @@ export class Newsletter {
   })
   studentIds: number[] | null;
 
-  @ApiProperty({ description: '🈳 발송 예약 시간 (YYYY-MM-DD HH:mm:ss)' })
-  @Column({ type: 'timestamp', nullable: true, comment: '발송 시간' })
+  @ApiProperty({
+    description: '🈳 발송 예약 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
+  })
+  @Column({ type: 'timestamp', nullable: true, comment: '발송 예약 시각' })
   scheduledAt: Date | null;
 
   // ------------------------------------------------------------------------ //

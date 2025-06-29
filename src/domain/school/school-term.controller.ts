@@ -9,8 +9,8 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 
 import { SchoolTermService } from 'src/domain/school/school-term.service';
+import { ListSchoolTermDocs } from 'src/domain/school/swagger/school-term-swagger.decorator';
 import { Term } from 'src/domain/term/entities/term.entity';
-import { ListTermDocs } from 'src/domain/term/swagger/shool-term-swagger.decorator';
 
 @ApiTags('✅ Schools > Terms ( 학교 > 학기 )')
 @Controller('schools')
@@ -22,7 +22,7 @@ export class SchoolTermController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @ListTermDocs()
+  @ListSchoolTermDocs()
   @Get(':schoolId/terms')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,

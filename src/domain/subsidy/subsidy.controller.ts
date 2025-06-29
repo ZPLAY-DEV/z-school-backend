@@ -12,8 +12,8 @@ import { UpdateSubsidyDto } from 'src/domain/subsidy/dto/update-subsidy.dto';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
 import { SubsidyService } from 'src/domain/subsidy/subsidy.service';
 
-@ApiTags('⚠️ Subsidys ( 학생지원금 )')
-@Controller('subsidys')
+@ApiTags('⚠️ Subsidies ( 학생지원금 )')
+@Controller('subsidies')
 export class SubsidyController {
   constructor(private readonly subsidyService: SubsidyService) {}
 

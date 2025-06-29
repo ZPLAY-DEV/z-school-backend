@@ -1,15 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
-  IsArray,
   IsBoolean,
+  IsDate,
   IsDateString,
   IsEnum,
   IsInt,
   IsOptional,
   IsPositive,
   IsString,
-  MaxLength,
+  MaxLength
 } from 'class-validator';
 import { PickRule, TermType } from 'src/common/enums';
 
@@ -62,26 +62,6 @@ export class CreateTermDto {
   end: string;
 
   @ApiProperty({
-    description: '🈳 수강신청 시작일시 (ISO 8601)',
-    example: '2025-03-01T00:00:00Z',
-    required: false,
-    type: Date,
-  })
-  @IsOptional()
-  @Type(() => Date)
-  bookingStart?: Date;
-
-  @ApiProperty({
-    description: '🈳 수강신청 종료일시 (ISO 8601)',
-    example: '2025-09-04T00:00:00Z',
-    required: false,
-    type: Date,
-  })
-  @IsOptional()
-  @Type(() => Date)
-  bookingEnd?: Date;
-
-  @ApiProperty({
     description: '학생확정방식',
     default: PickRule.RANDOM,
   })
@@ -112,8 +92,49 @@ export class CreateTermDto {
   @IsOptional()
   isActive?: boolean;
 
-  @ApiProperty({ description: '학기 이미지', type: [String] })
+  @ApiProperty({
+    description: '🈳 수강신청시작 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
+    required: false,
+  })
   @IsOptional()
-  @IsArray()
-  images?: string[];
+  @IsDate()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      // "YYYY-MM-DD HH:mm:ss" 형식이면 ISO 형식으로 변환
+      const dateStr = value.replace(' ', 'T');
+      if (!dateStr.includes('T')) {
+        return new Date(value);
+      }
+      if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+        return new Date(dateStr + 'Z');
+      }
+      return new Date(dateStr);
+    }
+    return value as Date | null | undefined;
+  })
+  bookingStart?: Date | null;
+
+  @ApiProperty({
+    description: '🈳 수강신청종료 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
+    required: false,
+  })
+  @IsOptional()
+  @IsDate()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      // "YYYY-MM-DD HH:mm:ss" 형식이면 ISO 형식으로 변환
+      const dateStr = value.replace(' ', 'T');
+      if (!dateStr.includes('T')) {
+        return new Date(value);
+      }
+      if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+        return new Date(dateStr + 'Z');
+      }
+      return new Date(dateStr);
+    }
+    return value as Date | null | undefined;
+  })
+  bookingEnd?: Date | null;
 }

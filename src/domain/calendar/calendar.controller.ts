@@ -3,14 +3,12 @@ import {
   ClassSerializerInterceptor,
   Controller,
   Delete,
-  Get,
   Param,
   ParseIntPipe,
   Patch,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { UpdateCalendarDto } from 'src/domain/calendar/dto/update-calendar.dto';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { CalendarService } from './calendar.service';
@@ -20,18 +18,6 @@ import { CalendarService } from './calendar.service';
 @UseInterceptors(ClassSerializerInterceptor)
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Read
-  //? ---------------------------------------------------------------------- ?//
-
-  @ApiOperation({ description: 'Calendar 리스트 w/ Pagination' })
-  @Get('paginated')
-  async findCalendars(
-    @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<Calendar>> {
-    return await this.calendarService.findAll(query);
-  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Update
@@ -50,6 +36,7 @@ export class CalendarController {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
+  @ApiOperation({ description: 'Calendar 삭제' })
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.calendarService.remove(id);

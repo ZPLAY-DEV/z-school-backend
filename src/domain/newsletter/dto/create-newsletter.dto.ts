@@ -107,16 +107,15 @@ export class CreateNewsletterDto {
   studentIds?: number[];
 
   @ApiProperty({
-    description:
-      '🈳 발송 시간 (예: "2025-06-24 10:00:00" 또는 "2025-06-24T10:00:00Z")',
-    example: '2025-06-05T00:30:00Z',
+    description: '🈳 발송 예약 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
     required: false,
   })
   @IsOptional()
   @IsDate()
   @Transform(({ value }) => {
     if (typeof value === 'string') {
-      // "YYYY-MM-DD HH:mm:ss" 형식을 ISO 형식으로 변환
+      // "YYYY-MM-DD HH:mm:ss" 형식이면 ISO 형식으로 변환
       const dateStr = value.replace(' ', 'T');
       if (!dateStr.includes('T')) {
         return new Date(value);

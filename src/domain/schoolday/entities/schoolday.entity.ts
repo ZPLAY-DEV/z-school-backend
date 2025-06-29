@@ -103,10 +103,10 @@ export class Schoolday {
 
   // ------------------------------------------------------------------------ //
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamp', nullable: true, comment: '시작 알림 시각' })
   startNotifiedAt: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamp', nullable: true, comment: '종료 알림 시각' })
   endNotifiedAt: Date | null;
 
   @Exclude()
