@@ -16,6 +16,7 @@ import { AttendanceStatusDto } from 'src/domain/attendance/dto/upsert-attendance
 import { IAttendance } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
+import { AttendanceWithLastFlagDto } from 'src/domain/group/dto/attendance-with-last-flag.dto';
 import { GroupAttendanceService } from 'src/domain/group/group-attendance.service';
 import {
   EndAttendanceDocs,
@@ -86,6 +87,19 @@ export class GroupAttendanceController {
   ): Promise<IAttendance[]> {
     const groupKey = generateGroupKey(groupId);
     return await this.groupAttendancesService.findAttendancesByDate(
+      groupKey,
+      date,
+    );
+  }
+
+  @FindAttendanceByDateDocs()
+  @Get(':groupId/attendances/:date/last')
+  async findByDateWithLastFlag(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('date') date: string,
+  ): Promise<AttendanceWithLastFlagDto[]> {
+    const groupKey = generateGroupKey(groupId);
+    return await this.groupAttendancesService.findAttendancesByDateWithLastFlag(
       groupKey,
       date,
     );

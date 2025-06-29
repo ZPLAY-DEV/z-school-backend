@@ -11,30 +11,30 @@ import {
 import { Actor } from 'src/common/enums';
 
 export class CreateSchooldayDto {
-  @ApiPropertyOptional({ description: 'DB의 학교ID' })
+  @ApiPropertyOptional({ description: 'schoolId', example: 1 })
   @IsInt()
   @Type(() => Number)
   @IsOptional()
   schoolId?: number;
 
-  @ApiPropertyOptional({ description: 'DB의 학기ID' })
+  @ApiPropertyOptional({ description: 'termId', example: 1 })
   @IsInt()
   @Type(() => Number)
   @IsOptional()
   termId?: number;
 
-  @ApiPropertyOptional({ description: 'DB의 수업ID' })
+  @ApiPropertyOptional({ description: 'lessonId', example: 1 })
   @IsInt()
   @Type(() => Number)
   @IsOptional()
   lessonId?: number;
 
-  @ApiPropertyOptional({ description: 'DB의 반ID' })
+  @ApiPropertyOptional({ description: 'groupId', example: 1 })
   @IsInt()
   @Type(() => Number)
   groupId: number;
 
-  @ApiPropertyOptional({ description: '휴일/행사일 이름' })
+  @ApiPropertyOptional({ description: 'name', example: '과목명' })
   @IsString()
   @MaxLength(16)
   name: string;
@@ -57,8 +57,8 @@ export class CreateSchooldayDto {
   duration: number;
 
   @ApiProperty({
-    description: '수업 종료일 등록 주체 ',
-    example: 'SYSTEM --- 수정 수정 주체 ( SYSTEM, INSTRUCTOR, MANAGER )',
+    description: '수업 종료일 등록 주체 (INSTRUCTOR, MANAGER, OTHER)',
+    example: 'MANAGER',
     enum: Actor,
   })
   @IsEnum(Actor)

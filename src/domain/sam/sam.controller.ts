@@ -28,7 +28,7 @@ import {
   GetSamGroupsDocs,
   SamDryRunDocs,
   SamScheduleFindByIdDocs,
-  SoftDeleteSamDocs
+  SoftDeleteSamDocs,
 } from './swagger/sam.swagger.decorator';
 
 @UseInterceptors(ClassSerializerInterceptor)

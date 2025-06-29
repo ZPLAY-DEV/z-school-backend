@@ -12,4 +12,4 @@ import { S3Module } from 'src/services/aws/s3.module';
   providers: [SchoolBoardService],
   exports: [SchoolBoardService],
 })
-export class SchoolBoardModule {} 
+export class SchoolBoardModule {}

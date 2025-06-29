@@ -87,7 +87,7 @@ export class Schoolday {
   @Column({ type: 'int', unsigned: true, default: 0 })
   duration: number;
 
-  @ApiProperty({ description: '시간 수정 주체', example: 'SYSTEM' })
+  @ApiProperty({ description: '시간 수정 주체', example: 'MANAGER' })
   @Column({
     type: 'enum',
     enum: Actor,

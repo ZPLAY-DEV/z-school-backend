@@ -24,4 +24,4 @@ import { RedisModule } from 'src/services/redis/redis.module';
   providers: [SchoolService, SchoolCalendarService],
   exports: [SchoolService, SchoolCalendarService],
 })
-export class SchoolCoreModule {} 
+export class SchoolCoreModule {}

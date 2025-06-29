@@ -1,7 +1,7 @@
 import {
-    BadRequestException,
-    Injectable,
-    NotFoundException,
+  BadRequestException,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { format, fromZonedTime } from 'date-fns-tz';
@@ -11,17 +11,19 @@ import { NotificationType } from 'src/common/enums/notification-type';
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 import { AttendanceStatusDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
-    IAttendance,
-    IAttendanceKey,
+  IAttendance,
+  IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
-    calculateTtl,
-    generateDailyStudentKey,
-    generateGroupKey,
-    processAttendanceReport,
+  calculateTtl,
+  generateDailyStudentKey,
+  generateGroupKey,
+  processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
+import { AttendanceWithLastFlagDto } from 'src/domain/group/dto/attendance-with-last-flag.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { getDuration } from 'src/helpers/time';
 import { NotificationService } from 'src/services/notification/notification.service';
@@ -34,6 +36,8 @@ export class GroupAttendanceService {
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
+    @InjectRepository(Pick)
+    private readonly pickRepository: Repository<Pick>,
     @InjectModel('Attendance')
     private readonly model: Model<IAttendance, IAttendanceKey>,
     private readonly notificationService: NotificationService,
@@ -258,6 +262,96 @@ export class GroupAttendanceService {
     }
   }
 
+  async findAttendancesByDateWithLastFlag(
+    groupKey: string,
+    date: string,
+  ): Promise<AttendanceWithLastFlagDto[]> {
+    try {
+      // 1. DynamoDB에서 출석 데이터 조회
+      const prefix = `DATE#${date}`;
+      const items: IAttendance[] = await this.model
+        .query('groupKey')
+        .eq(groupKey)
+        .where('dailyStudentKey')
+        .beginsWith(prefix)
+        .exec();
+
+      if (items.length === 0) {
+        return [];
+      }
+
+      // 2. 학생 ID 추출 및 현재 그룹 ID 추출
+      const studentIds = items.map((v) =>
+        this.extractStudentIdFromRangeKey(v.dailyStudentKey),
+      );
+      const groupId = Number(groupKey.split('#')[1]);
+
+      // 3. 한 번의 최적화된 쿼리로 각 학생의 해당 날짜 모든 그룹 스케줄 조회
+      const studentScheduleData: {
+        studentId: number;
+        groupId: number;
+        endsAt: string;
+      }[] = await this.pickRepository
+        .createQueryBuilder('pick')
+        .innerJoin('pick.group', 'group')
+        .innerJoin('group.schooldays', 'schoolday')
+        .select([
+          'pick.studentId as studentId',
+          'group.id as groupId',
+          'schoolday.endsAt as endsAt',
+        ])
+        .where('pick.studentId IN (:...studentIds)', { studentIds })
+        .andWhere('DATE(schoolday.startsAt) = :targetDate', {
+          targetDate: date,
+        })
+        .orderBy('pick.studentId')
+        .addOrderBy('schoolday.endsAt', 'DESC')
+        .getRawMany();
+
+      // 4. 메모리에서 학생별 마지막 그룹 정보 계산
+      const studentLastGroupMap = new Map<number, boolean>();
+
+      // 학생별로 그룹핑하여 각 학생의 마지막 그룹 ID 찾기
+      const studentGroups = studentScheduleData.reduce(
+        (acc, row) => {
+          const studentId = row.studentId;
+          if (!acc[studentId]) acc[studentId] = [];
+          acc[studentId].push({
+            groupId: row.groupId,
+            endsAt: row.endsAt,
+          });
+          return acc;
+        },
+        {} as Record<number, { groupId: number; endsAt: string }[]>,
+      );
+
+      // 각 학생의 마지막 그룹이 현재 그룹인지 확인
+      studentIds.forEach((studentId) => {
+        const schedule = studentGroups[studentId] || [];
+        const lastGroup = schedule[0]; // 이미 endsAt DESC로 정렬되어 첫 번째가 마지막 그룹
+        studentLastGroupMap.set(studentId, lastGroup?.groupId === groupId);
+      });
+
+      // 5. 출석 데이터와 마지막 그룹 정보 결합
+      const attendancesWithLastFlag: AttendanceWithLastFlagDto[] = items.map(
+        (item) => {
+          const studentId = this.extractStudentIdFromRangeKey(
+            item.dailyStudentKey,
+          );
+          return {
+            ...item,
+            isLast: studentLastGroupMap.get(studentId) ?? false,
+          };
+        },
+      );
+
+      return attendancesWithLastFlag;
+    } catch (error) {
+      console.error(`[dynamodb] optimized query error`, error);
+      throw new BadRequestException('출석 정보 조회에 실패했습니다.');
+    }
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Report
   //? ---------------------------------------------------------------------- ?//
@@ -385,7 +479,7 @@ export class GroupAttendanceService {
 
   /**
    * Extract student IDs from DTOs
-   * dailyStudentKey format: "DATE#2025-06-16#STUDENT#51#2-3-51"
+   * dailyStudentKey format: "DATE#2025-06-16#STUDENT#51#2-3-51" => 51
    */
   private extractStudentIdFromRangeKey(dailyStudentKey: string): number {
     const parts = dailyStudentKey.split('#');

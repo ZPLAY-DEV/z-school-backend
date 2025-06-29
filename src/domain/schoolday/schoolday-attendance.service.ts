@@ -1,7 +1,7 @@
 import {
-    DeleteCommand,
-    PutCommand,
-    TransactWriteCommand,
+  DeleteCommand,
+  PutCommand,
+  TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,24 +9,25 @@ import { addDays } from 'date-fns';
 import { fromZonedTime } from 'date-fns-tz';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
 import {
-    IAttendance,
-    IAttendanceCore,
+  IAttendance,
+  IAttendanceCore,
 } from 'src/domain/attendance/entities/attendance.interface';
 import {
-    DeleteRequest,
-    WriteRequest,
+  DeleteRequest,
+  WriteRequest,
 } from 'src/domain/attendance/types/attendance.types';
 import {
-    buildAttendanceItem,
-    calculateTtl,
-    generateDailyStudentKey,
-    generateGroupKey,
+  buildAttendanceItem,
+  calculateTtl,
+  generateDailyStudentKey,
+  generateGroupKey,
 } from 'src/domain/attendance/utils/attendance.utils';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
 import {
-    BuildAttendanceForStudentDto,
-    CreateAttendanceResultDto,
-    CreateDynamoRecordWithDateDto,
-    CreateDynamoRecordWithRangeDto,
+  BuildAttendanceForStudentDto,
+  CreateAttendanceResultDto,
+  CreateDynamoRecordWithDateDto,
+  CreateDynamoRecordWithRangeDto,
 } from 'src/domain/schoolday/dto/create-dynamo-record.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -272,7 +273,7 @@ export class SchooldayAttendanceService {
     const attendances: IAttendance[] = [];
 
     for (const pick of picks ?? []) {
-      if (this.shouldSkipStudentForTheDay(pick, startsAt)) {
+      if (this.skipStudentForTheDay(pick, startsAt)) {
         continue;
       }
 
@@ -297,13 +298,18 @@ export class SchooldayAttendanceService {
   }
 
   /**
-   * 수업종료일이 설정된 학생이 있으면, 그 학생은 제외해야 한다.
+   * 학기 중간에 들어오거나 나간 전학생들의 경우 처리하는 로직
+   * - 만일 startedBy or endedBy 가 null 이 아니면 전학생이다.
+   * - 만일 전학생인 경우 그들의 startedOn ~ endedOn 기간인지 확인한다.
    */
-  private shouldSkipStudentForTheDay(pick: any, startsAt: Date): boolean {
-    if (!pick.endedOn) return false;
+  private skipStudentForTheDay(pick: Pick, startsAt: Date): boolean {
+    if (!pick.startedOn && !pick.endedOn) return false;
 
+    const startDate = fromZonedTime(`${pick.startedOn}T00:00:00`, 'Asia/Seoul');
     const endDate = fromZonedTime(`${pick.endedOn}T23:59:59`, 'Asia/Seoul');
-    return endDate < startsAt;
+
+    // startsAt이 startDate ~ endDate 기간에 포함되면 false (skip하지 않음), 아니면 true (skip함)
+    return !(startsAt >= startDate && startsAt <= endDate);
   }
 
   /**

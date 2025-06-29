@@ -52,4 +52,4 @@ import { SchoolTermComboController } from 'src/domain/school/school-term-combo.c
     SchoolTermOfferingService,
   ],
 })
-export class SchoolTermModule {} 
+export class SchoolTermModule {}

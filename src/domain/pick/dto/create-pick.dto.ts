@@ -35,11 +35,11 @@ export class CreatePickDto {
   @ApiPropertyOptional({
     description: '누가 수업시작일(첫수업일) 등록했나?',
     enum: Actor,
-    default: Actor.SYSTEM,
+    default: null,
   })
   @IsEnum(Actor)
   @IsOptional()
-  startedBy?: Actor;
+  startedBy?: Actor | null;
 
   @ApiPropertyOptional({ description: '수업시작일(첫수업일)' })
   @IsString()
@@ -49,11 +49,11 @@ export class CreatePickDto {
   @ApiPropertyOptional({
     description: '누가 수업종료일(마지막수업일) 등록했나?',
     enum: Actor,
-    default: Actor.SYSTEM,
+    default: null,
   })
   @IsEnum(Actor)
   @IsOptional()
-  endedBy?: Actor;
+  endedBy?: Actor | null;
 
   @ApiPropertyOptional({ description: '수업종료일(마지막수업일)' })
   @IsString()

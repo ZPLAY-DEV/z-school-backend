@@ -10,12 +10,9 @@ import { SchoolSamService } from 'src/domain/school/school-sam.service';
 import { UploadModule } from 'src/services/upload/upload.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Student, Parent, Sam]),
-    UploadModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Student, Parent, Sam]), UploadModule],
   controllers: [SchoolStudentController, SchoolSamController],
   providers: [SchoolStudentService, SchoolSamService],
   exports: [SchoolStudentService, SchoolSamService],
 })
-export class SchoolStudentModule {} 
+export class SchoolStudentModule {}

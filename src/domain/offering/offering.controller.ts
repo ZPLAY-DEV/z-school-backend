@@ -20,7 +20,7 @@ import {
   CreateOfferingDocs,
   GetFormerStudentsDocs,
   GetOfferingByIdDocs,
-  RemoveOfferingDocs
+  RemoveOfferingDocs,
 } from 'src/domain/offering/swagger/offering-swagger.decorator';
 import { Student } from 'src/domain/student/entities/student.entity';
 

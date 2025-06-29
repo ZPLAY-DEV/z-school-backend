@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
 import {
-    DeleteRequest,
-    WriteRequest,
+  DeleteRequest,
+  WriteRequest,
 } from 'src/domain/attendance/types/attendance.types';
 import {
-    buildAttendanceItem,
-    calculateTtl,
-    generateDailyStudentKey,
-    generateGroupKey,
+  buildAttendanceItem,
+  calculateTtl,
+  generateDailyStudentKey,
+  generateGroupKey,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';

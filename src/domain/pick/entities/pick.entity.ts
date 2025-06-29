@@ -55,16 +55,17 @@ export class Pick {
 
   @ApiProperty({
     description: '🈵 누가 수업시작일 등록했나?',
-    default: Actor.SYSTEM,
-    example: Actor.SYSTEM,
+    default: null,
+    example: null,
   })
   @Column({
     type: 'enum',
     enum: Actor,
-    default: Actor.SYSTEM,
-    comment: '누가 수업시작일 등록했나?',
+    default: null,
+    nullable: true,
+    comment: '누가 수업시작일(첫수업일) 등록했나?',
   })
-  startedBy: Actor;
+  startedBy: Actor | null;
 
   @ApiProperty({
     description: '🈳 startedOn; 수업시작일(첫수업일)',
@@ -79,6 +80,7 @@ export class Pick {
 
   @ApiProperty({
     description: '🈳 누가 수업종료일(마지막수업일) 등록했나?',
+    default: null,
     example: Actor.INSTRUCTOR,
   })
   @Column({

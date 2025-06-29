@@ -23,4 +23,3 @@ export * from './subsidy-type';
 export * from './term-type';
 export * from './time-unit';
 export * from './weekday';
-

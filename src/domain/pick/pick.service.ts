@@ -8,7 +8,6 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { Actor } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateBulkPickDto } from 'src/domain/pick/dto/create-bulk-pick.dto';
 import { CreatePickDto, EndPickDto } from 'src/domain/pick/dto/create-pick.dto';
@@ -53,7 +52,7 @@ export class PickService {
     const picks: Partial<Pick>[] = dto.studentIds.map((studentId) => ({
       groupId: dto.groupId,
       studentId,
-      startedBy: Actor.SYSTEM,
+      startedBy: null,
       startedOn,
     }));
 
