@@ -46,39 +46,3 @@ export class AppController {
     throw new Error('My first error for Sentry testing!');
   }
 }
-
-// redis 테스트용 컨트롤러
-// @Controller()
-// export class AppController {
-//   constructor(
-//     private readonly redisCacheService: RedisCacheService,
-//     private readonly redisMessageService: RedisMessageService,
-//   ) {
-//     this.redisMessageService.subscribe('test-channel', (message) => {
-//       console.log('Received message:', message);
-//     });
-//   }
-
-//   @Get('cache')
-//   async testCache() {
-//     await this.redisCacheService.set('test-key', { value: 'Hello' }, 60); // 60초 TTL
-//     const cached = await this.redisCacheService.get('test-key');
-//     return { cached };
-//   }
-
-//   @Get('publish')
-//   async testPublish() {
-//     await this.redisMessageService.publish('test-channel', {
-//       msg: 'Hello from Redis',
-//     });
-//     return { status: 'Message published' };
-//   }
-
-//   @Get('emit')
-//   async testEmit() {
-//     await this.redisMessageService.emitEvent('test-event', {
-//       data: 'Event data',
-//     });
-//     return { status: 'Event emitted' };
-//   }
-// }

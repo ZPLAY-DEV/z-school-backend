@@ -101,7 +101,7 @@ export class LessonCoreService {
 
       //? 5단계) 반(Group)과 쌤(Sam) 정보 처리
       if (dto.groups?.length) {
-        await this.processGroups(lesson, dto.schoolId, dto.groups, manager);
+        await this.processGroups(lesson, dto, manager);
       }
 
       // 최종 데이터를 다시 로드하여 변환된 값을 반환
@@ -288,12 +288,7 @@ export class LessonCoreService {
 
     //? 5단계) 반(Group)과 쌤(Sam) 정보 처리
     if (dto.groups?.length) {
-      await this.processGroups(
-        updatedLesson,
-        dto.schoolId!,
-        dto.groups,
-        manager,
-      );
+      await this.processGroups(updatedLesson, dto, manager);
     }
 
     // 최종 데이터를 다시 로드하여 변환된 값을 반환
@@ -376,14 +371,15 @@ export class LessonCoreService {
 
   private async processGroups(
     lesson: Lesson,
-    schoolId: number,
-    groups: CreateGroupWithInstructorDto[],
+    dto: CreateLessonDto | UpdateLessonDto,
+    // schoolId: number,
+    // groups: CreateGroupWithInstructorDto[],
     manager: EntityManager,
   ): Promise<void> {
     const uniqueSams = new Map<string, number>(); // key: `${instructorName}-${instructorPhone}`
     const groupsWithSamData: GroupSamData[] = [];
 
-    for (const groupDto of groups || []) {
+    for (const groupDto of dto.groups || []) {
       const instructorKey = `${groupDto.instructorName}-${groupDto.instructorPhone}`;
 
       // 이미 처리한 쌤인지 확인
@@ -414,16 +410,16 @@ export class LessonCoreService {
       }
 
       // 2. Find or create Sam (by instructorId, schoolId)
-      if (!schoolId) {
+      if (!dto.schoolId) {
         throw new Error('schoolId is required in DTO');
       }
       let sam = await manager.getRepository('Sam').findOne({
-        where: { instructorId: instructor.id, schoolId },
+        where: { instructorId: instructor.id, schoolId: dto.schoolId },
       });
       if (!sam) {
         sam = await manager.getRepository('Sam').save({
           instructorId: instructor.id,
-          schoolId: schoolId,
+          schoolId: dto.schoolId,
           alias: groupDto.instructorName, // or set as needed
         });
       }
@@ -475,7 +471,7 @@ export class LessonCoreService {
       relations: { groups: true },
     });
     if (existingLesson && existingLesson.groups.length > 0) {
-      const newGroupNames = groups?.map((g) => g.groupName || '') || [];
+      const newGroupNames = dto.groups?.map((g) => g.groupName || '') || [];
       const groupsToDelete = existingLesson.groups.filter(
         (g) => !newGroupNames.includes(g.groupName || ''),
       );
@@ -487,24 +483,51 @@ export class LessonCoreService {
       }
     }
 
-    // SamLesson 관계 upsert (samId, lessonId)
+    // 저장된 groups 데이터가 lesson 객체에 반영되도록
+    lesson.groups = await manager.find(Group, {
+      where: { lessonId: lesson.id, deletedAt: IsNull() },
+    });
+
+    // Contract 관계 upsert
+    const contractData: Array<{
+      samId: number;
+      lessonId: number;
+      groupId: number;
+      startedOn: string;
+      endedOn: string;
+    }> = [];
+
     const samIds = Array.from(uniqueSams.values());
     for (const samId of samIds) {
-      // Check if SamLesson exists
-      const existingSamLesson = await manager.findOne('SamLesson', {
-        where: { samId, lessonId: lesson.id },
-      });
-      if (!existingSamLesson) {
-        await manager.save('SamLesson', {
+      for (const group of lesson.groups) {
+        contractData.push({
           samId,
           lessonId: lesson.id,
+          groupId: group.id,
+          startedOn: dto.start ?? lesson.start,
+          endedOn: dto.end ?? lesson.end,
         });
       }
     }
 
-    // 저장된 groups 데이터를 lesson 객체에 다시 로드하여 반환값이 transform된 데이터가 되도록 함
-    lesson.groups = await manager.find(Group, {
-      where: { lessonId: lesson.id, deletedAt: IsNull() },
-    });
+    if (contractData.length > 0) {
+      const values = contractData
+        .map(
+          (data) =>
+            `(${data.samId}, ${data.lessonId}, ${data.groupId}, '${data.startedOn}', ${data.endedOn})`,
+        )
+        .join(', ');
+
+      const upsertQuery = `
+        INSERT INTO contracts (samId, lessonId, groupId, startedOn, endedOn)
+        VALUES ${values}
+        ON DUPLICATE KEY UPDATE
+          startedOn = VALUES(startedOn),
+          endedOn = VALUES(endedOn),
+          updatedAt = CURRENT_TIMESTAMP
+      `;
+
+      await manager.query(upsertQuery);
+    }
   }
 }

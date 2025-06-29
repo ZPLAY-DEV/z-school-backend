@@ -11,8 +11,6 @@ describe('calculateLessonDays', () => {
     categoryId: 1,
     schoolId: 1,
     lessonName: '테스트',
-    termlyLessonCount: 0,
-    weeklyLessonCount: 0,
     total: 0,
     instructorFee: 0,
     bookFees: null,
@@ -30,7 +28,7 @@ describe('calculateLessonDays', () => {
     groups: [],
     offerings: [],
     ledgers: [],
-    samLessons: [],
+    contracts: [],
   });
   const baseGroup = new Group({
     weekday: Weekday.MONDAY,
@@ -53,10 +51,10 @@ describe('calculateLessonDays', () => {
     updatedAt: new Date(),
     deletedAt: null,
     schooldays: [],
-    sam: undefined,
     lesson: undefined,
     picks: [],
     boards: [],
+    contracts: [],
   });
 
   it('월요일 3주, 휴일 없이 정상 반환', () => {

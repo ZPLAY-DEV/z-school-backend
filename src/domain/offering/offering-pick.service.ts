@@ -291,6 +291,8 @@ export class OfferingPickService {
       await this.pickRepository.query(query, values);
     }
 
+    // todo. 죽은 데이터가 삭제되는지 확인.
+
     // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
     await this.offeringRepository.update(offeringId, {
       status: ClassStatus.ACTIVE,

@@ -33,12 +33,12 @@ export class Pick {
   @Column({ type: 'int', unsigned: true, nullable: true })
   studentId: number;
 
-  // 관리때문에 추가) 수강신청과목 리스트에서 pick 여부 확인에 필요함
+  // 관리때문에 추가) 재수강생 고를때, 수강신청과목 리스트 pick 여부 확인에 필요함
   @ApiProperty({ description: 'offeringId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   offeringId: number;
 
-  // 관리때문에 추가) 재수강생 고를때 필요함
+  // todo. see if we need this.
   @ApiProperty({ description: 'lessonId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   lessonId: number;
