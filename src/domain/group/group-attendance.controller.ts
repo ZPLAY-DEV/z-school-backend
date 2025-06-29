@@ -21,6 +21,7 @@ import { GroupAttendanceService } from 'src/domain/group/group-attendance.servic
 import {
   EndAttendanceDocs,
   FindAttendanceByDateDocs,
+  FindAttendanceByDateWithLastFlagDocs,
   GetReportDocs,
   StartAttendanceDocs,
   UpsertAttendanceDocs,
@@ -92,7 +93,7 @@ export class GroupAttendanceController {
     );
   }
 
-  @FindAttendanceByDateDocs()
+  @FindAttendanceByDateWithLastFlagDocs()
   @Get(':groupId/attendances/:date/last')
   async findByDateWithLastFlag(
     @Param('groupId', ParseIntPipe) groupId: number,

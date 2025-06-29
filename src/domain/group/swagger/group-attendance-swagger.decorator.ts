@@ -149,6 +149,163 @@ export const FindAttendanceByDateDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
+//? Find Attendance by Date with Last Flag
+//? ---------------------------------------------------------------------- ?//
+export const FindAttendanceByDateWithLastFlagDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '반별 출석 👈 특정 날짜 조회 (마지막 그룹 여부 포함)',
+      description: `
+      - 특정 반의 특정 날짜에 대한 출석 정보를 조회합니다.
+      - DynamoDB에서 데이터를 조회하여 실시간 출석 상태를 반환합니다.
+      - 각 학생이 해당 날짜에 마지막으로 수업을 받는 그룹인지 여부를 포함합니다.
+      
+      ### 매개변수:
+      - \`groupId\`: 조회할 반의 ID (숫자)
+      - \`date\`: 조회할 날짜 (YYYY-MM-DD 형식)
+      
+      ### 응답 데이터:
+      - 해당 날짜의 모든 학생 출석 정보 배열
+      - 각 출석 정보에는 학생 정보, 수업 정보, 출석 상태, 마지막 그룹 여부가 포함됩니다.
+      - \`isLast\`: 해당 학생이 이 날짜에 마지막으로 수업을 받는 그룹인지 여부
+      
+      ### 출석 상태:
+      -  INIT = 'INIT', // 시작전
+      -  PRESENT = 'PRESENT', // 출석
+      -  ABSENT = 'ABSENT', // 결석
+      -  LATE = 'LATE', // 지각
+      -  LEFT = 'LEFT', // 조퇴
+      -  EXCUSED_ABSENT = 'EXCUSED_ABSENT', // 선결석통보
+      -  EXCUSED_LATE = 'EXCUSED_LATE', // 선지각통보
+      -  EXCUSED_LEFT = 'EXCUSED_LEFT', // 선조퇴통보
+      
+      ### 활용 예시:
+      - 학생의 하교 시간 결정 시 활용
+      - 마지막 수업 종료 후 특별한 처리가 필요한 경우
+      - 학부모 알림 시스템에서 활용
+      `,
+    }),
+    ApiParam({
+      name: 'groupId',
+      type: 'number',
+      description: '반 ID',
+      example: 123,
+    }),
+    ApiParam({
+      name: 'date',
+      type: 'string',
+      description: '조회할 날짜 (YYYY-MM-DD)',
+      example: '2025-01-15',
+    }),
+    ApiOkResponse({
+      description: '출석 정보 조회 성공 (마지막 그룹 여부 포함)',
+      schema: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            groupKey: {
+              type: 'string',
+              description: '반 키 (예: GROUP#123)',
+              example: 'GROUP#123',
+            },
+            dailyStudentKey: {
+              type: 'string',
+              description:
+                '일별 학생 키 (예: DATE#2025-01-15#STUDENT#1학년1반-10)',
+              example: 'DATE#2025-01-15#STUDENT#1학년1반-10',
+            },
+            lessonId: {
+              type: 'number',
+              description: '수업 ID',
+              example: 456,
+            },
+            lessonName: {
+              type: 'string',
+              description: '수업명',
+              example: '수학',
+            },
+            groupId: {
+              type: 'number',
+              description: '반 ID',
+              example: 123,
+            },
+            groupName: {
+              type: 'string',
+              description: '반 이름',
+              example: '1학년 1반',
+            },
+            studentId: {
+              type: 'number',
+              description: '학생 ID',
+              example: 789,
+            },
+            studentName: {
+              type: 'string',
+              description: '학생명',
+              example: '홍길동',
+            },
+            start: {
+              type: 'string',
+              description: '수업 시작 시간',
+              example: '14:00',
+            },
+            end: {
+              type: 'string',
+              description: '수업 종료 시간',
+              example: '14:40',
+            },
+            duration: {
+              type: 'number',
+              description: '수업 시간 (분)',
+              example: 40,
+            },
+            status: {
+              type: 'string',
+              enum: [
+                'INIT',
+                'PRESENT',
+                'ABSENT',
+                'LATE',
+                'LEFT',
+                'EXCUSED_ABSENT',
+                'EXCUSED_LATE',
+                'EXCUSED_LEFT',
+              ],
+              description: '출석 상태',
+              example: 'PRESENT',
+            },
+            expires: {
+              type: 'number',
+              description: 'TTL (Time To Live)',
+              example: 1640995200,
+            },
+            parentNote: {
+              type: 'string',
+              description: '학부모 메모',
+              example: '병원 방문으로 인한 조퇴',
+            },
+            schoolNote: {
+              type: 'string',
+              description: '학교 메모',
+              example: '담임 확인 완료',
+            },
+            isLast: {
+              type: 'boolean',
+              description:
+                '해당 학생이 이 날짜에 마지막으로 수업을 받는 그룹인지 여부',
+              example: true,
+            },
+          },
+          required: ['groupKey', 'dailyStudentKey', 'isLast'],
+        },
+      },
+    }),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
 //? Upsert Attendance
 //? ---------------------------------------------------------------------- ?//
 export const UpsertAttendanceDocs = () => {

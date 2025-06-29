@@ -10,6 +10,7 @@ const data = [
     payload: {
       name: '삼척초등학교',
       authorityCode: 'K10',
+      phone: '0260527000',
       region: 'GANGWON',
       schoolCode: '7872025',
       address: '강원특별자치도 삼척시 일반로 273',
@@ -1180,16 +1181,6 @@ const data = [
     uri: `schools/1/terms/1/offerings/bulk`,
     payload: {},
   },
-  {
-    uri: `schools`,
-    payload: {
-      name: '삼척초등학교',
-      authorityCode: 'K10',
-      region: 'GANGWON',
-      schoolCode: '7872025',
-      address: '강원특별자치도 삼척시 일반로 273',
-    },
-  },
 ];
 
 async function loginAndGetToken() {
@@ -1197,9 +1188,9 @@ async function loginAndGetToken() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      username: '01094867415',
+      username: 'test@gmail.com',
       password: 'password',
-      role: 'PARENT',
+      role: 'MANAGER',
     }),
   });
 

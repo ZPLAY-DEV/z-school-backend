@@ -54,8 +54,8 @@ export class SchoolStudentController {
   ): Promise<number | Student[]> {
     const koreanFaker = new Faker({ locale: [ko] });
 
-    // 100개의 학생 DTO 생성
-    const dtos: CreateStudentDto[] = Array.from({ length: 100 }, (_, i) => {
+    // 600개의 학생 DTO 생성
+    const dtos: CreateStudentDto[] = Array.from({ length: 600 }, (_, i) => {
       const firstName = koreanFaker.person.firstName();
       const lastName = koreanFaker.person.lastName();
       const koreanName = lastName + firstName;
