@@ -36,7 +36,7 @@ export class CategoryController {
 
   @ApiOperation({ summary: '⚙️ to seed data' })
   @Post('seed')
-  async seed(): Promise<void> {
+  async seed(): Promise<number> {
     return await this.categoryService.seed();
   }
 }

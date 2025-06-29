@@ -1202,7 +1202,7 @@ async function run() {
   const token = await loginAndGetToken();
   console.log('✅ token', token);
   for (const item of data) {
-    console.log('✅ item', `${url}/${item.uri}`, JSON.stringify(item.payload));
+    console.log('👉 item', `${url}/${item.uri}`, JSON.stringify(item.payload));
     try {
       const response = await fetch(`${url}/${item.uri}`, {
         method: 'POST',
@@ -1214,21 +1214,15 @@ async function run() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          `❌ Error for studentId ${item.studentId}:`,
-          response.status,
-          errorText,
-        );
+        const message = await response.text();
+        console.error(`🟡`, message);
       } else {
         const result = await response.json();
-        console.log(`✅ Success for studentId ${item.studentId}:`, result);
+        console.log(`🟢`, result);
       }
     } catch (err) {
-      console.error(
-        `❗ Network error for studentId ${item.studentId}:`,
-        err.message,
-      );
+      console.log(err);
+      console.error(`🔴`, err.message);
     }
   }
 }

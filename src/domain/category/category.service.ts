@@ -53,7 +53,7 @@ export class CategoryService {
   //? SEED
   //? ---------------------------------------------------------------------- ?//
 
-  async seed(): Promise<void> {
+  async seed(): Promise<number> {
     const items = [
       {
         slug: CategoryEnum.FREE_CUSTOM,
@@ -79,8 +79,17 @@ export class CategoryService {
 
     // 순서 보장을 위해서 for ...of loop 사용.
     for (const item of items) {
-      const category = new Category(item);
-      await this.categoryRepository.manager.save(category);
+      // 이미 존재하는지 확인
+      const existingCategory = await this.categoryRepository.findOne({
+        where: { slug: item.slug },
+      });
+
+      // 존재하지 않을 때만 생성
+      if (!existingCategory) {
+        const category = new Category(item);
+        await this.categoryRepository.manager.save(category);
+      }
     }
+    return items.length;
   }
 }

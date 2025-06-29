@@ -54,27 +54,33 @@ export class SchoolStudentController {
   ): Promise<number | Student[]> {
     const koreanFaker = new Faker({ locale: [ko] });
 
-    // 600개의 학생 DTO 생성
-    const dtos: CreateStudentDto[] = Array.from({ length: 600 }, (_, i) => {
-      const firstName = koreanFaker.person.firstName();
-      const lastName = koreanFaker.person.lastName();
-      const koreanName = lastName + firstName;
-      const parentPhone = `010${koreanFaker.string.numeric(8)}`;
+    // 1-6학년, 각 학년당 4개 반, 각 반당 25명씩 생성
+    const dtos: CreateStudentDto[] = [];
 
-      const dto = new CreateStudentDto();
-      dto.schoolId = schoolId;
-      dto.grade = koreanFaker.helpers.arrayElement([1, 2, 3, 4, 5, 6]);
-      dto.class = koreanFaker.helpers.arrayElement(['1', '2', '3', '4']);
-      dto.studentCode = i + 1;
-      dto.name = koreanName;
-      dto.phone = `010${koreanFaker.string.numeric(8)}`;
-      dto.status = StudentStatus.ATTENDING;
-      dto.parent = {
-        phone: parentPhone,
-      };
+    for (let grade = 1; grade <= 6; grade++) {
+      for (let classNum = 1; classNum <= 4; classNum++) {
+        for (let studentCode = 1; studentCode <= 25; studentCode++) {
+          const firstName = koreanFaker.person.firstName();
+          const lastName = koreanFaker.person.lastName();
+          const koreanName = lastName + firstName;
+          const parentPhone = `010${koreanFaker.string.numeric(8)}`;
 
-      return dto;
-    });
+          const dto = new CreateStudentDto();
+          dto.schoolId = schoolId;
+          dto.grade = grade;
+          dto.class = classNum.toString();
+          dto.studentCode = studentCode;
+          dto.name = koreanName;
+          dto.phone = `010${koreanFaker.string.numeric(8)}`;
+          dto.status = StudentStatus.ATTENDING;
+          dto.parent = {
+            phone: parentPhone,
+          };
+
+          dtos.push(dto);
+        }
+      }
+    }
 
     return await this.schoolStudentService.createBulk(schoolId, dtos);
   }
