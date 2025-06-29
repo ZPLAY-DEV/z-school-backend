@@ -1,6 +1,6 @@
 /**
  * 자동화 입력 스크립트
- * how to execute? `node booking-anyone.js`
+ * how to execute? `node db-seed.js`
  */
 
 const url = 'http://localhost:3001/v1';
@@ -1195,12 +1195,13 @@ async function loginAndGetToken() {
   });
 
   const data = await res.json();
-  return data.accessToken; // 실제 응답 구조에 따라 조정
+  return data.accessToken;
 }
 
 async function run() {
   const token = await loginAndGetToken();
   console.log('✅ token', token);
+
   for (const item of data) {
     console.log('👉 item', `${url}/${item.uri}`, JSON.stringify(item.payload));
     try {

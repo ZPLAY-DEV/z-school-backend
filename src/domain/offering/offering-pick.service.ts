@@ -36,7 +36,7 @@ export class OfferingPickService {
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
       relations: [
-        'term', // to get basicPickRule and extraPickRule
+        'term', // to get PickRule
         'lesson',
         'lesson.groups',
         'lesson.groups.schooldays',
