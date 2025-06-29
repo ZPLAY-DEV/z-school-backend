@@ -7,7 +7,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseArrayPipe,
   ParseEnumPipe,
   ParseIntPipe,
   Patch,
@@ -24,7 +23,6 @@ import { UploadService } from 'src/services/upload/upload.service';
 import { Booking } from '../booking/entities/booking.entity';
 import { Group } from '../group/entities/group.entity';
 import { CreateStudentDto } from './dto/create-student.dto';
-import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 
 @ApiTags('✅ Students ( 학생 )')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -45,15 +43,15 @@ export class StudentController {
     return await this.studentService.create(dto);
   }
 
-  //? ---------------------------------------------------------------------- ?//
-  //? READ
-  //? ---------------------------------------------------------------------- ?//
-
   @HttpCode(HttpStatus.OK)
   @Post('dryrun')
   async dryRun(@Body() dto: CreateStudentDto): Promise<Student | null> {
     return await this.studentService.dryRun(dto);
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? READ
+  //? ---------------------------------------------------------------------- ?//
 
   //? 학생 상세 정보 조회
   @Get(':id')
@@ -70,15 +68,7 @@ export class StudentController {
     return await this.studentService.findByIdWithStatus(id, status);
   }
 
-  //? 요일별 학생 수업 일정 조회
-  @Get(':id/schedule')
-  async findBySchedule(
-    @Param('id', ParseIntPipe) id: number,
-    @Query('dates', new ParseArrayPipe({ items: String, optional: true }))
-    dates: string[],
-  ) {
-    return await this.studentService.findBySchedule(id, dates);
-  }
+  // todo. 요일별 학생 수업 일정 조회. ( <= see if we need this. )
 
   //? 특정 학생의 수강 신청 내역 조회
   @Get(':id/bookings')
@@ -91,6 +81,7 @@ export class StudentController {
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
+
   @ApiOperation({ description: 'Student 수정' })
   @Patch(':id')
   async update(
@@ -98,19 +89,6 @@ export class StudentController {
     @Body() dto: UpdateStudentDto,
   ): Promise<Student> {
     return await this.studentService.update(id, dto);
-  }
-
-  @Patch(':schoolId/students/:studentId/status')
-  async updateStudentStatus(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Param('studentId', ParseIntPipe) studentId: number,
-    @Body() dto: UpdateStudentStatusDto,
-  ): Promise<Student> {
-    return await this.studentService.updateStudentStatus(
-      schoolId,
-      studentId,
-      dto,
-    );
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -122,54 +100,4 @@ export class StudentController {
   async remove(@Param('id') id: number): Promise<Student> {
     return await this.studentService.remove(id);
   }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? NOT USED
-  //? ---------------------------------------------------------------------- ?//
-
-  // @ApiOperation({ description: '이미지 URL 생성' })
-  // @Post(':id/s3urls')
-  // async generateS3Urls(
-  //   @Param('id', ParseIntPipe) id: number,
-  //   @Body('mime') mime: string,
-  // ): Promise<IS3Urls> {
-  //   return await this.uploadService.generateStudentImageUrls(id, mime);
-  // }
-
-  // @ApiOperation({ description: 'Student 이미지 삭제' })
-  // @Post('/image/delete')
-  // async deleteImages(@Body('url') url: string): Promise<void> {
-  //   return await this.studentService.deleteImages(url);
-  // }
-
-  // @ApiOperation({ description: 'Student 리스트 w/ Pagination' })
-  // @Public()
-  // @Get('paginated')
-  // async getAdminStudent(
-  //   @Paginate() query: PaginateQuery,
-  // ): Promise<Paginated<Student>> {
-  //   return await this.studentService.findAll(query);
-  // }
-
-  // @ApiOperation({ description: 'Student 리스트 w/ Pagination' })
-  // @Public()
-  // @Get()
-  // async getStudent(
-  //   @Paginate() query: PaginateQuery,
-  // ): Promise<Paginated<Student>> {
-  //   const activeQuery = {
-  //     ...query,
-  //     filter: {
-  //       isActive: '1',
-  //     },
-  //   };
-  //   return await this.studentService.findAll(activeQuery);
-  // }
-
-  // @ApiOperation({ description: '모든 active 배너 리스트' })
-  // @Public()
-  // @Get('active')
-  // async getActiveStudent(): Promise<Student[]> {
-  //   return await this.studentService.findActive();
-  // }
 }

@@ -39,14 +39,7 @@ export class InstructorController {
 
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Instructor> {
-    return await this.instructorService.findById(id, [
-      'user',
-      'documents',
-      'groups',
-      'schools',
-      'instructorLessons',
-      'instructorLessons.lesson',
-    ]);
+    return await this.instructorService.findById(id, ['user', 'sams']);
   }
 
   //? ---------------------------------------------------------------------- ?//

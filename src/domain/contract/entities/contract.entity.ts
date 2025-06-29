@@ -2,8 +2,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { Actor } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { Offering } from 'src/domain/offering/entities/offering.entity';
-import { Student } from 'src/domain/student/entities/student.entity';
+import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
 import {
   Column,
   CreateDateColumn,
@@ -16,10 +16,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('picks')
-@Unique(['groupId', 'offeringId', 'studentId'])
-export class Pick {
-  @ApiProperty({ description: 'pickId', example: 1 })
+@Entity('contracts')
+@Unique(['groupId', 'lessonId', 'samId'])
+export class Contract {
+  @ApiProperty({ description: 'contractId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 
@@ -28,30 +28,17 @@ export class Pick {
   @Column({ type: 'int', unsigned: true, nullable: true })
   groupId: number;
 
-  // 어떤 학생이 선택되었는지를 저장
+  // 어떤 학교쌤이 선택되었는지를 저장
   @ApiProperty({ description: 'studentId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
-  studentId: number;
+  samId: number;
 
-  // 관리때문에 추가) 수강신청과목 리스트에서 pick 여부 확인에 필요함
-  @ApiProperty({ description: 'offeringId', example: 1 })
-  @Column({ type: 'int', unsigned: true, nullable: true })
-  offeringId: number;
-
-  // 관리때문에 추가) 재수강생 고를때 필요함
+  // 관리때문에 추가) 강사가 가르치는 과목 고를때 필요함
   @ApiProperty({ description: 'lessonId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   lessonId: number;
 
   // ------------------------------------------------------------------------ //
-
-  @ApiProperty({ description: '이 학생의 정확한 교재비', example: 12000 })
-  @Column({ type: 'int', unsigned: true, default: 0 })
-  bookFee: number;
-
-  @ApiProperty({ description: '이 학생의 정확한 재료비', example: 8200 })
-  @Column({ type: 'int', unsigned: true, default: 0 })
-  materialFee: number;
 
   @ApiProperty({
     description: '🈵 누가 수업시작일 등록했나?',
@@ -125,15 +112,15 @@ export class Pick {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Offering, (offering) => offering.picks)
-  @JoinColumn({ name: 'offeringId' })
-  offering: Offering;
+  @ManyToOne(() => Sam, (sam) => sam.contracts)
+  @JoinColumn({ name: 'samId' })
+  sam: Sam;
 
-  @ManyToOne(() => Student, (student) => student.picks)
-  @JoinColumn({ name: 'studentId' })
-  student: Student;
-
-  @ManyToOne(() => Group, (group) => group.picks)
+  @ManyToOne(() => Group, (group) => group.contracts)
   @JoinColumn({ name: 'groupId' })
   group: Group;
+
+  @ManyToOne(() => Lesson, (lesson) => lesson.contracts)
+  @JoinColumn({ name: 'lessonId' })
+  lesson: Lesson;
 }

@@ -2,9 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { Actor, ClassStatus, Weekday } from 'src/common/enums';
 import { Board } from 'src/domain/board/entities/board.entity';
+import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
-import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import {
   Column,
@@ -131,20 +131,17 @@ export class Group {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Sam, (sam) => sam.groups)
-  @JoinColumn({ name: 'samId' })
-  sam: Sam;
-
   @ManyToOne(() => Lesson, (lesson) => lesson.groups)
   @JoinColumn({ name: 'lessonId' })
   lesson: Lesson;
 
   //* N-to-M belongsToMany with custom props using 1-to-M ------------------ *//
-  @ApiProperty({
-    description: '🈳 연결된 학생 목록',
-  })
-  @OneToMany(() => Pick, (gs) => gs.group)
+
+  @OneToMany(() => Pick, (pick) => pick.group)
   picks: Pick[];
+
+  @OneToMany(() => Contract, (contract) => contract.group)
+  contracts: Contract[];
 
   @OneToMany(() => Board, (board) => board.group)
   boards: Board[];

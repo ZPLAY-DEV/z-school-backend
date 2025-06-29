@@ -255,7 +255,7 @@ export class SchoolSamService {
   async list(schoolId: number): Promise<Sam[]> {
     return await this.samRepository.find({
       where: { schoolId },
-      relations: ['instructor', 'groups'],
+      relations: ['instructor', 'contracts', 'contracts.group'],
       order: {
         id: 'ASC',
       },
@@ -273,18 +273,16 @@ export class SchoolSamService {
     return await paginate<Sam>(query, queryBuilder, {
       relations: {
         instructor: true,
-        groups: true,
+        contracts: {
+          group: true,
+        },
       },
       sortableColumns: ['alias'],
-      searchableColumns: ['alias', 'instructor.phone', 'groups.groupName'],
+      searchableColumns: ['alias', 'instructor.phone'],
       defaultSortBy: [['id', 'ASC']],
       filterableColumns: {
         alias: [FilterOperator.EQ, FilterOperator.ILIKE],
-        'groups.groupName': [FilterOperator.EQ, FilterOperator.ILIKE],
-        'instructor.userId': [FilterOperator.EQ],
         'instructor.phone': [FilterOperator.EQ, FilterOperator.ILIKE],
-        editFeePermission: [FilterOperator.EQ],
-        editEnrollmentPermission: [FilterOperator.EQ],
       },
     });
   }

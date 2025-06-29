@@ -22,11 +22,11 @@ import {
   CreateSchoolSamBulkDryRunDocs,
   SchoolSamListDocs,
   SchoolSamPaginatedDocs,
-} from '../sam/swagger/school-sam.swagger.decorator';
+} from './swagger/school-sam.swagger.decorator';
 
-@UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('✅ Schools > Sams ( 학교 > 강사 )')
+@ApiTags('✅ Schools > Sams ( 학교 > 학교쌤 )')
 @Controller('schools')
+@UseInterceptors(ClassSerializerInterceptor)
 export class SchoolSamController {
   constructor(
     private readonly schoolSamService: SchoolSamService,

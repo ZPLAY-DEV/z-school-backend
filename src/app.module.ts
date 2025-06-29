@@ -30,6 +30,7 @@ import { NewsletterModule } from 'src/domain/newsletter/newsletter.module';
 import { OfferingModule } from 'src/domain/offering/offering.module';
 import { ParentModule } from 'src/domain/parent/parent.module';
 import { PayoutModule } from 'src/domain/payout/payout.module';
+import { PickModule } from 'src/domain/pick/pick.module';
 import { SamModule } from 'src/domain/sam/sam.module';
 import { SchoolModule } from 'src/domain/school/school.module';
 import { SchooldayModule } from 'src/domain/schoolday/schoolday.module';
@@ -123,6 +124,7 @@ import { UploadModule } from './services/upload/upload.module';
     OfferingModule,
     ParentModule,
     PayoutModule,
+    PickModule,
     RedisModule,
     SamModule,
     SchooldayModule,

@@ -3,13 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { DeleteInstructorNoteDto } from 'src/domain/instructor/dto/delete-instructor-note.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
-import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { getKoreanWeekday } from 'src/helpers/date';
-import { transformScheduleResponse } from 'src/helpers/group-schedule.util';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 @Injectable()
 export class SamService {
@@ -28,6 +26,7 @@ export class SamService {
   //? ---------------------------------------------------------------------- ?//
   //? Create
   //? ---------------------------------------------------------------------- ?//
+
   async create(dto: CreateSamDto): Promise<Sam> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       // 1. 학교 존재 여부 확인
@@ -113,10 +112,6 @@ export class SamService {
     });
   }
 
-  //? ---------------------------------------------------------------------- ?//
-  //? Read
-  //? ---------------------------------------------------------------------- ?//
-
   async dryRun(dto: CreateSamDto): Promise<Sam | null> {
     // In dryRun mode, we check if the instructor exists but don't create it
     const existingSam = await this.samRepository
@@ -133,14 +128,9 @@ export class SamService {
     return existingSam ? existingSam : null;
   }
 
-  async groups(id: number): Promise<Group[]> {
-    const sam = await this.samRepository.findOneOrFail({
-      where: { id },
-      relations: ['groups', 'groups.picks'],
-    });
-
-    return sam?.groups ?? [];
-  }
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
 
   async findById(id: number, relations: string[] = []): Promise<Sam> {
     try {
@@ -158,92 +148,22 @@ export class SamService {
     }
   }
 
-  async findBySchedule(id: number, dates: string[]) {
-    // 1. samId 기반  group 조회
-    const groups = await this.groupRepository.find({
-      where: {
-        samId: id,
-      },
-      relations: ['sam', 'sam.instructor', 'schooldays'],
-      select: {
-        id: true,
-        groupName: true,
-        location: true,
-        weekday: true,
-        start: true,
-        end: true,
-        schooldays: {
-          id: true,
-          startsAt: true,
-          endsAt: true,
-          duration: true,
-        },
-        sam: {
-          id: true,
-          alias: true,
-          instructor: {
-            id: true,
-            phone: true,
-          },
-        },
-      },
+  async findGroupsById(id: number): Promise<Group[]> {
+    const sam = await this.samRepository.findOneOrFail({
+      where: { id },
+      relations: ['contracts', 'contracts.group'],
     });
 
-    // 2. 날짜별로 Group 그룹화
-    const result: Record<string, Group[]> = {};
-    dates.forEach((date) => {
-      const koreanWeekday = getKoreanWeekday(date);
-      result[`${date}(${koreanWeekday})`] = [];
+    return sam?.contracts.map((contract) => contract.group) ?? [];
+  }
+
+  async findLessonsById(id: number): Promise<Lesson[]> {
+    const sam = await this.samRepository.findOneOrFail({
+      where: { id },
+      relations: ['contracts', 'contracts.lesson'],
     });
-
-    console.log('result -->', result);
-
-    // 3. 결과 값이 없을 경우 프론트에서 전달 받은 주단위 날짜 배열을 리턴
-    if (!groups.length) {
-      return transformScheduleResponse(dates, result);
-    }
-
-    groups.forEach((group) => {
-      // schooldays에서 dates 배열에 포함된 날짜만 필터링
-      const filteredSchooldays = group.schooldays.filter((day) => {
-        const dayDate = day.startsAt.toISOString().split('T')[0]; // "2025-05-20T13:50:00Z" -> "2025-05-20"
-        return dates.includes(dayDate);
-      });
-
-      // 필터링된 schooldays가 있는 경우, 각 날짜에 Group 추가
-      filteredSchooldays.forEach((schoolday) => {
-        const dayDate = schoolday.startsAt.toISOString().split('T')[0];
-        const koreanWeekday = getKoreanWeekday(dayDate);
-        if (dates.includes(dayDate)) {
-          // Group 객체 기반 schooldays와 sam을 부분 객체로 구성
-          result[`${dayDate}(${koreanWeekday})`].push({
-            ...group,
-            schooldays: [
-              {
-                id: schoolday.id,
-                startsAt: schoolday.startsAt,
-                endsAt: schoolday.endsAt,
-                duration: schoolday.duration,
-              } as Schoolday,
-            ],
-            sam: group.sam
-              ? {
-                  id: group.sam.id,
-                  alias: group.sam.alias,
-                  instructor: group.sam.instructor
-                    ? {
-                        id: group.sam.instructor.id,
-                        phone: group.sam.instructor.phone,
-                      }
-                    : undefined,
-                }
-              : undefined,
-          } as Group);
-        }
-      });
-    });
-
-    return transformScheduleResponse(dates, result);
+    // todo. deduplicate lessons
+    return sam?.contracts.map((contract) => contract.lesson) ?? [];
   }
 
   //? ---------------------------------------------------------------------- ?//

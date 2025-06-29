@@ -15,25 +15,18 @@ import { BookingStatus } from 'src/common/enums';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { getKoreanWeekday } from 'src/helpers/date';
-import { transformScheduleResponse } from 'src/helpers/group-schedule.util';
 import { S3Service } from 'src/services/aws/s3.service';
 import {
   DataSource,
   In,
   IsNull,
-  LessThanOrEqual,
-  MoreThanOrEqual,
   Not,
-  Or,
-  Repository,
+  Repository
 } from 'typeorm';
 import { Booking } from '../booking/entities/booking.entity';
-import { ScheduleResponseDto } from '../group/dto/schedule-response.dto';
 import { Group } from '../group/entities/group.entity';
 import { Pick } from '../pick/entities/pick.entity';
 import { School } from '../school/entities/school.entity';
-import { Schoolday } from '../schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 
@@ -227,109 +220,6 @@ export class StudentService {
     });
 
     return groups;
-  }
-
-  //? 학생의 수강 일정 조회
-  async findBySchedule(
-    studentId: number,
-    dates: string[],
-  ): Promise<ScheduleResponseDto> {
-    const picks = await this.pickRepository.find({
-      where: {
-        studentId,
-        startedOn: LessThanOrEqual(dates[dates.length - 1]),
-        endedOn: Or(IsNull(), MoreThanOrEqual(dates[0])),
-      },
-      relations: [
-        'group',
-        'group.schooldays',
-        'group.sam',
-        'group.sam.instructor', // sam 하위의 instructor ( phone 값 추출을 위함 )
-      ],
-      select: {
-        id: true,
-        studentId: true,
-        groupId: true,
-        startedOn: true,
-        endedOn: true,
-        group: {
-          id: true,
-          groupName: true,
-          location: true,
-          weekday: true,
-          start: true,
-          end: true,
-          schooldays: {
-            id: true,
-            startsAt: true,
-            endsAt: true,
-            duration: true,
-          },
-          sam: {
-            id: true,
-            alias: true,
-            instructor: {
-              id: true,
-              phone: true,
-            },
-          },
-        },
-      },
-    });
-
-    // 2. 날짜별로 Group 그룹화
-    const result: Record<string, Group[]> = {};
-    dates.forEach((date) => {
-      const koreanWeekday = getKoreanWeekday(date);
-      result[`${date}(${koreanWeekday})`] = [];
-    });
-
-    // 3. 결과 값이 없을 경우 프론트에서 전달 받은 주단위 날짜 배열을 리턴
-    if (!picks.length) {
-      return transformScheduleResponse(dates, result);
-    }
-
-    picks.forEach((pick) => {
-      const group = pick.group;
-      // schooldays에서 dates 배열에 포함된 날짜만 필터링
-      const filteredSchooldays = group.schooldays.filter((day) => {
-        const dayDate = day.startsAt.toISOString().split('T')[0]; // "2025-05-20T13:50:00Z" -> "2025-05-20"
-        return dates.includes(dayDate);
-      });
-
-      // 필터링된 schooldays가 있는 경우, 각 날짜에 Group 추가
-      filteredSchooldays.forEach((schoolday) => {
-        const dayDate = schoolday.startsAt.toISOString().split('T')[0];
-        const koreanWeekday = getKoreanWeekday(dayDate);
-        if (dates.includes(dayDate)) {
-          // Group 객체 기반 schooldays와 sam을 부분 객체로 구성
-          result[`${dayDate}(${koreanWeekday})`].push({
-            ...group,
-            schooldays: [
-              {
-                id: schoolday.id,
-                startsAt: schoolday.startsAt,
-                endsAt: schoolday.endsAt,
-                duration: schoolday.duration,
-              } as Schoolday,
-            ],
-            sam: group.sam
-              ? {
-                  id: group.sam.id,
-                  alias: group.sam.alias,
-                  instructor: group.sam.instructor
-                    ? {
-                        id: group.sam.instructor.id,
-                        phone: group.sam.instructor.phone,
-                      }
-                    : undefined,
-                }
-              : undefined,
-          } as Group);
-        }
-      });
-    });
-    return transformScheduleResponse(dates, result);
   }
 
   //? 학생의 수강 신청 내역 조회

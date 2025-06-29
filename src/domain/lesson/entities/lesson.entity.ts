@@ -2,11 +2,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsEnum, IsOptional } from 'class-validator';
 import { ClassStatus, DocumentType } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
+import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
 import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
-import { SamLesson } from 'src/domain/sam/entities/sam-lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
@@ -188,46 +188,6 @@ export class Lesson {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @ApiProperty({
-    description: '관련 groups',
-    type: [Group],
-    isArray: true,
-    example: [
-      {
-        id: 1,
-        samId: 1,
-        lessonId: 1,
-        groupName: '바이올린:화요일A반',
-        location: '과학실2',
-        capacity: 10,
-        allowedGrades: '1,2',
-        weekday: '화',
-        start: '13:50',
-        end: '14:30',
-        status: 'PENDING',
-        tuition: 0,
-        bookFee: 0,
-        materialFee: 0,
-        days: 18,
-        deletedBy: null,
-        note: null,
-        createdAt: '2025-05-23T08:43:26.709Z',
-        updatedAt: '2025-05-26T02:28:19.000Z',
-        sam: {
-          id: 1,
-          instructorId: 1,
-          schoolId: 1,
-          alias: '김사과',
-          score: 0,
-          editFeePermission: false,
-          editEnrollmentPermission: false,
-          note: null,
-          createdAt: '2025-05-23T08:31:12.233Z',
-          updatedAt: '2025-05-23T08:31:12.233Z',
-        },
-      },
-    ],
-  })
   @OneToMany(() => Group, (group) => group.lesson)
   public groups: Group[];
 
@@ -239,33 +199,8 @@ export class Lesson {
 
   //* N-to-M belongsToMany using 1-to-M ------------------------------------ *//
 
-  @ApiProperty({
-    description: '관련 samLessons',
-    type: [SamLesson],
-    isArray: true,
-    example: [
-      {
-        id: 22,
-        instructorId: 9,
-        lessonId: 21,
-        createdAt: '2025-05-16T02:34:15.441Z',
-        updatedAt: '2025-05-16T02:34:15.441Z',
-        instructor: {
-          id: 9,
-          userId: null,
-          name: '미확정',
-          phone: '01000000007',
-          score: 0,
-          registeredDocuments: null,
-          termsAgreedAt: null,
-          createdAt: '2025-05-16T02:34:15.437Z',
-          updatedAt: '2025-05-16T02:34:15.437Z',
-        },
-      },
-    ],
-  })
-  @OneToMany(() => SamLesson, (samLesson: SamLesson) => samLesson.lesson)
-  samLessons: SamLesson[];
+  @OneToMany(() => Contract, (contract) => contract.lesson)
+  contracts: Contract[];
 
   //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
 

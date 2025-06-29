@@ -1,9 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { Group } from 'src/domain/group/entities/group.entity';
+import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Payout } from 'src/domain/payout/entities/payout.entity';
-import { SamLesson } from 'src/domain/sam/entities/sam-lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import {
   Column,
@@ -114,14 +113,11 @@ export class Sam {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @OneToMany(() => Group, (group) => group.sam)
-  groups: Group[]; // 가르치는 반
-
   @OneToMany(() => Payout, (payout) => payout.sam)
   payouts: Payout[]; // 월급
 
-  @OneToMany(() => SamLesson, (samLesson: SamLesson) => samLesson.sam)
-  samLessons: SamLesson[]; // 가르치는 과목
+  @OneToMany(() => Contract, (contract) => contract.sam)
+  contracts: Contract[]; // 가르치는 과목
 
   //? Constructor ---------------------------------------------------------- ?//
 

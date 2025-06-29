@@ -10,10 +10,10 @@ import {
   FilterOperator,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
-import { CreateSamResponseDto } from '../dto/create-sam-response.dto';
-import { CreateSamDto } from '../dto/create-sam.dto';
-import { SamRelationResponseDto } from '../dto/sam-relation-response.dto';
-import { SamResponseDto } from '../dto/sam-response.dto';
+import { CreateSamResponseDto } from '../../sam/dto/create-sam-response.dto';
+import { CreateSamDto } from '../../sam/dto/create-sam.dto';
+import { SamRelationResponseDto } from '../../sam/dto/sam-relation-response.dto';
+import { SamResponseDto } from '../../sam/dto/sam-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create School > Sam
