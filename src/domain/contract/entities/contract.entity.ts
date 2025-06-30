@@ -38,6 +38,11 @@ export class Contract {
   @Column({ type: 'int', unsigned: true, nullable: true })
   lessonId: number;
 
+  // a clear way to know which group belongs to which term
+  @ApiProperty({ description: 'termId', example: 1 })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  termId: number;
+
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({

@@ -38,10 +38,10 @@ export class Pick {
   @Column({ type: 'int', unsigned: true, nullable: true })
   offeringId: number;
 
-  // todo. see if we need this.
-  @ApiProperty({ description: 'lessonId', example: 1 })
+  // a clear way to know which group belongs to which term
+  @ApiProperty({ description: 'termId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
-  lessonId: number;
+  termId: number;
 
   // ------------------------------------------------------------------------ //
 

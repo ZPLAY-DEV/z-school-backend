@@ -282,6 +282,7 @@ export interface IPickKeys {
   studentId: number;
   groupId: number;
   offeringId: number;
+  termId: number;
   startedOn: string;
 }
 

@@ -65,18 +65,21 @@ export class OfferingPickService {
       selectedStudentIds = await this.pickFirstComeFirstServed(
         offeringId,
         offering.capacity - offering.prepicked,
+        offering.termId,
         sameGradeGroups,
       );
     } else if (offering.pickRule === PickRule.RANDOM) {
       selectedStudentIds = await this.pickRandomStudents(
         offeringId,
         offering.capacity - offering.prepicked,
+        offering.termId,
         sameGradeGroups,
       );
     } else {
       selectedStudentIds = await this.pickAnyone(
         offeringId,
         offering.capacity - offering.prepicked,
+        offering.termId,
         sameGradeGroups,
       );
     }
@@ -121,6 +124,7 @@ export class OfferingPickService {
   async pickFirstComeFirstServed(
     offeringId: number,
     capacity: number,
+    termId: number,
     sameGradeGroups: { groupId: number; startedOn: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
@@ -137,6 +141,7 @@ export class OfferingPickService {
         studentId,
         groupId,
         offeringId,
+        termId,
         startedOn,
       }));
       items = items.concat(groupItems);
@@ -144,7 +149,13 @@ export class OfferingPickService {
     const groupIds = sameGradeGroups.map((v) => v.groupId);
 
     // 정교한 picks 관리: 기존 데이터와 비교하여 정확한 처리
-    await this.managePicks(offeringId, groupIds, selectedStudentIds, items);
+    await this.managePicks(
+      offeringId,
+      groupIds,
+      termId,
+      selectedStudentIds,
+      items,
+    );
 
     // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
     await this.offeringRepository.update(offeringId, {
@@ -166,6 +177,7 @@ export class OfferingPickService {
   async pickAnyone(
     offeringId: number,
     capacity: number,
+    termId: number,
     sameGradeGroups: { groupId: number; startedOn: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
@@ -182,6 +194,7 @@ export class OfferingPickService {
         studentId,
         groupId,
         offeringId,
+        termId,
         startedOn,
       }));
       items = items.concat(groupItems);
@@ -189,7 +202,13 @@ export class OfferingPickService {
     const groupIds = sameGradeGroups.map((v) => v.groupId);
 
     // 정교한 picks 관리: 기존 데이터와 비교하여 정확한 처리
-    await this.managePicks(offeringId, groupIds, selectedStudentIds, items);
+    await this.managePicks(
+      offeringId,
+      groupIds,
+      termId,
+      selectedStudentIds,
+      items,
+    );
 
     // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
     await this.offeringRepository.update(offeringId, {
@@ -211,6 +230,7 @@ export class OfferingPickService {
   async pickRandomStudents(
     offeringId: number,
     capacity: number,
+    termId: number,
     sameGradeGroups: { groupId: number; startedOn: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
@@ -234,6 +254,7 @@ export class OfferingPickService {
         studentId,
         groupId,
         offeringId,
+        termId,
         startedOn,
       }));
       items = items.concat(groupItems);
@@ -241,7 +262,13 @@ export class OfferingPickService {
     const groupIds = sameGradeGroups.map((v) => v.groupId);
 
     // 정교한 picks 관리: 기존 데이터와 비교하여 정확한 처리
-    await this.managePicks(offeringId, groupIds, selectedStudentIds, items);
+    await this.managePicks(
+      offeringId,
+      groupIds,
+      termId,
+      selectedStudentIds,
+      items,
+    );
 
     // set offering, groups, lesson 의 상태를 ACTIVE 로 변경
     await this.offeringRepository.update(offeringId, {
@@ -269,6 +296,7 @@ export class OfferingPickService {
   private async managePicks(
     offeringId: number,
     groupIds: number[],
+    termId: number,
     selectedStudentIds: number[],
     newItems: IPickKeys[],
   ): Promise<void> {
@@ -283,18 +311,20 @@ export class OfferingPickService {
 
     // 2. 새로운 picks upsert
     if (newItems.length > 0) {
-      const placeholders = newItems.map(() => '(?, ?, ?, ?)').join(', ');
+      const placeholders = newItems.map(() => '(?, ?, ?, ?, ?)').join(', ');
       const values = newItems.flatMap((item) => [
         item.studentId,
         item.groupId,
         item.offeringId,
+        item.termId,
         item.startedOn,
       ]);
 
       const query = `
-        INSERT INTO picks (studentId, groupId, offeringId, startedOn)
-        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, startedOn)
-        ON DUPLICATE KEY UPDATE 
+        INSERT INTO picks (studentId, groupId, offeringId, termId, startedOn)
+        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, termId, startedOn)
+        ON DUPLICATE KEY UPDATE
+          termId = new_pick.termId,
           startedOn = new_pick.startedOn
       `;
       await this.pickRepository.query(query, values);

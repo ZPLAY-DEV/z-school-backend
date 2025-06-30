@@ -526,6 +526,7 @@ export class LessonCoreService {
       samId: number;
       lessonId: number;
       groupId: number;
+      termId: number;
       startedOn: string;
       endedOn: string;
     }> = [];
@@ -537,6 +538,7 @@ export class LessonCoreService {
           samId,
           lessonId,
           groupId: group.id,
+          termId: lesson.termId,
           startedOn: dto.start ?? lesson.start,
           endedOn: dto.end ?? lesson.end,
         });
@@ -545,19 +547,23 @@ export class LessonCoreService {
 
     // 3. 새로운 contracts upsert
     if (contractData.length > 0) {
-      const placeholders = contractData.map(() => '(?, ?, ?, ?, ?)').join(', ');
+      const placeholders = contractData
+        .map(() => '(?, ?, ?, ?, ?, ?)')
+        .join(', ');
       const values = contractData.flatMap((data) => [
         data.samId,
         data.lessonId,
         data.groupId,
+        data.termId,
         data.startedOn,
         data.endedOn,
       ]);
 
       const upsertQuery = `
-        INSERT INTO contracts (samId, lessonId, groupId, startedOn, endedOn)
-        VALUES ${placeholders} AS new_contract(samId, lessonId, groupId, startedOn, endedOn)
+        INSERT INTO contracts (samId, lessonId, groupId, termId, startedOn, endedOn)
+        VALUES ${placeholders} AS new_contract(samId, lessonId, groupId, termId, startedOn, endedOn)
         ON DUPLICATE KEY UPDATE
+          termId = new_contract.termId,
           startedOn = new_contract.startedOn,
           endedOn = new_contract.endedOn,
           updatedAt = CURRENT_TIMESTAMP
