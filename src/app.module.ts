@@ -45,7 +45,6 @@ import { RedisModule } from 'src/services/redis/redis.module';
 import { SlackModule } from 'src/services/slack/slack.module';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { OrmConfig } from './database/orm-config';
-import { BoardModule } from './domain/board/board.module';
 import { UploadModule } from './services/upload/upload.module';
 
 @Module({
@@ -110,7 +109,6 @@ import { UploadModule } from './services/upload/upload.module';
     }),
     AttendanceModule,
     AuthModule,
-    BoardModule,
     BookingModule,
     CalendarModule,
     CategoryModule,

@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { SchoolBoardModule } from 'src/domain/school/features/school-board.module';
 import { SchoolCoreModule } from 'src/domain/school/features/school-core.module';
 import { SchoolResourceModule } from 'src/domain/school/features/school-resource.module';
 import { SchoolStudentModule } from 'src/domain/school/features/school-student.module';
@@ -12,7 +11,6 @@ import { UploadModule } from 'src/services/upload/upload.module';
     SchoolCoreModule,
     SchoolTermModule,
     SchoolStudentModule,
-    SchoolBoardModule,
     SchoolResourceModule,
     UploadModule,
     S3Module,
@@ -21,7 +19,6 @@ import { UploadModule } from 'src/services/upload/upload.module';
     SchoolCoreModule,
     SchoolTermModule,
     SchoolStudentModule,
-    SchoolBoardModule,
     SchoolResourceModule,
   ],
 })

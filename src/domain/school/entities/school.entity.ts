@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
-import { Board } from 'src/domain/board/entities/board.entity';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
@@ -171,9 +170,6 @@ export class School {
     cascade: ['insert', 'update'],
   })
   public statements: Statement[];
-
-  @OneToMany(() => Board, (board) => board.school)
-  public boards: Board[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

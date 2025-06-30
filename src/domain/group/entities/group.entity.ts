@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { Actor, ClassStatus, Weekday } from 'src/common/enums';
-import { Board } from 'src/domain/board/entities/board.entity';
 import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
@@ -149,9 +148,6 @@ export class Group {
 
   @OneToMany(() => Contract, (contract) => contract.group)
   contracts: Contract[];
-
-  @OneToMany(() => Board, (board) => board.group)
-  boards: Board[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

@@ -1,8 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { DEFAULT_AVATAR_URL } from 'src/common/constants';
-import { Board } from 'src/domain/board/entities/board.entity';
-import { Comment } from 'src/domain/board/entities/comment.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
@@ -118,17 +116,11 @@ export class User {
   // })
   // posts: Post[];
 
-  @Exclude()
-  @OneToMany(() => Board, (board) => board.user, {
-    cascade: ['insert', 'update'],
-  })
-  boards: Board[];
-
-  @Exclude()
-  @OneToMany(() => Comment, (comment) => comment.user, {
-    cascade: ['insert', 'update'],
-  })
-  comments: Comment[];
+  // @Exclude()
+  // @OneToMany(() => Comment, (comment) => comment.user, {
+  //   cascade: ['insert', 'update'],
+  // })
+  // comments: Comment[];
 
   @Exclude()
   @OneToMany(() => Withdrawal, (withdrawal) => withdrawal.user)
