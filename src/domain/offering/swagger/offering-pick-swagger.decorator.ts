@@ -3,7 +3,7 @@ import { ApiOperation, ApiParam } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
+import { ResponseCreateOfferingPickDto } from 'src/domain/group/dto/response-create-offering-pick.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create Offering Pick
@@ -27,7 +27,7 @@ export const CreateOfferingPickDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '수강생 확정 완료',
-      type: ResponsePickDto,
+      type: ResponseCreateOfferingPickDto,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );

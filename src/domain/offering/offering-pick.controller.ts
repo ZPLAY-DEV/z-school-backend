@@ -10,8 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
-
-import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
+import { ResponseCreateOfferingPickDto } from 'src/domain/group/dto/response-create-offering-pick.dto';
 import { OfferingPickService } from 'src/domain/offering/offering-pick.service';
 import { CreateOfferingPickDocs } from 'src/domain/offering/swagger/offering-pick-swagger.decorator';
 
@@ -30,7 +29,7 @@ export class OfferingPickController {
   @HttpCode(200)
   async create(
     @Param('offeringId', ParseIntPipe) offeringId: number,
-  ): Promise<ResponsePickDto> {
+  ): Promise<ResponseCreateOfferingPickDto> {
     return this.offeringPickService.create(offeringId);
   }
 

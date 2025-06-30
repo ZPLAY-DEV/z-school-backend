@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { PickRule } from 'src/common/enums';
 
-export class ResponsePickDto {
+export class ResponseCreateOfferingPickDto {
   @ApiProperty({
     description: '수강신청 규칙',
     enum: PickRule,
@@ -18,7 +18,7 @@ export class ResponsePickDto {
   @ApiProperty({ description: '빈자리수', example: 2 })
   unfilled: number;
 
-  constructor(partial: Partial<ResponsePickDto>) {
+  constructor(partial: Partial<ResponseCreateOfferingPickDto>) {
     Object.assign(this, partial);
   }
 }

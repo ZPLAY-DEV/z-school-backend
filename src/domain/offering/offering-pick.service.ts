@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { BookingStatus, ClassStatus, PickRule } from 'src/common/enums';
 import { IPickKeys } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
-import { ResponsePickDto } from 'src/domain/group/dto/response-pick.dto';
+import { ResponseCreateOfferingPickDto } from 'src/domain/group/dto/response-create-offering-pick.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -30,7 +30,7 @@ export class OfferingPickService {
   //? CREATE (pick 확정짓기)
   //? ---------------------------------------------------------------------- ?//
 
-  async create(offeringId: number): Promise<ResponsePickDto> {
+  async create(offeringId: number): Promise<ResponseCreateOfferingPickDto> {
     let selectedStudentIds: number[] = [];
 
     const offering = await this.offeringRepository.findOneOrFail({
@@ -86,7 +86,7 @@ export class OfferingPickService {
 
     // console.log('🚀 picks', selectedStudentIds);
 
-    return new ResponsePickDto({
+    return new ResponseCreateOfferingPickDto({
       pickRule: offering.pickRule,
       capacity: offering.capacity,
       filled: selectedStudentIds.length,
