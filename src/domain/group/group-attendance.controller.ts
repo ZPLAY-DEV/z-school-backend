@@ -13,10 +13,12 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 import { AttendanceStatusDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
-import { IAttendance } from 'src/domain/attendance/entities/attendance.interface';
+import {
+  IAttendance,
+  IAttendanceWithLastFlag,
+} from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
-import { AttendanceWithLastFlagDto } from 'src/domain/group/dto/attendance-with-last-flag.dto';
 import { GroupAttendanceService } from 'src/domain/group/group-attendance.service';
 import {
   EndAttendanceDocs,
@@ -98,7 +100,7 @@ export class GroupAttendanceController {
   async findByDateWithLastFlag(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('date') date: string,
-  ): Promise<AttendanceWithLastFlagDto[]> {
+  ): Promise<IAttendanceWithLastFlag[]> {
     const groupKey = generateGroupKey(groupId);
     return await this.groupAttendancesService.findAttendancesByDateWithLastFlag(
       groupKey,

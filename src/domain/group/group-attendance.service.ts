@@ -13,6 +13,7 @@ import { AttendanceStatusDto } from 'src/domain/attendance/dto/upsert-attendance
 import {
   IAttendance,
   IAttendanceKey,
+  IAttendanceWithLastFlag,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
@@ -21,7 +22,6 @@ import {
   generateGroupKey,
   processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
-import { AttendanceWithLastFlagDto } from 'src/domain/group/dto/attendance-with-last-flag.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -265,7 +265,7 @@ export class GroupAttendanceService {
   async findAttendancesByDateWithLastFlag(
     groupKey: string,
     date: string,
-  ): Promise<AttendanceWithLastFlagDto[]> {
+  ): Promise<IAttendanceWithLastFlag[]> {
     try {
       // 1. DynamoDB에서 출석 데이터 조회
       const prefix = `DATE#${date}`;
@@ -333,7 +333,7 @@ export class GroupAttendanceService {
       });
 
       // 5. 출석 데이터와 마지막 그룹 정보 결합
-      const attendancesWithLastFlag: AttendanceWithLastFlagDto[] = items.map(
+      const attendancesWithLastFlag: IAttendanceWithLastFlag[] = items.map(
         (item) => {
           const studentId = this.extractStudentIdFromRangeKey(
             item.dailyStudentKey,

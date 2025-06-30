@@ -23,3 +23,7 @@ export interface IAttendance extends IAttendanceCore {
   parentNote?: string;
   schoolNote?: string;
 }
+
+export interface IAttendanceWithLastFlag extends IAttendance {
+  isLast: boolean;
+}
