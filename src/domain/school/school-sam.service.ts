@@ -77,7 +77,7 @@ export class SchoolSamService {
           alias: dto.alias,
           score: dto.score,
           editFeePermission: dto.editFeePermission,
-          editEnrollmentPermission: dto.editEnrollmentPermission,
+          editPickPermission: dto.editPickPermission,
           note: dto.note,
         });
         sam = await manager.save(Sam, sam);
@@ -89,7 +89,7 @@ export class SchoolSamService {
           alias: dto.alias,
           score: dto.score ?? 0,
           editFeePermission: dto.editFeePermission ?? false,
-          editEnrollmentPermission: dto.editEnrollmentPermission ?? false,
+          editPickPermission: dto.editPickPermission ?? false,
           note: dto.note,
         });
         sam = await manager.save(Sam, sam);
@@ -186,7 +186,7 @@ export class SchoolSamService {
                 instructorId: instructor.id,
                 alias: dto.alias,
                 editFeePermission: dto.editFeePermission,
-                editEnrollmentPermission: dto.editEnrollmentPermission,
+                editPickPermission: dto.editPickPermission,
                 note: dto.note,
                 score: dto.score,
               },
@@ -203,7 +203,7 @@ export class SchoolSamService {
               schoolId,
               alias: dto.alias,
               editFeePermission: dto.editFeePermission ?? false,
-              editEnrollmentPermission: dto.editEnrollmentPermission ?? false,
+              editPickPermission: dto.editPickPermission ?? false,
               note: dto.note,
               score: dto.score ?? 0,
             });

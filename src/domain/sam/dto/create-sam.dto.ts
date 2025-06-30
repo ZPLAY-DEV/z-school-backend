@@ -51,8 +51,8 @@ export class CreateSamDto {
 
   @ApiProperty({
     description: '🈳 교재/재료비 수정 권한 여부',
-    example: 'true --- 학교에서 부여할 교재/재료비 수정 권한 여부',
     type: Boolean,
+    example: true,
     required: false,
   })
   @IsBoolean()
@@ -60,18 +60,18 @@ export class CreateSamDto {
   editFeePermission?: boolean;
 
   @ApiProperty({
-    description: '🈳 수강 추가/취소 권한 여부',
-    example: 'true --- 학교에서 부여할 수강 추가/취소 권한 여부',
+    description: '🈳 수강생 추가/취소 권한 여부',
     type: Boolean,
+    example: true,
     required: false,
   })
   @IsBoolean()
   @IsOptional()
-  editEnrollmentPermission?: boolean;
+  editPickPermission?: boolean;
 
   @ApiProperty({
-    description: '🈳 내용',
-    example: '특이사항 없음 --- 학교에서 부여할 비고',
+    description: '🈳 보고',
+    example: '특이사항 정리',
     type: String,
     required: false,
   })

@@ -72,15 +72,15 @@ export class Sam {
   editFeePermission: boolean;
 
   @ApiProperty({
-    description: '🈳 수강 추가/취소 권한 여부',
+    description: '🈳 수강생 추가/취소 권한 여부',
     example: false,
   })
   @Column({
     type: 'boolean',
     default: false,
-    comment: '수강 추가/취소 권한 여부',
+    comment: '수강생 추가/취소 권한 여부',
   })
-  editEnrollmentPermission: boolean;
+  editPickPermission: boolean;
 
   @ApiProperty({ description: '🈳 비고', example: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })

@@ -85,7 +85,7 @@ export class SamService {
             alias: dto.alias,
             score: dto.score,
             editFeePermission: dto.editFeePermission,
-            editEnrollmentPermission: dto.editEnrollmentPermission,
+            editPickPermission: dto.editPickPermission,
             note: dto.note,
           },
         );
@@ -97,7 +97,7 @@ export class SamService {
           score: dto.score,
           alias: dto.alias,
           editFeePermission: dto.editFeePermission,
-          editEnrollmentPermission: dto.editEnrollmentPermission,
+          editPickPermission: dto.editPickPermission,
           note: dto.note,
         });
         await manager.save(Sam, sam);
