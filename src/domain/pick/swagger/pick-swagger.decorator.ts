@@ -9,7 +9,6 @@ import {
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { CreateBulkPickDto } from '../dto/create-bulk-pick.dto';
 import { EndPickDto, StartPickDto } from '../dto/create-pick.dto';
 import { UpdatePickDto } from '../dto/update-pick.dto';
 import { Pick } from '../entities/pick.entity';
@@ -38,23 +37,6 @@ export const CreatePickDocs = () =>
       type: Pick,
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
-  );
-
-// BulkPick
-export const CreatePickBulkDocs = () =>
-  applyDecorators(
-    ApiOperation({
-      summary: '여러 학생을 한 번에 반에 등록',
-      description:
-        '여러 학생을 한 번에 반에 등록합니다. 시스템에 의한 일괄 등록.',
-    }),
-    ApiBody({ type: CreateBulkPickDto }),
-    ApiCreatedResponseTemplate({
-      description: '학생 반 일괄 등록 완료',
-      type: Pick,
-      isArray: true,
-    }),
-    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 
 // UpdatePick

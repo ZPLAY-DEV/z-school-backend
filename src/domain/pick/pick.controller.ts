@@ -17,18 +17,16 @@ import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.deco
 import { Actor } from 'src/common/enums';
 
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
-import { CreateBulkPickDto } from 'src/domain/pick/dto/create-bulk-pick.dto';
 import { EndPickDto, StartPickDto } from 'src/domain/pick/dto/create-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { PickService } from 'src/domain/pick/pick.service';
 import {
-  CreatePickBulkDocs,
   CreatePickDocs,
   DeletePickDocs,
   EndPickDocs,
   ListPicksDocs,
   PaginatedListPicksDocs,
-  UpdatePickDocs,
+  UpdatePickDocs
 } from 'src/domain/pick/swagger/pick-swagger.decorator';
 
 @ApiTags('✅ Picks ( 확정수강생; pivot )')
@@ -58,16 +56,6 @@ export class PickController {
       ...dto,
       startedBy: role,
     });
-  }
-
-  @CreatePickBulkDocs()
-  @ApiOperation({
-    description:
-      '@deprecated. 수동으로 여러명을 등록하는 usecase 가 있는지 모르겠음.',
-  })
-  @Post('/bulk')
-  async createBulk(@Body() dto: CreateBulkPickDto): Promise<Pick[]> {
-    return await this.pickService.createBulk(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//

@@ -8,10 +8,23 @@ import {
   IsOptional,
   IsString,
   Length,
-  ValidateNested
+  ValidateNested,
 } from 'class-validator';
-import { ClassStatus, PickRule } from 'src/common/enums';
-import { ClassTimeDto } from 'src/domain/offering/dto/class-time.dto';
+import { ClassStatus, PickRule, Weekday } from 'src/common/enums';
+
+export class ClassTimeDto {
+  @ApiProperty({ enum: Weekday })
+  @IsEnum(Weekday)
+  weekday: Weekday;
+
+  @ApiProperty({ example: '15:00' })
+  @IsString()
+  start: string;
+
+  @ApiProperty({ example: '23:00' })
+  @IsString()
+  end: string;
+}
 
 export class CreateOfferingDto {
   @ApiProperty({ description: '🈳 DB의 학교ID' })

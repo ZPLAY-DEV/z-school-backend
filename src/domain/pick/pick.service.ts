@@ -1,7 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
 import {
   FilterOperator,
   paginate,
@@ -9,10 +7,9 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { CreateBulkPickDto } from 'src/domain/pick/dto/create-bulk-pick.dto';
 import { CreatePickDto, EndPickDto } from 'src/domain/pick/dto/create-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { UpdateGroupDto } from '../group/dto/update-group.dto';
 
 @Injectable()
@@ -34,35 +31,6 @@ export class PickService {
   async startPick(dto: CreatePickDto): Promise<Pick> {
     const pick = this.pickRepository.create(dto);
     return await this.pickRepository.save(pick);
-  }
-
-  // 필수항목) groupId, studentId (무조건 시스템 등록이라 가정)
-  async createBulk(dto: CreateBulkPickDto): Promise<Pick[]> {
-    const group = await this.groupRepository.findOneOrFail({
-      where: { id: dto.groupId },
-      relations: ['schooldays'],
-    });
-    if (!group.schooldays || group.schooldays.length === 0) {
-      throw new NotFoundException('Group not found');
-    }
-    const { startsAt } = group.schooldays[0];
-    const seoulTime = toZonedTime(startsAt, 'Asia/Seoul');
-    const startedOn = format(seoulTime, 'yyyy-MM-dd');
-
-    const picks: Partial<Pick>[] = dto.studentIds.map((studentId) => ({
-      groupId: dto.groupId,
-      studentId,
-      startedBy: null,
-      startedOn,
-    }));
-
-    // upsert based on unique constraint: groupId, studentId
-    await this.pickRepository.upsert(picks, ['groupId', 'studentId']);
-
-    // refetch the upserted picks to return full entities
-    return await this.pickRepository.find({
-      where: { groupId: dto.groupId, studentId: In(dto.studentIds) },
-    });
   }
 
   //? ---------------------------------------------------------------------- ?//
