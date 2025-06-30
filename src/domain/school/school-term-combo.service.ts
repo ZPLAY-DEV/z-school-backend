@@ -39,7 +39,8 @@ export class SchoolTermComboService {
     // 2. Get Sams
     const sams = await this.samRepository
       .createQueryBuilder('sam')
-      .innerJoin('sam.groups', 'group')
+      .innerJoin('sam.contracts', 'contract')
+      .innerJoin('contract.group', 'group')
       .innerJoin('group.lesson', 'lesson')
       .innerJoin('lesson.term', 'term')
       .innerJoin('term.school', 'school')
