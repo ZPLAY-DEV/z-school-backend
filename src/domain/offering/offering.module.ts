@@ -8,11 +8,12 @@ import { OfferingPickController } from 'src/domain/offering/offering-pick.contro
 import { OfferingPickService } from 'src/domain/offering/offering-pick.service';
 import { OfferingController } from 'src/domain/offering/offering.controller';
 import { OfferingService } from 'src/domain/offering/offering.service';
+import { OfferingSubscriber } from 'src/domain/offering/subscriber/offering.subscriber';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Offering, Booking, Pick, Group, Lesson])],
-  providers: [OfferingService, OfferingPickService],
+  providers: [OfferingService, OfferingPickService, OfferingSubscriber],
   controllers: [OfferingController, OfferingPickController],
 })
 export class OfferingModule {}

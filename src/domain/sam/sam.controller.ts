@@ -49,7 +49,12 @@ export class SamController {
   //? 학교쌤의 상세 정보 조회
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Sam> {
-    return await this.samService.findById(id, ['instructor', 'groups']);
+    return await this.samService.findById(id, [
+      'instructor',
+      'contracts',
+      'contracts.group',
+      'contracts.lesson',
+    ]);
   }
 
   //? 학교쌤이 가르치는 반 리스트
