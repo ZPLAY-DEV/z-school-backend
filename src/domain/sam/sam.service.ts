@@ -27,6 +27,7 @@ export class SamService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  // todo. see if it works
   async create(dto: CreateSamDto): Promise<Sam> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       // 1. 학교 존재 여부 확인
@@ -48,12 +49,11 @@ export class SamService {
 
         if (foundInstructor) {
           instructor = foundInstructor;
-          dto.instructorId = instructor.id;
         } else {
           instructor = this.instructorRepository.create(dto.instructor);
           await this.instructorRepository.save(instructor);
-          dto.instructorId = instructor.id;
         }
+        dto.instructorId = instructor.id;
       }
 
       if (!instructor) {
@@ -94,7 +94,7 @@ export class SamService {
         sam = manager.create(Sam, {
           instructorId: instructor.id,
           schoolId: dto.schoolId,
-          score: dto.score,
+          score: dto.score || 0,
           alias: dto.alias,
           editFeePermission: dto.editFeePermission,
           editPickPermission: dto.editPickPermission,
@@ -148,11 +148,17 @@ export class SamService {
     }
   }
 
-  async findGroupsById(id: number): Promise<Group[]> {
+  async findGroupsById(id: number, termId?: number): Promise<Group[]> {
     const sam = await this.samRepository.findOneOrFail({
       where: { id },
-      relations: ['contracts', 'contracts.group'],
+      relations: ['contracts', 'contracts.group', 'contracts.group.lesson'],
     });
+
+    if (termId) {
+      sam.contracts = sam.contracts.filter(
+        (contract) => contract.group.lesson.termId === Number(termId),
+      );
+    }
 
     return sam?.contracts.map((contract) => contract.group) ?? [];
   }

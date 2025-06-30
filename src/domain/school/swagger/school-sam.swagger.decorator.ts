@@ -10,6 +10,7 @@ import {
   FilterOperator,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateSamResponseDto } from '../../sam/dto/create-sam-response.dto';
 import { CreateSamDto } from '../../sam/dto/create-sam.dto';
 import { SamRelationResponseDto } from '../../sam/dto/sam-relation-response.dto';
@@ -143,5 +144,43 @@ export const SchoolSamPaginatedDocs = () => {
         editEnrollmentPermission: [FilterOperator.EQ],
       },
     }),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Get School > Sam Groups For Date
+//? ---------------------------------------------------------------------- ?//
+export const GetSchoolSamGroupsForDateDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 학교 > 강사 특정 날짜 수업 반 목록 조회',
+      description: `
+      - 특정 학교의 강사가 특정 날짜에 수업하는 반 목록을 시간 순으로 조회한다.
+      - 날짜 형식은 YYYY-MM-DD 형식으로 입력해야 한다.
+      - 결과는 수업 시작 시간을 기준으로 오름차순 정렬된다.
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+    }),
+    ApiParam({
+      name: 'samId',
+      type: Number,
+      description: '강사 ID',
+    }),
+    ApiParam({
+      name: 'date',
+      type: String,
+      description: '조회할 날짜 (YYYY-MM-DD)',
+      example: '2025-01-15',
+    }),
+    ApiOkResponseTemplate({
+      description: '특정 날짜의 강사 수업 반 목록 조회 완료',
+      type: Group,
+      isArray: true,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };

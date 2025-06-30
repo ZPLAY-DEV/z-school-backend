@@ -11,6 +11,7 @@ import { CreateSamDto } from '../dto/create-sam.dto';
 import { DeleteSamNoteDto } from '../dto/delete-sam-note.dto';
 import { SamRelationResponseDto } from '../dto/sam-relation-response.dto';
 import { SamResponseDto } from '../dto/sam-response.dto';
+import { UpdateSamDto } from '../dto/update-sam.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create School Sam
@@ -178,5 +179,33 @@ export const SamScheduleFindByIdDocs = () => {
       description: '학교에 속한 강사의 주간 수업 일정 조회 완료',
       type: ScheduleResponseDto,
     }),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Update Sam
+//? ---------------------------------------------------------------------- ?//
+export const UpdateSamDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 학교에 속한 강사 정보 수정',
+      description: `
+      - 학교에 속한 강사의 정보를 수정한다.
+      - alias, score, editFeePermission, editPickPermission, note 등의 정보를 수정할 수 있다.
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '학교에 속한 강사 ID',
+    }),
+    ApiBody({
+      type: UpdateSamDto,
+    }),
+    ApiOkResponseTemplate({
+      description: '학교에 속한 강사 정보 수정 완료',
+      type: SamResponseDto,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };

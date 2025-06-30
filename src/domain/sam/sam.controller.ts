@@ -10,9 +10,10 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
@@ -20,6 +21,14 @@ import { DeleteSamNoteDto } from 'src/domain/sam/dto/delete-sam-note.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { SamService } from 'src/domain/sam/sam.service';
+import {
+  CreateSamDocs,
+  GetSamByIdDocs,
+  GetSamGroupsDocs,
+  SamDryRunDocs,
+  SoftDeleteSamDocs,
+  UpdateSamDocs,
+} from 'src/domain/sam/swagger/sam.swagger.decorator';
 
 @ApiTags('✅ Sams ( 학교쌤 ≓ Student )')
 @Controller('sams')
@@ -31,11 +40,16 @@ export class SamController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  // todo. see if it works
+  @CreateSamDocs()
+  @ApiOperation({ description: '학교쌤(Sam) 생성' })
   @Post()
   async create(@Body() dto: CreateSamDto): Promise<Sam> {
     return await this.samService.create(dto);
   }
 
+  @SamDryRunDocs()
+  @ApiOperation({ description: '학교쌤(Sam) 생성 dryRun 체크' })
   @HttpCode(HttpStatus.OK)
   @Post('dryrun')
   async dryRun(@Body() dto: CreateSamDto): Promise<Sam | null> {
@@ -46,7 +60,8 @@ export class SamController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  //? 학교쌤의 상세 정보 조회
+  @GetSamByIdDocs()
+  @ApiOperation({ description: '학교쌤(Sam) 상세 정보 조회' })
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Sam> {
     return await this.samService.findById(id, [
@@ -57,18 +72,22 @@ export class SamController {
     ]);
   }
 
-  //? 학교쌤이 가르치는 반 리스트
+  @GetSamGroupsDocs()
+  @ApiOperation({ description: '학교쌤이 가르치는 반 리스트 조회' })
   @Get(':id/groups')
   async findGroupsById(
     @Param('id', ParseIntPipe) id: number,
+    @Query('termId') termId?: number,
   ): Promise<Group[]> {
-    return await this.samService.findGroupsById(id);
+    return await this.samService.findGroupsById(id, termId);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
+  @UpdateSamDocs()
+  @ApiOperation({ description: '학교쌤(Sam) 정보 수정' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -81,6 +100,8 @@ export class SamController {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
+  @SoftDeleteSamDocs()
+  @ApiOperation({ description: '학교쌤(Sam) 소프트 삭제' })
   @Delete(':id')
   async softDelete(
     @Param('id', ParseIntPipe) id: number,
