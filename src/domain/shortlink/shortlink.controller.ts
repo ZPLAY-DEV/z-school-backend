@@ -1,5 +1,4 @@
 import {
-  Body,
   ClassSerializerInterceptor,
   Controller,
   Delete,
@@ -10,7 +9,6 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { DeleteSamNoteDto } from 'src/domain/sam/dto/delete-sam-note.dto';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { ShortlinkService } from 'src/domain/shortlink/shortlink.service';
 import {
@@ -49,10 +47,7 @@ export class ShortlinkController {
 
   @SoftDeleteShortlinkDocs()
   @Delete(':id')
-  async softDelete(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: DeleteSamNoteDto,
-  ): Promise<void> {
-    return await this.shortlinkService.softDelete(id, dto);
+  async softDelete(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    await this.shortlinkService.remove(id);
   }
 }

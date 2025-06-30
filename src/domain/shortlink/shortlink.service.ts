@@ -1,6 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeleteInstructorNoteDto } from 'src/domain/instructor/dto/delete-instructor-note.dto';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { Repository } from 'typeorm';
 @Injectable()
@@ -37,20 +36,8 @@ export class ShortlinkService {
   }
 
   //? ---------------------------------------------------------------------- ?//
-  //? Update
-  //? ---------------------------------------------------------------------- ?//
-
-  //? ---------------------------------------------------------------------- ?//
   //? Delete
   //? ---------------------------------------------------------------------- ?//
-
-  // this is soft-delete
-  async softDelete(id: number, dto: DeleteInstructorNoteDto): Promise<void> {
-    await this.shortlinkRepository.update(
-      { id },
-      { note: dto.note, deletedAt: new Date() },
-    );
-  }
 
   // this is hard-delete
   async remove(id: number): Promise<Shortlink> {

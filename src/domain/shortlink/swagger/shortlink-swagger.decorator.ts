@@ -1,16 +1,14 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
   ApiExtraModels,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
-  getSchemaPath,
+  getSchemaPath
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { DeleteSamNoteDto } from 'src/domain/sam/dto/delete-sam-note.dto';
 import { Shortlink } from '../entities/shortlink.entity';
 
 //? ---------------------------------------------------------------------- ?//
@@ -85,19 +83,6 @@ export const SoftDeleteShortlinkDocs = () => {
       type: Number,
       description: '숏링크 ID',
       example: 1,
-    }),
-    ApiBody({
-      type: DeleteSamNoteDto,
-      description: '삭제 정보',
-      examples: {
-        example1: {
-          summary: '삭제 예제',
-          value: {
-            reason: '더 이상 필요없는 숏링크',
-            deletedBy: 1,
-          },
-        },
-      },
     }),
     ApiOkResponse({
       description: '숏링크 삭제 완료',

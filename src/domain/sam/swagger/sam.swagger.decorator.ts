@@ -18,7 +18,6 @@ import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { CreateSamDto } from '../dto/create-sam.dto';
-import { DeleteSamNoteDto } from '../dto/delete-sam-note.dto';
 import { UpdateSamDto } from '../dto/update-sam.dto';
 
 //? ---------------------------------------------------------------------- ?//
@@ -89,7 +88,10 @@ export const SoftDeleteSamDocs = () => {
       description: '학교에 속한 강사 ID ( instructorSchoolId )',
     }),
     ApiBody({
-      type: DeleteSamNoteDto,
+      schema: {
+        type: 'object',
+        properties: { note: { type: 'string' } },
+      },
     }),
     ApiOkResponseTemplate({
       description: '학교에 속한 강사 소프트 삭제 완료',

@@ -1,7 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { DeleteInstructorNoteDto } from 'src/domain/instructor/dto/delete-instructor-note.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
@@ -191,18 +190,12 @@ export class SamService {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
-  // this is soft-delete
-  async softDelete(id: number, dto: DeleteInstructorNoteDto): Promise<void> {
-    await this.samRepository.update(
-      { id },
-      { note: dto.note, deletedAt: new Date() },
-    );
-  }
-
-  // this is hard-delete
-  async remove(id: number): Promise<Sam> {
-    const sam = await this.findById(id);
-    await this.samRepository.softRemove(sam);
-    return sam;
+  async softDelete(id: number, note: string | undefined): Promise<void> {
+    if (note) {
+      await this.samRepository.update({ id }, { note, deletedAt: new Date() });
+    } else {
+      const sam = await this.findById(id);
+      await this.samRepository.softRemove(sam);
+    }
   }
 }

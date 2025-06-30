@@ -9,7 +9,6 @@ import {
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
-import { DeleteSamNoteDto } from 'src/domain/sam/dto/delete-sam-note.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
@@ -273,24 +272,6 @@ export class SchoolSamService {
         new Date(aSchoolday.startsAt).getTime() -
         new Date(bSchoolday.startsAt).getTime()
       );
-    });
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Delete
-  //? ---------------------------------------------------------------------- ?//
-
-  async softDelete(
-    schoolId: number,
-    samId: number,
-    dto: DeleteSamNoteDto,
-  ): Promise<void> {
-    const sam = await this.samRepository.findOneOrFail({
-      where: { schoolId, id: samId },
-    });
-    await this.samRepository.update(sam.id, {
-      note: dto.note,
-      deletedAt: new Date(),
     });
   }
 }

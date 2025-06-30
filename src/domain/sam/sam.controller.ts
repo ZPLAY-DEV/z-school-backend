@@ -17,7 +17,6 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
-import { DeleteSamNoteDto } from 'src/domain/sam/dto/delete-sam-note.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { SamService } from 'src/domain/sam/sam.service';
@@ -105,8 +104,8 @@ export class SamController {
   @Delete(':id')
   async softDelete(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: DeleteSamNoteDto,
+    @Body('note') note?: string,
   ): Promise<void> {
-    return await this.samService.softDelete(id, dto);
+    return await this.samService.softDelete(id, note);
   }
 }
