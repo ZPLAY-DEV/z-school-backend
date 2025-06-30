@@ -97,7 +97,6 @@ export class LessonCoreService {
         schoolName: school.name,
         frequency: dto.frequency ?? 1,
         operationFeeRule: school.operationFeeRule,
-        requiredDocuments: dto.requiredDocuments || [],
       });
 
       //? 5단계) 반(Group)과 쌤(Sam) 정보 처리
@@ -280,7 +279,6 @@ export class LessonCoreService {
         ...dto,
         schoolName: school.name,
         operationFeeRule: school.operationFeeRule,
-        requiredDocuments: dto.requiredDocuments || [],
       })
       .catch((error) => {
         console.log(`🔴 허용하지 않는 입력 조합 오류`, error);

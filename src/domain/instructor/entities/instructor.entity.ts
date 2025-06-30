@@ -1,7 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { IsArray, IsEnum } from 'class-validator';
-import { DocumentType } from 'src/common/enums';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
@@ -44,14 +42,6 @@ export class Instructor {
   @ApiProperty({ description: '🈳 내용' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
-
-  // ------------------------------------------------------------------------ //
-
-  @ApiProperty({ description: '🈵 강사가 지금까지 업로드한 문서' })
-  @Column('json', { nullable: true })
-  @IsArray()
-  @IsEnum(DocumentType, { each: true })
-  registeredDocuments: DocumentType[];
 
   // ------------------------------------------------------------------------ //
 

@@ -115,7 +115,6 @@ export const UpdateLessonDocs = () => {
         example1: {
           value: {
             lessonName: '과목명',
-            requiredDocuments: ['경력증명서'],
           },
         },
       },

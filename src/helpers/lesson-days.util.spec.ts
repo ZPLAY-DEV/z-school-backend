@@ -17,7 +17,6 @@ describe('calculateLessonDays', () => {
     materialFees: null,
     operationFee: 0,
     operationFeeRule: null,
-    requiredDocuments: null,
     note: null,
     status: undefined,
     createdAt: new Date(),

@@ -11,7 +11,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
-import { ClassStatus, DocumentType } from 'src/common/enums';
+import { ClassStatus } from 'src/common/enums';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
 import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
 
@@ -138,16 +138,6 @@ export class CreateLessonDto {
   @IsString()
   @MaxLength(16)
   operationFeeRule?: string | null;
-
-  @ApiProperty({
-    description: '🈳 필요한 문서의 Key 값들',
-    required: false,
-    example: [DocumentType.RESUME, DocumentType.CAREER_CERTIFICATE],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsEnum(DocumentType, { each: true })
-  requiredDocuments?: DocumentType[] | null;
 
   @ApiProperty({ description: '🈳 비고', required: false })
   @IsOptional()

@@ -1,15 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
-  IsArray,
   IsDate,
-  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
-  IsString,
+  IsString
 } from 'class-validator';
-import { DocumentType } from 'src/common/enums';
 
 export class CreateInstructorDto {
   @ApiProperty({
@@ -49,18 +46,6 @@ export class CreateInstructorDto {
   @IsString()
   @IsOptional()
   note?: string | null;
-
-  @ApiProperty({
-    description: '🈵 강사가 등록한 문서 타입들',
-    example: ['RESUME', 'CERTIFICATE'],
-    type: [String],
-    enum: DocumentType,
-    required: false,
-  })
-  @IsArray()
-  @IsEnum(DocumentType, { each: true })
-  @IsOptional()
-  registeredDocuments?: DocumentType[];
 
   @ApiProperty({
     description: '🈳 약관동의 시각',

@@ -15,7 +15,12 @@ import { UpdateInstructorDto } from 'src/domain/instructor/dto/update-instructor
 import { InstructorService } from 'src/domain/instructor/instructor.service';
 import { CreateInstructorDto } from './dto/create-instructor.dto';
 import { Instructor } from './entities/instructor.entity';
-import { SoftDeleteSchoolInstructorDocs } from './swagger/instructor.swagger.decorator';
+import {
+  CreateInstructorSimpleDocs,
+  FindInstructorByIdDocs,
+  SoftDeleteSchoolInstructorDocs,
+  UpdateInstructorDocs,
+} from './swagger/instructor.swagger.decorator';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Instructors ( 강사 ≓ Parent )')
@@ -27,6 +32,7 @@ export class InstructorController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateInstructorSimpleDocs()
   @Post()
   async create(@Body() dto: CreateInstructorDto): Promise<Instructor> {
     return await this.instructorService.create(dto);
@@ -36,6 +42,7 @@ export class InstructorController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @FindInstructorByIdDocs()
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Instructor> {
     return await this.instructorService.findById(id, ['user', 'sams']);
@@ -45,6 +52,7 @@ export class InstructorController {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
+  @UpdateInstructorDocs()
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,

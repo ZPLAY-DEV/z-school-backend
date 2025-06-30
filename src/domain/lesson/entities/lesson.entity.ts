@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsOptional } from 'class-validator';
-import { ClassStatus, DocumentType } from 'src/common/enums';
+import { ClassStatus } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -121,16 +120,6 @@ export class Lesson {
   })
   @Column({ type: 'varchar', length: 16, default: 'CO-1000' })
   operationFeeRule: string | null; // 과목별로 다른 계산룰이 적용되는 경우를 위해 추가
-
-  @ApiProperty({
-    description: '🈳 필요한 문서의 Key 값들; Source of Truth',
-    example: [DocumentType.RESUME],
-  })
-  @Column('json', { nullable: true })
-  @IsArray()
-  @IsEnum(DocumentType, { each: true })
-  @IsOptional()
-  requiredDocuments: DocumentType[] | null;
 
   @ApiProperty({ description: '🈳 비고', example: 'optional 비고내용' })
   @Column({ type: 'varchar', length: 255, nullable: true })

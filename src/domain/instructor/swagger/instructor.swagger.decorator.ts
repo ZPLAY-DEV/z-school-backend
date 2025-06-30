@@ -6,6 +6,7 @@ import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-crea
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateInstructorDto } from '../dto/create-instructor.dto';
+import { UpdateInstructorDto } from '../dto/update-instructor.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create School > Instructor
@@ -32,31 +33,6 @@ export const CreateInstructorDocs = () => {
       type: Instructor,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
-  );
-};
-
-//? ---------------------------------------------------------------------- ?//
-//? Private) Instructor (dryrun)
-//? ---------------------------------------------------------------------- ?//
-export const InstructorDryRunDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '✅ 강사 dryRun 체크',
-      description: `
-      - 강사(단일) 생성 dryrun 체크 -> dryrun은 실제로 데이터를 등록할 때, 데이터를 덮어쓰는 여부를 판별하는 엔드포인트
-      - 실제로 데이터를 생성하지 않고 어떤 데이터가 생성될지 미리 확인 ( 해당 엔드포인트로 Upsert 여부를 결정 )
-      - 반환되는 값이 존재할 경우 schoolId - phone 로 중복 여부를 판단
-      - 반환되는 값이 존재 하지 않을 경우, 중첩되는 강사가 없음을 의미
-      `,
-    }),
-    ApiBody({
-      type: CreateInstructorDto,
-    }),
-    ApiOkResponseTemplate({
-      description: '강사 등록 시물레이션 결과',
-      type: CreateInstructorDto,
-    }),
-    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -91,5 +67,68 @@ export const SoftDeleteSchoolInstructorDocs = () => {
       description: '강사 소프트 삭제 완료',
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Create Instructor
+//? ---------------------------------------------------------------------- ?//
+export const CreateInstructorSimpleDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 강사 생성',
+      description: '새로운 강사를 생성합니다.',
+    }),
+    ApiBody({ type: CreateInstructorDto }),
+    ApiCreatedResponseTemplate({
+      description: '강사 생성 완료',
+      type: Instructor,
+    }),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Get Instructor by ID
+//? ---------------------------------------------------------------------- ?//
+export const FindInstructorByIdDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 강사 조회',
+      description: 'ID로 강사 정보를 조회합니다.',
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '강사 ID',
+    }),
+    ApiOkResponseTemplate({
+      description: '강사 조회 완료',
+      type: Instructor,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Update Instructor
+//? ---------------------------------------------------------------------- ?//
+export const UpdateInstructorDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✅ 강사 수정',
+      description: '강사 정보를 수정합니다.',
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '강사 ID',
+    }),
+    ApiBody({ type: UpdateInstructorDto }),
+    ApiOkResponseTemplate({
+      description: '강사 수정 완료',
+      type: Instructor,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };
