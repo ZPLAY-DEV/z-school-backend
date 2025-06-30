@@ -5,14 +5,14 @@ import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { RemovalStatus } from 'src/common/enums';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiEnumResponseTemplate } from 'src/common/swagger/response/api-enum.response';
-import { BoardRelationResponseDto } from '../dto/board-relation-response.dto';
-import { BoardResponseDto } from '../dto/board-response.dto';
-import { CommentResponseDto } from '../dto/comment-response.dto';
+import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CreateBoardDto } from '../dto/create-board.dto';
 import { CreateCommentDto } from '../dto/create-comment.dto';
 import { GenerateS3UrlResponseDto } from '../dto/generate-s3url.response.dto';
 import { UpdateBoardDto } from '../dto/update-board.dto';
 import { UpdateCommentDto } from '../dto/update-comment.dto';
+import { Board } from '../entities/board.entity';
+import { Comment } from '../entities/comment.entity';
 
 //? ---------------------------------------------------------------------- ?//
 //? Generate S3 Path
@@ -52,26 +52,20 @@ export const GenerateS3PathDocs = () => {
 export const CreateBoardDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 게시글 생성 - 강사의 수업 게시판 작성',
+      summary: '게시글 작성',
       description: `
-      - 강사가 본인이 수업하는 강좌(Group)에 대한 게시글을 작성
-      - 게시글은 강사만 작성할 수 있음 -> JWT Role값이 INSTRUCTOR 아닐 경우 403
-      - 게시글 작성 시 첨부 이미지를 업로드 할 수 있음
-      - 게시글 작성시 이미지 첨부는 Presigned URL을 통해서 진행
+      - 그룹 게시판에 새로운 게시글을 작성합니다.
+      - 제목, 내용, 이미지를 포함할 수 있습니다.
       `,
     }),
     ApiBody({
       type: CreateBoardDto,
     }),
     ApiCreatedResponseTemplate({
-      description: '게시글 생성 완료',
-      type: BoardResponseDto,
+      description: '게시글 작성 완료',
+      type: Board,
     }),
-    ApiStatuses(
-      StatusCodes.BAD_REQUEST,
-      StatusCodes.NOT_FOUND,
-      StatusCodes.FORBIDDEN,
-    ),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -81,20 +75,24 @@ export const CreateBoardDocs = () => {
 export const CreateCommentDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 댓글 생성 - 강사의 수업 게시판 댓글 추가',
+      summary: '댓글 작성',
       description: `
-      - 게시글에 댓글을 작성
-      - name은 학생의 학년-반-번호 이름(학부모) 형식으로 지정
+      - 특정 게시글에 댓글을 작성합니다.
       `,
+    }),
+    ApiParam({
+      name: 'boardId',
+      type: Number,
+      description: '게시글 ID',
     }),
     ApiBody({
       type: CreateCommentDto,
     }),
     ApiCreatedResponseTemplate({
-      description: '댓글 생성 완료',
-      type: CommentResponseDto,
+      description: '댓글 작성 완료',
+      type: Comment,
     }),
-    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -104,30 +102,24 @@ export const CreateCommentDocs = () => {
 export const UpdateBoardDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 게시글 수정 - 강사의 수업 게시판 정보 수정',
+      summary: '게시글 수정',
       description: `
-      - 게시글 수정
-      - userId, 게시글 id가 일치해야만 수정 가능 - 불일치 할 경우 404 반환
+      - 기존 게시글의 내용을 수정합니다.
       `,
     }),
     ApiParam({
       name: 'id',
       type: Number,
-      description: '게시글 id',
-      required: true,
+      description: '게시글 ID',
     }),
     ApiBody({
       type: UpdateBoardDto,
     }),
-    ApiCreatedResponseTemplate({
+    ApiOkResponseTemplate({
       description: '게시글 수정 완료',
-      type: BoardResponseDto,
+      type: Board,
     }),
-    ApiStatuses(
-      StatusCodes.NOT_FOUND,
-      StatusCodes.BAD_REQUEST,
-      StatusCodes.FORBIDDEN,
-    ),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -137,24 +129,22 @@ export const UpdateBoardDocs = () => {
 export const UpdateCommentDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 댓글 수정 - 강사의 수업 게시판 댓글 수정',
+      summary: '댓글 수정',
       description: `
-      - 댓글 수정
-      - userId, 댓글 id가 일치해야만 수정 가능 - 불일치 할 경우 404 반환
+      - 기존 댓글의 내용을 수정합니다.
       `,
     }),
     ApiParam({
-      name: 'id',
+      name: 'commentId',
       type: Number,
-      description: '댓글 id',
-      required: true,
+      description: '댓글 ID',
     }),
     ApiBody({
       type: UpdateCommentDto,
     }),
-    ApiCreatedResponseTemplate({
+    ApiOkResponseTemplate({
       description: '댓글 수정 완료',
-      type: CommentResponseDto,
+      type: Comment,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
@@ -163,23 +153,22 @@ export const UpdateCommentDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? FindById
 //? ---------------------------------------------------------------------- ?//
-export const FindByIdBoardDocs = () => {
+export const FindBoardByIdDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 게시글 조회 - 강사의 수업 게시판 상세 조회',
+      summary: '게시글 상세 조회',
       description: `
-      - 게시글 상세 조회
+      - 특정 게시글의 상세 정보와 댓글 목록을 조회합니다.
       `,
     }),
     ApiParam({
       name: 'id',
       type: Number,
-      description: '게시글 id',
-      required: true,
+      description: '게시글 ID',
     }),
-    ApiCreatedResponseTemplate({
-      description: '게시글 조회 상세 완료',
-      type: BoardRelationResponseDto,
+    ApiOkResponseTemplate({
+      description: '게시글 상세 조회 완료',
+      type: Board,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
   );

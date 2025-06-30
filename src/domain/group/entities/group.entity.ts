@@ -23,32 +23,36 @@ import {
 @Entity('groups')
 @Unique(['lessonId', 'groupName'])
 export class Group {
-  @ApiProperty({ description: 'groupId' })
+  @ApiProperty({ description: 'group 의 id', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈳 exclusively exists in instructor' })
+  @ApiProperty({ description: '🈳 samId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   samId: number;
 
-  @ApiProperty({ description: '🈵 exclusively exists in lesson' })
+  @ApiProperty({ description: '🈵 lessonId', example: 1 })
   @Column({ type: 'int', unsigned: true })
   lessonId: number;
 
   //* ---------------------------------------------------------------------- *//
 
-  @ApiProperty({ description: '🈵 반이름' })
+  @ApiProperty({ description: '🈵 반이름', example: '체육A반' })
   @Column({ type: 'varchar', length: 32 })
   groupName: string;
 
+  @ApiProperty({ description: '🈵 수업장소', example: '체육실' })
   @Column({ type: 'varchar', length: 32, nullable: true })
   location: string | null;
 
-  @ApiProperty({ description: '🈳 class size' })
+  @ApiProperty({ description: '🈳 정원수', example: 20 })
   @Column({ type: 'tinyint', unsigned: true, default: 20 })
   capacity: number;
 
-  @ApiProperty({ description: '🈳 a comma separated string format' })
+  @ApiProperty({
+    description: '🈳 쉼표로 구분한 신청가능 학년 in string',
+    example: '1,2',
+  })
   @Column({ type: 'varchar', length: 16 })
   allowedGrades: string;
 
@@ -68,7 +72,7 @@ export class Group {
   @Column({ type: 'varchar', length: 5 })
   end: string;
 
-  @ApiProperty({ description: '🈵 상태' })
+  @ApiProperty({ description: '🈵 상태', example: ClassStatus.PENDING })
   @Column({
     type: 'enum',
     enum: ClassStatus,
@@ -76,15 +80,18 @@ export class Group {
   })
   status: ClassStatus;
 
-  @ApiProperty({ description: '🈵 수업료 합계 (A+B+C+D)' })
+  @ApiProperty({ description: '🈵 수업료 합계 (A+B+C+D)', example: 100000 })
   @Column({ type: 'int', unsigned: true, default: 0 })
   tuition: number;
 
-  @ApiProperty({ description: '🈳 B. 도서구매비 배열(낮은가격순 정렬)' })
+  @ApiProperty({
+    description: '🈳 B. 도서구매비',
+    example: 5000,
+  })
   @Column({ type: 'int', unsigned: true, default: 0 })
   bookFee: number;
 
-  @ApiProperty({ description: '🈳 C. 재료구매비 배열(낮은가격순 정렬)' })
+  @ApiProperty({ description: '🈳 C. 재료구매비', example: 5000 })
   @Column({ type: 'int', unsigned: true, default: 0 })
   materialFee: number;
 
@@ -102,7 +109,7 @@ export class Group {
   })
   deletedBy: Actor | null;
 
-  @ApiProperty({ description: '🈳 비고' })
+  @ApiProperty({ description: '🈳 비고', example: '참고할 만한 내용' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
 

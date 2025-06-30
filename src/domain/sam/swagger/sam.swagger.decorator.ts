@@ -1,16 +1,24 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { GroupPickResponseDto } from 'src/domain/group/dto/group-pick-response.dto';
-import { ScheduleResponseDto } from 'src/domain/group/dto/schedule-response.dto';
-import { CreateSamResponseDto } from '../dto/create-sam-response.dto';
+import { Contract } from 'src/domain/contract/entities/contract.entity';
+import { Group } from 'src/domain/group/entities/group.entity';
+import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { CreateSamDto } from '../dto/create-sam.dto';
 import { DeleteSamNoteDto } from '../dto/delete-sam-note.dto';
-import { SamRelationResponseDto } from '../dto/sam-relation-response.dto';
-import { SamResponseDto } from '../dto/sam-response.dto';
 import { UpdateSamDto } from '../dto/update-sam.dto';
 
 //? ---------------------------------------------------------------------- ?//
@@ -30,7 +38,7 @@ export const CreateSamDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: '학교에 속한 강사 생성 완료',
-      type: CreateSamResponseDto,
+      type: Sam,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
@@ -55,7 +63,7 @@ export const SamDryRunDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '학교에 속한 강사 등록 시물레이션 결과',
-      type: SamResponseDto,
+      type: Sam,
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST),
   );
@@ -107,9 +115,26 @@ export const GetSamByIdDocs = () => {
       type: Number,
       description: '강사 ID',
     }),
-    ApiOkResponseTemplate({
+    ApiExtraModels(Sam, Instructor, Contract),
+    ApiOkResponse({
       description: '학교에 속한 강사 상세 조회',
-      type: SamRelationResponseDto,
+      schema: {
+        allOf: [
+          { $ref: getSchemaPath(Sam) },
+          {
+            type: 'object',
+            properties: {
+              instructor: {
+                $ref: getSchemaPath(Instructor),
+              },
+              contracts: {
+                type: 'array',
+                items: { $ref: getSchemaPath(Contract) },
+              },
+            },
+          },
+        ],
+      },
     }),
   );
 };
@@ -125,6 +150,7 @@ export const GetSamGroupsDocs = () => {
       description: `
       - 학교에 속한 특정 강사가 관리하는 반 목록을 조회한다.
       - 반 목록에는 반 정보와 반 학생 목록이 포함된다.
+      - termId를 전달하면 해당 학기의 반만 필터링하여 조회된다.
       `,
     }),
     ApiParam({
@@ -132,52 +158,31 @@ export const GetSamGroupsDocs = () => {
       type: Number,
       description: '강사 ID',
     }),
-    ApiOkResponseTemplate({
-      description: '학교에 속한 강사의 반 & 학생 상세 조회',
-      type: GroupPickResponseDto,
-      isArray: true,
-    }),
-  );
-};
-
-//? ---------------------------------------------------------------------- ?//
-//?  학교에 속한 강사의 수업 일정 조회 ( 주단위 )
-//? ---------------------------------------------------------------------- ?//
-export const SamScheduleFindByIdDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary:
-        '✅ 학교에 속한 강사(쌤)의 수업 일정 조회 --- 학교에 속한 강사의 주간 강의일정 조회',
-      description: `
-      - 학교에 속한 강사의(쌤) 수업 일정 조회
-      - 반드시 주간 일요일 ~ 토요일 기준으로 QueryString에 날짜형식 2025-06-01 으로 전달해야함.
-      - 해당 주차에 수업이 있는 강좌가 없을 경우 객체 배열의 형태는 유지하되, 내부의 groups 배열은 비어있는 값이 반환됨.
-      `,
-    }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: '학교에 속한 강사(쌤)의 ID',
-      required: true,
-    }),
     ApiQuery({
-      name: 'dates',
-      type: [String],
-      description: '조회할 날짜 배열',
-      example: [
-        '2025-06-01',
-        '2025-06-02',
-        '2025-06-03',
-        '2025-06-04',
-        '2025-06-05',
-        '2025-06-06',
-        '2025-06-07',
-      ],
-      required: true,
+      name: 'termId',
+      type: Number,
+      description: '학기 ID (선택사항, 전달 시 해당 학기의 반만 필터링)',
+      required: false,
     }),
-    ApiOkResponseTemplate({
-      description: '학교에 속한 강사의 주간 수업 일정 조회 완료',
-      type: ScheduleResponseDto,
+    ApiExtraModels(Group, Lesson),
+    ApiOkResponse({
+      description: '학교에 속한 강사의 반 & 학생 상세 조회',
+      schema: {
+        type: 'array',
+        items: {
+          allOf: [
+            { $ref: getSchemaPath(Group) },
+            {
+              type: 'object',
+              properties: {
+                lesson: {
+                  $ref: getSchemaPath(Lesson),
+                },
+              },
+            },
+          ],
+        },
+      },
     }),
   );
 };
@@ -204,7 +209,7 @@ export const UpdateSamDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '학교에 속한 강사 정보 수정 완료',
-      type: SamResponseDto,
+      type: Sam,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );

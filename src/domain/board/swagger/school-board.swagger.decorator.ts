@@ -1,12 +1,16 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { StatusCodes } from 'http-status-codes';
 import {
   ApiOkPaginatedResponse,
   ApiPaginationQuery,
   FilterOperator,
 } from 'nestjs-paginate';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { BoardResponseDto } from '../dto/board-response.dto';
+import { CreateBoardDto } from '../dto/create-board.dto';
+import { Board } from '../entities/board.entity';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학교에서 사용자가 작성한 게시글 목록 조회
@@ -28,7 +32,7 @@ export const SchoolBoardListDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '게시글 목록 조회 완료',
-      type: BoardResponseDto,
+      type: Board,
       isArray: true,
     }),
   );
@@ -56,7 +60,7 @@ export const SchoolBoardListPaginatedDocs = () => {
       description: '학교 ID',
       required: true,
     }),
-    ApiOkPaginatedResponse(BoardResponseDto, {
+    ApiOkPaginatedResponse(Board, {
       sortableColumns: ['id'],
       defaultSortBy: [['id', 'DESC']],
     }),
@@ -85,7 +89,7 @@ export const SchoolBoardMineListDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '내가 작성한 게시글 목록 조회 완료',
-      type: BoardResponseDto,
+      type: Board,
       isArray: true,
     }),
   );
@@ -109,7 +113,7 @@ export const SchoolBoardMineListPaginatedDocs = () => {
       - 정렬은 기본적으로 게시글 생성일 기준으로 정렬됨.
       `,
     }),
-    ApiOkPaginatedResponse(BoardResponseDto, {
+    ApiOkPaginatedResponse(Board, {
       sortableColumns: ['id'],
       defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
@@ -149,7 +153,7 @@ export const SchoolBoardTargetListDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '대상 게시글 목록 조회 완료',
-      type: BoardResponseDto,
+      type: Board,
       isArray: true,
     }),
   );
@@ -180,7 +184,7 @@ export const SchoolBoardTargetListPaginatedDocs = () => {
       description: '그룹 ID 배열',
       required: false,
     }),
-    ApiOkPaginatedResponse(BoardResponseDto, {
+    ApiOkPaginatedResponse(Board, {
       sortableColumns: ['id'],
       defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
@@ -197,3 +201,54 @@ export const SchoolBoardTargetListPaginatedDocs = () => {
     }),
   );
 };
+
+export const CreateSchoolBoardDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '✅ 학교 > 게시글 생성',
+      description: `
+      - 학교 관리자가 학교 공지사항을 작성합니다.
+      `,
+    }),
+    ApiParam({ name: 'schoolId', type: Number, description: '학교 ID' }),
+    ApiBody({ type: CreateBoardDto }),
+    ApiCreatedResponseTemplate({
+      description: '학교 게시글 생성 완료',
+      type: Board,
+    }),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
+  );
+
+export const SchoolBoardFindByIdDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '✅ 학교 > 게시글 상세 조회',
+      description: `
+      - 특정 학교의 게시글 상세 정보를 조회합니다.
+      `,
+    }),
+    ApiParam({ name: 'schoolId', type: Number, description: '학교 ID' }),
+    ApiParam({ name: 'boardId', type: Number, description: '게시글 ID' }),
+    ApiOkResponseTemplate({
+      description: '학교 게시글 상세 조회 완료',
+      type: Board,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? School Board Infinite List
+//? ---------------------------------------------------------------------- ?//
+export const SchoolBoardInfiniteListDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '✅ 학교 > 게시글 무한스크롤 목록 조회',
+      description: `
+      - 특정 학교의 게시글을 무한스크롤 방식으로 조회합니다.
+      `,
+    }),
+    ApiParam({ name: 'schoolId', type: Number, description: '학교 ID' }),
+    ApiOkPaginatedResponse(Board, {
+      sortableColumns: ['id', 'title'],
+    }),
+  );

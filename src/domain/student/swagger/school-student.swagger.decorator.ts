@@ -7,15 +7,16 @@ import {
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
+import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CreateStudentDto } from '../dto/create-student.dto';
+import { Student } from '../entities/student.entity';
 
 import {
   ApiOkPaginatedResponse,
   ApiPaginationQuery,
   FilterOperator,
 } from 'nestjs-paginate';
-import { StudentResponseDto } from '../dto/student-response.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학생 일괄 생성
@@ -63,7 +64,7 @@ export const CreateSchoolStudentsBulkDryRunDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '덮어쓰여질 레코드 목록',
-      type: StudentResponseDto,
+      type: Student,
       isArray: true,
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
@@ -92,7 +93,7 @@ export const SchoolStudentListDocs = () => {
     }),
     ApiOkResponseTemplate({
       description: '학생 일괄 조회 완료',
-      type: StudentResponseDto,
+      type: Student,
       isArray: true,
     }),
   );
@@ -119,7 +120,7 @@ export const SchoolStudentListPaginatedDocs = () => {
       - 반환되는 picks 객체 배열에 맞춰서 수강중인 강좌를 프론트에서 핸들링
       `,
     }),
-    ApiOkPaginatedResponse(StudentResponseDto, {
+    ApiOkPaginatedResponse(Student, {
       sortableColumns: ['grade', 'class', 'studentCode', 'name'],
       defaultSortBy: [
         ['grade', 'ASC'],
@@ -152,3 +153,20 @@ export const SchoolStudentListPaginatedDocs = () => {
     }),
   );
 };
+
+export const CreateSchoolStudentDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '✅ 학교 > 학생 생성',
+      description: `
+      - 학교에 속한 학생을 생성한다.
+      `,
+    }),
+    ApiParam({ name: 'schoolId', type: Number, description: '학교 ID' }),
+    ApiBody({ type: CreateStudentDto }),
+    ApiCreatedResponseTemplate({
+      description: '학교 학생 생성 완료',
+      type: Student,
+    }),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
+  );

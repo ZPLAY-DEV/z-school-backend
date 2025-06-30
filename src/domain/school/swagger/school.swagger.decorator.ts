@@ -10,7 +10,6 @@ import {
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { CreateSchoolDto } from '../dto/create-school.dto';
-import { SchoolResponseDto } from '../dto/school-response.dto';
 import { UpdateSchoolDto } from '../dto/update-school.dto';
 import { School } from '../entities/school.entity';
 
@@ -31,7 +30,7 @@ export const CreateSchoolDocs = () => {
     }),
     ApiCreatedResponse({
       description: '학생 생성 완료',
-      type: SchoolResponseDto,
+      type: School,
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST),
   );
@@ -69,8 +68,19 @@ export const UpdateSchoolDocs = () => {
     ApiExtraModels(School),
     ApiOkResponse({
       description: '학교 수정 완료',
-      type: SchoolResponseDto,
+      type: School,
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
   );
 };
+
+export const FindSchoolDocs = () =>
+  applyDecorators(
+    ApiOperation({ summary: '학교 상세 조회' }),
+    ApiParam({ name: 'id', type: Number, description: '학교 ID' }),
+    ApiOkResponse({
+      description: '학교 상세 조회 완료',
+      type: School,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );

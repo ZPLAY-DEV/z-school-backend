@@ -32,7 +32,7 @@ import {
   CreateCommentDocs,
   DeleteBoardDocs,
   DeleteCommentDocs,
-  FindByIdBoardDocs,
+  FindBoardByIdDocs,
   GenerateS3PathDocs,
   UpdateBoardDocs,
   UpdateCommentDocs,
@@ -96,7 +96,7 @@ export class BoardController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @FindByIdBoardDocs()
+  @FindBoardByIdDocs()
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Board> {
     return await this.boardService.findById(id, ['comments', 'school']);

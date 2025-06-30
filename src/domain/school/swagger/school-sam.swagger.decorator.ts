@@ -1,31 +1,25 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
+import { ApiOkPaginatedResponse } from 'nestjs-paginate';
+import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-
-import {
-  ApiOkPaginatedResponse,
-  ApiPaginationQuery,
-  FilterOperator,
-} from 'nestjs-paginate';
-import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { CreateSamResponseDto } from '../../sam/dto/create-sam-response.dto';
 import { CreateSamDto } from '../../sam/dto/create-sam.dto';
-import { SamRelationResponseDto } from '../../sam/dto/sam-relation-response.dto';
-import { SamResponseDto } from '../../sam/dto/sam-response.dto';
+import { Sam } from '../../sam/entities/sam.entity';
 
 //? ---------------------------------------------------------------------- ?//
-//? Create School > Sam
+//? Create School Sam Bulk
 //? ---------------------------------------------------------------------- ?//
 export const CreateSchoolSamBulkDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교 > 강사 Bulk 생성',
+      summary: '✅ 학교 > 강사 대량 생성 (일괄)',
       description: `
-      - 학교에 속한 강사를 BULK로 생성.
-      - 학교에 속한 강사가 이미 존재할 경우 Upsert 처리
+      - 학교에 귀속된 강사들을 대량으로 생성한다.
+      - 학교에 귀속된 강사의 정보와 강사의 정보가 이미 등록되어 있을 경우 Upsert 된다.
+      - 대량 생성은 배열 형태의 데이터를 받아서 처리한다.
       `,
     }),
     ApiParam({
@@ -34,12 +28,11 @@ export const CreateSchoolSamBulkDocs = () => {
       description: '학교 ID',
     }),
     ApiBody({
-      type: CreateSamDto,
-      isArray: true,
+      type: [CreateSamDto],
     }),
     ApiCreatedResponseTemplate({
-      description: '학교에 속한 강사(sam) 생성 완료',
-      type: CreateSamResponseDto,
+      description: '학교에 속한 강사 대량 생성 완료',
+      type: Sam,
       isArray: true,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
@@ -47,17 +40,16 @@ export const CreateSchoolSamBulkDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Create School > DryRun Bulk
+//? Create School Sam Bulk DryRun
 //? ---------------------------------------------------------------------- ?//
 export const CreateSchoolSamBulkDryRunDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교 > 강사 bulk 생성 (dryrun)',
+      summary: '✅ 학교 > 강사 대량 생성 dryRun 체크',
       description: `
-      - 학교 > 강사(Bulk) 생성 dryrun 체크 -> dryrun은 실제로 데이터를 등록할 때, 데이터를 덮어쓰는 여부를 판별하는 엔드포인트
-      - 실제로 데이터를 생성하지 않고 어떤 데이터가 생성될지 미리 확인 ( 해당 엔드포인트로 Upsert 여부를 결정 )
-      - 반환되는 값이 존재할 경우 instructor phone 으로 중복 여부를 판단
-      - 반환되는 값이 빈 배열일 경우, 중첩되는 강사가 없음을 의미
+      - 학교에 속한 강사들(대량) 생성 dryrun 체크
+      - 실제로 데이터를 생성하지 않고 어떤 데이터가 생성될지 미리 확인
+      - 중복되는 강사가 있는지 사전에 체크 가능
       `,
     }),
     ApiParam({
@@ -66,12 +58,11 @@ export const CreateSchoolSamBulkDryRunDocs = () => {
       description: '학교 ID',
     }),
     ApiBody({
-      type: CreateSamDto,
-      isArray: true,
+      type: [CreateSamDto],
     }),
     ApiOkResponseTemplate({
-      description: '덮어쓰여질 레코드 목록',
-      type: SamResponseDto,
+      description: '학교에 속한 강사 대량 등록 시물레이션 결과',
+      type: Sam,
       isArray: true,
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST),
@@ -79,15 +70,15 @@ export const CreateSchoolSamBulkDryRunDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Read School > Sam List
+//? School Sam List
 //? ---------------------------------------------------------------------- ?//
 export const SchoolSamListDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '✅ 학교 > 강사 목록 조회',
       description: `
-      - 학교에 속한 강사(sam) 목록 조회
-      - 페이징 x
+      - 특정 학교에 속한 모든 강사들의 목록을 조회한다.
+      - 강사 기본 정보와 관련 데이터를 포함한다.
       `,
     }),
     ApiParam({
@@ -96,53 +87,32 @@ export const SchoolSamListDocs = () => {
       description: '학교 ID',
     }),
     ApiOkResponseTemplate({
-      description: '학교에 속한 강사(sam) 목록 조회',
-      type: SamRelationResponseDto,
+      description: '학교에 속한 강사 목록 조회 완료',
+      type: Sam,
       isArray: true,
     }),
   );
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Read School > Sam (Paginated)
+//? School Sam Paginated
 //? ---------------------------------------------------------------------- ?//
 export const SchoolSamPaginatedDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교 > 강사 목록 조회 (페이징)',
+      summary: '✅ 학교 > 강사 무한스크롤 목록 조회',
       description: `
-      - 학교에 속한 강사 리스트를 페이징 조회한다.
-      - 해당 엔드포인트로 페이징 기반 강사 전체조회, 강사 검색, 필터가 가능. 
-      - 검색 조건: alias(강사의 별칭 ), instructor.phone ( 강사의 전화번호 ), groups.groupName ( 강사가 가르치는 반의 이름 )
-        - 검색시 QueryString에 search 키워드를 통해 검색 조건을 입력할 수 있음. EX) ?search=홍길동 ?search=01012345678 ? search=수학 ...
-      - 필터 조건: alias(강사이름), editFeePermission(수업료 수정 권한), editEnrollmentPermission(수강신청 수정 권한), instructor.phone(강사의 전화번호), instructor.userId(강사의 유저ID -> 앱 사용 
-      - 정렬 조건: alias(강사의 별칭)으로 정렬이 가능
+      - 특정 학교에 속한 강사들의 페이지네이션된 목록을 조회한다.
+      - 무한스크롤 방식의 페이지네이션을 지원한다.
       `,
     }),
-    ApiOkPaginatedResponse(SamRelationResponseDto, {
-      sortableColumns: ['alias'],
-      defaultSortBy: [['id', 'ASC']],
-      filterableColumns: {
-        alias: [FilterOperator.EQ, FilterOperator.ILIKE],
-        'groups.name': [FilterOperator.EQ, FilterOperator.ILIKE],
-        'instructor.userId': [FilterOperator.EQ],
-        'instructor.phone': [FilterOperator.EQ, FilterOperator.ILIKE],
-        editFeePermission: [FilterOperator.EQ],
-        editEnrollmentPermission: [FilterOperator.EQ],
-      },
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
     }),
-    ApiPaginationQuery({
-      sortableColumns: ['alias'],
-      defaultSortBy: [['alias', 'ASC']],
-      searchableColumns: ['alias', 'instructor.phone'],
-      filterableColumns: {
-        alias: [FilterOperator.EQ, FilterOperator.ILIKE],
-        'groups.name': [FilterOperator.EQ, FilterOperator.ILIKE],
-        'instructor.userId': [FilterOperator.EQ],
-        'instructor.phone': [FilterOperator.EQ, FilterOperator.ILIKE],
-        editFeePermission: [FilterOperator.EQ],
-        editEnrollmentPermission: [FilterOperator.EQ],
-      },
+    ApiOkPaginatedResponse(Sam, {
+      sortableColumns: ['id', 'alias'],
     }),
   );
 };
