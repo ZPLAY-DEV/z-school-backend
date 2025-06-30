@@ -13,6 +13,8 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { StudentStatus } from 'src/common/enums';
 
+import { Group } from 'src/domain/group/entities/group.entity';
+import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-grades.dto';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { UploadService } from 'src/services/upload/upload.service';
@@ -20,11 +22,13 @@ import { SchoolStudentService } from './school-student.service';
 import {
   CreateSchoolStudentBulkDocs,
   CreateSchoolStudentsBulkDryRunDocs,
+  GetSchoolStudentGroupsForDateDocs,
+  SchoolStudentGradesDocs,
   SchoolStudentListDocs,
   SchoolStudentListPaginatedDocs,
 } from './swagger/school-student.swagger.decorator';
 
-@ApiTags('✅ Schools > Students ( 학생관리 )')
+@ApiTags('✅ Schools > Students ( 학교 > 학생 )')
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schools')
 export class SchoolStudentController {
@@ -54,6 +58,8 @@ export class SchoolStudentController {
   ): Promise<number | Student[]> {
     return await this.schoolStudentService.createBulk(schoolId, dtos, true);
   }
+
+  // ------------------------------------------------------------------------ //
 
   @ApiOperation({ summary: 'seed data ⚙️ DB 초기화때 사용' })
   @Post(':schoolId/students/bulk/seed')
@@ -97,13 +103,6 @@ export class SchoolStudentController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @Get(':schoolId/students/grades')
-  async getGradeClasses(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-  ): Promise<{ grade: number; classes: string[] }[]> {
-    return await this.schoolStudentService.getGradeClasses(schoolId);
-  }
-
   @SchoolStudentListPaginatedDocs()
   @Get(':schoolId/students/paginated')
   async infiniteList(
@@ -119,5 +118,27 @@ export class SchoolStudentController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
   ): Promise<Student[]> {
     return await this.schoolStudentService.list(schoolId);
+  }
+
+  @SchoolStudentGradesDocs()
+  @Get(':schoolId/students/grades')
+  async getGradeClasses(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+  ): Promise<ResponseSchoolGradesDto[]> {
+    return await this.schoolStudentService.getGradeClasses(schoolId);
+  }
+
+  @GetSchoolStudentGroupsForDateDocs()
+  @Get(':schoolId/students/:studentId/dates/:date')
+  async getGroupsForDate(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Param('date') date?: string,
+  ): Promise<Group[]> {
+    return await this.schoolStudentService.getGroupsForDate(
+      schoolId,
+      studentId,
+      date,
+    );
   }
 }

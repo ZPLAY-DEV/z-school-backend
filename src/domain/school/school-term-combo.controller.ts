@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
-import { SchoolTermComboResponseDto } from 'src/domain/school/dto/school-term-combo-response.dto';
+import { ResponseSchoolTermComboDto } from 'src/domain/school/dto/response-school-term-combo.dto';
 import { SchoolTermComboService } from 'src/domain/school/school-term-combo.service';
 import { GetSchoolTermComboDocs } from './swagger/school-term-combo-swagger.decorator';
 
@@ -31,7 +31,7 @@ export class SchoolTermComboController {
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
-  ): Promise<SchoolTermComboResponseDto> {
+  ): Promise<ResponseSchoolTermComboDto> {
     return await this.schoolTermComboService.list(schoolId, termId);
   }
 }

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
-import { SchoolTermComboResponseDto } from 'src/domain/school/dto/school-term-combo-response.dto';
+import { ResponseSchoolTermComboDto } from 'src/domain/school/dto/response-school-term-combo.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Repository } from 'typeorm';
 
@@ -26,7 +26,7 @@ export class SchoolTermComboService {
   async list(
     schoolId: number,
     termId: number,
-  ): Promise<SchoolTermComboResponseDto> {
+  ): Promise<ResponseSchoolTermComboDto> {
     // 1. Get Lessons
     const lessons = await this.lessonRepository
       .createQueryBuilder('lesson')

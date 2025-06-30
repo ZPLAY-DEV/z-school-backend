@@ -9,8 +9,8 @@ import {
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { CreateBoardDto } from '../dto/create-board.dto';
-import { Board } from '../entities/board.entity';
+import { CreateBoardDto } from '../../board/dto/create-board.dto';
+import { Board } from '../../board/entities/board.entity';
 
 //? ---------------------------------------------------------------------- ?//
 //? Private) 학교에서 사용자가 작성한 게시글 목록 조회
@@ -18,7 +18,7 @@ import { Board } from '../entities/board.entity';
 export const SchoolBoardListDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교에서 사용자가 작성한 게시글 목록 조회',
+      summary: '학교에서 사용자가 작성한 게시글 목록 조회',
       description: `
       - 학교에서 사용자가 작성한 게시글 목록을 조회한다
       - 페이징 X
@@ -44,7 +44,7 @@ export const SchoolBoardListDocs = () => {
 export const SchoolBoardListPaginatedDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교에서 사용자(강사)가 작성한 게시글 목록 조회 (페이징)',
+      summary: '학교에서 사용자(강사)가 작성한 게시글 목록 조회 (페이징)',
       description: `
       - 학교에서 사용자(강사)가 작성한 게시글 목록을 조회한다
       - 검색 조건: title
@@ -80,7 +80,7 @@ export const SchoolBoardListPaginatedDocs = () => {
 export const SchoolBoardMineListDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 강사가 학교별 업로드한 본인의 게시글 목록 조회 ',
+      summary: '강사가 학교별 업로드한 본인의 게시글 목록 조회 ',
       description: `
       - 강사가 학교별 업로드한 본인의 게시글 목록
       - 유저 토큰에서 사용자 id를 추출하여 학교에서 해당 사용자가 작성한 게시글을 유동적으로 조회
@@ -102,7 +102,7 @@ export const SchoolBoardMineListPaginatedDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary:
-        '✅ 강사가 학교별 업로드한 본인의 게시글 목록 조회 & 검색 & 필터 ( 페이징 ) ',
+        '강사가 학교별 업로드한 본인의 게시글 목록 조회 & 검색 & 필터 ( 페이징 ) ',
       description: `
       - 강사가 학교별 업로드한 본인의 게시글 목록 조회 ( 페이징 )
       - 유저 토큰에서 사용자 id를 추출하여 학교에서 해당 사용자가 작성한 게시글을 유동적으로 조회
@@ -137,7 +137,7 @@ export const SchoolBoardMineListPaginatedDocs = () => {
 export const SchoolBoardTargetListDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학부모가 groups 별 강사가 게시한 게시글 목록 조회  ',
+      summary: '학부모가 groups 별 강사가 게시한 게시글 목록 조회  ',
       description: `
       - 학부모가 groups 별 강사가 게시한 게시글 목록을 조회한다
       - queryString에 groupIds 값이 없을 경우 학교에 모든 게시물을 조회 
@@ -166,7 +166,7 @@ export const SchoolBoardTargetListPaginatedDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary:
-        '✅ 학부모가 groups 별 강사가 게시한 게시글 목록 조회 & 검색 & 필터 ( 페이징 ) ',
+        '학부모가 groups 별 강사가 게시한 게시글 목록 조회 & 검색 & 필터 ( 페이징 ) ',
       description: `
       - 학부모가 groups 별 강사가 게시한 게시글 목록 조회 ( 페이징 )
       - queryString에 groupIds 값이 없을 경우 학교에 모든 게시물을 조회 
@@ -205,7 +205,7 @@ export const SchoolBoardTargetListPaginatedDocs = () => {
 export const CreateSchoolBoardDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '✅ 학교 > 게시글 생성',
+      summary: '학교 > 게시글 생성',
       description: `
       - 학교 관리자가 학교 공지사항을 작성합니다.
       `,
@@ -222,7 +222,7 @@ export const CreateSchoolBoardDocs = () =>
 export const SchoolBoardFindByIdDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '✅ 학교 > 게시글 상세 조회',
+      summary: '학교 > 게시글 상세 조회',
       description: `
       - 특정 학교의 게시글 상세 정보를 조회합니다.
       `,
@@ -242,7 +242,7 @@ export const SchoolBoardFindByIdDocs = () =>
 export const SchoolBoardInfiniteListDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '✅ 학교 > 게시글 무한스크롤 목록 조회',
+      summary: '학교 > 게시글 무한스크롤 목록 조회',
       description: `
       - 특정 학교의 게시글을 무한스크롤 방식으로 조회합니다.
       `,

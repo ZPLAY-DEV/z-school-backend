@@ -14,7 +14,7 @@ import { UpdateInstructorDto } from '../dto/update-instructor.dto';
 export const CreateInstructorDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교 > 강사 생성',
+      summary: '학교 > 강사 생성',
       description: `
       - 학교에 귀속된 강사를 생성한다.
       - 학교에 귀속된 강사의 정보와 강사의 정보가 이미 등록되어 있을 경우 Upsert 된다. ( 업데이트에서도 해당 엔드포인트로 처리 가능 )
@@ -42,7 +42,7 @@ export const CreateInstructorDocs = () => {
 export const SoftDeleteSchoolInstructorDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교에 속한 강사 삭제',
+      summary: '학교에 속한 강사 삭제',
       description: `
       - 학교에 속한 강사를 소프트 삭제한다. (soft delete)
       - note 필드에 삭제 사유를 입력할 수 있음. 
@@ -76,7 +76,7 @@ export const SoftDeleteSchoolInstructorDocs = () => {
 export const CreateInstructorSimpleDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 강사 생성',
+      summary: '강사 생성',
       description: '새로운 강사를 생성합니다.',
     }),
     ApiBody({ type: CreateInstructorDto }),
@@ -94,7 +94,7 @@ export const CreateInstructorSimpleDocs = () => {
 export const FindInstructorByIdDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 강사 조회',
+      summary: '강사 조회',
       description: 'ID로 강사 정보를 조회합니다.',
     }),
     ApiParam({
@@ -116,7 +116,7 @@ export const FindInstructorByIdDocs = () => {
 export const UpdateInstructorDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 강사 수정',
+      summary: '강사 수정',
       description: '강사 정보를 수정합니다.',
     }),
     ApiParam({

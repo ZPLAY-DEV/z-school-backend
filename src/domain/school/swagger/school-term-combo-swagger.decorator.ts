@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
-import { SchoolTermComboResponseDto } from '../dto/school-term-combo-response.dto';
+import { ResponseSchoolTermComboDto } from '../dto/response-school-term-combo.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Get School Term Combo
@@ -36,11 +36,11 @@ export const GetSchoolTermComboDocs = () => {
       description: '학기 ID',
       example: 1,
     }),
-    ApiExtraModels(SchoolTermComboResponseDto),
+    ApiExtraModels(ResponseSchoolTermComboDto),
     ApiOkResponse({
       description: '학교 학기 콤보 정보 조회 완료',
       schema: {
-        $ref: getSchemaPath(SchoolTermComboResponseDto),
+        $ref: getSchemaPath(ResponseSchoolTermComboDto),
         description: '학교와 학기의 통합 정보',
       },
     }),

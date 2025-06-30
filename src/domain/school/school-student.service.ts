@@ -6,9 +6,12 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { Parent } from 'src/domain/parent/entities/parent.entity';
+import { Group } from 'src/domain/group/entities/group.entity';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-grades.dto';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { getKoreanWeekday } from 'src/helpers/date';
 import { DataSource, Repository } from 'typeorm';
 import { School } from './entities/school.entity';
 
@@ -19,64 +22,14 @@ export class SchoolStudentService {
   constructor(
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
-    @InjectRepository(Parent)
-    private readonly parentRepository: Repository<Parent>,
+    @InjectRepository(Pick)
+    private readonly pickRepository: Repository<Pick>,
     private dataSource: DataSource, // for transaction
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? Create
   //? ---------------------------------------------------------------------- ?//
-
-  async create(dto: CreateStudentDto, schoolId: number): Promise<Student> {
-    const { parent: parentDto, ...studentDto } = dto;
-
-    let parentId: number | undefined;
-
-    const school = await this.dataSource.createEntityManager().findOne(School, {
-      where: { id: schoolId },
-    });
-
-    if (!school) {
-      throw new NotFoundException(`School not found`);
-    }
-
-    if (parentDto?.phone) {
-      let parent = await this.parentRepository.findOne({
-        where: { phone: parentDto.phone },
-      });
-      if (!parent) {
-        parent = await this.parentRepository.save({
-          ...parentDto,
-        });
-      }
-      parentId = parent.id;
-    }
-
-    const existingStudent = await this.studentRepository.findOne({
-      where: {
-        schoolId: studentDto.schoolId,
-        grade: studentDto.grade,
-        class: studentDto.class,
-        studentCode: studentDto.studentCode,
-        // parentId: parentId,
-      },
-    });
-
-    if (existingStudent) {
-      const updatedStudent = this.studentRepository.merge(existingStudent, {
-        ...studentDto,
-        parentId,
-      });
-      return this.studentRepository.save(updatedStudent);
-    } else {
-      const newStudent = this.studentRepository.create({
-        ...studentDto,
-        parentId,
-      });
-      return this.studentRepository.save(newStudent);
-    }
-  }
 
   async createBulk(
     schoolId: number,
@@ -217,6 +170,39 @@ export class SchoolStudentService {
     }
   }
 
+  /**
+   * Check for existing Students that would be overwritten based on the compound unique key
+   * (schoolId, grade, class, studentCode)
+   */
+  private async checkExistingStudents(
+    dtos: CreateStudentDto[],
+  ): Promise<Student[]> {
+    // Extract unique key combinations from DTOs
+    const uniqueKeyCombinations = dtos.map((dto) => ({
+      schoolId: dto.schoolId,
+      grade: dto.grade,
+      class: dto.class,
+      studentCode: dto.studentCode,
+    }));
+
+    // Find existing lessons that match any of these combinations
+    const existingStudents = await this.studentRepository.find({
+      where: uniqueKeyCombinations.map((combo) => ({
+        schoolId: combo.schoolId,
+        grade: combo.grade,
+        class: combo.class,
+        studentCode: combo.studentCode,
+      })),
+    });
+
+    // No existing lessons found means no records will be overwritten
+    if (existingStudents.length === 0) {
+      return [];
+    }
+
+    return existingStudents;
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
@@ -265,9 +251,7 @@ export class SchoolStudentService {
     return await queryBuilder.getMany();
   }
 
-  async getGradeClasses(
-    schoolId: number,
-  ): Promise<{ grade: number; classes: string[] }[]> {
+  async getGradeClasses(schoolId: number): Promise<ResponseSchoolGradesDto[]> {
     const result = await this.studentRepository.query(
       'SELECT grade, class \
 FROM students \
@@ -293,40 +277,71 @@ ORDER BY grade, class',
       .sort((a, b) => a.grade - b.grade);
   }
 
-  /**
-   * Check for existing Students that would be overwritten based on the compound unique key
-   * (schoolId, grade, class, studentCode)
-   */
-  private async checkExistingStudents(
-    dtos: CreateStudentDto[],
-  ): Promise<Student[]> {
-    // Extract unique key combinations from DTOs
-    const uniqueKeyCombinations = dtos.map((dto) => ({
-      schoolId: dto.schoolId,
-      grade: dto.grade,
-      class: dto.class,
-      studentCode: dto.studentCode,
-    }));
-
-    // Find existing lessons that match any of these combinations
-    const existingStudents = await this.studentRepository.find({
-      where: uniqueKeyCombinations.map((combo) => ({
-        schoolId: combo.schoolId,
-        grade: combo.grade,
-        class: combo.class,
-        studentCode: combo.studentCode,
-      })),
+  async getGroupsForDate(
+    schoolId: number,
+    studentId: number,
+    date?: string,
+  ): Promise<Group[]> {
+    // 학생이 해당 학교에 속해있는지 확인
+    const student = await this.studentRepository.findOne({
+      where: { id: studentId, schoolId },
     });
 
-    // No existing lessons found means no records will be overwritten
-    if (existingStudents.length === 0) {
+    if (!student) {
+      throw new NotFoundException(
+        `Student with id ${studentId} not found in school ${schoolId}`,
+      );
+    }
+
+    // 학생의 모든 Pick들을 조회 (Group과 Lesson 정보 포함)
+    const picks = await this.pickRepository.find({
+      where: { studentId },
+      relations: ['group', 'group.lesson'],
+    });
+
+    if (!picks.length) {
       return [];
     }
 
-    return existingStudents;
-  }
+    // date가 제공된 경우, 해당 날짜에 해당하는 그룹들만 필터링
+    if (date) {
+      const targetWeekday = getKoreanWeekday(date);
+      const targetDate = new Date(date);
 
-  //? ---------------------------------------------------------------------- ?//
-  //? Update
-  //? ---------------------------------------------------------------------- ?//
+      const filteredPicks = picks.filter((pick) => {
+        const group = pick.group;
+
+        if (!group) {
+          return false;
+        }
+
+        // 1. 요일이 일치하는지 확인
+        if (group.weekday !== (targetWeekday as any)) {
+          return false;
+        }
+
+        // 2. 수업 기간 내에 있는지 확인
+        if (pick.startedOn) {
+          const startDate = new Date(pick.startedOn);
+          if (targetDate < startDate) {
+            return false;
+          }
+        }
+
+        if (pick.endedOn) {
+          const endDate = new Date(pick.endedOn);
+          if (targetDate > endDate) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      return filteredPicks.map((pick) => pick.group).filter(Boolean);
+    }
+
+    // date가 제공되지 않은 경우, 모든 그룹 반환
+    return picks.map((pick) => pick.group).filter(Boolean);
+  }
 }

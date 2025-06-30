@@ -60,7 +60,6 @@ export class SamController {
   //? ---------------------------------------------------------------------- ?//
 
   @GetSamByIdDocs()
-  @ApiOperation({ description: '학교쌤(Sam) 상세 정보 조회' })
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Sam> {
     return await this.samService.findById(id, [
@@ -72,7 +71,6 @@ export class SamController {
   }
 
   @GetSamGroupsDocs()
-  @ApiOperation({ description: '학교쌤이 가르치는 반 리스트 조회' })
   @Get(':id/groups')
   async findGroupsById(
     @Param('id', ParseIntPipe) id: number,
@@ -86,7 +84,6 @@ export class SamController {
   //? ---------------------------------------------------------------------- ?//
 
   @UpdateSamDocs()
-  @ApiOperation({ description: '학교쌤(Sam) 정보 수정' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -100,7 +97,6 @@ export class SamController {
   //? ---------------------------------------------------------------------- ?//
 
   @SoftDeleteSamDocs()
-  @ApiOperation({ description: '학교쌤(Sam) 소프트 삭제' })
   @Delete(':id')
   async softDelete(
     @Param('id', ParseIntPipe) id: number,

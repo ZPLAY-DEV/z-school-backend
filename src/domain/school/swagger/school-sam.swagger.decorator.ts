@@ -15,7 +15,7 @@ import { Sam } from '../../sam/entities/sam.entity';
 export const CreateSchoolSamBulkDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교 > 강사 대량 생성 (일괄)',
+      summary: '학교 > 강사 대량 생성 (일괄)',
       description: `
       - 학교에 귀속된 강사들을 대량으로 생성한다.
       - 학교에 귀속된 강사의 정보와 강사의 정보가 이미 등록되어 있을 경우 Upsert 된다.
@@ -45,7 +45,7 @@ export const CreateSchoolSamBulkDocs = () => {
 export const CreateSchoolSamBulkDryRunDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교 > 강사 대량 생성 dryRun 체크',
+      summary: '학교 > 강사 대량 생성 dryRun 체크',
       description: `
       - 학교에 속한 강사들(대량) 생성 dryrun 체크
       - 실제로 데이터를 생성하지 않고 어떤 데이터가 생성될지 미리 확인
@@ -75,7 +75,7 @@ export const CreateSchoolSamBulkDryRunDocs = () => {
 export const SchoolSamListDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교 > 강사 목록 조회',
+      summary: '학교 > 강사 목록 조회',
       description: `
       - 특정 학교에 속한 모든 강사들의 목록을 조회한다.
       - 강사 기본 정보와 관련 데이터를 포함한다.
@@ -100,7 +100,7 @@ export const SchoolSamListDocs = () => {
 export const SchoolSamPaginatedDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교 > 강사 무한스크롤 목록 조회',
+      summary: '학교 > 강사 무한스크롤 목록 조회',
       description: `
       - 특정 학교에 속한 강사들의 페이지네이션된 목록을 조회한다.
       - 무한스크롤 방식의 페이지네이션을 지원한다.
@@ -123,7 +123,7 @@ export const SchoolSamPaginatedDocs = () => {
 export const GetSchoolSamGroupsForDateDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 학교 > 강사 특정 날짜 수업 반 목록 조회',
+      summary: '학교 > 강사 특정 날짜 수업 반 목록 조회',
       description: `
       - 특정 학교의 강사가 특정 날짜에 수업하는 반 목록을 시간 순으로 조회한다.
       - 날짜 형식은 YYYY-MM-DD 형식으로 입력해야 한다.

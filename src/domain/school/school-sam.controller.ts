@@ -87,7 +87,6 @@ export class SchoolSamController {
     @Param('samId', ParseIntPipe) samId: number,
     @Param('date') date?: string,
   ): Promise<Group[]> {
-    console.log(schoolId, samId, date);
     return await this.schoolSamService.getGroupsForDate(schoolId, samId, date);
   }
 }

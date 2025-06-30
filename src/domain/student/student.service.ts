@@ -1,34 +1,17 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  FilterOperator,
-  paginate,
-  Paginated,
-  PaginateQuery,
-} from 'nestjs-paginate';
-import { BookingStatus } from 'src/common/enums';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { S3Service } from 'src/services/aws/s3.service';
-import {
-  DataSource,
-  In,
-  IsNull,
-  Not,
-  Repository
-} from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { Booking } from '../booking/entities/booking.entity';
-import { Group } from '../group/entities/group.entity';
-import { Pick } from '../pick/entities/pick.entity';
-import { School } from '../school/entities/school.entity';
 import { CreateStudentDto } from './dto/create-student.dto';
-import { UpdateStudentStatusDto } from './dto/update-student-status.dto';
 
 @Injectable()
 export class StudentService {
@@ -37,34 +20,20 @@ export class StudentService {
     private readonly parentRepository: Repository<Parent>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
-    @InjectRepository(Pick)
-    private readonly pickRepository: Repository<Pick>,
-    @InjectRepository(Group)
-    private readonly groupRepository: Repository<Group>,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
-    private dataSource: DataSource,
     private readonly s3Service: S3Service,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
+
   async create(dto: CreateStudentDto): Promise<Student> {
     const { parent: parentDto, ...studentDto } = dto;
 
     let parentId: number | undefined;
 
-    // 1. 학교 존재 여부 확인
-    const school = await this.dataSource.createEntityManager().findOne(School, {
-      where: { id: dto.schoolId },
-    });
-
-    if (!school) {
-      throw new NotFoundException('School not found');
-    }
-
-    // 2. 보호자 존재 여부 확인 ( upsert )
     if (parentDto?.phone) {
       let parent = await this.parentRepository.findOne({
         where: { phone: parentDto.phone },
@@ -102,10 +71,6 @@ export class StudentService {
     }
   }
 
-  //? ---------------------------------------------------------------------- ?//
-  //? READ
-  //? ---------------------------------------------------------------------- ?//
-
   //? upsert 여부 조회
   async dryRun(dto: CreateStudentDto): Promise<Student | null> {
     // In dryRun mode, we check if the student exists but don't create it
@@ -121,28 +86,9 @@ export class StudentService {
     return existingStudent ? existingStudent : null;
   }
 
-  //? 학생 목록 조회
-  async findAll(query: PaginateQuery): Promise<Paginated<Student>> {
-    const queryBuilder = this.studentRepository.createQueryBuilder('student');
-    return await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'name'],
-      searchableColumns: ['name'],
-      defaultSortBy: [['id', 'DESC']],
-      filterableColumns: {
-        isActive: [FilterOperator.EQ],
-        studentType: [FilterOperator.EQ],
-      },
-    });
-  }
-
-  //? 재학 학생 조회
-  async findActive(): Promise<Student[]> {
-    return await this.studentRepository
-      .createQueryBuilder('student')
-      .orderBy('student.id', 'DESC')
-      .where({ isActive: true })
-      .getMany();
-  }
+  //? ---------------------------------------------------------------------- ?//
+  //? READ
+  //? ---------------------------------------------------------------------- ?//
 
   //? 학생 상세 정보 조회
   async findById(id: number): Promise<Student> {
@@ -160,92 +106,69 @@ export class StudentService {
     return student;
   }
 
-  //? 학생의 수업 형태에 따른 조회
-  async findByIdWithStatus(
-    id: number,
-    status: BookingStatus,
-  ): Promise<Group[]> {
-    switch (status) {
-      case BookingStatus.ENROLLED:
-        return await this.findEnrolledGroups(id);
-      case BookingStatus.CANCELED:
-        return await this.findCancelledGroups(id);
-      default:
-        throw new BadRequestException('Not supported option');
+  //? 학생의 수강중인 반 조회
+  async findGroupsById(id: number, termId?: number): Promise<Group[]> {
+    const student = await this.studentRepository.findOne({
+      where: { id },
+      relations: ['picks', 'picks.group', 'picks.group.lesson'],
+    });
+
+    if (!student) {
+      throw new NotFoundException('Student not found');
     }
+
+    let picks = student.picks;
+    if (termId) {
+      picks = picks.filter((pick) => pick.termId === Number(termId));
+    }
+
+    // Pick에서 Group 추출
+    return picks.map((pick) => pick.group).filter(Boolean);
   }
 
-  //? 학생의 수강중인 강좌 조회
-  async findEnrolledGroups(studentId: number): Promise<Group[]> {
-    // 1) pick에서 학생이 수강중인 강좌 조회
-    const picks = await this.pickRepository.find({
-      where: {
-        studentId,
-        endedBy: IsNull(),
-      },
-      relations: ['group'],
+  //? 학생의 취소한 반 조회
+  async findCanceledGroupsById(id: number, termId?: number): Promise<Group[]> {
+    const student = await this.studentRepository.findOne({
+      where: { id },
+      relations: ['picks', 'picks.group', 'picks.group.lesson'],
     });
 
-    // 2) pick에서 학생이 수강중인 강좌의 id값 추출
-    const groupIds = picks.map((pick) => pick.group.id);
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
 
-    // 3) 학생이 수강중인 강좌 조회
-    const groups = await this.groupRepository.find({
-      where: {
-        id: In(groupIds),
-      },
-      relations: ['sam', 'sam.instructor'],
-    });
+    let picks = student.picks;
+    picks = termId
+      ? picks.filter((pick) => !!pick.endedBy && pick.termId === Number(termId))
+      : picks.filter((pick) => !!pick.endedBy);
 
-    return groups;
-  }
-
-  //? 학생의 수강취소 강좌 조회
-  async findCancelledGroups(studentId: number): Promise<Group[]> {
-    const picks = await this.pickRepository.find({
-      where: {
-        studentId,
-        endedBy: Not(IsNull()),
-      },
-      relations: ['group'],
-    });
-
-    // 2) pick에서 학생이 수강중인 강좌의 id 추출
-    const groupIds = picks.map((pick) => pick.group.id);
-
-    // 3) 학생이 수강 취소한 강좌 조회
-    const groups = await this.groupRepository.find({
-      where: { id: In(groupIds) },
-      relations: ['sam', 'sam.instructor'],
-    });
-
-    return groups;
+    // Pick에서 Group 추출
+    return picks.map((pick) => pick.group).filter(Boolean);
   }
 
   //? 학생의 수강 신청 내역 조회
-  async findBookings(id: number): Promise<Booking[]> {
-    return await this.bookingRepository.find({
-      where: {
-        studentId: id,
-      },
-      relations: ['offering'],
-    });
+  async findBookingsById(id: number, termId?: number): Promise<Booking[]> {
+    const queryBuilder = this.bookingRepository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.offering', 'offering')
+      .where('booking.studentId = :studentId', { studentId: id });
+
+    // termId가 제공되면 해당 학기의 booking만 필터링
+    if (termId) {
+      queryBuilder.andWhere('offering.termId = :termId', {
+        termId: Number(termId),
+      });
+    }
+
+    return await queryBuilder.getMany();
   }
+
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
+
   async update(id: number, dto: UpdateStudentDto): Promise<Student> {
-    // 1. 학교 존재 여부 확인
-    const school = await this.dataSource.createEntityManager().findOne(School, {
-      where: { id: dto.schoolId },
-    });
-
-    if (!school) {
-      throw new NotFoundException('School not found');
-    }
-
-    // 2. Unique 제약 조건 확인 (학교-학년-반-번호) 기반
-    const isStudent = await this.studentRepository.findOne({
+    const existingStudent = await this.studentRepository.findOne({
       where: {
         schoolId: dto.schoolId,
         grade: dto.grade,
@@ -255,7 +178,7 @@ export class StudentService {
       },
     });
 
-    if (isStudent) {
+    if (existingStudent) {
       throw new ConflictException('Student already exists');
     }
 
@@ -268,45 +191,10 @@ export class StudentService {
     return await this.studentRepository.save(student);
   }
 
-  async updateStudentStatus(
-    schoolId: number,
-    studentId: number,
-    dto: UpdateStudentStatusDto,
-  ): Promise<Student> {
-    // 1. 학교 존재 여부 확인
-    const school = await this.dataSource.createEntityManager().findOne(School, {
-      where: { id: schoolId },
-    });
-
-    if (!school) {
-      throw new NotFoundException('School not found');
-    }
-
-    // 2. 학생 존재 여부 확인
-    const student = await this.studentRepository.findOne({
-      where: { id: studentId },
-    });
-
-    if (!student) {
-      throw new NotFoundException('Student not found');
-    }
-
-    // 3. 학생 상태 업데이트
-    await this.studentRepository.save({
-      ...student,
-      status: dto.status,
-    });
-
-    return await this.studentRepository.findOneOrFail({
-      where: { id: studentId },
-    });
-  }
-
   //? ---------------------------------------------------------------------- ?//
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
 
-  // note that this is hard-delete
   async remove(id: number): Promise<Student> {
     const student = await this.studentRepository.findOne({
       where: { id },
@@ -314,7 +202,7 @@ export class StudentService {
     if (!student) {
       throw new NotFoundException('Student not found');
     }
-    return await this.studentRepository.remove(student);
+    return await this.studentRepository.softRemove(student);
   }
 
   // note that this is hard-delete

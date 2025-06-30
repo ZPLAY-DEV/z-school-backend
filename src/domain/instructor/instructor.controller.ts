@@ -22,9 +22,9 @@ import {
   UpdateInstructorDocs,
 } from './swagger/instructor.swagger.decorator';
 
-@UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Instructors ( 강사 ≓ Parent )')
 @Controller('instructors')
+@UseInterceptors(ClassSerializerInterceptor)
 export class InstructorController {
   constructor(private readonly instructorService: InstructorService) {}
 

@@ -14,6 +14,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
 import { Board } from '../board/entities/board.entity';
+import { SchoolBoardService } from './school-board.service';
 import {
   SchoolBoardListDocs,
   SchoolBoardListPaginatedDocs,
@@ -21,8 +22,7 @@ import {
   SchoolBoardMineListPaginatedDocs,
   SchoolBoardTargetListDocs,
   SchoolBoardTargetListPaginatedDocs,
-} from '../board/swagger/school-board.swagger.decorator';
-import { SchoolBoardService } from './school-board.service';
+} from './swagger/school-board.swagger.decorator';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('✅ Schools > Board ( 학교 > 게시판 )')

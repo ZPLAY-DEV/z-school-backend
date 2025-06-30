@@ -7,26 +7,34 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseEnumPipe,
   ParseIntPipe,
   Patch,
   Post,
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { BookingStatus } from 'src/common/enums';
+import { ApiTags } from '@nestjs/swagger';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { StudentService } from 'src/domain/student/student.service';
+import {
+  CreateStudentDocs,
+  CreateStudentDryRunDocs,
+  FindStudentBookingsDocs,
+  FindStudentByIdDocs,
+  FindStudentCanceledGroupsDocs,
+  FindStudentGroupsDocs,
+  RemoveStudentDocs,
+  UpdateStudentDocs,
+} from 'src/domain/student/swagger/student-swagger.decorator';
 import { UploadService } from 'src/services/upload/upload.service';
-import { Booking } from '../booking/entities/booking.entity';
-import { Group } from '../group/entities/group.entity';
 import { CreateStudentDto } from './dto/create-student.dto';
 
 @ApiTags('✅ Students ( 학생 )')
-@UseInterceptors(ClassSerializerInterceptor)
 @Controller('students')
+@UseInterceptors(ClassSerializerInterceptor)
 export class StudentController {
   constructor(
     private readonly studentService: StudentService,
@@ -34,15 +42,16 @@ export class StudentController {
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? CREATE
+  //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Student 생성' })
+  @CreateStudentDocs()
   @Post()
   async create(@Body() dto: CreateStudentDto): Promise<Student> {
     return await this.studentService.create(dto);
   }
 
+  @CreateStudentDryRunDocs()
   @HttpCode(HttpStatus.OK)
   @Post('dryrun')
   async dryRun(@Body() dto: CreateStudentDto): Promise<Student | null> {
@@ -53,36 +62,44 @@ export class StudentController {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  //? 학생 상세 정보 조회
+  @FindStudentByIdDocs()
   @Get(':id')
   async findById(@Param('id') id: number): Promise<Student> {
     return await this.studentService.findById(id);
   }
 
-  //? 수강중인 강좌 / 수강취소 강좌 조회
+  @FindStudentGroupsDocs()
   @Get(':id/groups')
-  async findByIdWithStatus(
+  async findGroupsById(
     @Param('id', ParseIntPipe) id: number,
-    @Query('status', new ParseEnumPipe(BookingStatus)) status: BookingStatus,
+    @Query('termId') termId?: number,
   ): Promise<Group[]> {
-    return await this.studentService.findByIdWithStatus(id, status);
+    return await this.studentService.findGroupsById(id, termId);
   }
 
-  // todo. 요일별 학생 수업 일정 조회. ( <= see if we need this. )
-
-  //? 특정 학생의 수강 신청 내역 조회
-  @Get(':id/bookings')
-  async findBookings(
+  @FindStudentCanceledGroupsDocs()
+  @Get(':id/canceled-groups')
+  async findCanceledGroupsById(
     @Param('id', ParseIntPipe) id: number,
+    @Query('termId') termId?: number,
+  ): Promise<Group[]> {
+    return await this.studentService.findGroupsById(id, termId);
+  }
+
+  @FindStudentBookingsDocs()
+  @Get(':id/bookings')
+  async findBookingsById(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('termId') termId?: number,
   ): Promise<Booking[]> {
-    return await this.studentService.findBookings(id);
+    return await this.studentService.findBookingsById(id, termId);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Student 수정' })
+  @UpdateStudentDocs()
   @Patch(':id')
   async update(
     @Param('id') id: number,
@@ -95,7 +112,7 @@ export class StudentController {
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Student 삭제' })
+  @RemoveStudentDocs()
   @Delete(':id')
   async remove(@Param('id') id: number): Promise<Student> {
     return await this.studentService.remove(id);
