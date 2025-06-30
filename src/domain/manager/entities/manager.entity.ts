@@ -48,7 +48,7 @@ export class Manager {
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈳 termsAgreedAt' })
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   termsAgreedAt: Date | null;
 
   @ApiProperty({ description: '🈵 createdAt' })

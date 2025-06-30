@@ -13,7 +13,6 @@ import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { DataSource, Repository } from 'typeorm';
 import { Sam } from '../sam/entities/sam.entity';
 import { CreateInstructorDto } from './dto/create-instructor.dto';
-import { DeleteInstructorNoteDto } from './dto/delete-instructor-note.dto';
 
 @Injectable()
 export class InstructorService {
@@ -123,18 +122,15 @@ export class InstructorService {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
-  // this is soft-delete
-  async softDelete(id: number, dto: DeleteInstructorNoteDto): Promise<void> {
-    await this.instructorRepository.update(
-      { id },
-      { note: dto.note, deletedAt: new Date() },
-    );
-  }
-
-  // this is hard-delete
-  async remove(id: number): Promise<Instructor> {
-    const instructor = await this.findById(id);
-    await this.instructorRepository.softRemove(instructor);
-    return instructor;
+  async softDelete(id: number, note: string | undefined): Promise<void> {
+    if (note) {
+      await this.instructorRepository.update(
+        { id },
+        { note, deletedAt: new Date() },
+      );
+    } else {
+      const instructor = await this.findById(id);
+      await this.instructorRepository.softRemove(instructor);
+    }
   }
 }

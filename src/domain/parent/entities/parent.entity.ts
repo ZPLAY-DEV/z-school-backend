@@ -45,7 +45,7 @@ export class Parent {
   note: string | null;
 
   @ApiProperty({ description: '🈳 termsAgreedAt', nullable: true })
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   termsAgreedAt: Date | null;
 
   // ------------------------------------------------------------------------ //

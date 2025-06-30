@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsArray,
+  IsDate,
   IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
-  MaxLength,
 } from 'class-validator';
 import { DocumentType } from 'src/common/enums';
 
@@ -21,34 +22,31 @@ export class CreateInstructorDto {
 
   @ApiProperty({
     description: '🈳 강사 이름',
-    example: '홍길동 --- 앱으로 가입한 강사의 이름',
+    example: '홍길동',
     type: String,
     required: false,
   })
   @IsOptional()
   @IsString()
-  @MaxLength(16)
   name?: string;
 
   @ApiProperty({
     description: '🈵 강사 전화번호 (숫자만 입력)',
-    example: '01012345678 --- 앱으로 가입한 강사의 전화 번호',
+    example: '01012345678',
     type: String,
     required: true,
   })
   @IsNotEmpty()
   @IsString()
-  @MaxLength(16)
   phone: string;
 
   @ApiProperty({
     description: '🈳 내용',
-    example: '특이사항 없음 --- 앱으로 가입한 강사의 비고',
+    example: '비고',
     type: String,
     required: false,
   })
   @IsString()
-  @MaxLength(255)
   @IsOptional()
   note?: string | null;
 
@@ -65,11 +63,25 @@ export class CreateInstructorDto {
   registeredDocuments?: DocumentType[];
 
   @ApiProperty({
-    description: '🈳 Terms agreed date',
-    example: '2025-01-01 --- 앱으로 가입한 강사가 약관동의한 시간',
-    type: Date,
+    description: '🈳 약관동의 시각',
+    example: '2025-01-01T12:00:00Z',
     required: false,
+    type: Date,
   })
   @IsOptional()
+  @IsDate()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const dateStr = value.replace(' ', 'T');
+      if (!dateStr.includes('T')) {
+        return new Date(value);
+      }
+      if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+        return new Date(dateStr + 'Z');
+      }
+      return new Date(dateStr);
+    }
+    return value as Date;
+  })
   termsAgreedAt?: Date;
 }

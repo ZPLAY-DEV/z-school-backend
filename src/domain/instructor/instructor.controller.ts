@@ -11,7 +11,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { DeleteInstructorNoteDto } from 'src/domain/instructor/dto/delete-instructor-note.dto';
 import { UpdateInstructorDto } from 'src/domain/instructor/dto/update-instructor.dto';
 import { InstructorService } from 'src/domain/instructor/instructor.service';
 import { CreateInstructorDto } from './dto/create-instructor.dto';
@@ -62,37 +61,8 @@ export class InstructorController {
   @Delete(':id')
   async softDelete(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: DeleteInstructorNoteDto,
+    @Body('note') note?: string,
   ): Promise<void> {
-    return await this.instructorService.softDelete(id, dto);
+    return await this.instructorService.softDelete(id, note);
   }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? NOT USED YET
-  //? ---------------------------------------------------------------------- ?//
-
-  // @Delete(':id')
-  // @ApiOperation({ summary: 'Delete a instructor' })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'The instructor has been successfully deleted.',
-  // })
-  // @ApiResponse({ status: 404, description: 'Instructor not found.' })
-  // async remove(@Param('id', ParseIntPipe) id: number) {
-  //   return await this.instructorService.remove(id);
-  // }
-
-  // @Get('/paginated')
-  // @ApiOperation({ summary: 'Get all instructors (paginated)' })
-  // async infiniteList(
-  //   @Paginate() query: PaginateQuery,
-  // ): Promise<Paginated<Instructor>> {
-  //   return await this.instructorService.infiniteList(query);
-  // }
-
-  // @Get()
-  // @ApiOperation({ summary: 'Get all instructors (paginated)' })
-  // async list(@Query('name') name: string): Promise<Instructor[]> {
-  //   return await this.instructorService.list(name);
-  // }
 }

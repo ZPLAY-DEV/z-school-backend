@@ -11,7 +11,6 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { Category as CategoryEnum } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { CategoryService } from './category.service';
-import { GetCategoryListDocs } from './swagger/category-swagger.decorator';
 
 @ApiTags('✅ Categories ( 분류 )')
 @Controller('categories')
@@ -24,7 +23,7 @@ export class CategoryController {
   //? ---------------------------------------------------------------------- ?//
 
   @Public()
-  @GetCategoryListDocs()
+  @ApiOperation({ summary: '분류 목록 조회' })
   @Get()
   async getList(@Query('slug') slug?: CategoryEnum): Promise<Category[]> {
     return await this.categoryService.list(slug);

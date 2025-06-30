@@ -4,8 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { DeleteInstructorNoteDto } from 'src/domain/instructor/dto/delete-instructor-note.dto';
-import { CreateInstructorResponseDto } from '../dto/create-instructor-response.dto';
+import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateInstructorDto } from '../dto/create-instructor.dto';
 
 //? ---------------------------------------------------------------------- ?//
@@ -30,7 +29,7 @@ export const CreateInstructorDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: 'Term 생성 완료',
-      type: CreateInstructorResponseDto,
+      type: Instructor,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
@@ -81,7 +80,12 @@ export const SoftDeleteSchoolInstructorDocs = () => {
       description: '학교에 속한 강사 ID ( instructorSchoolId )',
     }),
     ApiBody({
-      type: DeleteInstructorNoteDto,
+      schema: {
+        type: 'object',
+        properties: {
+          note: { type: 'string', description: '삭제 사유 (선택사항)' },
+        },
+      },
     }),
     ApiOkResponseTemplate({
       description: '강사 소프트 삭제 완료',

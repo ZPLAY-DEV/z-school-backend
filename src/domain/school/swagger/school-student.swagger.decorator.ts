@@ -9,8 +9,8 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { CreateStudentDto } from '../dto/create-student.dto';
-import { Student } from '../entities/student.entity';
+import { CreateStudentDto } from '../../student/dto/create-student.dto';
+import { Student } from '../../student/entities/student.entity';
 
 import {
   ApiOkPaginatedResponse,

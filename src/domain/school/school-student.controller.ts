@@ -16,13 +16,13 @@ import { StudentStatus } from 'src/common/enums';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { UploadService } from 'src/services/upload/upload.service';
+import { SchoolStudentService } from './school-student.service';
 import {
   CreateSchoolStudentBulkDocs,
   CreateSchoolStudentsBulkDryRunDocs,
   SchoolStudentListDocs,
   SchoolStudentListPaginatedDocs,
-} from '../student/swagger/school-student.swagger.decorator';
-import { SchoolStudentService } from './school-student.service';
+} from './swagger/school-student.swagger.decorator';
 
 @ApiTags('✅ Schools > Students ( 학생관리 )')
 @UseInterceptors(ClassSerializerInterceptor)

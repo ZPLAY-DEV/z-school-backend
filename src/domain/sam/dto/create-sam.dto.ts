@@ -31,7 +31,7 @@ export class CreateSamDto {
 
   @ApiProperty({
     description: '🈵 강사 학교별 별칭',
-    example: '퉁퉁쌤 --- 학교에서 추가시킬 강사의 별칭(이름)',
+    example: '홍길동',
     type: String,
     required: true,
   })

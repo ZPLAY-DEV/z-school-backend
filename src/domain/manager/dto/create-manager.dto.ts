@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
-  IsDateString,
+  IsDate,
   IsEnum,
   IsInt,
   IsOptional,
@@ -64,11 +65,26 @@ export class CreateManagerDto {
   @IsOptional()
   note?: string;
 
-  @ApiPropertyOptional({
-    description: 'Terms agreed date',
-    example: '2023-01-01T00:00:00Z',
+  @ApiProperty({
+    description: '🈳 약관동의 시각',
+    example: '2025-01-01T12:00:00Z',
+    required: false,
+    type: Date,
   })
-  @IsDateString()
   @IsOptional()
+  @IsDate()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const dateStr = value.replace(' ', 'T');
+      if (!dateStr.includes('T')) {
+        return new Date(value);
+      }
+      if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+        return new Date(dateStr + 'Z');
+      }
+      return new Date(dateStr);
+    }
+    return value as Date;
+  })
   termsAgreedAt?: Date;
 }
