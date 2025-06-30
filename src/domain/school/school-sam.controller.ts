@@ -46,10 +46,6 @@ export class SchoolSamController {
     return await this.schoolSamService.createBulk(schoolId, dtos);
   }
 
-  //? ---------------------------------------------------------------------- ?//
-  //? Read
-  //? ---------------------------------------------------------------------- ?//
-
   @CreateSchoolSamBulkDryRunDocs()
   @HttpCode(StatusCodes.OK)
   @Post(':schoolId/sams/bulk/dryrun')
@@ -59,6 +55,10 @@ export class SchoolSamController {
   ): Promise<Sam[]> {
     return await this.schoolSamService.createBulk(schoolId, dtos, true);
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
 
   @SchoolSamListDocs()
   @Get(':schoolId/sams')

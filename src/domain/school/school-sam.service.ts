@@ -255,7 +255,12 @@ export class SchoolSamService {
   async list(schoolId: number): Promise<Sam[]> {
     return await this.samRepository.find({
       where: { schoolId },
-      relations: ['instructor', 'contracts', 'contracts.group'],
+      relations: [
+        'instructor',
+        'contracts',
+        'contracts.lesson',
+        'contracts.group',
+      ],
       order: {
         id: 'ASC',
       },

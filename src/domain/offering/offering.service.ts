@@ -53,11 +53,21 @@ export class OfferingService {
       const offerings = await this.offeringRepository.find({
         where: { termId, lessonName },
       });
+
       const picks = await this.pickRepository.find({
         where: { offeringId: In(offerings.map((offering) => offering.id)) },
         relations: ['student'],
       });
-      return picks.map((pick) => pick.student);
+
+      // id 중복 제거
+      const uniqueStudentsMap = new Map<number, Student>();
+      picks.forEach((pick) => {
+        if (pick.student && pick.student.id) {
+          uniqueStudentsMap.set(pick.student.id, pick.student);
+        }
+      });
+
+      return Array.from(uniqueStudentsMap.values());
     } catch (error) {
       console.error(error);
       throw new NotFoundException(`Offering not found`);

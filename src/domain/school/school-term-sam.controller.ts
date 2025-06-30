@@ -21,6 +21,8 @@ export class SchoolTermSamController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  // todo. do we even need this?
+  // reasoning) 학교 학기 마다 강사를 관리하는 건 귀찮다고 했다 함.
   @SchoolTermSamListDocs()
   @Get(':schoolId/terms/:termId/sams')
   async list(

@@ -23,7 +23,6 @@ import {
   SchoolStudentListPaginatedDocs,
 } from '../student/swagger/school-student.swagger.decorator';
 import { SchoolStudentService } from './school-student.service';
-// import { UpdateStudentStatusDto } from '../student/dto/update-student-status.dto';
 
 @ApiTags('✅ Schools > Students ( 학생관리 )')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -45,6 +44,15 @@ export class SchoolStudentController {
     @Body() dtos: CreateStudentDto[],
   ): Promise<number | Student[]> {
     return await this.schoolStudentService.createBulk(schoolId, dtos);
+  }
+
+  @CreateSchoolStudentsBulkDryRunDocs()
+  @Post(':schoolId/students/bulk/dryrun')
+  async bulkDryRun(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Body() dtos: CreateStudentDto[],
+  ): Promise<number | Student[]> {
+    return await this.schoolStudentService.createBulk(schoolId, dtos, true);
   }
 
   @ApiOperation({ summary: 'seed data ⚙️ DB 초기화때 사용' })
@@ -88,20 +96,12 @@ export class SchoolStudentController {
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
-  @CreateSchoolStudentsBulkDryRunDocs()
-  @Post(':schoolId/students/bulk/dryrun')
-  async bulkDryRun(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Body() dtos: CreateStudentDto[],
-  ): Promise<number | Student[]> {
-    return await this.schoolStudentService.createBulk(schoolId, dtos, true);
-  }
 
   @Get(':schoolId/students/grades')
-  async grades(
+  async getGradeClasses(
     @Param('schoolId', ParseIntPipe) schoolId: number,
   ): Promise<{ grade: number; classes: string[] }[]> {
-    return await this.schoolStudentService.grades(schoolId);
+    return await this.schoolStudentService.getGradeClasses(schoolId);
   }
 
   @SchoolStudentListPaginatedDocs()
@@ -120,30 +120,4 @@ export class SchoolStudentController {
   ): Promise<Student[]> {
     return await this.schoolStudentService.list(schoolId);
   }
-
-  // @StudentDetailDocs()
-  // @Get(':schoolId/students/:studentId')
-  // async getStudentById(
-  //   @Param('schoolId', ParseIntPipe) schoolId: number,
-  //   @Param('studentId', ParseIntPipe) studentId: number,
-  // ): Promise<Student> {
-  //   return await this.schoolStudentService.getStudentById(schoolId, studentId);
-  // }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Update
-  //? ---------------------------------------------------------------------- ?//
-  // @StudentStatusUpdateDocs()
-  // @Patch(':schoolId/students/:studentId/status')
-  // async updateStudentStatus(
-  //   @Param('schoolId', ParseIntPipe) schoolId: number,
-  //   @Param('studentId', ParseIntPipe) studentId: number,
-  //   @Body() dto: UpdateStudentStatusDto,
-  // ): Promise<Student> {
-  //   return await this.schoolStudentService.updateStudentStatus(
-  //     schoolId,
-  //     studentId,
-  //     dto,
-  //   );
-  // }
 }

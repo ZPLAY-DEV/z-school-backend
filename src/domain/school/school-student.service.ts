@@ -265,7 +265,7 @@ export class SchoolStudentService {
     return await queryBuilder.getMany();
   }
 
-  async grades(
+  async getGradeClasses(
     schoolId: number,
   ): Promise<{ grade: number; classes: string[] }[]> {
     const result = await this.studentRepository.query(
