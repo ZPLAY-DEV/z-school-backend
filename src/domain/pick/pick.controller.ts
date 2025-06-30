@@ -15,7 +15,6 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor } from 'src/common/enums';
-
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { EndPickDto, StartPickDto } from 'src/domain/pick/dto/create-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
@@ -26,7 +25,7 @@ import {
   EndPickDocs,
   ListPicksDocs,
   PaginatedListPicksDocs,
-  UpdatePickDocs
+  UpdatePickDocs,
 } from 'src/domain/pick/swagger/pick-swagger.decorator';
 
 @ApiTags('✅ Picks ( 확정수강생; pivot )')
@@ -42,7 +41,7 @@ export class PickController {
   @CreatePickDocs()
   @ApiOperation({ description: '수동으로 학생을 반에 등록합니다.' })
   @Post()
-  async startPick(
+  async createPick(
     @Body() dto: StartPickDto,
     @CurrentUserIdAndRole() user: { id: number; role: string },
   ): Promise<Pick> {
@@ -52,7 +51,7 @@ export class PickController {
         : user.role === 'INSTRUCTOR'
           ? Actor.INSTRUCTOR
           : Actor.OTHER;
-    return await this.pickService.startPick({
+    return await this.pickService.createPick({
       ...dto,
       startedBy: role,
     });

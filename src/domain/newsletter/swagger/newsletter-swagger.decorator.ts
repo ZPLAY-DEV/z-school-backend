@@ -12,8 +12,8 @@ import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-crea
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CreateNewsletterDto } from '../dto/create-newsletter.dto';
 import { GenerateS3UrlsDto } from '../dto/generate-s3-urls.dto';
-import { NewsletterDetailResponseDto } from '../dto/newsletter-detail.response.dto';
 import { ResendNewsletterDto } from '../dto/resend-newsletter.dto';
+import { NewsletterDetailResponseDto } from '../dto/response-extended-newsletter.dto';
 import { UpdateNewsletterDto } from '../dto/update-newsletter.dto';
 import { Newsletter } from '../entities/newsletter.entity';
 

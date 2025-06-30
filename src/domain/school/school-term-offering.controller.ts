@@ -13,13 +13,13 @@ import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { SchoolTermOfferingService } from 'src/domain/school/school-term-offering.service';
 import {
   CreateSchoolTermOfferingsDocs,
   DeleteAllSchoolTermOfferingsDocs,
   SchoolTermOfferingListDocs,
   SchoolTermOfferingPaginatedListDocs,
-} from 'src/domain/offering/swagger/school-term-offering-swagger.decorator';
-import { SchoolTermOfferingService } from 'src/domain/school/school-term-offering.service';
+} from 'src/domain/school/swagger/school-term-offering-swagger.decorator';
 
 @Controller('schools')
 @ApiTags('✅ Schools > Terms > Offerings ( 학교 > 학기 > 수강신청과목 )')

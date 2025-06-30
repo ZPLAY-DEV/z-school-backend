@@ -28,7 +28,7 @@ export class PickService {
   //? ---------------------------------------------------------------------- ?//
 
   // 필수항목) groupId, studentId, startedOn, note (수동으로 등록시)
-  async startPick(dto: CreatePickDto): Promise<Pick> {
+  async createPick(dto: CreatePickDto): Promise<Pick> {
     const pick = this.pickRepository.create(dto);
     return await this.pickRepository.save(pick);
   }
@@ -98,27 +98,6 @@ export class PickService {
       },
     });
   }
-
-  // no reason to use this at this moment
-  // async findByUniqueIds(
-  //   groupId: number,
-  //   studentId: number,
-  //   relations: string[] = [],
-  // ): Promise<Pick> {
-  //   try {
-  //     return relations.length > 0
-  //       ? await this.pickRepository.findOneOrFail({
-  //           where: { groupId, studentId },
-  //           relations,
-  //         })
-  //       : await this.pickRepository.findOneOrFail({
-  //           where: { groupId, studentId },
-  //         });
-  //   } catch (error) {
-  //     this.logger.error(error);
-  //     throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
-  //   }
-  // }
 
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE

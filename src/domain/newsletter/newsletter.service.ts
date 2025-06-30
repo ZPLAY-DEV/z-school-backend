@@ -19,7 +19,7 @@ import { StudentReadInfo } from 'src/common/interfaces';
 import { IEvent, IEventKey } from 'src/domain/event/entities/event.interface';
 import { generateEventKey } from 'src/domain/event/utils/event.utils';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
-import { NewsletterDetailResponseDto } from 'src/domain/newsletter/dto/newsletter-detail.response.dto';
+import { NewsletterDetailResponseDto } from 'src/domain/newsletter/dto/response-extended-newsletter.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { School } from 'src/domain/school/entities/school.entity';
