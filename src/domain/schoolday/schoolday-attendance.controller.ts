@@ -8,10 +8,10 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import {
-  CreateAttendanceResultDto,
   CreateDynamoRecordWithDateDto,
   CreateDynamoRecordWithRangeDto,
-} from 'src/domain/schoolday/dto/create-dynamo-record.dto';
+  ResponseAttendanceDto,
+} from 'src/domain/schoolday/dto/response-attendance.dto';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
 import {
   CreateAttendanceOfSchooldayWithDateDocs,
@@ -30,12 +30,12 @@ export class SchooldayAttendanceController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ summary: '⚙️ Cronjob 용 모든 학교 출석부 생성' })
+  @ApiOperation({ summary: '🕒 Cronjob 용 모든 학교 출석부 생성' })
   @Public()
   @Post('attendances')
   async createAllWithDate(
     @Body('date') date: string,
-  ): Promise<CreateAttendanceResultDto[]> {
+  ): Promise<ResponseAttendanceDto[]> {
     return await this.schooldayAttendanceService.createAllWithDate(date);
   }
 
@@ -43,7 +43,7 @@ export class SchooldayAttendanceController {
   @Post('attendances/date')
   async createWithDate(
     @Body() dto: CreateDynamoRecordWithDateDto,
-  ): Promise<CreateAttendanceResultDto> {
+  ): Promise<ResponseAttendanceDto> {
     return await this.schooldayAttendanceService.createWithDate(dto);
   }
 
@@ -51,7 +51,7 @@ export class SchooldayAttendanceController {
   @Post('attendances/period')
   async createWithPeriod(
     @Body() dto: CreateDynamoRecordWithRangeDto,
-  ): Promise<CreateAttendanceResultDto> {
+  ): Promise<ResponseAttendanceDto> {
     return await this.schooldayAttendanceService.createWithPeriod(dto);
   }
 }

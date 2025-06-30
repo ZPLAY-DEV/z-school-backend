@@ -24,11 +24,11 @@ import {
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import {
-  BuildAttendanceForStudentDto,
-  CreateAttendanceResultDto,
+  BuildAttendanceBodyDto,
   CreateDynamoRecordWithDateDto,
   CreateDynamoRecordWithRangeDto,
-} from 'src/domain/schoolday/dto/create-dynamo-record.dto';
+  ResponseAttendanceDto,
+} from 'src/domain/schoolday/dto/response-attendance.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
@@ -63,14 +63,14 @@ export class SchooldayAttendanceService {
    * @param date `2025-08-14` 형식의 날짜 문자열
    * @returns 생성된 총 기록 수, 실패 수, 이미 존재하는 기록 수를 반환
    */
-  async createAllWithDate(date: string): Promise<CreateAttendanceResultDto[]> {
+  async createAllWithDate(date: string): Promise<ResponseAttendanceDto[]> {
     const terms = await this.termRepository.find({
       where: {
         isActive: true,
       },
     });
 
-    const results: CreateAttendanceResultDto[] = [];
+    const results: ResponseAttendanceDto[] = [];
 
     for (const term of terms) {
       const schoolId = term.schoolId;
@@ -92,7 +92,7 @@ export class SchooldayAttendanceService {
 
   async createWithDate(
     dto: CreateDynamoRecordWithDateDto,
-  ): Promise<CreateAttendanceResultDto> {
+  ): Promise<ResponseAttendanceDto> {
     const { schoolId, termId, date } = dto;
 
     const startsAt = fromZonedTime(`${date}T00:00:00`, 'Asia/Seoul');
@@ -108,7 +108,7 @@ export class SchooldayAttendanceService {
    */
   async createWithPeriod(
     dto: CreateDynamoRecordWithRangeDto,
-  ): Promise<CreateAttendanceResultDto> {
+  ): Promise<ResponseAttendanceDto> {
     const { schoolId, termId, from, to } = dto;
 
     const startsAt = fromZonedTime(`${from}T00:00:00`, 'Asia/Seoul');
@@ -132,7 +132,7 @@ export class SchooldayAttendanceService {
    */
   async executeBatchOperations(
     items: (WriteRequest | DeleteRequest)[],
-  ): Promise<CreateAttendanceResultDto> {
+  ): Promise<ResponseAttendanceDto> {
     if (items.length === 0) {
       return { total: 0, failedBatches: 0, alreadyExists: 0 };
     }
@@ -202,7 +202,7 @@ export class SchooldayAttendanceService {
     termId: number | undefined,
     startsAt: Date,
     endsAt: Date,
-  ): Promise<CreateAttendanceResultDto> {
+  ): Promise<ResponseAttendanceDto> {
     const schooldays = await this.fetchSchooldays(
       schoolId,
       termId,
@@ -277,7 +277,7 @@ export class SchooldayAttendanceService {
         continue;
       }
 
-      const dto: BuildAttendanceForStudentDto = {
+      const dto: BuildAttendanceBodyDto = {
         pick,
         localDate,
         lessonId,
@@ -315,9 +315,7 @@ export class SchooldayAttendanceService {
   /**
    * 학생 한 명에 대한 출석부 아이템을 구축합니다
    */
-  private buildAttendanceForStudent(
-    dto: BuildAttendanceForStudentDto,
-  ): IAttendance {
+  private buildAttendanceForStudent(dto: BuildAttendanceBodyDto): IAttendance {
     const {
       pick,
       localDate,

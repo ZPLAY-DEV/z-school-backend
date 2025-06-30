@@ -43,7 +43,7 @@ export class CreateDynamoRecordWithRangeDto {
   to: string; // "2025-08-14" 형식으로 저장
 }
 
-export class CreateAttendanceResultDto {
+export class ResponseAttendanceDto {
   @ApiProperty({ description: '생성된 총 출석 기록 수', example: 150 })
   total: number;
 
@@ -60,7 +60,7 @@ export class CreateAttendanceResultDto {
   alreadyExists?: number;
 }
 
-export class BuildAttendanceForStudentDto {
+export class BuildAttendanceBodyDto {
   @ApiProperty({
     description: 'pick',
     example: '{ studentId: 1, groupId: 1, ... }',

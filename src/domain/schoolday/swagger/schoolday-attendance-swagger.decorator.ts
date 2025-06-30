@@ -4,10 +4,10 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import {
-  CreateAttendanceResultDto,
   CreateDynamoRecordWithDateDto,
   CreateDynamoRecordWithRangeDto,
-} from 'src/domain/schoolday/dto/create-dynamo-record.dto';
+  ResponseAttendanceDto,
+} from 'src/domain/schoolday/dto/response-attendance.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create Attendance for Schooldays (Date)
@@ -85,7 +85,7 @@ export const CreateAttendanceOfSchooldayWithDateDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: '출석 데이터 생성 완료',
-      type: CreateAttendanceResultDto,
+      type: ResponseAttendanceDto,
     }),
     ApiStatuses(
       StatusCodes.BAD_REQUEST, // 400 - 잘못된 데이터
@@ -194,7 +194,7 @@ export const CreateAttendanceOfSchooldayWithPeriodDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: '출석 데이터 생성 완료',
-      type: CreateAttendanceResultDto,
+      type: ResponseAttendanceDto,
     }),
     ApiStatuses(
       StatusCodes.BAD_REQUEST, // 400 - 잘못된 데이터
