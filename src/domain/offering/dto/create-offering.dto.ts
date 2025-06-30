@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  ArrayNotEmpty,
   IsArray,
   IsEnum,
   IsInt,
@@ -9,7 +8,7 @@ import {
   IsOptional,
   IsString,
   Length,
-  ValidateNested,
+  ValidateNested
 } from 'class-validator';
 import { ClassStatus, PickRule } from 'src/common/enums';
 import { ClassTimeDto } from 'src/domain/offering/dto/class-time.dto';
@@ -56,7 +55,6 @@ export class CreateOfferingDto {
 
   @ApiProperty({ description: '허용 학년 목록', type: [Number] })
   @IsArray()
-  @ArrayNotEmpty()
   allowedGrades: number[];
 
   @ApiProperty({
@@ -78,17 +76,14 @@ export class CreateOfferingDto {
 
   @ApiProperty({ description: 'bitmasks (간단 배열)', type: [Number] })
   @IsArray()
-  @ArrayNotEmpty()
   bitmasks: number[];
 
   @ApiProperty({ description: 'bitmasks (간단 배열)', type: [Number] })
   @IsArray()
-  @ArrayNotEmpty()
   groupIds: number[];
 
   @ApiProperty({ description: '이전 수강자 ID 목록', type: [Number] })
   @IsArray()
-  @ArrayNotEmpty()
   prepickedStudentIds: number[];
 
   @ApiProperty({ description: '마지막 동기화 시간', type: Number })
