@@ -13,7 +13,18 @@ import {
 } from 'class-validator';
 import { ClassStatus } from 'src/common/enums';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
-import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
+
+export class FeeItemDto {
+  @ApiProperty({ description: '항목명' })
+  @IsString()
+  @MaxLength(16)
+  name: string;
+
+  @ApiProperty({ description: '금액' })
+  @IsInt()
+  @IsPositive()
+  amount: number;
+}
 
 export class CreateLessonDto {
   @ApiProperty({ description: '🈵 Term ID', required: true, example: 1 })
@@ -174,15 +185,6 @@ export class CreateLessonDto {
   @ValidateNested({ each: true })
   @Type(() => CreateGroupWithInstructorDto)
   groups: CreateGroupWithInstructorDto[];
-
-  // @ApiProperty({ description: '🈵 분류' })
-  // @Column({
-  //   type: 'enum',
-  //   enum: CategoryEnum,
-  //   default: CategoryEnum.FREE_CUSTOM,
-  // })
-  // @IsEnum(CategoryEnum)
-  // category: CategoryEnum;
 }
 
 // Controller에서 사용할 타입 (Param 제외)

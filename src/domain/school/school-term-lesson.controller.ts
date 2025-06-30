@@ -15,14 +15,14 @@ import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CreateLessonRequestDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { SchoolTermLessonService } from 'src/domain/school/school-term-lesson.service';
 import {
   CreateSchoolTermLessonsBulkDocs,
   CreateSchoolTermLessonsBulkDryRunDocs,
   DeleteAllSchoolTermLessonsDocs,
   SchoolTermLessonListDocs,
   SchoolTermLessonPaginatedListDocs,
-} from 'src/domain/lesson/swagger/school-term-lesson-swagger.decorator';
-import { SchoolTermLessonService } from 'src/domain/school/school-term-lesson.service';
+} from 'src/domain/school/swagger/school-term-lesson-swagger.decorator';
 
 @ApiTags('✅ Schools > Terms > Lessons ( 학교 > 학기 > 과목 )')
 @Controller('schools')

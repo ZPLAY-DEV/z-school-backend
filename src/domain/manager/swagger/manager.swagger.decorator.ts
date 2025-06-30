@@ -8,14 +8,30 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
+import {
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
+  PaginateConfig,
+} from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { CreateManagerDto } from '../dto/create-manager.dto';
 import { UpdateManagerDto } from '../dto/update-manager.dto';
 import { Manager } from '../entities/manager.entity';
 
+const MANAGER_CONFIG: PaginateConfig<Manager> = {
+  sortableColumns: ['id', 'name', 'phone'],
+  searchableColumns: ['name'],
+  defaultSortBy: [['id', 'DESC']],
+  filterableColumns: {
+    phone: [FilterOperator.EQ, FilterOperator.IN, FilterOperator.ILIKE],
+  },
+};
+
 //? ---------------------------------------------------------------------- ?//
-//? Private) Create Manager
+//? Create Manager
 //? ---------------------------------------------------------------------- ?//
+
 export const CreateManagerDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -37,46 +53,27 @@ export const CreateManagerDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Public) Get Managers with Pagination
+//? Get Managers with Pagination
 //? ---------------------------------------------------------------------- ?//
+
 export const GetManagersPaginatedDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '✅ 관리자 리스트 (페이지네이션)',
       description: `
       - 페이지네이션을 적용한 관리자 리스트를 조회한다.
-      - 관리자용 API로 모든 관리자 정보를 확인할 수 있다.
       `,
     }),
-    ApiOkResponse({
-      description: '관리자 리스트 조회 완료',
-      schema: {
-        type: 'object',
-        properties: {
-          data: {
-            type: 'array',
-            items: { $ref: '#/components/schemas/Manager' },
-          },
-          meta: {
-            type: 'object',
-            properties: {
-              totalItems: { type: 'number' },
-              itemCount: { type: 'number' },
-              itemsPerPage: { type: 'number' },
-              totalPages: { type: 'number' },
-              currentPage: { type: 'number' },
-            },
-          },
-        },
-      },
-    }),
-    ApiExtraModels(Manager),
+    ApiPaginationQuery(MANAGER_CONFIG),
+    ApiOkPaginatedResponse(Manager, MANAGER_CONFIG),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Public) Get Active Managers
+//? Get Active Managers
 //? ---------------------------------------------------------------------- ?//
+
 export const GetActiveManagersDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -94,8 +91,9 @@ export const GetActiveManagersDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) Get Manager by ID
+//? Get Manager by ID
 //? ---------------------------------------------------------------------- ?//
+
 export const GetManagerByIdDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -121,8 +119,9 @@ export const GetManagerByIdDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) Update Manager
+//? Update Manager
 //? ---------------------------------------------------------------------- ?//
+
 export const UpdateManagerDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -145,7 +144,7 @@ export const UpdateManagerDocs = () => {
         example1: {
           value: {
             name: '홍길동',
-            phone: '010-1234-5678',
+            phone: '01012345678',
             note: '업데이트된 관리자 정보',
           },
         },
@@ -161,8 +160,9 @@ export const UpdateManagerDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Private) Delete Manager
+//? Delete Manager
 //? ---------------------------------------------------------------------- ?//
+
 export const DeleteManagerDocs = () => {
   return applyDecorators(
     ApiOperation({

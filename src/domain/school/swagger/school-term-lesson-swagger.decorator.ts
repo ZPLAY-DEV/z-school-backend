@@ -9,7 +9,7 @@ import {
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
-import { Lesson } from '../entities/lesson.entity';
+import { Lesson } from '../../lesson/entities/lesson.entity';
 
 const TERM_LESSON_CONFIG: PaginateConfig<Lesson> = {
   sortableColumns: ['id', 'lessonName'],

@@ -35,16 +35,14 @@ export class ManagerService {
     const queryBuilder = this.managerRepository
       .createQueryBuilder('manager')
       .leftJoinAndSelect('manager.user', 'user')
-      .leftJoinAndSelect('manager.school', 'school')
-      .orderBy('manager.id', 'DESC');
+      .leftJoinAndSelect('manager.school', 'school');
 
     return await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'name', 'phone', 'note'],
+      sortableColumns: ['id', 'name', 'phone'],
       searchableColumns: ['name'],
       defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
-        category: [FilterOperator.EQ],
-        isPrivate: [FilterOperator.EQ],
+        phone: [FilterOperator.EQ, FilterOperator.IN, FilterOperator.ILIKE],
       },
     });
   }

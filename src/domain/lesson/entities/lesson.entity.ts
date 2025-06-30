@@ -4,7 +4,7 @@ import { Category } from 'src/domain/category/entities/category.entity';
 import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
-import { FeeItemDto } from 'src/domain/lesson/dto/fee-item.dto';
+import { FeeItemDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
