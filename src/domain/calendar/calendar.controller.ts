@@ -23,7 +23,10 @@ export class CalendarController {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Calendar 수정' })
+  @ApiOperation({
+    description: 'Calendar 수정',
+    summary: '학사일정 수정',
+  })
   @Patch(':id')
   async update(
     @Param('id') id: number,
@@ -36,7 +39,7 @@ export class CalendarController {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Calendar 삭제' })
+  @ApiOperation({ description: 'Calendar 삭제', summary: '학사일정 삭제' })
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.calendarService.remove(id);

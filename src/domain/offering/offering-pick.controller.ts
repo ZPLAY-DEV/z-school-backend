@@ -1,15 +1,13 @@
 import {
   ClassSerializerInterceptor,
   Controller,
-  Get,
   HttpCode,
   Param,
   ParseIntPipe,
   Post,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Public } from 'src/common/decorators/public.decorator';
 import { ResponseCreateOfferingPickDto } from 'src/domain/group/dto/response-create-offering-pick.dto';
 import { OfferingPickService } from 'src/domain/offering/offering-pick.service';
 import { CreateOfferingPickDocs } from 'src/domain/offering/swagger/offering-pick-swagger.decorator';
@@ -31,16 +29,5 @@ export class OfferingPickController {
     @Param('offeringId', ParseIntPipe) offeringId: number,
   ): Promise<ResponseCreateOfferingPickDto> {
     return this.offeringPickService.create(offeringId);
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Read
-  //? ---------------------------------------------------------------------- ?//
-
-  @Public()
-  @Get(':offeringId/picks')
-  list(@Param('offeringId', ParseIntPipe) offeringId: number): any {
-    // do we even need this?
-    console.log(offeringId);
   }
 }

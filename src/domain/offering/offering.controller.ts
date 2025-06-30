@@ -21,6 +21,7 @@ import {
   GetFormerStudentsDocs,
   GetOfferingByIdDocs,
   RemoveOfferingDocs,
+  UpdateOfferingDocs,
 } from 'src/domain/offering/swagger/offering-swagger.decorator';
 import { Student } from 'src/domain/student/entities/student.entity';
 
@@ -68,7 +69,7 @@ export class OfferingController {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  // @UpdateOfferingDocs()
+  @UpdateOfferingDocs()
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,

@@ -39,10 +39,4 @@ export class AppController {
     console.log('🔥 purgeCache');
     await this.appService.purgeCache();
   }
-
-  @Public()
-  @Get('error')
-  getError() {
-    throw new Error('My first error for Sentry testing!');
-  }
 }
