@@ -23,7 +23,7 @@ import { GroupAttendanceService } from 'src/domain/group/group-attendance.servic
 import {
   EndAttendanceDocs,
   FindAttendanceByDateDocs,
-  FindAttendanceByDateWithLastFlagDocs,
+  FindAttendanceByDateWithExtendedDataDocs,
   GetReportDocs,
   StartAttendanceDocs,
   UpsertAttendanceDocs,
@@ -95,14 +95,14 @@ export class GroupAttendanceController {
     );
   }
 
-  @FindAttendanceByDateWithLastFlagDocs()
-  @Get(':groupId/attendances/:date/last')
-  async findByDateWithLastFlag(
+  @FindAttendanceByDateWithExtendedDataDocs()
+  @Get(':groupId/attendances/:date/extended')
+  async findByDateWithExtendedData(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('date') date: string,
   ): Promise<IAttendanceWithLastFlag[]> {
     const groupKey = generateGroupKey(groupId);
-    return await this.groupAttendancesService.findAttendancesByDateWithLastFlag(
+    return await this.groupAttendancesService.findAttendancesByDateWithExtendedData(
       groupKey,
       date,
     );

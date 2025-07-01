@@ -262,7 +262,28 @@ export class GroupAttendanceService {
     }
   }
 
-  async findAttendancesByDateWithLastFlag(
+  /**
+   * 지정된 날짜의 출석 정보를 확장된 데이터와 함께 조회합니다.
+   *
+   * @description
+   * 기본 출석 정보에 추가로 다음 정보들을 포함합니다:
+   * - student: Student entity (부모 정보 포함)
+   * - isLast: 해당 학생의 당일 마지막 수업 여부
+   *
+   * @param groupKey DynamoDB 그룹 키 (e.g., "GROUP#48")
+   * @param date 조회할 날짜 (e.g., "2025-06-08")
+   *
+   * @returns IAttendanceWithLastFlag[]
+   * - 기본 출석 정보 + student entity + isLast 플래그
+   * - student: { id, name, grade, class, studentCode, parent }
+   * - isLast: boolean (해당 학생의 당일 마지막 수업 여부)
+   *
+   * @performance
+   * - MySQL 쿼리 최적화: IN 조건으로 모든 학생 정보를 한 번에 조회
+   * - 메모리 최적화: Map을 사용한 O(1) lookup
+   * - N+1 쿼리 방지
+   */
+  async findAttendancesByDateWithExtendedData(
     groupKey: string,
     date: string,
   ): Promise<IAttendanceWithLastFlag[]> {
@@ -286,7 +307,7 @@ export class GroupAttendanceService {
       );
       const groupId = Number(groupKey.split('#')[1]);
 
-      // 3. 한 번의 쿼리로 모든 학생 정보 조회
+      // 3. 한 번의 쿼리로 모든 학생 정보 조회 (부모 정보 포함)
       const students = await this.studentRepository.find({
         where: { id: In(studentIds) },
         relations: ['parent'],
@@ -294,6 +315,7 @@ export class GroupAttendanceService {
       });
 
       // 학생 ID를 key로 하는 Map 생성 (빠른 lookup을 위해)
+      // 각 student entity는 response에서 student 필드로 반환됨
       const studentMap = new Map(
         students.map((student) => [student.id, student]),
       );
@@ -344,7 +366,7 @@ export class GroupAttendanceService {
         studentLastGroupMap.set(studentId, lastGroup?.groupId === groupId);
       });
 
-      // 5. 출석 데이터와 마지막 그룹 정보 결합
+      // 5. 출석 데이터와 확장 정보 결합 (student entity + isLast 플래그)
       const attendancesWithLastFlag: IAttendanceWithLastFlag[] = items.map(
         (item) => {
           const studentId = this.extractStudentIdFromRangeKey(
@@ -352,8 +374,8 @@ export class GroupAttendanceService {
           );
           return {
             ...item,
-            student: studentMap.get(studentId),
-            isLast: studentLastGroupMap.get(studentId) ?? false,
+            student: studentMap.get(studentId), // Student entity (부모 정보 포함)
+            isLast: studentLastGroupMap.get(studentId) ?? false, // 당일 마지막 수업 여부
           };
         },
       );

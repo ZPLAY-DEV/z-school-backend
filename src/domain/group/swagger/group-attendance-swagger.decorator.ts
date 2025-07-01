@@ -151,10 +151,10 @@ export const FindAttendanceByDateDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? Find Attendance by Date with Last Flag
 //? ---------------------------------------------------------------------- ?//
-export const FindAttendanceByDateWithLastFlagDocs = () => {
+export const FindAttendanceByDateWithExtendedDataDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '반별 출석 👈 특정 날짜 조회 (마지막 그룹 여부 포함)',
+      summary: '반별 출석 👈 특정 날짜 조회 (확장된 data 포함)',
       description: `
       - 특정 반의 특정 날짜에 대한 출석 정보를 조회합니다.
       - DynamoDB에서 데이터를 조회하여 실시간 출석 상태를 반환합니다.
@@ -289,6 +289,56 @@ export const FindAttendanceByDateWithLastFlagDocs = () => {
               type: 'string',
               description: '학교 메모',
               example: '담임 확인 완료',
+            },
+            student: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'number',
+                  description: '학생 ID',
+                  example: 789,
+                },
+                name: {
+                  type: 'string',
+                  description: '학생 이름',
+                  example: '홍길동',
+                },
+                grade: {
+                  type: 'number',
+                  description: '학년',
+                  example: 1,
+                },
+                class: {
+                  type: 'string',
+                  description: '반',
+                  example: '1반',
+                },
+                studentCode: {
+                  type: 'string',
+                  description: '학생 코드',
+                  example: '123456',
+                },
+                parent: {
+                  type: 'object',
+                  properties: {
+                    id: {
+                      type: 'number',
+                      description: '학부모 ID',
+                      example: 123,
+                    },
+                    name: {
+                      type: 'string',
+                      description: '학부모 이름',
+                      example: '홍길동 엄마',
+                    },
+                    phone: {
+                      type: 'string',
+                      description: '학부모 전화번호',
+                      example: '01012345678',
+                    },
+                  },
+                },
+              },
             },
             isLast: {
               type: 'boolean',
