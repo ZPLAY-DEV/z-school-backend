@@ -234,6 +234,7 @@ export class NewsletterService {
         id,
         status: SendStatus.SCHEDULED,
         scheduledAt,
+        resentAt: scheduledAt,
       });
       const updatedNewsletter = (await manager.save(newsletter)) as Newsletter;
 
