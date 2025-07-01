@@ -98,6 +98,8 @@ export class SchooldayAttendanceService {
     const startsAt = fromZonedTime(`${date}T00:00:00`, 'Asia/Seoul');
     const endsAt = fromZonedTime(`${date}T23:59:59`, 'Asia/Seoul');
 
+    console.log(`🕒`, dto, startsAt, endsAt);
+
     return this.createAttendances(schoolId, termId, startsAt, endsAt);
   }
 
@@ -209,7 +211,11 @@ export class SchooldayAttendanceService {
       startsAt,
       endsAt,
     );
+    console.log(`🕒`, schooldays);
     const attendances = this.buildAttendances(schooldays);
+
+    console.log(`🕒 attendances`, attendances);
+
     const writeRequests = this.createPutRequestBatch(attendances);
 
     return this.executeBatchOperations(writeRequests);
@@ -252,12 +258,32 @@ export class SchooldayAttendanceService {
    * 수업일 아이템들로부터 출석부 아이템들을 구축합니다
    */
   private buildAttendances(schooldays: Schoolday[]): IAttendance[] {
+    this.logger.log(`Building attendances for ${schooldays.length} schooldays`);
+
+    if (schooldays.length === 0) {
+      this.logger.warn(
+        'No schooldays found, returning empty attendances array',
+      );
+      return [];
+    }
+
     const attendances: IAttendance[] = [];
+
     for (const schoolday of schooldays) {
+      if (!schoolday.group) {
+        this.logger.warn(
+          `Schoolday ${schoolday.id} has no group relation, skipping`,
+        );
+        continue;
+      }
+
       const attendancesForTheDay = this.buildAttendancesForTheDay(schoolday);
       attendances.push(...attendancesForTheDay);
     }
 
+    this.logger.log(
+      `Total attendances built: ${attendances.length} across ${schooldays.length} schooldays`,
+    );
     return attendances;
   }
 
@@ -272,8 +298,34 @@ export class SchooldayAttendanceService {
     const expires = calculateTtl(addDays(new Date(), 365));
     const attendances: IAttendance[] = [];
 
-    for (const pick of picks ?? []) {
+    this.logger.log(
+      `Building attendances for schoolday ${groupId}, picks count: ${picks?.length || 0}`,
+    );
+
+    if (!picks || picks.length === 0) {
+      this.logger.warn(
+        `No picks found for group ${groupId}, skipping attendance generation`,
+      );
+      return [];
+    }
+
+    console.log(`🕒 picks`, JSON.stringify(picks, null, 2));
+
+    let skippedCount = 0;
+    let processedCount = 0;
+
+    for (const pick of picks) {
+      if (!pick.student) {
+        this.logger.warn(`Pick ${pick.id} has no student relation, skipping`);
+        skippedCount++;
+        continue;
+      }
+
       if (this.skipStudentForTheDay(pick, startsAt)) {
+        this.logger.log(
+          `Skipping student ${pick.student.name} (ID: ${pick.student.id}) for date filter`,
+        );
+        skippedCount++;
         continue;
       }
 
@@ -292,8 +344,12 @@ export class SchooldayAttendanceService {
       const attendance = this.buildAttendanceForStudent(dto);
 
       attendances.push(attendance);
+      processedCount++;
     }
 
+    this.logger.log(
+      `Generated ${attendances.length} attendances, processed ${processedCount} students, skipped ${skippedCount} students for group ${groupId}`,
+    );
     return attendances;
   }
 
@@ -303,13 +359,61 @@ export class SchooldayAttendanceService {
    * - 만일 전학생인 경우 그들의 startedOn ~ endedOn 기간인지 확인한다.
    */
   private skipStudentForTheDay(pick: Pick, startsAt: Date): boolean {
-    if (!pick.startedOn && !pick.endedOn) return false;
+    // startedOn과 endedOn이 모두 없거나 빈 문자열인 경우 skip하지 않음
+    const hasStartedOn = pick.startedOn && pick.startedOn.trim() !== '';
+    const hasEndedOn = pick.endedOn && pick.endedOn.trim() !== '';
 
-    const startDate = fromZonedTime(`${pick.startedOn}T00:00:00`, 'Asia/Seoul');
-    const endDate = fromZonedTime(`${pick.endedOn}T23:59:59`, 'Asia/Seoul');
+    if (!hasStartedOn && !hasEndedOn) {
+      return false;
+    }
 
-    // startsAt이 startDate ~ endDate 기간에 포함되면 false (skip하지 않음), 아니면 true (skip함)
-    return !(startsAt >= startDate && startsAt <= endDate);
+    try {
+      // startedOn이 있는 경우에만 startDate 계산
+      let startDate: Date | null = null;
+      if (hasStartedOn) {
+        startDate = fromZonedTime(`${pick.startedOn}T00:00:00`, 'Asia/Seoul');
+      }
+
+      // endedOn이 있는 경우에만 endDate 계산
+      let endDate: Date | null = null;
+      if (hasEndedOn) {
+        endDate = fromZonedTime(`${pick.endedOn}T23:59:59`, 'Asia/Seoul');
+      }
+
+      // 둘 다 없으면 skip하지 않음 (이미 위에서 체크했지만 안전장치)
+      if (!startDate && !endDate) {
+        return false;
+      }
+
+      // startDate만 있는 경우: startsAt >= startDate여야 함
+      if (startDate && !endDate) {
+        return startsAt < startDate;
+      }
+
+      // endDate만 있는 경우: startsAt <= endDate여야 함
+      if (!startDate && endDate) {
+        return startsAt > endDate;
+      }
+
+      // 둘 다 있는 경우: startDate <= startsAt <= endDate여야 함
+      if (startDate && endDate) {
+        return !(startsAt >= startDate && startsAt <= endDate);
+      }
+
+      // 이 지점에 도달하면 안되지만 안전장치
+      return false;
+    } catch (error) {
+      this.logger.error('Date parsing error in skipStudentForTheDay:', {
+        error: error.message,
+        pickId: pick.id,
+        studentId: pick.studentId,
+        startedOn: pick.startedOn,
+        endedOn: pick.endedOn,
+        startsAt: startsAt.toISOString(),
+      });
+      // 에러 시 skip하지 않음 (보수적 접근)
+      return false;
+    }
   }
 
   /**
