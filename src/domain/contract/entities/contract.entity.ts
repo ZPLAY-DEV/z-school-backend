@@ -19,7 +19,7 @@ import {
 @Entity('contracts')
 @Unique(['groupId', 'lessonId', 'samId'])
 export class Contract {
-  @ApiProperty({ description: 'contractId', example: 1 })
+  @ApiProperty({ description: 'a primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 

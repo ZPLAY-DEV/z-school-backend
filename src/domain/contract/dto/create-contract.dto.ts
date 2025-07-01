@@ -9,21 +9,21 @@ import {
 } from 'class-validator';
 import { Actor } from 'src/common/enums';
 
-export class CreatePickDto {
-  @ApiProperty({ description: '반 ID' })
+export class CreateContractDto {
+  @ApiProperty({ description: '반 ID', example: 1 })
   @IsInt()
   @IsPositive()
   groupId: number;
 
-  @ApiProperty({ description: '학생 ID' })
+  @ApiProperty({ description: '학교 선생님 ID', example: 1 })
   @IsInt()
   @IsPositive()
-  studentId: number;
+  samId: number;
 
-  @ApiProperty({ description: 'Offering ID', example: 1 })
+  @ApiProperty({ description: '수업 ID', example: 1 })
   @IsInt()
   @IsPositive()
-  offeringId: number;
+  lessonId: number;
 
   @ApiProperty({ description: '학기 ID', example: 1 })
   @IsInt()
@@ -31,18 +31,6 @@ export class CreatePickDto {
   termId: number;
 
   // ------------------------------------------------------------------------ //
-
-  @ApiProperty({ description: '학생 책값' })
-  @IsInt()
-  @IsPositive()
-  @IsOptional()
-  bookFee?: number;
-
-  @ApiProperty({ description: '학생 재료값' })
-  @IsInt()
-  @IsPositive()
-  @IsOptional()
-  materialFee?: number;
 
   @ApiPropertyOptional({
     description: '누가 수업시작일(첫수업일) 등록했나?',
@@ -53,10 +41,12 @@ export class CreatePickDto {
   @IsOptional()
   startedBy?: Actor | null;
 
-  @ApiPropertyOptional({ description: '수업시작일(첫수업일)' })
+  @ApiProperty({
+    description: '수업시작일(첫수업일)',
+    example: '2025-05-27',
+  })
   @IsString()
-  @IsOptional()
-  startedOn?: string;
+  startedOn: string;
 
   @ApiPropertyOptional({
     description: '누가 수업종료일(마지막수업일) 등록했나?',
@@ -67,29 +57,42 @@ export class CreatePickDto {
   @IsOptional()
   endedBy?: Actor | null;
 
-  @ApiPropertyOptional({ description: '수업종료일(마지막수업일)' })
+  @ApiPropertyOptional({
+    description: '수업종료일(마지막수업일)',
+    example: '2025-08-27',
+  })
   @IsString()
   @IsOptional()
   endedOn?: string;
 
-  @ApiPropertyOptional({ description: '비고' })
+  @ApiPropertyOptional({ description: '비고', example: '비고' })
   @IsString()
   @MaxLength(255)
   @IsOptional()
   note?: string;
 }
 
-// PickBaseDto: groupId, studentId, note (모두 필수)
-class PickBaseDto {
+// ContractBaseDto: groupId, studentId, note (모두 필수)
+class ContractBaseDto {
   @ApiProperty({ description: '반 ID' })
   @IsInt()
   @IsPositive()
   groupId: number;
 
-  @ApiProperty({ description: '학생 ID' })
+  @ApiProperty({ description: '학교쌤 ID' })
   @IsInt()
   @IsPositive()
-  studentId: number;
+  samId: number;
+
+  @ApiProperty({ description: '수업 ID', example: 1 })
+  @IsInt()
+  @IsPositive()
+  lessonId: number;
+
+  @ApiProperty({ description: '학기 ID', example: 1 })
+  @IsInt()
+  @IsPositive()
+  termId: number;
 
   @ApiProperty({ description: '비고' })
   @IsString()
@@ -97,18 +100,8 @@ class PickBaseDto {
   note: string;
 }
 
-// StartPickDto: groupId, studentId, startedBy, startedOn, note (모두 필수)
-export class StartPickDto extends PickBaseDto {
-  @ApiProperty({ description: 'Offering ID', example: 1 })
-  @IsInt()
-  @IsPositive()
-  offeringId: number;
-
-  @ApiProperty({ description: '학기 ID', example: 1 })
-  @IsInt()
-  @IsPositive()
-  termId: number;
-
+// StartContractDto: groupId, samId, startedBy, startedOn, note (모두 필수)
+export class StartContractDto extends ContractBaseDto {
   @ApiProperty({
     description: '누가 수업시작일(첫수업일) 등록했나?',
     enum: Actor,
@@ -122,8 +115,8 @@ export class StartPickDto extends PickBaseDto {
   startedOn: string;
 }
 
-// EndPickDto: groupId, studentId, endedBy, endedOn, note (모두 필수)
-export class EndPickDto extends PickBaseDto {
+// EndContractDto: groupId, studentId, endedBy, endedOn, note (모두 필수)
+export class EndContractDto extends ContractBaseDto {
   @ApiProperty({
     description: '누가 수업종료일(마지막수업일) 등록했나?',
     enum: Actor,

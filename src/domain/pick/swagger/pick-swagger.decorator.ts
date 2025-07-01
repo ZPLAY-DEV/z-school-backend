@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import {
   ApiOkPaginatedResponse,
   ApiPaginationQuery,
+  FilterOperator,
   PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -13,18 +14,38 @@ import { EndPickDto, StartPickDto } from '../dto/create-pick.dto';
 import { UpdatePickDto } from '../dto/update-pick.dto';
 import { Pick } from '../entities/pick.entity';
 
-const PICK_OFFERING_CONFIG: PaginateConfig<Pick> = {
+const LIST_STUDENTS_CONFIG: PaginateConfig<Pick> = {
+  relations: {
+    student: {
+      parent: true,
+    },
+  },
   sortableColumns: ['id'],
   searchableColumns: ['note'],
   defaultSortBy: [['id', 'DESC']],
   filterableColumns: {
-    pickRule: true,
-    allowedGrades: true,
+    enrolledBy: [FilterOperator.EQ],
+    deletedBy: [FilterOperator.EQ],
+  },
+};
+
+const LIST_GROUPS_CONFIG: PaginateConfig<Pick> = {
+  relations: {
+    group: {
+      lesson: true,
+    },
+  },
+  sortableColumns: ['id'],
+  searchableColumns: ['note'],
+  defaultSortBy: [['id', 'DESC']],
+  filterableColumns: {
+    enrolledBy: [FilterOperator.EQ],
+    deletedBy: [FilterOperator.EQ],
   },
 };
 
 // StartPick
-export const CreatePickDocs = () =>
+export const StartPickDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '이유와 함께 수업시작일 기록',
@@ -37,22 +58,6 @@ export const CreatePickDocs = () =>
       type: Pick,
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
-  );
-
-// UpdatePick
-export const UpdatePickDocs = () =>
-  applyDecorators(
-    ApiOperation({
-      summary: '수강생 pivot 에서 특정 학생의 정보 수정',
-      description: '반에 등록된 특정 학생의 정보를 수정합니다.',
-    }),
-    // UpdatePickDto가 올바른 DTO이므로 이를 사용
-    ApiBody({ type: UpdatePickDto }),
-    ApiOkResponseTemplate({
-      description: '반 수강생 정보 수정 완료',
-      type: Pick,
-    }),
-    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 
 // EndPick
@@ -71,42 +76,85 @@ export const EndPickDocs = () =>
     ApiStatuses(StatusCodes.NOT_FOUND),
   );
 
-// DeletePick
-export const DeletePickDocs = () =>
+// ListStudents - 특정 그룹의 학생 목록 조회
+export const ListStudentsDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '수강생 pivot 에서 특정 학생을 삭제',
-      description: '반에서 특정 학생을 삭제합니다.',
-    }),
-    ApiOkResponse({ description: '반 수강생 삭제 완료' }),
-    ApiStatuses(StatusCodes.NOT_FOUND),
-  );
-
-// List Picks (학생이 속한 반 목록 or 반에 속한 학생 목록)
-export const ListPicksDocs = () =>
-  applyDecorators(
-    ApiOperation({
-      summary: '학생이 속한 반 목록 또는 반에 속한 학생 목록',
-      description:
-        '특정 학생이 속한 반 목록 또는 반에 속한 학생 목록을 조회합니다.',
+      summary: '특정 그룹의 학생 목록 조회',
+      description: '특정 그룹(반)에 등록된 모든 학생의 목록을 조회합니다.',
     }),
     ApiOkResponseTemplate({
-      description: '목록 조회 완료',
+      description: '그룹의 학생 목록 조회 성공',
       type: Pick,
       isArray: true,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
   );
 
-// Paginated List Picks
-export const PaginatedListPicksDocs = () =>
+// PaginatedListStudents - 특정 그룹의 학생 목록 페이지네이션 조회
+export const PaginatedListStudentsDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '학생/반 목록 페이지네이션',
+      summary: '특정 그룹의 학생 목록 페이지네이션 조회',
       description:
-        '특정 학생이 속한 반 목록 또는 반에 속한 학생 목록을 페이지네이션으로 조회합니다.',
+        '특정 그룹(반)에 등록된 학생의 목록을 페이지네이션으로 조회합니다.',
     }),
-    ApiPaginationQuery(PICK_OFFERING_CONFIG),
-    ApiOkPaginatedResponse(Pick, PICK_OFFERING_CONFIG),
+    ApiPaginationQuery(LIST_STUDENTS_CONFIG),
+    ApiOkPaginatedResponse(Pick, LIST_STUDENTS_CONFIG),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+// ListGroups - 특정 학생의 그룹 목록 조회
+export const ListGroupsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '특정 학생의 그룹 목록 조회',
+      description: '특정 학생이 등록된 모든 그룹(반)의 목록을 조회합니다.',
+    }),
+    ApiOkResponseTemplate({
+      description: '학생의 그룹 목록 조회 성공',
+      type: Pick,
+      isArray: true,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+// PaginatedListGroups - 특정 학생의 그룹 목록 페이지네이션 조회
+export const PaginatedListGroupsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '특정 학생의 그룹 목록 페이지네이션 조회',
+      description:
+        '특정 학생이 등록된 그룹(반)의 목록을 페이지네이션으로 조회합니다.',
+    }),
+    ApiPaginationQuery(LIST_GROUPS_CONFIG),
+    ApiOkPaginatedResponse(Pick, LIST_GROUPS_CONFIG),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+// UpdatePick
+export const UpdatePickDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '확정수강생 pivot 에서 특정 학생의 정보 수정',
+      description: '반에 등록된 특정 학생의 정보를 수정합니다.',
+    }),
+    // UpdatePickDto가 올바른 DTO이므로 이를 사용
+    ApiBody({ type: UpdatePickDto }),
+    ApiOkResponseTemplate({
+      description: '반 수강생 정보 수정 완료',
+      type: Pick,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+// DeletePick
+export const DeletePickDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '확정수강생 pivot 에서 특정 학생을 삭제',
+      description: '반에서 특정 학생을 삭제합니다.',
+    }),
+    ApiOkResponse({ description: '반 수강생 삭제 완료' }),
     ApiStatuses(StatusCodes.NOT_FOUND),
   );

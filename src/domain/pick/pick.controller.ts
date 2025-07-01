@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Patch,
@@ -11,7 +12,7 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor } from 'src/common/enums';
@@ -20,15 +21,17 @@ import { EndPickDto, StartPickDto } from 'src/domain/pick/dto/create-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { PickService } from 'src/domain/pick/pick.service';
 import {
-  CreatePickDocs,
   DeletePickDocs,
   EndPickDocs,
-  ListPicksDocs,
-  PaginatedListPicksDocs,
+  ListGroupsDocs,
+  ListStudentsDocs,
+  PaginatedListGroupsDocs,
+  PaginatedListStudentsDocs,
+  StartPickDocs,
   UpdatePickDocs,
 } from 'src/domain/pick/swagger/pick-swagger.decorator';
 
-@ApiTags('✅ Picks ( 확정수강생; pivot )')
+@ApiTags('✅ Picks ( 확정수강생; 반·학생 pivot )')
 @Controller('picks')
 @UseInterceptors(ClassSerializerInterceptor)
 export class PickController {
@@ -38,9 +41,9 @@ export class PickController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @CreatePickDocs()
-  @ApiOperation({ description: '수동으로 학생을 반에 등록합니다.' })
-  @Post()
+  @StartPickDocs()
+  @HttpCode(200)
+  @Post('start')
   async createPick(
     @Body() dto: StartPickDto,
     @CurrentUserIdAndRole() user: { id: number; role: string },
@@ -57,61 +60,9 @@ export class PickController {
     });
   }
 
-  //? ---------------------------------------------------------------------- ?//
-  //? Read
-  //? ---------------------------------------------------------------------- ?//
-
-  @ListPicksDocs()
-  @Get('students/:studentId')
-  async getGroupList(
-    @Param('studentId', ParseIntPipe) studentId: number,
-  ): Promise<Pick[]> {
-    return await this.pickService.listGroups(studentId);
-  }
-
-  @ListPicksDocs()
-  @Get('groups/:groupId')
-  async getStudentList(
-    @Param('groupId', ParseIntPipe) groupId: number,
-  ): Promise<Pick[]> {
-    return await this.pickService.listStudents(groupId);
-  }
-
-  @PaginatedListPicksDocs()
-  @Get('students/:studentId/paginated')
-  async getGroupInfiniteList(
-    @Param('studentId', ParseIntPipe) studentId: number,
-    @Query() query: PaginateQuery,
-  ): Promise<Paginated<Pick>> {
-    return await this.pickService.groupInfiniteList(studentId, query);
-  }
-
-  @PaginatedListPicksDocs()
-  @Get('groups/:groupId/paginated')
-  async getStudentInfiniteList(
-    @Param('groupId', ParseIntPipe) groupId: number,
-    @Query() query: PaginateQuery,
-  ): Promise<Paginated<Pick>> {
-    return await this.pickService.studentInfiniteList(groupId, query);
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Update
-  //? ---------------------------------------------------------------------- ?//
-
-  @UpdatePickDocs()
-  @ApiOperation({ description: '반에 등록된 특정 학생의 정보를 수정합니다' })
-  @Patch(':id')
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateGroupDto,
-  ): Promise<Pick> {
-    return await this.pickService.update(id, dto);
-  }
-
   @EndPickDocs()
-  @ApiOperation({ description: '반에 등록된 특정 학생의 수업을 종료합니다' })
-  @Patch()
+  @HttpCode(200)
+  @Post('end')
   async endPick(
     @Body() dto: EndPickDto,
     @CurrentUserIdAndRole() user: { id: number; role: string },
@@ -126,6 +77,57 @@ export class PickController {
       ...dto,
       endedBy: role,
     });
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
+
+  @ListGroupsDocs()
+  @Get('students/:studentId')
+  async getGroupList(
+    @Param('studentId', ParseIntPipe) studentId: number,
+  ): Promise<Pick[]> {
+    return await this.pickService.listGroups(studentId);
+  }
+
+  @PaginatedListGroupsDocs()
+  @Get('students/:studentId/paginated')
+  async getGroupInfiniteList(
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Query() query: PaginateQuery,
+  ): Promise<Paginated<Pick>> {
+    return await this.pickService.groupInfiniteList(studentId, query);
+  }
+
+  @ListStudentsDocs()
+  @Get('groups/:groupId')
+  async getStudentList(
+    @Param('groupId', ParseIntPipe) groupId: number,
+  ): Promise<Pick[]> {
+    return await this.pickService.listStudents(groupId);
+  }
+
+  @PaginatedListStudentsDocs()
+  @Get('groups/:groupId/paginated')
+  async getStudentInfiniteList(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Query() query: PaginateQuery,
+  ): Promise<Paginated<Pick>> {
+    return await this.pickService.studentInfiniteList(groupId, query);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
+  @UpdatePickDocs()
+  @Patch(':id')
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateGroupDto,
+  ): Promise<Pick> {
+    return await this.pickService.update(id, dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
