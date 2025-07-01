@@ -27,7 +27,7 @@ import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { getDuration } from 'src/helpers/time';
 import { NotificationService } from 'src/services/notification/notification.service';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 @Injectable()
 export class GroupAttendanceService {
@@ -286,7 +286,19 @@ export class GroupAttendanceService {
       );
       const groupId = Number(groupKey.split('#')[1]);
 
-      // 3. 한 번의 최적화된 쿼리로 각 학생의 해당 날짜 모든 그룹 스케줄 조회
+      // 3. 한 번의 쿼리로 모든 학생 정보 조회
+      const students = await this.studentRepository.find({
+        where: { id: In(studentIds) },
+        relations: ['parent'],
+        select: ['id', 'name', 'grade', 'class', 'studentCode', 'parent'],
+      });
+
+      // 학생 ID를 key로 하는 Map 생성 (빠른 lookup을 위해)
+      const studentMap = new Map(
+        students.map((student) => [student.id, student]),
+      );
+
+      // 4. 한 번의 최적화된 쿼리로 각 학생의 해당 날짜 모든 그룹 스케줄 조회
       const studentScheduleData: {
         studentId: number;
         groupId: number;
@@ -340,6 +352,7 @@ export class GroupAttendanceService {
           );
           return {
             ...item,
+            student: studentMap.get(studentId),
             isLast: studentLastGroupMap.get(studentId) ?? false,
           };
         },
