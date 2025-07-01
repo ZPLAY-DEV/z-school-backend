@@ -1,10 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-  FilterOperator,
-  paginate,
-  Paginated,
-  PaginateQuery,
+    FilterOperator,
+    paginate,
+    Paginated,
+    PaginateQuery,
 } from 'nestjs-paginate';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
@@ -321,15 +321,15 @@ ORDER BY grade, class',
         }
 
         // 2. 수업 기간 내에 있는지 확인
-        if (pick.startedOn) {
-          const startDate = new Date(pick.startedOn);
+        if (pick.start) {
+          const startDate = new Date(pick.start);
           if (targetDate < startDate) {
             return false;
           }
         }
 
-        if (pick.endedOn) {
-          const endDate = new Date(pick.endedOn);
+        if (pick.end) {
+          const endDate = new Date(pick.end);
           if (targetDate > endDate) {
             return false;
           }

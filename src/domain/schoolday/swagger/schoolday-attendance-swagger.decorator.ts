@@ -4,9 +4,9 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import {
-  CreateDynamoRecordWithDateDto,
-  CreateDynamoRecordWithRangeDto,
-  ResponseAttendanceDto,
+    CreateDynamoRecordWithDateDto,
+    CreateDynamoRecordWithRangeDto,
+    ResponseAttendanceDto,
 } from 'src/domain/schoolday/dto/response-attendance.dto';
 
 //? ---------------------------------------------------------------------- ?//
@@ -47,7 +47,7 @@ export const CreateAttendanceOfSchooldayWithDateDocs = () => {
       - 지수 백오프: 100ms × 2^retry
       
       ### ⚠️ 주의사항
-      - 종료된 수강생(\`endedOn\` < 수업일)은 제외됩니다.
+      - 종료된 수강생(\`end\` < 수업일)은 제외됩니다.
       - 기본 출석 상태: \`PENDING\`
       - TTL: 생성일로부터 1년 후 자동 삭제
       - 대량 데이터 처리 시 응답 시간이 길어질 수 있습니다.
@@ -136,7 +136,7 @@ export const CreateAttendanceOfSchooldayWithPeriodDocs = () => {
       - 지수 백오프: 100ms × 2^retry
       
       ### ⚠️ 주의사항
-      - 종료된 수강생(\`endedOn\` < 수업일)은 제외됩니다.
+      - 종료된 수강생(\`end\` < 수업일)은 제외됩니다.
       - 기본 출석 상태: \`PENDING\`
       - TTL: 생성일로부터 1년 후 자동 삭제
       - 대량 데이터 처리 시 응답 시간이 매우 길어질 수 있습니다.

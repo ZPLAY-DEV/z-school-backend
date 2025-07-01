@@ -23,8 +23,8 @@ const data = [
       schoolYear: 2025,
       schoolName: '삼척초등학교',
       termName: '봄학기',
-      start: '2025-03-12',
-      end: '2025-07-25',
+      start: '2025-03-01',
+      end: '2025-05-31',
     },
   },
   {

@@ -10,6 +10,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -19,6 +20,7 @@ import {
 } from 'typeorm';
 
 @Entity('terms')
+@Index(['start', 'end'])
 @Unique(['schoolId', 'schoolYear', 'termName'])
 export class Term {
   @ApiProperty({ description: 'termId', example: 1 })
@@ -43,12 +45,16 @@ export class Term {
   @Column({ type: 'varchar', length: 16 })
   termName: string;
 
-  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
-  @Column({ type: 'varchar', length: 10 })
+  @ApiProperty({
+    description: '검색을 위해 varchar 에서 date 으로 변경 (YYYY-MM-DD)',
+  })
+  @Column({ type: 'date' })
   start: string;
 
-  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
-  @Column({ type: 'varchar', length: 10 })
+  @ApiProperty({
+    description: '검색을 위해 varchar 에서 date 으로 변경 (YYYY-MM-DD)',
+  })
+  @Column({ type: 'date' })
   end: string;
 
   @ApiProperty({ description: '🈳 시간 중복 허용 여부', default: false })
@@ -87,14 +93,6 @@ export class Term {
     comment: '수강신청 준비 상태. [null => 날짜] 지정시 자동으로 true',
   })
   isOfferingReady: boolean;
-
-  @ApiProperty({ description: '🈳 현재 학기', default: false })
-  @Column({
-    type: 'boolean',
-    default: false,
-    comment: '현재 학기 여부 (현재 학기만 자동으로 출석부가 생성된다.)',
-  })
-  isActive: boolean;
 
   // ------------------------------------------------------------------------ //
 
@@ -144,16 +142,6 @@ export class Term {
 
   @OneToMany(() => Newsletter, (newsletter: Newsletter) => newsletter.term)
   public newsletters: Newsletter[];
-
-  //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
-
-  get startDate(): Date {
-    return new Date(`${this.start}T09:00:00+09:00`); // UTC +9 시간대로 변환
-  }
-
-  get endDate(): Date {
-    return new Date(`${this.end}T09:00:00+09:00`); // UTC +9 시간대로 변환
-  }
 
   //? Constructor ---------------------------------------------------------- ?//
 

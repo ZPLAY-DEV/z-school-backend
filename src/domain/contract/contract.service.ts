@@ -33,7 +33,7 @@ export class ContractService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  // 필수항목) groupId, samId, startedOn, note (수동으로 등록시)
+  // 필수항목) groupId, samId, start, note (수동으로 등록시)
   async createContract(dto: CreateContractDto): Promise<Contract> {
     const existingContract = await this.findContractByGroupIdAndSamId(
       dto.groupId,
@@ -58,12 +58,12 @@ export class ContractService {
     await this.contractRepository.update(contract.id, {
       note: dto.note,
       endedBy: dto.endedBy,
-      endedOn: dto.endedOn,
+      end: dto.end,
     });
 
     contract.note = dto.note;
     contract.endedBy = dto.endedBy ?? Actor.OTHER;
-    contract.endedOn = dto.endedOn;
+    contract.end = dto.end;
 
     return contract;
   }

@@ -283,7 +283,7 @@ export interface IPickKeys {
   groupId: number;
   offeringId: number;
   termId: number;
-  startedOn: string;
+  start: string;
 }
 
 export interface ICalendarDay {

@@ -61,14 +61,14 @@ export class Lesson {
     description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
     example: '2025-01-01',
   })
-  @Column({ type: 'varchar', length: 10 })
+  @Column({ type: 'date' })
   start: string;
 
   @ApiProperty({
     description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
     example: '2025-02-01',
   })
-  @Column({ type: 'varchar', length: 10 })
+  @Column({ type: 'date' })
   end: string;
 
   @ApiProperty({ description: 'weekly frequency' })

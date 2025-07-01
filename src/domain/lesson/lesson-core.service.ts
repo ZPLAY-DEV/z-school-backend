@@ -70,8 +70,8 @@ export class LessonCoreService {
 
       if (
         (dto.start &&
-          new Date(`${dto.start}T09:00:00+09:00`) < term.startDate) ||
-        (dto.end && new Date(`${dto.end}T09:00:00+09:00`) > term.endDate)
+          new Date(`${dto.start}T08:00:00+09:00`) < new Date(term.start)) ||
+        (dto.end && new Date(`${dto.end}T08:00:00+09:00`) > new Date(term.end))
       ) {
         throw new BadRequestException('Out of range');
       }
@@ -525,8 +525,8 @@ export class LessonCoreService {
       lessonId: number;
       groupId: number;
       termId: number;
-      startedOn: string;
-      endedOn: string;
+      start: string;
+      end: string;
     }> = [];
 
     const samIds = Array.from(uniqueSams.values());
@@ -537,8 +537,8 @@ export class LessonCoreService {
           lessonId,
           groupId: group.id,
           termId: lesson.termId,
-          startedOn: dto.start ?? lesson.start,
-          endedOn: dto.end ?? lesson.end,
+          start: dto.start ?? lesson.start,
+          end: dto.end ?? lesson.end,
         });
       }
     }
@@ -553,17 +553,17 @@ export class LessonCoreService {
         data.lessonId,
         data.groupId,
         data.termId,
-        data.startedOn,
-        data.endedOn,
+        data.start,
+        data.end,
       ]);
 
       const upsertQuery = `
-        INSERT INTO contracts (samId, lessonId, groupId, termId, startedOn, endedOn)
-        VALUES ${placeholders} AS new_contract(samId, lessonId, groupId, termId, startedOn, endedOn)
+        INSERT INTO contracts (samId, lessonId, groupId, termId, start, end)
+        VALUES ${placeholders} AS new_contract(samId, lessonId, groupId, termId, start, end)
         ON DUPLICATE KEY UPDATE
           termId = new_contract.termId,
-          startedOn = new_contract.startedOn,
-          endedOn = new_contract.endedOn,
+          start = new_contract.start,
+          end = new_contract.end,
           updatedAt = CURRENT_TIMESTAMP
       `;
       await manager.query(upsertQuery, values);

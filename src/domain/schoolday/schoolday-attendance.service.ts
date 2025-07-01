@@ -66,7 +66,8 @@ export class SchooldayAttendanceService {
   async createAllWithDate(date: string): Promise<ResponseAttendanceDto[]> {
     const terms = await this.termRepository.find({
       where: {
-        isActive: true,
+        start: MoreThanOrEqual(date),
+        end: LessThanOrEqual(date),
       },
     });
 
@@ -211,11 +212,7 @@ export class SchooldayAttendanceService {
       startsAt,
       endsAt,
     );
-    console.log(`🕒`, schooldays);
     const attendances = this.buildAttendances(schooldays);
-
-    console.log(`🕒 attendances`, attendances);
-
     const writeRequests = this.createPutRequestBatch(attendances);
 
     return this.executeBatchOperations(writeRequests);
@@ -309,8 +306,6 @@ export class SchooldayAttendanceService {
       return [];
     }
 
-    console.log(`🕒 picks`, JSON.stringify(picks, null, 2));
-
     let skippedCount = 0;
     let processedCount = 0;
 
@@ -356,28 +351,28 @@ export class SchooldayAttendanceService {
   /**
    * 학기 중간에 들어오거나 나간 전학생들의 경우 처리하는 로직
    * - 만일 startedBy or endedBy 가 null 이 아니면 전학생이다.
-   * - 만일 전학생인 경우 그들의 startedOn ~ endedOn 기간인지 확인한다.
+   * - 만일 전학생인 경우 그들의 start ~ end 기간인지 확인한다.
    */
   private skipStudentForTheDay(pick: Pick, startsAt: Date): boolean {
-    // startedOn과 endedOn이 모두 없거나 빈 문자열인 경우 skip하지 않음
-    const hasStartedOn = pick.startedOn && pick.startedOn.trim() !== '';
-    const hasEndedOn = pick.endedOn && pick.endedOn.trim() !== '';
+    // start과 end이 모두 없거나 빈 문자열인 경우 skip하지 않음
+    const hasStartedOn = pick.start && pick.start.trim() !== '';
+    const hasEndedOn = pick.end && pick.end.trim() !== '';
 
     if (!hasStartedOn && !hasEndedOn) {
       return false;
     }
 
     try {
-      // startedOn이 있는 경우에만 startDate 계산
+      // start이 있는 경우에만 startDate 계산
       let startDate: Date | null = null;
       if (hasStartedOn) {
-        startDate = fromZonedTime(`${pick.startedOn}T00:00:00`, 'Asia/Seoul');
+        startDate = fromZonedTime(`${pick.start}T00:00:00`, 'Asia/Seoul');
       }
 
-      // endedOn이 있는 경우에만 endDate 계산
+      // end이 있는 경우에만 endDate 계산
       let endDate: Date | null = null;
       if (hasEndedOn) {
-        endDate = fromZonedTime(`${pick.endedOn}T23:59:59`, 'Asia/Seoul');
+        endDate = fromZonedTime(`${pick.end}T23:59:59`, 'Asia/Seoul');
       }
 
       // 둘 다 없으면 skip하지 않음 (이미 위에서 체크했지만 안전장치)
@@ -407,8 +402,8 @@ export class SchooldayAttendanceService {
         error: error.message,
         pickId: pick.id,
         studentId: pick.studentId,
-        startedOn: pick.startedOn,
-        endedOn: pick.endedOn,
+        start: pick.start,
+        end: pick.end,
         startsAt: startsAt.toISOString(),
       });
       // 에러 시 skip하지 않음 (보수적 접근)

@@ -68,15 +68,14 @@ export class Pick {
   startedBy: Actor | null;
 
   @ApiProperty({
-    description: '🈳 startedOn; 수업시작일(첫수업일)',
+    description: '🈳 start; 수업시작일(첫수업일)',
     example: '2025-05-27',
   })
   @Column({
-    type: 'varchar',
-    length: 16,
+    type: 'date',
     comment: '수업시작일(첫수업일)',
   })
-  startedOn: string;
+  start: string;
 
   @ApiProperty({
     description: '🈳 누가 수업종료일(마지막수업일) 등록했나?',
@@ -93,16 +92,14 @@ export class Pick {
   endedBy: Actor | null;
 
   @ApiProperty({
-    description: '🈳 endedOn; 수업종료일(마지막수업일)',
+    description: '🈳 end; 수업종료일(마지막수업일)',
     example: '2025-08-27',
   })
   @Column({
-    type: 'varchar',
-    length: 16,
-    nullable: true,
+    type: 'date',
     comment: '수업종료일(마지막수업일)',
   })
-  endedOn: string | null;
+  end: string;
 
   @ApiProperty({ description: '🈳 비고', example: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })

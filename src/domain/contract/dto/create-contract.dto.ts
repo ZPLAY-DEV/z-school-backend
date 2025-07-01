@@ -46,7 +46,7 @@ export class CreateContractDto {
     example: '2025-05-27',
   })
   @IsString()
-  startedOn: string;
+  start: string;
 
   @ApiPropertyOptional({
     description: '누가 수업종료일(마지막수업일) 등록했나?',
@@ -63,7 +63,7 @@ export class CreateContractDto {
   })
   @IsString()
   @IsOptional()
-  endedOn?: string;
+  end?: string;
 
   @ApiPropertyOptional({ description: '비고', example: '비고' })
   @IsString()
@@ -100,7 +100,7 @@ class ContractBaseDto {
   note: string;
 }
 
-// StartContractDto: groupId, samId, startedBy, startedOn, note (모두 필수)
+// StartContractDto: groupId, samId, startedBy, start, note (모두 필수)
 export class StartContractDto extends ContractBaseDto {
   @ApiProperty({
     description: '누가 수업시작일(첫수업일) 등록했나?',
@@ -112,10 +112,10 @@ export class StartContractDto extends ContractBaseDto {
 
   @ApiProperty({ description: '수업시작일(첫수업일)', example: '2025-01-01' })
   @IsString()
-  startedOn: string;
+  start: string;
 }
 
-// EndContractDto: groupId, studentId, endedBy, endedOn, note (모두 필수)
+// EndContractDto: groupId, studentId, endedBy, end, note (모두 필수)
 export class EndContractDto extends ContractBaseDto {
   @ApiProperty({
     description: '누가 수업종료일(마지막수업일) 등록했나?',
@@ -130,5 +130,5 @@ export class EndContractDto extends ContractBaseDto {
     example: '2025-01-01',
   })
   @IsString()
-  endedOn: string;
+  end: string;
 }

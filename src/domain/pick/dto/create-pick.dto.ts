@@ -56,7 +56,7 @@ export class CreatePickDto {
   @ApiPropertyOptional({ description: '수업시작일(첫수업일)' })
   @IsString()
   @IsOptional()
-  startedOn?: string;
+  start?: string;
 
   @ApiPropertyOptional({
     description: '누가 수업종료일(마지막수업일) 등록했나?',
@@ -70,7 +70,7 @@ export class CreatePickDto {
   @ApiPropertyOptional({ description: '수업종료일(마지막수업일)' })
   @IsString()
   @IsOptional()
-  endedOn?: string;
+  end?: string;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsString()
@@ -97,7 +97,7 @@ class PickBaseDto {
   note: string;
 }
 
-// StartPickDto: groupId, studentId, startedBy, startedOn, note (모두 필수)
+// StartPickDto: groupId, studentId, startedBy, start, note (모두 필수)
 export class StartPickDto extends PickBaseDto {
   @ApiProperty({ description: 'Offering ID', example: 1 })
   @IsInt()
@@ -119,10 +119,10 @@ export class StartPickDto extends PickBaseDto {
 
   @ApiProperty({ description: '수업시작일(첫수업일)', example: '2025-01-01' })
   @IsString()
-  startedOn: string;
+  start: string;
 }
 
-// EndPickDto: groupId, studentId, endedBy, endedOn, note (모두 필수)
+// EndPickDto: groupId, studentId, endedBy, end, note (모두 필수)
 export class EndPickDto extends PickBaseDto {
   @ApiProperty({
     description: '누가 수업종료일(마지막수업일) 등록했나?',
@@ -137,5 +137,5 @@ export class EndPickDto extends PickBaseDto {
     example: '2025-01-01',
   })
   @IsString()
-  endedOn: string;
+  end: string;
 }

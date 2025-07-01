@@ -29,7 +29,7 @@ export class Calendar {
   name: string | null; // 관리자 편의를 위한 column
 
   @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
-  @Column({ type: 'varchar', length: 10 })
+  @Column({ type: 'date' })
   date: string; // "2025-08-14" 형식으로 저장
 
   @ApiProperty({ description: '' })

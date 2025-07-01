@@ -45,7 +45,7 @@ export class OfferingPickService {
 
     // console.log('🚀 offering', JSON.stringify(offering, null, 2));
     // offerings 는 같은 학년 group 이 여러개 있을 수 있음
-    const sameGradeGroups: { groupId: number; startedOn: string }[] =
+    const sameGradeGroups: { groupId: number; start: string }[] =
       offering.lesson.groups
         ?.sort(
           (a, b) =>
@@ -55,8 +55,8 @@ export class OfferingPickService {
         .filter((v: Group) => offering.groupIds.includes(v.id))
         .map((v: Group) => {
           const groupId = v.id;
-          const startedOn = formatDateInKST(v.schooldays[0].startsAt);
-          return { groupId, startedOn };
+          const start = formatDateInKST(v.schooldays[0].startsAt);
+          return { groupId, start };
         });
 
     //console.log('🚀 combo', JSON.stringify(sameGradeGroups, null, 2));
@@ -125,7 +125,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     termId: number,
-    sameGradeGroups: { groupId: number; startedOn: string }[],
+    sameGradeGroups: { groupId: number; start: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
@@ -136,13 +136,13 @@ export class OfferingPickService {
 
     // 같은 학년 group 들에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    sameGradeGroups.forEach(({ groupId, startedOn }) => {
+    sameGradeGroups.forEach(({ groupId, start }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
         offeringId,
         termId,
-        startedOn,
+        start,
       }));
       items = items.concat(groupItems);
     });
@@ -178,7 +178,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     termId: number,
-    sameGradeGroups: { groupId: number; startedOn: string }[],
+    sameGradeGroups: { groupId: number; start: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
@@ -189,13 +189,13 @@ export class OfferingPickService {
 
     // 같은 학년 group 들에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    sameGradeGroups.forEach(({ groupId, startedOn }) => {
+    sameGradeGroups.forEach(({ groupId, start }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
         offeringId,
         termId,
-        startedOn,
+        start,
       }));
       items = items.concat(groupItems);
     });
@@ -231,7 +231,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     termId: number,
-    sameGradeGroups: { groupId: number; startedOn: string }[],
+    sameGradeGroups: { groupId: number; start: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
@@ -249,13 +249,13 @@ export class OfferingPickService {
 
     // 같은 학년 group 들에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    sameGradeGroups.forEach(({ groupId, startedOn }) => {
+    sameGradeGroups.forEach(({ groupId, start }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
         offeringId,
         termId,
-        startedOn,
+        start,
       }));
       items = items.concat(groupItems);
     });
@@ -317,15 +317,15 @@ export class OfferingPickService {
         item.groupId,
         item.offeringId,
         item.termId,
-        item.startedOn,
+        item.start,
       ]);
 
       const query = `
-        INSERT INTO picks (studentId, groupId, offeringId, termId, startedOn)
-        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, termId, startedOn)
+        INSERT INTO picks (studentId, groupId, offeringId, termId, start)
+        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, termId, start)
         ON DUPLICATE KEY UPDATE
           termId = new_pick.termId,
-          startedOn = new_pick.startedOn
+          start = new_pick.start
       `;
       await this.pickRepository.query(query, values);
     }

@@ -30,7 +30,7 @@ export class PickService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  // 필수항목) groupId, studentId, startedOn, note (수동으로 등록시)
+  // 필수항목) groupId, studentId, start, note (수동으로 등록시)
   async createPick(dto: CreatePickDto): Promise<Pick> {
     const existingPick = await this.findPickByGroupIdAndStudentId(
       dto.groupId,
@@ -55,12 +55,12 @@ export class PickService {
     await this.pickRepository.update(pick.id, {
       note: dto.note,
       endedBy: dto.endedBy,
-      endedOn: dto.endedOn,
+      end: dto.end,
     });
 
     pick.note = dto.note;
     pick.endedBy = dto.endedBy ?? Actor.OTHER;
-    pick.endedOn = dto.endedOn;
+    pick.end = dto.end;
 
     return pick;
   }
