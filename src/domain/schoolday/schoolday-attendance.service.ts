@@ -63,28 +63,15 @@ export class SchooldayAttendanceService {
    * @param date `2025-08-14` 형식의 날짜 문자열
    * @returns 생성된 총 기록 수, 실패 수, 이미 존재하는 기록 수를 반환
    */
-  async createAllWithDate(date: string): Promise<ResponseAttendanceDto[]> {
-    const terms = await this.termRepository.find({
-      where: {
-        start: MoreThanOrEqual(date),
-        end: LessThanOrEqual(date),
-      },
-    });
+  async createAllWithDate(param?: string): Promise<ResponseAttendanceDto[]> {
+    const date = !param ? new Date() : new Date(param);
+    const dateString = date.toISOString().split('T')[0];
 
+    const terms = await this.findTermsByDate(dateString);
     const results: ResponseAttendanceDto[] = [];
 
     for (const term of terms) {
-      const schoolId = term.schoolId;
-      const termId = term.id;
-      const startsAt = fromZonedTime(`${date}T00:00:00`, 'Asia/Seoul');
-      const endsAt = fromZonedTime(`${date}T23:59:59`, 'Asia/Seoul');
-
-      const result = await this.createAttendances(
-        schoolId,
-        termId,
-        startsAt,
-        endsAt,
-      );
+      const result = await this.createAttendancesForTerm(term, dateString);
       results.push(result);
     }
 
@@ -94,14 +81,13 @@ export class SchooldayAttendanceService {
   async createWithDate(
     dto: CreateDynamoRecordWithDateDto,
   ): Promise<ResponseAttendanceDto> {
-    const { schoolId, termId, date } = dto;
-
-    const startsAt = fromZonedTime(`${date}T00:00:00`, 'Asia/Seoul');
-    const endsAt = fromZonedTime(`${date}T23:59:59`, 'Asia/Seoul');
-
-    console.log(`🕒`, dto, startsAt, endsAt);
-
-    return this.createAttendances(schoolId, termId, startsAt, endsAt);
+    const dateString = this.getDateString(dto.date);
+    return this.createAttendances(
+      dto.schoolId,
+      dto.termId,
+      dateString,
+      dateString,
+    );
   }
 
   /**
@@ -112,12 +98,7 @@ export class SchooldayAttendanceService {
   async createWithPeriod(
     dto: CreateDynamoRecordWithRangeDto,
   ): Promise<ResponseAttendanceDto> {
-    const { schoolId, termId, from, to } = dto;
-
-    const startsAt = fromZonedTime(`${from}T00:00:00`, 'Asia/Seoul');
-    const endsAt = fromZonedTime(`${to}T23:59:59`, 'Asia/Seoul');
-
-    return this.createAttendances(schoolId, termId, startsAt, endsAt);
+    return this.createAttendances(dto.schoolId, dto.termId, dto.from, dto.to);
   }
 
   //* ----------------------------------------------------------------------- */
@@ -140,27 +121,21 @@ export class SchooldayAttendanceService {
       return { total: 0, failedBatches: 0, alreadyExists: 0 };
     }
 
-    // 100개씩 청크로 나누어 처리 (TransactWriteItems 제한)
     const chunks = chunk(items, 100);
     let totalAlreadyExists = 0;
     let totalFailedBatches = 0;
 
     for (const chunk of chunks) {
-      const chunkResult = await this.executeTransactionChunk(chunk);
-      totalAlreadyExists += chunkResult.alreadyExists;
-      totalFailedBatches += chunkResult.failedBatches;
+      const result = await this.executeTransactionChunk(chunk);
+      totalAlreadyExists += result.alreadyExists;
+      totalFailedBatches += result.failedBatches;
     }
 
-    const result = {
+    return {
       total: items.length,
       failedBatches: totalFailedBatches,
       alreadyExists: totalAlreadyExists,
     };
-
-    this.logger.log(
-      `Batch operation completed. Total: ${result.total}, Failed: ${result.failedBatches}, Already exists: ${result.alreadyExists}`,
-    );
-    return result;
   }
 
   /**
@@ -174,9 +149,7 @@ export class SchooldayAttendanceService {
     dailyStudentKeys: string[],
   ): DeleteRequest[] {
     return dailyStudentKeys.map((dailyStudentKey) => ({
-      DeleteRequest: {
-        Key: { groupKey, dailyStudentKey },
-      },
+      DeleteRequest: { Key: { groupKey, dailyStudentKey } },
     }));
   }
 
@@ -187,9 +160,7 @@ export class SchooldayAttendanceService {
    */
   createPutRequestBatch(attendanceItems: IAttendanceCore[]): WriteRequest[] {
     return attendanceItems.map((item) => ({
-      PutRequest: {
-        Item: buildAttendanceItem(item),
-      },
+      PutRequest: { Item: buildAttendanceItem(item) },
     }));
   }
 
@@ -201,11 +172,14 @@ export class SchooldayAttendanceService {
    * 출석부 기록 생성의 메인 orchestration 메서드
    */
   private async createAttendances(
-    schoolId: number | undefined,
-    termId: number | undefined,
-    startsAt: Date,
-    endsAt: Date,
+    schoolId: number,
+    termId: number,
+    fromDate: string,
+    toDate: string,
   ): Promise<ResponseAttendanceDto> {
+    const startsAt = fromZonedTime(`${fromDate}T00:00:00`, 'Asia/Seoul');
+    const endsAt = fromZonedTime(`${toDate}T23:59:59`, 'Asia/Seoul');
+
     const schooldays = await this.fetchSchooldays(
       schoolId,
       termId,
@@ -222,26 +196,18 @@ export class SchooldayAttendanceService {
    * 필터링 조건에 따라 수업일 기록들을 조회합니다
    */
   private async fetchSchooldays(
-    schoolId: number | undefined,
-    termId: number | undefined,
+    schoolId: number,
+    termId: number,
     startsAt: Date,
     endsAt: Date,
   ): Promise<Schoolday[]> {
-    const whereCondition: any = {
-      startsAt: MoreThanOrEqual(startsAt),
-      endsAt: LessThanOrEqual(endsAt),
-    };
-
-    if (schoolId !== undefined) {
-      whereCondition.schoolId = schoolId;
-    }
-
-    if (termId !== undefined) {
-      whereCondition.termId = termId;
-    }
-
     return this.schooldayRepository.find({
-      where: whereCondition,
+      where: {
+        schoolId,
+        termId,
+        startsAt: MoreThanOrEqual(startsAt),
+        endsAt: LessThanOrEqual(endsAt),
+      },
       relations: {
         group: {
           picks: { student: true },
@@ -251,100 +217,42 @@ export class SchooldayAttendanceService {
     });
   }
 
-  /**
-   * 수업일 아이템들로부터 출석부 아이템들을 구축합니다
-   */
   private buildAttendances(schooldays: Schoolday[]): IAttendance[] {
-    this.logger.log(`Building attendances for ${schooldays.length} schooldays`);
-
     if (schooldays.length === 0) {
-      this.logger.warn(
-        'No schooldays found, returning empty attendances array',
-      );
       return [];
     }
 
     const attendances: IAttendance[] = [];
 
     for (const schoolday of schooldays) {
-      if (!schoolday.group) {
-        this.logger.warn(
-          `Schoolday ${schoolday.id} has no group relation, skipping`,
+      if (!schoolday.group?.picks) continue;
+
+      const { group, startsAt, duration, lessonId, groupId } = schoolday;
+      const localDate = formatDateInKST(startsAt);
+      const expires = calculateTtl(addDays(new Date(), 365));
+
+      const dayAttendances = group.picks
+        .filter(
+          (pick) => pick.student && this.isStudentActiveOnDate(pick, startsAt),
+        )
+        .map((pick) =>
+          this.buildAttendanceForStudent({
+            pick,
+            localDate,
+            lessonId,
+            lessonName: group.lesson?.lessonName || '',
+            groupId,
+            groupName: group.groupName,
+            start: group.start,
+            end: group.end,
+            duration,
+            expires,
+          }),
         );
-        continue;
-      }
 
-      const attendancesForTheDay = this.buildAttendancesForTheDay(schoolday);
-      attendances.push(...attendancesForTheDay);
+      attendances.push(...dayAttendances);
     }
 
-    this.logger.log(
-      `Total attendances built: ${attendances.length} across ${schooldays.length} schooldays`,
-    );
-    return attendances;
-  }
-
-  /**
-   * 단일 수업일에 대한 출석부 아이템들을 생성합니다.
-   * 당연한 이야기지만, picks (수강확정된 학생) 관계가 없으면 생성 안된다.
-   */
-  private buildAttendancesForTheDay(schoolday: Schoolday): IAttendance[] {
-    const { group, startsAt, duration, lessonId, groupId } = schoolday;
-    const { picks, groupName, lesson } = group;
-    const localDate = formatDateInKST(startsAt);
-    const expires = calculateTtl(addDays(new Date(), 365));
-    const attendances: IAttendance[] = [];
-
-    this.logger.log(
-      `Building attendances for schoolday ${groupId}, picks count: ${picks?.length || 0}`,
-    );
-
-    if (!picks || picks.length === 0) {
-      this.logger.warn(
-        `No picks found for group ${groupId}, skipping attendance generation`,
-      );
-      return [];
-    }
-
-    let skippedCount = 0;
-    let processedCount = 0;
-
-    for (const pick of picks) {
-      if (!pick.student) {
-        this.logger.warn(`Pick ${pick.id} has no student relation, skipping`);
-        skippedCount++;
-        continue;
-      }
-
-      if (this.skipStudentForTheDay(pick, startsAt)) {
-        this.logger.log(
-          `Skipping student ${pick.student.name} (ID: ${pick.student.id}) for date filter`,
-        );
-        skippedCount++;
-        continue;
-      }
-
-      const dto: BuildAttendanceBodyDto = {
-        pick,
-        localDate,
-        lessonId,
-        lessonName: lesson?.lessonName,
-        groupId,
-        groupName,
-        start: group.start,
-        end: group.end,
-        duration,
-        expires,
-      };
-      const attendance = this.buildAttendanceForStudent(dto);
-
-      attendances.push(attendance);
-      processedCount++;
-    }
-
-    this.logger.log(
-      `Generated ${attendances.length} attendances, processed ${processedCount} students, skipped ${skippedCount} students for group ${groupId}`,
-    );
     return attendances;
   }
 
@@ -353,61 +261,28 @@ export class SchooldayAttendanceService {
    * - 만일 startedBy or endedBy 가 null 이 아니면 전학생이다.
    * - 만일 전학생인 경우 그들의 start ~ end 기간인지 확인한다.
    */
-  private skipStudentForTheDay(pick: Pick, startsAt: Date): boolean {
-    // start과 end이 모두 없거나 빈 문자열인 경우 skip하지 않음
-    const hasStartedOn = pick.start && pick.start.trim() !== '';
-    const hasEndedOn = pick.end && pick.end.trim() !== '';
+  private isStudentActiveOnDate(pick: Pick, date: Date): boolean {
+    const hasStart = pick.start?.trim();
+    const hasEnd = pick.end?.trim();
 
-    if (!hasStartedOn && !hasEndedOn) {
-      return false;
-    }
+    if (!hasStart && !hasEnd) return true;
 
     try {
-      // start이 있는 경우에만 startDate 계산
-      let startDate: Date | null = null;
-      if (hasStartedOn) {
-        startDate = fromZonedTime(`${pick.start}T00:00:00`, 'Asia/Seoul');
-      }
+      const startDate = hasStart
+        ? fromZonedTime(`${pick.start}T00:00:00`, 'Asia/Seoul')
+        : null;
+      const endDate = hasEnd
+        ? fromZonedTime(`${pick.end}T23:59:59`, 'Asia/Seoul')
+        : null;
 
-      // end이 있는 경우에만 endDate 계산
-      let endDate: Date | null = null;
-      if (hasEndedOn) {
-        endDate = fromZonedTime(`${pick.end}T23:59:59`, 'Asia/Seoul');
-      }
+      if (startDate && !endDate) return date >= startDate;
+      if (!startDate && endDate) return date <= endDate;
+      if (startDate && endDate) return date >= startDate && date <= endDate;
 
-      // 둘 다 없으면 skip하지 않음 (이미 위에서 체크했지만 안전장치)
-      if (!startDate && !endDate) {
-        return false;
-      }
-
-      // startDate만 있는 경우: startsAt >= startDate여야 함
-      if (startDate && !endDate) {
-        return startsAt < startDate;
-      }
-
-      // endDate만 있는 경우: startsAt <= endDate여야 함
-      if (!startDate && endDate) {
-        return startsAt > endDate;
-      }
-
-      // 둘 다 있는 경우: startDate <= startsAt <= endDate여야 함
-      if (startDate && endDate) {
-        return !(startsAt >= startDate && startsAt <= endDate);
-      }
-
-      // 이 지점에 도달하면 안되지만 안전장치
-      return false;
+      return true;
     } catch (error) {
-      this.logger.error('Date parsing error in skipStudentForTheDay:', {
-        error: error.message,
-        pickId: pick.id,
-        studentId: pick.studentId,
-        start: pick.start,
-        end: pick.end,
-        startsAt: startsAt.toISOString(),
-      });
-      // 에러 시 skip하지 않음 (보수적 접근)
-      return false;
+      this.logger.error('Date parsing error', { error, pickId: pick.id });
+      return true;
     }
   }
 
@@ -415,42 +290,30 @@ export class SchooldayAttendanceService {
    * 학생 한 명에 대한 출석부 아이템을 구축합니다
    */
   private buildAttendanceForStudent(dto: BuildAttendanceBodyDto): IAttendance {
-    const {
-      pick,
-      localDate,
-      lessonId,
-      lessonName,
-      groupId,
-      groupName,
-      start,
-      end,
-      duration,
-      expires,
-    } = dto;
-    const groupKey = generateGroupKey(groupId);
+    const groupKey = generateGroupKey(dto.groupId);
     const dailyStudentKey = generateDailyStudentKey(
-      localDate,
-      pick.student.id,
-      pick.student.grade,
-      pick.student.class,
-      pick.student.studentCode,
+      dto.localDate,
+      dto.pick.student.id,
+      dto.pick.student.grade,
+      dto.pick.student.class,
+      dto.pick.student.studentCode,
     );
 
     return {
       groupKey,
       dailyStudentKey,
-      lessonId,
-      lessonName: lessonName || '',
-      groupId,
-      groupName,
-      studentId: pick.student.id,
-      studentName: pick.student.name,
-      start,
-      end,
-      duration,
+      lessonId: dto.lessonId,
+      lessonName: dto.lessonName,
+      groupId: dto.groupId,
+      groupName: dto.groupName,
+      studentId: dto.pick.student.id,
+      studentName: dto.pick.student.name,
+      start: dto.start,
+      end: dto.end,
+      duration: dto.duration,
       status: AttendanceStatus.INIT,
-      expires,
-    } as IAttendance;
+      expires: dto.expires,
+    };
   }
 
   /**
@@ -461,66 +324,62 @@ export class SchooldayAttendanceService {
   ): Promise<'success' | 'failed' | 'already_exists'> {
     try {
       if ('PutRequest' in item) {
-        await this.executePutOperation(item.PutRequest.Item);
-      } else if ('DeleteRequest' in item) {
-        await this.executeDeleteOperation(item.DeleteRequest.Key);
+        await this.dynamoService.send(
+          new PutCommand({
+            TableName: ATTENDANCE_TABLE_NAME,
+            Item: item.PutRequest.Item,
+            ConditionExpression:
+              'attribute_not_exists(groupKey) AND attribute_not_exists(dailyStudentKey)',
+          }),
+        );
+      } else {
+        await this.dynamoService.send(
+          new DeleteCommand({
+            TableName: ATTENDANCE_TABLE_NAME,
+            Key: item.DeleteRequest.Key,
+          }),
+        );
       }
       return 'success';
-    } catch (error: any) {
-      return this.handleOperationError(error);
+    } catch (error) {
+      if (error.name === 'ConditionalCheckFailedException') {
+        return 'already_exists';
+      }
+      this.logger.error('DynamoDB operation failed', error);
+      return 'failed';
     }
   }
 
-  /**
-   * Executes a conditional put operation
-   */
-  private async executePutOperation(item: any): Promise<void> {
-    await this.dynamoService.send(
-      new PutCommand({
-        TableName: ATTENDANCE_TABLE_NAME,
-        Item: item,
-        ConditionExpression:
-          'attribute_not_exists(groupKey) AND attribute_not_exists(dailyStudentKey)',
-      }),
+  private async findTermsByDate(dateString: string): Promise<Term[]> {
+    return this.termRepository.find({
+      where: {
+        start: LessThanOrEqual(dateString),
+        end: MoreThanOrEqual(dateString),
+      },
+    });
+  }
+
+  private async createAttendancesForTerm(
+    term: Term,
+    dateString: string,
+  ): Promise<ResponseAttendanceDto> {
+    return this.createAttendances(
+      term.schoolId,
+      term.id,
+      dateString,
+      dateString,
     );
   }
 
-  /**
-   * Executes a delete operation
-   */
-  private async executeDeleteOperation(key: any): Promise<void> {
-    await this.dynamoService.send(
-      new DeleteCommand({
-        TableName: ATTENDANCE_TABLE_NAME,
-        Key: key,
-      }),
-    );
+  private getDateString(date?: string): string {
+    const targetDate = date ? new Date(date) : new Date();
+    return targetDate.toISOString().split('T')[0];
   }
 
-  /**
-   * Handles errors from DynamoDB operations
-   */
-  private handleOperationError(error: any): 'failed' | 'already_exists' {
-    if (
-      error.name === 'ConditionalCheckFailedException' ||
-      error.code === 'ConditionalCheckFailedException'
-    ) {
-      this.logger.log('Item already exists, skipping...');
-      return 'already_exists';
-    }
-
-    this.logger.error('DynamoDB operation failed', error);
-    return 'failed';
-  }
-
-  /**
-   * 청크 단위로 TransactWriteItems를 실행합니다
-   */
   private async executeTransactionChunk(
     items: (WriteRequest | DeleteRequest)[],
   ): Promise<{ alreadyExists: number; failedBatches: number }> {
     try {
-      // WriteRequest/DeleteRequest를 TransactWriteItem 형식으로 변환
       const transactItems = items.map((item) => {
         if ('PutRequest' in item) {
           return {
@@ -540,33 +399,20 @@ export class SchooldayAttendanceService {
         }
       });
 
-      // TransactWriteItems 실행
       await this.dynamoService.send(
-        new TransactWriteCommand({
-          TransactItems: transactItems,
-        }),
+        new TransactWriteCommand({ TransactItems: transactItems }),
       );
-
       return { alreadyExists: 0, failedBatches: 0 };
     } catch (error) {
-      this.logger.error(`Transaction failed:`, error);
-
-      if (
-        error.name === 'TransactionCanceledException' ||
-        error.code === 'TransactionCanceledException'
-      ) {
-        // TransactionCanceledException의 경우 개별 처리로 fallback
+      if (error.name === 'TransactionCanceledException') {
         return this.fallbackToIndividualProcessing(items);
       }
 
-      // 기타 에러의 경우 전체 청크 실패로 처리
+      this.logger.error('Transaction failed', error);
       return { alreadyExists: 0, failedBatches: items.length };
     }
   }
 
-  /**
-   * 트랜잭션 실패시 개별 처리로 fallback
-   */
   private async fallbackToIndividualProcessing(
     items: (WriteRequest | DeleteRequest)[],
   ): Promise<{ alreadyExists: number; failedBatches: number }> {
@@ -575,11 +421,8 @@ export class SchooldayAttendanceService {
 
     for (const item of items) {
       const result = await this.processIndividualOperation(item);
-      if (result === 'already_exists') {
-        alreadyExists++;
-      } else if (result === 'failed') {
-        failedBatches++;
-      }
+      if (result === 'already_exists') alreadyExists++;
+      if (result === 'failed') failedBatches++;
     }
 
     return { alreadyExists, failedBatches };

@@ -45,7 +45,7 @@ export class OfferingPickService {
 
     // console.log('🚀 offering', JSON.stringify(offering, null, 2));
     // offerings 는 같은 학년 group 이 여러개 있을 수 있음
-    const sameGradeGroups: { groupId: number; start: string }[] =
+    const sameGradeGroups: { groupId: number; start: string; end: string }[] =
       offering.lesson.groups
         ?.sort(
           (a, b) =>
@@ -55,8 +55,10 @@ export class OfferingPickService {
         .filter((v: Group) => offering.groupIds.includes(v.id))
         .map((v: Group) => {
           const groupId = v.id;
+          const totalDays = v.schooldays.length;
           const start = formatDateInKST(v.schooldays[0].startsAt);
-          return { groupId, start };
+          const end = formatDateInKST(v.schooldays[totalDays - 1].endsAt);
+          return { groupId, start, end };
         });
 
     //console.log('🚀 combo', JSON.stringify(sameGradeGroups, null, 2));
@@ -125,7 +127,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     termId: number,
-    sameGradeGroups: { groupId: number; start: string }[],
+    sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId, status: BookingStatus.ENROLLED },
@@ -136,13 +138,14 @@ export class OfferingPickService {
 
     // 같은 학년 group 들에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    sameGradeGroups.forEach(({ groupId, start }) => {
+    sameGradeGroups.forEach(({ groupId, start, end }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
         offeringId,
         termId,
         start,
+        end,
       }));
       items = items.concat(groupItems);
     });
@@ -178,7 +181,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     termId: number,
-    sameGradeGroups: { groupId: number; start: string }[],
+    sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
@@ -189,13 +192,14 @@ export class OfferingPickService {
 
     // 같은 학년 group 들에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    sameGradeGroups.forEach(({ groupId, start }) => {
+    sameGradeGroups.forEach(({ groupId, start, end }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
         offeringId,
         termId,
         start,
+        end,
       }));
       items = items.concat(groupItems);
     });
@@ -231,7 +235,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     termId: number,
-    sameGradeGroups: { groupId: number; start: string }[],
+    sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
@@ -249,13 +253,14 @@ export class OfferingPickService {
 
     // 같은 학년 group 들에 동일한 학생을 할당
     let items: IPickKeys[] = [];
-    sameGradeGroups.forEach(({ groupId, start }) => {
+    sameGradeGroups.forEach(({ groupId, start, end }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
         studentId,
         groupId,
         offeringId,
         termId,
         start,
+        end,
       }));
       items = items.concat(groupItems);
     });
@@ -288,7 +293,7 @@ export class OfferingPickService {
   }
 
   /**
-   * 기존 picks와 새로운 선택을 비교하여 정교하게 관리
+   * 기존 picks와 새로운 선택을 비교하여 lingering dead data 제거
    * - 새로운 picks는 upsert
    * - 선택되지 않은 기존 picks는 삭제
    * - 데이터 정합성 보장 및 불필요한 작업 최소화
@@ -311,21 +316,23 @@ export class OfferingPickService {
 
     // 2. 새로운 picks upsert
     if (newItems.length > 0) {
-      const placeholders = newItems.map(() => '(?, ?, ?, ?, ?)').join(', ');
+      const placeholders = newItems.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
       const values = newItems.flatMap((item) => [
         item.studentId,
         item.groupId,
         item.offeringId,
         item.termId,
         item.start,
+        item.end,
       ]);
 
       const query = `
-        INSERT INTO picks (studentId, groupId, offeringId, termId, start)
-        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, termId, start)
+        INSERT INTO picks (studentId, groupId, offeringId, termId, start, end)
+        VALUES ${placeholders} AS new_pick(studentId, groupId, offeringId, termId, start, end)
         ON DUPLICATE KEY UPDATE
           termId = new_pick.termId,
-          start = new_pick.start
+          start = new_pick.start,
+          end = new_pick.end
       `;
       await this.pickRepository.query(query, values);
     }

@@ -4,6 +4,7 @@ import {
   IsInt,
   IsNumber,
   IsObject,
+  IsOptional,
   IsString,
 } from 'class-validator';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
@@ -18,9 +19,9 @@ export class CreateDynamoRecordWithDateDto {
   termId: number;
 
   @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
-  @IsString()
+  @IsOptional()
   @IsDateString()
-  date: string; // "2025-08-14" 형식으로 저장
+  date?: string; // "2025-08-14" 형식으로 저장
 }
 
 export class CreateDynamoRecordWithRangeDto {

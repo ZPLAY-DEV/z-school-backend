@@ -34,7 +34,7 @@ export class SchooldayAttendanceController {
   @Public()
   @Post('attendances')
   async createAllWithDate(
-    @Body('date') date: string,
+    @Body('date') date?: string,
   ): Promise<ResponseAttendanceDto[]> {
     return await this.schooldayAttendanceService.createAllWithDate(date);
   }

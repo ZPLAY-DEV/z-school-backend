@@ -284,6 +284,7 @@ export interface IPickKeys {
   offeringId: number;
   termId: number;
   start: string;
+  end: string;
 }
 
 export interface ICalendarDay {
