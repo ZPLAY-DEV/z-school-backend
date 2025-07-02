@@ -25,23 +25,22 @@ import {
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import {
   BuildAttendanceBodyDto,
+  CreateAttendanceForAllValidTermsDto,
   CreateDynamoRecordWithDateDto,
   CreateDynamoRecordWithRangeDto,
+  DeleteAttendanceBySchoolTermDto,
   ResponseAttendanceDto,
 } from 'src/domain/schoolday/dto/response-attendance.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
+import { getDateString } from 'src/helpers/date';
 import { formatDateInKST } from 'src/helpers/time';
 import { DynamoService } from 'src/services/aws/dynamo.service';
 import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 
 const ATTENDANCE_TABLE_NAME = `${process.env.NODE_ENV}_attendance_table`;
 
-/**
- * 수업일 출석부 관리 서비스
- * 출석부 생성, 일괄 처리, DynamoDB 연동을 담당합니다
- */
 @Injectable()
 export class SchooldayAttendanceService {
   private readonly logger = new Logger(SchooldayAttendanceService.name);
@@ -54,65 +53,150 @@ export class SchooldayAttendanceService {
     private readonly dynamoService: DynamoService,
   ) {}
 
-  //* ----------------------------------------------------------------------- */
-  //* PUBLIC API METHODS
-  //* ----------------------------------------------------------------------- */
-
-  /**
-   * 특정 날짜의 수업일 출석부를 생성합니다
-   * @param date `2025-08-14` 형식의 날짜 문자열
-   * @returns 생성된 총 기록 수, 실패 수, 이미 존재하는 기록 수를 반환
-   */
-  async createAllWithDate(param?: string): Promise<ResponseAttendanceDto[]> {
-    const date = !param ? new Date() : new Date(param);
-    const dateString = date.toISOString().split('T')[0];
-
-    const terms = await this.findTermsByDate(dateString);
-    const results: ResponseAttendanceDto[] = [];
-
-    for (const term of terms) {
-      const result = await this.createAttendancesForTerm(term, dateString);
-      results.push(result);
-    }
-
-    return results;
-  }
+  //? ---------------------------------------------------------------------- ?//
+  //? Create
+  //? ---------------------------------------------------------------------- ?//
 
   async createWithDate(
     dto: CreateDynamoRecordWithDateDto,
   ): Promise<ResponseAttendanceDto> {
-    const dateString = this.getDateString(dto.date);
-    return this.createAttendances(
-      dto.schoolId,
-      dto.termId,
-      dateString,
-      dateString,
-    );
+    const dateString = getDateString(dto.date);
+    return this.createAttendances(dto.schoolId, dto.termId, dateString);
   }
 
-  /**
-   * 기간 내 수업일 출석부를 일괄 생성합니다
-   * @param dto - 학교ID, 학기ID, 시작날짜, 종료날짜가 포함된 데이터
-   * @returns 생성된 총 기록 수, 실패 수, 이미 존재하는 기록 수를 반환
-   */
   async createWithPeriod(
     dto: CreateDynamoRecordWithRangeDto,
   ): Promise<ResponseAttendanceDto> {
     return this.createAttendances(dto.schoolId, dto.termId, dto.from, dto.to);
   }
 
-  //* ----------------------------------------------------------------------- */
-  //* BATCH OPERATIONS (Used by SchooldaySubscriber)
-  //* ----------------------------------------------------------------------- */
+  async createAttendanceForAllValidTerms(
+    dto: CreateAttendanceForAllValidTermsDto,
+  ): Promise<ResponseAttendanceDto> {
+    // 해당 날짜에 유효한 모든 학기 찾기
+    const validTerms = await this.findTermsByDate(dto.date);
+
+    if (validTerms.length === 0) {
+      return { total: 0, failedBatches: 0, alreadyExists: 0 };
+    }
+
+    const allAttendances: IAttendance[] = [];
+
+    for (const term of validTerms) {
+      // 해당 학기의 해당 날짜에 있는 모든 수업일 찾기 (모든 lesson > group)
+      const schooldays = await this.fetchSchooldaysByDate(
+        term.schoolId,
+        term.id,
+        dto.date,
+      );
+
+      // 유효한 수업일들만 필터링
+      const validSchooldays = schooldays.filter((schoolday) =>
+        this.isValidSchooldayForAttendance(schoolday),
+      );
+
+      // 각 수업일에 대한 출석부 생성
+      const termAttendances = this.buildAttendances(validSchooldays);
+      allAttendances.push(...termAttendances);
+    }
+
+    const writeRequests = this.createPutRequestBatch(allAttendances);
+    return this.executeBatchOperations(writeRequests);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Delete
+  //? ---------------------------------------------------------------------- ?//
+
+  async deleteWithDate(
+    dto: CreateDynamoRecordWithDateDto,
+  ): Promise<ResponseAttendanceDto> {
+    const dateString = getDateString(dto.date);
+    return this.deleteAttendances(dto.schoolId, dto.termId, dateString);
+  }
+
+  async deleteWithPeriod(
+    dto: CreateDynamoRecordWithRangeDto,
+  ): Promise<ResponseAttendanceDto> {
+    return this.deleteAttendances(dto.schoolId, dto.termId, dto.from, dto.to);
+  }
+
+  async deleteAttendancesBySchoolAndTerm(
+    dto: DeleteAttendanceBySchoolTermDto,
+  ): Promise<ResponseAttendanceDto> {
+    // 해당 학교/학기의 모든 수업일 찾기 (날짜 범위 제한 없음)
+    const schooldays = await this.fetchAllSchooldaysBySchoolAndTerm(
+      dto.schoolId,
+      dto.termId,
+    );
+
+    // 유효한 수업일들만 필터링
+    const validSchooldays = schooldays.filter((schoolday) =>
+      this.isValidSchooldayForAttendance(schoolday),
+    );
+
+    const deleteRequests = this.buildDeleteRequests(validSchooldays);
+    return this.executeBatchOperations(deleteRequests);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Common Helper Methods (재활용성 향상)
+  //? ---------------------------------------------------------------------- ?//
 
   /**
-   * 출석부 아이템들을 조건부 로직과 함께 일괄 처리합니다
-   * ✅ TransactWriteItems 사용으로 최적화:
-   * - 속도: 빠름 (최대 100개 아이템을 1회 API 콜로 처리)
-   * - 정확도: 높음 (ConditionExpression 완전 지원)
-   * - 비용: 2x WCU (일반 write 대비)
-   * @param items - 생성 또는 삭제 요청 배열 (최대 100개)
-   * @returns 실패 건수와 조건 체크 실패 건수를 포함한 결과 요약
+   * 공통 날짜 범위 파싱 로직
+   */
+  private parseDateRange(
+    fromDate: string,
+    toDate?: string,
+  ): { startsAt: Date; endsAt: Date } {
+    const startsAt = fromZonedTime(`${fromDate}T00:00:00`, 'Asia/Seoul');
+    const endsAt = toDate
+      ? fromZonedTime(`${toDate}T23:59:59`, 'Asia/Seoul')
+      : fromZonedTime(`${fromDate}T23:59:59`, 'Asia/Seoul');
+
+    return { startsAt, endsAt };
+  }
+
+  /**
+   * 공통 schoolday 조회 및 검증 로직
+   */
+  private async getValidatedSchooldays(
+    schoolId: number,
+    termId: number,
+    fromDate: string,
+    toDate?: string,
+  ): Promise<Schoolday[]> {
+    const { startsAt, endsAt } = this.parseDateRange(fromDate, toDate);
+    const schooldays = await this.fetchSchooldays(
+      schoolId,
+      termId,
+      startsAt,
+      endsAt,
+    );
+
+    return schooldays.filter((schoolday) =>
+      this.isValidSchooldayForAttendance(schoolday),
+    );
+  }
+
+  /**
+   * Schoolday 유효성 검증 (타입 가드)
+   */
+  private isValidSchooldayForAttendance(schoolday: Schoolday): boolean {
+    return !!(
+      schoolday.group &&
+      schoolday.group.picks &&
+      schoolday.group.picks.length > 0
+    );
+  }
+
+  //* ---------------------------------------------------------------------- *//
+  //* BATCH OPERATIONS (Used by both subscriber and this service)
+  //* ---------------------------------------------------------------------- *//
+
+  /**
+   * TransactWriteItems를 사용한 일괄 처리 (최대 100개)
    */
   async executeBatchOperations(
     items: (WriteRequest | DeleteRequest)[],
@@ -138,12 +222,6 @@ export class SchooldayAttendanceService {
     };
   }
 
-  /**
-   * 일괄 처리용 삭제 요청 객체들을 생성합니다
-   * @param groupKey - 그룹 식별자
-   * @param dailyStudentKeys - 삭제할 일일 학생 키 배열
-   * @returns 삭제 요청 객체 배열
-   */
   createDeleteRequestBatch(
     groupKey: string,
     dailyStudentKeys: string[],
@@ -153,68 +231,32 @@ export class SchooldayAttendanceService {
     }));
   }
 
-  /**
-   * 일괄 처리용 생성 요청 객체들을 생성합니다
-   * @param attendanceItems - 생성할 출석부 아이템 배열
-   * @returns 쓰기 요청 객체 배열
-   */
   createPutRequestBatch(attendanceItems: IAttendanceCore[]): WriteRequest[] {
     return attendanceItems.map((item) => ({
       PutRequest: { Item: buildAttendanceItem(item) },
     }));
   }
 
-  //* ----------------------------------------------------------------------- */
-  //* PRIVATE IMPLEMENTATION METHODS
-  //* ----------------------------------------------------------------------- */
+  //? ---------------------------------------------------------------------- ?//
+  //? DynamoDB create queries
+  //? ---------------------------------------------------------------------- ?//
 
-  /**
-   * 출석부 기록 생성의 메인 orchestration 메서드
-   */
   private async createAttendances(
     schoolId: number,
     termId: number,
     fromDate: string,
-    toDate: string,
+    toDate?: string,
   ): Promise<ResponseAttendanceDto> {
-    const startsAt = fromZonedTime(`${fromDate}T00:00:00`, 'Asia/Seoul');
-    const endsAt = fromZonedTime(`${toDate}T23:59:59`, 'Asia/Seoul');
-
-    const schooldays = await this.fetchSchooldays(
+    const schooldays = await this.getValidatedSchooldays(
       schoolId,
       termId,
-      startsAt,
-      endsAt,
+      fromDate,
+      toDate,
     );
     const attendances = this.buildAttendances(schooldays);
     const writeRequests = this.createPutRequestBatch(attendances);
 
     return this.executeBatchOperations(writeRequests);
-  }
-
-  /**
-   * 필터링 조건에 따라 수업일 기록들을 조회합니다
-   */
-  private async fetchSchooldays(
-    schoolId: number,
-    termId: number,
-    startsAt: Date,
-    endsAt: Date,
-  ): Promise<Schoolday[]> {
-    return this.schooldayRepository.find({
-      where: {
-        schoolId,
-        termId,
-        startsAt: MoreThanOrEqual(startsAt),
-        endsAt: LessThanOrEqual(endsAt),
-      },
-      relations: {
-        group: {
-          picks: { student: true },
-          lesson: true,
-        },
-      },
-    });
   }
 
   private buildAttendances(schooldays: Schoolday[]): IAttendance[] {
@@ -225,7 +267,7 @@ export class SchooldayAttendanceService {
     const attendances: IAttendance[] = [];
 
     for (const schoolday of schooldays) {
-      if (!schoolday.group?.picks) continue;
+      // getValidatedSchooldays에서 이미 검증되었으므로 안전함
 
       const { group, startsAt, duration, lessonId, groupId } = schoolday;
       const localDate = formatDateInKST(startsAt);
@@ -257,9 +299,7 @@ export class SchooldayAttendanceService {
   }
 
   /**
-   * 학기 중간에 들어오거나 나간 전학생들의 경우 처리하는 로직
-   * - 만일 startedBy or endedBy 가 null 이 아니면 전학생이다.
-   * - 만일 전학생인 경우 그들의 start ~ end 기간인지 확인한다.
+   * 전학생 처리: start/end 기간 확인
    */
   private isStudentActiveOnDate(pick: Pick, date: Date): boolean {
     const hasStart = pick.start?.trim();
@@ -286,9 +326,6 @@ export class SchooldayAttendanceService {
     }
   }
 
-  /**
-   * 학생 한 명에 대한 출석부 아이템을 구축합니다
-   */
   private buildAttendanceForStudent(dto: BuildAttendanceBodyDto): IAttendance {
     const groupKey = generateGroupKey(dto.groupId);
     const dailyStudentKey = generateDailyStudentKey(
@@ -314,66 +351,6 @@ export class SchooldayAttendanceService {
       status: AttendanceStatus.INIT,
       expires: dto.expires,
     };
-  }
-
-  /**
-   * 단일 DynamoDB 작업(생성 또는 삭제)을 처리합니다
-   */
-  private async processIndividualOperation(
-    item: WriteRequest | DeleteRequest,
-  ): Promise<'success' | 'failed' | 'already_exists'> {
-    try {
-      if ('PutRequest' in item) {
-        await this.dynamoService.send(
-          new PutCommand({
-            TableName: ATTENDANCE_TABLE_NAME,
-            Item: item.PutRequest.Item,
-            ConditionExpression:
-              'attribute_not_exists(groupKey) AND attribute_not_exists(dailyStudentKey)',
-          }),
-        );
-      } else {
-        await this.dynamoService.send(
-          new DeleteCommand({
-            TableName: ATTENDANCE_TABLE_NAME,
-            Key: item.DeleteRequest.Key,
-          }),
-        );
-      }
-      return 'success';
-    } catch (error) {
-      if (error.name === 'ConditionalCheckFailedException') {
-        return 'already_exists';
-      }
-      this.logger.error('DynamoDB operation failed', error);
-      return 'failed';
-    }
-  }
-
-  private async findTermsByDate(dateString: string): Promise<Term[]> {
-    return this.termRepository.find({
-      where: {
-        start: LessThanOrEqual(dateString),
-        end: MoreThanOrEqual(dateString),
-      },
-    });
-  }
-
-  private async createAttendancesForTerm(
-    term: Term,
-    dateString: string,
-  ): Promise<ResponseAttendanceDto> {
-    return this.createAttendances(
-      term.schoolId,
-      term.id,
-      dateString,
-      dateString,
-    );
-  }
-
-  private getDateString(date?: string): string {
-    const targetDate = date ? new Date(date) : new Date();
-    return targetDate.toISOString().split('T')[0];
   }
 
   private async executeTransactionChunk(
@@ -420,11 +397,176 @@ export class SchooldayAttendanceService {
     let failedBatches = 0;
 
     for (const item of items) {
-      const result = await this.processIndividualOperation(item);
-      if (result === 'already_exists') alreadyExists++;
-      if (result === 'failed') failedBatches++;
+      try {
+        if ('PutRequest' in item) {
+          await this.dynamoService.send(
+            new PutCommand({
+              TableName: ATTENDANCE_TABLE_NAME,
+              Item: item.PutRequest.Item,
+              ConditionExpression:
+                'attribute_not_exists(groupKey) AND attribute_not_exists(dailyStudentKey)',
+            }),
+          );
+        } else {
+          await this.dynamoService.send(
+            new DeleteCommand({
+              TableName: ATTENDANCE_TABLE_NAME,
+              Key: item.DeleteRequest.Key,
+            }),
+          );
+        }
+      } catch (error) {
+        if (error.name === 'ConditionalCheckFailedException') {
+          alreadyExists++;
+        } else {
+          this.logger.error('DynamoDB operation failed', error);
+          failedBatches++;
+        }
+      }
     }
 
     return { alreadyExists, failedBatches };
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? DynamoDB delete queries
+  //? ---------------------------------------------------------------------- ?//
+
+  private async deleteAttendances(
+    schoolId: number,
+    termId: number,
+    fromDate: string,
+    toDate?: string,
+  ): Promise<ResponseAttendanceDto> {
+    const schooldays = await this.getValidatedSchooldays(
+      schoolId,
+      termId,
+      fromDate,
+      toDate,
+    );
+    const deleteRequests = this.buildDeleteRequests(schooldays);
+
+    return this.executeBatchOperations(deleteRequests);
+  }
+
+  private buildDeleteRequests(schooldays: Schoolday[]): DeleteRequest[] {
+    if (schooldays.length === 0) {
+      return [];
+    }
+
+    const deleteRequests: DeleteRequest[] = [];
+
+    for (const schoolday of schooldays) {
+      // getValidatedSchooldays에서 이미 검증되었으므로 안전함
+
+      const { group, startsAt, groupId } = schoolday;
+      const localDate = formatDateInKST(startsAt);
+      const groupKey = generateGroupKey(groupId);
+
+      const dailyStudentKeys = group.picks
+        .filter(
+          (pick) => pick.student && this.isStudentActiveOnDate(pick, startsAt),
+        )
+        .map((pick) =>
+          generateDailyStudentKey(
+            localDate,
+            pick.student.id,
+            pick.student.grade,
+            pick.student.class,
+            pick.student.studentCode,
+          ),
+        );
+
+      const dayDeleteRequests = this.createDeleteRequestBatch(
+        groupKey,
+        dailyStudentKeys,
+      );
+
+      deleteRequests.push(...dayDeleteRequests);
+    }
+
+    return deleteRequests;
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? MySQL queries
+  //? ---------------------------------------------------------------------- ?//
+
+  private async fetchSchooldays(
+    schoolId: number,
+    termId: number,
+    startsAt: Date,
+    endsAt: Date,
+  ): Promise<Schoolday[]> {
+    return this.schooldayRepository.find({
+      where: {
+        schoolId,
+        termId,
+        startsAt: MoreThanOrEqual(startsAt),
+        endsAt: LessThanOrEqual(endsAt),
+      },
+      relations: {
+        group: {
+          picks: { student: true },
+          lesson: true,
+        },
+      },
+    });
+  }
+
+  private async findTermsByDate(dateString: string): Promise<Term[]> {
+    return this.termRepository.find({
+      where: {
+        start: LessThanOrEqual(dateString),
+        end: MoreThanOrEqual(dateString),
+      },
+    });
+  }
+
+  /**
+   * 특정 날짜에 해당하는 수업일들을 조회 (모든 lesson > group)
+   */
+  private async fetchSchooldaysByDate(
+    schoolId: number,
+    termId: number,
+    targetDate: string,
+  ): Promise<Schoolday[]> {
+    const { startsAt, endsAt } = this.parseDateRange(targetDate);
+
+    return this.schooldayRepository.find({
+      where: {
+        schoolId,
+        termId,
+        startsAt: MoreThanOrEqual(startsAt),
+        endsAt: LessThanOrEqual(endsAt),
+      },
+      relations: {
+        group: {
+          picks: { student: true },
+          lesson: true,
+        },
+      },
+    });
+  }
+
+  /**
+   * 특정 학교/학기의 모든 수업일들을 조회 (날짜 제한 없음)
+   */
+  private async fetchAllSchooldaysBySchoolAndTerm(
+    schoolId: number,
+    termId: number,
+  ): Promise<Schoolday[]> {
+    return this.schooldayRepository.find({
+      where: {
+        schoolId,
+        termId,
+      },
+      relations: {
+        group: {
+          picks: { student: true },
+          lesson: true,
+        },
+      },
+    });
   }
 }

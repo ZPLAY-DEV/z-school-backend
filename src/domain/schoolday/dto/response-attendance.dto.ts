@@ -1,11 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsDateString,
-  IsInt,
-  IsNumber,
-  IsObject,
-  IsOptional,
-  IsString,
+    IsDateString,
+    IsInt,
+    IsNumber,
+    IsObject,
+    IsOptional,
+    IsString,
 } from 'class-validator';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 
@@ -104,4 +104,21 @@ export class BuildAttendanceBodyDto {
   @ApiProperty({ description: 'expires', example: 1718438400 })
   @IsNumber()
   expires: number;
+}
+
+export class CreateAttendanceForAllValidTermsDto {
+  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @IsString()
+  @IsDateString()
+  date: string;
+}
+
+export class DeleteAttendanceBySchoolTermDto {
+  @ApiProperty({ description: '학교ID', example: 1 })
+  @IsInt()
+  schoolId: number;
+
+  @ApiProperty({ description: '학기ID', example: 1 })
+  @IsInt()
+  termId: number;
 }

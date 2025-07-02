@@ -35,9 +35,7 @@ export class SchooldaySubscriber
   //? ---------------------------------------------------------------------- ?//
   //? 1. DynamoDB throttling 대응
   //? 2. Subscriber 중복 실행 방지.
-  //? 3. DynamoDB batch 실행만 5번 retry
-  //? 4. retry 시 exponential backoff 대응
-  //? 5. 강화된 에러 처리 및 타입 안전성
+  //? 3. DynamoDB batch 실행 후 실패 시 개별 처리
   //? ---------------------------------------------------------------------- ?//
 
   async afterUpdate(event: UpdateEvent<Schoolday>) {

@@ -2,14 +2,17 @@ import {
   Body,
   ClassSerializerInterceptor,
   Controller,
+  Delete,
   Post,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import {
+  CreateAttendanceForAllValidTermsDto,
   CreateDynamoRecordWithDateDto,
   CreateDynamoRecordWithRangeDto,
+  DeleteAttendanceBySchoolTermDto,
   ResponseAttendanceDto,
 } from 'src/domain/schoolday/dto/response-attendance.dto';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
@@ -30,13 +33,14 @@ export class SchooldayAttendanceController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ summary: '🕒 Cronjob 용 모든 학교 출석부 생성' })
   @Public()
-  @Post('attendances')
-  async createAllWithDate(
-    @Body('date') date?: string,
-  ): Promise<ResponseAttendanceDto[]> {
-    return await this.schooldayAttendanceService.createAllWithDate(date);
+  @Post('attendances/all')
+  async createAttendanceForAllValidTerms(
+    @Body() dto: CreateAttendanceForAllValidTermsDto,
+  ): Promise<ResponseAttendanceDto> {
+    return await this.schooldayAttendanceService.createAttendanceForAllValidTerms(
+      dto,
+    );
   }
 
   @CreateAttendanceOfSchooldayWithDateDocs()
@@ -53,5 +57,35 @@ export class SchooldayAttendanceController {
     @Body() dto: CreateDynamoRecordWithRangeDto,
   ): Promise<ResponseAttendanceDto> {
     return await this.schooldayAttendanceService.createWithPeriod(dto);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Delete
+  //? ---------------------------------------------------------------------- ?//
+
+  @Public()
+  @Delete('attendances/all')
+  async deleteAttendancesBySchoolAndTerm(
+    @Body() dto: DeleteAttendanceBySchoolTermDto,
+  ): Promise<ResponseAttendanceDto> {
+    return await this.schooldayAttendanceService.deleteAttendancesBySchoolAndTerm(
+      dto,
+    );
+  }
+
+  @Public()
+  @Delete('attendances/date')
+  async deleteWithDate(
+    @Body() dto: CreateDynamoRecordWithDateDto,
+  ): Promise<ResponseAttendanceDto> {
+    return await this.schooldayAttendanceService.deleteWithDate(dto);
+  }
+
+  @Public()
+  @Delete('attendances/period')
+  async deleteWithPeriod(
+    @Body() dto: CreateDynamoRecordWithRangeDto,
+  ): Promise<ResponseAttendanceDto> {
+    return await this.schooldayAttendanceService.deleteWithPeriod(dto);
   }
 }
