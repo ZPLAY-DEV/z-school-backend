@@ -192,6 +192,7 @@ export class NotificationService {
       const now = new Date();
       const seoulTimeZone = 'Asia/Seoul';
 
+      console.log(`🔥 data: ${JSON.stringify(data)}`);
       console.log(`🔥 results: ${JSON.stringify(results)}`);
       const partitionedLogData = {
         // 기본 로그 정보 (원본 필드명 제거하고 파티션 필드명으로 통일)
@@ -201,11 +202,11 @@ export class NotificationService {
         title:
           data.messages.length > 1
             ? `${data.messages[0].title ?? school.name} 외 ${data.messages.length - 1}건`
-            : data.messages[0].title, // 첫 번째 메시지의 title
+            : data.messages[0]?.title, // 첫 번째 메시지의 title
         body:
           data.messages.length > 1
             ? `${data.messages[0].body} 외 ${data.messages.length - 1}건`
-            : data.messages[0].body, // 첫 번째 메시지의 body
+            : data.messages[0]?.body, // 첫 번째 메시지의 body
         ids: data.messages.map((v) => v.id), // 결과 배열의 id 필드 추출
         role: data.role, // PARENT or INSTRUCTOR (일반 컬럼)
 

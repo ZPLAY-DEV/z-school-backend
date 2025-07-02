@@ -454,7 +454,10 @@ export class GroupAttendanceService {
             groupKey: dto.groupKey,
             dailyStudentKey: dto.dailyStudentKey,
           },
-          { status: dto.status },
+          {
+            status: dto.status,
+            ...(dto.schoolNote !== undefined && { schoolNote: dto.schoolNote }),
+          },
         ),
       );
       const results = await Promise.all(updatePromises);
@@ -526,7 +529,10 @@ export class GroupAttendanceService {
             groupKey: dto.groupKey,
             dailyStudentKey: dto.dailyStudentKey,
           },
-          { status: dto.status },
+          {
+            status: dto.status,
+            ...(dto.schoolNote !== undefined && { schoolNote: dto.schoolNote }),
+          },
         ),
       );
 

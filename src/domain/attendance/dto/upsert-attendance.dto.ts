@@ -70,4 +70,12 @@ export class AttendanceStatusDto {
   })
   @IsEnum(AttendanceStatus)
   status: AttendanceStatus;
+
+  @ApiProperty({
+    description: '🈵 학교에서 학생·학부모에 남긴 메시지',
+    default: 'message from school',
+    required: false,
+  })
+  @IsString()
+  schoolNote: string;
 }

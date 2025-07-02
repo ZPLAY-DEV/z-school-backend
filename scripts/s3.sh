@@ -26,3 +26,18 @@ awslocal s3api put-bucket-policy \
 awslocal s3api put-bucket-cors \
   --bucket afterschool-files-bucket \
   --cors-configuration '{"CORSRules":[{"AllowedOrigins":["*"],"AllowedMethods":["GET","PUT","POST","DELETE"],"AllowedHeaders":["*"],"ExposeHeaders":["ETag"]}]}'
+
+## firehose
+awslocal --endpoint-url=http://localhost:4566 firehose create-delivery-stream \
+  --delivery-stream-name notification-logs-stream \
+  --delivery-stream-type DirectPut \
+  --s3-destination-configuration '{
+      "RoleARN": "arn:aws:iam::000000000000:role/firehose_delivery_role",
+      "BucketARN": "arn:aws:s3:::notification-logs-bucket",
+      "Prefix": "logs/",
+      "BufferingHints": {
+        "SizeInMBs": 1,
+        "IntervalInSeconds": 60
+      },
+      "CompressionFormat": "UNCOMPRESSED"
+  }'
