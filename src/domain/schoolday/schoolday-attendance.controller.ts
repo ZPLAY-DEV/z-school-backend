@@ -9,11 +9,10 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import {
-  CreateAttendanceForAllValidTermsDto,
   CreateDynamoRecordWithDateDto,
   CreateDynamoRecordWithRangeDto,
   DeleteAttendanceBySchoolTermDto,
-  ResponseAttendanceDto,
+  ResponseAttendanceDto
 } from 'src/domain/schoolday/dto/response-attendance.dto';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
 import {
@@ -36,10 +35,10 @@ export class SchooldayAttendanceController {
   @Public()
   @Post('attendances/all')
   async createAttendanceForAllValidTerms(
-    @Body() dto: CreateAttendanceForAllValidTermsDto,
+    @Body('date') date?: string,
   ): Promise<ResponseAttendanceDto> {
     return await this.schooldayAttendanceService.createAttendanceForAllValidTerms(
-      dto,
+      date,
     );
   }
 

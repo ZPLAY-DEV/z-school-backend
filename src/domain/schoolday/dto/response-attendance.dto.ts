@@ -1,11 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-    IsDateString,
-    IsInt,
-    IsNumber,
-    IsObject,
-    IsOptional,
-    IsString,
+  IsDateString,
+  IsInt,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
 } from 'class-validator';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 
@@ -45,8 +45,8 @@ export class CreateDynamoRecordWithRangeDto {
 }
 
 export class ResponseAttendanceDto {
-  @ApiProperty({ description: '생성된 총 출석 기록 수', example: 150 })
-  total: number;
+  @ApiProperty({ description: '총 schoolday 수', example: 100 })
+  schooldays: number;
 
   @ApiProperty({
     description: '실패한 배치 작업 수',
@@ -104,13 +104,6 @@ export class BuildAttendanceBodyDto {
   @ApiProperty({ description: 'expires', example: 1718438400 })
   @IsNumber()
   expires: number;
-}
-
-export class CreateAttendanceForAllValidTermsDto {
-  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
-  @IsString()
-  @IsDateString()
-  date: string;
 }
 
 export class DeleteAttendanceBySchoolTermDto {

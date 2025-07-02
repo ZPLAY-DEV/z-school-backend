@@ -153,7 +153,7 @@ export class SchooldaySubscriber
 
         this.logger.log(
           `Successfully processed attendance records for schoolday ID: ${schoolday.id}. ` +
-            `Total: ${result.total}, Failed batches: ${result.failedBatches}`,
+            `Total: ${result.schooldays}, Failed batches: ${result.failedBatches}`,
         );
 
         // 실패한 배치가 있다면 경고 로그 출력

@@ -25,7 +25,6 @@ import {
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import {
   BuildAttendanceBodyDto,
-  CreateAttendanceForAllValidTermsDto,
   CreateDynamoRecordWithDateDto,
   CreateDynamoRecordWithRangeDto,
   DeleteAttendanceBySchoolTermDto,
@@ -71,13 +70,14 @@ export class SchooldayAttendanceService {
   }
 
   async createAttendanceForAllValidTerms(
-    dto: CreateAttendanceForAllValidTermsDto,
+    date?: string,
   ): Promise<ResponseAttendanceDto> {
     // 해당 날짜에 유효한 모든 학기 찾기
-    const validTerms = await this.findTermsByDate(dto.date);
+    const dateString = getDateString(date);
+    const validTerms = await this.findTermsByDate(dateString);
 
     if (validTerms.length === 0) {
-      return { total: 0, failedBatches: 0, alreadyExists: 0 };
+      return { schooldays: 0, failedBatches: 0, alreadyExists: 0 };
     }
 
     const allAttendances: IAttendance[] = [];
@@ -87,7 +87,7 @@ export class SchooldayAttendanceService {
       const schooldays = await this.fetchSchooldaysByDate(
         term.schoolId,
         term.id,
-        dto.date,
+        dateString,
       );
 
       // 유효한 수업일들만 필터링
@@ -202,7 +202,7 @@ export class SchooldayAttendanceService {
     items: (WriteRequest | DeleteRequest)[],
   ): Promise<ResponseAttendanceDto> {
     if (items.length === 0) {
-      return { total: 0, failedBatches: 0, alreadyExists: 0 };
+      return { schooldays: 0, failedBatches: 0, alreadyExists: 0 };
     }
 
     const chunks = chunk(items, 100);
@@ -216,7 +216,7 @@ export class SchooldayAttendanceService {
     }
 
     return {
-      total: items.length,
+      schooldays: items.length,
       failedBatches: totalFailedBatches,
       alreadyExists: totalAlreadyExists,
     };
