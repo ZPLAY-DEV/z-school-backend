@@ -7,6 +7,7 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -36,8 +37,13 @@ export class SchooldayController {
 
   @GetSchooldayListDocs()
   @Get()
-  async getList(): Promise<Schoolday[]> {
-    return await this.schooldayService.list();
+  async getList(
+    @Query('schoolId') schoolId?: number,
+    @Query('termId') termId?: number,
+    @Query('groupId') groupId?: number,
+    @Query('date') date?: string,
+  ): Promise<Schoolday[]> {
+    return await this.schooldayService.list(schoolId, termId, groupId, date);
   }
 
   @GetSchooldayPaginatedListDocs()

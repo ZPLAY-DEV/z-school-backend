@@ -62,11 +62,43 @@ export class SchooldayService {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  async list(): Promise<Schoolday[]> {
+  async list(
+    schoolId?: number,
+    termId?: number,
+    groupId?: number,
+    date?: string,
+  ): Promise<Schoolday[]> {
     const queryBuilder = this.schooldayRepository
       .createQueryBuilder('schoolday')
       .leftJoinAndSelect('schoolday.group', 'group')
       .leftJoinAndSelect('group.picks', 'picks');
+
+    const conditions: string[] = [];
+    const parameters: Record<string, any> = {};
+
+    if (schoolId) {
+      conditions.push('schoolday.schoolId = :schoolId');
+      parameters.schoolId = schoolId;
+    }
+
+    if (termId) {
+      conditions.push('schoolday.termId = :termId');
+      parameters.termId = termId;
+    }
+
+    if (groupId) {
+      conditions.push('group.id = :groupId');
+      parameters.groupId = groupId;
+    }
+
+    if (date) {
+      conditions.push('DATE(schoolday.startsAt) = :date');
+      parameters.date = date;
+    }
+
+    if (conditions.length > 0) {
+      queryBuilder.where(conditions.join(' AND '), parameters);
+    }
 
     return await queryBuilder.getMany();
   }
