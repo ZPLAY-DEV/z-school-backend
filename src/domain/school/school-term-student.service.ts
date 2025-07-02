@@ -59,6 +59,7 @@ export class SchoolTermStudentService {
     );
 
     this.logger.debug(`School ${schoolId}의 사용 가능한 terms:`, terms);
+
     return terms;
   }
 }

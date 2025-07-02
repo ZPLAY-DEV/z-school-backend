@@ -284,7 +284,13 @@ export class GroupAttendanceService {
         .where('dailyStudentKey')
         .beginsWith(prefix)
         .exec();
-      return result as IAttendance[];
+
+      // Ensure all fields are present (MySQL-like behavior)
+      return (result as IAttendance[]).map((item) => ({
+        ...item,
+        parentNote: item.parentNote ?? null,
+        schoolNote: item.schoolNote ?? null,
+      }));
     } catch (error) {
       console.error(`[dynamodb] error`, error);
       throw new BadRequestException('출석 정보 조회에 실패했습니다.');
@@ -403,6 +409,9 @@ export class GroupAttendanceService {
           );
           return {
             ...item,
+            // Ensure all fields are present (MySQL-like behavior)
+            parentNote: item.parentNote ?? null,
+            schoolNote: item.schoolNote ?? null,
             student: studentMap.get(studentId), // Student entity (부모 정보 포함)
             isLast: studentLastGroupMap.get(studentId) ?? false, // 당일 마지막 수업 여부
           };

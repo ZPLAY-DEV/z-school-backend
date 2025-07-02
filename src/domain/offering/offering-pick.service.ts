@@ -8,7 +8,6 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
-import { formatDateInKST } from 'src/helpers/time';
 import { In, Repository } from 'typeorm';
 
 @Injectable()
@@ -55,9 +54,11 @@ export class OfferingPickService {
         .filter((v: Group) => offering.groupIds.includes(v.id))
         .map((v: Group) => {
           const groupId = v.id;
-          const totalDays = v.schooldays.length;
-          const start = formatDateInKST(v.schooldays[0].startsAt);
-          const end = formatDateInKST(v.schooldays[totalDays - 1].endsAt);
+          //const totalDays = v.schooldays.length;
+          //const start = formatDateInKST(v.schooldays[0].startsAt);
+          //const end = formatDateInKST(v.schooldays[totalDays - 1].endsAt);
+          const start = offering.lesson.start;
+          const end = offering.lesson.end;
           return { groupId, start, end };
         });
 

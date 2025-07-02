@@ -20,10 +20,11 @@ export interface IAttendanceCore extends IAttendanceKey {
 }
 
 export interface IAttendance extends IAttendanceCore {
-  parentNote?: string;
-  schoolNote?: string;
+  parentNote?: string | null;
+  schoolNote?: string | null;
 }
 
 export interface IAttendanceWithLastFlag extends IAttendance {
   isLast: boolean;
+  student?: any; // Student entity with parent info
 }
