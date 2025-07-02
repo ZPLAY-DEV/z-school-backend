@@ -24,6 +24,7 @@ import {
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { getDuration } from 'src/helpers/time';
 import { NotificationService } from 'src/services/notification/notification.service';
@@ -38,6 +39,8 @@ export class GroupAttendanceService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(Pick)
     private readonly pickRepository: Repository<Pick>,
+    @InjectRepository(Schoolday)
+    private readonly schooldayRepository: Repository<Schoolday>,
     @InjectModel('Attendance')
     private readonly model: Model<IAttendance, IAttendanceKey>,
     private readonly notificationService: NotificationService,
@@ -97,6 +100,19 @@ export class GroupAttendanceService {
       schoolId: group.lesson.schoolId,
       role: 'PARENT',
     });
+
+    // 수업시작문자 발송시각 업데이트
+    if (dtos.length > 0) {
+      const date = dtos[0].dailyStudentKey.split('#')[1]; // "DATE#2025-06-16#STUDENT#..." -> "2025-06-16"
+      await this.schooldayRepository
+        .createQueryBuilder()
+        .update(Schoolday)
+        .set({ startNotifiedAt: new Date() })
+        .where('groupId = :groupId', { groupId })
+        .andWhere('DATE(startsAt) = :date', { date })
+        .execute();
+    }
+
     return messages.length;
   }
 
@@ -149,6 +165,19 @@ export class GroupAttendanceService {
       schoolId: group.lesson.schoolId,
       role: 'PARENT',
     });
+
+    // 수업종료문자 발송시각 업데이트
+    if (dtos.length > 0) {
+      const date = dtos[0].dailyStudentKey.split('#')[1]; // "DATE#2025-06-16#STUDENT#..." -> "2025-06-16"
+      await this.schooldayRepository
+        .createQueryBuilder()
+        .update(Schoolday)
+        .set({ endNotifiedAt: new Date() })
+        .where('groupId = :groupId', { groupId })
+        .andWhere('DATE(startsAt) = :date', { date })
+        .execute();
+    }
+
     return messages.length;
   }
 

@@ -8,12 +8,13 @@ import { GroupAttendanceService } from 'src/domain/group/group-attendance.servic
 import { GroupController } from 'src/domain/group/group.controller';
 import { GroupService } from 'src/domain/group/group.service';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { NotificationModule } from 'src/services/notification/notification.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Group, Pick, Student]),
+    TypeOrmModule.forFeature([Group, Student, Pick, Schoolday]),
     DynamooseModule.forFeature([
       {
         name: 'Attendance',
