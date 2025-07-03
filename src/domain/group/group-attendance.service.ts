@@ -4,12 +4,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { addDays } from 'date-fns';
 import { format, fromZonedTime } from 'date-fns-tz';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
 import { NotificationType } from 'src/common/enums/notification-type';
-import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
-import { AttendanceStatusDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
+import {
+  CreateAttendanceWithGroupStudentDto,
+  CreateAttendanceWithKeyDto,
+} from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
   IAttendance,
   IAttendanceKey,
@@ -19,7 +22,6 @@ import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
   generateDailyStudentKey,
   generateGroupKey,
-  getOneYearTtl,
   processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -54,7 +56,7 @@ export class GroupAttendanceService {
 
   async notifyStart(
     groupId: number, //! e.g. 48
-    dtos: AttendanceStatusDto[],
+    dtos: CreateAttendanceWithKeyDto[],
   ): Promise<number> {
     const group = await this.groupRepository.findOneOrFail({
       where: { id: groupId },
@@ -118,7 +120,7 @@ export class GroupAttendanceService {
 
   async notifyEnd(
     groupId: number, //! e.g. 48
-    dtos: AttendanceStatusDto[],
+    dtos: CreateAttendanceWithKeyDto[],
   ): Promise<number> {
     // MySQL 읽고
     const group = await this.groupRepository.findOneOrFail({
@@ -183,14 +185,11 @@ export class GroupAttendanceService {
 
   async notifyCustom(
     groupId: number,
-    dtos: AttendanceStatusDto[],
+    dtos: CreateAttendanceWithKeyDto[],
   ): Promise<number> {
     if (dtos.length === 0) {
       return 0;
     }
-
-    // 첫 번째 DTO에서 groupId 추출
-    // const groupId = Number(dtos[0].groupKey.split('#')[1]);
 
     // MySQL 읽고
     const group = await this.groupRepository.findOneOrFail({
@@ -207,37 +206,38 @@ export class GroupAttendanceService {
     const allStudents = group.picks.map((v) => v.student);
 
     // Custom message를 위한 학생 ID와 메시지 매핑
-    const studentMessageMap = new Map<number, string>();
+    const schoolNoteMap = new Map<number, string>();
     const statusMap = new Map<number, string>();
 
     dtos.forEach((dto) => {
       const studentId = this.extractStudentIdFromRangeKey(dto.dailyStudentKey);
       const message = dto.schoolNote || '';
-      studentMessageMap.set(studentId, message);
+      schoolNoteMap.set(studentId, message);
       statusMap.set(studentId, this.translateStatusInOtherContext(dto.status));
     });
 
-    const studentIds = Array.from(studentMessageMap.keys());
+    const studentIds = Array.from(schoolNoteMap.keys());
 
     const messages = allStudents
       .filter((v) => studentIds.includes(v.id))
       .map((v: Student) => {
-        const customMessage = studentMessageMap.get(v.id);
+        const schoolNote = schoolNoteMap.get(v.id);
         const status = statusMap.get(v.id);
         return {
           id: v.parent.id,
           phone: v.parent.phone,
           token: v.parent.user?.pushToken ?? null,
           title: `${group.lesson.schoolName}`,
-          body: `${v.name} 학생 ${status} : ${customMessage}`,
+          body: `${v.name} 학생 ${status} : ${schoolNote}`,
           role: 'PARENT',
         };
       });
 
-    // Dynamo 상태 업데이트 (customMessage를 schoolNote로 저장)
+    // Dynamo 상태 업데이트
     const updatedDtos = dtos.map((dto) => ({
       ...dto,
       schoolNote: dto.schoolNote,
+      schoolNotedAt: new Date(),
     }));
 
     await this.updateAttendanceStatusInBulkOptimized(updatedDtos);
@@ -258,7 +258,7 @@ export class GroupAttendanceService {
 
   async upsert(
     date: string, //! e.g. "2025-06-08" <- 하이픈 반드시 포함
-    dto: UpdateAttendanceDto,
+    dto: CreateAttendanceWithGroupStudentDto,
   ): Promise<IAttendance> {
     const group = await this.groupRepository.findOneOrFail({
       where: { id: dto.groupId },
@@ -277,7 +277,7 @@ export class GroupAttendanceService {
     }
 
     const duration = getDuration(group.start, group.end);
-    const expires = getOneYearTtl(new Date());
+    const expires = Math.floor(addDays(new Date(), 400).getTime() / 1000);
     const groupKey = generateGroupKey(group.id);
     const dailyStudentKey = generateDailyStudentKey(
       date,
@@ -303,6 +303,8 @@ export class GroupAttendanceService {
       end: group.end,
       duration: duration,
       expires: expires,
+      ...(typeof dto.parentNote === 'string' && { parentNotedAt: new Date() }),
+      ...(typeof dto.schoolNote === 'string' && { schoolNotedAt: new Date() }),
     };
 
     // intentionally using exception-driven control flow
@@ -516,7 +518,7 @@ export class GroupAttendanceService {
    * - 대부분의 레코드가 변경될 것으로 예상되는 경우
    */
   async updateAttendanceStatusInBulk(
-    dtos: AttendanceStatusDto[],
+    dtos: CreateAttendanceWithKeyDto[],
   ): Promise<IAttendance[]> {
     try {
       const updatePromises = dtos.map((dto) =>
@@ -551,7 +553,7 @@ export class GroupAttendanceService {
    * - 레코드 수가 많고 대부분 변경이 없을 것으로 예상되는 경우
    */
   async updateAttendanceStatusInBulkOptimized(
-    dtos: AttendanceStatusDto[],
+    dtos: CreateAttendanceWithKeyDto[],
   ): Promise<{
     updatedCount: number;
     skippedCount: number;

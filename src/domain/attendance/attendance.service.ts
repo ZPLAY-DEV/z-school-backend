@@ -4,12 +4,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { addDays } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { SortOrder } from 'dynamoose/dist/General';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
-import { CreateWithStudentAndSchooldayDto } from 'src/domain/attendance/dto/create-with-student-and-schoolday.dto';
-import { UpsertAttendanceDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
+import {
+  CreateAttendanceWithStudentSchooldayDto,
+  UpsertAttendanceDto,
+} from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
   IAttendance,
   IAttendanceKey,
@@ -17,7 +20,6 @@ import {
 import {
   generateDailyStudentKey,
   generateGroupKey,
-  getOneYearTtl,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
@@ -40,8 +42,8 @@ export class AttendanceService {
   ) {}
 
   async init(): Promise<void> {
-    const now = new Date();
-    const ttl = Math.floor(now.getTime() / 1000) + 60 * 60 * 24; // 1 일
+    const now = addDays(new Date(), 1);
+    const ttl = Math.floor(now.getTime() / 1000); // 1일
     try {
       await this.model.create({
         groupKey: generateGroupKey(1),
@@ -68,7 +70,7 @@ export class AttendanceService {
   //? This method works as upsert - if the item exists, it will be overwritten.
   //?
   async upsertWithStudentAndSchoolday(
-    dto: CreateWithStudentAndSchooldayDto,
+    dto: CreateAttendanceWithStudentSchooldayDto,
   ): Promise<IAttendance> {
     const { studentId, schooldayId, status, parentNote, schoolNote } = dto;
 
@@ -89,7 +91,9 @@ export class AttendanceService {
     if (!schoolday) {
       throw new NotFoundException('Schoolday not found');
     }
-    const expires = getOneYearTtl(schoolday.startsAt);
+    const expires = Math.floor(
+      addDays(schoolday.startsAt, 400).getTime() / 1000,
+    );
     const itemKey = {
       groupKey: generateGroupKey(schoolday.group.id),
       dailyStudentKey: generateDailyStudentKey(
@@ -179,7 +183,9 @@ export class AttendanceService {
     if (!schoolday) {
       throw new NotFoundException('Schoolday not found');
     }
-    const expires = getOneYearTtl(schoolday.startsAt);
+    const expires = Math.floor(
+      addDays(schoolday.startsAt, 400).getTime() / 1000,
+    );
 
     itemDto.start = formatInTimeZone(schoolday.startsAt, 'Asia/Seoul', 'HH:mm');
     itemDto.end = formatInTimeZone(schoolday.endsAt, 'Asia/Seoul', 'HH:mm');

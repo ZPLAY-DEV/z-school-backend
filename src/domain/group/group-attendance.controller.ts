@@ -10,9 +10,10 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-
-import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
-import { AttendanceStatusDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
+import {
+  CreateAttendanceWithGroupStudentDto,
+  CreateAttendanceWithKeyDto,
+} from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
   IAttendance,
   IAttendanceWithLastFlag,
@@ -46,7 +47,7 @@ export class GroupAttendanceController {
   @Post(':groupId/attendances/start')
   async start(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Body() dtos: AttendanceStatusDto[],
+    @Body() dtos: CreateAttendanceWithKeyDto[],
   ): Promise<number> {
     return await this.groupAttendancesService.notifyStart(groupId, dtos);
   }
@@ -56,7 +57,7 @@ export class GroupAttendanceController {
   @Post(':groupId/attendances/end')
   async end(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Body() dtos: AttendanceStatusDto[],
+    @Body() dtos: CreateAttendanceWithKeyDto[],
   ): Promise<number> {
     return await this.groupAttendancesService.notifyEnd(groupId, dtos);
   }
@@ -65,7 +66,7 @@ export class GroupAttendanceController {
   @Post(':groupId/attendances/custom')
   async custom(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Body() dtos: AttendanceStatusDto[],
+    @Body() dtos: CreateAttendanceWithKeyDto[],
   ): Promise<number> {
     return await this.groupAttendancesService.notifyCustom(groupId, dtos);
   }
@@ -78,7 +79,7 @@ export class GroupAttendanceController {
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('date') date: string,
     @Param('studentId', ParseIntPipe) studentId: number,
-    @Body() dto: UpdateAttendanceDto,
+    @Body() dto: CreateAttendanceWithGroupStudentDto,
   ): Promise<IAttendance> {
     return await this.groupAttendancesService.upsert(date, {
       ...dto,

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsBoolean,
+  IsDate,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -74,6 +74,14 @@ export class CreateAttendanceDto {
   parentNote?: string;
 
   @ApiProperty({
+    description: '🈳 학생·학부모가 메시지를 남긴 시간',
+    required: false,
+  })
+  @IsDate()
+  @IsOptional()
+  parentNotedAt?: Date;
+
+  @ApiProperty({
     description: '🈳 학교에서 학생·학부모에 남긴 메시지',
     required: false,
   })
@@ -81,10 +89,13 @@ export class CreateAttendanceDto {
   @IsOptional()
   schoolNote?: string;
 
-  @ApiProperty({ description: '🈳 읽음 여부', required: false, default: false })
-  @IsBoolean()
+  @ApiProperty({
+    description: '🈳 학교에서 메시지를 남긴 시간',
+    required: false,
+  })
+  @IsDate()
   @IsOptional()
-  isRead?: boolean;
+  schoolNotedAt?: Date;
 
   @ApiProperty({
     description: '🈳 ttl',

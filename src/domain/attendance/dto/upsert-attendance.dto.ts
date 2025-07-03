@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { AttendanceStatus } from 'src/common/enums';
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 
@@ -43,25 +43,43 @@ export class AttendanceKeyDto {
   dailyStudentKey: string;
 }
 
-export class AttendanceStatusDto {
+export class StudentSchooldayDto {
   @ApiProperty({
-    description: '🈵 그룹 키 (파티션 키)',
-    example: 'GROUP#123',
-    type: 'string',
-    pattern: '^GROUP#\\d+$',
+    description: '🈵 학생 Id',
+    example: 1,
+    type: 'number',
   })
-  @IsString()
-  groupKey: string;
+  @IsNumber()
+  studentId: number;
 
   @ApiProperty({
-    description: '🈵 일일 학생 키 (정렬 키) - 날짜, 학생 ID, 학급 정보 포함',
-    example: 'DATE#2025-01-15#STUDENT#123#1-A-01',
-    type: 'string',
-    pattern: '^DATE#\\d{4}-\\d{2}-\\d{2}#STUDENT#\\d+#.*$',
+    description: '🈵 학습일 Id',
+    example: 1,
+    type: 'number',
   })
-  @IsString()
-  dailyStudentKey: string;
+  @IsNumber()
+  schooldayId: number;
+}
 
+export class GroupStudentDto {
+  @ApiProperty({
+    description: '🈵 그룹 Id',
+    example: 1,
+    type: 'number',
+  })
+  @IsNumber()
+  groupId: number;
+
+  @ApiProperty({
+    description: '🈵 학생 Id',
+    example: 1,
+    type: 'number',
+  })
+  @IsNumber()
+  studentId: number;
+}
+
+export class CreateAttendanceWithKeyDto extends AttendanceKeyDto {
   @ApiProperty({
     description: '🈵 status',
     default: AttendanceStatus.PRESENT,
@@ -72,6 +90,15 @@ export class AttendanceStatusDto {
   status: AttendanceStatus;
 
   @ApiProperty({
+    description: '🈵 학생·학부모가 학교에 남긴 메시지',
+    default: '감사합니다.',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  parentNote?: string;
+
+  @ApiProperty({
     description: '🈵 학교에서 학생·학부모에 남긴 메시지',
     default: '감사합니다.',
     required: false,
@@ -79,6 +106,17 @@ export class AttendanceStatusDto {
   @IsOptional()
   @IsString()
   schoolNote?: string | null;
+}
+
+export class CreateAttendanceWithStudentSchooldayDto extends StudentSchooldayDto {
+  @ApiProperty({
+    description: '🈵 status',
+    default: AttendanceStatus.PRESENT,
+    required: true,
+    enum: AttendanceStatus,
+  })
+  @IsEnum(AttendanceStatus)
+  status: AttendanceStatus;
 
   @ApiProperty({
     description: '🈵 학생·학부모가 학교에 남긴 메시지',
@@ -88,4 +126,42 @@ export class AttendanceStatusDto {
   @IsOptional()
   @IsString()
   parentNote?: string;
+
+  @ApiProperty({
+    description: '🈵 학교에서 학생·학부모에 남긴 메시지',
+    default: '감사합니다.',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  schoolNote?: string | null;
+}
+
+export class CreateAttendanceWithGroupStudentDto extends GroupStudentDto {
+  @ApiProperty({
+    description: '🈵 status',
+    default: AttendanceStatus.PRESENT,
+    required: true,
+    enum: AttendanceStatus,
+  })
+  @IsEnum(AttendanceStatus)
+  status: AttendanceStatus;
+
+  @ApiProperty({
+    description: '🈵 학생·학부모가 학교에 남긴 메시지',
+    default: '감사합니다.',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  parentNote?: string;
+
+  @ApiProperty({
+    description: '🈵 학교에서 학생·학부모에 남긴 메시지',
+    default: '감사합니다.',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  schoolNote?: string | null;
 }

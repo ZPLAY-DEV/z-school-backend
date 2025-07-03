@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { addDays } from 'date-fns';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
 import {
   DeleteRequest,
@@ -8,7 +9,6 @@ import {
   buildAttendanceItem,
   generateDailyStudentKey,
   generateGroupKey,
-  getOneYearTtl,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
@@ -110,7 +110,9 @@ export class SchooldaySubscriber
       batchRequests.push(...deleteRequests);
 
       // 4b. 새로운 출석 기록 생성을 위한 put requests 생성
-      const expires = getOneYearTtl(schoolday.startsAt);
+      const expires = Math.floor(
+        addDays(schoolday.startsAt, 400).getTime() / 1000,
+      );
 
       const putRequests: WriteRequest[] = picks.map((pick) => {
         const newDailyStudentKey = generateDailyStudentKey(

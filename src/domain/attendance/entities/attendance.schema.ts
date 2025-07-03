@@ -58,8 +58,26 @@ export const AttendanceSchema = new Schema(
       type: String,
       required: false,
     },
+    parentNotedAt: {
+      type: {
+        value: Number,
+        settings: {
+          storage: 'milliseconds',
+        },
+      },
+      required: false,
+    },
     schoolNote: {
       type: String,
+      required: false,
+    },
+    schoolNotedAt: {
+      type: {
+        value: Number,
+        settings: {
+          storage: 'milliseconds',
+        },
+      },
       required: false,
     },
     expires: {

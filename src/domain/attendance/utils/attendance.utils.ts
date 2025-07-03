@@ -27,15 +27,6 @@ export function generateDailyStudentKey(
 }
 
 /**
- * Calculate TTL expiration timestamp
- */
-export function getOneYearTtl(date: Date): number {
-  return (
-    Math.floor(date.getTime() / 1000) + 60 * 60 * 24 * 365 // 365일 TTL
-  );
-}
-
-/**
  * Builds DynamoDB item by filtering out undefined values (NoSQL best practice)
  */
 export function buildAttendanceItem(item: IAttendanceCore): IAttendanceCore {
