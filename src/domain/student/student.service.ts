@@ -95,7 +95,9 @@ export class StudentService {
     const student = await this.studentRepository
       .createQueryBuilder('student')
       .leftJoinAndSelect('student.parent', 'parent')
-      .leftJoinAndSelect('student.picks', 'picks')
+      .leftJoinAndSelect('student.picks', 'pick')
+      .leftJoinAndSelect('pick.group', 'group')
+      .leftJoinAndSelect('group.schooldays', 'schoolday')
       .where('student.id = :id', { id })
       .getOne();
 
@@ -118,9 +120,9 @@ export class StudentService {
     }
 
     let picks = student.picks;
-    if (termId) {
-      picks = picks.filter((pick) => pick.termId === Number(termId));
-    }
+    picks = termId
+      ? picks.filter((pick) => !pick.endedBy && pick.termId === Number(termId))
+      : picks.filter((pick) => !pick.endedBy);
 
     // Pick에서 Group 추출
     return picks.map((pick) => pick.group).filter(Boolean);

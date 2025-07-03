@@ -83,7 +83,7 @@ export class StudentController {
     @Param('id', ParseIntPipe) id: number,
     @Query('termId') termId?: number,
   ): Promise<Group[]> {
-    return await this.studentService.findGroupsById(id, termId);
+    return await this.studentService.findCanceledGroupsById(id, termId);
   }
 
   @FindStudentBookingsDocs()
