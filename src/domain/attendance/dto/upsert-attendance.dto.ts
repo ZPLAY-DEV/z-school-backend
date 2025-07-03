@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { AttendanceStatus } from 'src/common/enums';
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 
@@ -73,9 +73,19 @@ export class AttendanceStatusDto {
 
   @ApiProperty({
     description: '🈵 학교에서 학생·학부모에 남긴 메시지',
-    default: 'message from school',
+    default: '감사합니다.',
     required: false,
   })
+  @IsOptional()
   @IsString()
-  schoolNote: string;
+  schoolNote?: string | null;
+
+  @ApiProperty({
+    description: '🈵 custom message body',
+    default: '감사합니다.',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  customMessage?: string;
 }

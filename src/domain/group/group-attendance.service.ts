@@ -142,7 +142,7 @@ export class GroupAttendanceService {
     dtos.forEach((dto) => {
       statusMap.set(
         this.extractStudentIdFromRangeKey(dto.dailyStudentKey),
-        this.translateStatusInEndContext(dto.status),
+        this.translateStatusInOtherContext(dto.status),
       );
     });
     const messages = allStudents
@@ -177,6 +177,78 @@ export class GroupAttendanceService {
         .andWhere('DATE(startsAt) = :date', { date })
         .execute();
     }
+
+    return messages.length;
+  }
+
+  async notifyCustom(
+    groupId: number,
+    dtos: AttendanceStatusDto[],
+  ): Promise<number> {
+    if (dtos.length === 0) {
+      return 0;
+    }
+
+    // 첫 번째 DTO에서 groupId 추출
+    // const groupId = Number(dtos[0].groupKey.split('#')[1]);
+
+    // MySQL 읽고
+    const group = await this.groupRepository.findOneOrFail({
+      where: { id: groupId },
+      relations: [
+        'lesson',
+        'picks',
+        'picks.student',
+        'picks.student.parent',
+        'picks.student.parent.user',
+      ],
+    });
+
+    const allStudents = group.picks.map((v) => v.student);
+
+    // Custom message를 위한 학생 ID와 메시지 매핑
+    const studentMessageMap = new Map<number, string>();
+    const statusMap = new Map<number, string>();
+
+    dtos.forEach((dto) => {
+      const studentId = this.extractStudentIdFromRangeKey(dto.dailyStudentKey);
+      // customMessage가 있으면 사용하고, 없으면 schoolNote 사용
+      const message = dto.customMessage || dto.schoolNote || '';
+      studentMessageMap.set(studentId, message);
+      statusMap.set(studentId, this.translateStatusInOtherContext(dto.status));
+    });
+
+    const studentIds = Array.from(studentMessageMap.keys());
+
+    const messages = allStudents
+      .filter((v) => studentIds.includes(v.id))
+      .map((v: Student) => {
+        const customMessage = studentMessageMap.get(v.id);
+        const status = statusMap.get(v.id);
+        return {
+          id: v.parent.id,
+          phone: v.parent.phone,
+          token: v.parent.user?.pushToken ?? null,
+          title: `${group.lesson.schoolName}`,
+          body: `${v.name} 학생 ${status} : ${customMessage}`,
+          role: 'PARENT',
+        };
+      });
+
+    // Dynamo 상태 업데이트 (customMessage를 schoolNote로 저장)
+    const updatedDtos = dtos.map((dto) => ({
+      ...dto,
+      schoolNote: dto.customMessage || dto.schoolNote,
+    }));
+
+    await this.updateAttendanceStatusInBulkOptimized(updatedDtos);
+
+    await this.notificationService.send({
+      messages,
+      type: NotificationType.CLASS,
+      schoolId: group.lesson.schoolId,
+      role: 'PARENT',
+    });
 
     return messages.length;
   }
@@ -583,10 +655,12 @@ export class GroupAttendanceService {
         return '선통보 지각';
       case AttendanceStatus.EXCUSED_LEFT:
         return '선통보 조퇴';
+      default:
+        return '하교';
     }
   }
 
-  private translateStatusInEndContext(status: AttendanceStatus): string {
+  private translateStatusInOtherContext(status: AttendanceStatus): string {
     switch (status) {
       case AttendanceStatus.INIT:
         return '출석채크 이전';
@@ -604,6 +678,8 @@ export class GroupAttendanceService {
         return '지각 선통보';
       case AttendanceStatus.EXCUSED_LEFT:
         return '조퇴 선통보';
+      default:
+        return '하교';
     }
   }
 
