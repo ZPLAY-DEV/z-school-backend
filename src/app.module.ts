@@ -21,6 +21,7 @@ import { BookingModule } from 'src/domain/booking/booking.module';
 import { CalendarModule } from 'src/domain/calendar/calendar.module';
 import { CategoryModule } from 'src/domain/category/category.module';
 import { ContractModule } from 'src/domain/contract/contract.module';
+import { DepartureModule } from 'src/domain/departure/departure.module';
 import { EventModule } from 'src/domain/event/event.module';
 import { GroupModule } from 'src/domain/group/group.module';
 import { InstructorModule } from 'src/domain/instructor/instructor.module';
@@ -114,6 +115,7 @@ import { UploadModule } from './services/upload/upload.module';
     CalendarModule,
     CategoryModule,
     ContractModule,
+    DepartureModule,
     EventModule,
     GroupModule,
     InstructorModule,

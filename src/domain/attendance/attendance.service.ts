@@ -15,9 +15,9 @@ import {
   IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
 import {
-  calculateTtl,
   generateDailyStudentKey,
   generateGroupKey,
+  getOneYearTtl,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
@@ -89,7 +89,7 @@ export class AttendanceService {
     if (!schoolday) {
       throw new NotFoundException('Schoolday not found');
     }
-    const expires = calculateTtl(schoolday.startsAt);
+    const expires = getOneYearTtl(schoolday.startsAt);
     const itemKey = {
       groupKey: generateGroupKey(schoolday.group.id),
       dailyStudentKey: generateDailyStudentKey(
@@ -179,7 +179,7 @@ export class AttendanceService {
     if (!schoolday) {
       throw new NotFoundException('Schoolday not found');
     }
-    const expires = calculateTtl(schoolday.startsAt);
+    const expires = getOneYearTtl(schoolday.startsAt);
 
     itemDto.start = formatInTimeZone(schoolday.startsAt, 'Asia/Seoul', 'HH:mm');
     itemDto.end = formatInTimeZone(schoolday.endsAt, 'Asia/Seoul', 'HH:mm');

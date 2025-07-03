@@ -16,6 +16,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { StudentService } from 'src/domain/student/student.service';
@@ -68,6 +69,23 @@ export class StudentController {
     return await this.studentService.findById(id);
   }
 
+  @Get(':id/schooldays')
+  async findSchooldaysById(
+    @Param('id') id: number,
+    @Query('termId') termId?: number,
+  ): Promise<Schoolday[]> {
+    return await this.studentService.findSchooldaysById(id, termId);
+  }
+
+  @FindStudentBookingsDocs()
+  @Get(':id/bookings')
+  async findBookingsById(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('termId') termId?: number,
+  ): Promise<Booking[]> {
+    return await this.studentService.findBookingsById(id, termId);
+  }
+
   @FindStudentGroupsDocs()
   @Get(':id/groups')
   async findGroupsById(
@@ -84,15 +102,6 @@ export class StudentController {
     @Query('termId') termId?: number,
   ): Promise<Group[]> {
     return await this.studentService.findCanceledGroupsById(id, termId);
-  }
-
-  @FindStudentBookingsDocs()
-  @Get(':id/bookings')
-  async findBookingsById(
-    @Param('id', ParseIntPipe) id: number,
-    @Query('termId') termId?: number,
-  ): Promise<Booking[]> {
-    return await this.studentService.findBookingsById(id, termId);
   }
 
   //? ---------------------------------------------------------------------- ?//

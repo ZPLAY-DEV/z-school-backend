@@ -16,12 +16,14 @@ export interface IAttendanceCore extends IAttendanceKey {
   end?: string; // e.g. "14:40"
   duration?: number; // e.g. 40
   status?: AttendanceStatus;
-  expires?: number; // for TTL
+  expires?: number; // for 400 days (a bit longer than 365 days)
 }
 
 export interface IAttendance extends IAttendanceCore {
   parentNote?: string | null;
+  parentNotedAt?: Date | null;
   schoolNote?: string | null;
+  schoolNotedAt?: Date | null;
 }
 
 export interface IAttendanceWithLastFlag extends IAttendance {

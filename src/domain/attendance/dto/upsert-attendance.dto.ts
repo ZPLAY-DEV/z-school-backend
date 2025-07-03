@@ -81,11 +81,11 @@ export class AttendanceStatusDto {
   schoolNote?: string | null;
 
   @ApiProperty({
-    description: '🈵 custom message body',
+    description: '🈵 학생·학부모가 학교에 남긴 메시지',
     default: '감사합니다.',
     required: false,
   })
   @IsOptional()
   @IsString()
-  customMessage?: string;
+  parentNote?: string;
 }

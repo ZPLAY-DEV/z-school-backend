@@ -5,7 +5,6 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { addDays } from 'date-fns';
 import { fromZonedTime } from 'date-fns-tz';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
 import {
@@ -18,9 +17,9 @@ import {
 } from 'src/domain/attendance/types/attendance.types';
 import {
   buildAttendanceItem,
-  calculateTtl,
   generateDailyStudentKey,
   generateGroupKey,
+  getOneYearTtl,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import {
@@ -271,7 +270,7 @@ export class SchooldayAttendanceService {
 
       const { group, startsAt, duration, lessonId, groupId } = schoolday;
       const localDate = formatDateInKST(startsAt);
-      const expires = calculateTtl(addDays(new Date(), 365));
+      const expires = getOneYearTtl(new Date());
 
       const dayAttendances = group.picks
         .filter(

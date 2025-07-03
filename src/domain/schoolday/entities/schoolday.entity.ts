@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Transform } from 'class-transformer';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Actor } from 'src/common/enums';
+import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import {
   Column,
@@ -10,6 +11,7 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
@@ -55,7 +57,10 @@ export class Schoolday {
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '미사용', example: null })
+  @ApiProperty({
+    description: '관리자 편의를 위해 lessonName 을 저장',
+    example: null,
+  })
   @Column({ type: 'varchar', length: 16, nullable: true })
   name: string | null; // 관리자 편의를 위한 column
 
@@ -126,6 +131,11 @@ export class Schoolday {
   })
   @JoinColumn({ name: 'groupId' })
   group: Group;
+
+  //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @OneToMany(() => Departure, (departure) => departure.schoolday)
+  departures: Departure[]; // 하교 기록
 
   //? Constructor ---------------------------------------------------------- ?//
 

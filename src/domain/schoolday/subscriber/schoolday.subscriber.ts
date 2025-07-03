@@ -6,9 +6,9 @@ import {
 } from 'src/domain/attendance/types/attendance.types';
 import {
   buildAttendanceItem,
-  calculateTtl,
   generateDailyStudentKey,
   generateGroupKey,
+  getOneYearTtl,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
@@ -110,7 +110,7 @@ export class SchooldaySubscriber
       batchRequests.push(...deleteRequests);
 
       // 4b. 새로운 출석 기록 생성을 위한 put requests 생성
-      const expires = calculateTtl(schoolday.startsAt);
+      const expires = getOneYearTtl(schoolday.startsAt);
 
       const putRequests: WriteRequest[] = picks.map((pick) => {
         const newDailyStudentKey = generateDailyStudentKey(

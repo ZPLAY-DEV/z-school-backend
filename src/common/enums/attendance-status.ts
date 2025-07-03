@@ -4,7 +4,7 @@ export enum AttendanceStatus {
   ABSENT = 'ABSENT', // 결석
   LATE = 'LATE', // 지각
   LEFT = 'LEFT', // 조퇴
-  FINISHED = 'FINISHED', // 하교
+  EXIT = 'EXIT', // 하교
   EXCUSED_ABSENT = 'EXCUSED_ABSENT', // 선결석통보
   EXCUSED_LATE = 'EXCUSED_LATE', // 선지각통보
   EXCUSED_LEFT = 'EXCUSED_LEFT', // 선조퇴통보

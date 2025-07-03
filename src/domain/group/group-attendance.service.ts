@@ -17,9 +17,9 @@ import {
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
-  calculateTtl,
   generateDailyStudentKey,
   generateGroupKey,
+  getOneYearTtl,
   processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -212,8 +212,7 @@ export class GroupAttendanceService {
 
     dtos.forEach((dto) => {
       const studentId = this.extractStudentIdFromRangeKey(dto.dailyStudentKey);
-      // customMessage가 있으면 사용하고, 없으면 schoolNote 사용
-      const message = dto.customMessage || dto.schoolNote || '';
+      const message = dto.schoolNote || '';
       studentMessageMap.set(studentId, message);
       statusMap.set(studentId, this.translateStatusInOtherContext(dto.status));
     });
@@ -238,7 +237,7 @@ export class GroupAttendanceService {
     // Dynamo 상태 업데이트 (customMessage를 schoolNote로 저장)
     const updatedDtos = dtos.map((dto) => ({
       ...dto,
-      schoolNote: dto.customMessage || dto.schoolNote,
+      schoolNote: dto.schoolNote,
     }));
 
     await this.updateAttendanceStatusInBulkOptimized(updatedDtos);
@@ -278,7 +277,7 @@ export class GroupAttendanceService {
     }
 
     const duration = getDuration(group.start, group.end);
-    const expires = calculateTtl(new Date());
+    const expires = getOneYearTtl(new Date());
     const groupKey = generateGroupKey(group.id);
     const dailyStudentKey = generateDailyStudentKey(
       date,

@@ -2,22 +2,23 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { StudentStatus } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
 import {
-  Column,
-  CreateDateColumn,
-  DeleteDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  Unique,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    DeleteDateColumn,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    Unique,
+    UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('students')
@@ -131,6 +132,9 @@ export class Student {
 
   @OneToMany(() => Ledger, (ledger) => ledger.student)
   ledgers: Ledger[]; // 영수증
+
+  @OneToMany(() => Departure, (departure) => departure.student)
+  departures: Departure[]; // 하교 기록
 
   //* N-to-M belongsToMany with custom props using 1-to-M ------------------ *//
 

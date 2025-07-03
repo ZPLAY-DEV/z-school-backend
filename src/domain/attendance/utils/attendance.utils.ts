@@ -29,9 +29,9 @@ export function generateDailyStudentKey(
 /**
  * Calculate TTL expiration timestamp
  */
-export function calculateTtl(startsAt: Date): number {
+export function getOneYearTtl(date: Date): number {
   return (
-    Math.floor(startsAt.getTime() / 1000) + 60 * 60 * 24 * 365 // 365일 TTL
+    Math.floor(date.getTime() / 1000) + 60 * 60 * 24 * 365 // 365일 TTL
   );
 }
 

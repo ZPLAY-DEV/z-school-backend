@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { S3Service } from 'src/services/aws/s3.service';
@@ -106,6 +107,46 @@ export class StudentService {
     }
 
     return student;
+  }
+
+  //? 학생의 수업일 조회
+  async findSchooldaysById(id: number, termId?: number): Promise<Schoolday[]> {
+    const queryBuilder = this.studentRepository
+      .createQueryBuilder('student')
+      .leftJoinAndSelect('student.picks', 'pick')
+      .leftJoinAndSelect('pick.group', 'group')
+      .leftJoinAndSelect('group.schooldays', 'schoolday')
+      .where('student.id = :id', { id })
+      .andWhere('pick.endedBy IS NULL'); // 현재 수강중인 반만 조회
+
+    // termId가 제공되면 해당 학기의 picks만 필터링
+    if (termId) {
+      queryBuilder.andWhere('pick.termId = :termId', {
+        termId: Number(termId),
+      });
+    }
+
+    const student = await queryBuilder.getOne();
+
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
+
+    // 학생의 picks에서 모든 schooldays 추출
+    const schooldays: Schoolday[] = [];
+    student.picks.forEach((pick) => {
+      if (pick.group && pick.group.schooldays) {
+        schooldays.push(...pick.group.schooldays);
+      }
+    });
+
+    // 중복 제거 (같은 schoolday가 여러 group에 있을 수 있다면...)
+    // const uniqueSchooldays = schooldays.filter(
+    //   (schoolday, index, self) =>
+    //     index === self.findIndex((s) => s.id === schoolday.id),
+    // );
+
+    return schooldays;
   }
 
   //? 학생의 수강중인 반 조회
