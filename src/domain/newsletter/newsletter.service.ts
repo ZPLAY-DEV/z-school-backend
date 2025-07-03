@@ -71,7 +71,6 @@ export class NewsletterService {
         schoolName: school.name,
         termName: term.termName,
       });
-
       // scheduledAt이 설정된 경우 이벤트 처리
       if (newsletter.scheduledAt) {
         await this.handleSendingNewsletter(newsletter, manager);
@@ -322,11 +321,11 @@ export class NewsletterService {
         channel: 'activity',
         text: `[API] 🟢 ${newsletter.schoolName}에서 뉴스레터 발송 (준비중)\n- 이름:${newsletter.title}\n- 분류:${translateNewsletterType(newsletter.type)}\n- 대상:${translateNewsletterTarget(newsletter.target)} ${newsletter.studentIds.length}명`,
       });
-    } catch (error) {
+    } catch (err) {
       this.logger.error(
-        `❌ Failed to handle scheduled newsletter: ${error.message}`,
+        `❌ Failed to handle scheduled newsletter: ${err.message}`,
+        err,
       );
-      throw error;
     }
   }
 
@@ -475,9 +474,10 @@ export class NewsletterService {
       await this.dataSource
         .getRepository(Shortlink)
         .delete({ newsletterId: newsletter.id });
-    } catch (error) {
+    } catch (err) {
       this.logger.error(
-        `❌ Failed to delete shortlinks for newsletter ${newsletter.id}: ${error.message}`,
+        `❌ Failed to delete shortlinks for newsletter ${newsletter.id}: ${err.message}`,
+        err,
       );
     }
   }
@@ -520,13 +520,6 @@ export class NewsletterService {
     });
 
     if (newsletters && newsletters.length > 0) {
-      // if (
-      //   newsletters.some(
-      //     (newsletter) => newsletter.status === SendStatus.SCHEDULED,
-      //   )
-      // ) {
-      //   throw new BadRequestException('Already scheduled.');
-      // }
       if (
         dto.type === NewsletterType.REGISTRATION &&
         newsletters.some(
@@ -536,7 +529,7 @@ export class NewsletterService {
         )
       ) {
         throw new BadRequestException(
-          'Registration newsletter already sent or scheduled.',
+          '❌ Registration newsletter already sent or scheduled.',
         );
       }
     }
@@ -593,8 +586,36 @@ export class NewsletterService {
 
     console.log(`✳️ event`, JSON.stringify(event, null, 2));
 
-    // DynamoDB upsert: 동일한 key면 자동으로 기존 레코드 덮어씀
-    await this.model.create(event);
+    // DynamoDB upsert: 먼저 생성 시도, 실패시 업데이트
+    try {
+      await this.model.create(event);
+    } catch (err) {
+      // ConditionalCheckFailedException 발생시 (이미 존재하는 키) 업데이트 시도
+      if (err.name === 'ConditionalCheckFailedException') {
+        try {
+          await this.model.update(
+            { eventKey: event.eventKey, eventTime: event.eventTime },
+            {
+              newsletterId: event.newsletterId,
+              status: event.status,
+              payload: event.payload,
+              expires: event.expires,
+            },
+          );
+        } catch (updateErr) {
+          this.logger.error(
+            `❌ Failed to update event: ${updateErr.message}`,
+            updateErr,
+          );
+          throw new InternalServerErrorException(
+            '이벤트 업데이트에 실패했습니다.',
+          );
+        }
+      } else {
+        this.logger.error(`❌ Failed to create event: ${err.message}`, err);
+        throw new InternalServerErrorException('이벤트 생성에 실패했습니다.');
+      }
+    }
   }
 
   private async checkPreviousEventWithDto(
@@ -618,9 +639,12 @@ export class NewsletterService {
           throw new BadRequestException('Registration event already sent.');
         }
       }
-    } catch (error) {
-      this.logger.error(`❌ Failed to check previous event: ${error.message}`);
-      throw error;
+    } catch (err) {
+      this.logger.error(
+        `❌ Failed to check previous event: ${err.message}`,
+        err,
+      );
+      throw new BadRequestException(err.message);
     }
   }
 
