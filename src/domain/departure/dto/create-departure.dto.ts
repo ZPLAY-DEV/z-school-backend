@@ -11,6 +11,13 @@ export class CreateDepartureDto {
   schooldayId: number;
 
   @ApiProperty({
+    description: '하교 날짜',
+    example: '2025-07-07',
+  })
+  @IsString()
+  date: string;
+
+  @ApiProperty({
     description: '하교시 메모',
     example: '정상 하교',
     required: false,

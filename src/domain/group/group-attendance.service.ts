@@ -448,15 +448,13 @@ export class GroupAttendanceService {
           date: date,
           studentId: In(studentIds),
         },
-        relations: ['student', 'schoolday'],
         select: [
           'id',
-          'studentId',
-          'schooldayId',
           'date',
           'note',
-          'student',
-          'schoolday',
+          'createdAt',
+          'updatedAt',
+          'studentId', // Map 생성을 위해 필요
         ],
       });
 
