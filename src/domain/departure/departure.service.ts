@@ -1,9 +1,13 @@
 import {
-    BadRequestException,
-    Injectable,
-    NotFoundException,
+  BadRequestException,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { NotificationType } from 'src/common/enums/notification-type';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { Student } from 'src/domain/student/entities/student.entity';
+import { NotificationService } from 'src/services/notification/notification.service';
 import { Repository } from 'typeorm';
 import { CreateDepartureDto } from './dto/create-departure.dto';
 import { UpdateDepartureDto } from './dto/update-departure.dto';
@@ -14,21 +18,54 @@ export class DepartureService {
   constructor(
     @InjectRepository(Departure)
     private readonly departureRepository: Repository<Departure>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
+    @InjectRepository(Schoolday)
+    private readonly schooldayRepository: Repository<Schoolday>,
+    private readonly notificationService: NotificationService,
   ) {}
 
-  async create(createDepartureDto: CreateDepartureDto): Promise<Departure> {
+  async create(dto: CreateDepartureDto): Promise<Departure> {
+    console.log(`🔥 dto`, JSON.stringify(dto, null, 2));
+
     try {
-      const departure = this.departureRepository.create({
-        ...createDepartureDto,
-        departuredAt: new Date(createDepartureDto.departuredAt),
+      const student = await this.studentRepository.findOne({
+        where: { id: dto.studentId },
+        relations: ['parent', 'parent.user'],
+      });
+      if (!student) {
+        throw new NotFoundException('Student not found.');
+      }
+
+      const schoolday = await this.schooldayRepository.findOne({
+        where: { id: dto.schooldayId },
+      });
+      if (!schoolday) {
+        throw new NotFoundException('Schoolday not found.');
+      }
+
+      const departure = this.departureRepository.create(dto);
+
+      await this.notificationService.send({
+        type: NotificationType.SCHOOL,
+        schoolId: student.schoolId,
+        role: 'PARENT',
+        messages: [
+          {
+            id: student.parent.id,
+            phone: student.parent.phone,
+            token: student.parent.user?.pushToken ?? null,
+            title: '하교 알림',
+            body: `${student.name} 학생이 하교했습니다.`,
+            role: 'PARENT',
+          },
+        ],
       });
 
       return await this.departureRepository.save(departure);
     } catch (error) {
       if (error.code === 'ER_DUP_ENTRY') {
-        throw new BadRequestException(
-          '해당 학생의 수업에 대한 하교 기록이 이미 존재합니다.',
-        );
+        throw new BadRequestException('A record already exists.');
       }
       throw error;
     }
@@ -37,7 +74,7 @@ export class DepartureService {
   async findAll(): Promise<Departure[]> {
     return await this.departureRepository.find({
       relations: ['student', 'schoolday'],
-      order: { departuredAt: 'DESC' },
+      order: { createdAt: 'DESC' },
     });
   }
 
@@ -58,7 +95,7 @@ export class DepartureService {
     return await this.departureRepository.find({
       where: { studentId },
       relations: ['student', 'schoolday'],
-      order: { departuredAt: 'DESC' },
+      order: { createdAt: 'DESC' },
     });
   }
 
@@ -77,10 +114,6 @@ export class DepartureService {
     updateDepartureDto: UpdateDepartureDto,
   ): Promise<Departure> {
     const departure = await this.findOne(id);
-
-    if (updateDepartureDto.departuredAt) {
-      departure.departuredAt = new Date(updateDepartureDto.departuredAt);
-    }
 
     if (updateDepartureDto.note !== undefined) {
       departure.note = updateDepartureDto.note;

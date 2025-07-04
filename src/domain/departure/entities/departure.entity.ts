@@ -16,31 +16,34 @@ import {
 
 @Entity('departures')
 @Unique(['studentId', 'schooldayId'])
-@Index('idx_student_departed', ['studentId', 'departuredAt'])
-@Index('idx_schoolday', ['schooldayId'])
+@Index(['date', 'studentId'])
 export class Departure {
-  @ApiProperty({ description: 'departureId', example: 1 })
+  @ApiProperty({ description: 'a primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
   @ApiProperty({ description: '학생 아이디', example: 1 })
-  @Column({ type: 'int', unsigned: true })
+  @Column({ type: 'int', unsigned: true, comment: '학생 아이디' })
   studentId: number;
 
   @ApiProperty({ description: '실제 마지막 참석 수업 아이디', example: 1 })
-  @Column({ type: 'int', unsigned: true })
+  @Column({
+    type: 'int',
+    unsigned: true,
+    comment: '마지막 참석 수업시간 아이디',
+  })
   schooldayId: number;
+
+  @ApiProperty({ description: '하교 날짜', example: '2025-07-07' })
+  @Column({
+    type: 'date',
+    comment: '하교 날짜 (schoolday 날짜와 동일, 쿼리 최적화를 위한 비정규화)',
+  })
+  date: string;
 
   @ApiProperty({ description: '하교시 메모', example: '정상 하교' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
-
-  @ApiProperty({
-    description: '하교시간',
-    example: '2025-01-15T15:30:00.000Z',
-  })
-  @Column({ type: 'datetime' })
-  departuredAt: Date;
 
   @Exclude()
   @ApiProperty({ description: 'createdAt' })

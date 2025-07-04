@@ -1,4 +1,5 @@
 import { AttendanceStatus } from 'src/common/enums';
+import { Departure } from 'src/domain/departure/entities/departure.entity';
 
 export interface IAttendanceKey {
   groupKey: string; // partition key, e.g. "GROUP#1"
@@ -26,7 +27,8 @@ export interface IAttendance extends IAttendanceCore {
   schoolNotedAt?: Date | null;
 }
 
-export interface IAttendanceWithLastFlag extends IAttendance {
-  isLast: boolean;
+export interface IAttendanceWithNextInfo extends IAttendance {
+  next: string; // Next class name or student's nextStop
   student?: any; // Student entity with parent info
+  departure?: Departure | null; // Departure entity with schoolday info
 }

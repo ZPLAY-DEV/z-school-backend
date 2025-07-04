@@ -23,6 +23,7 @@ export class CreateDepartureDto {
     description: '하교시간',
     example: '2025-01-15T15:30:00.000Z',
   })
+  @IsOptional()
   @IsDateString()
-  departuredAt: string;
+  departuredAt?: string;
 }

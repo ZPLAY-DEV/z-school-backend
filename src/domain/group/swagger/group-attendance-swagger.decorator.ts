@@ -158,7 +158,7 @@ export const FindAttendanceByDateWithExtendedDataDocs = () => {
       description: `
       - 특정 반의 특정 날짜에 대한 출석 정보를 조회합니다.
       - DynamoDB에서 데이터를 조회하여 실시간 출석 상태를 반환합니다.
-      - 각 학생이 해당 날짜에 마지막으로 수업을 받는 그룹인지 여부를 포함합니다.
+      - 각 학생의 다음 수업 정보 또는 하교 목적지를 포함합니다.
       
       ### 매개변수:
       - \`groupId\`: 조회할 반의 ID (숫자)
@@ -166,8 +166,8 @@ export const FindAttendanceByDateWithExtendedDataDocs = () => {
       
       ### 응답 데이터:
       - 해당 날짜의 모든 학생 출석 정보 배열
-      - 각 출석 정보에는 학생 정보, 수업 정보, 출석 상태, 마지막 그룹 여부가 포함됩니다.
-      - \`isLast\`: 해당 학생이 이 날짜에 마지막으로 수업을 받는 그룹인지 여부
+      - 각 출석 정보에는 학생 정보, 수업 정보, 출석 상태, 다음 수업 정보가 포함됩니다.
+      - \`next\`: 해당 학생의 다음 수업명 또는 하교 목적지
       
       ### 출석 상태:
       -  INIT = 'INIT', // 시작전
@@ -180,8 +180,9 @@ export const FindAttendanceByDateWithExtendedDataDocs = () => {
       -  EXCUSED_LEFT = 'EXCUSED_LEFT', // 선조퇴통보
       
       ### 활용 예시:
-      - 학생의 하교 시간 결정 시 활용
-      - 마지막 수업 종료 후 특별한 처리가 필요한 경우
+      - 학생의 다음 수업 안내 시 활용
+      - 하교 시간 결정 시 활용
+      - 수업 종료 후 다음 수업 장소 안내
       - 학부모 알림 시스템에서 활용
       `,
     }),
@@ -198,7 +199,7 @@ export const FindAttendanceByDateWithExtendedDataDocs = () => {
       example: '2025-01-15',
     }),
     ApiOkResponse({
-      description: '출석 정보 조회 성공 (마지막 그룹 여부 포함)',
+      description: '출석 정보 조회 성공 (다음 수업 정보 포함)',
       schema: {
         type: 'array',
         items: {
@@ -340,14 +341,13 @@ export const FindAttendanceByDateWithExtendedDataDocs = () => {
                 },
               },
             },
-            isLast: {
-              type: 'boolean',
-              description:
-                '해당 학생이 이 날짜에 마지막으로 수업을 받는 그룹인지 여부',
-              example: true,
+            next: {
+              type: 'string',
+              description: '해당 학생의 다음 수업명 또는 하교 목적지',
+              example: '국어 수업',
             },
           },
-          required: ['groupKey', 'dailyStudentKey', 'isLast'],
+          required: ['groupKey', 'dailyStudentKey', 'next'],
         },
       },
     }),

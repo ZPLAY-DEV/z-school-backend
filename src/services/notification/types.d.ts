@@ -1,6 +1,8 @@
+import { NotificationType } from 'src/common/enums/notification-type';
+
 // s3 partitioning metadata
 export type PartitioningMeta = {
-  type: NotificationType; // PING_SCHOOL, PING_CLASS, PING_OTHER, DISP_REGISTER, DISP_NEWS, DISP_SURVEY
+  type: NotificationType; // REGISTRATION, NEWS, SURVERY, SCHOOL, CLASS, OTHER
   schoolId: number; // 학교아이디
   role: string; // `PARENT` 또는 `INSTRUCTOR`
 };

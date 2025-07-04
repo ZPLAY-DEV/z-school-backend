@@ -16,7 +16,7 @@ import {
 import {
   IAttendance,
   IAttendanceKey,
-  IAttendanceWithLastFlag,
+  IAttendanceWithNextInfo,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
@@ -24,6 +24,7 @@ import {
   generateGroupKey,
   processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
+import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
@@ -43,6 +44,8 @@ export class GroupAttendanceService {
     private readonly pickRepository: Repository<Pick>,
     @InjectRepository(Schoolday)
     private readonly schooldayRepository: Repository<Schoolday>,
+    @InjectRepository(Departure)
+    private readonly departureRepository: Repository<Departure>,
     @InjectModel('Attendance')
     private readonly model: Model<IAttendance, IAttendanceKey>,
     private readonly notificationService: NotificationService,
@@ -376,25 +379,28 @@ export class GroupAttendanceService {
    * @description
    * 기본 출석 정보에 추가로 다음 정보들을 포함합니다:
    * - student: Student entity (부모 정보 포함)
-   * - isLast: 해당 학생의 당일 마지막 수업 여부
+   * - next: 다음 수업명 또는 student.nextStop
+   * - departure: 해당 학생의 당일 하교 정보 (있는 경우)
    *
    * @param groupKey DynamoDB 그룹 키 (e.g., "GROUP#48")
    * @param date 조회할 날짜 (e.g., "2025-06-08")
    *
-   * @returns IAttendanceWithLastFlag[]
-   * - 기본 출석 정보 + student entity + isLast 플래그
+   * @returns IAttendanceWithNextInfo[]
+   * - 기본 출석 정보 + student entity + next 필드 + departure 정보
    * - student: { id, name, grade, class, studentCode, parent }
-   * - isLast: boolean (해당 학생의 당일 마지막 수업 여부)
+   * - next: string (다음 수업명 또는 student.nextStop)
+   * - departure: Departure entity (해당 학생의 당일 하교 정보, 없으면 null)
    *
    * @performance
-   * - MySQL 쿼리 최적화: IN 조건으로 모든 학생 정보를 한 번에 조회
+   * - MySQL 쿼리 최적화: IN 조건으로 모든 학생 및 departure 정보를 한 번에 조회
    * - 메모리 최적화: Map을 사용한 O(1) lookup
    * - N+1 쿼리 방지
+   * - 복합 인덱스 활용: departure 테이블의 (date, studentId) 인덱스 사용
    */
   async findAttendancesByDateWithExtendedData(
     groupKey: string,
     date: string,
-  ): Promise<IAttendanceWithLastFlag[]> {
+  ): Promise<IAttendanceWithNextInfo[]> {
     try {
       // 1. DynamoDB에서 출석 데이터 조회
       const prefix = `DATE#${date}`;
@@ -419,7 +425,15 @@ export class GroupAttendanceService {
       const students = await this.studentRepository.find({
         where: { id: In(studentIds) },
         relations: ['parent'],
-        select: ['id', 'name', 'grade', 'class', 'studentCode', 'parent'],
+        select: [
+          'id',
+          'name',
+          'grade',
+          'class',
+          'studentCode',
+          'nextStop',
+          'parent',
+        ],
       });
 
       // 학생 ID를 key로 하는 Map 생성 (빠른 lookup을 위해)
@@ -428,10 +442,34 @@ export class GroupAttendanceService {
         students.map((student) => [student.id, student]),
       );
 
-      // 4. 한 번의 최적화된 쿼리로 각 학생의 해당 날짜 모든 그룹 스케줄 조회
+      // 4. 한 번의 최적화된 쿼리로 해당 날짜의 모든 학생 departure 정보 조회
+      const departures = await this.departureRepository.find({
+        where: {
+          date: date,
+          studentId: In(studentIds),
+        },
+        relations: ['student', 'schoolday'],
+        select: [
+          'id',
+          'studentId',
+          'schooldayId',
+          'date',
+          'note',
+          'student',
+          'schoolday',
+        ],
+      });
+
+      // 학생 ID를 key로 하는 departure Map 생성 (빠른 lookup을 위해)
+      const departureMap = new Map<number, Departure>(
+        departures.map((departure) => [departure.studentId, departure]),
+      );
+
+      // 5. 한 번의 최적화된 쿼리로 각 학생의 해당 날짜 모든 그룹 스케줄 조회
       const studentScheduleData: {
         studentId: number;
         groupId: number;
+        groupName: string;
         endsAt: string;
       }[] = await this.pickRepository
         .createQueryBuilder('pick')
@@ -440,6 +478,7 @@ export class GroupAttendanceService {
         .select([
           'pick.studentId as studentId',
           'group.id as groupId',
+          'group.groupName as groupName',
           'schoolday.endsAt as endsAt',
         ])
         .where('pick.studentId IN (:...studentIds)', { studentIds })
@@ -447,35 +486,72 @@ export class GroupAttendanceService {
           targetDate: date,
         })
         .orderBy('pick.studentId')
-        .addOrderBy('schoolday.endsAt', 'DESC')
+        .addOrderBy('schoolday.endsAt', 'ASC')
         .getRawMany();
 
-      // 4. 메모리에서 학생별 마지막 그룹 정보 계산
-      const studentLastGroupMap = new Map<number, boolean>();
+      // 6. 메모리에서 학생별 다음 수업 정보 계산
+      const studentNextMap = new Map<number, string>();
 
-      // 학생별로 그룹핑하여 각 학생의 마지막 그룹 ID 찾기
+      // 학생별로 그룹핑하여 각 학생의 다음 수업 찾기
       const studentGroups = studentScheduleData.reduce(
         (acc, row) => {
           const studentId = row.studentId;
           if (!acc[studentId]) acc[studentId] = [];
           acc[studentId].push({
             groupId: row.groupId,
+            groupName: row.groupName,
             endsAt: row.endsAt,
           });
           return acc;
         },
-        {} as Record<number, { groupId: number; endsAt: string }[]>,
+        {} as Record<
+          number,
+          { groupId: number; groupName: string; endsAt: string }[]
+        >,
       );
 
-      // 각 학생의 마지막 그룹이 현재 그룹인지 확인
+      // 각 학생의 현재 그룹 다음 수업 찾기
       studentIds.forEach((studentId) => {
         const schedule = studentGroups[studentId] || [];
-        const lastGroup = schedule[0]; // 이미 endsAt DESC로 정렬되어 첫 번째가 마지막 그룹
-        studentLastGroupMap.set(studentId, lastGroup?.groupId === groupId);
+        const currentIndex = schedule.findIndex(
+          (group) => group.groupId === groupId,
+        );
+
+        console.log(
+          `🔍 [DEBUG] Student ${studentId}: schedule=${JSON.stringify(schedule)}, currentIndex=${currentIndex}, groupId=${groupId}`,
+        );
+
+        if (currentIndex === -1) {
+          // 현재 그룹을 찾을 수 없는 경우
+          const student = studentMap.get(studentId);
+          const nextStop = student?.nextStop;
+          const finalNext = nextStop || '하교장소 미지정';
+          console.log(
+            `❌ [DEBUG] Student ${studentId}: Group not found, student=${JSON.stringify(student)}, nextStop="${nextStop}", finalNext="${finalNext}"`,
+          );
+          studentNextMap.set(studentId, finalNext);
+        } else if (currentIndex === schedule.length - 1) {
+          // 마지막 그룹인 경우
+          const student = studentMap.get(studentId);
+          const nextStop = student?.nextStop;
+          const finalNext = nextStop || '하교장소 미지정';
+          console.log(
+            `🏁 [DEBUG] Student ${studentId}: Last group, student=${JSON.stringify(student)}, nextStop="${nextStop}", finalNext="${finalNext}"`,
+          );
+          studentNextMap.set(studentId, finalNext);
+        } else {
+          // 다음 그룹이 있는 경우
+          const nextGroup = schedule[currentIndex + 1];
+          const finalNext = nextGroup.groupName || '수업명 미지정';
+          console.log(
+            `➡️ [DEBUG] Student ${studentId}: Next group, nextGroup=${JSON.stringify(nextGroup)}, finalNext="${finalNext}"`,
+          );
+          studentNextMap.set(studentId, finalNext);
+        }
       });
 
-      // 5. 출석 데이터와 확장 정보 결합 (student entity + isLast 플래그)
-      const attendancesWithLastFlag: IAttendanceWithLastFlag[] = items.map(
+      // 7. 출석 데이터와 확장 정보 결합 (student entity + next 필드 + departure 정보)
+      const attendancesWithNextInfo: IAttendanceWithNextInfo[] = items.map(
         (item) => {
           const studentId = this.extractStudentIdFromRangeKey(
             item.dailyStudentKey,
@@ -484,14 +560,17 @@ export class GroupAttendanceService {
             ...item,
             // Ensure all fields are present (MySQL-like behavior)
             parentNote: item.parentNote ?? null,
+            parentNotedAt: item.parentNotedAt ?? null,
             schoolNote: item.schoolNote ?? null,
+            schoolNotedAt: item.schoolNotedAt ?? null,
             student: studentMap.get(studentId), // Student entity (부모 정보 포함)
-            isLast: studentLastGroupMap.get(studentId) ?? false, // 당일 마지막 수업 여부
+            next: studentNextMap.get(studentId) ?? '이동장소 미지정', // 다음 수업명 또는 nextStop
+            departure: departureMap.get(studentId) ?? null, // 해당 학생의 당일 departure 정보
           };
         },
       );
 
-      return attendancesWithLastFlag;
+      return attendancesWithNextInfo;
     } catch (error) {
       console.error(`[dynamodb] optimized query error`, error);
       throw new BadRequestException('출석 정보 조회에 실패했습니다.');

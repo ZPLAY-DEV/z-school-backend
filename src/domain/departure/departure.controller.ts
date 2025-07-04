@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -10,6 +11,7 @@ import {
   Patch,
   Post,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { DepartureService } from './departure.service';
@@ -17,10 +19,15 @@ import { CreateDepartureDto } from './dto/create-departure.dto';
 import { UpdateDepartureDto } from './dto/update-departure.dto';
 import { Departure } from './entities/departure.entity';
 
-@ApiTags('Departure')
-@Controller('departure')
+@ApiTags('Departure ( 하교기록 )')
+@Controller('departures')
+@UseInterceptors(ClassSerializerInterceptor)
 export class DepartureController {
   constructor(private readonly departureService: DepartureService) {}
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Create
+  //? ---------------------------------------------------------------------- ?//
 
   @Post()
   @ApiOperation({ summary: '하교 기록 생성' })
@@ -34,6 +41,10 @@ export class DepartureController {
   ): Promise<Departure> {
     return await this.departureService.create(createDepartureDto);
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
 
   @Get()
   @ApiOperation({ summary: '모든 하교 기록 조회' })
@@ -81,6 +92,10 @@ export class DepartureController {
     return await this.departureService.findOne(id);
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
   @Patch(':id')
   @ApiOperation({ summary: '하교 기록 수정' })
   @ApiResponse({
@@ -94,6 +109,10 @@ export class DepartureController {
   ): Promise<Departure> {
     return await this.departureService.update(id, updateDepartureDto);
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Delete
+  //? ---------------------------------------------------------------------- ?//
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DynamooseModule } from 'nestjs-dynamoose';
 import { AttendanceSchema } from 'src/domain/attendance/entities/attendance.schema';
+import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { GroupAttendanceController } from 'src/domain/group/group-attendance.controller';
 import { GroupAttendanceService } from 'src/domain/group/group-attendance.service';
@@ -14,7 +15,7 @@ import { NotificationModule } from 'src/services/notification/notification.modul
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Group, Student, Pick, Schoolday]),
+    TypeOrmModule.forFeature([Group, Student, Pick, Schoolday, Departure]),
     DynamooseModule.forFeature([
       {
         name: 'Attendance',
