@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd ~/code/z-school-backend
+cd ~/Code/api
 
 echo "👉 Pulling latest code..."
 git reset --hard

@@ -1,30 +1,19 @@
 module.exports = {
   apps: [
     {
-      name: 'v3',
+      name: 'api',
       script: './dist/main.js',
       instances: 1,
       watch: false,
       merge_logs: false,
       log_date_format: 'YYYY-MM-DD HH:mm Z',
-      out_file: '~/.pm2/logs/v3-access.log',
-      error_file: '~/.pm2/logs/v3-error.log',
+      out_file: '~/.pm2/logs/api-access.log',
+      error_file: '~/.pm2/logs/api-error.log',
       autorestart: true,
       exec_mode: 'cluster',
       env: {
         NODE_ENV: 'development',
       },
-    },
-    {
-      name: 'ngrok',
-      script: 'ngrok', // ngrok 명령 실행
-      args: 'start --all --config="/Users/zplaydev/Library/Application Support/ngrok/ngrok.yml"',
-      interpreter: 'none', // Node.js 인터프리터 사용 안함
-      autorestart: true,
-      watch: false,
-      log_date_format: 'YYYY-MM-DD HH:mm Z',
-      out_file: '~/.pm2/logs/ngrok-access.log',
-      error_file: '~/.pm2/logs/ngrok-error.log',
     },
   ],
 };

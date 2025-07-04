@@ -1,22 +1,21 @@
 services:
   localstack:
-    image: localstack/localstack:latest
+    image: localstack/localstack:4.5.0
     container_name: localstack
     ports:
       - "4566:4566"           # LocalStack Gateway
       - "4510-4559:4510-4559" # 외부 서비스 포트 범위
     environment:
-      - DEFAULT_REGION=ap-northeast-2
       - SERVICES=sqs,events,lambda,dynamodb,firehose,s3,cloudfront,cloudwatch,secretsmanager,logs,apigateway
       - ENFORCE_IAM=0
       - DYNAMODB_SHARE_DB=1
       - DEBUG=1
-      - DATA_DIR=/var/lib/localstack/data
+      - PERSISTENCE=true
       - DOCKER_HOST=unix:///var/run/docker.sock
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
-      - HOSTNAME_EXTERNAL=gnat-fleet-sheep.ngrok-free.app    # ngrok 호스트 이름
-      - LOCALSTACK_HOST=gnat-fleet-sheep.ngrok-free.app:4566 # ngrok 호스트 이름
+      - S3_SKIP_SIGNATURE_VALIDATION=1
+      - LOCALSTACK_HOST=localhost
     volumes:
       - /Users/Shared/docker/localstack-data:/var/lib/localstack/data
       - /var/run/docker.sock:/var/run/docker.sock
