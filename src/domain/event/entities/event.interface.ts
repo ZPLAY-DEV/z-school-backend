@@ -7,4 +7,6 @@ export interface IEvent extends IEventKey {
   status: string; // "SCHEDULED" | "SENT" | "FAILED" | "CANCELED"
   payload: any; // 이벤트 페이로드
   expires?: number; // for TTL
+  createdAt?: Date; // Dynamoose timestamps
+  updatedAt?: Date; // Dynamoose timestamps
 }

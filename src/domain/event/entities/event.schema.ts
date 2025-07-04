@@ -29,36 +29,12 @@ export const EventSchema = new Schema(
       type: {
         value: Number,
         settings: {
-          storage: 'seconds', //! this must be 10 digit number
+          storage: 'seconds', // TTL은 seconds로 유지
         },
       },
     },
   },
   {
-    saveUnknown: true,
-    timestamps: {
-      createdAt: {
-        createdAt: {
-          type: {
-            value: Number,
-            settings: {
-              storage: 'milliseconds',
-            },
-          },
-        },
-      },
-      updatedAt: {
-        updatedAt: {
-          type: {
-            value: Number,
-            settings: {
-              storage: 'milliseconds',
-            },
-          },
-        },
-      },
-    },
+    timestamps: true, // 자동으로 createdAt, updatedAt이 Date 타입으로 생성
   },
 );
-
-// console.log('hashKey:', EventSchema.hashKey);

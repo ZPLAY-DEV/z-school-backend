@@ -25,6 +25,8 @@ export interface IAttendance extends IAttendanceCore {
   parentNotedAt?: Date | null;
   schoolNote?: string | null;
   schoolNotedAt?: Date | null;
+  createdAt?: Date; // Dynamoose timestamps
+  updatedAt?: Date; // Dynamoose timestamps
 }
 
 export interface IAttendanceWithNextInfo extends IAttendance {

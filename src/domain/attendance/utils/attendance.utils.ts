@@ -40,46 +40,6 @@ export function buildAttendanceItem(item: IAttendanceCore): IAttendanceCore {
 }
 
 /**
- * Convert DynamoDB item to IAttendance (Number timestamps -> Date objects)
- * Also converts createdAt, updatedAt for consistency with MySQL data
- */
-export function fromDynamoItem(item: Record<string, any>): IAttendance {
-  const converted = {
-    ...item,
-    parentNotedAt:
-      typeof item.parentNotedAt === 'number'
-        ? new Date(item.parentNotedAt)
-        : null,
-    schoolNotedAt:
-      typeof item.schoolNotedAt === 'number'
-        ? new Date(item.schoolNotedAt)
-        : null,
-    // Convert DynamoDB timestamps to Date objects for consistency
-    ...(typeof item.createdAt === 'number' && {
-      createdAt: new Date(item.createdAt),
-    }),
-    ...(typeof item.updatedAt === 'number' && {
-      updatedAt: new Date(item.updatedAt),
-    }),
-  };
-
-  return converted as IAttendance;
-}
-
-/**
- * Convert IAttendance to DynamoDB item (Date objects -> Number timestamps)
- */
-export function toDynamoItem(
-  attendance: Partial<IAttendance>,
-): Record<string, any> {
-  return {
-    ...attendance,
-    parentNotedAt: attendance.parentNotedAt?.getTime() ?? null,
-    schoolNotedAt: attendance.schoolNotedAt?.getTime() ?? null,
-  };
-}
-
-/**
  * Process attendance items into AttendanceReport array
  * Extracts common logic for grouping and formatting attendance data
  */
