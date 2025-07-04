@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude } from 'class-transformer';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import {
@@ -45,12 +44,10 @@ export class Departure {
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
 
-  @Exclude()
   @ApiProperty({ description: 'createdAt' })
   @CreateDateColumn()
   createdAt: Date;
 
-  @Exclude()
   @ApiProperty({ description: 'updatedAt' })
   @UpdateDateColumn()
   updatedAt: Date;

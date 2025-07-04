@@ -489,6 +489,7 @@ export class GroupAttendanceService {
 
       // 6. 메모리에서 학생별 다음 수업 정보 계산
       const studentNextMap = new Map<number, string>();
+      const studentIsLastMap = new Map<number, boolean>();
 
       // 학생별로 그룹핑하여 각 학생의 다음 수업 찾기
       const studentGroups = studentScheduleData.reduce(
@@ -528,6 +529,7 @@ export class GroupAttendanceService {
             `❌ [DEBUG] Student ${studentId}: Group not found, student=${JSON.stringify(student)}, nextStop="${nextStop}", finalNext="${finalNext}"`,
           );
           studentNextMap.set(studentId, finalNext);
+          studentIsLastMap.set(studentId, true); // 그룹을 찾을 수 없는 경우는 마지막으로 간주
         } else if (currentIndex === schedule.length - 1) {
           // 마지막 그룹인 경우
           const student = studentMap.get(studentId);
@@ -537,6 +539,7 @@ export class GroupAttendanceService {
             `🏁 [DEBUG] Student ${studentId}: Last group, student=${JSON.stringify(student)}, nextStop="${nextStop}", finalNext="${finalNext}"`,
           );
           studentNextMap.set(studentId, finalNext);
+          studentIsLastMap.set(studentId, true); // 마지막 그룹
         } else {
           // 다음 그룹이 있는 경우
           const nextGroup = schedule[currentIndex + 1];
@@ -545,6 +548,7 @@ export class GroupAttendanceService {
             `➡️ [DEBUG] Student ${studentId}: Next group, nextGroup=${JSON.stringify(nextGroup)}, finalNext="${finalNext}"`,
           );
           studentNextMap.set(studentId, finalNext);
+          studentIsLastMap.set(studentId, false); // 마지막 그룹이 아님
         }
       });
 
@@ -562,6 +566,7 @@ export class GroupAttendanceService {
             schoolNote: item.schoolNote ?? null,
             schoolNotedAt: item.schoolNotedAt ?? null,
             student: studentMap.get(studentId), // Student entity (부모 정보 포함)
+            isLast: studentIsLastMap.get(studentId) ?? false, // 마지막 수업 여부
             next: studentNextMap.get(studentId) ?? '이동장소 미지정', // 다음 수업명 또는 nextStop
             departure: departureMap.get(studentId) ?? null, // 해당 학생의 당일 departure 정보
           };
