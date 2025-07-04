@@ -307,13 +307,13 @@ export class GroupAttendanceService {
       end: group.end,
       duration: duration,
       expires: expires,
-      // Dynamoose will automatically handle Date objects now!
       ...(typeof dto.parentNote === 'string' && {
         parentNotedAt: new Date(),
       }),
-      ...(typeof dto.schoolNote === 'string' && {
-        schoolNotedAt: new Date(),
-      }),
+      //! 조퇴에서만 parentNotedAt 이 조퇴알림시각으로 사용되어서 빼버림.
+      //! ...(typeof dto.schoolNote === 'string' && {
+      //!   schoolNotedAt: new Date(),
+      //! }),
     };
 
     // intentionally using exception-driven control flow

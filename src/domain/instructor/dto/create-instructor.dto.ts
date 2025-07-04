@@ -5,7 +5,7 @@ import {
   IsInt,
   IsNotEmpty,
   IsOptional,
-  IsString
+  IsString,
 } from 'class-validator';
 
 export class CreateInstructorDto {
@@ -14,8 +14,9 @@ export class CreateInstructorDto {
     type: Number,
     example: 1,
   })
+  @IsOptional()
   @IsInt()
-  userId: number;
+  userId?: number;
 
   @ApiProperty({
     description: '🈳 강사 이름',

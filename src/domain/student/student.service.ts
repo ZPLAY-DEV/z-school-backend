@@ -10,7 +10,7 @@ import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { S3Service } from 'src/services/aws/s3.service';
-import { Not, Repository } from 'typeorm';
+import { DataSource, EntityManager, Not, Repository } from 'typeorm';
 import { Booking } from '../booking/entities/booking.entity';
 import { CreateStudentDto } from './dto/create-student.dto';
 
@@ -24,12 +24,14 @@ export class StudentService {
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
     private readonly s3Service: S3Service,
+    private readonly dataSource: DataSource,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
+  //! somehow we prefer to use upsert instead of create
   async create(dto: CreateStudentDto): Promise<Student> {
     const { parent: parentDto, ...studentDto } = dto;
 
@@ -57,19 +59,27 @@ export class StudentService {
       },
     });
 
+    let savedStudent: Student;
+
     if (existingStudent) {
       const updatedStudent = this.studentRepository.merge(existingStudent, {
         ...studentDto,
         parentId,
       });
-      return this.studentRepository.save(updatedStudent);
+      savedStudent = await this.studentRepository.save(updatedStudent);
     } else {
       const newStudent = this.studentRepository.create({
         ...studentDto,
         parentId,
       });
-      return this.studentRepository.save(newStudent);
+      savedStudent = await this.studentRepository.save(newStudent);
     }
+
+    // parent 정보와 함께 리턴
+    return await this.studentRepository.findOneOrFail({
+      where: { id: savedStudent.id },
+      relations: ['parent'],
+    });
   }
 
   //? upsert 여부 조회
@@ -211,27 +221,76 @@ export class StudentService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateStudentDto): Promise<Student> {
-    const existingStudent = await this.studentRepository.findOne({
-      where: {
+    return await this.dataSource.transaction(async (manager: EntityManager) => {
+      // 중복 체크 (자신 제외)
+      if (dto.schoolId && dto.grade && dto.class && dto.studentCode) {
+        const existingStudent = await manager.findOne(Student, {
+          where: {
+            schoolId: dto.schoolId,
+            grade: dto.grade,
+            class: dto.class,
+            studentCode: dto.studentCode,
+            id: Not(id),
+          },
+        });
+
+        if (existingStudent) {
+          throw new ConflictException('Student already exists');
+        }
+      }
+
+      // 1. Student 존재 여부 확인
+      const existingStudent = await manager.findOne(Student, {
+        where: { id },
+        relations: ['parent'],
+      });
+
+      if (!existingStudent) {
+        throw new NotFoundException('Student not found');
+      }
+
+      // 2. parent 정보가 있으면 업데이트
+      if (dto.parent && existingStudent.parentId) {
+        await manager.update(
+          Parent,
+          { id: existingStudent.parentId },
+          dto.parent,
+        );
+      }
+
+      // 3. Student 정보 업데이트 (parent 정보 제외)
+      const studentUpdateData = {
+        parentId: dto.parentId,
         schoolId: dto.schoolId,
         grade: dto.grade,
         class: dto.class,
         studentCode: dto.studentCode,
-        id: Not(id),
-      },
+        name: dto.name,
+        phone: dto.phone,
+        escortPhone: dto.escortPhone,
+        homeTransit: dto.homeTransit,
+        nextStop: dto.nextStop,
+        status: dto.status,
+        note: dto.note,
+      };
+
+      const student = await manager.preload(Student, {
+        id,
+        ...studentUpdateData,
+      });
+
+      if (!student) {
+        throw new NotFoundException('Student not found');
+      }
+
+      await manager.save(Student, student);
+
+      // 4. 업데이트된 Student 조회 및 반환
+      return await manager.findOneOrFail(Student, {
+        where: { id },
+        relations: ['parent'],
+      });
     });
-
-    if (existingStudent) {
-      throw new ConflictException('Student already exists');
-    }
-
-    const student = await this.studentRepository.preload({ id, ...dto });
-
-    if (!student) {
-      throw new NotFoundException('Student not found');
-    }
-
-    return await this.studentRepository.save(student);
   }
 
   //? ---------------------------------------------------------------------- ?//

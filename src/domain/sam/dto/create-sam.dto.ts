@@ -18,8 +18,9 @@ export class CreateSamDto {
     type: Number,
     example: 1,
   })
+  @IsOptional()
   @IsInt()
-  instructorId: number;
+  instructorId?: number;
 
   @ApiProperty({
     description: '🈵 School ID (number)',

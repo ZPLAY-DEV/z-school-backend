@@ -39,7 +39,6 @@ export class SamController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  // todo. see if it works
   @CreateSamDocs()
   @ApiOperation({ description: '학교쌤(Sam) 생성' })
   @Post()
@@ -59,17 +58,6 @@ export class SamController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @GetSamByIdDocs()
-  @Get(':id')
-  async findById(@Param('id', ParseIntPipe) id: number): Promise<Sam> {
-    return await this.samService.findById(id, [
-      'instructor',
-      'contracts',
-      'contracts.group',
-      'contracts.lesson',
-    ]);
-  }
-
   @GetSamGroupsDocs()
   @Get(':id/groups')
   async findGroupsById(
@@ -77,6 +65,18 @@ export class SamController {
     @Query('termId') termId?: number,
   ): Promise<Group[]> {
     return await this.samService.findGroupsById(id, termId);
+  }
+
+  @GetSamByIdDocs()
+  @Get(':id')
+  async findById(@Param('id', ParseIntPipe) id: number): Promise<Sam> {
+    return await this.samService.findById(id, [
+      'instructor',
+      'contracts',
+      'contracts.group',
+      'contracts.group.schooldays',
+      'contracts.lesson',
+    ]);
   }
 
   //? ---------------------------------------------------------------------- ?//

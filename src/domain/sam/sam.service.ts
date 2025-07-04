@@ -26,7 +26,7 @@ export class SamService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  // todo. see if it works
+  //! somehow we prefer to use upsert instead of create
   async create(dto: CreateSamDto): Promise<Sam> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       // 1. 학교 존재 여부 확인
@@ -42,15 +42,15 @@ export class SamService {
       let instructor: Instructor | undefined;
 
       if (dto?.instructor) {
-        const foundInstructor = await this.instructorRepository.findOne({
+        const foundInstructor = await manager.findOne(Instructor, {
           where: { phone: dto.instructor.phone },
         });
 
         if (foundInstructor) {
           instructor = foundInstructor;
         } else {
-          instructor = this.instructorRepository.create(dto.instructor);
-          await this.instructorRepository.save(instructor);
+          instructor = manager.create(Instructor, dto.instructor);
+          await manager.save(Instructor, instructor);
         }
         dto.instructorId = instructor.id;
       }
@@ -176,14 +176,52 @@ export class SamService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateSamDto): Promise<Sam> {
-    const sam = await this.samRepository.preload({
-      ...dto,
-      id,
+    return await this.dataSource.transaction(async (manager: EntityManager) => {
+      // 1. Sam 존재 여부 확인
+      const existingSam = await manager.findOne(Sam, {
+        where: { id },
+        relations: ['instructor'],
+      });
+
+      if (!existingSam) {
+        throw new NotFoundException(`Sam not found`);
+      }
+
+      // 2. instructor 정보가 있으면 업데이트
+      if (dto.instructor) {
+        await manager.update(
+          Instructor,
+          { id: existingSam.instructorId },
+          dto.instructor,
+        );
+      }
+
+      // 3. Sam 정보 업데이트 (instructor 정보 제외)
+      const samUpdateData = {
+        alias: dto.alias,
+        score: dto.score,
+        editFeePermission: dto.editFeePermission,
+        editPickPermission: dto.editPickPermission,
+        note: dto.note,
+      };
+
+      const sam = await manager.preload(Sam, {
+        ...samUpdateData,
+        id,
+      });
+
+      if (!sam) {
+        throw new NotFoundException(`Sam not found`);
+      }
+
+      await manager.save(Sam, sam);
+
+      // 4. 업데이트된 Sam 조회 및 반환
+      return await manager.findOneOrFail(Sam, {
+        where: { id },
+        relations: ['instructor'],
+      });
     });
-    if (!sam) {
-      throw new NotFoundException(`Sam not found`);
-    }
-    return await this.samRepository.save(sam);
   }
 
   //? ---------------------------------------------------------------------- ?//
