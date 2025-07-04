@@ -50,7 +50,8 @@ export class StudentSchooldayDto {
     type: 'number',
   })
   @IsNumber()
-  studentId: number;
+  @IsOptional()
+  studentId?: number;
 
   @ApiProperty({
     description: '🈵 학습일 Id',
@@ -58,7 +59,8 @@ export class StudentSchooldayDto {
     type: 'number',
   })
   @IsNumber()
-  schooldayId: number;
+  @IsOptional()
+  schooldayId?: number;
 }
 
 export class GroupStudentDto {
@@ -68,7 +70,8 @@ export class GroupStudentDto {
     type: 'number',
   })
   @IsNumber()
-  groupId: number;
+  @IsOptional()
+  groupId?: number;
 
   @ApiProperty({
     description: '🈵 학생 Id',
@@ -76,7 +79,8 @@ export class GroupStudentDto {
     type: 'number',
   })
   @IsNumber()
-  studentId: number;
+  @IsOptional()
+  studentId?: number;
 }
 
 export class CreateAttendanceWithKeyDto extends AttendanceKeyDto {

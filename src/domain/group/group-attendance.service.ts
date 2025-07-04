@@ -20,6 +20,7 @@ import {
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
+  fromDynamoItem,
   generateDailyStudentKey,
   generateGroupKey,
   processAttendanceReport,
@@ -263,6 +264,7 @@ export class GroupAttendanceService {
     date: string, //! e.g. "2025-06-08" <- 하이픈 반드시 포함
     dto: CreateAttendanceWithGroupStudentDto,
   ): Promise<IAttendance> {
+    console.log('🔍 [DEBUG] upsert dto:', JSON.stringify(dto, null, 2));
     const group = await this.groupRepository.findOneOrFail({
       where: { id: dto.groupId },
       relations: ['lesson', 'schooldays'],
@@ -306,8 +308,12 @@ export class GroupAttendanceService {
       end: group.end,
       duration: duration,
       expires: expires,
-      ...(typeof dto.parentNote === 'string' && { parentNotedAt: new Date() }),
-      ...(typeof dto.schoolNote === 'string' && { schoolNotedAt: new Date() }),
+      ...(typeof dto.parentNote === 'string' && {
+        parentNotedAt: new Date().getTime() as any,
+      }),
+      ...(typeof dto.schoolNote === 'string' && {
+        schoolNotedAt: new Date().getTime() as any,
+      }),
     };
 
     // intentionally using exception-driven control flow
@@ -320,7 +326,12 @@ export class GroupAttendanceService {
         '✅ created new attendance:',
         JSON.stringify(result, null, 2),
       );
-      return result;
+      // Convert DynamoDB timestamps to Date objects for consistency
+      return fromDynamoItem({
+        ...result,
+        parentNote: result.parentNote ?? null,
+        schoolNote: result.schoolNote ?? null,
+      });
     } catch (error) {
       if (
         error.name === 'ConditionalCheckFailedException' ||
@@ -332,7 +343,12 @@ export class GroupAttendanceService {
             '✅ updated existing attendance:',
             JSON.stringify(result, null, 2),
           );
-          return result;
+          // Convert DynamoDB timestamps to Date objects for consistency
+          return fromDynamoItem({
+            ...result,
+            parentNote: result.parentNote ?? null,
+            schoolNote: result.schoolNote ?? null,
+          });
         } catch (updateError) {
           console.error(`[dynamodb] update error`, updateError);
           throw new BadRequestException('출석 정보 업데이트에 실패했습니다.');
@@ -361,12 +377,14 @@ export class GroupAttendanceService {
         .beginsWith(prefix)
         .exec();
 
-      // Ensure all fields are present (MySQL-like behavior)
-      return (result as IAttendance[]).map((item) => ({
-        ...item,
-        parentNote: item.parentNote ?? null,
-        schoolNote: item.schoolNote ?? null,
-      }));
+      // Convert DynamoDB timestamps to Date objects for consistency
+      return (result as IAttendance[]).map((item) =>
+        fromDynamoItem({
+          ...item,
+          parentNote: item.parentNote ?? null,
+          schoolNote: item.schoolNote ?? null,
+        }),
+      );
     } catch (error) {
       console.error(`[dynamodb] error`, error);
       throw new BadRequestException('출석 정보 조회에 실패했습니다.');
@@ -552,19 +570,19 @@ export class GroupAttendanceService {
         }
       });
 
-      // 7. 출석 데이터와 확장 정보 결합 (student entity + next 필드 + departure 정보)
+      // 7. 출석 데이터와 확장 정보 결합 (DynamoDB timestamp 변환 포함)
       const attendancesWithNextInfo: IAttendanceWithNextInfo[] = items.map(
         (item) => {
           const studentId = this.extractStudentIdFromRangeKey(
             item.dailyStudentKey,
           );
-          return {
+          const convertedItem = fromDynamoItem({
             ...item,
-            // Ensure all fields are present (MySQL-like behavior)
             parentNote: item.parentNote ?? null,
-            parentNotedAt: item.parentNotedAt ?? null,
             schoolNote: item.schoolNote ?? null,
-            schoolNotedAt: item.schoolNotedAt ?? null,
+          });
+          return {
+            ...convertedItem,
             student: studentMap.get(studentId), // Student entity (부모 정보 포함)
             isLast: studentIsLastMap.get(studentId) ?? false, // 마지막 수업 여부
             next: studentNextMap.get(studentId) ?? '이동장소 미지정', // 다음 수업명 또는 nextStop
@@ -687,6 +705,9 @@ export class GroupAttendanceService {
           {
             status: dto.status,
             ...(dto.schoolNote !== undefined && { schoolNote: dto.schoolNote }),
+            ...(dto.schoolNote !== undefined && {
+              schoolNotedAt: new Date().getTime() as any,
+            }),
           },
         ),
       );
@@ -701,7 +722,7 @@ export class GroupAttendanceService {
       return {
         updatedCount: results.length,
         skippedCount,
-        results,
+        results: [] as IAttendance[], // 업데이트된 결과는 빈 배열로 반환
       };
     } catch (error) {
       console.error(`[dynamodb] optimized bulk update error`, error);
