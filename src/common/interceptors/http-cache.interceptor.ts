@@ -36,9 +36,9 @@ export class HttpCacheInterceptor extends CacheInterceptor {
   async _saveCacheTags(requestUrl: string, baseEntity: string) {
     const tagKey = `cache:${baseEntity}`;
     const client = await this._getRedisClient();
-    const exists = await client.sIsMember(tagKey, requestUrl);
+    const exists = await client?.sIsMember(tagKey, requestUrl);
     if (!exists) {
-      await client.sAdd(tagKey, requestUrl);
+      await client?.sAdd(tagKey, requestUrl);
       console.log(`✅ cache updated for: ${requestUrl}`);
     } else {
       console.log(`⚠️ cache bypassed for: ${requestUrl}`);
@@ -47,16 +47,18 @@ export class HttpCacheInterceptor extends CacheInterceptor {
 
   async _invalidateCacheTags(tag: string) {
     const client = await this._getRedisClient();
-    const keys = await client.sMembers(tag);
-    if (keys.length > 0) {
-      const pipeline = client.multi(); // node-redis에서는 multi() 사용
-      for (const key of keys) {
-        pipeline.sRem(tag, key);
-        pipeline.del(key);
-        console.log(`🚫 cache removed for: ${key}`);
+    const keys = await client?.sMembers(tag);
+    if (keys && keys.length > 0) {
+      const pipeline = client?.multi(); // node-redis에서는 multi() 사용
+      if (pipeline) {
+        for (const key of keys) {
+          pipeline.sRem(tag, key);
+          pipeline.del(key);
+          console.log(`🚫 cache removed for: ${key}`);
+        }
+        pipeline.del(tag);
+        await pipeline.exec(); // node-redis에서도 exec()로 실행
       }
-      pipeline.del(tag);
-      await pipeline.exec(); // node-redis에서도 exec()로 실행
     }
   }
 
@@ -144,7 +146,7 @@ export class HttpCacheInterceptor extends CacheInterceptor {
           redis.call('DEL', key)
         end
       `;
-      await client.eval(luaScript, {
+      await client?.eval(luaScript, {
         keys: [],
         arguments: ['cache:*'],
       });
