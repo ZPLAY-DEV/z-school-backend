@@ -4,7 +4,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
-  getSchemaPath
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';

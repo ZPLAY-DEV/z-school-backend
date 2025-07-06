@@ -77,6 +77,11 @@ export class NewsletterController {
     return await this.newsletterService.findOnlyRegistration(schoolId, termId);
   }
 
+  @Get('to-be-sent')
+  async findOnlyNewslettersToBeSent(): Promise<Newsletter[]> {
+    return await this.newsletterService.findOnlyNewslettersToBeSent();
+  }
+
   @FindNewsletterByIdDocs()
   @Get(':id')
   async findById(

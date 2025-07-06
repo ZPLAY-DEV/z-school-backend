@@ -5,19 +5,15 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { fromZonedTime } from 'date-fns-tz';
 import { nanoid } from 'nanoid';
-import { Model } from 'nestjs-dynamoose';
-import { InjectModel } from 'nestjs-dynamoose/dist/common';
 import {
-  EventStatus,
   NewsletterTarget,
   NewsletterType,
   StudentStatus,
 } from 'src/common/enums';
 import { SendStatus } from 'src/common/enums/send-status';
 import { StudentReadInfo } from 'src/common/interfaces';
-import { IEvent, IEventKey } from 'src/domain/event/entities/event.interface';
-import { generateEventKey } from 'src/domain/event/utils/event.utils';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { NewsletterDetailResponseDto } from 'src/domain/newsletter/dto/response-extended-newsletter.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
@@ -33,15 +29,13 @@ import {
   translateNewsletterType,
 } from 'src/helpers/translate';
 import { SlackService } from 'src/services/slack/slack.service';
-import { DataSource, EntityManager, In } from 'typeorm';
+import { DataSource, EntityManager, In, LessThan } from 'typeorm';
 
 @Injectable()
 export class NewsletterService {
   private readonly newsletterRepository;
   private readonly logger = new Logger(NewsletterService.name);
   constructor(
-    @InjectModel('Event')
-    private readonly model: Model<IEvent, IEventKey>,
     private readonly dataSource: DataSource,
     private readonly slack: SlackService,
     // @Inject(REDIS_TRACKING_CLIENT)
@@ -60,7 +54,6 @@ export class NewsletterService {
     const school = await this.checkSchoolValidity(dto);
     const term = await this.checkTermValidity(dto);
     if (dto.type === NewsletterType.REGISTRATION) {
-      await this.checkPreviousEventWithDto(dto);
       await this.checkExistingNewsletterWithDto(dto);
     }
 
@@ -129,6 +122,22 @@ export class NewsletterService {
     }
 
     return newsletter as Newsletter;
+  }
+
+  async findOnlyNewslettersToBeSent(): Promise<Newsletter[]> {
+    // 현재 서울 시간을 UTC로 변환
+    const nowInSeoul = new Date();
+    const nowInUTC = fromZonedTime(nowInSeoul, 'Asia/Seoul');
+
+    const newsletters = await this.newsletterRepository.find({
+      where: {
+        status: SendStatus.SCHEDULED,
+        scheduledAt: LessThan(nowInUTC),
+      },
+      order: { scheduledAt: 'ASC' },
+    });
+
+    return newsletters as Newsletter[];
   }
 
   async findDetail(id: number): Promise<NewsletterDetailResponseDto> {
@@ -222,7 +231,6 @@ export class NewsletterService {
       status: SendStatus.CANCELED,
     });
     // 재발송 때문에 shortlinks 삭제 안함.
-    await this.deleteEvent(newsletter);
 
     return (await this.newsletterRepository.save(newsletter)) as Newsletter;
   }
@@ -235,13 +243,19 @@ export class NewsletterService {
         scheduledAt,
         resentAt: scheduledAt,
       });
-      const updatedNewsletter = (await manager.save(newsletter)) as Newsletter;
-
-      const students = await this.getStudents(manager, updatedNewsletter);
+      if (!newsletter) {
+        throw new NotFoundException('Newsletter not found');
+      }
+      const students = await this.getStudents(manager, newsletter);
       const dedupedStudents = this.dedupeStudents(students);
-      const shortlinks = await this.fetchShortlinks(manager, updatedNewsletter);
-
-      await this.createEvent(updatedNewsletter, shortlinks, dedupedStudents);
+      const shortlinks = await this.fetchShortlinks(manager, newsletter);
+      const payload = this.buildNotificationPayload(
+        newsletter,
+        shortlinks,
+        dedupedStudents,
+      );
+      newsletter.payload = payload;
+      const updatedNewsletter = await manager.save(newsletter);
 
       return updatedNewsletter;
     });
@@ -274,7 +288,6 @@ export class NewsletterService {
   async deleteNewsletter(id: number): Promise<Newsletter> {
     const newsletter = await this.findById(id);
     await this.deleteShortlinks(newsletter);
-    await this.deleteEvent(newsletter);
     return (await this.newsletterRepository.softRemove(
       newsletter,
     )) as Newsletter;
@@ -310,9 +323,12 @@ export class NewsletterService {
         newsletter,
         dedupedStudents,
       );
-      // dynamodb 이벤트 레코드 생성
-      await this.createEvent(newsletter, shortlinks, dedupedStudents);
       // newsletter 업데이트
+      newsletter.payload = this.buildNotificationPayload(
+        newsletter,
+        shortlinks,
+        dedupedStudents,
+      );
       newsletter.status = SendStatus.SCHEDULED;
       newsletter.studentIds = studentIds;
       await manager.save(newsletter);
@@ -535,140 +551,39 @@ export class NewsletterService {
     }
   }
 
-  // ------------------------------------------------------------------------ //
-  // private methods for dynamodb
-  // ------------------------------------------------------------------------ //
-
-  private async createEvent(
+  private buildNotificationPayload(
     newsletter: Newsletter,
     shortlinks: Shortlink[],
     students: Student[],
-  ): Promise<void> {
-    const scheduledTime = newsletter.scheduledAt!;
-    const scheduledTimestamp = scheduledTime.getTime();
-
-    console.log(`✳️ scheduledTime`, scheduledTime);
-    console.log(`✳️ scheduledTimestamp`, scheduledTimestamp);
-
-    const ttl = Math.floor(scheduledTimestamp / 1000) + 60 * 60 * 24 * 30; // 30일 TTL
-
-    const event = {
-      eventKey: generateEventKey(newsletter.schoolId, newsletter.type),
-      eventTime: scheduledTimestamp,
-      newsletterId: newsletter.id,
-      status: EventStatus.SCHEDULED,
-      payload: {
-        type: newsletter.type as string,
-        schoolId: newsletter.schoolId,
-        role: 'PARENT',
-        messages: students.map((student) => {
-          const shortlink = shortlinks.find(
-            (shortlink) => shortlink.parentId === student.parent.id,
-          );
-          const isFcm = !!student.parent?.user?.pushToken;
-          const url = `http://afters.kr`;
-          return {
-            id: student.parent.id,
-            phone: student.parent.phone,
-            token: student.parent?.user?.pushToken,
-            title: translateNewsletterType(newsletter.type),
-            body: isFcm
-              ? `${newsletter.title}`
-              : `${newsletter.title} ${url}/${shortlink?.nanoid}`,
-            role: 'PARENT',
-            page: 'newsletters',
-            args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
-          };
-        }),
-      },
-      expires: ttl,
+  ): {
+    type: string;
+    schoolId: number;
+    role: string;
+    messages: any[];
+  } {
+    return {
+      type: newsletter.type as string,
+      schoolId: newsletter.schoolId,
+      role: 'PARENT',
+      messages: students.map((student) => {
+        const shortlink = shortlinks.find(
+          (shortlink) => shortlink.parentId === student.parent.id,
+        );
+        const isFcm = !!student.parent?.user?.pushToken;
+        const url = `https://scola.kr`;
+        return {
+          id: student.parent.id,
+          phone: student.parent.phone,
+          token: student.parent?.user?.pushToken,
+          title: translateNewsletterType(newsletter.type),
+          body: isFcm
+            ? `${newsletter.title}`
+            : `${newsletter.title} ${url}/${shortlink?.nanoid}`,
+          role: 'PARENT',
+          page: 'newsletters',
+          args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
+        };
+      }),
     };
-
-    console.log(`✳️ event`, JSON.stringify(event, null, 2));
-
-    // DynamoDB upsert: 먼저 생성 시도, 실패시 업데이트
-    try {
-      await this.model.create(event);
-    } catch (err) {
-      // ConditionalCheckFailedException 발생시 (이미 존재하는 키) 업데이트 시도
-      if (err.name === 'ConditionalCheckFailedException') {
-        try {
-          await this.model.update(
-            { eventKey: event.eventKey, eventTime: event.eventTime },
-            {
-              newsletterId: event.newsletterId,
-              status: event.status,
-              payload: event.payload,
-              expires: event.expires,
-            },
-          );
-        } catch (updateErr) {
-          this.logger.error(
-            `❌ Failed to update event: ${updateErr.message}`,
-            updateErr,
-          );
-          throw new InternalServerErrorException(
-            '이벤트 업데이트에 실패했습니다.',
-          );
-        }
-      } else {
-        this.logger.error(`❌ Failed to create event: ${err.message}`, err);
-        throw new InternalServerErrorException('이벤트 생성에 실패했습니다.');
-      }
-    }
-  }
-
-  private async checkPreviousEventWithDto(
-    dto: CreateNewsletterDto,
-  ): Promise<void> {
-    const eventKey = generateEventKey(dto.schoolId, dto.type); // 예) 특정학교의 REGISTRATION 타입 이벤트 조회
-
-    // query로 해당 eventKey의 과거 이벤트들을 조회 (현시각보다 작은 것만)
-    const nowTimestamp = Date.now();
-
-    try {
-      const events = await this.model
-        .query('eventKey')
-        .eq(eventKey)
-        .where('eventTime')
-        .lt(nowTimestamp)
-        .exec();
-
-      if (events && events.length > 0) {
-        if (events.some((event) => event.status === 'SENT')) {
-          throw new BadRequestException('Registration event already sent.');
-        }
-      }
-    } catch (err) {
-      this.logger.error(
-        `❌ Failed to check previous event: ${err.message}`,
-        err,
-      );
-      throw new BadRequestException(err.message);
-    }
-  }
-
-  private async deleteEvent(newsletter: Newsletter): Promise<void> {
-    if (!newsletter.scheduledAt) {
-      return;
-    }
-
-    const eventKey = generateEventKey(newsletter.schoolId, newsletter.type);
-    const scheduledTimestamp = newsletter.scheduledAt.getTime();
-    const event = await this.model.get({
-      eventKey,
-      eventTime: scheduledTimestamp,
-    });
-
-    if (event) {
-      await this.model.delete({
-        eventKey,
-        eventTime: scheduledTimestamp,
-      });
-    } else {
-      this.logger.warn(
-        `⚠️ No event found for newsletter ${newsletter.id} at ${newsletter.scheduledAt.toISOString()}`,
-      );
-    }
   }
 }

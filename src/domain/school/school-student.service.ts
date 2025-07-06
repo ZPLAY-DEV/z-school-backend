@@ -1,10 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-    FilterOperator,
-    paginate,
-    Paginated,
-    PaginateQuery,
+  FilterOperator,
+  paginate,
+  Paginated,
+  PaginateQuery,
 } from 'nestjs-paginate';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';

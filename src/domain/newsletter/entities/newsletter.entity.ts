@@ -91,7 +91,11 @@ export class Newsletter {
   target: NewsletterTarget | null;
 
   @ApiProperty({ description: '🈵 발송 대상 유형' })
-  @Column({ type: 'simple-array', comment: '', nullable: true })
+  @Column({
+    type: 'simple-array',
+    comment: '대상별 아이템 아이디',
+    nullable: true,
+  })
   targetItems: number[] | null;
 
   @ApiProperty({ description: '🈵 발송 대상 유형' })
@@ -105,6 +109,15 @@ export class Newsletter {
     nullable: true,
   })
   studentIds: number[] | null;
+
+  @ApiProperty({ description: '🈵 발송 대상 유형' })
+  @Column({ type: 'json', nullable: true })
+  payload: {
+    type: string;
+    schoolId: number;
+    role: string;
+    messages: any[];
+  } | null;
 
   @ApiProperty({
     description: '🈳 발송 예약 시각 (YYYY-MM-DD HH:mm:ss)',

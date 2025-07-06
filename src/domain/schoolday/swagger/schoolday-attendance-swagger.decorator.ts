@@ -4,9 +4,9 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import {
-    CreateDynamoRecordWithDateDto,
-    CreateDynamoRecordWithRangeDto,
-    ResponseAttendanceDto,
+  CreateDynamoRecordWithDateDto,
+  CreateDynamoRecordWithRangeDto,
+  ResponseAttendanceDto,
 } from 'src/domain/schoolday/dto/response-attendance.dto';
 
 //? ---------------------------------------------------------------------- ?//

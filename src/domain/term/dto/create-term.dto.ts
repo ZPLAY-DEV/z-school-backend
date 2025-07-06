@@ -9,7 +9,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  MaxLength
+  MaxLength,
 } from 'class-validator';
 import { PickRule, TermType } from 'src/common/enums';
 

@@ -12,7 +12,7 @@ import {
   CreateDynamoRecordWithDateDto,
   CreateDynamoRecordWithRangeDto,
   DeleteAttendanceBySchoolTermDto,
-  ResponseAttendanceDto
+  ResponseAttendanceDto,
 } from 'src/domain/schoolday/dto/response-attendance.dto';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
 import {
