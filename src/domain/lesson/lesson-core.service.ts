@@ -73,7 +73,9 @@ export class LessonCoreService {
           new Date(`${dto.start}T08:00:00+09:00`) < new Date(term.start)) ||
         (dto.end && new Date(`${dto.end}T08:00:00+09:00`) > new Date(term.end))
       ) {
-        throw new BadRequestException('Out of range');
+        throw new BadRequestException(
+          'Lesson period out of range based on the term',
+        );
       }
 
       //? 3단계) 같은 이름의 기존 강좌가 있는지 확인

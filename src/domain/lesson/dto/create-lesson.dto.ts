@@ -92,11 +92,11 @@ export class CreateLessonDto {
   end?: string;
 
   @ApiProperty({
-    description: '🈳 frequency',
+    description: '🈳 주당 몇회 frequency',
     default: 1,
   })
   @IsInt()
-  @IsPositive()
+  @IsOptional()
   frequency?: number;
 
   @ApiProperty({
@@ -105,13 +105,12 @@ export class CreateLessonDto {
     default: 0,
   })
   @IsInt()
-  @IsPositive()
+  @IsOptional()
   total?: number;
 
   @ApiProperty({ description: '🈳 A. 1회 수강료', required: false, default: 0 })
-  @IsOptional()
   @IsInt()
-  @IsPositive()
+  @IsOptional()
   instructorFee?: number;
 
   @ApiProperty({
@@ -119,8 +118,8 @@ export class CreateLessonDto {
     required: false,
     example: [{ name: 'total', amount: 10000 }],
   })
-  @IsOptional()
   @IsArray()
+  @IsOptional()
   bookFees?: FeeItemDto[] | null;
 
   @ApiProperty({
@@ -128,8 +127,8 @@ export class CreateLessonDto {
     required: false,
     example: [{ name: 'total', amount: 10000 }],
   })
-  @IsOptional()
   @IsArray()
+  @IsOptional()
   materialFees?: FeeItemDto[] | null;
 
   @ApiProperty({
@@ -137,7 +136,7 @@ export class CreateLessonDto {
     default: 0,
   })
   @IsInt()
-  @IsPositive()
+  @IsOptional()
   operationFee?: number;
 
   @ApiProperty({
@@ -145,15 +144,14 @@ export class CreateLessonDto {
     required: false,
     default: 'CO-1000',
   })
-  @IsOptional()
   @IsString()
+  @IsOptional()
   @MaxLength(16)
   operationFeeRule?: string | null;
 
   @ApiProperty({ description: '🈳 비고', required: false })
-  @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @IsOptional()
   note?: string | null;
 
   @ApiProperty({
