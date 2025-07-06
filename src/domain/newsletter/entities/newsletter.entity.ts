@@ -120,18 +120,18 @@ export class Newsletter {
   } | null;
 
   @ApiProperty({
-    description: '🈳 발송 예약 시각 (YYYY-MM-DD HH:mm:ss)',
+    description: '🈳 발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
     example: '2025-06-26T00:30:00Z',
   })
   @Column({ type: 'timestamp', nullable: true, comment: '발송예약 시각' })
   scheduledAt: Date | null;
 
   @ApiProperty({
-    description: '🈳 재발송 시각 (YYYY-MM-DD HH:mm:ss)',
+    description: '🈳 재발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
     example: '2025-06-26T00:30:00Z',
   })
-  @Column({ type: 'timestamp', nullable: true, comment: '재발송 시각' })
-  resentAt: Date | null;
+  @Column({ type: 'timestamp', nullable: true, comment: '재발송예약 시각' })
+  rescheduledAt: Date | null;
 
   // ------------------------------------------------------------------------ //
 

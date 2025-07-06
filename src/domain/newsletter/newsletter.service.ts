@@ -216,9 +216,15 @@ export class NewsletterService {
       // scheduledAt이 새로 설정된 경우에만 이벤트 처리
       const wasScheduledAtNull = !existingNewsletter.scheduledAt;
       const isScheduledAtSet = !!updatedNewsletter.scheduledAt;
-
       if (wasScheduledAtNull && isScheduledAtSet) {
         await this.handleSendingNewsletter(updatedNewsletter, manager);
+      }
+
+      // scheduledAt이 새로 설정된 경우에만 이벤트 처리
+      const wasRescheduledAtNull = !existingNewsletter.rescheduledAt;
+      const isRescheduledAtSet = !!updatedNewsletter.rescheduledAt;
+      if (wasRescheduledAtNull && isRescheduledAtSet) {
+        await this.handleResendingNewsletter(updatedNewsletter, manager);
       }
 
       return updatedNewsletter;
@@ -235,26 +241,16 @@ export class NewsletterService {
     return (await this.newsletterRepository.save(newsletter)) as Newsletter;
   }
 
-  async resendNewsletter(id: number, scheduledAt: Date): Promise<Newsletter> {
+  async resendNewsletter(id: number, rescheduledAt: Date): Promise<Newsletter> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       const newsletter = await manager.preload(Newsletter, {
         id,
-        status: SendStatus.SCHEDULED,
-        scheduledAt,
-        resentAt: scheduledAt,
+        status: SendStatus.RESCHEDULED,
+        rescheduledAt,
       });
       if (!newsletter) {
         throw new NotFoundException('Newsletter not found');
       }
-      const students = await this.getStudents(manager, newsletter);
-      const dedupedStudents = this.dedupeStudents(students);
-      const shortlinks = await this.fetchShortlinks(manager, newsletter);
-      const payload = this.buildNotificationPayload(
-        newsletter,
-        shortlinks,
-        dedupedStudents,
-      );
-      newsletter.payload = payload;
       const updatedNewsletter = await manager.save(newsletter);
 
       return updatedNewsletter;
@@ -335,7 +331,36 @@ export class NewsletterService {
 
       await this.slack.sendMessage({
         channel: 'activity',
-        text: `[API] 🟢 ${newsletter.schoolName}에서 뉴스레터 발송 (준비중)\n- 이름:${newsletter.title}\n- 분류:${translateNewsletterType(newsletter.type)}\n- 대상:${translateNewsletterTarget(newsletter.target)} ${newsletter.studentIds.length}명`,
+        text: `[API] 🟢 ${newsletter.schoolName}에서 뉴스레터 발송 중\n- 이름:${newsletter.title}\n- 분류:${translateNewsletterType(newsletter.type)}\n- 대상:${translateNewsletterTarget(newsletter.target)} ${shortlinks.length}명`,
+      });
+    } catch (err) {
+      this.logger.error(
+        `❌ Failed to handle scheduled newsletter: ${err.message}`,
+        err,
+      );
+    }
+  }
+
+  //? 예약된 뉴스레터 처리
+  private async handleResendingNewsletter(
+    newsletter: Newsletter,
+    manager: EntityManager,
+  ): Promise<void> {
+    console.log(`✳️ handleSendingNewsletter`, newsletter);
+
+    try {
+      // 안읽은 숏링크
+      const shortlinks = await this.fetchUnreadShortlinks(manager, newsletter);
+      // newsletter 업데이트
+      newsletter.payload = this.rebuildNotificationPayload(
+        newsletter,
+        shortlinks,
+      );
+      await manager.save(newsletter);
+
+      await this.slack.sendMessage({
+        channel: 'activity',
+        text: `[API] 🟢 ${newsletter.schoolName}에서 뉴스레터 재발송 중\n- 이름:${newsletter.title}\n- 분류:${translateNewsletterType(newsletter.type)}\n- 대상:${translateNewsletterTarget(newsletter.target)} ${shortlinks.length}명`,
       });
     } catch (err) {
       this.logger.error(
@@ -485,6 +510,16 @@ export class NewsletterService {
     });
   }
 
+  private async fetchUnreadShortlinks(
+    manager: EntityManager,
+    newsletter: Newsletter,
+  ): Promise<Shortlink[]> {
+    return await manager.find(Shortlink, {
+      where: { newsletterId: newsletter.id, isRead: false },
+      relations: { parent: { user: true } },
+    });
+  }
+
   private async deleteShortlinks(newsletter: Newsletter): Promise<void> {
     try {
       await this.dataSource
@@ -561,6 +596,7 @@ export class NewsletterService {
     role: string;
     messages: any[];
   } {
+    const url = `https://zschool.kr`;
     return {
       type: newsletter.type as string,
       schoolId: newsletter.schoolId,
@@ -570,7 +606,6 @@ export class NewsletterService {
           (shortlink) => shortlink.parentId === student.parent.id,
         );
         const isFcm = !!student.parent?.user?.pushToken;
-        const url = `https://scola.kr`;
         return {
           id: student.parent.id,
           phone: student.parent.phone,
@@ -582,6 +617,38 @@ export class NewsletterService {
           role: 'PARENT',
           page: 'newsletters',
           args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
+        };
+      }),
+    };
+  }
+
+  private rebuildNotificationPayload(
+    newsletter: Newsletter,
+    shortlinks: Shortlink[], // unread shortlinks
+  ): {
+    type: string;
+    schoolId: number;
+    role: string;
+    messages: any[];
+  } {
+    const url = `https://zschool.kr`;
+    return {
+      type: newsletter.type as string,
+      schoolId: newsletter.schoolId,
+      role: 'PARENT',
+      messages: shortlinks.map((shortlink) => {
+        const isFcm = !!shortlink.parent?.user?.pushToken;
+        return {
+          id: shortlink.parent.id, // 학부모 아이디
+          phone: shortlink.parent.phone,
+          token: shortlink.parent?.user?.pushToken,
+          title: `[재발송] ${translateNewsletterType(newsletter.type)}`,
+          body: isFcm
+            ? `${newsletter.title}`
+            : `[재발송] ${newsletter.title} ${url}/${shortlink?.nanoid}`,
+          role: 'PARENT',
+          page: shortlink.page,
+          args: shortlink.args,
         };
       }),
     };
