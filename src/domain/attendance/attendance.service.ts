@@ -44,22 +44,30 @@ export class AttendanceService {
   async init(): Promise<void> {
     const now = addDays(new Date(), 1);
     const ttl = Math.floor(now.getTime() / 1000); // 1일
+
+    const itemKey = {
+      groupKey: generateGroupKey(1),
+      dailyStudentKey: generateDailyStudentKey('2025-01-01', 1, 1, '1', 1),
+    };
+
+    const itemDto = {
+      lessonId: 1,
+      lessonName: '수학',
+      groupId: 1,
+      groupName: '1학년1반',
+      studentId: 1,
+      studentName: '김철수',
+      start: '14:00',
+      end: '15:00',
+      duration: 60,
+      status: AttendanceStatus.INIT,
+      expires: ttl,
+    };
+
     try {
-      await this.model.create({
-        groupKey: generateGroupKey(1),
-        dailyStudentKey: generateDailyStudentKey('2025-01-01', 1, 1, '1', 1),
-        lessonId: 1,
-        lessonName: '수학',
-        groupId: 1,
-        groupName: '1학년1반',
-        studentId: 1,
-        studentName: '김철수',
-        start: '14:00',
-        end: '15:00',
-        duration: 60,
-        status: AttendanceStatus.INIT,
-        expires: ttl,
-      });
+      // update() 메서드를 사용하여 upsert 효과 구현
+      await this.model.update(itemKey, itemDto);
+      console.log('✅ created/updated attendance record in init()');
     } catch (error) {
       console.error(`🚨`, error);
     }

@@ -100,8 +100,8 @@ import { UploadModule } from './services/upload/upload.module';
           : false,
       aws: {
         region: process.env.AWS_DEFAULT_REGION ?? 'ap-northeast-2',
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? 'test',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? 'test',
       },
       table: {
         create: process.env.NODE_ENV === 'development', // create dynamo tables in local env
