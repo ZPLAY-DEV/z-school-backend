@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# create notification-logs-bucket
-awslocal --endpoint-url=http://localhost:4566 s3 mb s3://notification-logs-bucket
+echo "🟢 Creating S3 buckets..."
 
-## create s3 bucket
+awslocal --endpoint-url=http://localhost:4566 s3 mb s3://notification-logs-bucket
 awslocal --endpoint-url=http://localhost:4566 s3 mb s3://afterschool-files-bucket
 
-## set the bucket policy
+echo "🟢 Setting bucket policy..."
+
 awslocal s3api put-bucket-policy \
   --bucket afterschool-files-bucket \
   --policy '{
@@ -22,12 +22,14 @@ awslocal s3api put-bucket-policy \
     ]
   }'
 
-## set CORS configuration
+echo "🟢 Setting CORS configuration..."
+
 awslocal s3api put-bucket-cors \
   --bucket afterschool-files-bucket \
   --cors-configuration '{"CORSRules":[{"AllowedOrigins":["*"],"AllowedMethods":["GET","PUT","POST","DELETE"],"AllowedHeaders":["*"],"ExposeHeaders":["ETag"]}]}'
 
-## firehose
+echo "🟢 Creating Firehose delivery stream..."
+
 awslocal --endpoint-url=http://localhost:4566 firehose create-delivery-stream \
   --delivery-stream-name notification-logs-stream \
   --delivery-stream-type DirectPut \
