@@ -1,4 +1,4 @@
-name: Deploy to macOS Staging
+name: Deploy to Ubuntu PC
 
 on:
   push:
@@ -22,5 +22,5 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Deploy on macOS
-      run: bash ~/code/z-school-backend/scripts/deploy.sh
+    - name: Deploy on Ubuntu PC
+      run: bash ~/Code/api/scripts/deploy.sh
