@@ -190,69 +190,160 @@ export class GroupAttendanceService {
     groupId: number,
     dtos: CreateAttendanceWithKeyDto[],
   ): Promise<number> {
+    console.log('🚀 [notifyCustom] Starting custom notification process');
+    console.log('📊 [notifyCustom] Input params:', {
+      groupId,
+      dtosLength: dtos.length,
+      dtos: dtos.map((dto) => ({
+        dailyStudentKey: dto.dailyStudentKey,
+        status: dto.status,
+        schoolNote: dto.schoolNote,
+        hasSchoolNote: !!dto.schoolNote,
+      })),
+    });
+
     if (dtos.length === 0) {
+      console.log('⚠️ [notifyCustom] No DTOs provided, returning 0');
       return 0;
     }
 
-    // MySQL 읽고
-    const group = await this.groupRepository.findOneOrFail({
-      where: { id: groupId },
-      relations: [
-        'lesson',
-        'picks',
-        'picks.student',
-        'picks.student.parent',
-        'picks.student.parent.user',
-      ],
-    });
-
-    const allStudents = group.picks.map((v) => v.student);
-
-    // Custom message를 위한 학생 ID와 메시지 매핑
-    const schoolNoteMap = new Map<number, string>();
-    const statusMap = new Map<number, string>();
-
-    dtos.forEach((dto) => {
-      const studentId = this.extractStudentIdFromRangeKey(dto.dailyStudentKey);
-      const message = dto.schoolNote || '';
-      schoolNoteMap.set(studentId, message);
-      statusMap.set(studentId, this.translateStatusInOtherContext(dto.status));
-    });
-
-    const studentIds = Array.from(schoolNoteMap.keys());
-
-    const messages = allStudents
-      .filter((v) => studentIds.includes(v.id))
-      .map((v: Student) => {
-        const schoolNote = schoolNoteMap.get(v.id);
-        const status = statusMap.get(v.id);
-        return {
-          id: v.parent.id,
-          phone: v.parent.phone,
-          token: v.parent.user?.pushToken ?? null,
-          title: `${group.lesson.schoolName}`,
-          body: `${v.name} 학생 ${status} : ${schoolNote}`,
-          role: 'PARENT',
-        };
+    try {
+      // MySQL 읽고
+      console.log('🔍 [notifyCustom] Fetching group data from MySQL...');
+      const group = await this.groupRepository.findOneOrFail({
+        where: { id: groupId },
+        relations: [
+          'lesson',
+          'picks',
+          'picks.student',
+          'picks.student.parent',
+          'picks.student.parent.user',
+        ],
+      });
+      console.log('✅ [notifyCustom] Group data fetched successfully:', {
+        groupId: group.id,
+        groupName: group.groupName,
+        lessonName: group.lesson.lessonName,
+        schoolName: group.lesson.schoolName,
+        picksCount: group.picks.length,
       });
 
-    // Dynamo 상태 업데이트
-    const updatedDtos = dtos.map((dto) => ({
-      ...dto,
-      schoolNote: dto.schoolNote,
-      schoolNotedAt: new Date(),
-    }));
+      const allStudents = group.picks.map((v) => v.student);
+      console.log(
+        '👥 [notifyCustom] All students in group:',
+        allStudents.map((s) => ({
+          id: s.id,
+          name: s.name,
+          hasParent: !!s.parent,
+          hasParentUser: !!s.parent?.user,
+          parentPhone: s.parent?.phone,
+        })),
+      );
 
-    await this.updateAttendanceStatusInBulkOptimized(updatedDtos);
+      // Custom message를 위한 학생 ID와 메시지 매핑
+      const schoolNoteMap = new Map<number, string>();
+      const statusMap = new Map<number, string>();
 
-    await this.notificationService.send({
-      messages,
-      type: NotificationType.CLASS,
-      schoolId: group.lesson.schoolId,
-      role: 'PARENT',
-    });
+      console.log('🗺️ [notifyCustom] Building student maps...');
+      dtos.forEach((dto) => {
+        const studentId = this.extractStudentIdFromRangeKey(
+          dto.dailyStudentKey,
+        );
+        const message = dto.schoolNote || '';
+        schoolNoteMap.set(studentId, message);
+        statusMap.set(
+          studentId,
+          this.translateStatusInOtherContext(dto.status),
+        );
+        console.log(`📝 [notifyCustom] Mapped student ${studentId}:`, {
+          status: dto.status,
+          translatedStatus: this.translateStatusInOtherContext(dto.status),
+          schoolNote: message,
+        });
+      });
 
-    return messages.length;
+      const studentIds = Array.from(schoolNoteMap.keys());
+      console.log('🎯 [notifyCustom] Target student IDs:', studentIds);
+
+      const allStudentIds = allStudents.map((s) => s.id);
+      const intersection = studentIds.filter((id) =>
+        allStudentIds.includes(id),
+      );
+      console.log('🔍 [notifyCustom] All student IDs in group:', allStudentIds);
+      console.log(
+        '🎯 [notifyCustom] Intersection of target and group students:',
+        intersection,
+      );
+
+      if (intersection.length === 0) {
+        console.log('❌ [notifyCustom] No matching students found in group');
+        throw new NotFoundException(
+          '해당 그룹에서 대상 학생을 찾을 수 없습니다.',
+        );
+      }
+
+      const messages = allStudents
+        .filter((v) => studentIds.includes(v.id))
+        .map((v: Student) => {
+          const schoolNote = schoolNoteMap.get(v.id);
+          const status = statusMap.get(v.id);
+          const message = {
+            id: v.parent.id,
+            phone: v.parent.phone,
+            token: v.parent.user?.pushToken ?? null,
+            title: `${group.lesson.schoolName}`,
+            body: `${v.name} 학생 ${status} : ${schoolNote}`,
+            role: 'PARENT',
+          };
+          console.log(
+            `💬 [notifyCustom] Created message for student ${v.id} (${v.name}):`,
+            message,
+          );
+          return message;
+        });
+
+      console.log('📧 [notifyCustom] Total messages to send:', messages.length);
+
+      // Dynamo 상태 업데이트
+      console.log('🔄 [notifyCustom] Preparing DynamoDB update...');
+      const updatedDtos = dtos.map((dto) => ({
+        ...dto,
+        schoolNote: dto.schoolNote,
+        schoolNotedAt: new Date(),
+      }));
+      console.log(
+        '🔧 [notifyCustom] Updated DTOs prepared:',
+        updatedDtos.map((dto) => ({
+          dailyStudentKey: dto.dailyStudentKey,
+          status: dto.status,
+          schoolNote: dto.schoolNote,
+          schoolNotedAt: dto.schoolNotedAt,
+        })),
+      );
+
+      console.log('💾 [notifyCustom] Executing DynamoDB bulk update...');
+      await this.updateAttendanceStatusInBulkOptimized(updatedDtos);
+      console.log('✅ [notifyCustom] DynamoDB update completed successfully');
+
+      console.log('📤 [notifyCustom] Sending notifications...');
+      await this.notificationService.send({
+        messages,
+        type: NotificationType.CLASS,
+        schoolId: group.lesson.schoolId,
+        role: 'PARENT',
+      });
+      console.log('✅ [notifyCustom] Notifications sent successfully');
+
+      console.log(
+        '🎉 [notifyCustom] Process completed successfully, returning message count:',
+        messages.length,
+      );
+      return messages.length;
+    } catch (error) {
+      console.error('❌ [notifyCustom] Error occurred:', error);
+      console.error('🔥 [notifyCustom] Error stack:', error.stack);
+      throw error;
+    }
   }
 
   //? ---------------------------------------------------------------------- ?//
