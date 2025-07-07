@@ -9,11 +9,10 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Paginated, PaginateQuery } from 'nestjs-paginate';
+import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor } from 'src/common/enums';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
@@ -95,7 +94,7 @@ export class PickController {
   @Get('students/:studentId/paginated')
   async getGroupInfiniteList(
     @Param('studentId', ParseIntPipe) studentId: number,
-    @Query() query: PaginateQuery,
+    @Paginate() query: PaginateQuery,
   ): Promise<Paginated<Pick>> {
     return await this.pickService.groupInfiniteList(studentId, query);
   }
@@ -112,7 +111,7 @@ export class PickController {
   @Get('groups/:groupId/paginated')
   async getStudentInfiniteList(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Query() query: PaginateQuery,
+    @Paginate() query: PaginateQuery,
   ): Promise<Paginated<Pick>> {
     return await this.pickService.studentInfiniteList(groupId, query);
   }

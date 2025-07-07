@@ -103,17 +103,15 @@ export class SchoolTermOfferingService {
       .where('offering.schoolId = :schoolId', { schoolId })
       .andWhere('offering.termId = :termId', { termId });
 
-    const result = await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'createdAt', 'updatedAt'] as const,
-      searchableColumns: ['lessonName', 'groupName'] as const,
+    return await paginate(query, queryBuilder, {
+      sortableColumns: ['id', 'createdAt', 'updatedAt'],
+      searchableColumns: ['lessonName', 'groupName'],
       defaultSortBy: [],
       filterableColumns: {
         pickRule: [FilterOperator.EQ, FilterOperator.IN],
         allowedGrades: [FilterOperator.EQ, FilterOperator.IN],
       },
     });
-
-    return result;
   }
 
   async list(

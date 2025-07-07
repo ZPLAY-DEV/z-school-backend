@@ -7,7 +7,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
-  FilterSuffix,
   paginate,
   Paginated,
   PaginateQuery,
@@ -106,8 +105,9 @@ export class PickService {
       filterableColumns: {
         enrolledBy: [FilterOperator.EQ],
         deletedBy: [FilterOperator.EQ],
-        startedBy: [FilterSuffix.NOT, FilterOperator.NULL],
-        endedBy: [FilterSuffix.NOT, FilterOperator.NULL],
+        startedBy: true,
+        endedBy: true,
+        note: true,
       },
     });
   }

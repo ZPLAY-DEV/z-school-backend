@@ -4,7 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
+import {
+  FilterOperator,
+  paginate,
+  PaginateConfig,
+  Paginated,
+  PaginateQuery,
+} from 'nestjs-paginate';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
@@ -271,6 +277,17 @@ export class StudentService {
     });
 
     return result;
+  }
+
+  async infiniteList(query: PaginateQuery): Promise<Paginated<Student>> {
+    const queryBuilder = this.studentRepository.createQueryBuilder('student');
+    const config: PaginateConfig<Student> = {
+      sortableColumns: ['id', 'name'],
+      filterableColumns: {
+        name: [FilterOperator.IN, FilterOperator.EQ, FilterOperator.NULL],
+      },
+    };
+    return await paginate<Student>(query, queryBuilder, config);
   }
 
   //? ---------------------------------------------------------------------- ?//

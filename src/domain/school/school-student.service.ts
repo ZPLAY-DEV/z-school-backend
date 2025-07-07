@@ -233,6 +233,7 @@ export class SchoolStudentService {
         studentCode: [FilterOperator.EQ],
         name: [FilterOperator.EQ, FilterOperator.ILIKE],
         status: [FilterOperator.EQ, FilterOperator.IN],
+        note: [FilterOperator.EQ, FilterOperator.ILIKE, FilterOperator.NULL],
       },
     });
   }
