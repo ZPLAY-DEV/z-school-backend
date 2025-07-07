@@ -304,7 +304,7 @@ export class StudentService {
             grade: dto.grade,
             class: dto.class,
             studentCode: dto.studentCode,
-            id: Not(id),
+            id: Not(id), // 자기 자신 제외하고 중복 체크
           },
         });
 
@@ -323,14 +323,16 @@ export class StudentService {
         throw new NotFoundException('Student not found');
       }
 
-      // 2. parent 정보가 있으면 업데이트
-      if (dto.parent && existingStudent.parentId) {
-        await manager.update(
-          Parent,
-          { id: existingStudent.parentId },
-          dto.parent,
-        );
+      // 2. parent 정보 업데이트 (항상 실행)
+      if (!existingStudent.parentId) {
+        throw new NotFoundException('Parent not found for this student');
       }
+
+      await manager.update(
+        Parent,
+        { id: existingStudent.parentId },
+        dto.parent,
+      );
 
       // 3. Student 정보 업데이트 (parent 정보 제외)
       const studentUpdateData = {
