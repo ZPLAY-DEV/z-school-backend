@@ -95,7 +95,7 @@ export class DepartureService {
     return await this.departureRepository.find({
       where: { studentId },
       relations: ['student', 'schoolday'],
-      order: { createdAt: 'DESC' },
+      order: { id: 'DESC' },
     });
   }
 

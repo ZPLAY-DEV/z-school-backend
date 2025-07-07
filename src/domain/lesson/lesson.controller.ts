@@ -9,9 +9,11 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -20,10 +22,12 @@ import {
   CreateLessonDocs,
   CreateLessonDryRunDocs,
   GetLessonByIdDocs,
+  GetStudentsByLessonIdDocs,
   RemoveLessonDocs,
   UpdateLessonDaysDocs,
   UpdateLessonDocs,
 } from 'src/domain/lesson/swagger/lesson-swagger.decorator';
+import { Student } from 'src/domain/student/entities/student.entity';
 
 //! 단일 Lesson 엔터티 작업
 @ApiTags('✅ Lessons ( 과목 )')
@@ -63,6 +67,15 @@ export class LessonController {
       'groups.contracts.sam',
       'category',
     ]);
+  }
+
+  @GetStudentsByLessonIdDocs()
+  @Get(':id/students/paginated')
+  async findStudentsById(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: PaginateQuery,
+  ): Promise<Paginated<Student>> {
+    return await this.lessonService.findStudentsById(id, query);
   }
 
   //? ---------------------------------------------------------------------- ?//

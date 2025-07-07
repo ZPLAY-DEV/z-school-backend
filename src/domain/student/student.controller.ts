@@ -27,7 +27,11 @@ import {
   FindStudentBookingsDocs,
   FindStudentByIdDocs,
   FindStudentCanceledGroupsDocs,
+  FindStudentCanceledGroupsPaginatedDocs,
   FindStudentGroupsDocs,
+  FindStudentGroupsPaginatedDocs,
+  FindStudentSchooldaysDocs,
+  FindStudentsPaginatedDocs,
   RemoveStudentDocs,
   UpdateStudentDocs,
 } from 'src/domain/student/swagger/student-swagger.decorator';
@@ -64,6 +68,7 @@ export class StudentController {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
+  @FindStudentsPaginatedDocs()
   @Get('paginated')
   async infiniteList(
     @Paginate() query: PaginateQuery,
@@ -77,6 +82,7 @@ export class StudentController {
     return await this.studentService.findById(id);
   }
 
+  @FindStudentSchooldaysDocs()
   @Get(':id/schooldays')
   async findSchooldaysById(
     @Param('id') id: number,
@@ -103,6 +109,7 @@ export class StudentController {
     return await this.studentService.listGroups(id, termId);
   }
 
+  @FindStudentGroupsPaginatedDocs()
   @Get(':id/groups/paginated')
   async infiniteListGroups(
     @Param('id', ParseIntPipe) id: number,
@@ -121,6 +128,7 @@ export class StudentController {
     return await this.studentService.listCanceledGroups(id, termId);
   }
 
+  @FindStudentCanceledGroupsPaginatedDocs()
   @Get(':id/canceled-groups/paginated')
   async infiniteListCanceledGroups(
     @Param('id', ParseIntPipe) id: number,

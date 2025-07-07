@@ -11,6 +11,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { Student } from 'src/domain/student/entities/student.entity';
 import { generateSchooldays } from 'src/helpers/lesson-days.util';
 import { Repository } from 'typeorm';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
@@ -27,6 +28,8 @@ export class LessonService {
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(Schoolday)
     private readonly schooldayRepository: Repository<Schoolday>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
     private readonly lessonCoreService: LessonCoreService,
     private readonly calendarService: CalendarService,
   ) {}
@@ -88,6 +91,39 @@ export class LessonService {
       this.logger.error(error);
       throw new NotFoundException(error.message);
     }
+  }
+
+  async findStudentsById(
+    id: number,
+    query?: PaginateQuery,
+  ): Promise<Paginated<Student>> {
+    const queryBuilder = this.studentRepository
+      .createQueryBuilder('student')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .leftJoin('student.picks', 'pick')
+      .leftJoin('pick.group', 'group')
+      .leftJoin('group.lesson', 'lesson')
+      .where('lesson.id = :lessonId', { lessonId: id })
+      .distinct(true); // 중복 학생 제거
+
+    return await paginate(
+      query || { page: 1, limit: 20, path: '' },
+      queryBuilder,
+      {
+        sortableColumns: ['id', 'name', 'grade', 'class', 'studentCode'],
+        searchableColumns: ['name'],
+        defaultSortBy: [
+          ['grade', 'ASC'],
+          ['class', 'ASC'],
+          ['studentCode', 'ASC'],
+        ],
+        filterableColumns: {
+          grade: [FilterOperator.EQ],
+          class: [FilterOperator.EQ, FilterOperator.ILIKE],
+          status: [FilterOperator.EQ],
+        },
+      },
+    );
   }
 
   //? ---------------------------------------------------------------------- ?//

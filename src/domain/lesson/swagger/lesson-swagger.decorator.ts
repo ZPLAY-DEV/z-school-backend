@@ -1,15 +1,17 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  getSchemaPath,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiQuery,
+    getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
+import { Student } from 'src/domain/student/entities/student.entity';
 import { CreateLessonDto } from '../dto/create-lesson.dto';
 import { UpdateLessonDto } from '../dto/update-lesson.dto';
 import { Lesson } from '../entities/lesson.entity';
@@ -172,5 +174,98 @@ export const UpdateLessonDaysDocs = () => {
       type: Number,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Get Students by Lesson ID
+//? ---------------------------------------------------------------------- ?//
+
+export const GetStudentsByLessonIdDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '과목별 학생 👈 페이지네이션 조회',
+      description: `
+      - 특정 과목에 등록된 모든 학생을 조회합니다
+      - lesson.groups.picks.student 관계를 통해 조회
+      - 페이지네이션, 검색, 필터링 지원
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '과목 ID',
+    }),
+    ApiQuery({
+      name: 'page',
+      required: false,
+      type: Number,
+      description: '페이지 번호 (기본값: 1)',
+    }),
+    ApiQuery({
+      name: 'limit',
+      required: false,
+      type: Number,
+      description: '페이지당 항목 수 (기본값: 20)',
+    }),
+    ApiQuery({
+      name: 'search',
+      required: false,
+      type: String,
+      description: '학생 이름 검색',
+    }),
+    ApiQuery({
+      name: 'filter.grade',
+      required: false,
+      type: Number,
+      description: '학년 필터',
+    }),
+    ApiQuery({
+      name: 'filter.class',
+      required: false,
+      type: String,
+      description: '반 필터',
+    }),
+    ApiQuery({
+      name: 'filter.status',
+      required: false,
+      type: String,
+      description: '학생 상태 필터',
+    }),
+    ApiOkResponse({
+      description: '과목별 학생 목록 조회 완료',
+      schema: {
+        type: 'object',
+        properties: {
+          data: {
+            type: 'array',
+            items: { $ref: getSchemaPath(Student) },
+          },
+          meta: {
+            type: 'object',
+            properties: {
+              itemsPerPage: { type: 'number' },
+              totalItems: { type: 'number' },
+              currentPage: { type: 'number' },
+              totalPages: { type: 'number' },
+              sortBy: { type: 'array', items: { type: 'array' } },
+              search: { type: 'string' },
+              filter: { type: 'object' },
+            },
+          },
+          links: {
+            type: 'object',
+            properties: {
+              first: { type: 'string' },
+              previous: { type: 'string' },
+              current: { type: 'string' },
+              next: { type: 'string' },
+              last: { type: 'string' },
+            },
+          },
+        },
+      },
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };

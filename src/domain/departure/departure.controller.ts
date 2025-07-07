@@ -19,7 +19,7 @@ import { CreateDepartureDto } from './dto/create-departure.dto';
 import { UpdateDepartureDto } from './dto/update-departure.dto';
 import { Departure } from './entities/departure.entity';
 
-@ApiTags('Departure ( 하교기록 )')
+@ApiTags('✅ Departure ( 하교기록 )')
 @Controller('departures')
 @UseInterceptors(ClassSerializerInterceptor)
 export class DepartureController {
@@ -57,7 +57,7 @@ export class DepartureController {
     return await this.departureService.findAll();
   }
 
-  @Get('student/:studentId')
+  @Get('students/:studentId')
   @ApiOperation({ summary: '특정 학생의 하교 기록 조회' })
   @ApiResponse({
     status: 200,
@@ -70,7 +70,7 @@ export class DepartureController {
     return await this.departureService.findByStudent(studentId);
   }
 
-  @Get('date')
+  @Get('dates')
   @ApiOperation({ summary: '특정 날짜의 하교 기록 조회' })
   @ApiResponse({
     status: 200,

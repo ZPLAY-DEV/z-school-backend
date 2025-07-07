@@ -5,14 +5,37 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
+import {
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
+  PaginateConfig,
+} from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
+
+// Student 페이지네이션 설정
+const STUDENT_CONFIG: PaginateConfig<Student> = {
+  sortableColumns: ['id', 'name'],
+  searchableColumns: ['name'],
+  defaultSortBy: [['id', 'DESC']],
+  filterableColumns: {
+    name: [FilterOperator.ILIKE],
+  },
+};
+
+// Group 페이지네이션 설정
+const GROUP_CONFIG: PaginateConfig<Group> = {
+  sortableColumns: ['id'],
+  defaultSortBy: [['id', 'DESC']],
+};
 
 export const CreateStudentDocs = () =>
   applyDecorators(
@@ -176,5 +199,88 @@ export const RemoveStudentDocs = () =>
       description: '학생 삭제 완료',
       type: Student,
     }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? 학생 목록 페이지네이션 조회
+//? ---------------------------------------------------------------------- ?//
+
+export const FindStudentsPaginatedDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '학생 목록 페이지네이션 조회',
+      description: '페이지네이션을 사용한 학생 목록 조회',
+    }),
+    ApiPaginationQuery(STUDENT_CONFIG),
+    ApiOkPaginatedResponse(Student, STUDENT_CONFIG),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? 학생 등교일 조회
+//? ---------------------------------------------------------------------- ?//
+
+export const FindStudentSchooldaysDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '학생 등교일 조회',
+      description: '학생의 등교일 목록 조회',
+    }),
+    ApiParam({ name: 'id', type: Number, description: '학생 ID' }),
+    ApiQuery({
+      name: 'termId',
+      type: Number,
+      required: false,
+      description: '학기 ID',
+    }),
+    ApiOkResponseTemplate({
+      description: '학생 등교일 조회 완료',
+      type: Schoolday,
+      isArray: true,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? 학생 그룹 페이지네이션 조회
+//? ---------------------------------------------------------------------- ?//
+
+export const FindStudentGroupsPaginatedDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '학생 그룹 페이지네이션 조회',
+      description: '페이지네이션을 사용한 학생 그룹 목록 조회',
+    }),
+    ApiParam({ name: 'id', type: Number, description: '학생 ID' }),
+    ApiQuery({
+      name: 'termId',
+      type: Number,
+      required: false,
+      description: '학기 ID',
+    }),
+    ApiPaginationQuery(GROUP_CONFIG),
+    ApiOkPaginatedResponse(Group, GROUP_CONFIG),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? 학생 취소된 그룹 페이지네이션 조회
+//? ---------------------------------------------------------------------- ?//
+
+export const FindStudentCanceledGroupsPaginatedDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '학생 취소된 그룹 페이지네이션 조회',
+      description: '페이지네이션을 사용한 학생의 취소된 그룹 목록 조회',
+    }),
+    ApiParam({ name: 'id', type: Number, description: '학생 ID' }),
+    ApiQuery({
+      name: 'termId',
+      type: Number,
+      required: false,
+      description: '학기 ID',
+    }),
+    ApiPaginationQuery(GROUP_CONFIG),
+    ApiOkPaginatedResponse(Group, GROUP_CONFIG),
     ApiStatuses(StatusCodes.NOT_FOUND),
   );

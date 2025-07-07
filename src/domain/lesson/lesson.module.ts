@@ -12,19 +12,23 @@ import { LessonCoreService } from 'src/domain/lesson/lesson-core.service';
 import { LessonController } from 'src/domain/lesson/lesson.controller';
 import { LessonService } from 'src/domain/lesson/lesson.service';
 import { LessonSubscriber } from 'src/domain/lesson/subscriber/lesson.subscriber';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
+      Category,
+      Group,
       Lesson,
+      Pick,
       School,
       Schoolday,
-      Group,
+      Student,
       Term,
-      Category,
     ]),
     DynamooseModule.forFeature([
       {
