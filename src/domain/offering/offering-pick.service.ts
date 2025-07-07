@@ -131,13 +131,16 @@ export class OfferingPickService {
     sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
-      where: { offeringId, status: BookingStatus.ENROLLED },
+      where: {
+        offeringId,
+        status: In([BookingStatus.ENROLLED, BookingStatus.PENDING]),
+      },
     });
     const allStudentIds = bookings.map((v) => v.studentId);
     // 선착순이므로 정원 내에서만 학생을 선택
     const selectedStudentIds = allStudentIds.slice(0, capacity);
 
-    // 같은 학년 group 들에 동일한 학생을 할당
+    // 같은 묶음 group 들에는 동일한 학생을 할당 (일주일에 수업이 1번 이상있는 수업은 같은 묶음 group 들이 있음)
     let items: IPickKeys[] = [];
     sameGradeGroups.forEach(({ groupId, start, end }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
@@ -152,7 +155,7 @@ export class OfferingPickService {
     });
     const groupIds = sameGradeGroups.map((v) => v.groupId);
 
-    // 정교한 picks 관리: 기존 데이터와 비교하여 정확한 처리
+    // 수정까지 고려하여, upsert 되도록 picks 관리: 기존 데이터와 비교하여 사라진 데이터의 경우 삭제처리
     await this.managePicks(
       offeringId,
       groupIds,
@@ -191,7 +194,7 @@ export class OfferingPickService {
     // 정원 제한 없이 전체 학생을 모두 선택
     const selectedStudentIds = allStudentIds;
 
-    // 같은 학년 group 들에 동일한 학생을 할당
+    // 같은 묶음 group 들에는 동일한 학생을 할당 (일주일에 수업이 1번 이상있는 수업은 같은 묶음 group 들이 있음)
     let items: IPickKeys[] = [];
     sameGradeGroups.forEach(({ groupId, start, end }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
@@ -206,7 +209,7 @@ export class OfferingPickService {
     });
     const groupIds = sameGradeGroups.map((v) => v.groupId);
 
-    // 정교한 picks 관리: 기존 데이터와 비교하여 정확한 처리
+    // 수정까지 고려하여, upsert 되도록 picks 관리: 기존 데이터와 비교하여 사라진 데이터의 경우 삭제처리
     await this.managePicks(
       offeringId,
       groupIds,
@@ -252,7 +255,7 @@ export class OfferingPickService {
         .slice(0, capacity);
     }
 
-    // 같은 학년 group 들에 동일한 학생을 할당
+    // 같은 묶음 group 들에는 동일한 학생을 할당 (일주일에 수업이 1번 이상있는 수업은 같은 묶음 group 들이 있음)
     let items: IPickKeys[] = [];
     sameGradeGroups.forEach(({ groupId, start, end }) => {
       const groupItems = selectedStudentIds.map((studentId) => ({
@@ -267,7 +270,7 @@ export class OfferingPickService {
     });
     const groupIds = sameGradeGroups.map((v) => v.groupId);
 
-    // 정교한 picks 관리: 기존 데이터와 비교하여 정확한 처리
+    // 수정까지 고려하여, upsert 되도록 picks 관리: 기존 데이터와 비교하여 사라진 데이터의 경우 삭제처리
     await this.managePicks(
       offeringId,
       groupIds,

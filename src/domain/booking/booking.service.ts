@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { AWS_SQS_CLIENT, REDIS_BOOKING_CLIENT } from 'src/common/constants';
 import { BookingStatus, ClassStatus, PickRule } from 'src/common/enums';
 import { IBookingSnapshotItem } from 'src/common/interfaces';
+import { CreateOverdueBookingDto } from 'src/domain/booking/dto/create-overdue-booking.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisBookingService } from 'src/services/redis/redis-booking.service';
@@ -34,19 +35,40 @@ export class BookingService {
     private readonly redisBookingService: RedisBookingService,
   ) {}
 
-  async validateOfferingStatus(offeringId: number): Promise<void> {
-    const offering = await this.offeringRepository.findOne({
-      where: { id: offeringId },
+  //? ---------------------------------------------------------------------- ?//
+
+  async createOverdueBooking(
+    dto: CreateOverdueBookingDto,
+  ): Promise<ResponseBookingDto> {
+    await this.validateOfferingStatus(dto.offeringId);
+
+    // 가장 마지막 waitingPostition 조회
+    const lastWaitingPosition = await this.bookingRepository.findOne({
+      where: { offeringId: dto.offeringId },
+      order: { waitingPosition: 'DESC' },
     });
 
-    if (!offering) {
-      throw new NotFoundException('수강신청과목을 찾을 수 없습니다.');
-    }
+    const note = '기간외 수강신청';
+    const waitingPosition = (lastWaitingPosition?.waitingPosition || 0) + 1;
+    const status = BookingStatus.PENDING;
+    const message = `🟡 수강신청결과 ${dto.lessonName} 수강이 대기상태입니다. (대기 ${waitingPosition}번)`;
 
-    if (offering.status === ClassStatus.CANCELED) {
-      throw new UnprocessableEntityException('삭제된 수강신청과목 입니다.');
-    }
+    const booking = this.bookingRepository.create({
+      ...dto,
+      status,
+      waitingPosition,
+      note,
+    });
+    await this.bookingRepository.save(booking);
+
+    return new ResponseBookingDto({
+      status,
+      waitingPosition,
+      message,
+    });
   }
+
+  //? ---------------------------------------------------------------------- ?//
 
   async createWithDb(dto: CreateBookingDto): Promise<ResponseBookingDto> {
     try {
@@ -68,7 +90,7 @@ export class BookingService {
         });
         await this.bookingRepository.save(booking);
       } else {
-        // 무작위, 재수강우선
+        // 무작위
         status = BookingStatus.PENDING;
         waitingPosition = 0;
         message = `🔵 ${dto.lessonName} 수강신청 했습니다. (신청기간이후 결과발표예정)`;
@@ -117,6 +139,8 @@ export class BookingService {
       throw new InternalServerErrorException(error.message);
     }
   }
+
+  //? ---------------------------------------------------------------------- ?//
 
   async createWithRedis(dto: CreateBookingDto): Promise<ResponseBookingDto> {
     const { offeringId, studentId, lessonName, capacity, pickRule } = dto;
@@ -248,6 +272,24 @@ export class BookingService {
         );
       }
       throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  // ------------------------------------------------------------------------ //
+  // private methods
+  // ------------------------------------------------------------------------ //
+
+  async validateOfferingStatus(offeringId: number): Promise<void> {
+    const offering = await this.offeringRepository.findOne({
+      where: { id: offeringId },
+    });
+
+    if (!offering) {
+      throw new NotFoundException('수강신청과목을 찾을 수 없습니다.');
+    }
+
+    if (offering.status === ClassStatus.CANCELED) {
+      throw new UnprocessableEntityException('삭제된 수강신청과목 입니다.');
     }
   }
 }

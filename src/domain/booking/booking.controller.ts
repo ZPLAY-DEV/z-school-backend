@@ -20,8 +20,8 @@ export class BookingController {
   //? Create Booking (수강신청)
   //? ---------------------------------------------------------------------- ?//
 
-  @Post()
   @CreateBookingSwagger()
+  @Post()
   async create(@Body() dto: CreateBookingDto): Promise<ResponseBookingDto> {
     if (dto.pickRule === PickRule.FIRST) {
       return await this.bookingService.createWithRedis(dto);
@@ -31,11 +31,22 @@ export class BookingController {
   }
 
   //? ---------------------------------------------------------------------- ?//
+  //? Create 기간외 Booking (수강신청)
+  //? ---------------------------------------------------------------------- ?//
+
+  @Post('overdue')
+  async createAfterPeriod(
+    @Body() dto: CreateBookingDto,
+  ): Promise<ResponseBookingDto> {
+    return await this.bookingService.createOverdueBooking(dto);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
   //? Cancel Booking (수강신청 취소)
   //? ---------------------------------------------------------------------- ?//
 
-  @Delete()
   @CancelBookingSwagger()
+  @Delete()
   async cancel(@Body() dto: CancelBookingDto): Promise<number> {
     if (dto.pickRule === PickRule.FIRST) {
       return await this.bookingService.cancelWithRedis(dto);

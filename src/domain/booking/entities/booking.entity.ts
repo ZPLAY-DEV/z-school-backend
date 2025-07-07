@@ -4,15 +4,15 @@ import { BookingStatus } from 'src/common/enums';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import {
-  Column,
-  CreateDateColumn,
-  DeleteDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  Unique,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    DeleteDateColumn,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    Unique,
+    UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('bookings')
