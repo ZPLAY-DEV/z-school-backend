@@ -247,12 +247,56 @@ export class OfferingPickService {
     const allStudentIds = bookings.map((v) => v.studentId);
     let selectedStudentIds: number[];
     if (capacity >= allStudentIds.length) {
-      // 1. capacity가 전체 학생 수보다 크거나 같은 경우
       selectedStudentIds = allStudentIds;
+
+      // 모든 bookings 의 status 를 ENROLLED 로 변경
+      await this.bookingRepository.update(
+        { offeringId },
+        { status: BookingStatus.ENROLLED },
+      );
     } else {
       selectedStudentIds = [...allStudentIds]
         .sort(() => Math.random() - 0.5)
         .slice(0, capacity);
+
+      // 모든 bookings 의 selectedStudentIds 의 status 를 ENROLLED 로 변경
+      await this.bookingRepository.update(
+        { offeringId, studentId: In(selectedStudentIds) },
+        { status: BookingStatus.ENROLLED },
+      );
+
+      // 선택되지 않은 나머지 bookings 의 status 를 PENDING 로 변경하고 waitingPosition 설정
+      const nonSelectedStudentIds = allStudentIds.filter(
+        (id) => !selectedStudentIds.includes(id),
+      );
+
+      if (nonSelectedStudentIds.length > 0) {
+        // VALUES를 사용한 간단한 bulk update
+        const valuePlaceholders = nonSelectedStudentIds
+          .map(() => '(?, ?, ?)')
+          .join(', ');
+
+        const query = `
+          UPDATE bookings 
+          JOIN (VALUES ${valuePlaceholders}) AS updates(student_id, new_status, new_waiting_position)
+          ON bookings.studentId = updates.student_id
+          SET bookings.status = updates.new_status, 
+              bookings.waitingPosition = updates.new_waiting_position
+          WHERE bookings.offeringId = ?
+        `;
+
+        // 각 학생의 (studentId, status, waitingPosition) 쌍으로 파라미터 구성
+        const params = [
+          ...nonSelectedStudentIds.flatMap((studentId, index) => [
+            studentId,
+            BookingStatus.PENDING,
+            index + 1,
+          ]),
+          offeringId,
+        ];
+
+        await this.bookingRepository.query(query, params);
+      }
     }
 
     // 같은 묶음 group 들에는 동일한 학생을 할당 (일주일에 수업이 1번 이상있는 수업은 같은 묶음 group 들이 있음)
