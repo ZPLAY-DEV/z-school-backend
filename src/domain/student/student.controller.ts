@@ -14,6 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
@@ -88,20 +89,42 @@ export class StudentController {
 
   @FindStudentGroupsDocs()
   @Get(':id/groups')
-  async findGroupsById(
+  async listGroups(
     @Param('id', ParseIntPipe) id: number,
     @Query('termId') termId?: number,
   ): Promise<Group[]> {
-    return await this.studentService.findGroupsById(id, termId);
+    return await this.studentService.listGroups(id, termId);
+  }
+
+  @Get(':id/groups/paginated')
+  async infiniteList(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: PaginateQuery,
+    @Query('termId') termId?: number,
+  ): Promise<Paginated<Group>> {
+    return await this.studentService.infiniteListGroups(id, query, termId);
   }
 
   @FindStudentCanceledGroupsDocs()
   @Get(':id/canceled-groups')
-  async findCanceledGroupsById(
+  async listCanceledGroups(
     @Param('id', ParseIntPipe) id: number,
     @Query('termId') termId?: number,
   ): Promise<Group[]> {
-    return await this.studentService.findCanceledGroupsById(id, termId);
+    return await this.studentService.listCanceledGroups(id, termId);
+  }
+
+  @Get(':id/canceled-groups/paginated')
+  async infiniteListCanceledGroups(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: PaginateQuery,
+    @Query('termId') termId?: number,
+  ): Promise<Paginated<Group>> {
+    return await this.studentService.infiniteListCanceledGroups(
+      id,
+      query,
+      termId,
+    );
   }
 
   //? ---------------------------------------------------------------------- ?//

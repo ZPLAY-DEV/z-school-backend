@@ -54,6 +54,9 @@ export class GroupController {
       'schooldays',
       'picks',
       'picks.student',
+      'contracts',
+      'contracts.sam',
+      'contracts.sam.instructor',
     ]);
   }
 

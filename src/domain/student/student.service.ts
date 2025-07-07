@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
@@ -21,6 +22,8 @@ export class StudentService {
     private readonly parentRepository: Repository<Parent>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
     private readonly s3Service: S3Service,
@@ -159,28 +162,71 @@ export class StudentService {
     return schooldays;
   }
 
-  //? 학생의 수강중인 반 조회
-  async findGroupsById(id: number, termId?: number): Promise<Group[]> {
-    const student = await this.studentRepository.findOne({
-      where: { id },
-      relations: ['picks', 'picks.group', 'picks.group.lesson'],
-    });
+  //? 학생의 수강 신청 내역 조회
+  async findBookingsById(id: number, termId?: number): Promise<Booking[]> {
+    const queryBuilder = this.bookingRepository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.offering', 'offering')
+      .where('booking.studentId = :studentId', { studentId: id });
 
-    if (!student) {
-      throw new NotFoundException('Student not found');
+    // termId가 제공되면 해당 학기의 booking만 필터링
+    if (termId) {
+      queryBuilder.andWhere('offering.termId = :termId', {
+        termId: Number(termId),
+      });
     }
 
-    let picks = student.picks;
-    picks = termId
-      ? picks.filter((pick) => !pick.endedBy && pick.termId === Number(termId))
-      : picks.filter((pick) => !pick.endedBy);
+    return await queryBuilder.getMany();
+  }
 
-    // Pick에서 Group 추출
-    return picks.map((pick) => pick.group).filter(Boolean);
+  //? 학생의 수강중인 반 조회
+  async listGroups(id: number, termId?: number): Promise<Group[]> {
+    const queryBuilder = this.groupRepository
+      .createQueryBuilder('student')
+      .leftJoinAndSelect('student.picks', 'pick')
+      .leftJoinAndSelect('pick.group', 'group')
+      .where('student.id = :id', { id })
+      .andWhere('pick.endedBy IS NULL');
+
+    if (termId) {
+      queryBuilder.andWhere('pick.termId = :termId', {
+        termId: Number(termId),
+      });
+    }
+
+    return await queryBuilder.getMany();
+  }
+
+  //? 학생의 수강중인 반 조회 (페이지네이션)
+  async infiniteListGroups(
+    id: number,
+    query: PaginateQuery,
+    termId?: number,
+  ): Promise<Paginated<Group>> {
+    const queryBuilder = this.groupRepository
+      .createQueryBuilder('group')
+      .leftJoinAndSelect('group.picks', 'pick')
+      .leftJoinAndSelect('pick.student', 'student')
+      .where('student.id = :id', { id })
+      .andWhere('pick.endedBy IS NULL');
+
+    if (termId) {
+      queryBuilder.andWhere('pick.termId = :termId', {
+        termId: Number(termId),
+      });
+    }
+
+    const result = await paginate(query, queryBuilder, {
+      sortableColumns: ['id', 'createdAt', 'updatedAt'] as const,
+      searchableColumns: ['groupName'] as const,
+      defaultSortBy: [['id', 'ASC']],
+    });
+
+    return result;
   }
 
   //? 학생의 취소한 반 조회
-  async findCanceledGroupsById(id: number, termId?: number): Promise<Group[]> {
+  async listCanceledGroups(id: number, termId?: number): Promise<Group[]> {
     const student = await this.studentRepository.findOne({
       where: { id },
       relations: ['picks', 'picks.group', 'picks.group.lesson'],
@@ -199,21 +245,32 @@ export class StudentService {
     return picks.map((pick) => pick.group).filter(Boolean);
   }
 
-  //? 학생의 수강 신청 내역 조회
-  async findBookingsById(id: number, termId?: number): Promise<Booking[]> {
-    const queryBuilder = this.bookingRepository
-      .createQueryBuilder('booking')
-      .leftJoinAndSelect('booking.offering', 'offering')
-      .where('booking.studentId = :studentId', { studentId: id });
+  //? 학생의 취소한 반 조회 (페이지네이션)
+  async infiniteListCanceledGroups(
+    id: number,
+    query: PaginateQuery,
+    termId?: number,
+  ): Promise<Paginated<Group>> {
+    const queryBuilder = this.groupRepository
+      .createQueryBuilder('group')
+      .leftJoinAndSelect('group.picks', 'pick')
+      .leftJoinAndSelect('pick.student', 'student')
+      .where('student.id = :id', { id })
+      .andWhere('pick.endedBy IS NOT NULL');
 
-    // termId가 제공되면 해당 학기의 booking만 필터링
     if (termId) {
-      queryBuilder.andWhere('offering.termId = :termId', {
+      queryBuilder.andWhere('pick.termId = :termId', {
         termId: Number(termId),
       });
     }
 
-    return await queryBuilder.getMany();
+    const result = await paginate(query, queryBuilder, {
+      sortableColumns: ['id', 'createdAt', 'updatedAt'] as const,
+      searchableColumns: ['groupName'] as const,
+      defaultSortBy: [['id', 'ASC']],
+    });
+
+    return result;
   }
 
   //? ---------------------------------------------------------------------- ?//
