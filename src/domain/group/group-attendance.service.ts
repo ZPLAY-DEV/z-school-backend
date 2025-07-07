@@ -202,9 +202,25 @@ export class GroupAttendanceService {
       })),
     });
 
-    if (dtos.length === 0) {
+    // dtos가 없거나 비어있으면 조기 반환
+    if (!dtos || dtos.length === 0) {
       console.log('⚠️ [notifyCustom] No DTOs provided, returning 0');
       return 0;
+    }
+
+    // 모든 dto의 groupId가 파라미터로 받은 groupId와 일치하는지 확인
+    const groupIds = dtos.map((v) => +v.groupKey.split('#')[1]);
+    const invalidGroupIds = groupIds.filter((id) => id !== groupId);
+
+    if (invalidGroupIds.length > 0) {
+      console.log('❌ [notifyCustom] Invalid group IDs found:', {
+        expectedGroupId: groupId,
+        foundGroupIds: groupIds,
+        invalidGroupIds,
+      });
+      throw new BadRequestException(
+        `잘못된 그룹 ID가 포함되어 있습니다. expected: ${groupId}, found: ${invalidGroupIds.join(', ')}`,
+      );
     }
 
     try {
