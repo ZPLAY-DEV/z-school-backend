@@ -104,7 +104,7 @@ export class SchoolTermOfferingService {
       .andWhere('offering.termId = :termId', { termId });
 
     const result = await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'lessonName', 'groupName'] as const,
+      sortableColumns: ['id', 'lessonName', 'groupName', 'createdAt'] as const,
       searchableColumns: ['lessonName', 'groupName'] as const,
       defaultSortBy: [['id', 'DESC']] as const,
       filterableColumns: {
