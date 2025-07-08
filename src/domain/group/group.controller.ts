@@ -24,6 +24,7 @@ import {
   FindGroupDocs,
   UpdateGroupDocs,
 } from 'src/domain/group/swagger/group-swagger.decorator';
+import { Student } from 'src/domain/student/entities/student.entity';
 
 @ApiTags('✅ Groups ( 반 )')
 @Controller('groups')
@@ -58,6 +59,14 @@ export class GroupController {
       'contracts.sam',
       'contracts.sam.instructor',
     ]);
+  }
+
+  @ApiOperation({ description: '반(Group) 조회' })
+  @Get(':id/available-students')
+  async findAvailableStudents(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Student[]> {
+    return await this.groupService.findAvailableStudents(id);
   }
 
   //? ---------------------------------------------------------------------- ?//

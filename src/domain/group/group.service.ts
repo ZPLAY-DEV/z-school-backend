@@ -16,6 +16,7 @@ import { RemovalStatus } from 'src/common/enums/removal-status';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { Student } from 'src/domain/student/entities/student.entity';
 import {
   parseRangeFormat,
   parseTime,
@@ -83,6 +84,52 @@ export class GroupService {
       this.logger.error(error);
       throw new NotFoundException(error.message);
     }
+  }
+
+  async findAvailableStudents(id: number): Promise<Student[]> {
+    // 1. Group을 찾고 lesson과 lesson.groups, lesson.school 관계를 포함하여 가져오기
+    const group = await this.groupRepository.findOne({
+      where: { id },
+      relations: [
+        'lesson',
+        'lesson.groups',
+        'lesson.groups.picks',
+        'lesson.school',
+        'lesson.school.students',
+      ],
+    });
+
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+
+    // 2. allowedGrades 파싱 (쉼표로 구분된 문자열을 숫자 배열로 변환)
+    const allowedGrades = group.allowedGrades
+      .split(',')
+      .map((grade) => parseInt(grade.trim()));
+
+    // 3. lesson의 모든 groups의 picks에서 studentId 추출
+    const excludedStudentIds = new Set<number>();
+    group.lesson.groups.forEach((lessonGroup) => {
+      lessonGroup.picks?.forEach((pick) => {
+        if (pick.studentId) {
+          excludedStudentIds.add(pick.studentId);
+        }
+      });
+    });
+
+    // 4. school의 students 중에서 조건에 맞는 학생들 필터링
+    const availableStudents = group.lesson.school.students.filter((student) => {
+      // grade가 allowedGrades에 포함되어야 함
+      const gradeMatches = allowedGrades.includes(student.grade);
+
+      // picks에 포함되지 않아야 함
+      const notInPicks = !excludedStudentIds.has(student.id);
+
+      return gradeMatches && notInPicks;
+    });
+
+    return availableStudents;
   }
 
   //? ---------------------------------------------------------------------- ?//
