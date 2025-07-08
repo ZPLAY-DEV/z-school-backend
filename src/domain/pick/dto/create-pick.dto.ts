@@ -92,9 +92,10 @@ class PickBaseDto {
   studentId: number;
 
   @ApiProperty({ description: '비고' })
+  @IsOptional()
   @IsString()
   @MaxLength(255)
-  note: string;
+  note?: string;
 }
 
 // StartPickDto: groupId, studentId, startedBy, start, note (모두 필수)
@@ -117,12 +118,22 @@ export class StartPickDto extends PickBaseDto {
   @IsOptional()
   startedBy?: Actor;
 
+  @ApiProperty({ description: '책값', example: 10000 })
+  @IsInt()
+  @IsOptional()
+  bookFee: number;
+
+  @ApiProperty({ description: '재료값', example: 10000 })
+  @IsInt()
+  @IsOptional()
+  materialFee: number;
+
   @ApiProperty({ description: '수업시작일(첫수업일)', example: '2025-01-01' })
   @IsString()
   start: string;
 }
 
-// EndPickDto: groupId, studentId, endedBy, end, note (모두 필수)
+// EndPickDto: groupId, studentId, note, endedBy, end, (모두 필수)
 export class EndPickDto extends PickBaseDto {
   @ApiProperty({
     description: '누가 수업종료일(마지막수업일) 등록했나?',

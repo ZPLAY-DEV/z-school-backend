@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -12,6 +7,7 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { Actor } from 'src/common/enums';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { CreatePickDto, EndPickDto } from 'src/domain/pick/dto/create-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Repository } from 'typeorm';
@@ -24,6 +20,8 @@ export class PickService {
   constructor(
     @InjectRepository(Pick)
     private readonly pickRepository: Repository<Pick>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -31,17 +29,28 @@ export class PickService {
   //? ---------------------------------------------------------------------- ?//
 
   // 필수항목) groupId, studentId, start, note (수동으로 등록시)
-  async createPick(dto: CreatePickDto): Promise<Pick> {
-    const existingPick = await this.findPickByGroupIdAndStudentId(
-      dto.groupId,
-      dto.studentId,
-    );
-    if (existingPick) {
-      throw new BadRequestException('already exists');
-    }
+  async createPick(dtos: CreatePickDto[], role: Actor): Promise<number> {
+    const groupId = dtos[0].groupId;
+    const groupWithLesson = await this.groupRepository.findOneOrFail({
+      where: {
+        id: groupId,
+      },
+      relations: ['lesson'],
+    });
+    const end = groupWithLesson.lesson.end;
+    const newDtos = dtos.map((dto) => ({
+      ...dto,
+      startedBy: role,
+      end: end,
+    }));
 
-    const pick = this.pickRepository.create(dto);
-    return await this.pickRepository.save(pick);
+    const picks = await this.pickRepository.upsert(newDtos, {
+      conflictPaths: ['groupId', 'offeringId', 'studentId'],
+      skipUpdateIfNoValuesChanged: true,
+    });
+
+    // return number of affected rows (upsert doesn't have affected, so return identifiers length)
+    return picks.identifiers?.length ?? dtos.length;
   }
 
   async endPick(dto: EndPickDto): Promise<Pick> {
@@ -50,7 +59,7 @@ export class PickService {
       dto.studentId,
     );
     if (!pick) {
-      throw new NotFoundException('not found');
+      throw new NotFoundException('pick entity not found');
     }
     await this.pickRepository.update(pick.id, {
       note: dto.note,
@@ -58,7 +67,7 @@ export class PickService {
       end: dto.end,
     });
 
-    pick.note = dto.note;
+    pick.note = dto.note ?? null;
     pick.endedBy = dto.endedBy ?? Actor.OTHER;
     pick.end = dto.end;
 
