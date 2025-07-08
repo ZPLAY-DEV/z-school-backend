@@ -129,19 +129,26 @@ export class LessonService {
     // Student 데이터를 ExtendedStudent로 변환
     const extendedStudents: ExtendedStudent[] = result.data.map((student) => {
       // lesson id로 이미 필터링되었으므로, 첫 번째 pick을 사용
-      const pick = student.picks?.[0];
+      const groupName =
+        student.picks && student.picks.length > 1
+          ? `${student.picks[0].group.groupName} 외 ${student.picks.length - 1}개`
+          : student.picks?.[0]?.group?.groupName || '';
+      const groupStart = student.picks?.[0].start || '';
+      // picks 속성을 제외한 student 객체 생성
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { picks: _picks, ...studentWithoutPicks } = student;
 
       return {
-        ...student,
-        groupName: pick?.group?.groupName || '',
-        pickStart: pick?.start || '',
+        ...studentWithoutPicks,
+        groupName,
+        groupStart,
       };
     });
 
     return {
       ...result,
       data: extendedStudents,
-    };
+    } as Paginated<ExtendedStudent>;
   }
 
   //? ---------------------------------------------------------------------- ?//

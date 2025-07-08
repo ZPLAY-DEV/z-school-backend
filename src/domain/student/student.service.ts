@@ -153,7 +153,7 @@ export class StudentService {
 
     // 학생의 picks에서 모든 schooldays 추출
     const schooldays: Schoolday[] = [];
-    student.picks.forEach((pick) => {
+    student.picks?.forEach((pick) => {
       if (pick.group && pick.group.schooldays) {
         schooldays.push(...pick.group.schooldays);
       }
@@ -244,11 +244,13 @@ export class StudentService {
 
     let picks = student.picks;
     picks = termId
-      ? picks.filter((pick) => !!pick.endedBy && pick.termId === Number(termId))
-      : picks.filter((pick) => !!pick.endedBy);
+      ? picks?.filter(
+          (pick) => !!pick.endedBy && pick.termId === Number(termId),
+        )
+      : picks?.filter((pick) => !!pick.endedBy);
 
     // Pick에서 Group 추출
-    return picks.map((pick) => pick.group).filter(Boolean);
+    return picks?.map((pick) => pick.group).filter(Boolean) || [];
   }
 
   //? 학생의 취소한 반 조회 (페이지네이션)

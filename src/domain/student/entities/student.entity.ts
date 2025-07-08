@@ -139,7 +139,7 @@ export class Student {
   //* N-to-M belongsToMany with custom props using 1-to-M ------------------ *//
 
   @OneToMany(() => Pick, (gs) => gs.student)
-  picks: Pick[];
+  picks?: Pick[];
 
   //? Constructor ---------------------------------------------------------- ?//
 
