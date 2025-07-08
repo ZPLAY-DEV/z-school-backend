@@ -9,6 +9,7 @@ import {
 import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
+import { ExtendedStudent } from 'src/domain/lesson/dto/extended-student.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -96,17 +97,17 @@ export class LessonService {
   async findStudentsById(
     id: number,
     query?: PaginateQuery,
-  ): Promise<Paginated<Student>> {
+  ): Promise<Paginated<ExtendedStudent>> {
     const queryBuilder = this.studentRepository
       .createQueryBuilder('student')
       .leftJoinAndSelect('student.parent', 'parent')
-      .leftJoin('student.picks', 'pick')
-      .leftJoin('pick.group', 'group')
+      .leftJoinAndSelect('student.picks', 'pick')
+      .leftJoinAndSelect('pick.group', 'group')
       .leftJoin('group.lesson', 'lesson')
       .where('lesson.id = :lessonId', { lessonId: id })
       .distinct(true); // 중복 학생 제거
 
-    return await paginate(
+    const result = await paginate(
       query || { page: 1, limit: 20, path: '' },
       queryBuilder,
       {
@@ -124,6 +125,23 @@ export class LessonService {
         },
       },
     );
+
+    // Student 데이터를 ExtendedStudent로 변환
+    const extendedStudents: ExtendedStudent[] = result.data.map((student) => {
+      // lesson id로 이미 필터링되었으므로, 첫 번째 pick을 사용
+      const pick = student.picks?.[0];
+
+      return {
+        ...student,
+        groupName: pick?.group?.groupName || '',
+        pickStart: pick?.start || '',
+      };
+    });
+
+    return {
+      ...result,
+      data: extendedStudents,
+    };
   }
 
   //? ---------------------------------------------------------------------- ?//
