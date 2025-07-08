@@ -65,6 +65,7 @@ export class LessonController {
     return await this.lessonService.findById(id, [
       'groups',
       'groups.contracts.sam',
+      'groups.picks',
       'category',
     ]);
   }
