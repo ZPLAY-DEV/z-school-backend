@@ -7,8 +7,9 @@ module.exports = {
       watch: false,
       merge_logs: false,
       log_date_format: 'YYYY-MM-DD HH:mm Z',
-      out_file: '~/.pm2/logs/api-access.log',
-      error_file: '~/.pm2/logs/api-error.log',
+      combine_logs: true,
+      out_file: '~/.pm2/logs/api-combined.log',
+      error_file: '~/.pm2/logs/api-combined.log',
       autorestart: true,
       exec_mode: 'cluster',
       env: {

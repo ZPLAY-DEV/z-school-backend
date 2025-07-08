@@ -17,7 +17,9 @@ import './instrument'; // import this first!
 // import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+  });
   // const configService = app.get<ConfigService>(ConfigService);
   const { env } = loadEnvConfig();
 
