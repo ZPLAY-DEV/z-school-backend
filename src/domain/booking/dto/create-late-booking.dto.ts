@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsString } from 'class-validator';
 
-export class CreateOverdueBookingDto {
+export class CreateLateBookingDto {
   @ApiProperty({ description: 'ID of the offering', example: 1 })
   @IsInt()
   offeringId: number;
@@ -16,7 +16,7 @@ export class CreateOverdueBookingDto {
 
   //? Constructor ---------------------------------------------------------- ?//
 
-  constructor(partial: Partial<CreateOverdueBookingDto>) {
+  constructor(partial: Partial<CreateLateBookingDto>) {
     Object.assign(this, partial);
   }
 }

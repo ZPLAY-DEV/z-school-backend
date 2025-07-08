@@ -10,7 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { AWS_SQS_CLIENT, REDIS_BOOKING_CLIENT } from 'src/common/constants';
 import { BookingStatus, ClassStatus, PickRule } from 'src/common/enums';
 import { IBookingSnapshotItem } from 'src/common/interfaces';
-import { CreateOverdueBookingDto } from 'src/domain/booking/dto/create-overdue-booking.dto';
+import { CreateLateBookingDto } from 'src/domain/booking/dto/create-late-booking.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisBookingService } from 'src/services/redis/redis-booking.service';
@@ -37,8 +37,8 @@ export class BookingService {
 
   //? ---------------------------------------------------------------------- ?//
 
-  async createOverdueBooking(
-    dto: CreateOverdueBookingDto,
+  async createLateBooking(
+    dto: CreateLateBookingDto,
   ): Promise<ResponseBookingDto> {
     await this.validateOfferingStatus(dto.offeringId);
 

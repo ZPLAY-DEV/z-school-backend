@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PickRule } from 'src/common/enums';
 
+import { CreateLateBookingDto } from 'src/domain/booking/dto/create-late-booking.dto';
 import { ResponseBookingDto } from 'src/domain/booking/dto/response-booking.dto';
 import {
   CancelBookingSwagger,
@@ -34,11 +35,11 @@ export class BookingController {
   //? Create 기간외 Booking (수강신청)
   //? ---------------------------------------------------------------------- ?//
 
-  @Post('overdue')
+  @Post('late')
   async createAfterPeriod(
-    @Body() dto: CreateBookingDto,
+    @Body() dto: CreateLateBookingDto,
   ): Promise<ResponseBookingDto> {
-    return await this.bookingService.createOverdueBooking(dto);
+    return await this.bookingService.createLateBooking(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
