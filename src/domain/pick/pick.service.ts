@@ -38,19 +38,43 @@ export class PickService {
       relations: ['lesson'],
     });
     const end = groupWithLesson.lesson.end;
-    const newDtos = dtos.map((dto) => ({
-      ...dto,
-      startedBy: role,
-      end: end,
-    }));
+    const termId = groupWithLesson.lesson.termId;
 
-    const picks = await this.pickRepository.upsert(newDtos, {
-      conflictPaths: ['groupId', 'offeringId', 'studentId'],
-      skipUpdateIfNoValuesChanged: true,
-    });
+    let affectedRows = 0;
 
-    // return number of affected rows (upsert doesn't have affected, so return identifiers length)
-    return picks.identifiers?.length ?? dtos.length;
+    for (const dto of dtos) {
+      // 기존 Pick이 있는지 확인
+      const existingPick = await this.pickRepository.findOne({
+        where: {
+          groupId: dto.groupId,
+          studentId: dto.studentId,
+        },
+      });
+
+      if (existingPick) {
+        // 기존 Pick 업데이트
+        await this.pickRepository.update(existingPick.id, {
+          ...dto,
+          termId: termId,
+          startedBy: role,
+          end: end,
+          note: `수강생 추가`,
+        });
+      } else {
+        // 새로운 Pick 생성
+        const newPick = this.pickRepository.create({
+          ...dto,
+          termId: termId,
+          startedBy: role,
+          end: end,
+          note: `수강생 추가`,
+        });
+        await this.pickRepository.save(newPick);
+      }
+      affectedRows++;
+    }
+
+    return affectedRows;
   }
 
   async endPick(dto: EndPickDto): Promise<Pick> {

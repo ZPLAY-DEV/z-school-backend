@@ -17,7 +17,7 @@ import {
 } from 'typeorm';
 
 @Entity('picks')
-@Unique(['groupId', 'offeringId', 'studentId'])
+@Unique(['groupId', 'studentId'])
 export class Pick {
   @ApiProperty({ description: 'pickId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
