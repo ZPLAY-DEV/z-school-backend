@@ -338,7 +338,7 @@ export class GroupAttendanceService {
       );
 
       console.log('💾 [notifyCustom] Executing DynamoDB bulk update...');
-      await this.updateAttendanceStatusInBulkOptimized(updatedDtos);
+      await this.updateAttendanceStatusInBulk(updatedDtos);
       console.log('✅ [notifyCustom] DynamoDB update completed successfully');
 
       console.log('📤 [notifyCustom] Sending notifications...');
@@ -762,10 +762,13 @@ export class GroupAttendanceService {
         }),
       );
 
-      // 2. 상태가 실제로 변경되는 것만 필터링
+      // 2. 상태가 실제로 변경되거나 schoolNote가 있는 것만 필터링
       const recordsToUpdate = currentRecords.filter(
         ({ dto, currentRecord }) =>
-          !currentRecord || currentRecord.status !== dto.status,
+          !currentRecord ||
+          currentRecord.status !== dto.status ||
+          (dto.schoolNote !== undefined &&
+            currentRecord.schoolNote !== dto.schoolNote),
       );
 
       if (recordsToUpdate.length === 0) {
