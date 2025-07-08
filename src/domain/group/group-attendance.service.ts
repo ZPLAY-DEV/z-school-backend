@@ -234,6 +234,7 @@ export class GroupAttendanceService {
           'picks.student',
           'picks.student.parent',
           'picks.student.parent.user',
+          'schooldays',
         ],
       });
       console.log('✅ [notifyCustom] Group data fetched successfully:', {
@@ -242,7 +243,40 @@ export class GroupAttendanceService {
         lessonName: group.lesson.lessonName,
         schoolName: group.lesson.schoolName,
         picksCount: group.picks.length,
+        schooldaysCount: group.schooldays.length,
       });
+
+      // DTOs에서 날짜 추출 및 검증
+      console.log('📅 [notifyCustom] Validating dates from DTOs...');
+      const dtosDates = dtos.map((dto) =>
+        this.extractDateFromRangeKey(dto.dailyStudentKey),
+      );
+      const uniqueDtosDates = [...new Set(dtosDates)];
+      console.log(
+        '📋 [notifyCustom] Extracted dates from DTOs:',
+        uniqueDtosDates,
+      );
+
+      // group.schooldays에서 날짜 추출 (YYYY-MM-DD 형식으로 변환)
+      const validSchoolDates = group.schooldays.map((schoolday) => {
+        const date = new Date(schoolday.startsAt);
+        return date.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+      });
+      console.log('🏫 [notifyCustom] Valid school dates:', validSchoolDates);
+
+      // DTOs의 날짜가 모두 유효한 수업날짜인지 확인
+      const invalidDates = uniqueDtosDates.filter(
+        (date) => !validSchoolDates.includes(date),
+      );
+
+      if (invalidDates.length > 0) {
+        console.log('❌ [notifyCustom] Invalid dates found:', invalidDates);
+        throw new BadRequestException(
+          `다음 날짜들은 해당 그룹의 수업일이 아닙니다: ${invalidDates.join(', ')}`,
+        );
+      }
+
+      console.log('✅ [notifyCustom] All dates are valid school dates');
 
       const allStudents = group.picks.map((v) => v.student);
       console.log(
@@ -822,6 +856,15 @@ export class GroupAttendanceService {
         '출석 정보 최적화 일괄 업데이트에 실패했습니다.',
       );
     }
+  }
+
+  /**
+   * Extract student IDs from DTOs
+   * dailyStudentKey format: "DATE#2025-06-16#STUDENT#51#2-3-51" => 2025-06-16
+   */
+  private extractDateFromRangeKey(dailyStudentKey: string): string {
+    const parts = dailyStudentKey.split('#');
+    return parts[1];
   }
 
   /**

@@ -58,7 +58,6 @@ export class PickService {
           termId: termId,
           startedBy: role,
           end: end,
-          note: `수강생 추가`,
         });
       } else {
         // 새로운 Pick 생성
@@ -67,7 +66,6 @@ export class PickService {
           termId: termId,
           startedBy: role,
           end: end,
-          note: `수강생 추가`,
         });
         await this.pickRepository.save(newPick);
       }
