@@ -58,8 +58,12 @@ export class Offering {
   groupName: string;
 
   @ApiProperty({ description: 'class size' })
-  @Column({ type: 'int', unsigned: true, default: 20 })
+  @Column({ type: 'tinyint', unsigned: true, default: 20 })
   capacity: number;
+
+  @ApiProperty({ description: 'bookings size' })
+  @Column({ type: 'smallint', unsigned: true, default: 0 })
+  bookingCount: number;
 
   @ApiProperty({ description: '🈳 prepicked size' })
   @Column({ type: 'tinyint', unsigned: true, default: 0 })

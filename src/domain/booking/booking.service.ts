@@ -89,6 +89,11 @@ export class BookingService {
           waitingPosition,
         });
         await this.bookingRepository.save(booking);
+        await this.offeringRepository.increment(
+          { id: dto.offeringId },
+          'bookingCount',
+          1,
+        );
       } else {
         // 무작위
         status = BookingStatus.PENDING;
@@ -122,8 +127,8 @@ export class BookingService {
     }
   }
 
-  async cancelWithDb(cancelBookingDto: CancelBookingDto): Promise<number> {
-    const { offeringId, studentId, note } = cancelBookingDto;
+  async cancelWithDb(dto: CancelBookingDto): Promise<number> {
+    const { offeringId, studentId, note } = dto;
 
     await this.validateOfferingStatus(offeringId);
 
@@ -131,6 +136,11 @@ export class BookingService {
       const { affected } = await this.bookingRepository.update(
         { offeringId, studentId },
         { status: BookingStatus.CANCELED, note, deletedAt: new Date() },
+      );
+      await this.offeringRepository.decrement(
+        { id: offeringId },
+        'bookingCount',
+        1,
       );
 
       return affected as number; // Assuming 1 row is affected
@@ -206,6 +216,11 @@ export class BookingService {
             timestamp,
           } as CreateBookingDto, // bookings 저장용 data 를 sqs 로 전송
         });
+        await this.offeringRepository.increment(
+          { id: dto.offeringId },
+          'bookingCount',
+          1,
+        );
 
         return response;
       } else {
@@ -258,6 +273,11 @@ export class BookingService {
             snapshot,
           },
         });
+        await this.offeringRepository.decrement(
+          { id: offeringId },
+          'bookingCount',
+          1,
+        );
 
         return snapshot.length;
       } else {
