@@ -22,6 +22,7 @@ import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 import { GroupAttendanceService } from 'src/domain/group/group-attendance.service';
 import {
+  CustomAttendanceDocs,
   EndAttendanceDocs,
   FindAttendanceByDateDocs,
   FindAttendanceByDateWithExtendedDataDocs,
@@ -30,7 +31,7 @@ import {
   UpsertAttendanceDocs,
 } from 'src/domain/group/swagger/group-attendance-swagger.decorator';
 
-@ApiTags('✅ Groups > Attendance ( 반 > 출석부 조회 )')
+@ApiTags('✳️ Groups > Attendance ( 반 > 출석부 조회 )')
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('groups')
 export class GroupAttendanceController {
@@ -62,6 +63,7 @@ export class GroupAttendanceController {
     return await this.groupAttendancesService.notifyEnd(groupId, dtos);
   }
 
+  @CustomAttendanceDocs()
   @HttpCode(200)
   @Post(':groupId/attendances/custom')
   async custom(

@@ -30,7 +30,7 @@ import {
 } from 'src/domain/lesson/swagger/lesson-swagger.decorator';
 
 //! 단일 Lesson 엔터티 작업
-@ApiTags('✅ Lessons ( 과목 )')
+@ApiTags('✳️ Lessons ( 과목 )')
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('lessons')
 export class LessonController {

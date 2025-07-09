@@ -9,9 +9,9 @@ import {
 import { Actor } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreatePickDto, EndPickDto } from 'src/domain/pick/dto/create-pick.dto';
+import { UpdatePickDto } from 'src/domain/pick/dto/update-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Repository } from 'typeorm';
-import { UpdateGroupDto } from '../group/dto/update-group.dto';
 
 @Injectable()
 export class PickService {
@@ -178,7 +178,7 @@ export class PickService {
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
 
-  async update(id: number, dto: UpdateGroupDto): Promise<Pick> {
+  async update(id: number, dto: UpdatePickDto): Promise<Pick> {
     const group = await this.pickRepository.preload({
       id,
       ...dto,

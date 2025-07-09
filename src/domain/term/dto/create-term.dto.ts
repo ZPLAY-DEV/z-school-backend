@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
@@ -6,99 +6,138 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsPositive,
   IsString,
   MaxLength,
+  Min,
 } from 'class-validator';
 import { PickRule, TermType } from 'src/common/enums';
 
+/**
+ * 학기(Term) 생성 DTO
+ * - 학교별 학기 정보를 설정
+ * - 필수: schoolName, schoolYear, termName, start, end
+ * - 선택: 수강신청 일정, 학기 유형, 규칙 등
+ */
 export class CreateTermDto {
-  @ApiProperty({ description: '🈳 DB의 학교ID', required: false })
-  @IsInt()
+  @ApiPropertyOptional({
+    description:
+      '학교 ID - 시스템에 등록된 학교의 고유 식별자 (자동 설정 가능)',
+    type: Number,
+    example: 1,
+    minimum: 1,
+  })
   @IsOptional()
-  @IsPositive()
+  @IsInt({ message: '학교 ID는 정수여야 합니다' })
+  @IsPositive({ message: '학교 ID는 1 이상이어야 합니다' })
   schoolId?: number;
 
   @ApiProperty({
-    description: '🈳 관리자 편의를 위한 학교명',
+    description: '학교명 - 관리자 편의를 위한 학교 전체 명칭 (최대 24자)',
+    type: String,
     example: '홍익대학교 사범대학 부속 초등학교',
-    required: true,
     maxLength: 24,
   })
-  @IsString()
-  @MaxLength(24) // '홍익대학교 사범대학 부속 초등학교'
+  @IsNotEmpty({ message: '학교명은 필수입니다' })
+  @IsString({ message: '학교명은 문자열이어야 합니다' })
+  @MaxLength(24, { message: '학교명은 24자 이하여야 합니다' })
   schoolName: string;
 
-  @ApiProperty({ description: '🈵 학사년도', example: 2025, required: true })
-  @IsInt()
-  @IsPositive()
+  @ApiProperty({
+    description: '학사년도 - 해당 학기가 속한 학년도 (4자리 년도)',
+    type: Number,
+    example: 2025,
+    minimum: 2020,
+    maximum: 2030,
+  })
+  @IsNotEmpty({ message: '학사년도는 필수입니다' })
+  @IsInt({ message: '학사년도는 정수여야 합니다' })
+  @Min(2020, { message: '학사년도는 2020년 이상이어야 합니다' })
   schoolYear: number;
 
   @ApiProperty({
-    description: '🈵 학기명',
+    description: '학기명 - 학기를 구분하는 명칭 (최대 16자)',
+    type: String,
     example: '1학기',
-    required: true,
     maxLength: 16,
   })
-  @IsString()
-  @MaxLength(16)
+  @IsNotEmpty({ message: '학기명은 필수입니다' })
+  @IsString({ message: '학기명은 문자열이어야 합니다' })
+  @MaxLength(16, { message: '학기명은 16자 이하여야 합니다' })
   termName: string;
 
   @ApiProperty({
-    description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
+    description: '학기 시작일 - ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
+    type: String,
     example: '2025-03-01',
-    required: true,
+    pattern: '^\\d{4}-\\d{2}-\\d{2}$',
   })
-  @IsDateString()
+  @IsNotEmpty({ message: '학기 시작일은 필수입니다' })
+  @IsDateString({}, { message: '올바른 날짜 형식이 아닙니다 (YYYY-MM-DD)' })
   start: string;
 
   @ApiProperty({
-    description: '🈵 ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
+    description:
+      '학기 종료일 - ISO 형식의 날짜 문자열 (YYYY-MM-DD, 시작일보다 늦어야 함)',
+    type: String,
     example: '2025-09-04',
-    required: true,
+    pattern: '^\\d{4}-\\d{2}-\\d{2}$',
   })
-  @IsDateString()
+  @IsNotEmpty({ message: '학기 종료일은 필수입니다' })
+  @IsDateString({}, { message: '올바른 날짜 형식이 아닙니다 (YYYY-MM-DD)' })
   end: string;
 
-  @ApiProperty({
-    description: '학생확정방식',
+  @ApiPropertyOptional({
+    description: '학생 확정 방식 - 수강 신청 시 학생 배정 규칙',
+    enum: PickRule,
     default: PickRule.RANDOM,
+    example: PickRule.RANDOM,
   })
-  @IsEnum(PickRule)
   @IsOptional()
+  @IsEnum(PickRule, { message: '올바른 학생 확정 방식을 선택해주세요' })
   pickRule?: PickRule;
 
-  @ApiProperty({
-    description: '학기종류',
+  @ApiPropertyOptional({
+    description: '학기 유형 - 정규학기, 방학특강 등 학기의 성격',
+    enum: TermType,
     default: TermType.REGULAR,
+    example: TermType.REGULAR,
   })
-  @IsEnum(TermType)
   @IsOptional()
+  @IsEnum(TermType, { message: '올바른 학기 유형을 선택해주세요' })
   type?: TermType;
 
-  @ApiProperty({ description: '시간 중복 허용 여부', default: false })
-  @IsBoolean()
-  @IsOptional()
-  allowTimeOverlap?: boolean;
-
-  @ApiProperty({ description: '수강신청 준비 상태', default: false })
-  @IsBoolean()
-  @IsOptional()
-  isOfferingReady?: boolean;
-
-  @ApiProperty({ description: '현재 학기 여부', default: false })
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
-
-  @ApiProperty({
-    description: '🈳 수강신청시작 시각 (YYYY-MM-DD HH:mm:ss)',
-    example: '2025-06-26T00:30:00Z',
-    required: false,
+  @ApiPropertyOptional({
+    description: '시간 중복 허용 여부 - 같은 시간대에 여러 수업 배정 허용',
+    type: Boolean,
+    default: false,
+    example: false,
   })
   @IsOptional()
-  @IsDate()
+  @IsBoolean({ message: '시간 중복 허용 여부는 불린값이어야 합니다' })
+  allowTimeOverlap?: boolean;
+
+  @ApiPropertyOptional({
+    description: '수강신청 준비 상태 - 수강신청 과목 생성 완료 여부',
+    type: Boolean,
+    default: false,
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: '수강신청 준비 상태는 불린값이어야 합니다' })
+  isOfferingReady?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      '수강신청 시작 일시 - ISO 형식 날짜/시간 (학기 시작 전이어야 함)',
+    type: String,
+    example: '2025-02-20T09:00:00Z',
+    format: 'date-time',
+  })
+  @IsOptional()
+  @IsDate({ message: '올바른 날짜/시간 형식이 아닙니다' })
   @Transform(({ value }) => {
     if (typeof value === 'string') {
       // "YYYY-MM-DD HH:mm:ss" 형식이면 ISO 형식으로 변환
@@ -115,13 +154,15 @@ export class CreateTermDto {
   })
   bookingStart?: Date | null;
 
-  @ApiProperty({
-    description: '🈳 수강신청종료 시각 (YYYY-MM-DD HH:mm:ss)',
-    example: '2025-06-26T00:30:00Z',
-    required: false,
+  @ApiPropertyOptional({
+    description:
+      '수강신청 종료 일시 - ISO 형식 날짜/시간 (시작일시보다 늦고 학기 시작 전이어야 함)',
+    type: String,
+    example: '2025-02-25T18:00:00Z',
+    format: 'date-time',
   })
   @IsOptional()
-  @IsDate()
+  @IsDate({ message: '올바른 날짜/시간 형식이 아닙니다' })
   @Transform(({ value }) => {
     if (typeof value === 'string') {
       // "YYYY-MM-DD HH:mm:ss" 형식이면 ISO 형식으로 변환

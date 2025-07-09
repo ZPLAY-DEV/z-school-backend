@@ -38,7 +38,7 @@ import {
 import { UploadService } from 'src/services/upload/upload.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 
-@ApiTags('✅ Students ( 학생 )')
+@ApiTags('✳️ Students ( 학생 )')
 @Controller('students')
 @UseInterceptors(ClassSerializerInterceptor)
 export class StudentController {

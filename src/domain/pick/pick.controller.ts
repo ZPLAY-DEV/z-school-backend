@@ -15,8 +15,8 @@ import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor } from 'src/common/enums';
-import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { EndPickDto, StartPickDto } from 'src/domain/pick/dto/create-pick.dto';
+import { UpdatePickDto } from 'src/domain/pick/dto/update-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { PickService } from 'src/domain/pick/pick.service';
 import {
@@ -30,7 +30,7 @@ import {
   UpdatePickDocs,
 } from 'src/domain/pick/swagger/pick-swagger.decorator';
 
-@ApiTags('✅ Picks ( 확정수강생; 반·학생 pivot )')
+@ApiTags('✳️ Picks ( 확정수강생; 반·학생 pivot )')
 @Controller('picks')
 @UseInterceptors(ClassSerializerInterceptor)
 export class PickController {
@@ -121,7 +121,7 @@ export class PickController {
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateGroupDto,
+    @Body() dto: UpdatePickDto,
   ): Promise<Pick> {
     return await this.pickService.update(id, dto);
   }

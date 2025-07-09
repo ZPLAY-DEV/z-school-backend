@@ -16,7 +16,7 @@ import {
   GetReportDocs,
 } from 'src/domain/lesson/swagger/lesson-attendance-swagger.decorator';
 
-@ApiTags('✅ Lessons > Attendance ( 과목 > 출석부 조회 )')
+@ApiTags('✳️ Lessons > Attendance ( 과목 > 출석부 조회 )')
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('lessons')
 export class LessonAttendanceController {

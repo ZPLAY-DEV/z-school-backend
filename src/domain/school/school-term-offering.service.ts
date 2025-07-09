@@ -6,6 +6,8 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { Weekday } from 'src/common/enums';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -23,7 +25,23 @@ export class SchoolTermOfferingService {
     private readonly offeringRepository: Repository<Offering>,
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
+    @InjectRepository(Booking)
+    private readonly bookingRepository: Repository<Booking>,
   ) {}
+
+  // 한국어 요일을 영어 요일로 매핑하는 헬퍼 함수
+  private getEnglishWeekday(koreanWeekday: Weekday): string {
+    const weekdayMap: Record<Weekday, string> = {
+      [Weekday.MONDAY]: 'MON',
+      [Weekday.TUESDAY]: 'TUE',
+      [Weekday.WEDNESDAY]: 'WED',
+      [Weekday.THURSDAY]: 'THU',
+      [Weekday.FRIDAY]: 'FRI',
+      [Weekday.SATURDAY]: 'SAT',
+      [Weekday.SUNDAY]: 'SUN',
+    };
+    return weekdayMap[koreanWeekday];
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? CREATE
@@ -135,6 +153,52 @@ export class SchoolTermOfferingService {
     }
 
     return items;
+  }
+
+  async listBookings(
+    schoolId: number,
+    termId: number,
+    userId: number,
+  ): Promise<Record<string, Offering[]>> {
+    // Student가 해당 학교, 학기에서 신청한 모든 bookings 조회
+    const bookings = await this.bookingRepository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.offering', 'offering')
+      .where('booking.studentId = :userId', { userId })
+      .andWhere('offering.schoolId = :schoolId', { schoolId })
+      .andWhere('offering.termId = :termId', { termId })
+      .getMany();
+
+    // 요일별 결과 객체 초기화
+    const result: Record<string, Offering[]> = {
+      MON: [],
+      TUE: [],
+      WED: [],
+      THU: [],
+      FRI: [],
+      SAT: [],
+    };
+
+    // 각 booking의 offering을 요일별로 분류
+    for (const booking of bookings) {
+      const offering = booking.offering;
+
+      // offering의 times 배열을 순회하며 각 요일에 offering 추가
+      for (const timeRange of offering.times) {
+        const englishWeekday = this.getEnglishWeekday(timeRange.weekday);
+
+        // 중복 방지를 위해 이미 추가되지 않은 경우만 추가
+        if (
+          !result[englishWeekday].some(
+            (existingOffering) => existingOffering.id === offering.id,
+          )
+        ) {
+          result[englishWeekday].push(offering);
+        }
+      }
+    }
+
+    return result;
   }
 
   //? ---------------------------------------------------------------------- ?//

@@ -26,21 +26,6 @@ export class FirehoseService implements OnModuleInit {
     const streamName =
       process.env.AWS_FIREHOSE_STREAM_NAME || 'notification-logs-stream';
 
-    // 🐛 디버깅을 위한 환경변수 로깅
-    console.log('🔍 FirehoseService Environment Variables:');
-    console.log(`  AWS_DEFAULT_REGION: ${process.env.AWS_DEFAULT_REGION}`);
-    console.log(
-      `  AWS_FIREHOSE_STREAM_NAME: ${process.env.AWS_FIREHOSE_STREAM_NAME}`,
-    );
-    console.log(
-      `  AWS_FIREHOSE_ENDPOINT: ${process.env.AWS_FIREHOSE_ENDPOINT}`,
-    );
-    console.log(`  AWS_ACCESS_KEY_ID: ${process.env.AWS_ACCESS_KEY_ID}`);
-    console.log(
-      `  AWS_SECRET_ACCESS_KEY: ${process.env.AWS_SECRET_ACCESS_KEY ? '***MASKED***' : 'undefined'}`,
-    );
-    console.log(`  NODE_ENV: ${process.env.NODE_ENV}`);
-
     if (!region) {
       throw new Error('AWS_DEFAULT_REGION environment variable is required');
     }
@@ -62,15 +47,6 @@ export class FirehoseService implements OnModuleInit {
 
     // LocalStack 엔드포인트 설정
     const endpoint = process.env.AWS_FIREHOSE_ENDPOINT;
-
-    // 🐛 클라이언트 설정 로깅
-    console.log('🔍 FirehoseClient Configuration:');
-    console.log(`  region: ${region}`);
-    console.log(`  endpoint: ${endpoint}`);
-    console.log(
-      `  credentials: ${credentials ? 'configured' : 'default chain'}`,
-    );
-    console.log(`  deliveryStreamName: ${this.deliveryStreamName}`);
 
     this.client = new FirehoseClient({
       region,

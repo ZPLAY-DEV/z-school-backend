@@ -611,3 +611,67 @@ export const EndAttendanceDocs = () => {
     ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
   );
 };
+
+//? ---------------------------------------------------------------------- ?//
+//? Custom Attendance Notification
+//? ---------------------------------------------------------------------- ?//
+
+export const CustomAttendanceDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '🎯 커스텀 출석 처리',
+      description: `
+### 📋 기능 개요
+- 특정 반의 출석 상태를 사용자 정의 방식으로 처리합니다
+- 일반적인 시작/종료 알림과는 별도로, 유연한 출석 처리가 가능합니다
+- 특별한 상황이나 임시적인 출석 변경 시 사용됩니다
+
+### 🎯 사용 시나리오
+- **보강 수업**: 정규 수업 시간 외 추가 수업
+- **특별 활동**: 체험학습, 견학 등 일반 수업과 다른 형태
+- **긴급 상황**: 급작스러운 일정 변경이나 임시 조치
+- **수동 조정**: 출석 상태의 수동 보정이 필요한 경우
+
+### 📝 매개변수
+- **groupId**: 대상 반의 고유 식별자 (숫자)
+
+### 📦 요청 데이터
+- **CreateAttendanceWithKeyDto[]**: 학생별 출석 상태 정보 배열
+- 각 항목에는 학생 식별자와 출석 상태가 포함됩니다
+
+### ✅ 성공 응답
+- **HTTP 200**: 커스텀 출석 처리 성공
+- **응답 데이터**: 처리된 학생 수 (숫자)
+
+### 🔧 주요 기능
+- 표준 출석 프로세스를 우회한 직접적인 출석 상태 설정
+- 실시간 알림 시스템과 연동
+- 출석 기록의 즉시 반영
+- 관련 통계 데이터 자동 업데이트
+
+### ⚠️ 주의사항
+- 이 API는 특별한 상황에서만 사용해야 합니다
+- 일반적인 출석 처리는 start/end 엔드포인트를 사용하세요
+- 출석 기록의 일관성을 위해 신중하게 사용해야 합니다
+
+### 💡 활용 예시
+- 야외 수업에서의 출석 체크
+- 온라인 수업과 오프라인 수업의 혼합 운영
+- 수업 중 학생 상태 변경 (조퇴, 지각 등)
+- 시스템 오류 복구 시 수동 보정
+      `,
+    }),
+    ApiParam({
+      name: 'groupId',
+      type: 'number',
+      description: '대상 반의 고유 식별자',
+      example: 123,
+    }),
+    ApiOkResponseTemplate({
+      description: '커스텀 출석 처리 성공',
+      type: Number,
+      isArray: false,
+    }),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
+  );
+};

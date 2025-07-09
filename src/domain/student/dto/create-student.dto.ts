@@ -1,155 +1,187 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-    IsEnum,
-    IsInt,
-    IsNotEmpty,
-    IsOptional,
-    IsString,
-    MaxLength,
-    ValidateNested,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
 import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
 
+/**
+ * 학생 생성 DTO
+ * - 새로운 학생을 시스템에 등록할 때 사용
+ * - 필수: schoolId, grade, parent
+ * - 선택: parentId, class, studentCode, name, phone, escortPhone, homeTransit, nextStop, status, note
+ */
 export class CreateStudentDto {
-  @ApiProperty({
-    description: '🈳 학부모 ID',
+  @ApiPropertyOptional({
+    description:
+      '기존 학부모 ID - 이미 등록된 학부모와 연결할 때 사용. 미입력시 새 학부모 생성',
     type: Number,
-    required: false,
     example: 1,
+    minimum: 1,
   })
-  @IsInt()
   @IsOptional()
+  @IsInt({ message: '학부모 ID는 정수여야 합니다' })
+  @Min(1, { message: '학부모 ID는 1 이상이어야 합니다' })
   parentId?: number;
 
   @ApiProperty({
-    description: '🈵 School ID (number)',
+    description: '학교 ID - 학생이 소속될 학교의 고유 식별자 (필수)',
     type: Number,
-    required: true,
     example: 1,
+    minimum: 1,
   })
-  @IsNotEmpty()
-  @IsInt()
+  @IsNotEmpty({ message: '학교 ID는 필수입니다' })
+  @IsInt({ message: '학교 ID는 정수여야 합니다' })
+  @Min(1, { message: '학교 ID는 1 이상이어야 합니다' })
   schoolId: number;
 
   @ApiProperty({
-    description: '🈵 학년 (up to 8 characters)',
-    required: true,
+    description: '학년 - 학생의 현재 학년 (1~12학년) (필수)',
     type: Number,
-    example: 1,
+    example: 3,
+    minimum: 1,
+    maximum: 12,
   })
-  @IsInt()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: '학년은 필수입니다' })
+  @IsInt({ message: '학년은 정수여야 합니다' })
+  @Min(1, { message: '학년은 1 이상이어야 합니다' })
+  @Max(12, { message: '학년은 12 이하여야 합니다' })
   grade: number;
 
-  @ApiProperty({
-    description: '🈳 반 (up to 8 characters)',
-    required: false,
+  @ApiPropertyOptional({
+    description: '반 - 학생의 소속 반 (최대 8자)',
     type: String,
-    example: '1 --- 반',
+    example: '3-2',
+    maxLength: 8,
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(8)
+  @IsString({ message: '반은 문자열이어야 합니다' })
+  @MaxLength(8, { message: '반은 8자 이하여야 합니다' })
   class?: string;
 
-  @ApiProperty({
-    description: '🈳 학번/번호 ( number )',
-    required: false,
+  @ApiPropertyOptional({
+    description: '학번/번호 - 학교 내 학생 고유번호 (1~99999)',
     type: Number,
-    example: '1 --- 학번/번호',
+    example: 2023001,
+    minimum: 1,
+    maximum: 99999,
   })
   @IsOptional()
-  @IsInt()
+  @IsInt({ message: '학번은 정수여야 합니다' })
   @Type(() => Number)
+  @Min(1, { message: '학번은 1 이상이어야 합니다' })
+  @Max(99999, { message: '학번은 99999 이하여야 합니다' })
   studentCode?: number;
 
-  @ApiProperty({
-    description: '🈳 학생 이름 (up to 16 characters)',
-    required: false,
+  @ApiPropertyOptional({
+    description: '학생 이름 - 학생의 실명 (최대 16자, 한글/영문/숫자만 허용)',
     type: String,
-    example: '홍길동 --- 학생 이름',
+    example: '홍길동',
+    maxLength: 16,
+    pattern: '^[가-힣a-zA-Z0-9\\s]+$',
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(16)
+  @IsString({ message: '학생 이름은 문자열이어야 합니다' })
+  @MaxLength(16, { message: '학생 이름은 16자 이하여야 합니다' })
+  @Matches(/^[가-힣a-zA-Z0-9\s]+$/, {
+    message: '학생 이름은 한글, 영문, 숫자, 공백만 허용됩니다',
+  })
   name?: string;
 
-  @ApiProperty({
-    description: '🈳 학생 전화번호 (up to 16 characters)',
-    required: false,
+  @ApiPropertyOptional({
+    description:
+      '학생 전화번호 - 학생 개인 휴대폰 번호 (하이픈 없이 숫자만, 최대 16자)',
     type: String,
-    example: '01012345678 --- 학생 전화번호',
+    example: '01012345678',
+    maxLength: 16,
+    pattern: '^[0-9]+$',
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(16)
+  @IsString({ message: '학생 전화번호는 문자열이어야 합니다' })
+  @MaxLength(16, { message: '학생 전화번호는 16자 이하여야 합니다' })
+  @Matches(/^[0-9]+$/, { message: '학생 전화번호는 숫자만 입력해주세요' })
   phone?: string;
 
-  @ApiProperty({
-    description: '🈳 귀가 동행인 전화번호 (up to 16 characters)',
-    required: false,
+  @ApiPropertyOptional({
+    description:
+      '귀가 동행인 전화번호 - 하교시 함께 가는 사람의 연락처 (하이픈 없이 숫자만, 최대 16자)',
     type: String,
-    example: '01012345678 --- 귀가 동행인 전화번호',
+    example: '01087654321',
+    maxLength: 16,
+    pattern: '^[0-9]+$',
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(16)
+  @IsString({ message: '귀가 동행인 전화번호는 문자열이어야 합니다' })
+  @MaxLength(16, { message: '귀가 동행인 전화번호는 16자 이하여야 합니다' })
+  @Matches(/^[0-9]+$/, {
+    message: '귀가 동행인 전화번호는 숫자만 입력해주세요',
+  })
   escortPhone?: string;
 
-  @ApiProperty({
-    description: '🈳 하교 방법 (up to 32 characters)',
-    required: false,
+  @ApiPropertyOptional({
+    description: '하교 방법 - 학생의 주요 하교 수단 (최대 32자)',
     type: String,
-    example: '버스 --- 하교 방법',
+    example: '학교버스',
+    maxLength: 32,
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(32)
+  @IsString({ message: '하교 방법은 문자열이어야 합니다' })
+  @MaxLength(32, { message: '하교 방법은 32자 이하여야 합니다' })
   homeTransit?: string;
 
-  @ApiProperty({
-    description: '🈳 하교후 가는 곳 (up to 32 characters)',
-    required: false,
+  @ApiPropertyOptional({
+    description: '하교후 가는 곳 - 하교 후 주로 향하는 장소 (최대 32자)',
     type: String,
+    example: '태권도 학원',
     maxLength: 32,
-    example: '학원 --- 하교후 가는 곳',
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(32)
+  @IsString({ message: '하교후 가는 곳은 문자열이어야 합니다' })
+  @MaxLength(32, { message: '하교후 가는 곳은 32자 이하여야 합니다' })
   nextStop?: string;
 
-  @ApiProperty({
-    description: '🈳 학생의 재학 상태 (enum default: ATTENDING)',
+  @ApiPropertyOptional({
+    description:
+      '재학 상태 - ATTENDING: 재학중, TRANSFERRED: 전학 (기본값: ATTENDING)',
     enum: StudentStatus,
+    enumName: 'StudentStatus',
+    example: StudentStatus.ATTENDING,
     default: StudentStatus.ATTENDING,
-    required: false,
-    example: 'ATTENDING --- 학생 재학 상태',
   })
-  @IsEnum(StudentStatus)
   @IsOptional()
+  @IsEnum(StudentStatus, {
+    message:
+      'status는 유효한 StudentStatus 값이어야 합니다 (ATTENDING, TRANSFERRED)',
+  })
   status: StudentStatus = StudentStatus.ATTENDING;
 
-  @ApiProperty({
-    description: '🈳 비고 (up to 255 characters)',
-    required: false,
+  @ApiPropertyOptional({
+    description: '비고 - 학생에 대한 추가 정보나 특이사항 (최대 255자)',
     type: String,
+    example: '알레르기: 견과류 주의 필요',
     maxLength: 255,
-    example: '관심과 주의가 필요한 학생 --- 학생의 비고란',
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(255)
+  @IsString({ message: '비고는 문자열이어야 합니다' })
+  @MaxLength(255, { message: '비고는 255자 이하여야 합니다' })
   note?: string;
 
   @ApiProperty({
-    description: '🈵 보호자 정보',
+    description: '보호자 정보 - 학생의 학부모/보호자 상세 정보 (필수)',
     type: CreateParentDto,
-    required: true,
   })
-  @ValidateNested()
+  @IsNotEmpty({ message: '보호자 정보는 필수입니다' })
+  @ValidateNested({ message: '보호자 정보가 올바르지 않습니다' })
   @Type(() => CreateParentDto)
   parent: CreateParentDto;
 }

@@ -298,23 +298,6 @@ export class StudentService {
 
   async update(id: number, dto: UpdateStudentDto): Promise<Student> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      // 중복 체크 (자신 제외)
-      if (dto.schoolId && dto.grade && dto.class && dto.studentCode) {
-        const existingStudent = await manager.findOne(Student, {
-          where: {
-            schoolId: dto.schoolId,
-            grade: dto.grade,
-            class: dto.class,
-            studentCode: dto.studentCode,
-            id: Not(id), // 자기 자신 제외하고 중복 체크
-          },
-        });
-
-        if (existingStudent) {
-          throw new ConflictException('Student already exists');
-        }
-      }
-
       // 1. Student 존재 여부 확인
       const existingStudent = await manager.findOne(Student, {
         where: { id },
@@ -325,21 +308,34 @@ export class StudentService {
         throw new NotFoundException('Student not found');
       }
 
-      // 2. parent 정보 업데이트 (항상 실행)
-      if (!existingStudent.parentId) {
-        throw new NotFoundException('Parent not found for this student');
+      // 2. 학번 중복 체크 (변경하는 경우만)
+      if (dto.studentCode && dto.studentCode !== existingStudent.studentCode) {
+        const duplicateStudent = await manager.findOne(Student, {
+          where: {
+            schoolId: existingStudent.schoolId, // 기존 학생의 schoolId 사용
+            studentCode: dto.studentCode,
+            id: Not(id), // 자기 자신 제외
+          },
+        });
+
+        if (duplicateStudent) {
+          throw new ConflictException(
+            'Student with this student code already exists in the school',
+          );
+        }
       }
 
-      await manager.update(
-        Parent,
-        { id: existingStudent.parentId },
-        dto.parent,
-      );
+      // 3. parent 정보 업데이트 (parent 정보가 있는 경우만)
+      if (dto.parent && existingStudent.parentId) {
+        await manager.update(
+          Parent,
+          { id: existingStudent.parentId },
+          dto.parent,
+        );
+      }
 
-      // 3. Student 정보 업데이트 (parent 정보 제외)
+      // 4. Student 정보 업데이트 (parent 정보 제외, schoolId와 parentId 제외)
       const studentUpdateData = {
-        parentId: dto.parentId,
-        schoolId: dto.schoolId,
         grade: dto.grade,
         class: dto.class,
         studentCode: dto.studentCode,
@@ -363,7 +359,7 @@ export class StudentService {
 
       await manager.save(Student, student);
 
-      // 4. 업데이트된 Student 조회 및 반환
+      // 5. 업데이트된 Student 조회 및 반환
       return await manager.findOneOrFail(Student, {
         where: { id },
         relations: ['parent'],

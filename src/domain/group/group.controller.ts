@@ -11,7 +11,7 @@ import {
   Put,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor, RemovalStatus } from 'src/common/enums';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
@@ -22,12 +22,14 @@ import { GroupService } from 'src/domain/group/group.service';
 import {
   CreateGroupDocs,
   DeleteGroupDocs,
+  FindAvailableStudentsDocs,
   FindGroupDocs,
+  RestoreGroupDocs,
   UpdateGroupDocs,
 } from 'src/domain/group/swagger/group-swagger.decorator';
 import { Student } from 'src/domain/student/entities/student.entity';
 
-@ApiTags('✅ Groups ( 반 )')
+@ApiTags('✳️ Groups ( 반 )')
 @Controller('groups')
 @UseInterceptors(ClassSerializerInterceptor)
 export class GroupController {
@@ -38,7 +40,6 @@ export class GroupController {
   //? ---------------------------------------------------------------------- ?//
 
   @CreateGroupDocs()
-  @ApiOperation({ description: '반(Group) 생성' })
   @Post()
   async create(@Body() dto: CreateGroupDto): Promise<Group> {
     return this.groupService.create(dto);
@@ -49,7 +50,6 @@ export class GroupController {
   //? ---------------------------------------------------------------------- ?//
 
   @FindGroupDocs()
-  @ApiOperation({ description: '반(Group) 조회' })
   @Get(':id')
   async findById(@Param('id') id: number): Promise<Group> {
     return await this.groupService.findById(id, [
@@ -62,7 +62,7 @@ export class GroupController {
     ]);
   }
 
-  @ApiOperation({ description: '반(Group) 조회' })
+  @FindAvailableStudentsDocs()
   @Get(':id/available-students')
   async findAvailableStudents(
     @Param('id', ParseIntPipe) id: number,
@@ -75,7 +75,6 @@ export class GroupController {
   //? ---------------------------------------------------------------------- ?//
 
   @UpdateGroupDocs()
-  @ApiOperation({ description: '반(Group) 수정' })
   @Patch(':id')
   async update(
     @Param('id') id: number,
@@ -84,7 +83,7 @@ export class GroupController {
     return await this.groupService.update(id, dto);
   }
 
-  @ApiOperation({ description: '폐강상태 반(Group) 복구' })
+  @RestoreGroupDocs()
   @Put(':id/restore')
   async restore(@Param('id') id: number): Promise<Group> {
     return await this.groupService.restore(id);
@@ -95,7 +94,6 @@ export class GroupController {
   //? ---------------------------------------------------------------------- ?//
 
   @DeleteGroupDocs()
-  @ApiOperation({ description: '반(Group) 삭제 w/ 취소 사유' })
   @Delete(':id')
   async remove(
     @Param('id', ParseIntPipe) id: number,

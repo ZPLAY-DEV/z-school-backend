@@ -390,7 +390,7 @@ export class LessonCoreService {
           lessonId: lesson.id,
           samId,
           ...groupDto,
-        });
+        } as GroupSamData);
         continue;
       }
 
@@ -433,16 +433,16 @@ export class LessonCoreService {
         lessonId: lesson.id,
         samId: Number(sam.id),
         ...groupDto,
-      });
+      } as GroupSamData);
     }
 
     // Upsert groups with both lessonId and samId
     for (const groupData of groupsWithSamData) {
       const groupStart = parseTimeFormat(parseTime(groupData.start));
       const groupEnd = parseTimeFormat(parseTime(groupData.end));
-      const groupAllowedGrades = parseRangeFormat(groupData.allowedGrades).join(
-        ',',
-      );
+      const groupAllowedGrades = parseRangeFormat(
+        groupData.allowedGrades as string,
+      ).join(',');
 
       const upsertData: DeepPartial<Group> = {
         lessonId: groupData.lessonId,

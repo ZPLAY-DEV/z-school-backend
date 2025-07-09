@@ -12,7 +12,7 @@ import { ResponseSchoolTermComboDto } from 'src/domain/school/dto/response-schoo
 import { SchoolTermComboService } from 'src/domain/school/school-term-combo.service';
 import { GetSchoolTermComboDocs } from './swagger/school-term-combo-swagger.decorator';
 
-@ApiTags('✅ Schools > Terms > Combo ( 학교 > 학기 > 콤보 )')
+@ApiTags('✳️ Schools > Terms > Combo ( 학교 > 학기 > 콤보 )')
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermComboController {

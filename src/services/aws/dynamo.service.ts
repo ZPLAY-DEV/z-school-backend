@@ -18,23 +18,6 @@ export class DynamoService implements OnModuleInit {
     const secretAccessKey =
       this.configService.get<string>('aws.secretAccessKey') ?? 'test';
 
-    // 🐛 디버깅을 위한 환경변수 로깅
-    console.log('🔍 DynamoService Environment Variables:');
-    console.log(
-      `  ConfigService aws.defaultRegion: ${this.configService.get<string>('aws.defaultRegion')}`,
-    );
-    console.log(
-      `  ConfigService aws.accessKey: ${this.configService.get<string>('aws.accessKey')}`,
-    );
-    console.log(
-      `  ConfigService aws.secretAccessKey: ${this.configService.get<string>('aws.secretAccessKey') ? '***MASKED***' : 'undefined'}`,
-    );
-    console.log(`  Final region: ${this.region}`);
-    console.log(`  Final accessKey: ${accessKey}`);
-    console.log(
-      `  Final secretAccessKey: ${secretAccessKey ? '***MASKED***' : 'undefined'}`,
-    );
-
     this.ddb = new DynamoDBClient({
       region: this.region,
       endpoint: 'http://localhost:4566',
