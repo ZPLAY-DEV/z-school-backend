@@ -28,22 +28,23 @@ export class Student {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 
-  @ApiProperty({ description: 'exclusively exists in parent' })
+  @ApiProperty({ description: 'exclusively exists in parent', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   parentId: number;
 
-  @ApiProperty({ description: 'exclusively exists in school' })
+  @ApiProperty({ description: 'exclusively exists in school', example: 1 })
   @Column({ type: 'int', unsigned: true })
   schoolId: number;
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '학년' })
+  @ApiProperty({ description: '학년', example: 1 })
   @Column({ type: 'tinyint', unsigned: true, default: 1 })
   grade: number;
 
   @ApiProperty({
     description: '반',
+    example: '1반',
   })
   @Column({
     type: 'varchar',
@@ -64,19 +65,28 @@ export class Student {
   @Column({ type: 'varchar', length: 16, comment: '이름' })
   name: string;
 
-  @ApiProperty({ description: '전화번호 (숫자만 입력)' })
+  @ApiProperty({
+    description: '학생 전화번호 (숫자만 입력)',
+    example: '01012345678',
+  })
   @Column({ type: 'varchar', length: 16, nullable: true, comment: '학생번호' })
   phone: string | null;
 
-  @ApiProperty({ description: '전화번호 (숫자만 입력)' })
+  @ApiProperty({
+    description: '보호자 전화번호 (숫자만 입력)',
+    example: '01012345678',
+  })
   @Column({ type: 'varchar', length: 16, nullable: true })
   escortPhone: string | null;
 
-  @ApiProperty({ description: 'up to 32 characters' })
+  @ApiProperty({
+    description: '미사용!',
+    example: '미사용!',
+  })
   @Column({ type: 'varchar', length: 32, nullable: true, comment: '하교방법' })
   homeTransit: string | null;
 
-  @ApiProperty({ description: '' })
+  @ApiProperty({ description: '하교후 목적지', example: '스쿨버스 타러감' })
   @Column({
     type: 'varchar',
     length: 32,
@@ -85,7 +95,7 @@ export class Student {
   })
   nextStop: string | null;
 
-  @ApiProperty({ description: '학생의 상태. 유효, 전학' })
+  @ApiProperty({ description: '학생의 상태. 유효, 전학', example: 'ATTENDING' })
   @Column({
     type: 'enum',
     enum: StudentStatus,
@@ -93,7 +103,7 @@ export class Student {
   })
   status: StudentStatus;
 
-  @ApiProperty({ description: '🈳 비고' })
+  @ApiProperty({ description: '🈳 비고', example: '비고내용' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
 
