@@ -18,7 +18,6 @@ import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
-import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 
 // Student 페이지네이션 설정
@@ -46,7 +45,108 @@ export const CreateStudentDocs = () =>
       `,
     }),
     ApiParam({ name: 'schoolId', type: Number, description: '학교 ID' }),
-    ApiBody({ type: CreateStudentDto }),
+    ApiBody({
+      schema: {
+        type: 'object',
+        properties: {
+          parentId: {
+            type: 'number',
+            description: '🈳 학부모 ID',
+            example: 1,
+          },
+          schoolId: {
+            type: 'number',
+            description: '🈵 School ID (number)',
+            example: 1,
+          },
+          grade: {
+            type: 'number',
+            description: '🈵 학년 (up to 8 characters)',
+            example: 1,
+          },
+          class: {
+            type: 'string',
+            description: '🈳 반 (up to 8 characters)',
+            example: '1',
+          },
+          studentCode: {
+            type: 'number',
+            description: '🈳 학번/번호 ( number )',
+            example: 1,
+          },
+          name: {
+            type: 'string',
+            description: '🈳 학생 이름 (up to 16 characters)',
+            example: '홍길동',
+          },
+          phone: {
+            type: 'string',
+            description: '🈳 학생 전화번호 (up to 16 characters)',
+            example: '01012345678',
+          },
+          escortPhone: {
+            type: 'string',
+            description: '🈳 귀가 동행인 전화번호 (up to 16 characters)',
+            example: '01012345678',
+          },
+          homeTransit: {
+            type: 'string',
+            description: '🈳 하교 방법 (up to 32 characters)',
+            example: '버스',
+          },
+          nextStop: {
+            type: 'string',
+            description: '🈳 하교후 가는 곳 (up to 32 characters)',
+            example: '학원',
+          },
+          status: {
+            type: 'string',
+            description: '🈳 학생의 재학 상태 (enum default: ATTENDING)',
+            example: 'ATTENDING',
+          },
+          note: {
+            type: 'string',
+            description: '🈳 비고 (up to 255 characters)',
+            example: '관심과 주의가 필요한 학생',
+          },
+          parent: {
+            type: 'object',
+            description: '🈵 보호자 정보',
+            properties: {
+              userId: {
+                type: 'number',
+                description:
+                  '🈳 User ID. seed 데이터 생성시 비워야 함. 가입시에만 필요',
+                example: 1,
+              },
+              name: {
+                type: 'string',
+                description: '🈳 학부모 이름',
+                example: '홍부모',
+              },
+              phone: {
+                type: 'string',
+                description: '🈵 전화번호 (숫자만)',
+                example: '01088887777',
+              },
+              note: {
+                type: 'string',
+                description: '🈳 내용',
+                example: '비고',
+              },
+              termsAgreedAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '🈳 약관동의 시각',
+                example: '2025-01-01T12:00:00Z',
+              },
+            },
+            required: ['phone'],
+          },
+        },
+        required: ['schoolId', 'grade', 'parent'],
+      },
+    }),
     ApiCreatedResponseTemplate({
       description: '학교 학생 생성 완료',
       type: Student,
@@ -176,7 +276,107 @@ export const UpdateStudentDocs = () =>
       description: '학생 정보를 수정한다',
     }),
     ApiParam({ name: 'id', type: Number, description: '학생 ID' }),
-    ApiBody({ type: UpdateStudentDto }),
+    ApiBody({
+      schema: {
+        type: 'object',
+        properties: {
+          parentId: {
+            type: 'number',
+            description: '🈳 학부모 ID',
+            example: 1,
+          },
+          schoolId: {
+            type: 'number',
+            description: '🈵 School ID (number)',
+            example: 1,
+          },
+          grade: {
+            type: 'number',
+            description: '🈵 학년 (up to 8 characters)',
+            example: 1,
+          },
+          class: {
+            type: 'string',
+            description: '🈳 반 (up to 8 characters)',
+            example: '1',
+          },
+          studentCode: {
+            type: 'number',
+            description: '🈳 학번/번호 ( number )',
+            example: 1,
+          },
+          name: {
+            type: 'string',
+            description: '🈳 학생 이름 (up to 16 characters)',
+            example: '홍길동',
+          },
+          phone: {
+            type: 'string',
+            description: '🈳 학생 전화번호 (up to 16 characters)',
+            example: '01012345678',
+          },
+          escortPhone: {
+            type: 'string',
+            description: '🈳 귀가 동행인 전화번호 (up to 16 characters)',
+            example: '01012345678',
+          },
+          homeTransit: {
+            type: 'string',
+            description: '🈳 하교 방법 (up to 32 characters)',
+            example: '버스',
+          },
+          nextStop: {
+            type: 'string',
+            description: '🈳 하교후 가는 곳 (up to 32 characters)',
+            example: '학원',
+          },
+          status: {
+            type: 'string',
+            description: '🈳 학생의 재학 상태 (enum default: ATTENDING)',
+            example: 'ATTENDING',
+          },
+          note: {
+            type: 'string',
+            description: '🈳 비고 (up to 255 characters)',
+            example: '관심과 주의가 필요한 학생',
+          },
+          parent: {
+            type: 'object',
+            description: '🈵 보호자 정보 (수정시 필수)',
+            properties: {
+              userId: {
+                type: 'number',
+                description:
+                  '🈳 User ID. seed 데이터 생성시 비워야 함. 가입시에만 필요',
+                example: 1,
+              },
+              name: {
+                type: 'string',
+                description: '🈳 학부모 이름',
+                example: '홍부모',
+              },
+              phone: {
+                type: 'string',
+                description: '🈵 전화번호 (숫자만)',
+                example: '01088887777',
+              },
+              note: {
+                type: 'string',
+                description: '🈳 내용',
+                example: '비고',
+              },
+              termsAgreedAt: {
+                type: 'string',
+                format: 'date-time',
+                description: '🈳 약관동의 시각',
+                example: '2025-01-01T12:00:00Z',
+              },
+            },
+          },
+        },
+        required: ['parent'],
+      },
+    }),
     ApiOkResponseTemplate({
       description: '학생 정보 수정 완료',
       type: Student,
