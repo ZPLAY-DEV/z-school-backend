@@ -178,7 +178,7 @@ export class GroupService {
       {
         end: group.lesson.end, // 복구 시 종료일 초기화
         endedBy: null, // 복구 시 종료자 정보 초기화
-        note: 'restored', // 복구 시 취소 사유 초기화
+        note: null, //! note needs to be null
       },
     );
 
