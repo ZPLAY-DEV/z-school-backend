@@ -170,6 +170,8 @@ export class GroupService {
       await this.groupRepository.update(id, {
         status: ClassStatus.ACTIVE,
       });
+    } else {
+      throw new UnprocessableEntityException('Group status is not canceled');
     }
     await this.pickRepository.update(
       group.picks.map((pick) => pick.id),
