@@ -197,7 +197,7 @@ export class GroupAttendanceService {
       dtos: dtos.map((dto) => ({
         dailyStudentKey: dto.dailyStudentKey,
         status: dto.status,
-        schoolNote: dto.schoolNote,
+        schoolNote: dto.schoolNote || '조퇴합니다.',
         hasSchoolNote: !!dto.schoolNote,
       })),
     });
@@ -237,34 +237,16 @@ export class GroupAttendanceService {
           'schooldays',
         ],
       });
-      console.log('✅ [notifyCustom] Group data fetched successfully:', {
-        groupId: group.id,
-        groupName: group.groupName,
-        lessonName: group.lesson.lessonName,
-        schoolName: group.lesson.schoolName,
-        picksCount: group.picks.length,
-        schooldaysCount: group.schooldays.length,
-      });
 
       // DTOs에서 날짜 추출 및 검증
-      console.log('📅 [notifyCustom] Validating dates from DTOs...');
       const dtosDates = dtos.map((dto) =>
         this.extractDateFromRangeKey(dto.dailyStudentKey),
       );
       const uniqueDtosDates = [...new Set(dtosDates)];
-      console.log(
-        '📋 [notifyCustom] Extracted dates from DTOs:',
-        uniqueDtosDates,
-      );
-
-      // group.schooldays에서 날짜 추출 (YYYY-MM-DD 형식으로 변환)
       const validSchoolDates = group.schooldays.map((schoolday) => {
         const date = new Date(schoolday.startsAt);
         return date.toISOString().split('T')[0]; // YYYY-MM-DD 형식
       });
-      console.log('🏫 [notifyCustom] Valid school dates:', validSchoolDates);
-
-      // DTOs의 날짜가 모두 유효한 수업날짜인지 확인
       const invalidDates = uniqueDtosDates.filter(
         (date) => !validSchoolDates.includes(date),
       );
@@ -276,21 +258,7 @@ export class GroupAttendanceService {
         );
       }
 
-      console.log('✅ [notifyCustom] All dates are valid school dates');
-
       const allStudents = group.picks.map((v) => v.student);
-      console.log(
-        '👥 [notifyCustom] All students in group:',
-        allStudents.map((s) => ({
-          id: s.id,
-          name: s.name,
-          hasParent: !!s.parent,
-          hasParentUser: !!s.parent?.user,
-          parentPhone: s.parent?.phone,
-        })),
-      );
-
-      // Custom message를 위한 학생 ID와 메시지 매핑
       const schoolNoteMap = new Map<number, string>();
       const statusMap = new Map<number, string>();
 
@@ -299,17 +267,12 @@ export class GroupAttendanceService {
         const studentId = this.extractStudentIdFromRangeKey(
           dto.dailyStudentKey,
         );
-        const message = dto.schoolNote || '';
+        const message = dto.schoolNote || '조퇴합니다.';
         schoolNoteMap.set(studentId, message);
         statusMap.set(
           studentId,
           this.translateStatusInOtherContext(dto.status),
         );
-        console.log(`📝 [notifyCustom] Mapped student ${studentId}:`, {
-          status: dto.status,
-          translatedStatus: this.translateStatusInOtherContext(dto.status),
-          schoolNote: message,
-        });
       });
 
       const studentIds = Array.from(schoolNoteMap.keys());
@@ -318,11 +281,6 @@ export class GroupAttendanceService {
       const allStudentIds = allStudents.map((s) => s.id);
       const intersection = studentIds.filter((id) =>
         allStudentIds.includes(id),
-      );
-      console.log('🔍 [notifyCustom] All student IDs in group:', allStudentIds);
-      console.log(
-        '🎯 [notifyCustom] Intersection of target and group students:',
-        intersection,
       );
 
       if (intersection.length === 0) {
@@ -358,31 +316,21 @@ export class GroupAttendanceService {
       console.log('🔄 [notifyCustom] Preparing DynamoDB update...');
       const updatedDtos = dtos.map((dto) => ({
         ...dto,
-        schoolNote: dto.schoolNote,
+        schoolNote: dto.schoolNote || '조퇴합니다.',
         schoolNotedAt: new Date(),
       }));
+
       console.log(
-        '🔧 [notifyCustom] Updated DTOs prepared:',
-        updatedDtos.map((dto) => ({
-          dailyStudentKey: dto.dailyStudentKey,
-          status: dto.status,
-          schoolNote: dto.schoolNote,
-          schoolNotedAt: dto.schoolNotedAt,
-        })),
+        '💾 [notifyCustom] Executing DynamoDB bulk update...',
+        JSON.stringify(updatedDtos, null, 2),
       );
-
-      console.log('💾 [notifyCustom] Executing DynamoDB bulk update...');
       await this.updateAttendanceStatusInBulk(updatedDtos);
-      console.log('✅ [notifyCustom] DynamoDB update completed successfully');
-
-      console.log('📤 [notifyCustom] Sending notifications...');
       await this.notificationService.send({
         messages,
         type: NotificationType.CLASS,
         schoolId: group.lesson.schoolId,
         role: 'PARENT',
       });
-      console.log('✅ [notifyCustom] Notifications sent successfully');
 
       console.log(
         '🎉 [notifyCustom] Process completed successfully, returning message count:',

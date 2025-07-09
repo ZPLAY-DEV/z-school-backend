@@ -140,6 +140,7 @@ export class LessonService {
             ? `${student.picks[0].group.groupName} 외 ${student.picks.length - 1}개`
             : student.picks?.[0]?.group?.groupName || '';
         const groupStart = student.picks?.[0].start || '';
+        const groupStartedBy = student.picks?.[0].startedBy || null;
         // picks 속성을 제외한 student 객체 생성
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { picks: _picks, ...studentWithoutPicks } = student;
@@ -148,6 +149,7 @@ export class LessonService {
           ...studentWithoutPicks,
           groupName,
           groupStart,
+          groupStartedBy,
         };
       },
     );
