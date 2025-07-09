@@ -7,6 +7,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { addDays } from 'date-fns';
 import { fromZonedTime } from 'date-fns-tz';
+import { ClassStatus } from 'src/common/enums';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
 import {
   IAttendance,
@@ -185,6 +186,7 @@ export class SchooldayAttendanceService {
   private isValidSchooldayForAttendance(schoolday: Schoolday): boolean {
     return !!(
       schoolday.group &&
+      schoolday.group.status === ClassStatus.ACTIVE &&
       schoolday.group.picks &&
       schoolday.group.picks.length > 0
     );

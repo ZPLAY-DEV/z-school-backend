@@ -1,10 +1,12 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { formatInTimeZone } from 'date-fns-tz';
 import {
   FilterOperator,
   paginate,
@@ -15,7 +17,9 @@ import { ClassStatus } from 'src/common/enums';
 import { RemovalStatus } from 'src/common/enums/removal-status';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
+import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import {
   parseRangeFormat,
@@ -23,7 +27,6 @@ import {
   parseTimeFormat,
 } from 'src/helpers/parse';
 import { Repository } from 'typeorm';
-import { UpdateGroupDto } from './dto/update-group.dto';
 
 @Injectable()
 export class GroupService {
@@ -32,6 +35,8 @@ export class GroupService {
   constructor(
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @InjectRepository(Pick)
+    private readonly pickRepository: Repository<Pick>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -170,20 +175,34 @@ export class GroupService {
       }
     } catch (error) {
       this.logger.error(error);
-      throw new UnprocessableEntityException('Condition not met');
+      throw new BadRequestException('Removal failed');
     }
 
+    // 폐강 처리 (canceled)
     if (group.status === ClassStatus.ACTIVE) {
       await this.groupRepository.update(id, {
-        status: ClassStatus.CANCELED,
+        status: ClassStatus.CANCELED, // no more attendance auto generation
         deletedBy: dto.role,
         note: dto.note,
       });
+
+      // set picks end date to today (Seoul timezone)
+      const today = formatInTimeZone(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+      await this.pickRepository.update(
+        group.picks.map((pick) => pick.id),
+        {
+          end: today,
+          endedBy: dto.role,
+        },
+      );
+
       return RemovalStatus.CANCELED;
     }
 
+    //! 이미 폐강 (canceled) 상태이면서, picks 가 존재하는 경우,
+    //! 폐강전까지의 정보가 picks 에 기록되어 있으므로, 삭제에 유의
     if (group.picks?.length > 0) {
-      throw new UnprocessableEntityException('Condition not met');
+      throw new UnprocessableEntityException('pick item exists');
     }
     await this.groupRepository.update(id, {
       note: dto.note,
