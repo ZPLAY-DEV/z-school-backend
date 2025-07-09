@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -81,6 +82,12 @@ export class GroupController {
     @Body() dto: UpdateGroupDto,
   ): Promise<Group> {
     return await this.groupService.update(id, dto);
+  }
+
+  @ApiOperation({ description: '폐강상태 반(Group) 복구' })
+  @Put(':id/restore')
+  async restore(@Param('id') id: number): Promise<Group> {
+    return await this.groupService.restore(id);
   }
 
   //? ---------------------------------------------------------------------- ?//

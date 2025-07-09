@@ -161,6 +161,28 @@ export class GroupService {
     return await this.groupRepository.save(group);
   }
 
+  async restore(id: number): Promise<Group> {
+    const group = await this.findById(id, ['picks', 'lesson']);
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+    if (group.status === ClassStatus.CANCELED) {
+      await this.groupRepository.update(id, {
+        status: ClassStatus.ACTIVE,
+      });
+    }
+    await this.pickRepository.update(
+      group.picks.map((pick) => pick.id),
+      {
+        end: group.lesson.end, // 복구 시 종료일 초기화
+        endedBy: null, // 복구 시 종료자 정보 초기화
+        note: 'restored', // 복구 시 취소 사유 초기화
+      },
+    );
+
+    return await this.findById(id, ['picks', 'lesson']);
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
@@ -193,6 +215,7 @@ export class GroupService {
         {
           end: today,
           endedBy: dto.role,
+          note: dto.note,
         },
       );
 
