@@ -60,52 +60,89 @@ export const CreateStudentDocs = () =>
 ### 📋 기능 설명
 새로운 학생을 시스템에 등록합니다.
 
+### 🏷️ 두 가지 생성 방식
+**1. 🆕 미등록 부모와 함께 생성** (추천)
+- \`parent.id\` 제외, \`parent.phone\` 필수
+- 새로운 부모를 생성하면서 학생 등록
+
+**2. 🔗 기존 부모와 연결하여 생성**
+- \`parent.id\`만 제공 (다른 parent 필드들은 무시됨)
+- 이미 등록된 부모와 학생 연결
+
 ### 📌 비즈니스 규칙
-- **필수 정보**: schoolId, grade, parent.phone
-- **선택 정보**: parentId, class, studentCode, name, phone, escortPhone, homeTransit, nextStop, status, note
-- **학부모 연결**: parentId가 있으면 기존 학부모와 연결, 없으면 새 학부모 생성
+- **필수 정보**: schoolId, grade, parent
+- **부모 정보**: parent 객체는 항상 필수
+- **선택 정보**: class, studentCode, name, phone, escortPhone, homeTransit, nextStop, status, note
 - **중복 체크**: 동일 학교 내 학번 중복 불가
 - **학년 범위**: 1~12학년만 가능
 
 ### ⚠️ 주의사항
+- parent 객체는 항상 필수 (일관성 있는 API 구조)
+- 기존 부모 연결: parent.id만 제공
+- 새로운 부모 생성: parent.id 제외, parent.phone 필수
 - 전화번호는 하이픈 없이 숫자만 입력
 - 학생 이름은 한글, 영문, 숫자, 공백만 허용
-- 학부모 정보는 필수 (최소한 전화번호 필요)
       `,
     }),
     ApiBody({
       type: CreateStudentDto,
       examples: {
-        basic: {
-          summary: '기본 학생 생성',
-          description: '필수 정보만으로 학생 생성',
+        'new-parent': {
+          summary: '🆕 미등록 부모와 함께 학생 생성',
+          description:
+            '새로운 부모를 생성하면서 학생을 등록하는 경우 (parent 객체 포함, parentId 제외)',
           value: {
             schoolId: 1,
             grade: 3,
+            class: '5',
+            studentCode: 4,
+            name: '이학상',
+            status: 'ATTENDING',
+            phone: '01011112222',
+            escortPhone: '01022223333',
             parent: {
-              name: '홍부모',
-              phone: '01012345678',
+              phone: '01066661031',
             },
           },
         },
-        complete: {
-          summary: '상세 정보 포함 학생 생성',
-          description: '모든 정보를 포함한 학생 생성',
+        'existing-parent': {
+          summary: '🔗 기존 부모와 연결하여 학생 생성',
+          description:
+            '이미 등록된 부모와 연결하여 학생을 등록하는 경우 (parent.id만 포함)',
           value: {
             schoolId: 1,
             grade: 3,
-            class: '3-2',
-            studentCode: 2023001,
-            name: '홍길동',
-            phone: '01012345678',
-            escortPhone: '01087654321',
+            class: '5',
+            studentCode: 4,
+            name: '이학상',
+            status: 'ATTENDING',
+            phone: '01011112222',
+            escortPhone: '01022223333',
+            parent: {
+              id: 1,
+            },
+          },
+        },
+        'detailed-new-parent': {
+          summary: '📝 상세 정보와 함께 새로운 부모 및 학생 생성',
+          description: '새로운 부모의 상세 정보와 함께 학생을 등록하는 경우',
+          value: {
+            schoolId: 1,
+            grade: 3,
+            class: '5',
+            studentCode: 4,
+            name: '이학상',
+            status: 'ATTENDING',
+            phone: '01011112222',
+            escortPhone: '01022223333',
             homeTransit: '학교버스',
             nextStop: '태권도 학원',
-            note: '알레르기: 견과류 주의',
+            note: '알레르기: 견과류 주의 필요',
             parent: {
               name: '홍부모',
-              phone: '01087654321',
+              phone: '01066661031',
               note: '주말에만 연락 가능',
+              termsAgreedAt: '2025-01-01T12:00:00Z',
             },
           },
         },
@@ -138,6 +175,11 @@ export const CreateStudentDryRunDocs = () =>
 ### 📋 기능 설명
 학생 생성 전 중복 여부를 사전 검증합니다.
 
+### 🏷️ 검증 방식
+실제 생성 API와 동일한 payload 구조를 사용:
+- **새로운 부모**: parent.id 제외, parent.phone 필수
+- **기존 부모**: parent.id만 제공
+
 ### 🎯 검증 항목
 - 동일 학교 내 학번 중복
 - 동일 학교 내 동명이인 중복
@@ -148,7 +190,39 @@ export const CreateStudentDryRunDocs = () =>
 - **중복 있음**: 중복되는 학생 정보 반환
       `,
     }),
-    ApiBody({ type: CreateStudentDto }),
+    ApiBody({
+      type: CreateStudentDto,
+      examples: {
+        'dryrun-new-parent': {
+          summary: '🆕 미등록 부모와 함께 생성 검증',
+          description: '새로운 부모 생성 방식으로 검증',
+          value: {
+            schoolId: 1,
+            grade: 3,
+            class: '5',
+            studentCode: 4,
+            name: '이학상',
+            parent: {
+              phone: '01066661031',
+            },
+          },
+        },
+        'dryrun-existing-parent': {
+          summary: '🔗 기존 부모 연결 방식으로 검증',
+          description: '기존 부모 연결 방식으로 검증',
+          value: {
+            schoolId: 1,
+            grade: 3,
+            class: '5',
+            studentCode: 4,
+            name: '이학상',
+            parent: {
+              id: 1,
+            },
+          },
+        },
+      },
+    }),
     ApiOkResponse({
       description: '✅ 검증 완료',
       schema: {

@@ -1,16 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsEnum,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Matches,
-  Max,
-  MaxLength,
-  Min,
-  ValidateNested,
+    IsEnum,
+    IsInt,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+    Matches,
+    Max,
+    MaxLength,
+    Min,
+    ValidateNested,
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
 import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
@@ -19,21 +19,12 @@ import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
  * 학생 생성 DTO
  * - 새로운 학생을 시스템에 등록할 때 사용
  * - 필수: schoolId, grade, parent
- * - 선택: parentId, class, studentCode, name, phone, escortPhone, homeTransit, nextStop, status, note
+ * - 부모 연결 방식:
+ *   - 기존 부모 연결: parent.id 포함 (다른 parent 필드들은 무시됨)
+ *   - 새로운 부모 생성: parent.id 제외, parent.phone 필수
+ * - 선택: class, studentCode, name, phone, escortPhone, homeTransit, nextStop, status, note
  */
 export class CreateStudentDto {
-  @ApiPropertyOptional({
-    description:
-      '기존 학부모 ID - 이미 등록된 학부모와 연결할 때 사용. 미입력시 새 학부모 생성',
-    type: Number,
-    example: 1,
-    minimum: 1,
-  })
-  @IsOptional()
-  @IsInt({ message: '학부모 ID는 정수여야 합니다' })
-  @Min(1, { message: '학부모 ID는 1 이상이어야 합니다' })
-  parentId?: number;
-
   @ApiProperty({
     description: '학교 ID - 학생이 소속될 학교의 고유 식별자 (필수)',
     type: Number,
@@ -61,7 +52,7 @@ export class CreateStudentDto {
   @ApiPropertyOptional({
     description: '반 - 학생의 소속 반 (최대 8자)',
     type: String,
-    example: '3-2',
+    example: '5',
     maxLength: 8,
   })
   @IsOptional()
@@ -72,7 +63,7 @@ export class CreateStudentDto {
   @ApiPropertyOptional({
     description: '학번/번호 - 학교 내 학생 고유번호 (1~99999)',
     type: Number,
-    example: 2023001,
+    example: 4,
     minimum: 1,
     maximum: 99999,
   })
@@ -86,7 +77,7 @@ export class CreateStudentDto {
   @ApiPropertyOptional({
     description: '학생 이름 - 학생의 실명 (최대 16자, 한글/영문/숫자만 허용)',
     type: String,
-    example: '홍길동',
+    example: '이학상',
     maxLength: 16,
     pattern: '^[가-힣a-zA-Z0-9\\s]+$',
   })
@@ -100,9 +91,24 @@ export class CreateStudentDto {
 
   @ApiPropertyOptional({
     description:
+      '재학 상태 - ATTENDING: 재학중, TRANSFERRED: 전학 (기본값: ATTENDING)',
+    enum: StudentStatus,
+    enumName: 'StudentStatus',
+    example: StudentStatus.ATTENDING,
+    default: StudentStatus.ATTENDING,
+  })
+  @IsOptional()
+  @IsEnum(StudentStatus, {
+    message:
+      'status는 유효한 StudentStatus 값이어야 합니다 (ATTENDING, TRANSFERRED)',
+  })
+  status: StudentStatus = StudentStatus.ATTENDING;
+
+  @ApiPropertyOptional({
+    description:
       '학생 전화번호 - 학생 개인 휴대폰 번호 (하이픈 없이 숫자만, 최대 16자)',
     type: String,
-    example: '01012345678',
+    example: '01011112222',
     maxLength: 16,
     pattern: '^[0-9]+$',
   })
@@ -116,7 +122,7 @@ export class CreateStudentDto {
     description:
       '귀가 동행인 전화번호 - 하교시 함께 가는 사람의 연락처 (하이픈 없이 숫자만, 최대 16자)',
     type: String,
-    example: '01087654321',
+    example: '01022223333',
     maxLength: 16,
     pattern: '^[0-9]+$',
   })
@@ -151,21 +157,6 @@ export class CreateStudentDto {
   nextStop?: string;
 
   @ApiPropertyOptional({
-    description:
-      '재학 상태 - ATTENDING: 재학중, TRANSFERRED: 전학 (기본값: ATTENDING)',
-    enum: StudentStatus,
-    enumName: 'StudentStatus',
-    example: StudentStatus.ATTENDING,
-    default: StudentStatus.ATTENDING,
-  })
-  @IsOptional()
-  @IsEnum(StudentStatus, {
-    message:
-      'status는 유효한 StudentStatus 값이어야 합니다 (ATTENDING, TRANSFERRED)',
-  })
-  status: StudentStatus = StudentStatus.ATTENDING;
-
-  @ApiPropertyOptional({
     description: '비고 - 학생에 대한 추가 정보나 특이사항 (최대 255자)',
     type: String,
     example: '알레르기: 견과류 주의 필요',
@@ -177,7 +168,11 @@ export class CreateStudentDto {
   note?: string;
 
   @ApiProperty({
-    description: '보호자 정보 - 학생의 학부모/보호자 상세 정보 (필수)',
+    description: `보호자 정보 - 학생의 학부모/보호자 정보 (필수)
+    
+🏷️ 두 가지 연결 방식:
+✅ 기존 부모 연결: parent.id만 제공 (다른 필드들은 무시됨)
+✅ 새로운 부모 생성: parent.id 제외, parent.phone 필수`,
     type: CreateParentDto,
   })
   @IsNotEmpty({ message: '보호자 정보는 필수입니다' })

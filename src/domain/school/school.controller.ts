@@ -30,7 +30,7 @@ import {
   UpdateSchoolDocs,
 } from './swagger/school-swagger.decorator';
 
-@ApiTags('✅ Schools ( 학교 )')
+@ApiTags('✳️ Schools ( 학교 )')
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolController {

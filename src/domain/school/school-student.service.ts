@@ -60,12 +60,14 @@ export class SchoolStudentService {
 
       if (parents.length > 0) {
         const parentPlaceholders = parents.map(() => '(?, ?, ?, ?)').join(', ');
-        const parentValues = parents.flatMap((parent) => [
-          parent.userId || null,
-          parent.name || null,
-          parent.phone || null,
-          parent.note || null,
-        ]);
+        const parentValues: (string | number | null)[] = parents.flatMap(
+          (parent) => [
+            parent.userId || null,
+            parent.name || null,
+            parent.phone || null,
+            parent.note || null,
+          ],
+        );
 
         await queryRunner.query(
           `
@@ -96,19 +98,21 @@ export class SchoolStudentService {
         const studentPlaceholders = dtos
           .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
           .join(', ');
-        const studentValues = dtos.flatMap((dto) => [
-          dto.name || null,
-          parentMap[dto.parent.phone] || null,
-          schoolId,
-          dto.grade || null,
-          dto.class || null,
-          dto.studentCode || null,
-          dto.phone || null,
-          dto.escortPhone || null,
-          dto.homeTransit || null,
-          dto.nextStop || null,
-          dto.note || null,
-        ]);
+        const studentValues: (string | number | null)[] = dtos.flatMap(
+          (dto) => [
+            dto.name || null,
+            dto.parent.phone ? parentMap[dto.parent.phone] || null : null,
+            schoolId,
+            dto.grade || null,
+            dto.class || null,
+            dto.studentCode || null,
+            dto.phone || null,
+            dto.escortPhone || null,
+            dto.homeTransit || null,
+            dto.nextStop || null,
+            dto.note || null,
+          ],
+        );
 
         await queryRunner.query(
           `

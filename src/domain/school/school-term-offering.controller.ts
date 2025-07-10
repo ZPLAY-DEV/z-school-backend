@@ -23,7 +23,7 @@ import {
 } from 'src/domain/school/swagger/school-term-offering-swagger.decorator';
 
 @Controller('schools')
-@ApiTags('✅ Schools > Terms > Offerings ( 학교 > 학기 > 수강신청과목 )')
+@ApiTags('✳️ Schools > Terms > Offerings ( 학교 > 학기 > 수강신청과목 )')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermOfferingController {
   constructor(

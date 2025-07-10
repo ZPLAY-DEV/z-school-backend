@@ -11,7 +11,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { SchoolCalendarService } from 'src/domain/school/school-calendar.service';
 import { CreateSchoolCalendarDocs } from 'src/domain/school/swagger/school-calendar-swagger.decorator';
 
-@ApiTags('✅ Schools > Calendar ( 학교 > 캘린더 )')
+@ApiTags('✳️ Schools > Calendar ( 학교 > 캘린더 )')
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolCalendarController {

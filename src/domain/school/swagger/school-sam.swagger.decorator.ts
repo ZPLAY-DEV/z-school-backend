@@ -1,5 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiOkPaginatedResponse } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -15,25 +15,163 @@ import { Sam } from '../../sam/entities/sam.entity';
 export const CreateSchoolSamBulkDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 강사 대량 생성 (일괄)',
+      summary: '🟢 학교 강사 일괄 생성/수정 (계약서 업로드)',
       description: `
-      - 학교에 귀속된 강사들을 대량으로 생성한다.
-      - 학교에 귀속된 강사의 정보와 강사의 정보가 이미 등록되어 있을 경우 Upsert 된다.
-      - 대량 생성은 배열 형태의 데이터를 받아서 처리한다.
+**📝 기능 설명**
+- 특정 학교에 소속된 강사들을 한 번에 생성하거나 수정합니다
+- Upsert 방식으로 동작하여 기존 강사 정보가 있으면 업데이트, 없으면 새로 생성
+- 계약서 기반 강사 정보 일괄 등록 시 주로 사용됩니다
+
+**🔄 비즈니스 로직**
+1. 이름 + 전화번호 조합으로 기존 강사 중복 체크
+2. 중복된 강사는 정보 업데이트, 새로운 강사는 생성
+3. 학교별 강사 소속 관계 설정
+4. 처리된 강사 목록을 반환
+
+**⚠️ 중요 제약사항**
+- 강사 이름은 필수 입력 (2-10자)
+- 전화번호는 010으로 시작하는 11자리 숫자 필수
+- 이메일은 유효한 형식이어야 함
+- 전문분야는 최대 50자
+- 경력은 최대 100자
+
+**📚 예시 시나리오**
+- 신학기 시작 전 전체 강사진 일괄 등록
+- 신규 강사 추가 등록
+- 기존 강사 정보 대량 수정 (연락처, 전문분야 변경 등)
+- 계약 갱신에 따른 강사 정보 업데이트
       `,
     }),
     ApiParam({
       name: 'schoolId',
       type: Number,
-      description: '학교 ID',
+      description: '학교 ID - 강사를 등록할 학교의 고유 식별자',
+      example: 1,
     }),
     ApiBody({
       type: [CreateSamDto],
+      description: '생성/수정할 강사 정보 배열',
+      examples: {
+        singleSam: {
+          summary: '단일 강사 등록',
+          value: [
+            {
+              name: '김영어',
+              phone: '01012345678',
+              email: 'kim.english@example.com',
+              alias: '김영어쌤',
+              specialty: '영어교육, TESOL',
+              career: '초등학교 영어교육 10년, 원어민 강사 경험 5년',
+              note: '미국 거주 경험으로 원어민 수준의 발음',
+            },
+          ],
+        },
+        multipleSams: {
+          summary: '여러 강사 동시 등록',
+          value: [
+            {
+              name: '김영어',
+              phone: '01012345678',
+              email: 'kim.english@example.com',
+              alias: '김영어쌤',
+              specialty: '영어교육, TESOL',
+              career: '초등학교 영어교육 10년',
+              note: '미국 거주 경험',
+            },
+            {
+              name: '박수학',
+              phone: '01087654321',
+              email: 'park.math@example.com',
+              alias: '박수학쌤',
+              specialty: '수학교육, 수학올림피아드',
+              career: '중등수학 교사 15년, 수학올림피아드 지도',
+              note: '창의적 수학 교육 전문',
+            },
+            {
+              name: '이미술',
+              phone: '01055556666',
+              email: 'lee.art@example.com',
+              alias: '이미술쌤',
+              specialty: '미술교육, 창의미술',
+              career: '미대 졸업 후 아동미술 교육 8년',
+              note: '아이들의 창의성 발달에 중점',
+            },
+          ],
+        },
+        contractRenewal: {
+          summary: '계약 갱신에 따른 정보 업데이트',
+          value: [
+            {
+              name: '최체육',
+              phone: '01099998888',
+              email: 'choi.sports@example.com',
+              alias: '최체육쌤',
+              specialty: '체육교육, 축구코칭',
+              career: '체육교사 12년, 축구 선수 출신',
+              note: '2025년 계약 갱신 - 급여 조정',
+            },
+          ],
+        },
+      },
     }),
     ApiCreatedResponseTemplate({
-      description: '학교에 속한 강사 대량 생성 완료',
+      description: '강사 일괄 등록 완료 - 생성/수정된 강사 목록 반환',
       type: Sam,
       isArray: true,
+    }),
+    ApiResponse({
+      status: 201,
+      description: '강사 일괄 등록 성공',
+      schema: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/Sam' },
+        example: [
+          {
+            id: 1,
+            name: '김영어',
+            phone: '01012345678',
+            email: 'kim.english@example.com',
+            alias: '김영어쌤',
+            specialty: '영어교육, TESOL',
+            career: '초등학교 영어교육 10년',
+            status: 'ACTIVE',
+            createdAt: '2025-01-15T09:00:00.000Z',
+            updatedAt: '2025-01-15T09:00:00.000Z',
+          },
+        ],
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: '요청 데이터 검증 실패',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 400 },
+          message: {
+            type: 'array',
+            items: { type: 'string' },
+            example: [
+              '강사 이름은 2자 이상 10자 이하여야 합니다',
+              '전화번호 형식이 올바르지 않습니다',
+              '이메일 형식이 올바르지 않습니다',
+            ],
+          },
+          error: { type: 'string', example: 'Bad Request' },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 404,
+      description: '존재하지 않는 학교',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 404 },
+          message: { type: 'string', example: 'School not found' },
+          error: { type: 'string', example: 'Not Found' },
+        },
+      },
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
@@ -45,25 +183,112 @@ export const CreateSchoolSamBulkDocs = () => {
 export const CreateSchoolSamBulkDryRunDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 강사 대량 생성 dryRun 체크',
+      summary: '🔍 학교 강사 일괄 생성 시뮬레이션 (Dry Run)',
       description: `
-      - 학교에 속한 강사들(대량) 생성 dryrun 체크
-      - 실제로 데이터를 생성하지 않고 어떤 데이터가 생성될지 미리 확인
-      - 중복되는 강사가 있는지 사전에 체크 가능
+**📝 기능 설명**
+- 실제 데이터를 생성하지 않고 강사 일괄 등록 시뮬레이션을 수행합니다
+- 중복되는 강사가 있는지 사전에 확인하여 Upsert 여부를 판단합니다
+- 계약서 업로드 전 데이터 검증용으로 주로 사용됩니다
+
+**🔄 비즈니스 로직**
+1. 요청된 강사 데이터의 유효성 검증
+2. 기존 데이터베이스와 중복 체크 (이름 + 전화번호 기준)
+3. 덮어쓰여질 기존 강사 레코드 반환
+4. 실제 데이터 변경 없이 결과만 시뮬레이션
+
+**⚠️ 중요 제약사항**
+- 실제 데이터베이스에는 변경사항이 적용되지 않음
+- 이름 + 전화번호 기준으로 중복 검사
+- 반환된 배열이 비어있으면 새로운 강사들만 등록 예정
+- 반환된 배열에 데이터가 있으면 해당 강사들이 업데이트 예정
+
+**📚 예시 시나리오**
+- 계약서 업로드 전 중복 강사 확인
+- 대량 데이터 입력 전 검증 작업
+- 기존 강사 정보가 변경될지 미리 확인
+- 데이터 정합성 검증 후 실제 등록 결정
       `,
     }),
     ApiParam({
       name: 'schoolId',
       type: Number,
-      description: '학교 ID',
+      description: '학교 ID - 시뮬레이션을 수행할 학교의 고유 식별자',
+      example: 1,
     }),
     ApiBody({
       type: [CreateSamDto],
+      description: '시뮬레이션할 강사 정보 배열',
+      examples: {
+        duplicateCheck: {
+          summary: '중복 검사 시나리오',
+          value: [
+            {
+              name: '김영어',
+              phone: '01012345678',
+              email: 'kim.english@example.com',
+              alias: '김영어쌤',
+              specialty: '영어교육',
+              career: '10년',
+            },
+          ],
+        },
+        newSams: {
+          summary: '신규 강사들 등록 예정',
+          value: [
+            {
+              name: '신규강사1',
+              phone: '01011111111',
+              email: 'new1@example.com',
+              alias: '신규쌤1',
+              specialty: '국어교육',
+              career: '5년',
+            },
+            {
+              name: '신규강사2',
+              phone: '01022222222',
+              email: 'new2@example.com',
+              alias: '신규쌤2',
+              specialty: '과학교육',
+              career: '3년',
+            },
+          ],
+        },
+      },
     }),
     ApiOkResponseTemplate({
-      description: '학교에 속한 강사 대량 등록 시물레이션 결과',
+      description: '중복 강사 시뮬레이션 결과 - 덮어쓰여질 기존 강사 목록',
       type: Sam,
       isArray: true,
+    }),
+    ApiResponse({
+      status: 200,
+      description: '시뮬레이션 성공 - 빈 배열은 새로운 강사만 등록됨을 의미',
+      schema: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/Sam' },
+        example: [],
+        description:
+          '빈 배열: 중복 없음, 데이터 있음: 해당 강사들이 업데이트됨',
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: '시뮬레이션 데이터 검증 실패',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 400 },
+          message: {
+            type: 'array',
+            items: { type: 'string' },
+            example: [
+              '강사 이름은 필수입니다',
+              '전화번호 형식이 올바르지 않습니다',
+            ],
+          },
+          error: { type: 'string', example: 'Bad Request' },
+        },
+      },
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST),
   );
@@ -75,22 +300,101 @@ export const CreateSchoolSamBulkDryRunDocs = () => {
 export const SchoolSamListDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 강사 목록 조회',
+      summary: '👨‍🏫 학교 전체 강사 목록 조회',
       description: `
-      - 특정 학교에 속한 모든 강사들의 목록을 조회한다.
-      - 강사 기본 정보와 관련 데이터를 포함한다.
+**📝 기능 설명**
+- 지정된 학교에 소속된 모든 강사 정보를 한 번에 조회합니다
+- 강사 기본 정보와 계약 상태, 담당 수업 정보가 포함됩니다
+- 페이지네이션 없이 전체 데이터를 반환합니다
+
+**🔄 비즈니스 로직**
+1. 학교별 전체 강사 조회 (활성, 비활성 포함)
+2. 강사 기본 정보 및 계약 정보 포함
+3. 강사명 오름차순으로 자동 정렬
+4. 관련 수업 및 그룹 정보 조인
+
+**📊 응답 데이터**
+- **Sam 정보**: 기본 강사 정보, 연락처, 전문분야
+- **Contract 정보**: 계약 상태, 급여 정보
+- **수업 연결**: 담당하는 수업 및 그룹 정보
+
+**🔍 활용 예시**
+- 전체 강사진 명단 출력
+- 강사별 연락망 생성
+- 수업 배정 현황 파악
+- 계약 관리 시스템 초기 데이터 로드
       `,
     }),
     ApiParam({
       name: 'schoolId',
       type: Number,
-      description: '학교 ID',
+      description: '학교 ID - 강사 목록을 조회할 학교의 고유 식별자',
+      example: 1,
     }),
     ApiOkResponseTemplate({
-      description: '학교에 속한 강사 목록 조회 완료',
+      description: '학교 전체 강사 목록 조회 완료',
       type: Sam,
       isArray: true,
     }),
+    ApiResponse({
+      status: 200,
+      description: '강사 목록 조회 성공',
+      schema: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/Sam' },
+        example: [
+          {
+            id: 1,
+            name: '김영어',
+            phone: '01012345678',
+            email: 'kim.english@example.com',
+            alias: '김영어쌤',
+            specialty: '영어교육, TESOL',
+            career: '초등학교 영어교육 10년',
+            status: 'ACTIVE',
+            contracts: [
+              {
+                id: 1,
+                termId: 1,
+                hourlyRate: 50000,
+                status: 'ACTIVE',
+              },
+            ],
+          },
+          {
+            id: 2,
+            name: '박수학',
+            phone: '01087654321',
+            email: 'park.math@example.com',
+            alias: '박수학쌤',
+            specialty: '수학교육',
+            career: '중등수학 교사 15년',
+            status: 'ACTIVE',
+            contracts: [
+              {
+                id: 2,
+                termId: 1,
+                hourlyRate: 55000,
+                status: 'ACTIVE',
+              },
+            ],
+          },
+        ],
+      },
+    }),
+    ApiResponse({
+      status: 404,
+      description: '존재하지 않는 학교',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 404 },
+          message: { type: 'string', example: 'School not found' },
+          error: { type: 'string', example: 'Not Found' },
+        },
+      },
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -100,20 +404,60 @@ export const SchoolSamListDocs = () => {
 export const SchoolSamPaginatedDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 강사 무한스크롤 목록 조회',
+      summary: '👨‍🏫📄 학교 강사 목록 페이지네이션 조회 (검색/정렬)',
       description: `
-      - 특정 학교에 속한 강사들의 페이지네이션된 목록을 조회한다.
-      - 무한스크롤 방식의 페이지네이션을 지원한다.
+**📝 기능 설명**
+- 대량의 강사 데이터를 페이지네이션으로 효율적으로 조회합니다
+- 검색 및 정렬 기능을 제공합니다
+- 무한스크롤 방식의 페이지네이션을 지원합니다
+
+**🔍 검색 기능**
+- **search**: 다음 필드에서 키워드 검색 가능
+  - \`name\`: 강사 이름
+  - \`alias\`: 강사 별명
+  - \`specialty\`: 전문분야
+  - \`email\`: 이메일 주소
+- **예시**: \`?search=김영어\`, \`?search=영어교육\`
+
+**📊 정렬 기능**
+- **기본 정렬**: 강사 ID 내림차순 (최신 등록순)
+- **커스텀 정렬**: \`?sortBy=name:ASC\` (이름 오름차순)
+- **정렬 가능 필드**: id, name, alias
+
+**📊 쿼리 파라미터 예시**
+- \`?page=1&limit=20\`: 첫 페이지, 20개씩
+- \`?search=영어&sortBy=name:ASC\`: '영어' 키워드 검색, 이름순 정렬
+- \`?sortBy=id:DESC\`: 최신 등록 강사순 정렬
+
+**🔍 활용 예시**
+- 강사 관리 화면에서 검색/필터링
+- 수업 배정 시 강사 선택
+- 계약 관리를 위한 강사 조회
+- 무한 스크롤 형태의 강사 목록
       `,
     }),
     ApiParam({
       name: 'schoolId',
       type: Number,
-      description: '학교 ID',
+      description: '학교 ID - 강사 목록을 조회할 학교의 고유 식별자',
+      example: 1,
     }),
     ApiOkPaginatedResponse(Sam, {
       sortableColumns: ['id', 'alias'],
     }),
+    ApiResponse({
+      status: 404,
+      description: '존재하지 않는 학교',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 404 },
+          message: { type: 'string', example: 'School not found' },
+          error: { type: 'string', example: 'Not Found' },
+        },
+      },
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
 
@@ -123,33 +467,124 @@ export const SchoolSamPaginatedDocs = () => {
 export const GetSchoolSamGroupsForDateDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '학교 > 강사 특정 날짜 수업 반 목록 조회',
+      summary: '📅 강사 특정 날짜 담당 수업 그룹 조회',
       description: `
-      - 특정 학교의 강사가 특정 날짜에 수업하는 반 목록을 시간 순으로 조회한다.
-      - 날짜 형식은 YYYY-MM-DD 형식으로 입력해야 한다.
-      - 결과는 수업 시작 시간을 기준으로 오름차순 정렬된다.
+**📝 기능 설명**
+- 특정 강사가 특정 날짜에 담당하는 수업 그룹들을 조회합니다
+- 강사별 일일 스케줄 확인이나 출석 관리에 활용됩니다
+- 수업 시간 순으로 정렬되어 반환됩니다
+
+**🔄 비즈니스 로직**
+1. 강사의 모든 Contract (계약) 정보 조회
+2. 지정된 날짜의 요일과 매치되는 수업 그룹 필터링
+3. 수업 기간(start ~ end)에 해당 날짜가 포함되는지 확인
+4. 수업 시작 시간 순으로 정렬하여 반환
+
+**⚠️ 중요 제약사항**
+- date 파라미터는 YYYY-MM-DD 형식 필수
+- 해당 날짜가 수업 기간 내에 포함되어야 함
+- 해당 요일에 수업이 있는 그룹만 반환
+- 강사가 해당 그룹을 담당하고 있어야 함
+
+**📊 반환 데이터**
+- **Group 정보**: 그룹 기본 정보 (이름, 정원 등)
+- **Lesson 정보**: 수업 상세 정보 (시간, 장소 등)
+- **시간 정렬**: 수업 시작 시간 오름차순
+
+**🔍 활용 예시**
+- 강사별 일일 스케줄 생성
+- 특정 날짜 수업 진행 대상 그룹 조회
+- 강사의 수업 부담도 확인
+- 시간 충돌 검사 및 스케줄 관리
       `,
     }),
     ApiParam({
       name: 'schoolId',
       type: Number,
-      description: '학교 ID',
+      description: '학교 ID - 조회할 학교의 고유 식별자',
+      example: 1,
     }),
     ApiParam({
       name: 'samId',
       type: Number,
-      description: '강사 ID',
+      description: '강사 ID - 스케줄을 조회할 강사의 고유 식별자',
+      example: 3,
     }),
     ApiParam({
       name: 'date',
       type: String,
-      description: '조회할 날짜 (YYYY-MM-DD)',
+      description: '조회할 날짜 - YYYY-MM-DD 형식의 날짜 문자열',
       example: '2025-01-15',
     }),
     ApiOkResponseTemplate({
-      description: '특정 날짜의 강사 수업 반 목록 조회 완료',
+      description: '강사 특정 날짜 담당 수업 그룹 조회 완료',
       type: Group,
       isArray: true,
+    }),
+    ApiResponse({
+      status: 200,
+      description: '강사 날짜별 그룹 조회 성공',
+      schema: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/Group' },
+        example: [
+          {
+            id: 5,
+            groupName: '영어회화 A반',
+            maxStudents: 20,
+            currentStudents: 15,
+            lesson: {
+              id: 1,
+              lessonName: '영어회화 초급',
+              weekday: 'WEDNESDAY',
+              startTime: '09:00',
+              endTime: '10:30',
+              location: '영어실',
+            },
+          },
+          {
+            id: 12,
+            groupName: '영어회화 B반',
+            maxStudents: 18,
+            currentStudents: 16,
+            lesson: {
+              id: 4,
+              lessonName: '영어회화 중급',
+              weekday: 'WEDNESDAY',
+              startTime: '14:00',
+              endTime: '15:30',
+              location: '영어실',
+            },
+          },
+        ],
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: '잘못된 날짜 형식',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 400 },
+          message: {
+            type: 'string',
+            example: 'Invalid date format. Use YYYY-MM-DD',
+          },
+          error: { type: 'string', example: 'Bad Request' },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 404,
+      description: '존재하지 않는 학교 또는 강사',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 404 },
+          message: { type: 'string', example: 'School or Sam not found' },
+          error: { type: 'string', example: 'Not Found' },
+        },
+      },
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );

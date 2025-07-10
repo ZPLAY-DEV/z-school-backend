@@ -44,21 +44,37 @@ export class StudentService {
   async create(dto: CreateStudentDto): Promise<Student> {
     const { parent: parentDto, ...studentDto } = dto;
 
-    let parentId: number | undefined;
+    let parentId: number;
 
-    if (parentDto?.phone) {
+    // 1. 부모 처리: parent.id가 있으면 기존 부모 연결, 없으면 새 부모 생성
+    if (parentDto.id) {
+      // 기존 부모와 연결하는 경우
+      const existingParent = await this.parentRepository.findOne({
+        where: { id: parentDto.id },
+      });
+      if (!existingParent) {
+        throw new NotFoundException('Parent not found');
+      }
+      parentId = parentDto.id;
+    } else {
+      // 새로운 부모를 생성하는 경우
+      if (!parentDto.phone) {
+        throw new Error('새로운 부모 생성 시 전화번호는 필수입니다');
+      }
+
       let parent = await this.parentRepository.findOne({
         where: { phone: parentDto.phone },
       });
       if (!parent) {
-        parent = await this.parentRepository.save({
-          ...parentDto,
-        });
+        // id를 제외한 나머지 정보로 새 부모 생성
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, ...parentCreateData } = parentDto;
+        parent = await this.parentRepository.save(parentCreateData);
       }
       parentId = parent.id;
     }
 
-    // 3. 학생 존재 여부 확인
+    // 2. 학생 존재 여부 확인
     const existingStudent = await this.studentRepository.findOne({
       where: {
         schoolId: studentDto.schoolId,
@@ -93,7 +109,21 @@ export class StudentService {
 
   //? upsert 여부 조회
   async dryRun(dto: CreateStudentDto): Promise<Student | null> {
-    // In dryRun mode, we check if the student exists but don't create it
+    const { parent: parentDto } = dto;
+
+    // 1. parent.id가 있는 경우 해당 부모가 존재하는지 확인
+    if (parentDto.id) {
+      const existingParent = await this.parentRepository.findOne({
+        where: { id: parentDto.id },
+      });
+      if (!existingParent) {
+        throw new NotFoundException('Parent not found');
+      }
+    } else if (!parentDto.phone) {
+      throw new Error('새로운 부모 생성 시 전화번호는 필수입니다');
+    }
+
+    // 2. 학생 존재 여부 확인 (실제 생성은 하지 않음)
     const existingStudent = await this.studentRepository.findOne({
       where: {
         schoolId: dto.schoolId,
@@ -101,6 +131,7 @@ export class StudentService {
         class: dto.class,
         studentCode: dto.studentCode,
       },
+      relations: ['parent'],
     });
 
     return existingStudent ? existingStudent : null;

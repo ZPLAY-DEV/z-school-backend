@@ -24,7 +24,7 @@ import {
   SchoolTermLessonPaginatedListDocs,
 } from 'src/domain/school/swagger/school-term-lesson-swagger.decorator';
 
-@ApiTags('✅ Schools > Terms > Lessons ( 학교 > 학기 > 과목 )')
+@ApiTags('✳️ Schools > Terms > Lessons ( 학교 > 학기 > 과목 )')
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermLessonController {

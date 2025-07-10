@@ -12,7 +12,7 @@ import { SchoolTermService } from 'src/domain/school/school-term.service';
 import { ListSchoolTermDocs } from 'src/domain/school/swagger/school-term-swagger.decorator';
 import { Term } from 'src/domain/term/entities/term.entity';
 
-@ApiTags('✅ Schools > Terms ( 학교 > 학기 )')
+@ApiTags('✳️ Schools > Terms ( 학교 > 학기 )')
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermController {

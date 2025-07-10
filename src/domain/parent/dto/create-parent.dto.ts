@@ -1,25 +1,38 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
-  IsDate,
-  IsInt,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-  Min,
+    IsDate,
+    IsInt,
+    IsOptional,
+    IsString,
+    Matches,
+    MaxLength,
+    Min,
 } from 'class-validator';
 
 /**
- * 학부모 생성 DTO
- * - 새로운 학부모를 시스템에 등록할 때 사용
- * - 필수: phone
- * - 선택: userId, name, note, termsAgreedAt
+ * 학부모 생성/연결 DTO
+ * - 새로운 학부모 생성 또는 기존 학부모 연결 시 사용
+ * - 기존 부모 연결: id 포함 (다른 필드들은 무시됨)
+ * - 새로운 부모 생성: id 제외, phone 필수, 나머지 선택
  */
 export class CreateParentDto {
   @ApiPropertyOptional({
-    description:
-      'User ID - 회원가입한 사용자와 연결할 때 사용. 시드 데이터 생성시에는 생략',
+    description: `학부모 ID - 기존 등록된 학부모와 연결할 때 사용
+    
+✅ 기존 부모 연결: id만 제공 (다른 필드들은 무시됨)
+✅ 새로운 부모 생성: id 제외, phone 필수`,
+    type: Number,
+    example: 1,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt({ message: '학부모 ID는 정수여야 합니다' })
+  @Min(1, { message: '학부모 ID는 1 이상이어야 합니다' })
+  id?: number;
+
+  @ApiPropertyOptional({
+    description: 'User ID - 회원가입한 사용자와 연결할 때 사용 (선택적)',
     type: Number,
     example: 1,
     minimum: 1,
@@ -45,17 +58,19 @@ export class CreateParentDto {
   name?: string;
 
   @ApiProperty({
-    description:
-      '전화번호 - 학부모 연락처 (하이픈 없이 숫자만, 10~11자리) (필수)',
+    description: `전화번호 - 학부모 연락처 (하이픈 없이 숫자만, 10~11자리)
+    
+⚠️ 새로운 부모 생성 시에만 필수 (id가 없는 경우)`,
     type: String,
-    example: '01012345678',
+    example: '01066661031',
     pattern: '^[0-9]{10,11}$',
   })
+  @IsOptional() // 기존 부모 연결 시에는 불필요하므로 optional로 변경
   @IsString({ message: '전화번호는 문자열이어야 합니다' })
   @Matches(/^[0-9]{10,11}$/, {
     message: '전화번호는 10~11자리 숫자만 입력해주세요',
   })
-  phone: string;
+  phone?: string;
 
   @ApiPropertyOptional({
     description: '비고 - 학부모에 대한 추가 정보나 특이사항 (최대 255자)',

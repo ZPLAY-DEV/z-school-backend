@@ -28,7 +28,7 @@ import {
   SchoolStudentListPaginatedDocs,
 } from './swagger/school-student.swagger.decorator';
 
-@ApiTags('✅ Schools > Students ( 학교 > 학생 )')
+@ApiTags('✳️ Schools > Students ( 학교 > 학생 )')
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schools')
 export class SchoolStudentController {

@@ -20,7 +20,7 @@ import { SchoolNewsletterService } from 'src/domain/school/school-newsletter.ser
 
 // import { Paginate } from 'nestjs-paginate';
 
-@ApiTags('✅ Schools > Newsletters ( 학교 > 뉴스레터 )')
+@ApiTags('✳️ Schools > Newsletters ( 학교 > 뉴스레터 )')
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolNewsletterController {
