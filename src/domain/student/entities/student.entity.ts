@@ -79,13 +79,6 @@ export class Student {
   @Column({ type: 'varchar', length: 16, nullable: true })
   escortPhone: string | null;
 
-  @ApiProperty({
-    description: '미사용!',
-    example: '미사용!',
-  })
-  @Column({ type: 'varchar', length: 32, nullable: true, comment: '하교방법' })
-  homeTransit: string | null;
-
   @ApiProperty({ description: '하교후 목적지', example: '스쿨버스 타러감' })
   @Column({
     type: 'varchar',

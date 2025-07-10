@@ -105,17 +105,6 @@ export class UpdateStudentDto {
   escortPhone?: string;
 
   @ApiPropertyOptional({
-    description: '하교 방법 - 학생의 주요 하교 수단 (최대 32자)',
-    type: String,
-    example: '도보',
-    maxLength: 32,
-  })
-  @IsOptional()
-  @IsString({ message: '하교 방법은 문자열이어야 합니다' })
-  @MaxLength(32, { message: '하교 방법은 32자 이하여야 합니다' })
-  homeTransit?: string;
-
-  @ApiPropertyOptional({
     description: '하교후 가는 곳 - 하교 후 주로 향하는 장소 (최대 32자)',
     type: String,
     example: '집',

@@ -76,7 +76,7 @@ export const CreateStudentDocs = () =>
 ### 📌 비즈니스 규칙
 - **필수 정보**: schoolId, grade, parent (또는 parentId)
 - **부모 정보**: parent 객체는 항상 필수 (parentId 미제공시)
-- **선택 정보**: class, studentCode, name, phone, escortPhone, homeTransit, nextStop, status, note
+- **선택 정보**: class, studentCode, name, phone, escortPhone, nextStop, status, note
 - **중복 체크**: 동일 학교 내 학번 중복 불가
 - **학년 범위**: 1~12학년만 가능
 
@@ -156,7 +156,6 @@ export const CreateStudentDocs = () =>
             status: 'ATTENDING',
             phone: '01011112222',
             escortPhone: '01022223333',
-            homeTransit: '학교버스',
             nextStop: '태권도 학원',
             note: '알레르기: 견과류 주의 필요',
             parent: {
@@ -592,7 +591,7 @@ export const UpdateStudentDocs = () =>
 기존 학생의 정보를 수정합니다.
 
 ### 🔄 수정 가능 항목
-- **학생 정보**: grade, class, studentCode, name, phone, escortPhone, homeTransit, nextStop, status, note
+- **학생 정보**: grade, class, studentCode, name, phone, escortPhone, nextStop, status, note
 - **학부모 정보**: name, phone, note, termsAgreedAt
 
 ### ⛔ 수정 불가 항목

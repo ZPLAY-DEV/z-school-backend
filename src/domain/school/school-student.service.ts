@@ -108,7 +108,6 @@ export class SchoolStudentService {
             dto.studentCode || null,
             dto.phone || null,
             dto.escortPhone || null,
-            dto.homeTransit || null,
             dto.nextStop || null,
             dto.note || null,
           ],
@@ -125,7 +124,6 @@ export class SchoolStudentService {
             studentCode,
             phone,
             escortPhone,
-            homeTransit,
             nextStop,
             note
           )
@@ -138,7 +136,6 @@ export class SchoolStudentService {
             studentCode,
             phone,
             escortPhone,
-            homeTransit,
             nextStop,
             note
           )
@@ -151,7 +148,6 @@ export class SchoolStudentService {
             studentCode = new_student.studentCode,
             phone = new_student.phone,
             escortPhone = new_student.escortPhone,
-            homeTransit = new_student.homeTransit,
             nextStop = new_student.nextStop,
             note = new_student.note
         `,

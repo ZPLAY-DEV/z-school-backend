@@ -24,7 +24,7 @@ import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
  *   - 기존 부모 연결: parent.id 포함 (다른 parent 필드들은 무시됨)
  *   - 새로운 부모 생성: parent.id 제외, parent.phone 필수
  *   - 직접 참조: parentId 제공 (parent 객체 무시됨)
- * - 선택: class, studentCode, name, phone, escortPhone, homeTransit, nextStop, status, note
+ * - 선택: class, studentCode, name, phone, escortPhone, nextStop, status, note
  */
 export class CreateStudentDto {
   @ApiProperty({
@@ -135,17 +135,6 @@ export class CreateStudentDto {
     message: '귀가 동행인 전화번호는 숫자만 입력해주세요',
   })
   escortPhone?: string;
-
-  @ApiPropertyOptional({
-    description: '하교 방법 - 학생의 주요 하교 수단 (최대 32자)',
-    type: String,
-    example: '학교버스',
-    maxLength: 32,
-  })
-  @IsOptional()
-  @IsString({ message: '하교 방법은 문자열이어야 합니다' })
-  @MaxLength(32, { message: '하교 방법은 32자 이하여야 합니다' })
-  homeTransit?: string;
 
   @ApiPropertyOptional({
     description: '하교후 가는 곳 - 하교 후 주로 향하는 장소 (최대 32자)',
