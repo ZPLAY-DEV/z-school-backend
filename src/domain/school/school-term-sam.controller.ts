@@ -15,7 +15,7 @@ import {
   SchoolTermSamWeeklySchooldaysDocs,
 } from './swagger/school-term-sam-swagger.decorator';
 
-@ApiTags('✳️ Schools > Terms > Sam ( 학교 > 학기 > 담임쌤 )')
+@ApiTags('✳️ Schools > Terms > Sams ( 학교 > 학기 > 담임쌤 )')
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermSamController {

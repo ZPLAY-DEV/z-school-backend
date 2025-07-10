@@ -523,7 +523,7 @@ export const SchoolStudentListDocs = () => {
 export const SchoolStudentListPaginatedDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '👥📄 학교 학생 목록 페이지네이션 조회 (검색/필터/정렬)',
+      summary: '👥 학교 학생 목록 페이지네이션 조회 (검색/필터/정렬)',
       description: `
 **📝 기능 설명**
 - 대량의 학생 데이터를 페이지네이션으로 효율적으로 조회합니다
