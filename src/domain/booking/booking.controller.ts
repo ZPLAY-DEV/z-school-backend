@@ -7,12 +7,13 @@ import { ResponseBookingDto } from 'src/domain/booking/dto/response-booking.dto'
 import {
   CancelBookingSwagger,
   CreateBookingSwagger,
+  CreateLateBookingDocs,
 } from 'src/domain/booking/swagger/booking-swagger.decorator';
 import { BookingService } from './booking.service';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
-@ApiTags('✅ Bookings ( 수강신청 )')
+@ApiTags('✳️ Bookings ( 수강신청 )')
 @Controller('bookings')
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
@@ -32,11 +33,12 @@ export class BookingController {
   }
 
   //? ---------------------------------------------------------------------- ?//
-  //? Create 기간외 Booking (수강신청)
+  //? Create 기간이 지난 후 Booking (수강신청) 기록 추가
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateLateBookingDocs()
   @Post('late')
-  async createAfterPeriod(
+  async createLateBooking(
     @Body() dto: CreateLateBookingDto,
   ): Promise<ResponseBookingDto> {
     return await this.bookingService.createLateBooking(dto);

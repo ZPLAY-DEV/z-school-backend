@@ -12,7 +12,7 @@ import { ResponseCreateOfferingPickDto } from 'src/domain/group/dto/response-cre
 import { OfferingPickService } from 'src/domain/offering/offering-pick.service';
 import { CreateOfferingPickDocs } from 'src/domain/offering/swagger/offering-pick-swagger.decorator';
 
-@ApiTags('✅ Offerings > Picks ( 수강신청과목 > 수강생 확정 )')
+@ApiTags('✳️ Offerings > Picks ( 수강신청과목 > 수강생 확정 )')
 @Controller('offerings')
 @UseInterceptors(ClassSerializerInterceptor)
 export class OfferingPickController {

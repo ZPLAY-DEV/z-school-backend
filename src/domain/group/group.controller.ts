@@ -22,8 +22,8 @@ import { GroupService } from 'src/domain/group/group.service';
 import {
   CreateGroupDocs,
   DeleteGroupDocs,
-  FindAvailableStudentsDocs,
   FindGroupDocs,
+  ListAvailableStudentsDocs,
   RestoreGroupDocs,
   UpdateGroupDocs,
 } from 'src/domain/group/swagger/group-swagger.decorator';
@@ -62,12 +62,19 @@ export class GroupController {
     ]);
   }
 
-  @FindAvailableStudentsDocs()
+  @ListAvailableStudentsDocs()
   @Get(':id/available-students')
-  async findAvailableStudents(
+  async listAvailableStudents(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Student[]> {
-    return await this.groupService.findAvailableStudents(id);
+    return await this.groupService.listAvailableStudents(id);
+  }
+
+  @Get(':id/booked-students')
+  async listBookedStudents(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Student[]> {
+    return await this.groupService.listBookedStudents(id);
   }
 
   //? ---------------------------------------------------------------------- ?//

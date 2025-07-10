@@ -37,7 +37,7 @@ import {
 import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
 
 @UseInterceptors(ClassSerializerInterceptor)
-@ApiTags('✅ Auth ( 인증 )')
+@ApiTags('✳️ Auth ( 인증 )')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

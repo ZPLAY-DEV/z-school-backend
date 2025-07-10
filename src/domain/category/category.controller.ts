@@ -6,15 +6,12 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Category as CategoryEnum } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { CategoryService } from './category.service';
-import {
-  GetCategoryListDocs,
-  SeedCategoryDocs,
-} from './swagger/category.swagger.decorator';
+import { GetCategoryListDocs } from './swagger/category.swagger.decorator';
 
 @ApiTags('✳️ Categories ( 분류 )')
 @Controller('categories')
@@ -37,7 +34,7 @@ export class CategoryController {
   //? SEED (DB 생성 후, 단 한번만 호출)
   //? ---------------------------------------------------------------------- ?//
 
-  @SeedCategoryDocs()
+  @ApiOperation({ summary: '⚙️ to initialize table' })
   @Post('seed')
   async seed(): Promise<number> {
     return await this.categoryService.seed();

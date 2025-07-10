@@ -34,7 +34,7 @@ import {
 } from 'src/domain/contract/swagger/contract-swagger.decorator';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 
-@ApiTags('✅ Contracts ( 담임쌤; 반·쌤 pivot )')
+@ApiTags('✳️ Contracts ( 담임쌤; 반·쌤 pivot )')
 @Controller('contracts')
 @UseInterceptors(ClassSerializerInterceptor)
 export class ContractController {

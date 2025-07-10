@@ -257,10 +257,10 @@ export const FindGroupDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
-//? Find Available Students
+//? List Available Students
 //? ---------------------------------------------------------------------- ?//
 
-export const FindAvailableStudentsDocs = () => {
+export const ListAvailableStudentsDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '👥 반 배정 가능한 학생 목록 조회',

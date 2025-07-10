@@ -29,7 +29,7 @@ import {
   UpdateSamDocs,
 } from 'src/domain/sam/swagger/sam.swagger.decorator';
 
-@ApiTags('✳️ Sams ( 학교쌤 ≓ Student )')
+@ApiTags('✳️ Sams ( 학교쌤 )')
 @Controller('sams')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SamController {

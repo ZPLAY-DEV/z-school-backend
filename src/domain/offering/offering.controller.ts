@@ -26,7 +26,7 @@ import {
 import { Student } from 'src/domain/student/entities/student.entity';
 
 //! 단일 Offering 엔터티 작업
-@ApiTags('✅ Offerings ( 수강신청과목 )')
+@ApiTags('✳️ Offerings ( 수강신청과목 )')
 @Controller('offerings')
 @UseInterceptors(ClassSerializerInterceptor)
 export class OfferingController {

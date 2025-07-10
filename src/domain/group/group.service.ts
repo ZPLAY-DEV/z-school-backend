@@ -91,7 +91,7 @@ export class GroupService {
     }
   }
 
-  async findAvailableStudents(id: number): Promise<Student[]> {
+  async listAvailableStudents(id: number): Promise<Student[]> {
     // 1. Group을 찾고 lesson과 lesson.groups, lesson.school 관계를 포함하여 가져오기
     const group = await this.groupRepository.findOne({
       where: { id },
@@ -135,6 +135,25 @@ export class GroupService {
     });
 
     return availableStudents;
+  }
+
+  async listBookedStudents(id: number): Promise<Student[]> {
+    const group = await this.groupRepository.findOne({
+      where: { id },
+      relations: [
+        'lesson',
+        'lesson.groups',
+        'lesson.groups.picks',
+        'lesson.school',
+        'lesson.school.students',
+      ],
+    });
+
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+
+    return [];
   }
 
   //? ---------------------------------------------------------------------- ?//

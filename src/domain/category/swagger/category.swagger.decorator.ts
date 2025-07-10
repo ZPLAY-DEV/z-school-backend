@@ -1,9 +1,8 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiOkResponse,
   ApiOperation,
   ApiQuery,
-  ApiResponse,
+  ApiResponse
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -66,55 +65,4 @@ export const GetCategoryListDocs = () =>
       },
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST),
-  );
-
-// Seed
-export const SeedCategoryDocs = () =>
-  applyDecorators(
-    ApiOperation({
-      summary: '⚙️ 분류 기본 데이터 생성',
-      description: `
-**📝 기능 설명**
-- 시스템 초기화 시 필요한 기본 분류 데이터를 생성합니다
-- 4개의 표준 분류를 자동으로 등록합니다
-- 이미 존재하는 분류는 건너뛰고 새로운 분류만 추가합니다
-
-**🔄 비즈니스 로직**
-1. FREE_CUSTOM: 늘봄맞춤무료 분류 생성
-2. FREE_CARE: 돌봄선택무료 분류 생성
-3. FREE_OPTIONAL: 늘봄선택무료 분류 생성
-4. PAID_OPTIONAL: 늘봄선택유료 분류 생성
-5. 중복 생성 방지로 안전한 재실행 가능
-
-**⚠️ 중요 제약사항**
-- 시스템 초기화 시에만 실행 권장
-- 이미 데이터가 있는 환경에서는 신중히 사용
-- 관리자 권한 필요 (현재는 인증 체크 없음)
-
-**📚 예시 시나리오**
-- 새로운 서버 환경 구축 시 기본 데이터 생성
-- 개발/테스트 환경 초기화
-      `,
-    }),
-    ApiOkResponse({
-      description: '시드 데이터 생성 완료 - 생성된 분류 수 반환',
-      schema: {
-        type: 'number',
-        example: 4,
-        description: '새로 생성된 분류의 개수',
-      },
-    }),
-    ApiResponse({
-      status: 500,
-      description: '데이터베이스 오류',
-      schema: {
-        type: 'object',
-        properties: {
-          statusCode: { type: 'number', example: 500 },
-          message: { type: 'string', example: 'Database connection failed' },
-          error: { type: 'string', example: 'Internal Server Error' },
-        },
-      },
-    }),
-    ApiStatuses(StatusCodes.INTERNAL_SERVER_ERROR),
   );
