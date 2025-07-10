@@ -13,6 +13,8 @@ import { SchoolTermLessonController } from 'src/domain/school/school-term-lesson
 import { SchoolTermLessonService } from 'src/domain/school/school-term-lesson.service';
 import { SchoolTermOfferingController } from 'src/domain/school/school-term-offering.controller';
 import { SchoolTermOfferingService } from 'src/domain/school/school-term-offering.service';
+import { SchoolTermSamController } from 'src/domain/school/school-term-sam.controller';
+import { SchoolTermSamService } from 'src/domain/school/school-term-sam.service';
 import { SchoolTermStudentController } from 'src/domain/school/school-term-student.controller';
 import { SchoolTermStudentService } from 'src/domain/school/school-term-student.service';
 import { SchoolTermController } from 'src/domain/school/school-term.controller';
@@ -38,6 +40,7 @@ import { SqsModule } from 'src/services/aws/sqs.module';
   ],
   controllers: [
     SchoolTermController,
+    SchoolTermSamController,
     SchoolTermStudentController,
     SchoolTermComboController,
     SchoolTermLessonController,
@@ -45,6 +48,7 @@ import { SqsModule } from 'src/services/aws/sqs.module';
   ],
   providers: [
     SchoolTermService,
+    SchoolTermSamService,
     SchoolTermStudentService,
     SchoolTermComboService,
     SchoolTermLessonService,
@@ -52,6 +56,7 @@ import { SqsModule } from 'src/services/aws/sqs.module';
   ],
   exports: [
     SchoolTermService,
+    SchoolTermSamService,
     SchoolTermStudentService,
     SchoolTermComboService,
     SchoolTermLessonService,

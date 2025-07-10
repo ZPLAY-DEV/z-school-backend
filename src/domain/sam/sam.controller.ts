@@ -29,7 +29,7 @@ import {
   UpdateSamDocs,
 } from 'src/domain/sam/swagger/sam.swagger.decorator';
 
-@ApiTags('✳️ Sams ( 학교쌤 )')
+@ApiTags('✳️ Sams ( 담임쌤 )')
 @Controller('sams')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SamController {
@@ -40,14 +40,14 @@ export class SamController {
   //? ---------------------------------------------------------------------- ?//
 
   @CreateSamDocs()
-  @ApiOperation({ description: '학교쌤(Sam) 생성' })
+  @ApiOperation({ description: '담임쌤(Sam) 생성' })
   @Post()
   async create(@Body() dto: CreateSamDto): Promise<Sam> {
     return await this.samService.create(dto);
   }
 
   @SamDryRunDocs()
-  @ApiOperation({ description: '학교쌤(Sam) 생성 dryRun 체크' })
+  @ApiOperation({ description: '담임쌤(Sam) 생성 dryRun 체크' })
   @HttpCode(HttpStatus.OK)
   @Post('dryrun')
   async dryRun(@Body() dto: CreateSamDto): Promise<Sam | null> {

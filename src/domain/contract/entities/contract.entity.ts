@@ -28,7 +28,7 @@ export class Contract {
   @Column({ type: 'int', unsigned: true, nullable: true })
   groupId: number;
 
-  // 어떤 학교쌤이 선택되었는지를 저장
+  // 어떤 담임쌤이 선택되었는지를 저장
   @ApiProperty({ description: 'studentId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   samId: number;

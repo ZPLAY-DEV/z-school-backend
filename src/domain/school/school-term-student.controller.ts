@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -24,6 +25,7 @@ import {
   SchoolTermStudentGroupsPaginatedDocs,
   SchoolTermStudentListDocs,
   SchoolTermStudentSchooldaysDocs,
+  SchoolTermStudentWeeklySchooldaysDocs,
 } from './swagger/school-term-student-swagger.decorator';
 
 @ApiTags('✳️ Schools > Terms > Students ( 학교 > 학기 > 학생 )')
@@ -90,6 +92,22 @@ export class SchoolTermStudentController {
       schoolId,
       termId,
       studentId,
+    );
+  }
+
+  @SchoolTermStudentWeeklySchooldaysDocs()
+  @Get(':schoolId/terms/:termId/students/:studentId/weekly-schooldays')
+  async listWeeklySchooldays(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Query('date') date?: string,
+  ): Promise<Record<string, Schoolday[]>> {
+    return await this.schoolTermStudentService.listWeeklySchooldays(
+      schoolId,
+      termId,
+      studentId,
+      date,
     );
   }
 

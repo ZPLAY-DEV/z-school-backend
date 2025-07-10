@@ -17,7 +17,7 @@ import {
   SoftDeleteShortlinkDocs,
 } from './swagger/shortlink-swagger.decorator';
 
-@ApiTags('✅ Shortlinks ( 숏링크 )')
+@ApiTags('✳️ Shortlinks ( 숏링크 )')
 @Controller('shortlinks')
 @UseInterceptors(ClassSerializerInterceptor)
 export class ShortlinkController {

@@ -79,7 +79,7 @@ class ContractBaseDto {
   @IsPositive()
   groupId: number;
 
-  @ApiProperty({ description: '학교쌤 ID' })
+  @ApiProperty({ description: '담임쌤 ID' })
   @IsInt()
   @IsPositive()
   samId: number;

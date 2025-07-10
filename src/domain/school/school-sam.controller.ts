@@ -26,7 +26,7 @@ import {
   SchoolSamPaginatedDocs,
 } from './swagger/school-sam.swagger.decorator';
 
-@ApiTags('✳️ Schools > Sams ( 학교 > 학교쌤 )')
+@ApiTags('✳️ Schools > Sams ( 학교 > 담임쌤 )')
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolSamController {

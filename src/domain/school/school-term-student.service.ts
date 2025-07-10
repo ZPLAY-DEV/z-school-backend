@@ -1,5 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { endOfWeek, startOfWeek } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import {
   FilterOperator,
   paginate,
@@ -81,6 +83,7 @@ export class SchoolTermStudentService {
 
     // 요일별 결과 객체 초기화
     const result: Record<string, Offering[]> = {
+      SUN: [],
       MON: [],
       TUE: [],
       WED: [],
@@ -120,6 +123,7 @@ export class SchoolTermStudentService {
       .leftJoinAndSelect('student.picks', 'pick')
       .leftJoinAndSelect('pick.group', 'group')
       .leftJoinAndSelect('group.schooldays', 'schoolday')
+      .leftJoinAndSelect('schoolday.group', 'schooldayGroup') // 추가: schoolday의 group 관계 로드
       .where('student.id = :studentId', { studentId })
       .andWhere('student.schoolId = :schoolId', { schoolId })
       .andWhere('pick.termId = :termId', { termId })
@@ -131,21 +135,111 @@ export class SchoolTermStudentService {
       throw new NotFoundException('Student not found');
     }
 
-    // 학생의 picks에서 모든 schooldays 추출
+    // 학생의 picks에서 모든 schooldays 추출 (group 관계 포함됨)
     const schooldays: Schoolday[] = [];
     student.picks?.forEach((pick) => {
       if (pick.group && pick.group.schooldays) {
-        schooldays.push(...pick.group.schooldays);
+        pick.group.schooldays.forEach((schoolday) => {
+          schooldays.push(schoolday);
+        });
       }
     });
 
-    // 중복 제거 (같은 schoolday가 여러 group에 있을 수 있다면...)
-    // const uniqueSchooldays = schooldays.filter(
-    //   (schoolday, index, self) =>
-    //     index === self.findIndex((s) => s.id === schoolday.id),
-    // );
+    // 시간순 정렬
+    schooldays.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 
     return schooldays;
+  }
+
+  async listWeeklySchooldays(
+    schoolId: number,
+    termId: number,
+    studentId: number,
+    date?: string,
+  ): Promise<Record<string, Schoolday[]>> {
+    try {
+      // 1. date 파라미터 처리 (null이면 오늘 날짜)
+      const targetDate = date ? new Date(date) : new Date();
+
+      // 2. 안전한 시간대 처리
+      let kstDate: Date;
+      try {
+        kstDate = toZonedTime(targetDate, 'Asia/Seoul');
+      } catch (timezoneError) {
+        this.logger.warn('시간대 변환 실패, 로컬 시간 사용:', timezoneError);
+        // 시간대 변환 실패시 로컬 시간 사용
+        kstDate = targetDate;
+      }
+
+      // 3. 해당 주의 일요일과 토요일 계산
+      const weekStart = startOfWeek(kstDate, { weekStartsOn: 0 }); // 일요일부터 시작
+      const weekEnd = endOfWeek(kstDate, { weekStartsOn: 0 }); // 토요일까지
+
+      // 4. 먼저 학생 존재 여부 확인 (주별 필터링 없이)
+      const student = await this.studentRepository
+        .createQueryBuilder('student')
+        .leftJoinAndSelect('student.picks', 'pick')
+        .leftJoinAndSelect('pick.group', 'group')
+        .leftJoinAndSelect('group.schooldays', 'schoolday')
+        .leftJoinAndSelect('schoolday.group', 'schooldayGroup')
+        .where('student.id = :studentId', { studentId })
+        .andWhere('student.schoolId = :schoolId', { schoolId })
+        .andWhere('pick.termId = :termId', { termId })
+        .andWhere('pick.endedBy IS NULL')
+        .getOne();
+
+      if (!student) {
+        throw new NotFoundException('Student not found');
+      }
+
+      // 5. 요일별로 그룹화
+      const result: Record<string, Schoolday[]> = {
+        SUN: [],
+        MON: [],
+        TUE: [],
+        WED: [],
+        THU: [],
+        FRI: [],
+        SAT: [],
+      };
+
+      // 6. 학생의 picks에서 해당 주의 schooldays만 추출 및 그룹화
+      student.picks?.forEach((pick) => {
+        if (pick.group && pick.group.schooldays) {
+          pick.group.schooldays.forEach((schoolday) => {
+            // 해당 주에 속하는 schoolday만 필터링
+            if (
+              schoolday.startsAt >= weekStart &&
+              schoolday.startsAt <= weekEnd
+            ) {
+              // schoolday의 시작 시각으로 요일 결정
+              const dayOfWeek = schoolday.startsAt.getDay();
+              const weekdayKey = [
+                'SUN',
+                'MON',
+                'TUE',
+                'WED',
+                'THU',
+                'FRI',
+                'SAT',
+              ][dayOfWeek];
+
+              result[weekdayKey].push(schoolday);
+            }
+          });
+        }
+      });
+
+      // 7. 각 요일별로 시간 순으로 정렬
+      Object.keys(result).forEach((day) => {
+        result[day].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+      });
+
+      return result;
+    } catch (error) {
+      this.logger.error('listWeeklySchooldays 오류:', error);
+      throw error;
+    }
   }
 
   //? 학생의 수강중인 반 조회
@@ -155,10 +249,10 @@ export class SchoolTermStudentService {
     studentId: number,
   ): Promise<Group[]> {
     const queryBuilder = this.groupRepository
-      .createQueryBuilder('student')
-      .leftJoinAndSelect('student.picks', 'pick')
-      .leftJoinAndSelect('pick.group', 'group')
-      .where('student.id = :studentId', { studentId })
+      .createQueryBuilder('group')
+      .leftJoinAndSelect('group.picks', 'pick')
+      .leftJoin('pick.student', 'student')
+      .where('pick.studentId = :studentId', { studentId })
       .andWhere('student.schoolId = :schoolId', { schoolId })
       .andWhere('pick.termId = :termId', { termId })
       .andWhere('pick.endedBy IS NULL');
@@ -176,6 +270,7 @@ export class SchoolTermStudentService {
     const queryBuilder = this.groupRepository
       .createQueryBuilder('group')
       .leftJoinAndSelect('group.picks', 'pick')
+      .leftJoin('pick.student', 'student')
       .where('pick.studentId = :studentId', { studentId })
       .andWhere('student.schoolId = :schoolId', { schoolId })
       .andWhere('pick.termId = :termId', { termId })
@@ -200,6 +295,7 @@ export class SchoolTermStudentService {
     const queryBuilder = this.groupRepository
       .createQueryBuilder('group')
       .leftJoinAndSelect('group.picks', 'pick')
+      .leftJoin('pick.student', 'student')
       .where('pick.studentId = :studentId', { studentId })
       .andWhere('student.schoolId = :schoolId', { schoolId })
       .andWhere('pick.termId = :termId', { termId })
@@ -218,6 +314,7 @@ export class SchoolTermStudentService {
     const queryBuilder = this.groupRepository
       .createQueryBuilder('group')
       .leftJoinAndSelect('group.picks', 'pick')
+      .leftJoin('pick.student', 'student')
       .where('pick.studentId = :studentId', { studentId })
       .andWhere('student.schoolId = :schoolId', { schoolId })
       .andWhere('pick.termId = :termId', { termId })

@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Transform } from 'class-transformer';
-import { formatInTimeZone } from 'date-fns-tz';
+import { Exclude } from 'class-transformer';
 import { Actor } from 'src/common/enums';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -68,11 +67,6 @@ export class Schoolday {
     description: '시작시각 DateTime',
     example: '2025-05-27T08:00:00+09:00',
   })
-  @Transform(({ value }: { value: Date | string | null | undefined }) =>
-    value
-      ? formatInTimeZone(value, 'Asia/Seoul', "yyyy-MM-dd'T'HH:mm:ssXXX")
-      : value,
-  )
   @Column({ type: 'datetime', nullable: true })
   startsAt: Date;
 
@@ -80,11 +74,6 @@ export class Schoolday {
     description: '종료시각 DateTime',
     example: '2025-05-27T09:00:00+09:00',
   })
-  @Transform(({ value }: { value: Date | string | null | undefined }) =>
-    value
-      ? formatInTimeZone(value, 'Asia/Seoul', "yyyy-MM-dd'T'HH:mm:ssXXX")
-      : value,
-  )
   @Column({ type: 'datetime', nullable: true })
   endsAt: Date;
 

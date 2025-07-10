@@ -14,8 +14,8 @@ import {
 import { CreateInstructorDto } from 'src/domain/instructor/dto/create-instructor.dto';
 
 /**
- * 학교쌤 생성 DTO
- * - 새로운 학교쌤을 시스템에 등록할 때 사용
+ * 담임쌤 생성 DTO
+ * - 새로운 담임쌤을 시스템에 등록할 때 사용
  * - 필수: schoolId, alias, instructor (또는 instructorId)
  * - 강사 연결 방식:
  *   - 기존 강사 연결: instructor.id 포함 (다른 instructor 필드들은 무시됨)
@@ -25,7 +25,7 @@ import { CreateInstructorDto } from 'src/domain/instructor/dto/create-instructor
  */
 export class CreateSamDto {
   @ApiProperty({
-    description: '학교 ID - 학교쌤이 소속될 학교의 고유 식별자 (필수)',
+    description: '학교 ID - 담임쌤이 소속될 학교의 고유 식별자 (필수)',
     type: Number,
     example: 1,
     minimum: 1,
@@ -35,7 +35,7 @@ export class CreateSamDto {
 
   @ApiProperty({
     description:
-      '별칭 - 학교쌤의 호칭/닉네임 (필수, 최대 16자, 한글/영문/숫자/공백만 허용)',
+      '별칭 - 담임쌤의 호칭/닉네임 (필수, 최대 16자, 한글/영문/숫자/공백만 허용)',
     type: String,
     example: '홍선생',
     maxLength: 16,
@@ -45,7 +45,7 @@ export class CreateSamDto {
   alias: string;
 
   @ApiPropertyOptional({
-    description: '평점 - 학교쌤의 평가 점수 (0~100점, 기본값: 0)',
+    description: '평점 - 담임쌤의 평가 점수 (0~100점, 기본값: 0)',
     type: Number,
     example: 85,
     minimum: 0,
@@ -80,7 +80,7 @@ export class CreateSamDto {
   editPickPermission?: boolean;
 
   @ApiPropertyOptional({
-    description: '비고 - 학교쌤에 대한 추가 정보나 특이사항 (최대 255자)',
+    description: '비고 - 담임쌤에 대한 추가 정보나 특이사항 (최대 255자)',
     type: String,
     example: '수학 전문 강사, 학생들과 소통이 원활함',
     maxLength: 255,
@@ -107,7 +107,7 @@ export class CreateSamDto {
   instructorId?: number;
 
   @ApiProperty({
-    description: `강사 정보 - 학교쌤의 강사 정보 (instructorId 미제공시 필수)
+    description: `강사 정보 - 담임쌤의 강사 정보 (instructorId 미제공시 필수)
 
 🏷️ 두 가지 연결 방식:
 ✅ 기존 강사 연결: instructor.id만 제공 (다른 필드들은 무시됨)

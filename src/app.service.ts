@@ -51,20 +51,20 @@ export class AppService {
     }
   }
 
-  async purgeTrackings(): Promise<number> {
-    try {
-      const redisClient = this.redisTrackingService.getClient();
-      const keys = await redisClient.keys('tracking:*');
-      if (keys.length > 0) {
-        await redisClient.del(keys);
-        return keys.length;
-      }
-      return 0;
-    } catch (error) {
-      this.logger.error('❌ Redis booking 데이터 삭제 실패', error.stack);
-      throw new InternalServerErrorException(error.message);
-    }
-  }
+  // async purgeTrackings(): Promise<number> {
+  //   try {
+  //     const redisClient = this.redisTrackingService.getClient();
+  //     const keys = await redisClient.keys('tracking:*');
+  //     if (keys.length > 0) {
+  //       await redisClient.del(keys);
+  //       return keys.length;
+  //     }
+  //     return 0;
+  //   } catch (error) {
+  //     this.logger.error('❌ Redis booking 데이터 삭제 실패', error.stack);
+  //     throw new InternalServerErrorException(error.message);
+  //   }
+  // }
 
   async purgeCache(): Promise<number> {
     try {

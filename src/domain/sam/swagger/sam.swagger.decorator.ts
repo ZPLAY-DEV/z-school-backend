@@ -28,19 +28,19 @@ import { UpdateSamDto } from '../dto/update-sam.dto';
 export const CreateSamDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '📝 학교쌤(Sam) 생성',
+      summary: '📝 담임쌤(Sam) 생성',
       description: `
 ### 📋 기능 설명
-새로운 학교쌤을 시스템에 등록합니다.
+새로운 담임쌤을 시스템에 등록합니다.
 
 ### 🏷️ 두 가지 생성 방식
 **1. 🆕 미등록 강사와 함께 생성** (추천)
 - \`instructor.id\` 제외, \`instructor.phone\` 필수
-- 새로운 강사를 생성하면서 학교쌤 등록
+- 새로운 강사를 생성하면서 담임쌤 등록
 
 **2. 🔗 기존 강사와 연결하여 생성**
 - \`instructor.id\`만 제공 (instructor 필드들은 무시됨)
-- 이미 등록된 강사와 학교쌤 연결
+- 이미 등록된 강사와 담임쌤 연결
 
 ### 📌 비즈니스 규칙
 - **필수 정보**: schoolId, alias, instructor
@@ -75,9 +75,9 @@ export const CreateSamDocs = () =>
           },
         },
         'existing-instructor': {
-          summary: '🔗 기존 강사와 연결하여 학교쌤 생성',
+          summary: '🔗 기존 강사와 연결하여 담임쌤 생성',
           description:
-            '이미 등록된 강사와 연결하여 학교쌤을 등록하는 경우 (instructor.id만 포함)',
+            '이미 등록된 강사와 연결하여 담임쌤을 등록하는 경우 (instructor.id만 포함)',
           value: {
             schoolId: 1,
             alias: '홍선생',
@@ -91,9 +91,9 @@ export const CreateSamDocs = () =>
           },
         },
         'new-instructor': {
-          summary: '🆕 미등록 강사와 함께 학교쌤 생성',
+          summary: '🆕 미등록 강사와 함께 담임쌤 생성',
           description:
-            '새로운 강사를 생성하면서 학교쌤을 등록하는 경우 (instructor 객체 포함, instructorId 제외)',
+            '새로운 강사를 생성하면서 담임쌤을 등록하는 경우 (instructor 객체 포함, instructorId 제외)',
           value: {
             schoolId: 1,
             alias: '홍선생',
@@ -109,8 +109,8 @@ export const CreateSamDocs = () =>
           },
         },
         'detailed-new-instructor': {
-          summary: '📝 상세 정보와 함께 새로운 강사 및 학교쌤 생성',
-          description: '새로운 강사의 상세 정보와 함께 학교쌤을 등록하는 경우',
+          summary: '📝 상세 정보와 함께 새로운 강사 및 담임쌤 생성',
+          description: '새로운 강사의 상세 정보와 함께 담임쌤을 등록하는 경우',
           value: {
             schoolId: 1,
             alias: '김수학쌤',
@@ -127,8 +127,8 @@ export const CreateSamDocs = () =>
           },
         },
         'minimal-new-instructor': {
-          summary: '⭐ 최소 정보로 새로운 강사 및 학교쌤 생성',
-          description: '필수 정보만으로 새로운 강사와 학교쌤을 등록하는 경우',
+          summary: '⭐ 최소 정보로 새로운 강사 및 담임쌤 생성',
+          description: '필수 정보만으로 새로운 강사와 담임쌤을 등록하는 경우',
           value: {
             schoolId: 1,
             alias: '이선생',
@@ -140,7 +140,7 @@ export const CreateSamDocs = () =>
       },
     }),
     ApiCreatedResponseTemplate({
-      description: '✅ 학교쌤 생성 성공',
+      description: '✅ 담임쌤 생성 성공',
       type: Sam,
     }),
     ApiResponse({
@@ -165,10 +165,10 @@ export const CreateSamDocs = () =>
 export const SamDryRunDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '🔍 학교쌤 생성 사전 검증',
+      summary: '🔍 담임쌤 생성 사전 검증',
       description: `
 ### 📋 기능 설명
-학교쌤 생성 전 중복 여부를 사전 검증합니다.
+담임쌤 생성 전 중복 여부를 사전 검증합니다.
 
 ### 🏷️ 검증 방식
 실제 생성 API와 동일한 payload 구조를 사용:
@@ -178,14 +178,14 @@ export const SamDryRunDocs = () =>
 ### 🎯 검증 항목
 - 동일 학교 내 강사 전화번호 중복
 - 동일 학교 내 강사명 중복
-- 학교쌤 별칭 중복
+- 담임쌤 별칭 중복
 
 ### 📤 응답
 - **중복 없음**: null 반환
-- **중복 있음**: 중복되는 학교쌤 정보 반환
+- **중복 있음**: 중복되는 담임쌤 정보 반환
 
 ### 💡 사용 시점
-- 학교쌤 등록 폼에서 실시간 검증
+- 담임쌤 등록 폼에서 실시간 검증
 - 대량 등록 전 사전 체크
 - UI에서 중복 경고 표시
       `,
@@ -249,7 +249,7 @@ export const SamDryRunDocs = () =>
           { type: 'null', description: '중복 없음 - 생성 가능' },
           {
             $ref: '#/components/schemas/Sam',
-            description: '중복 학교쌤 정보',
+            description: '중복 담임쌤 정보',
           },
         ],
       },

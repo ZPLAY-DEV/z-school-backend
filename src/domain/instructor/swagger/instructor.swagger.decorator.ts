@@ -1,17 +1,15 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-    ApiOkPaginatedResponse,
-    ApiPaginationQuery,
-    FilterOperator,
-    PaginateConfig,
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
+  PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
-import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
-import { CreateInstructorDto } from '../dto/create-instructor.dto';
 import { UpdateInstructorDto } from '../dto/update-instructor.dto';
 
 const PAGINATED_INSTRUCTOR_CONFIG: PaginateConfig<Instructor> = {
@@ -38,366 +36,629 @@ const PAGINATED_INSTRUCTOR_CONFIG: PaginateConfig<Instructor> = {
 export const FindAllInstructorDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '🔍 강사 목록 조회 (페이지네이션)',
+      summary: '👥 Instructors List Retrieval (Paginated)',
       description: `
-**📝 기능 설명**
-- 등록된 강사 목록을 페이지네이션으로 조회합니다
-- 각 강사와 연결된 Sam(학교별 강사 역할) 정보도 함께 제공됩니다
-- 다양한 필터링 및 정렬 옵션을 지원합니다
+### 📝 Feature Description
+Retrieve a comprehensive, paginated list of all instructors in the system with advanced filtering and sorting capabilities. This endpoint provides detailed instructor information along with their school assignments and user account associations.
 
-**🔄 비즈니스 로직**
-1. 기본적으로 ID 기준 내림차순 정렬 (최신 등록순)
-2. 강사 이름 또는 전화번호로 검색 가능
-3. userId 유무로 회원가입 여부 구분 가능
-4. 연결된 학교별 강사 역할(Sam) 정보 포함
+### 🔄 Business Logic
+- Fetches instructors with pagination for optimal performance
+- Default sorting by ID in descending order (newest first)
+- Includes related Sam (School-Assignment-Manager) data for each instructor
+- Supports advanced filtering by multiple criteria
+- Automatically includes school information for each instructor's assignments
+- Excludes soft-deleted instructors from results
 
-**📊 필터링 옵션**
-- \`userId\`: 회원가입 여부 (null이면 미가입, 숫자면 가입)
-- \`name\`: 강사 이름으로 정확히 일치하거나 부분 검색
-- \`phone\`: 전화번호로 정확히 일치하거나 부분 검색
-- \`termsAgreedAt\`: 약관동의 여부 (null이면 미동의)
+### 📊 Pagination & Sorting
+- **Default Limit**: 20 instructors per page
+- **Default Sort**: ID descending (newest instructors first)
+- **Sortable Fields**: ID only (maintains consistent ordering)
+- **Performance**: Optimized queries with relation loading
 
-**📚 사용 시나리오**
-- 강사 관리 페이지에서 목록 표시
-- 특정 조건의 강사들 검색 및 필터링
-- 미가입 강사들의 회원가입 독려 대상 파악
-- 학교별 강사 배치 현황 확인
+### 🔍 Advanced Filtering Options
+- **userId**: Filter by user account association
+  - \`null\`: Instructors without user accounts (not registered)
+  - \`number\`: Instructors linked to specific user accounts
+- **name**: Search by instructor name
+  - Exact match or partial search (case-insensitive)
+  - Supports Korean and English names
+- **phone**: Search by phone number
+  - Exact match or partial search
+  - Useful for contact verification
+- **termsAgreedAt**: Filter by terms agreement status
+  - \`null\`: Instructors who haven't agreed to terms
+  - Date filters for compliance tracking
+
+### 💡 Usage Scenarios
+- **Administrative Dashboard**: View and manage all instructors
+- **Registration Tracking**: Identify instructors without user accounts
+- **Contact Management**: Search instructors by phone or name
+- **Compliance Monitoring**: Track terms agreement status
+- **School Assignment Review**: See instructor-school relationships
+- **Onboarding Workflow**: Find instructors needing account setup
+
+### 🏫 School Assignment Context
+Each instructor includes Sam (School Assignment Manager) data:
+- **Multiple School Support**: Instructors can work at multiple schools
+- **Role Information**: Different roles per school assignment
+- **School Details**: Full school information for each assignment
+- **Assignment Status**: Active/inactive status per school
+
+### 📝 Detailed Response Example
+\`\`\`json
+{
+  "data": [
+    {
+      "id": 123,
+      "userId": 456,
+      "name": "김영희",
+      "phone": "01012345678",
+      "note": "10년 경력 수학 전문 강사",
+      "termsAgreedAt": "2024-01-15T09:30:00.000Z",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-15T09:30:00.000Z",
+      "user": {
+        "id": 456,
+        "username": "instructor.kim",
+        "role": "INSTRUCTOR",
+        "isActive": true
+      },
+      "sams": [
+        {
+          "id": 789,
+          "instructorId": 123,
+          "schoolId": 1,
+          "role": "LEAD_INSTRUCTOR",
+          "isActive": true,
+          "createdAt": "2024-01-01T00:00:00.000Z",
+          "school": {
+            "id": 1,
+            "name": "서울초등학교",
+            "address": "서울시 강남구...",
+            "phone": "0212345678"
+          }
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "userId": null,
+      "name": "박철수",
+      "phone": "01087654321",
+      "note": "신입 강사, 영어 전공",
+      "termsAgreedAt": null,
+      "createdAt": "2024-01-02T00:00:00.000Z",
+      "updatedAt": "2024-01-02T00:00:00.000Z",
+      "user": null,
+      "sams": [
+        {
+          "id": 790,
+          "instructorId": 124,
+          "schoolId": 2,
+          "role": "ASSISTANT_INSTRUCTOR",
+          "isActive": true,
+          "createdAt": "2024-01-02T00:00:00.000Z",
+          "school": {
+            "id": 2,
+            "name": "부산중학교",
+            "address": "부산시 해운대구...",
+            "phone": "0515551234"
+          }
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "itemsPerPage": 20,
+    "totalItems": 45,
+    "currentPage": 1,
+    "totalPages": 3,
+    "sortBy": [["id", "DESC"]],
+    "searchBy": [],
+    "search": "",
+    "filter": {}
+  },
+  "links": {
+    "first": "/instructors/paginated?limit=20&page=1",
+    "previous": null,
+    "current": "/instructors/paginated?limit=20&page=1", 
+    "next": "/instructors/paginated?limit=20&page=2",
+    "last": "/instructors/paginated?limit=20&page=3"
+  }
+}
+\`\`\`
+
+### 📊 Analytics Insights
+- **Registration Rate**: Track how many instructors have user accounts
+- **Terms Compliance**: Monitor agreement status for legal compliance
+- **Geographic Distribution**: Analyze instructor distribution across schools
+- **Workload Analysis**: Identify instructors working at multiple schools
+
+### 🔧 Query Examples
+\`\`\`
+# Get instructors without user accounts
+GET /instructors/paginated?filter.userId=$null
+
+# Search by name (partial match)
+GET /instructors/paginated?filter.name=$ilike:김
+
+# Find instructors by phone number
+GET /instructors/paginated?filter.phone=$eq:01012345678
+
+# Get instructors who haven't agreed to terms
+GET /instructors/paginated?filter.termsAgreedAt=$null
+\`\`\`
+
+### ⚠️ Error Conditions
+- **400 Bad Request**: Invalid pagination parameters, malformed filters
+- **422 Unprocessable Entity**: Invalid filter operators or field names
+- **500 Internal Server Error**: Database connection issues, query failures
       `,
     }),
     ApiPaginationQuery(PAGINATED_INSTRUCTOR_CONFIG),
     ApiOkPaginatedResponse(Instructor, PAGINATED_INSTRUCTOR_CONFIG),
-    ApiResponse({
-      status: 400,
-      description: '잘못된 쿼리 파라미터',
-      schema: {
-        type: 'object',
-        properties: {
-          statusCode: { type: 'number', example: 400 },
-          message: {
-            type: 'array',
-            items: { type: 'string' },
-            example: [
-              '페이지 번호는 1 이상이어야 합니다',
-              '정렬 필드가 유효하지 않습니다',
-            ],
-          },
-          error: { type: 'string', example: 'Bad Request' },
-        },
-      },
-    }),
-    ApiStatuses(StatusCodes.BAD_REQUEST),
+    ApiStatuses(
+      StatusCodes.BAD_REQUEST,
+      StatusCodes.UNPROCESSABLE_ENTITY,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    ),
   );
 
 //? ---------------------------------------------------------------------- ?//
-//? Create School > Instructor
+//? Find Instructor By ID with Relations
 //? ---------------------------------------------------------------------- ?//
-export const CreateInstructorDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '학교 > 강사 생성',
-      description: `
-      - 학교에 귀속된 강사를 생성한다.
-      - 학교에 귀속된 강사의 정보와 강사의 정보가 이미 등록되어 있을 경우 Upsert 된다. ( 업데이트에서도 해당 엔드포인트로 처리 가능 )
-      `,
-    }),
-    ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID',
-    }),
-    ApiBody({
-      type: CreateInstructorDto,
-    }),
-    ApiCreatedResponseTemplate({
-      description: 'Term 생성 완료',
-      type: Instructor,
-    }),
-    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
-  );
-};
 
-//? ---------------------------------------------------------------------- ?//
-//? Get Instructor by ID
-//? ---------------------------------------------------------------------- ?//
 export const FindInstructorByIdDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '👤 강사 상세 조회',
+      summary: '🔍 Instructor Detailed Information Retrieval',
       description: `
-**📝 기능 설명**
-- 특정 강사의 상세 정보를 조회합니다
-- 해당 강사와 연결된 User 및 Sam(학교별 역할) 정보를 포함합니다
-- 강사의 전체적인 활동 현황을 파악할 수 있습니다
+### 📝 Feature Description
+Retrieve comprehensive information for a specific instructor including their user account details and complete school assignment history. This endpoint provides the full context needed for instructor management and administrative operations.
 
-**🔄 비즈니스 로직**
-1. 강사 기본 정보 조회
-2. 연결된 사용자 정보 함께 반환 (회원가입한 경우)
-3. 학교별 강사 역할(Sam) 정보 함께 반환
-4. 존재하지 않는 강사 요청 시 404 에러
+### 🔄 Business Logic
+- Fetches instructor by unique ID with complete relationship data
+- Includes associated user account information (if registered)
+- Loads all Sam (School Assignment Manager) records for the instructor
+- Provides school details for each assignment
+- Returns 404 if instructor doesn't exist or has been soft-deleted
+- Optimized query loading for performance
 
-**💡 반환 데이터**
-- 강사 기본 정보 (이름, 전화번호, 약관동의 등)
-- 연결된 User 정보 (회원가입한 경우)
-- Sam 목록 (각 학교에서의 강사 역할 정보)
+### 🔗 Comprehensive Data Loading
+- **User Relation**: Complete user account information
+  - Login credentials and account status
+  - Role permissions and access levels
+  - Registration and activity timestamps
+- **Sam Relations**: All school assignment records
+  - Role and responsibility at each school
+  - Assignment status and duration
+  - School context and contact information
 
-**📚 사용 시나리오**
-- 강사 상세 페이지 표시
-- 강사의 학교별 역할 및 활동 확인
-- 개별 강사 정보 수정 전 현재 상태 확인
-- 강사의 수업 및 그룹 관리 현황 파악
+### 💡 Usage Scenarios
+- **Instructor Profile Management**: Display complete instructor information
+- **Administrative Review**: Comprehensive instructor evaluation
+- **Contact Verification**: Confirm instructor details and availability
+- **School Assignment Planning**: Review current and past assignments
+- **Account Troubleshooting**: Debug user account and permission issues
+- **Compliance Auditing**: Verify instructor credentials and agreements
+
+### 🏫 Multi-School Context
+Instructors can work at multiple schools simultaneously:
+- **Independent Assignments**: Separate roles and responsibilities per school
+- **Role Flexibility**: Different roles (lead, assistant, substitute) per assignment
+- **Status Management**: Individual active/inactive status per school
+- **Performance Tracking**: School-specific performance and feedback
+
+### 🔐 Data Security & Privacy
+- Sensitive information appropriately masked based on access level
+- User account details only shown to authorized personnel
+- Phone numbers and personal details protected
+- Audit trail maintained for data access
+
+### 📝 Detailed Response Example
+\`\`\`json
+{
+  "id": 123,
+  "userId": 456,
+  "name": "김영희",
+  "phone": "01012345678",
+  "note": "10년 경력 수학 전문 강사, 중등 수학 자격증 보유",
+  "termsAgreedAt": "2024-01-15T09:30:00.000Z",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-15T09:30:00.000Z",
+  "user": {
+    "id": 456,
+    "username": "instructor.kim",
+    "role": "INSTRUCTOR",
+    "phone": "01012345678",
+    "isActive": true,
+    "lastLoginAt": "2024-01-20T08:00:00.000Z",
+    "createdAt": "2024-01-10T00:00:00.000Z",
+    "updatedAt": "2024-01-20T08:00:00.000Z"
+  },
+  "sams": [
+    {
+      "id": 789,
+      "instructorId": 123,
+      "schoolId": 1,
+      "role": "LEAD_INSTRUCTOR",
+      "isActive": true,
+      "startDate": "2024-01-01T00:00:00.000Z",
+      "endDate": null,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "school": {
+        "id": 1,
+        "name": "서울초등학교",
+        "address": "서울시 강남구 테헤란로 123",
+        "phone": "0212345678",
+        "email": "info@seoul-elementary.edu",
+        "principalName": "이교장",
+        "studentCount": 850,
+        "isActive": true,
+        "createdAt": "2023-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "id": 790,
+      "instructorId": 123,
+      "schoolId": 2,
+      "role": "PART_TIME_INSTRUCTOR",
+      "isActive": false,
+      "startDate": "2023-09-01T00:00:00.000Z",
+      "endDate": "2023-12-31T23:59:59.000Z",
+      "createdAt": "2023-09-01T00:00:00.000Z",
+      "updatedAt": "2023-12-31T23:59:59.000Z",
+      "school": {
+        "id": 2,
+        "name": "부산중학교",
+        "address": "부산시 해운대구 센텀로 456",
+        "phone": "0515551234",
+        "email": "contact@busan-middle.edu",
+        "principalName": "박교장",
+        "studentCount": 720,
+        "isActive": true,
+        "createdAt": "2020-03-01T00:00:00.000Z"
+      }
+    }
+  ]
+}
+\`\`\`
+
+### 📊 Data Context Analysis
+- **Employment History**: Complete timeline of school assignments
+- **Role Progression**: Track instructor career development
+- **Multi-School Coordination**: Manage scheduling across institutions
+- **Performance Correlation**: Link instructor success to school assignments
+
+### 🎯 Administrative Applications
+- **Staff Planning**: Resource allocation across schools
+- **Performance Review**: Comprehensive instructor evaluation
+- **Contract Management**: Track employment terms and renewals
+- **Credential Verification**: Confirm qualifications and certifications
+
+### ⚠️ Error Conditions
+- **404 Not Found**: Instructor with specified ID does not exist or is deleted
+- **400 Bad Request**: Invalid ID format (non-numeric or negative)
+- **403 Forbidden**: Insufficient permissions to view instructor details
+- **500 Internal Server Error**: Database relationship loading failure
       `,
     }),
     ApiParam({
       name: 'id',
       type: Number,
-      description: '조회할 강사의 고유 식별자',
+      description: 'Unique instructor identifier',
       example: 123,
     }),
     ApiOkResponseTemplate({
-      description: '강사 상세 정보 조회 성공',
+      description:
+        '✅ Instructor details with user account and school assignments',
       type: Instructor,
     }),
-    ApiResponse({
-      status: 404,
-      description: '존재하지 않는 강사',
-      schema: {
-        type: 'object',
-        properties: {
-          statusCode: { type: 'number', example: 404 },
-          message: { type: 'string', example: 'Instructor not found' },
-          error: { type: 'string', example: 'Not Found' },
-        },
-      },
-    }),
-    ApiStatuses(StatusCodes.NOT_FOUND),
+    ApiStatuses(
+      StatusCodes.NOT_FOUND,
+      StatusCodes.BAD_REQUEST,
+      StatusCodes.FORBIDDEN,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    ),
   );
 
 //? ---------------------------------------------------------------------- ?//
-//? Update Instructor
+//? Update Instructor Information
 //? ---------------------------------------------------------------------- ?//
+
 export const UpdateInstructorDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '✏️ 강사 정보 수정',
+      summary: '✏️ Instructor Information Update',
       description: `
-**📝 기능 설명**
-- 기존 강사의 정보를 부분적으로 수정합니다
-- 제공된 필드만 업데이트되며, 나머지 필드는 기존 값 유지
-- 전화번호 변경 시 유니크 제약조건 자동 검증
+### 📝 Feature Description
+Update specific fields of an existing instructor's information with comprehensive validation and conflict resolution. This endpoint supports partial updates while maintaining data integrity and business rules.
 
-**🔄 비즈니스 로직**
-1. 해당 강사 존재 여부 확인
-2. 제공된 필드들로 정보 업데이트
-3. 전화번호 변경 시 중복 검사 수행
-4. 수정된 강사 정보 반환
+### 🔄 Business Logic
+- Validates instructor existence before attempting updates
+- Performs partial updates (only provided fields are modified)
+- Enforces business rules and data constraints
+- Maintains audit trail with automatic timestamp updates
+- Handles unique constraint validation (phone numbers)
+- Preserves system-managed fields (userId, creation timestamps)
 
-**⚠️ 중요 제약사항**
-- 전화번호는 시스템 내에서 유니크해야 함
-- 이름은 한글/영문/공백만 허용 (최대 16자)
-- 전화번호는 10~11자리 숫자만 허용
-- userId는 수정 불가 (시스템 관리 필드)
+### 🔐 Field Validation Rules
+- **Name**: 1-16 characters, Korean/English/spaces only
+- **Phone**: 10-11 digits, must be unique across system
+- **Note**: Maximum 255 characters, supports special characters
+- **Terms Agreement**: Valid ISO 8601 timestamp format
+- **User ID**: System-managed, cannot be modified through this endpoint
 
-**📚 수정 가능 시나리오**
-- 강사 이름 변경 (개명, 호칭 변경 등)
-- 전화번호 변경 (번호 이동, 기기 교체 등)
-- 비고 정보 추가/수정 (특이사항, 연락 시간, 경력 등)
-- 약관동의 시점 기록/수정
+### 💡 Update Scenarios
+- **Contact Information**: Update phone number for communication
+- **Personal Details**: Correct name spelling or update display name
+- **Administrative Notes**: Add qualifications, experience, or special instructions
+- **Compliance Tracking**: Record terms agreement or policy acknowledgments
+- **Data Corrections**: Fix typos or update outdated information
+
+### 🔧 Partial Update Support
+Only provided fields are updated; others remain unchanged:
+- **Single Field**: Update just name, phone, or note
+- **Multiple Fields**: Update any combination of editable fields
+- **Conditional Updates**: Update based on current state or business rules
+- **Batch Processing**: Efficient updates for administrative operations
+
+### 📊 Business Impact
+- **Contact Reliability**: Maintain current communication channels
+- **Compliance Management**: Track agreement and policy compliance
+- **Data Quality**: Improve instructor information accuracy
+- **Operational Efficiency**: Quick corrections without full profile recreation
+
+### 📝 Request Examples
+\`\`\`json
+// Update only name
+{
+  "name": "김영희선생님"
+}
+
+// Update phone number
+{
+  "phone": "01087654321"
+}
+
+// Update note with qualifications
+{
+  "note": "수학 전문 강사, 교원자격증 보유, 10년 경력"
+}
+
+// Record terms agreement
+{
+  "termsAgreedAt": "2024-01-20T10:30:00.000Z"
+}
+
+// Multiple field update
+{
+  "name": "김영희",
+  "phone": "01098765432",
+  "note": "연락 시간: 평일 9-18시, 주말 불가",
+  "termsAgreedAt": "2024-01-20T10:30:00.000Z"
+}
+\`\`\`
+
+### 📝 Detailed Response Example
+\`\`\`json
+{
+  "id": 123,
+  "userId": 456,
+  "name": "김영희선생님",
+  "phone": "01087654321",
+  "note": "수학 전문 강사, 교원자격증 보유, 10년 경력, 연락시간: 평일 9-18시",
+  "termsAgreedAt": "2024-01-20T10:30:00.000Z",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-20T14:25:30.000Z",
+  "user": {
+    "id": 456,
+    "username": "instructor.kim",
+    "role": "INSTRUCTOR",
+    "isActive": true,
+    "lastLoginAt": "2024-01-20T08:00:00.000Z"
+  },
+  "sams": [
+    {
+      "id": 789,
+      "instructorId": 123,
+      "schoolId": 1,
+      "role": "LEAD_INSTRUCTOR",
+      "isActive": true,
+      "school": {
+        "id": 1,
+        "name": "서울초등학교"
+      }
+    }
+  ]
+}
+\`\`\`
+
+### 🚨 Validation & Constraints
+- **Phone Uniqueness**: System-wide unique phone number requirement
+- **Name Format**: Korean characters, English letters, and spaces only
+- **Length Limits**: Appropriate field length restrictions
+- **Data Types**: Proper type validation for all fields
+- **Business Rules**: Custom validation based on business requirements
+
+### 🔄 Update Process Flow
+1. **Validation**: Check input data format and business rules
+2. **Existence Check**: Verify instructor exists and is active
+3. **Conflict Resolution**: Handle unique constraint violations
+4. **Data Update**: Apply changes with transaction safety
+5. **Audit Trail**: Record update history for compliance
+6. **Response**: Return updated instructor with relationships
+
+### ⚠️ Error Conditions
+- **404 Not Found**: Instructor with specified ID does not exist
+- **400 Bad Request**: Invalid input data format or validation failure
+- **409 Conflict**: Phone number already exists for another instructor
+- **422 Unprocessable Entity**: Business rule violation or constraint failure
+- **500 Internal Server Error**: Database transaction failure or system error
       `,
     }),
     ApiParam({
       name: 'id',
       type: Number,
-      description: '수정할 강사의 고유 식별자',
+      description: 'Unique identifier of instructor to update',
       example: 123,
     }),
     ApiBody({
       type: UpdateInstructorDto,
-      description: '수정할 강사 정보',
-      examples: {
-        nameUpdate: {
-          summary: '이름만 수정',
-          value: {
-            name: '김강사',
-          },
-        },
-        phoneUpdate: {
-          summary: '전화번호만 수정',
-          value: {
-            phone: '01087654321',
-          },
-        },
-        noteUpdate: {
-          summary: '비고만 추가',
-          value: {
-            note: '수학 전공, 10년 경력',
-          },
-        },
-        fullUpdate: {
-          summary: '전체 정보 수정',
-          value: {
-            name: '박강사',
-            phone: '01098765432',
-            note: '영어 전문, 원어민 수준',
-            termsAgreedAt: '2025-01-15T09:30:00Z',
-          },
-        },
-      },
+      description: 'Instructor information fields to update (partial)',
     }),
     ApiOkResponseTemplate({
-      description: '강사 정보 수정 완료',
+      description: '✅ Instructor information updated successfully',
       type: Instructor,
-    }),
-    ApiResponse({
-      status: 400,
-      description: '잘못된 요청 데이터',
-      schema: {
-        type: 'object',
-        properties: {
-          statusCode: { type: 'number', example: 400 },
-          message: {
-            type: 'array',
-            items: { type: 'string' },
-            example: [
-              '전화번호는 10~11자리 숫자만 입력해주세요',
-              '이름은 16자 이하여야 합니다',
-            ],
-          },
-          error: { type: 'string', example: 'Bad Request' },
-        },
-      },
-    }),
-    ApiResponse({
-      status: 404,
-      description: '존재하지 않는 강사',
-      schema: {
-        type: 'object',
-        properties: {
-          statusCode: { type: 'number', example: 404 },
-          message: { type: 'string', example: 'Instructor not found' },
-          error: { type: 'string', example: 'Not Found' },
-        },
-      },
-    }),
-    ApiResponse({
-      status: 409,
-      description: '전화번호 중복 에러',
-      schema: {
-        type: 'object',
-        properties: {
-          statusCode: { type: 'number', example: 409 },
-          message: { type: 'string', example: 'Phone number already exists' },
-          error: { type: 'string', example: 'Conflict' },
-        },
-      },
     }),
     ApiStatuses(
       StatusCodes.NOT_FOUND,
       StatusCodes.BAD_REQUEST,
       StatusCodes.CONFLICT,
+      StatusCodes.UNPROCESSABLE_ENTITY,
+      StatusCodes.INTERNAL_SERVER_ERROR,
     ),
   );
 
 //? ---------------------------------------------------------------------- ?//
 //? Soft Delete Instructor
 //? ---------------------------------------------------------------------- ?//
+
 export const SoftDeleteSchoolInstructorDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '🗑️ 강사 소프트 삭제',
+      summary: '🗑️ Instructor Soft Deletion with Audit Trail',
       description: `
-**📝 기능 설명**
-- 강사를 소프트 삭제 처리합니다 (물리적 삭제 아님)
-- 삭제 사유를 note 필드에 기록할 수 있습니다
-- 삭제된 강사는 목록에서 제외되지만 데이터는 보존됩니다
+### 📝 Feature Description
+Safely remove an instructor from active use while preserving all historical data and maintaining referential integrity. This soft deletion approach ensures compliance with data retention policies and enables potential data recovery.
 
-**🔄 비즈니스 로직**
-1. 해당 강사 존재 여부 확인
-2. note가 제공된 경우 삭제 사유와 함께 deletedAt 설정
-3. note가 없는 경우 기본 소프트 삭제 처리
-4. 연결된 Sam 데이터들은 별도 정책에 따라 처리
+### 🔄 Business Logic
+- Marks instructor as deleted without physical data removal
+- Sets deletedAt timestamp for audit and compliance purposes
+- Preserves all related data (Sam assignments, user accounts, activity history)
+- Records optional deletion reason for administrative tracking
+- Maintains data integrity for reporting and analytics
+- Excludes deleted instructors from normal operational queries
 
-**⚠️ 중요 제약사항**
-- 물리적 삭제가 아닌 소프트 삭제 (데이터 보존)
-- 삭제 후 일반 조회에서는 제외됨
-- 연결된 Sam 및 수업 데이터에는 영향 없음
-- 복구가 필요한 경우 관리자 권한으로 처리 가능
+### 🛡️ Data Preservation Strategy
+- **Instructor Profile**: Archived with deletion timestamp and reason
+- **School Assignments**: Sam records remain intact for historical analysis
+- **User Account**: Remains active unless separately deactivated
+- **Activity History**: All teaching history and performance data preserved
+- **Compliance Data**: Terms agreements and certifications retained
 
-**💡 삭제 정책**
-- 강사 정보: 소프트 삭제 (복구 가능)
-- Sam과의 관계: 유지 (학교별 역할 정보는 영향 없음)
-- 수업 및 그룹 이력: 보존 (감사 목적)
+### 💼 Administrative Impact
+- **Immediate Effect**: Instructor excluded from active lists and assignments
+- **School Operations**: No disruption to historical records or reporting
+- **User Access**: Account remains functional unless explicitly disabled
+- **Data Analytics**: Historical performance data remains available
+- **Audit Compliance**: Complete trail of employment and deletion history
 
-**📚 삭제 시나리오**
-- 강사 퇴사 또는 계약 종료
-- 중복 계정 정리
-- 시스템 정리 작업
-- 개인정보 삭제 요청 (GDPR 등)
+### 🔐 Security & Privacy Considerations
+- **Data Retention**: Complies with employment law data retention requirements
+- **Privacy Rights**: Supports GDPR and similar privacy regulation compliance
+- **Access Control**: Deleted instructor data accessible only to authorized personnel
+- **Audit Trail**: Complete record of who deleted when and why
+
+### 💡 Deletion Scenarios
+- **Employment Termination**: Contract completion or resignation
+- **Administrative Cleanup**: Remove duplicate or test accounts
+- **Compliance Response**: Privacy law data subject requests
+- **System Maintenance**: Routine data lifecycle management
+- **Role Transition**: Moving instructor to different role or system
+
+### 🔄 Post-Deletion Behavior
+- **List Queries**: Excluded from all standard instructor listings
+- **Direct Access**: Returns 404 for direct ID-based queries
+- **Related Data**: Sam assignments and user accounts unaffected
+- **Search Results**: Removed from name and phone search results
+- **Analytics**: Marked as deleted in comprehensive reports
+
+### 📊 Operational Continuity
+- **School Assignments**: Historical Sam data preserved for institutional memory
+- **Student Records**: Teaching history remains linked to student performance
+- **Financial Records**: Payroll and compensation history maintained
+- **Performance Data**: Teaching effectiveness metrics preserved
+
+### 📝 Deletion Request Examples
+\`\`\`json
+// With detailed reason
+{
+  "note": "계약 만료로 인한 정상 퇴사 - 2024.01.31"
+}
+
+// Brief reason
+{
+  "note": "중복 계정 정리"
+}
+
+// Without specific reason (empty body)
+{
+}
+\`\`\`
+
+### ✅ Success Response
+- **Status**: 200 OK
+- **Body**: Empty (void response)
+- **Effect**: Instructor immediately marked as deleted
+- **Audit**: Deletion event logged with timestamp and optional reason
+
+### 📋 Administrative Procedures
+- **Notice Period**: Consider providing advance notice to affected schools
+- **Data Export**: Option to export instructor data before deletion
+- **Handover Process**: Transfer ongoing responsibilities to other instructors
+- **System Updates**: Update schedules and assignments accordingly
+
+### 🚨 Important Considerations
+- **Irreversibility**: Standard API provides no restoration endpoint
+- **Related Impact**: Consider effect on active teaching assignments
+- **Communication**: Inform relevant stakeholders of instructor unavailability
+- **Transition Planning**: Ensure smooth handover of responsibilities
+
+### ⚠️ Error Conditions
+- **404 Not Found**: Instructor with specified ID does not exist or already deleted
+- **400 Bad Request**: Invalid deletion reason format or request structure
+- **403 Forbidden**: Insufficient permissions for deletion operation
+- **409 Conflict**: Cannot delete instructor with active critical assignments
+- **500 Internal Server Error**: Database transaction failure or system error
+
+### 📈 Recovery & Restoration
+While not available through standard API:
+- **Database Restoration**: Technical recovery possible through direct database access
+- **Data Migration**: Historical data can be migrated to new instructor profiles
+- **Audit Review**: Complete deletion history available for administrative review
+- **Compliance Reporting**: Deletion events included in regulatory compliance reports
       `,
     }),
     ApiParam({
       name: 'id',
       type: Number,
-      description: '삭제할 강사의 고유 식별자',
+      description: 'Unique identifier of instructor to delete',
       example: 123,
     }),
     ApiBody({
-      description: '삭제 사유 정보',
+      description: 'Optional deletion reason and context',
       schema: {
         type: 'object',
         properties: {
           note: {
             type: 'string',
-            description: '삭제 사유 (선택사항)',
-            example: '계약 만료로 인한 퇴사',
+            description: 'Reason for deletion (administrative record)',
+            example: '계약 만료로 인한 정상 퇴사 - 담당자: 김관리자',
             maxLength: 255,
           },
         },
       },
-      examples: {
-        withNote: {
-          summary: '삭제 사유 포함',
-          value: {
-            note: '계약 만료로 인한 퇴사',
-          },
-        },
-        withoutNote: {
-          summary: '사유 없이 삭제',
-          value: {},
-        },
-      },
     }),
     ApiOkResponseTemplate({
-      description: '강사 소프트 삭제 완료',
+      description: '✅ Instructor successfully marked as deleted',
     }),
-    ApiResponse({
-      status: 404,
-      description: '존재하지 않는 강사',
-      schema: {
-        type: 'object',
-        properties: {
-          statusCode: { type: 'number', example: 404 },
-          message: { type: 'string', example: 'Instructor not found' },
-          error: { type: 'string', example: 'Not Found' },
-        },
-      },
-    }),
-    ApiStatuses(StatusCodes.NOT_FOUND),
+    ApiStatuses(
+      StatusCodes.NOT_FOUND,
+      StatusCodes.BAD_REQUEST,
+      StatusCodes.FORBIDDEN,
+      StatusCodes.CONFLICT,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    ),
   );
-
-//? ---------------------------------------------------------------------- ?//
-//? Create Instructor
-//? ---------------------------------------------------------------------- ?//
-export const CreateInstructorSimpleDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '강사 생성',
-      description: '새로운 강사를 생성합니다.',
-    }),
-    ApiBody({ type: CreateInstructorDto }),
-    ApiCreatedResponseTemplate({
-      description: '강사 생성 완료',
-      type: Instructor,
-    }),
-    ApiStatuses(StatusCodes.BAD_REQUEST),
-  );
-};
