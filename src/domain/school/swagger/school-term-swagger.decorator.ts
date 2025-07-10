@@ -44,40 +44,38 @@ GET /v1/schools/123/terms
 \`\`\`json
 [
   {
-    "id": 456,
-    "termName": "2024학년도 1학기",
-    "startDate": "2024-03-01",
-    "endDate": "2024-07-15",
-    "pickStartDate": "2024-02-15",
-    "pickEndDate": "2024-02-28",
-    "status": "ACTIVE",
-    "totalLessons": 25,
-    "totalStudents": 150,
-    "createdAt": "2024-01-15T09:00:00Z"
+    "id": 1,
+    "schoolId": 1,
+    "schoolName": "삼척초등학교",
+    "schoolYear": 2025,
+    "termName": "봄학기",
+    "start": "2025-03-01",
+    "end": "2025-05-31",
+    "allowTimeOverlap": false,
+    "pickRule": "RANDOM",
+    "type": "REGULAR",
+    "isOfferingReady": false,
+    "bookingStart": null,
+    "bookingEnd": null,
+    "createdAt": "2025-07-08T08:27:09.565Z",
+    "status": "FINISHED"
   },
   {
-    "id": 455,
-    "termName": "2023학년도 2학기",
-    "startDate": "2023-09-01",
-    "endDate": "2024-02-28",
-    "pickStartDate": "2023-08-15",
-    "pickEndDate": "2023-08-31",
-    "status": "COMPLETED",
-    "totalLessons": 30,
-    "totalStudents": 140,
-    "createdAt": "2023-07-15T09:00:00Z"
-  },
-  {
-    "id": 457,
-    "termName": "2024학년도 2학기",
-    "startDate": "2024-09-01",
-    "endDate": "2025-02-28",
-    "pickStartDate": "2024-08-15",
-    "pickEndDate": "2024-08-31",
-    "status": "SCHEDULED",
-    "totalLessons": 0,
-    "totalStudents": 0,
-    "createdAt": "2024-01-20T09:00:00Z"
+    "id": 2,
+    "schoolId": 1,
+    "schoolName": "삼척초등학교",
+    "schoolYear": 2025,
+    "termName": "여름학기",
+    "start": "2025-06-01",
+    "end": "2025-08-31",
+    "allowTimeOverlap": false,
+    "pickRule": "RANDOM",
+    "type": "REGULAR",
+    "isOfferingReady": false,
+    "bookingStart": null,
+    "bookingEnd": null,
+    "createdAt": "2025-07-08T08:28:45.257Z",
+    "status": "ONGOING"
   }
 ]
 \`\`\`

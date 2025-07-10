@@ -46,11 +46,7 @@ export const CreateTermDocs = () => {
   "start": "2025-03-01",
   "end": "2025-09-04",
   "pickRule": "RANDOM",
-  "type": "REGULAR",
-  "allowTimeOverlap": false,
-  "isOfferingReady": false,
-  "bookingStart": "2025-02-20T09:00:00Z",
-  "bookingEnd": "2025-02-25T18:00:00Z"
+  "type": "REGULAR"
 }
 \`\`\`
 
@@ -182,6 +178,7 @@ export const FindTermDocs = () => {
   "termName": "1학기",
   "start": "2025-03-01",
   "end": "2025-08-31",
+  "status": "ONGOING",
   "pickRule": "RANDOM",
   "type": "REGULAR",
   "allowTimeOverlap": false,
@@ -195,7 +192,8 @@ export const FindTermDocs = () => {
       "lessonName": "영어회화",
       "maxStudents": 20,
       "currentStudents": 15
-    }
+    },
+    :
   ],
   "createdAt": "2025-01-01T00:00:00Z",
   "updatedAt": "2025-01-15T10:30:00Z"
@@ -258,12 +256,12 @@ export const UpdateTermDocs = () => {
 - **기본 정보**: 학교명(schoolName), 학사년도(schoolYear), 학기명(termName)
 - **기간 정보**: 시작일(start), 종료일(end)
 - **수강신청**: 수강신청 시작/종료 일시(bookingStart, bookingEnd)
-- **운영 설정**: 준비 상태(isOfferingReady)
 - **규칙 설정**: 학생 확정 방식(pickRule), 시간 중복 허용(allowTimeOverlap)
 - **학기 유형**: 정규/특별 등 유형(type)
 
 ### 🚫 수정 불가능한 필드
-- **연관 관계**: schoolId (별도 프로세스)
+- **관계 외래키**: schoolId
+- **자동 상태변경**: isOfferingReady
 - **시스템 정보**: id, createdAt, updatedAt
 
 ### ⚠️ 주의사항
@@ -406,6 +404,13 @@ export const DeleteTermDocs = () => {
   "termName": "1학기",
   "start": "2025-03-01",
   "end": "2025-08-31",
+  "status": "FINISHED",
+  "pickRule": "RANDOM",
+  "type": "REGULAR",
+  "allowTimeOverlap": false,
+  "isOfferingReady": true,
+  "bookingStart": "2025-02-20T09:00:00Z",
+  "bookingEnd": "2025-02-25T18:00:00Z",
   "deletedAt": "2025-01-15T14:30:00Z",
   "createdAt": "2025-01-01T00:00:00Z",
   "updatedAt": "2025-01-15T14:30:00Z"

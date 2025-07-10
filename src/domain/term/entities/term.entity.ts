@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude } from 'class-transformer';
-import { PickRule, TermType } from 'src/common/enums';
+import { Exclude, Expose } from 'class-transformer';
+import { format } from 'date-fns-tz';
+import { PickRule, TermStatus, TermType } from 'src/common/enums';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -109,6 +110,25 @@ export class Term {
   })
   @Column({ type: 'timestamp', nullable: true, comment: '수강신청 종료일시' })
   bookingEnd: Date | null;
+
+  @ApiProperty({
+    description:
+      '현재 학기 상태 (UPCOMING: 시작 전, ONGOING: 진행 중, FINISHED: 종료)',
+    enum: TermStatus,
+    example: TermStatus.ONGOING,
+  })
+  @Expose()
+  get status(): TermStatus {
+    const today = format(new Date(), 'yyyy-MM-dd', { timeZone: 'Asia/Seoul' });
+
+    if (today < this.start) {
+      return TermStatus.UPCOMING;
+    } else if (today >= this.start && today <= this.end) {
+      return TermStatus.ONGOING;
+    } else {
+      return TermStatus.FINISHED;
+    }
+  }
 
   @ApiProperty({ description: 'createdAt' })
   @CreateDateColumn()
