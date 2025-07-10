@@ -658,12 +658,12 @@ export const UpdateLessonDocs = () => {
 - ✅ **frequency**: 주당 수업 횟수
 - ✅ **수업료 정보**: total, instructorFee, bookFees, materialFees, operationFee
 - ✅ **operationFeeRule**: 수용비 규칙
+- ✅ **categoryId**: 분류 정보
 - ✅ **note**: 비고
 - ✅ **status**: 과목 상태
 
 **수정 불가능한 필드:**
 - ❌ **termId**: 학기 정보 (과목 생성 후 변경 불가)
-- ❌ **categoryId**: 분류 정보 (과목 생성 후 변경 불가)
 - ❌ **schoolId**: 학교 정보 (과목 생성 후 변경 불가)
 - ❌ **groups**: 반 정보 (별도 API 사용)
 

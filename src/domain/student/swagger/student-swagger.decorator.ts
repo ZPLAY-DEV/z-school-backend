@@ -349,7 +349,7 @@ export const FindStudentByIdDocs = () =>
 export const FindStudentSchooldaysDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '📅 학생 수업일 조회',
+      summary: '📅 학생 수업일 조회 ❌ deprecated',
       description: `
 ### 📋 기능 설명
 특정 학생의 수업일 목록을 조회합니다.
@@ -388,7 +388,7 @@ export const FindStudentSchooldaysDocs = () =>
 export const FindStudentBookingsDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '📋 학생 수강신청 목록 조회',
+      summary: '📋 학생 수강신청 목록 조회 ❌ deprecated',
       description: `
 ### 📋 기능 설명
 특정 학생의 수강신청 목록을 조회합니다.
@@ -427,7 +427,7 @@ export const FindStudentBookingsDocs = () =>
 export const FindStudentGroupsDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '👌 학생 수강중인 반 목록 조회',
+      summary: '👌 학생 수강중인 반 목록 조회 ❌ deprecated',
       description: `
 ### 📋 기능 설명
 특정 학생이 수강중인 반 목록을 조회합니다.
@@ -466,7 +466,7 @@ export const FindStudentGroupsDocs = () =>
 export const FindStudentGroupsPaginatedDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '👌 학생 수강중인 반 목록 조회 (페이지네이션)',
+      summary: '👌 학생 수강중인 반 목록 조회 (페이지네이션) ❌ deprecated',
       description: `
 ### 📋 기능 설명
 특정 학생이 수강중인 반 목록을 페이지네이션으로 조회합니다.
@@ -504,7 +504,7 @@ export const FindStudentGroupsPaginatedDocs = () =>
 export const FindStudentCanceledGroupsDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '🤚 학생 수강 취소한 반 목록 조회',
+      summary: '🤚 학생 수강 취소한 반 목록 조회 ❌ deprecated',
       description: `
 ### 📋 기능 설명
 학생이 수강 취소한 반 목록을 조회합니다.
@@ -543,7 +543,7 @@ export const FindStudentCanceledGroupsDocs = () =>
 export const FindStudentCanceledGroupsPaginatedDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '🤚 학생 수강 취소한 반 목록 조회 (페이지네이션)',
+      summary: '🤚 학생 수강 취소한 반 목록 조회 (페이지네이션) ❌ deprecated',
       description: `
 ### 📋 기능 설명
 학생 수강 취소한 반 목록을 페이지네이션으로 조회합니다.

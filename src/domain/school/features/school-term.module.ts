@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { LessonModule } from 'src/domain/lesson/lesson.module';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -23,13 +24,14 @@ import { SqsModule } from 'src/services/aws/sqs.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      Term,
-      Student,
-      Sam,
-      School,
+      Booking,
+      Group,
       Lesson,
       Offering,
-      Booking,
+      Sam,
+      School,
+      Student,
+      Term,
     ]),
     LessonModule,
     SqsModule,

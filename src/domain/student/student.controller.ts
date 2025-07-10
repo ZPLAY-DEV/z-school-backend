@@ -82,6 +82,7 @@ export class StudentController {
     return await this.studentService.findById(id);
   }
 
+  //! @deprecated
   @FindStudentSchooldaysDocs()
   @Get(':id/schooldays')
   async findSchooldaysById(
@@ -91,6 +92,7 @@ export class StudentController {
     return await this.studentService.findSchooldaysById(id, termId);
   }
 
+  //! @deprecated
   @FindStudentBookingsDocs()
   @Get(':id/bookings')
   async findBookingsById(
@@ -100,6 +102,7 @@ export class StudentController {
     return await this.studentService.findBookingsById(id, termId);
   }
 
+  //! @deprecated
   @FindStudentGroupsDocs()
   @Get(':id/groups')
   async listGroups(
@@ -109,6 +112,7 @@ export class StudentController {
     return await this.studentService.listGroups(id, termId);
   }
 
+  //! @deprecated
   @FindStudentGroupsPaginatedDocs()
   @Get(':id/groups/paginated')
   async infiniteListGroups(
@@ -119,6 +123,7 @@ export class StudentController {
     return await this.studentService.infiniteListGroups(id, query, termId);
   }
 
+  //! @deprecated
   @FindStudentCanceledGroupsDocs()
   @Get(':id/canceled-groups')
   async listCanceledGroups(
@@ -128,6 +133,7 @@ export class StudentController {
     return await this.studentService.listCanceledGroups(id, termId);
   }
 
+  //! @deprecated
   @FindStudentCanceledGroupsPaginatedDocs()
   @Get(':id/canceled-groups/paginated')
   async infiniteListCanceledGroups(

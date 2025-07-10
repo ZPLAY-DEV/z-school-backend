@@ -1,5 +1,6 @@
 import { getMonth, getWeek, getYear } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { Weekday } from 'src/common/enums';
 
 export const getLocalDateFromString = (value: string) => {
   return toZonedTime(value, 'Asia/Seoul');
@@ -17,6 +18,20 @@ export const getKoreanWeekday = (date: string): string => {
   const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
   const dateObj = new Date(date);
   return weekdays[dateObj.getDay()];
+};
+
+// 한국어 요일을 영어 요일로 매핑하는 헬퍼 함수
+export const getEnglishWeekday = (koreanWeekday: Weekday): string => {
+  const weekdayMap: Record<Weekday, string> = {
+    [Weekday.SUNDAY]: 'SUN',
+    [Weekday.MONDAY]: 'MON',
+    [Weekday.TUESDAY]: 'TUE',
+    [Weekday.WEDNESDAY]: 'WED',
+    [Weekday.THURSDAY]: 'THU',
+    [Weekday.FRIDAY]: 'FRI',
+    [Weekday.SATURDAY]: 'SAT',
+  };
+  return weekdayMap[koreanWeekday];
 };
 
 /**

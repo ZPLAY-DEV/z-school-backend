@@ -1,9 +1,27 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
+import {
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
+  PaginateConfig,
+} from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { Group } from 'src/domain/group/entities/group.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+
+// Group 페이지네이션 설정
+const GROUP_CONFIG: PaginateConfig<Group> = {
+  sortableColumns: ['id', 'groupName'],
+  defaultSortBy: [['id', 'DESC']],
+  filterableColumns: {
+    groupName: [FilterOperator.ILIKE],
+  },
+};
 
 //? ---------------------------------------------------------------------- ?//
 //? Get School Term Students List
@@ -14,88 +32,57 @@ export const SchoolTermStudentListDocs = () => {
     ApiOperation({
       summary: '👥 학기별 등록 학생 목록 조회',
       description: `
-**📝 기능 설명**
+### 📝 기능 설명
 특정 학교의 특정 학기에 등록된 모든 학생 목록을 조회합니다.
 
-**🔄 비즈니스 로직**
+### 🔄 비즈니스 로직
 - 해당 학기에 수강신청을 통해 등록된 학생들의 목록을 조회
 - 학생 기본 정보(이름, 학년, 반, 연락처 등) 제공
 - 수강신청 상태와 관계없이 해당 학기에 등록된 모든 학생 포함
 - 학생명 기준으로 정렬하여 제공
 
-**⚠️ 중요 제약사항**
-- 유효한 학교 ID와 학기 ID가 필요함
-- 해당 학교에 속한 학기만 조회 가능
-- 삭제된 학생은 목록에서 제외
-- 조회 전용 API
+### 💡 사용 시점
+- 학기별 학생 현황 파악
+- 출석부 생성
+- 학급 관리 시스템
+- 학부모 연락처 관리
 
-**📚 예시 시나리오**
-1. **출석 관리**: 해당 학기 출석부 작성을 위한 학생 목록 조회
-2. **학기별 학생 현황**: 관리자가 특정 학기의 등록 학생 현황 파악
-3. **연락망 구성**: 학기별 학생 및 학부모 연락처 정보 수집
-4. **성적 관리**: 해당 학기 성적 입력을 위한 학생 목록 확인
-
-**API 호출 예시**
-\`\`\`
-GET /v1/schools/123/terms/456/students
-\`\`\`
-
-**성공 응답 예시**
+### 📝 정확한 응답 예시
 \`\`\`json
 [
   {
-    "id": 1001,
-    "studentName": "김학생",
+    "id": 1,
+    "parentId": 1,
+    "schoolId": 1,
     "grade": 3,
-    "className": "3학년 1반",
-    "phone": "01011111111",
-    "parentName": "김학부모",
-    "parentPhone": "01022222222",
-    "status": "ACTIVE",
-    "enrolledLessons": [
-      {
-        "lessonId": 789,
-        "lessonName": "수학",
-        "status": "ENROLLED"
-      }
-    ]
+    "class": "1반",
+    "studentCode": 10,
+    "name": "김학생",
+    "phone": "01012345678",
+    "escortPhone": "01087654321",
+    "nextStop": "태권도 학원",
+    "status": "ATTENDING",
+    "note": "알레르기 주의",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
   },
   {
-    "id": 1002,
-    "studentName": "이학생",
+    "id": 2,
+    "parentId": 2,
+    "schoolId": 1,
     "grade": 2,
-    "className": "2학년 3반",
-    "phone": "01033333333",
-    "parentName": "이학부모",
-    "parentPhone": "01044444444",
-    "status": "ACTIVE",
-    "enrolledLessons": [
-      {
-        "lessonId": 790,
-        "lessonName": "영어",
-        "status": "ENROLLED"
-      }
-    ]
+    "class": "2반",
+    "studentCode": 5,
+    "name": "이학생",
+    "phone": "01098765432",
+    "escortPhone": "01055443322",
+    "nextStop": "집",
+    "status": "ATTENDING",
+    "note": null,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
   }
 ]
-\`\`\`
-
-**실패 응답 예시 - 존재하지 않는 학교**
-\`\`\`json
-{
-  "statusCode": 404,
-  "message": "해당 ID의 학교를 찾을 수 없습니다",
-  "error": "Not Found"
-}
-\`\`\`
-
-**실패 응답 예시 - 존재하지 않는 학기**
-\`\`\`json
-{
-  "statusCode": 404,
-  "message": "해당 ID의 학기를 찾을 수 없습니다",
-  "error": "Not Found"
-}
 \`\`\`
       `,
     }),
@@ -117,3 +104,696 @@ GET /v1/schools/123/terms/456/students
     ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
+
+//? ---------------------------------------------------------------------- ?//
+//? Get School Term Student Bookings
+//? ---------------------------------------------------------------------- ?//
+
+export const SchoolTermStudentBookingsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '📋 학생 수강신청 목록 조회 (학기별)',
+      description: `
+### 📋 기능 설명
+특정 학교의 특정 학기에서 특정 학생의 수강신청 목록을 조회합니다.
+
+### 🔄 비즈니스 로직
+- 해당 학교, 학기에서 학생이 신청한 모든 수강신청 목록 조회
+- 수강신청 상태(대기, 확정, 취소 등) 포함
+- 수강신청 일시 및 상세 정보 제공
+- **항상 offering 정보 포함**: 각 booking에는 연관된 Offering 엔티티가 항상 포함됩니다
+
+### 📊 응답 데이터 구조
+- Booking[]: 수강신청 목록 배열
+- booking.offering: 각 수강신청에 연관된 Offering 엔티티 (필수 포함)
+- offering.schoolId, offering.termId: 해당 학교 및 학기 정보
+- offering.times: 수업 시간 정보 등
+
+### 💡 사용 시점
+- 학생 수강 이력 조회
+- 학부모 수강신청 현황 확인
+- 수업료 정산 및 환불 처리
+- 학기별 수강 현황 분석
+
+### 📝 정확한 응답 예시
+\`\`\`json
+[
+  {
+    "id": 1,
+    "offeringId": 456,
+    "studentId": 123,
+    "lessonName": "수학",
+    "waitingPosition": 0,
+    "status": "CONFIRMED",
+    "note": null,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z",
+    "offering": {
+      "id": 456,
+      "schoolId": 1,
+      "termId": 1,
+      "title": "수학 기초반",
+      "description": "기초 수학 과정",
+      "capacity": 20,
+      "price": 150000,
+      "times": [
+        {
+          "weekday": "월",
+          "startTime": "14:00",
+          "endTime": "15:00"
+        }
+      ],
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  }
+]
+\`\`\`
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'studentId',
+      type: Number,
+      description: '학생 ID',
+      example: 1,
+    }),
+    ApiOkResponseTemplate({
+      description: '✅ 학생 수강신청 목록 (offering 정보 포함)',
+      type: Booking,
+      isArray: true,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? Get School Term Student Booking Stats
+//? ---------------------------------------------------------------------- ?//
+
+export const SchoolTermStudentBookingStatsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '📊 학생 수강신청 통계 조회 (요일별)',
+      description: `
+### 📋 기능 설명
+특정 학교의 특정 학기에서 특정 학생의 수강신청을 요일별로 분류하여 조회합니다.
+
+### 🔄 비즈니스 로직
+- 학생의 모든 수강신청을 요일별로 분류
+- 각 요일에 해당하는 Offering 목록 제공
+- MON, TUE, WED, THU, FRI, SAT 요일별 구분
+- 중복 제거 처리 (같은 Offering이 여러 시간에 있을 경우)
+
+### 💡 사용 시점
+- 학생 시간표 작성
+- 수강 시간 중복 확인
+- 학부모 스케줄 관리
+- 요일별 수강 현황 분석
+
+### 📝 정확한 응답 예시
+\`\`\`json
+{
+  "MON": [
+    {
+      "id": 1,
+      "schoolId": 1,
+      "termId": 1,
+      "lessonId": 1,
+      "schoolName": "ABC 초등학교",
+      "lessonName": "수학",
+      "groupName": "수학A반",
+      "capacity": 20,
+      "bookingCount": 15,
+      "prepicked": 0,
+      "allowedGrades": [1, 2, 3],
+      "pickRule": "FIRST",
+      "times": [
+        {
+          "weekday": "월",
+          "startTime": "14:00",
+          "endTime": "15:00"
+        }
+      ],
+      "bitmasks": [1],
+      "groupIds": [1],
+      "prepickedStudentIds": [],
+      "lastSyncTimestamp": 0,
+      "status": "CONFIRMED",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "TUE": [],
+  "WED": [
+    {
+      "id": 2,
+      "schoolId": 1,
+      "termId": 1,
+      "lessonId": 2,
+      "schoolName": "ABC 초등학교",
+      "lessonName": "영어",
+      "groupName": "영어B반",
+      "capacity": 15,
+      "bookingCount": 12,
+      "prepicked": 0,
+      "allowedGrades": [2, 3],
+      "pickRule": "FIRST",
+      "times": [
+        {
+          "weekday": "수",
+          "startTime": "15:00",
+          "endTime": "16:00"
+        }
+      ],
+      "bitmasks": [4],
+      "groupIds": [2],
+      "prepickedStudentIds": [],
+      "lastSyncTimestamp": 0,
+      "status": "CONFIRMED",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "THU": [],
+  "FRI": [],
+  "SAT": []
+}
+\`\`\`
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'studentId',
+      type: Number,
+      description: '학생 ID',
+      example: 1,
+    }),
+    ApiOkResponse({
+      description: '✅ 학생 수강신청 요일별 통계',
+      schema: {
+        type: 'object',
+        properties: {
+          MON: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Offering' },
+            description: '월요일 수강 Offering 목록',
+          },
+          TUE: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Offering' },
+            description: '화요일 수강 Offering 목록',
+          },
+          WED: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Offering' },
+            description: '수요일 수강 Offering 목록',
+          },
+          THU: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Offering' },
+            description: '목요일 수강 Offering 목록',
+          },
+          FRI: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Offering' },
+            description: '금요일 수강 Offering 목록',
+          },
+          SAT: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Offering' },
+            description: '토요일 수강 Offering 목록',
+          },
+        },
+      },
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? Get School Term Student Schooldays
+//? ---------------------------------------------------------------------- ?//
+
+export const SchoolTermStudentSchooldaysDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '📅 학생 수업일 조회 (학기별)',
+      description: `
+### 📋 기능 설명
+특정 학교의 특정 학기에서 특정 학생의 수업일 목록을 조회합니다.
+
+### 🔄 비즈니스 로직
+- 학생이 수강중인 반의 모든 수업일 조회
+- 해당 학기에 진행되는 수업일만 포함
+- 수업일별 상세 정보 제공
+
+### 💡 사용 시점
+- 학생 출석 현황 조회
+- 학부모 앱에서 자녀 수업 일정 확인
+- 수업료 정산 근거 자료
+- 보강 수업 스케줄 관리
+
+### 📝 정확한 응답 예시
+\`\`\`json
+[
+  {
+    "id": 1,
+    "schoolId": 1,
+    "termId": 1,
+    "lessonId": 1,
+    "groupId": 1,
+    "name": "수학",
+    "startsAt": "2024-05-27T08:00:00+09:00",
+    "endsAt": "2024-05-27T09:00:00+09:00",
+    "duration": 60,
+    "updatedBy": null,
+    "note": null,
+    "startNotifiedAt": null,
+    "endNotifiedAt": null
+  },
+  {
+    "id": 2,
+    "schoolId": 1,
+    "termId": 1,
+    "lessonId": 2,
+    "groupId": 2,
+    "name": "영어",
+    "startsAt": "2024-05-29T15:00:00+09:00",
+    "endsAt": "2024-05-29T16:00:00+09:00",
+    "duration": 60,
+    "updatedBy": "MANAGER",
+    "note": "보강 수업",
+    "startNotifiedAt": "2024-05-29T14:50:00+09:00",
+    "endNotifiedAt": "2024-05-29T16:00:00+09:00"
+  }
+]
+\`\`\`
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'studentId',
+      type: Number,
+      description: '학생 ID',
+      example: 1,
+    }),
+    ApiOkResponseTemplate({
+      description: '✅ 학생 수업일 목록',
+      type: Schoolday,
+      isArray: true,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? Get School Term Student Groups
+//? ---------------------------------------------------------------------- ?//
+
+export const SchoolTermStudentGroupsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '👌 학생 수강중인 반 목록 조회 (학기별)',
+      description: `
+### 📋 기능 설명
+특정 학교의 특정 학기에서 특정 학생이 수강중인 반 목록을 조회합니다.
+
+### 🔄 비즈니스 로직
+- 해당 학기에 학생이 수강중인 모든 반 조회
+- 수강 취소되지 않은 활성 상태의 반만 포함
+- 반별 상세 정보 및 수강 상태 제공
+
+### 💡 사용 시점
+- 학생 수강 현황 조회
+- 반 이동 및 변경 처리
+- 출석 관리 시스템
+- 학부모 수강 현황 확인
+
+### 📝 정확한 응답 예시
+\`\`\`json
+[
+  {
+    "id": 1,
+    "samId": null,
+    "lessonId": 1,
+    "groupName": "수학A반",
+    "location": "1-1교실",
+    "capacity": 20,
+    "allowedGrades": "1,2,3",
+    "weekday": "MONDAY",
+    "start": "14:40",
+    "end": "15:20",
+    "status": "CONFIRMED",
+    "tuition": 100000,
+    "bookFee": 5000,
+    "materialFee": 3000,
+    "days": 18,
+    "deletedBy": null,
+    "note": "기초 수학 과정",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "samId": 1,
+    "lessonId": 2,
+    "groupName": "영어B반",
+    "location": "어학실",
+    "capacity": 15,
+    "allowedGrades": "2,3",
+    "weekday": "WEDNESDAY",
+    "start": "15:00",
+    "end": "16:00",
+    "status": "CONFIRMED",
+    "tuition": 120000,
+    "bookFee": 8000,
+    "materialFee": 2000,
+    "days": 16,
+    "deletedBy": null,
+    "note": null,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
+\`\`\`
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'studentId',
+      type: Number,
+      description: '학생 ID',
+      example: 1,
+    }),
+    ApiOkResponseTemplate({
+      description: '✅ 학생 소속 그룹 목록',
+      type: Group,
+      isArray: true,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? Get School Term Student Groups Paginated
+//? ---------------------------------------------------------------------- ?//
+
+export const SchoolTermStudentGroupsPaginatedDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '👌 학생 수강중인 반 목록 조회 (학기별, 페이지네이션)',
+      description: `
+### 📋 기능 설명
+특정 학교의 특정 학기에서 특정 학생이 수강중인 반 목록을 페이지네이션으로 조회합니다.
+
+### 🔍 검색 및 필터링
+- **검색 가능**: groupName (그룹명)
+- **정렬 가능**: id, groupName
+- **필터링**: groupName (부분 일치)
+
+### 💡 사용 시점
+- 대량의 그룹 데이터 조회
+- 무한 스크롤 구현
+- 검색 기능이 필요한 경우
+- 관리자 대시보드
+
+### 📝 정확한 응답 예시
+\`\`\`json
+{
+  "data": [
+    {
+      "id": 1,
+      "samId": null,
+      "lessonId": 1,
+      "groupName": "수학A반",
+      "location": "1-1교실",
+      "capacity": 20,
+      "allowedGrades": "1,2,3",
+      "weekday": "MONDAY",
+      "start": "14:40",
+      "end": "15:20",
+      "status": "CONFIRMED",
+      "tuition": 100000,
+      "bookFee": 5000,
+      "materialFee": 3000,
+      "days": 18,
+      "deletedBy": null,
+      "note": "기초 수학 과정",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "itemsPerPage": 10,
+    "totalItems": 1,
+    "currentPage": 1,
+    "totalPages": 1,
+    "sortBy": [["id", "DESC"]],
+    "searchBy": [],
+    "search": "",
+    "filter": {}
+  },
+  "links": {
+    "first": "/schools/1/terms/1/students/1/groups/paginated?limit=10",
+    "previous": "",
+    "current": "/schools/1/terms/1/students/1/groups/paginated?page=1&limit=10",
+    "next": "",
+    "last": "/schools/1/terms/1/students/1/groups/paginated?page=1&limit=10"
+  }
+}
+\`\`\`
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'studentId',
+      type: Number,
+      description: '학생 ID',
+      example: 1,
+    }),
+    ApiPaginationQuery(GROUP_CONFIG),
+    ApiOkPaginatedResponse(Group, GROUP_CONFIG),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? Get School Term Student Canceled Groups
+//? ---------------------------------------------------------------------- ?//
+
+export const SchoolTermStudentCanceledGroupsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '🤚 학생 수강 취소한 반 목록 조회 (학기별)',
+      description: `
+### 📋 기능 설명
+특정 학교의 특정 학기에서 특정 학생이 수강 취소한 반 목록을 조회합니다.
+
+### 🔄 비즈니스 로직
+- 해당 학기에 학생이 수강 취소한 모든 반 조회
+- 취소 일시 및 취소 사유 포함
+- 환불 처리 상태 정보 제공
+
+### 💡 사용 시점
+- 수강료 환불 처리
+- 대체 수업 안내
+- 수강 이력 관리
+- 취소 현황 분석
+
+### 📝 정확한 응답 예시
+\`\`\`json
+[
+  {
+    "id": 3,
+    "samId": null,
+    "lessonId": 3,
+    "groupName": "체육C반",
+    "location": "체육관",
+    "capacity": 25,
+    "allowedGrades": "1,2,3,4",
+    "weekday": "FRIDAY",
+    "start": "16:00",
+    "end": "17:00",
+    "status": "CANCELLED",
+    "tuition": 80000,
+    "bookFee": 0,
+    "materialFee": 10000,
+    "days": 15,
+    "deletedBy": "PARENT",
+    "note": "개인 사정으로 취소",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-15T00:00:00.000Z"
+  }
+]
+\`\`\`
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'studentId',
+      type: Number,
+      description: '학생 ID',
+      example: 1,
+    }),
+    ApiOkResponseTemplate({
+      description: '✅ 학생 취소 그룹 목록',
+      type: Group,
+      isArray: true,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? Get School Term Student Canceled Groups Paginated
+//? ---------------------------------------------------------------------- ?//
+
+export const SchoolTermStudentCanceledGroupsPaginatedDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '🤚 학생 수강 취소한 반 목록 조회 (학기별, 페이지네이션)',
+      description: `
+### 📋 기능 설명
+특정 학교의 특정 학기에서 특정 학생 수강 취소한 반 목록을 페이지네이션으로 조회합니다.
+
+### 🔍 검색 및 필터링
+- **검색 가능**: groupName (그룹명)
+- **정렬 가능**: id, groupName
+- **필터링**: groupName (부분 일치)
+
+### 💡 사용 시점
+- 대량의 취소 그룹 데이터 조회
+- 환불 처리 현황 관리
+- 통계 및 분석 자료
+- 취소 패턴 분석
+
+### 📝 정확한 응답 예시
+\`\`\`json
+{
+  "data": [
+    {
+      "id": 3,
+      "samId": null,
+      "lessonId": 3,
+      "groupName": "체육C반",
+      "location": "체육관",
+      "capacity": 25,
+      "allowedGrades": "1,2,3,4",
+      "weekday": "FRIDAY",
+      "start": "16:00",
+      "end": "17:00",
+      "status": "CANCELLED",
+      "tuition": 80000,
+      "bookFee": 0,
+      "materialFee": 10000,
+      "days": 15,
+      "deletedBy": "PARENT",
+      "note": "개인 사정으로 취소",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-15T00:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "itemsPerPage": 10,
+    "totalItems": 1,
+    "currentPage": 1,
+    "totalPages": 1,
+    "sortBy": [["id", "DESC"]],
+    "searchBy": [],
+    "search": "",
+    "filter": {}
+  },
+  "links": {
+    "first": "/schools/1/terms/1/students/1/canceled-groups/paginated?limit=10",
+    "previous": "",
+    "current": "/schools/1/terms/1/students/1/canceled-groups/paginated?page=1&limit=10",
+    "next": "",
+    "last": "/schools/1/terms/1/students/1/canceled-groups/paginated?page=1&limit=10"
+  }
+}
+\`\`\`
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'studentId',
+      type: Number,
+      description: '학생 ID',
+      example: 1,
+    }),
+    ApiPaginationQuery(GROUP_CONFIG),
+    ApiOkPaginatedResponse(Group, GROUP_CONFIG),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
