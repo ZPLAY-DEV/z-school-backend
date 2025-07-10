@@ -17,13 +17,13 @@ class UpdateInstructorDto {
 
 export class UpdateSamDto extends PartialType(
   class {
-    instructorId: CreateSamDto['instructorId'];
     schoolId: CreateSamDto['schoolId'];
     alias: CreateSamDto['alias'];
     score: CreateSamDto['score'];
     editFeePermission: CreateSamDto['editFeePermission'];
     editPickPermission: CreateSamDto['editPickPermission'];
     note: CreateSamDto['note'];
+    instructorId: CreateSamDto['instructorId'];
   },
 ) {
   @ApiProperty({

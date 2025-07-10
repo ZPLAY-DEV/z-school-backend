@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
@@ -29,6 +34,8 @@ export class SamService {
   //! somehow we prefer to use upsert instead of create
   async create(dto: CreateSamDto): Promise<Sam> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
+      const { instructor: instructorDto, instructorId, ...samDto } = dto;
+
       // 1. 학교 존재 여부 확인
       const school = await manager.findOne(School, {
         where: { id: dto.schoolId },
@@ -38,93 +45,124 @@ export class SamService {
         throw new NotFoundException('School not found');
       }
 
-      // 2. instructor 존재 여부 확인
-      let instructor: Instructor | undefined;
+      let finalInstructorId: number;
 
-      if (dto?.instructor) {
-        const foundInstructor = await manager.findOne(Instructor, {
-          where: { phone: dto.instructor.phone },
+      // 2. 강사 처리: instructorId 우선, 없으면 instructor 객체 방식 사용
+      if (instructorId) {
+        // instructorId가 제공된 경우 - 기존 강사 직접 참조
+        const existingInstructor = await manager.findOne(Instructor, {
+          where: { id: instructorId },
         });
-
-        if (foundInstructor) {
-          instructor = foundInstructor;
-        } else {
-          instructor = manager.create(Instructor, dto.instructor);
-          await manager.save(Instructor, instructor);
+        if (!existingInstructor) {
+          throw new NotFoundException('Instructor not found');
         }
-        dto.instructorId = instructor.id;
-      }
-
-      if (!instructor) {
-        // 업데이트된 강사 정보 조회
-        instructor = await manager.findOneOrFail(Instructor, {
-          where: { id: dto.instructorId },
+        finalInstructorId = instructorId;
+      } else if (instructorDto.id) {
+        // instructor.id가 있으면 기존 강사 연결
+        const existingInstructor = await manager.findOne(Instructor, {
+          where: { id: instructorDto.id },
         });
-      }
-
-      // 4. Sam 관계 upsert (동일 phone 기준)
-      let sam = await manager
-        .createQueryBuilder(Sam, 'sam')
-        .innerJoin('sam.instructor', 'instructor')
-        .where('sam.schoolId = :schoolId', {
-          schoolId: dto.schoolId,
-        })
-        .andWhere('sam.instructorId = :instructorId', {
-          instructorId: dto.instructorId,
-        })
-        .getOne();
-
-      if (sam) {
-        // 기존 관계 업데이트
-        await manager.update(
-          Sam,
-          { id: sam.id },
-          {
-            instructorId: instructor.id,
-            alias: dto.alias,
-            score: dto.score,
-            editFeePermission: dto.editFeePermission,
-            editPickPermission: dto.editPickPermission,
-            note: dto.note,
-          },
-        );
+        if (!existingInstructor) {
+          throw new NotFoundException('Instructor not found');
+        }
+        finalInstructorId = instructorDto.id;
       } else {
-        // 새 관계 생성
-        sam = manager.create(Sam, {
-          instructorId: instructor.id,
-          schoolId: dto.schoolId,
-          score: dto.score || 0,
-          alias: dto.alias,
-          editFeePermission: dto.editFeePermission,
-          editPickPermission: dto.editPickPermission,
-          note: dto.note,
+        // 새로운 강사 생성
+        const newInstructor = manager.create(Instructor, {
+          userId: instructorDto.userId,
+          name: instructorDto.name,
+          phone: instructorDto.phone,
+          note: instructorDto.note,
+          termsAgreedAt: instructorDto.termsAgreedAt,
         });
-        await manager.save(Sam, sam);
+        const savedInstructor = await manager.save(Instructor, newInstructor);
+        finalInstructorId = savedInstructor.id;
       }
 
-      return await manager.findOneOrFail(Sam, {
+      // 3. 중복 체크 - 동일 학교 내 강사 중복
+      const existingSam = await manager.findOne(Sam, {
         where: {
-          id: sam.id,
+          schoolId: dto.schoolId,
+          instructorId: finalInstructorId,
         },
+      });
+
+      if (existingSam) {
+        throw new ConflictException(
+          'This instructor is already registered in this school',
+        );
+      }
+
+      // 4. Sam 생성
+      const sam = manager.create(Sam, {
+        ...samDto,
+        instructorId: finalInstructorId,
+        score: dto.score ?? 0,
+        editFeePermission: dto.editFeePermission ?? false,
+        editPickPermission: dto.editPickPermission ?? false,
+      });
+
+      const savedSam = await manager.save(Sam, sam);
+
+      // 5. 관계 정보와 함께 반환
+      return await manager.findOneOrFail(Sam, {
+        where: { id: savedSam.id },
         relations: ['instructor'],
       });
     });
   }
 
   async dryRun(dto: CreateSamDto): Promise<Sam | null> {
-    // In dryRun mode, we check if the instructor exists but don't create it
-    const existingSam = await this.samRepository
-      .createQueryBuilder('sam')
-      .innerJoin(Instructor, 'instructor', 'instructor.id = sam.instructorId')
-      .where('sam.schoolId = :schoolId', {
-        schoolId: dto.schoolId,
-      })
-      .andWhere('instructor.phone = :phone', {
-        phone: dto.instructor.phone,
-      })
-      .getOne();
+    const { instructor: instructorDto, instructorId } = dto;
 
-    return existingSam ? existingSam : null;
+    let targetInstructorId: number | null = null;
+
+    // 1. 강사 처리: instructorId 우선, 없으면 instructor 객체 방식 사용
+    if (instructorId) {
+      // instructorId가 제공된 경우 - 기존 강사 직접 참조
+      const existingInstructor = await this.instructorRepository.findOne({
+        where: { id: instructorId },
+      });
+      if (!existingInstructor) {
+        throw new NotFoundException('Instructor not found');
+      }
+      targetInstructorId = instructorId;
+    } else if (instructorDto.id) {
+      // instructor.id가 있으면 기존 강사 연결
+      const existingInstructor = await this.instructorRepository.findOne({
+        where: { id: instructorDto.id },
+      });
+      if (!existingInstructor) {
+        throw new NotFoundException('Instructor not found');
+      }
+      targetInstructorId = instructorDto.id;
+    } else if (instructorDto.phone) {
+      // 새로운 강사 생성 방식 - 전화번호로 기존 강사 확인
+      const existingInstructor = await this.instructorRepository.findOne({
+        where: { phone: instructorDto.phone },
+      });
+      if (existingInstructor) {
+        targetInstructorId = existingInstructor.id;
+      } else {
+        // 새로운 강사가 생성될 예정이므로 중복 체크 불가
+        return null;
+      }
+    }
+
+    // 2. 중복 체크 - 동일 학교 내 강사 중복
+    if (targetInstructorId) {
+      const existingSam = await this.samRepository.findOne({
+        where: {
+          schoolId: dto.schoolId,
+          instructorId: targetInstructorId,
+        },
+        relations: ['instructor'],
+      });
+
+      return existingSam || null;
+    }
+
+    return null;
   }
 
   //? ---------------------------------------------------------------------- ?//

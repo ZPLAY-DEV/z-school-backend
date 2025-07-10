@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,18 +12,22 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { DataSource, EntityManager, IsNull, Repository } from 'typeorm';
+
+import { S3Service } from 'src/services/aws/s3.service';
+
+import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { S3Service } from 'src/services/aws/s3.service';
-import { DataSource, EntityManager, Not, Repository } from 'typeorm';
-import { Booking } from '../booking/entities/booking.entity';
-import { CreateStudentDto } from './dto/create-student.dto';
 
 @Injectable()
 export class StudentService {
+  private logger = new Logger(StudentService.name);
+
   constructor(
     @InjectRepository(Parent)
     private readonly parentRepository: Repository<Parent>,
@@ -42,99 +47,150 @@ export class StudentService {
 
   //! somehow we prefer to use upsert instead of create
   async create(dto: CreateStudentDto): Promise<Student> {
-    const { parent: parentDto, ...studentDto } = dto;
+    return await this.dataSource.transaction(async (manager) => {
+      const { parent: parentDto, parentId, ...studentDto } = dto;
 
-    let parentId: number;
+      let finalParentId: number;
 
-    // 1. 부모 처리: parent.id가 있으면 기존 부모 연결, 없으면 새 부모 생성
-    if (parentDto.id) {
-      // 기존 부모와 연결하는 경우
-      const existingParent = await this.parentRepository.findOne({
-        where: { id: parentDto.id },
-      });
-      if (!existingParent) {
-        throw new NotFoundException('Parent not found');
+      // 1. 부모 처리: parentId 우선, 없으면 parent 객체 방식 사용
+      if (parentId) {
+        // parentId가 제공된 경우 - 기존 부모 직접 참조
+        const existingParent = await manager.findOne(Parent, {
+          where: { id: parentId },
+        });
+        if (!existingParent) {
+          throw new NotFoundException('Parent not found');
+        }
+        finalParentId = parentId;
+      } else if (parentDto.id) {
+        // parent.id가 있으면 기존 부모 연결
+        const existingParent = await manager.findOne(Parent, {
+          where: { id: parentDto.id },
+        });
+        if (!existingParent) {
+          throw new NotFoundException('Parent not found');
+        }
+        finalParentId = parentDto.id;
+      } else {
+        // 새로운 부모 생성
+        const newParent = manager.create(Parent, {
+          userId: parentDto.userId,
+          name: parentDto.name,
+          phone: parentDto.phone,
+          note: parentDto.note,
+          termsAgreedAt: parentDto.termsAgreedAt,
+        });
+        const savedParent = await manager.save(Parent, newParent);
+        finalParentId = savedParent.id;
       }
-      parentId = parentDto.id;
-    } else {
-      // 새로운 부모를 생성하는 경우
-      if (!parentDto.phone) {
-        throw new Error('새로운 부모 생성 시 전화번호는 필수입니다');
-      }
 
-      let parent = await this.parentRepository.findOne({
-        where: { phone: parentDto.phone },
-      });
-      if (!parent) {
-        // id를 제외한 나머지 정보로 새 부모 생성
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, ...parentCreateData } = parentDto;
-        parent = await this.parentRepository.save(parentCreateData);
-      }
-      parentId = parent.id;
-    }
-
-    // 2. 학생 존재 여부 확인
-    const existingStudent = await this.studentRepository.findOne({
-      where: {
+      // 2. 중복 체크 - 동일 학교 내 중복 확인
+      const whereCondition: any = {
         schoolId: studentDto.schoolId,
         grade: studentDto.grade,
-        class: studentDto.class,
-        studentCode: studentDto.studentCode,
-      },
-    });
+      };
 
-    let savedStudent: Student;
+      // class 조건 추가 (null 처리)
+      if (studentDto.class !== undefined) {
+        whereCondition.class = studentDto.class || IsNull();
+      }
 
-    if (existingStudent) {
-      const updatedStudent = this.studentRepository.merge(existingStudent, {
-        ...studentDto,
-        parentId,
+      // studentCode 조건 추가 (null 처리)
+      if (studentDto.studentCode !== undefined) {
+        whereCondition.studentCode = studentDto.studentCode || IsNull();
+      }
+
+      const existingStudent = await manager.findOne(Student, {
+        where: whereCondition,
       });
-      savedStudent = await this.studentRepository.save(updatedStudent);
-    } else {
-      const newStudent = this.studentRepository.create({
-        ...studentDto,
-        parentId,
-      });
-      savedStudent = await this.studentRepository.save(newStudent);
-    }
 
-    // parent 정보와 함께 리턴
-    return await this.studentRepository.findOneOrFail({
-      where: { id: savedStudent.id },
-      relations: ['parent'],
+      if (existingStudent) {
+        throw new ConflictException(
+          'Student with same school, grade, class, and studentCode already exists',
+        );
+      }
+
+      // 3. Student 생성
+      const student = manager.create(Student, {
+        ...studentDto,
+        parentId: finalParentId,
+        status: dto.status,
+      });
+
+      const savedStudent = await manager.save(Student, student);
+
+      // 4. 관계 정보와 함께 반환
+      return await manager.findOneOrFail(Student, {
+        where: { id: savedStudent.id },
+        relations: ['parent'],
+      });
     });
   }
 
   //? upsert 여부 조회
   async dryRun(dto: CreateStudentDto): Promise<Student | null> {
-    const { parent: parentDto } = dto;
+    const { parent: parentDto, parentId } = dto;
 
-    // 1. parent.id가 있는 경우 해당 부모가 존재하는지 확인
-    if (parentDto.id) {
+    let targetParentId: number | null = null;
+
+    // 1. 부모 처리: parentId 우선, 없으면 parent 객체 방식 사용
+    if (parentId) {
+      // parentId가 제공된 경우 - 기존 부모 직접 참조
+      const existingParent = await this.parentRepository.findOne({
+        where: { id: parentId },
+      });
+      if (!existingParent) {
+        throw new NotFoundException('Parent not found');
+      }
+      targetParentId = parentId;
+    } else if (parentDto.id) {
+      // parent.id가 있으면 기존 부모 연결
       const existingParent = await this.parentRepository.findOne({
         where: { id: parentDto.id },
       });
       if (!existingParent) {
         throw new NotFoundException('Parent not found');
       }
-    } else if (!parentDto.phone) {
-      throw new Error('새로운 부모 생성 시 전화번호는 필수입니다');
+      targetParentId = parentDto.id;
+    } else if (parentDto.phone) {
+      // 새로운 부모 생성 방식 - 전화번호로 기존 부모 확인
+      const existingParent = await this.parentRepository.findOne({
+        where: { phone: parentDto.phone },
+      });
+      if (existingParent) {
+        targetParentId = existingParent.id;
+      } else {
+        // 새로운 부모가 생성될 예정이므로 중복 체크 불가
+        return null;
+      }
     }
 
-    // 2. 학생 존재 여부 확인 (실제 생성은 하지 않음)
-    const existingStudent = await this.studentRepository.findOne({
-      where: {
+    // 2. 중복 체크 - 동일 학교 내 학생 중복
+    if (targetParentId) {
+      const whereCondition: any = {
         schoolId: dto.schoolId,
         grade: dto.grade,
-        class: dto.class,
-        studentCode: dto.studentCode,
-      },
-      relations: ['parent'],
-    });
+      };
 
-    return existingStudent ? existingStudent : null;
+      // class 조건 추가 (null 처리)
+      if (dto.class !== undefined) {
+        whereCondition.class = dto.class || IsNull();
+      }
+
+      // studentCode 조건 추가 (null 처리)
+      if (dto.studentCode !== undefined) {
+        whereCondition.studentCode = dto.studentCode || IsNull();
+      }
+
+      const existingStudent = await this.studentRepository.findOne({
+        where: whereCondition,
+        relations: ['parent'],
+      });
+
+      return existingStudent || null;
+    }
+
+    return null;
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -243,8 +299,7 @@ export class StudentService {
     const queryBuilder = this.groupRepository
       .createQueryBuilder('group')
       .leftJoinAndSelect('group.picks', 'pick')
-      .leftJoinAndSelect('pick.student', 'student')
-      .where('student.id = :id', { id })
+      .where('pick.studentId = :id', { id })
       .andWhere('pick.endedBy IS NULL');
 
     if (termId) {
@@ -253,48 +308,22 @@ export class StudentService {
       });
     }
 
-    const result = await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'createdAt', 'updatedAt'] as const,
-      searchableColumns: ['groupName'] as const,
-      defaultSortBy: [['id', 'ASC']],
-    });
+    const config: PaginateConfig<Group> = {
+      sortableColumns: ['id', 'groupName'],
+      filterableColumns: {
+        groupName: [FilterOperator.ILIKE],
+      },
+    };
 
-    return result;
+    return paginate(query, queryBuilder, config);
   }
 
-  //? 학생의 취소한 반 조회
+  //? 학생의 수강취소된 반 조회
   async listCanceledGroups(id: number, termId?: number): Promise<Group[]> {
-    const student = await this.studentRepository.findOne({
-      where: { id },
-      relations: ['picks', 'picks.group', 'picks.group.lesson'],
-    });
-
-    if (!student) {
-      throw new NotFoundException('Student not found');
-    }
-
-    let picks = student.picks;
-    picks = termId
-      ? picks?.filter(
-          (pick) => !!pick.endedBy && pick.termId === Number(termId),
-        )
-      : picks?.filter((pick) => !!pick.endedBy);
-
-    // Pick에서 Group 추출
-    return picks?.map((pick) => pick.group).filter(Boolean) || [];
-  }
-
-  //? 학생의 취소한 반 조회 (페이지네이션)
-  async infiniteListCanceledGroups(
-    id: number,
-    query: PaginateQuery,
-    termId?: number,
-  ): Promise<Paginated<Group>> {
     const queryBuilder = this.groupRepository
       .createQueryBuilder('group')
       .leftJoinAndSelect('group.picks', 'pick')
-      .leftJoinAndSelect('pick.student', 'student')
-      .where('student.id = :id', { id })
+      .where('pick.studentId = :id', { id })
       .andWhere('pick.endedBy IS NOT NULL');
 
     if (termId) {
@@ -303,24 +332,50 @@ export class StudentService {
       });
     }
 
-    const result = await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'createdAt', 'updatedAt'] as const,
-      searchableColumns: ['groupName'] as const,
-      defaultSortBy: [['id', 'ASC']],
-    });
-
-    return result;
+    return await queryBuilder.getMany();
   }
 
+  //? 학생의 수강취소된 반 조회 (페이지네이션)
+  async infiniteListCanceledGroups(
+    id: number,
+    query: PaginateQuery,
+    termId?: number,
+  ): Promise<Paginated<Group>> {
+    const queryBuilder = this.groupRepository
+      .createQueryBuilder('group')
+      .leftJoinAndSelect('group.picks', 'pick')
+      .where('pick.studentId = :id', { id })
+      .andWhere('pick.endedBy IS NOT NULL');
+
+    if (termId) {
+      queryBuilder.andWhere('pick.termId = :termId', {
+        termId: Number(termId),
+      });
+    }
+
+    const config: PaginateConfig<Group> = {
+      sortableColumns: ['id', 'groupName'],
+      filterableColumns: {
+        groupName: [FilterOperator.ILIKE],
+      },
+    };
+
+    return paginate(query, queryBuilder, config);
+  }
+
+  //? 학생 목록 조회 (페이지네이션)
   async infiniteList(query: PaginateQuery): Promise<Paginated<Student>> {
     const queryBuilder = this.studentRepository.createQueryBuilder('student');
     const config: PaginateConfig<Student> = {
       sortableColumns: ['id', 'name'],
       filterableColumns: {
-        name: [FilterOperator.IN, FilterOperator.EQ, FilterOperator.NULL],
+        name: [FilterOperator.ILIKE],
+        phone: [FilterOperator.ILIKE],
+        note: [FilterOperator.ILIKE],
       },
     };
-    return await paginate<Student>(query, queryBuilder, config);
+
+    return paginate(query, queryBuilder, config);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -328,71 +383,30 @@ export class StudentService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateStudentDto): Promise<Student> {
+    // 1. 기존 학생 존재 여부 확인
+    const existingStudent = await this.studentRepository.findOneOrFail({
+      where: { id },
+      relations: ['parent'],
+    });
+
+    // 2. 업데이트할 데이터가 있는지 확인
+    const fieldsToUpdate = Object.keys(dto).filter(
+      (key) => dto[key as keyof UpdateStudentDto] !== undefined,
+    );
+
+    if (fieldsToUpdate.length === 0) {
+      return existingStudent;
+    }
+
+    // 3. 트랜잭션 내에서 업데이트 수행
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      // 1. Student 존재 여부 확인
-      const existingStudent = await manager.findOne(Student, {
-        where: { id },
-        relations: ['parent'],
-      });
+      // 학생 정보 업데이트
+      const updatedStudent = manager.merge(Student, existingStudent, dto);
+      const savedStudent = await manager.save(Student, updatedStudent);
 
-      if (!existingStudent) {
-        throw new NotFoundException('Student not found');
-      }
-
-      // 2. 학번 중복 체크 (변경하는 경우만)
-      if (dto.studentCode && dto.studentCode !== existingStudent.studentCode) {
-        const duplicateStudent = await manager.findOne(Student, {
-          where: {
-            schoolId: existingStudent.schoolId, // 기존 학생의 schoolId 사용
-            studentCode: dto.studentCode,
-            id: Not(id), // 자기 자신 제외
-          },
-        });
-
-        if (duplicateStudent) {
-          throw new ConflictException(
-            'Student with this student code already exists in the school',
-          );
-        }
-      }
-
-      // 3. parent 정보 업데이트 (parent 정보가 있는 경우만)
-      if (dto.parent && existingStudent.parentId) {
-        await manager.update(
-          Parent,
-          { id: existingStudent.parentId },
-          dto.parent,
-        );
-      }
-
-      // 4. Student 정보 업데이트 (parent 정보 제외, schoolId와 parentId 제외)
-      const studentUpdateData = {
-        grade: dto.grade,
-        class: dto.class,
-        studentCode: dto.studentCode,
-        name: dto.name,
-        phone: dto.phone,
-        escortPhone: dto.escortPhone,
-        homeTransit: dto.homeTransit,
-        nextStop: dto.nextStop,
-        status: dto.status,
-        note: dto.note,
-      };
-
-      const student = await manager.preload(Student, {
-        id,
-        ...studentUpdateData,
-      });
-
-      if (!student) {
-        throw new NotFoundException('Student not found');
-      }
-
-      await manager.save(Student, student);
-
-      // 5. 업데이트된 Student 조회 및 반환
+      // 업데이트된 학생 정보 반환 (관계 포함)
       return await manager.findOneOrFail(Student, {
-        where: { id },
+        where: { id: savedStudent.id },
         relations: ['parent'],
       });
     });
@@ -402,18 +416,43 @@ export class StudentService {
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
 
+  //? 학생 삭제 (soft delete)
   async remove(id: number): Promise<Student> {
+    // ID로 student 조회
     const student = await this.studentRepository.findOne({
       where: { id },
+      relations: ['picks'], // 수강 중인 picks 함께 조회
     });
+
     if (!student) {
-      throw new NotFoundException('Student not found');
+      throw new NotFoundException(`Student with ID ${id} not found`);
     }
-    return await this.studentRepository.softRemove(student);
+
+    // 수강 중인 picks가 있는지 확인
+    const activePicks = student.picks?.filter((pick) => !pick.endedBy);
+    if (activePicks && activePicks.length > 0) {
+      throw new Error('Cannot delete student with active picks');
+    }
+
+    // 삭제일이 없으면 soft delete
+    if (!student.deletedAt) {
+      await this.studentRepository.update(id, {
+        deletedAt: new Date(),
+      });
+    }
+
+    // 삭제된 학생 정보 반환
+    return await this.studentRepository.findOneOrFail({
+      where: { id },
+      withDeleted: true,
+    });
   }
 
-  // note that this is hard-delete
+  //? 학생 이미지 삭제
   async deleteImages(url: string): Promise<void> {
-    await this.s3Service.delete(url);
+    const fileName = url.split('/').pop();
+    if (fileName) {
+      await this.s3Service.delete(fileName);
+    }
   }
 }

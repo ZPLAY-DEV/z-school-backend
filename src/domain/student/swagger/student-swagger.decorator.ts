@@ -60,24 +60,29 @@ export const CreateStudentDocs = () =>
 ### 📋 기능 설명
 새로운 학생을 시스템에 등록합니다.
 
-### 🏷️ 두 가지 생성 방식
-**1. 🆕 미등록 부모와 함께 생성** (추천)
-- \`parent.id\` 제외, \`parent.phone\` 필수
-- 새로운 부모를 생성하면서 학생 등록
+### 🏷️ 세 가지 생성 방식
+**1. 🎯 부모 ID로 직접 연결** (가장 간단)
+- \`parentId\`만 제공 (parent 객체 무시됨)
+- 기존 부모의 ID를 사용하여 직접 연결
 
 **2. 🔗 기존 부모와 연결하여 생성**
 - \`parent.id\`만 제공 (다른 parent 필드들은 무시됨)
 - 이미 등록된 부모와 학생 연결
 
+**3. 🆕 미등록 부모와 함께 생성** (추천)
+- \`parent.id\` 제외, \`parent.phone\` 필수
+- 새로운 부모를 생성하면서 학생 등록
+
 ### 📌 비즈니스 규칙
-- **필수 정보**: schoolId, grade, parent
-- **부모 정보**: parent 객체는 항상 필수
+- **필수 정보**: schoolId, grade, parent (또는 parentId)
+- **부모 정보**: parent 객체는 항상 필수 (parentId 미제공시)
 - **선택 정보**: class, studentCode, name, phone, escortPhone, homeTransit, nextStop, status, note
 - **중복 체크**: 동일 학교 내 학번 중복 불가
 - **학년 범위**: 1~12학년만 가능
 
 ### ⚠️ 주의사항
 - parent 객체는 항상 필수 (일관성 있는 API 구조)
+- parentId가 제공되면 parent 객체는 무시됨
 - 기존 부모 연결: parent.id만 제공
 - 새로운 부모 생성: parent.id 제외, parent.phone 필수
 - 전화번호는 하이픈 없이 숫자만 입력
@@ -87,10 +92,10 @@ export const CreateStudentDocs = () =>
     ApiBody({
       type: CreateStudentDto,
       examples: {
-        'new-parent': {
-          summary: '🆕 미등록 부모와 함께 학생 생성',
+        'direct-parent-reference': {
+          summary: '🎯 부모 ID로 직접 연결',
           description:
-            '새로운 부모를 생성하면서 학생을 등록하는 경우 (parent 객체 포함, parentId 제외)',
+            '기존 부모의 ID를 사용하여 직접 연결하는 방식 (가장 간단한 방법)',
           value: {
             schoolId: 1,
             grade: 3,
@@ -100,9 +105,7 @@ export const CreateStudentDocs = () =>
             status: 'ATTENDING',
             phone: '01011112222',
             escortPhone: '01022223333',
-            parent: {
-              phone: '01066661031',
-            },
+            parentId: 1,
           },
         },
         'existing-parent': {
@@ -120,6 +123,24 @@ export const CreateStudentDocs = () =>
             escortPhone: '01022223333',
             parent: {
               id: 1,
+            },
+          },
+        },
+        'new-parent': {
+          summary: '🆕 미등록 부모와 함께 학생 생성',
+          description:
+            '새로운 부모를 생성하면서 학생을 등록하는 경우 (parent 객체 포함, parentId 제외)',
+          value: {
+            schoolId: 1,
+            grade: 3,
+            class: '5',
+            studentCode: 4,
+            name: '이학상',
+            status: 'ATTENDING',
+            phone: '01011112222',
+            escortPhone: '01022223333',
+            parent: {
+              phone: '01066661031',
             },
           },
         },
@@ -143,6 +164,17 @@ export const CreateStudentDocs = () =>
               phone: '01066661031',
               note: '주말에만 연락 가능',
               termsAgreedAt: '2025-01-01T12:00:00Z',
+            },
+          },
+        },
+        'minimal-new-parent': {
+          summary: '🎯 최소 정보로 새로운 부모 및 학생 생성',
+          description: '필수 정보만으로 새로운 부모와 학생을 생성하는 경우',
+          value: {
+            schoolId: 1,
+            grade: 3,
+            parent: {
+              phone: '01066661031',
             },
           },
         },
@@ -177,8 +209,9 @@ export const CreateStudentDryRunDocs = () =>
 
 ### 🏷️ 검증 방식
 실제 생성 API와 동일한 payload 구조를 사용:
-- **새로운 부모**: parent.id 제외, parent.phone 필수
+- **부모 ID 직접**: parentId만 제공
 - **기존 부모**: parent.id만 제공
+- **새로운 부모**: parent.id 제외, parent.phone 필수
 
 ### 🎯 검증 항목
 - 동일 학교 내 학번 중복
@@ -193,18 +226,16 @@ export const CreateStudentDryRunDocs = () =>
     ApiBody({
       type: CreateStudentDto,
       examples: {
-        'dryrun-new-parent': {
-          summary: '🆕 미등록 부모와 함께 생성 검증',
-          description: '새로운 부모 생성 방식으로 검증',
+        'dryrun-parent-id': {
+          summary: '🎯 부모 ID로 직접 연결 검증',
+          description: '기존 부모 ID를 사용한 직접 연결 방식으로 검증',
           value: {
             schoolId: 1,
             grade: 3,
             class: '5',
             studentCode: 4,
             name: '이학상',
-            parent: {
-              phone: '01066661031',
-            },
+            parentId: 1,
           },
         },
         'dryrun-existing-parent': {
@@ -218,6 +249,20 @@ export const CreateStudentDryRunDocs = () =>
             name: '이학상',
             parent: {
               id: 1,
+            },
+          },
+        },
+        'dryrun-new-parent': {
+          summary: '🆕 미등록 부모와 함께 생성 검증',
+          description: '새로운 부모 생성 방식으로 검증',
+          value: {
+            schoolId: 1,
+            grade: 3,
+            class: '5',
+            studentCode: 4,
+            name: '이학상',
+            parent: {
+              phone: '01066661031',
             },
           },
         },

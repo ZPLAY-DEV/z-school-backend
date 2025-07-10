@@ -18,7 +18,7 @@ import { UpdateParentDto } from 'src/domain/parent/dto/update-parent.dto';
  * 학생 정보 수정 DTO
  * - 실제로 업데이트 가능한 필드들만 포함
  * - schoolId는 수정 불가 (학교 변경은 전학 프로세스를 통해서만)
- * - parentId는 수정 불가 (학부모 변경은 별도 프로세스 필요)
+ * - parentId와 parent는 선택적 업데이트 가능
  */
 export class UpdateStudentDto {
   @ApiPropertyOptional({
@@ -151,7 +151,22 @@ export class UpdateStudentDto {
   note?: string;
 
   @ApiPropertyOptional({
-    description: '보호자 정보 수정 - 학생의 학부모/보호자 정보 업데이트',
+    description: `부모 ID - 기존 등록된 부모로 변경할 때 사용 (선택)
+    
+🏷️ 부모 변경: parentId 제공시 parent 객체 무시`,
+    type: Number,
+    example: 2,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt({ message: '부모 ID는 정수여야 합니다' })
+  @Min(1, { message: '부모 ID는 1 이상이어야 합니다' })
+  parentId?: number;
+
+  @ApiPropertyOptional({
+    description: `보호자 정보 수정 - 학생의 학부모/보호자 정보 업데이트 (선택)
+    
+⚠️ parentId가 제공되면 이 객체는 무시됩니다`,
     type: UpdateParentDto,
   })
   @IsOptional()

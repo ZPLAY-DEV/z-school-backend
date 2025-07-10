@@ -1,16 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-    IsEnum,
-    IsInt,
-    IsNotEmpty,
-    IsOptional,
-    IsString,
-    Matches,
-    Max,
-    MaxLength,
-    Min,
-    ValidateNested,
+  IsDefined,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
 import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
@@ -18,10 +19,11 @@ import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
 /**
  * 학생 생성 DTO
  * - 새로운 학생을 시스템에 등록할 때 사용
- * - 필수: schoolId, grade, parent
+ * - 필수: schoolId, grade, parent (또는 parentId)
  * - 부모 연결 방식:
  *   - 기존 부모 연결: parent.id 포함 (다른 parent 필드들은 무시됨)
  *   - 새로운 부모 생성: parent.id 제외, parent.phone 필수
+ *   - 직접 참조: parentId 제공 (parent 객체 무시됨)
  * - 선택: class, studentCode, name, phone, escortPhone, homeTransit, nextStop, status, note
  */
 export class CreateStudentDto {
@@ -167,15 +169,33 @@ export class CreateStudentDto {
   @MaxLength(255, { message: '비고는 255자 이하여야 합니다' })
   note?: string;
 
-  @ApiProperty({
-    description: `보호자 정보 - 학생의 학부모/보호자 정보 (필수)
+  @ApiPropertyOptional({
+    description: `부모 ID - 기존 등록된 부모와 직접 연결할 때 사용 (선택)
     
+🏷️ 부모 연결 방식 우선순위:
+1️⃣ parentId 우선: 제공시 parent 객체 무시
+2️⃣ parent.id: 기존 부모 연결
+3️⃣ parent 객체: 새로운 부모 생성`,
+    type: Number,
+    example: 1,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt({ message: '부모 ID는 정수여야 합니다' })
+  @Min(1, { message: '부모 ID는 1 이상이어야 합니다' })
+  parentId?: number;
+
+  @ApiProperty({
+    description: `보호자 정보 - 학생의 학부모/보호자 정보 (parentId 미제공시 필수)
+
 🏷️ 두 가지 연결 방식:
 ✅ 기존 부모 연결: parent.id만 제공 (다른 필드들은 무시됨)
-✅ 새로운 부모 생성: parent.id 제외, parent.phone 필수`,
+✅ 새로운 부모 생성: parent.id 제외, parent.phone 필수
+
+⚠️ parentId가 제공되면 이 객체는 무시됩니다`,
     type: CreateParentDto,
   })
-  @IsNotEmpty({ message: '보호자 정보는 필수입니다' })
+  @IsDefined({ message: '보호자 정보는 필수입니다' })
   @ValidateNested({ message: '보호자 정보가 올바르지 않습니다' })
   @Type(() => CreateParentDto)
   parent: CreateParentDto;

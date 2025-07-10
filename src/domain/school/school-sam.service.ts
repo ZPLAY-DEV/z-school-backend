@@ -76,7 +76,7 @@ export class SchoolSamService {
       const instructorPromises = dtos.map(async (dto) => {
         try {
           // 4.1. 강사 upsert
-          let instructor = instructorMap.get(dto.instructor.phone);
+          let instructor = instructorMap.get(dto.instructor.phone!);
           if (instructor) {
             // 기존 강사 업데이트
             await manager.update(
@@ -141,7 +141,7 @@ export class SchoolSamService {
           });
         } catch (error) {
           this.logger.error(
-            `Failed to process instructor with phone: ${dto.instructor.phone}`,
+            `Failed to process instructor with phone: ${dto.instructor.phone!}`,
             error.stack,
           );
           throw error;
