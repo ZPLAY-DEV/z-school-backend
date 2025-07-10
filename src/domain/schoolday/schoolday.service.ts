@@ -71,7 +71,9 @@ export class SchooldayService {
     const queryBuilder = this.schooldayRepository
       .createQueryBuilder('schoolday')
       .leftJoinAndSelect('schoolday.group', 'group')
-      .leftJoinAndSelect('group.picks', 'picks');
+      .leftJoinAndSelect('group.picks', 'picks')
+      .leftJoinAndSelect('group.sam', 'sam')
+      .leftJoinAndSelect('sam.instructor', 'instructor');
 
     const conditions: string[] = [];
     const parameters: Record<string, any> = {};

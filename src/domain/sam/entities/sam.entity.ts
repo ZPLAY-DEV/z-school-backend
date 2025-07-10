@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { Contract } from 'src/domain/contract/entities/contract.entity';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Payout } from 'src/domain/payout/entities/payout.entity';
 import { School } from 'src/domain/school/entities/school.entity';
@@ -118,6 +119,9 @@ export class Sam {
 
   @OneToMany(() => Contract, (contract) => contract.sam)
   contracts: Contract[]; // 가르치는 과목
+
+  @OneToMany(() => Group, (group) => group.sam)
+  groups: Group[]; // 담당 그룹
 
   //? Constructor ---------------------------------------------------------- ?//
 

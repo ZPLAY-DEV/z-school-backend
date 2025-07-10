@@ -1,16 +1,16 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiOkResponse,
-    ApiOperation,
-    ApiResponse,
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-    ApiOkPaginatedResponse,
-    ApiPaginationQuery,
-    FilterOperator,
-    PaginateConfig,
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
+  PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';

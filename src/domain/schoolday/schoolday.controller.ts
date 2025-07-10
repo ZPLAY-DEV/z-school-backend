@@ -22,10 +22,11 @@ import {
   GetSchooldayByIdDocs,
   GetSchooldayListDocs,
   GetSchooldayPaginatedListDocs,
+  GetTodaySchooldaysDocs,
   UpdateSchooldayTimeDocs,
 } from './swagger/schoolday-swagger.decorator';
 
-@ApiTags('✅ Schooldays ( 수업일 )')
+@ApiTags('✳️ Schooldays ( 수업일 )')
 @Controller('schooldays')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchooldayController {
@@ -44,6 +45,16 @@ export class SchooldayController {
     @Query('date') date?: string,
   ): Promise<Schoolday[]> {
     return await this.schooldayService.list(schoolId, termId, groupId, date);
+  }
+
+  @GetTodaySchooldaysDocs()
+  @Get('today')
+  async getToday(
+    @Query('schoolId') schoolId?: number,
+    @Query('termId') termId?: number,
+  ): Promise<Schoolday[]> {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
+    return await this.schooldayService.list(schoolId, termId, undefined, today);
   }
 
   @GetSchooldayPaginatedListDocs()

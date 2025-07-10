@@ -16,11 +16,15 @@ import {
 } from 'src/domain/schoolday/dto/response-attendance.dto';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
 import {
+  CreateAttendanceForAllValidTermsDocs,
   CreateAttendanceOfSchooldayWithDateDocs,
   CreateAttendanceOfSchooldayWithPeriodDocs,
+  DeleteAttendanceByDateDocs,
+  DeleteAttendanceByPeriodDocs,
+  DeleteAttendancesBySchoolAndTermDocs,
 } from 'src/domain/schoolday/swagger/schoolday-attendance-swagger.decorator';
 
-@ApiTags('✅ Schooldays > Attendance ( 수업일 > 출석부 생성 )')
+@ApiTags('✳️ Schooldays > Attendance ( 수업일 > 출석부 생성 )')
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schooldays')
 export class SchooldayAttendanceController {
@@ -32,6 +36,7 @@ export class SchooldayAttendanceController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateAttendanceForAllValidTermsDocs()
   @Public()
   @Post('attendances/all')
   async createAttendanceForAllValidTerms(
@@ -62,6 +67,7 @@ export class SchooldayAttendanceController {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
+  @DeleteAttendancesBySchoolAndTermDocs()
   @Public()
   @Delete('attendances/all')
   async deleteAttendancesBySchoolAndTerm(
@@ -72,6 +78,7 @@ export class SchooldayAttendanceController {
     );
   }
 
+  @DeleteAttendanceByDateDocs()
   @Public()
   @Delete('attendances/date')
   async deleteWithDate(
@@ -80,6 +87,7 @@ export class SchooldayAttendanceController {
     return await this.schooldayAttendanceService.deleteWithDate(dto);
   }
 
+  @DeleteAttendanceByPeriodDocs()
   @Public()
   @Delete('attendances/period')
   async deleteWithPeriod(
