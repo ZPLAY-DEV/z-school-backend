@@ -32,29 +32,13 @@ export class InstructorService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
   async create(dto: CreateInstructorDto): Promise<Instructor> {
-    const parent = this.instructorRepository.create(dto);
-    return await this.instructorRepository.save(parent);
+    const instructor = this.instructorRepository.create(dto);
+    return await this.instructorRepository.save(instructor);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
-
-  // name 으로 시작하는 과목을 가리키는 강사 리스트
-  async list(name: string | null): Promise<Instructor[]> {
-    const queryBuilder = this.instructorRepository
-      .createQueryBuilder('instructor')
-      .leftJoinAndSelect('instructor.schools', 'school')
-      .leftJoinAndSelect('instructor.instructorLessons', 'instructorLesson')
-      .leftJoinAndSelect('instructorLesson.lesson', 'lesson');
-
-    if (name) {
-      queryBuilder.where('instructor.name LIKE :name', { name: `${name}%` });
-    }
-    queryBuilder.orderBy('instructor.id', 'DESC');
-
-    return await queryBuilder.getMany();
-  }
 
   async infiniteList(query: PaginateQuery): Promise<Paginated<Instructor>> {
     const queryBuilder = this.instructorRepository
@@ -78,6 +62,22 @@ export class InstructorService {
     };
 
     return paginate<Instructor>(query, queryBuilder, config);
+  }
+
+  // name 으로 시작하는 과목을 가리키는 강사 리스트
+  async list(name: string | null): Promise<Instructor[]> {
+    const queryBuilder = this.instructorRepository
+      .createQueryBuilder('instructor')
+      .leftJoinAndSelect('instructor.schools', 'school')
+      .leftJoinAndSelect('instructor.instructorLessons', 'instructorLesson')
+      .leftJoinAndSelect('instructorLesson.lesson', 'lesson');
+
+    if (name) {
+      queryBuilder.where('instructor.name LIKE :name', { name: `${name}%` });
+    }
+    queryBuilder.orderBy('instructor.id', 'DESC');
+
+    return await queryBuilder.getMany();
   }
 
   async findById(id: number, relations: string[] = []): Promise<Instructor> {
@@ -122,7 +122,7 @@ export class InstructorService {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
-  async softDelete(id: number, note: string | undefined): Promise<void> {
+  async remove(id: number, note: string | undefined): Promise<void> {
     if (note) {
       await this.instructorRepository.update(
         { id },

@@ -21,7 +21,7 @@ import {
   UpdateParentDocs,
 } from './swagger/parent-swagger.decorator';
 
-@ApiTags('✅ Parents ( 학부모 )')
+@ApiTags('✳️ Parents ( 학부모 )')
 @Controller('parents')
 @UseInterceptors(ClassSerializerInterceptor)
 export class ParentController {
@@ -33,13 +33,15 @@ export class ParentController {
 
   @FindAllParentDocs()
   @Get('paginated')
-  async findAll(@Paginate() query: PaginateQuery): Promise<Paginated<Parent>> {
-    return this.parentService.findAll(query);
+  async infiniteList(
+    @Paginate() query: PaginateQuery,
+  ): Promise<Paginated<Parent>> {
+    return this.parentService.infiniteList(query);
   }
 
   @FindParentDocs()
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findById(@Param('id', ParseIntPipe) id: number) {
     return this.parentService.findById(id, ['students']);
   }
 
@@ -62,7 +64,7 @@ export class ParentController {
 
   @DeleteParentDocs()
   @Delete(':id')
-  async remove(@Param('id') id: string): Promise<Parent> {
+  async remove(@Param('id') id: number): Promise<Parent> {
     return this.parentService.remove(id);
   }
 }

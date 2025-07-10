@@ -37,7 +37,7 @@ export class ParentService {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  async findAll(query: PaginateQuery): Promise<Paginated<Parent>> {
+  async infiniteList(query: PaginateQuery): Promise<Paginated<Parent>> {
     const queryBuilder = this.parentRepository.createQueryBuilder('parent');
 
     const config: PaginateConfig<Parent> = {
@@ -63,7 +63,7 @@ export class ParentService {
     return await paginate(query, queryBuilder, config);
   }
 
-  async findById(id: string, relations: string[] = []): Promise<Parent> {
+  async list(id: string, relations: string[] = []): Promise<Parent> {
     try {
       return relations.length > 0
         ? await this.parentRepository.findOneOrFail({
@@ -76,6 +76,22 @@ export class ParentService {
     } catch (error) {
       this.logger.error(error);
       throw new NotFoundException(error.message);
+    }
+  }
+
+  async findById(id: number, relations: string[] = []): Promise<Parent> {
+    try {
+      return relations.length > 0
+        ? await this.parentRepository.findOneOrFail({
+            where: { id },
+            relations,
+          })
+        : await this.parentRepository.findOneOrFail({
+            where: { id },
+          });
+    } catch (e) {
+      this.logger.error(e);
+      throw new NotFoundException(`Parent not found`);
     }
   }
 
@@ -95,8 +111,8 @@ export class ParentService {
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
 
-  async remove(id: string) {
+  async remove(id: number) {
     const parent = await this.findById(id);
-    return await this.parentRepository.remove(parent);
+    return await this.parentRepository.softRemove(parent);
   }
 }

@@ -28,6 +28,7 @@ import {
   DeleteNewsletterDocs,
   FindNewsletterByIdDocs,
   FindNewslettersDocs,
+  FindNewslettersToBeSentDocs,
   FindRegistrationNewsletterDocs,
   GenerateNewsletterS3UrlsDocs,
   MarkAsReadDocs,
@@ -35,7 +36,7 @@ import {
   UpdateNewsletterDocs,
 } from './swagger/newsletter-swagger.decorator';
 
-@ApiTags('✅ Newsletters ( 뉴스레터 )')
+@ApiTags('✳️ Newsletters ( 뉴스레터 )')
 @Controller('newsletters')
 @UseInterceptors(ClassSerializerInterceptor)
 export class NewsletterController {
@@ -77,6 +78,7 @@ export class NewsletterController {
     return await this.newsletterService.findOnlyRegistration(schoolId, termId);
   }
 
+  @FindNewslettersToBeSentDocs()
   @Get('to-be-sent')
   async findOnlyNewslettersToBeSent(): Promise<Newsletter[]> {
     return await this.newsletterService.findOnlyNewslettersToBeSent();

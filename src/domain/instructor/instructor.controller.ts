@@ -7,40 +7,37 @@ import {
   Param,
   ParseIntPipe,
   Patch,
-  Post,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { UpdateInstructorDto } from 'src/domain/instructor/dto/update-instructor.dto';
 import { InstructorService } from 'src/domain/instructor/instructor.service';
-import { CreateInstructorDto } from './dto/create-instructor.dto';
 import { Instructor } from './entities/instructor.entity';
 import {
-  CreateInstructorSimpleDocs,
+  FindAllInstructorDocs,
   FindInstructorByIdDocs,
   SoftDeleteSchoolInstructorDocs,
   UpdateInstructorDocs,
 } from './swagger/instructor.swagger.decorator';
 
-@ApiTags('✅ Instructors ( 강사 ≓ Parent )')
+@ApiTags('✳️ Instructors ( 강사 )')
 @Controller('instructors')
 @UseInterceptors(ClassSerializerInterceptor)
 export class InstructorController {
   constructor(private readonly instructorService: InstructorService) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? Create
-  //? ---------------------------------------------------------------------- ?//
-
-  @CreateInstructorSimpleDocs()
-  @Post()
-  async create(@Body() dto: CreateInstructorDto): Promise<Instructor> {
-    return await this.instructorService.create(dto);
-  }
-
-  //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
+
+  @FindAllInstructorDocs()
+  @Get('paginated')
+  async infiniteList(
+    @Paginate() query: PaginateQuery,
+  ): Promise<Paginated<Instructor>> {
+    return this.instructorService.infiniteList(query);
+  }
 
   @FindInstructorByIdDocs()
   @Get(':id')
@@ -71,6 +68,6 @@ export class InstructorController {
     @Param('id', ParseIntPipe) id: number,
     @Body('note') note?: string,
   ): Promise<void> {
-    return await this.instructorService.softDelete(id, note);
+    return await this.instructorService.remove(id, note);
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category as CategoryEnum, CategoryLabels } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
@@ -15,7 +15,7 @@ export class CategoryService {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  async list(slug: CategoryEnum | undefined): Promise<Category[]> {
+  async list(slug?: CategoryEnum): Promise<Category[]> {
     if (!slug) {
       return await this.categoryRepository.find();
     }
@@ -25,20 +25,6 @@ export class CategoryService {
         slug,
       },
     });
-  }
-
-  async findBySlug(slug: CategoryEnum): Promise<Category> {
-    try {
-      const item = await this.categoryRepository.findOneOrFail({
-        where: {
-          slug,
-        },
-      });
-      return item;
-    } catch (e) {
-      console.error(e);
-      throw new NotFoundException();
-    }
   }
 
   async getByIds(ids: number[]): Promise<Category[]> {

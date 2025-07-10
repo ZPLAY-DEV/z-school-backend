@@ -14,7 +14,7 @@ import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import {
   InfiniteListSchoolTermNewslettersDocs,
   ListSchoolTermNewslettersDocs,
-} from 'src/domain/newsletter/swagger/school-newsletter-swagger.decorator';
+} from 'src/domain/school/swagger/school-newsletter-swagger.decorator';
 
 import { SchoolNewsletterService } from 'src/domain/school/school-newsletter.service';
 
