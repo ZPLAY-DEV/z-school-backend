@@ -6,7 +6,6 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
@@ -210,68 +209,6 @@ export class SchoolSamService {
         alias: [FilterOperator.EQ, FilterOperator.ILIKE],
         'instructor.phone': [FilterOperator.EQ, FilterOperator.ILIKE],
       },
-    });
-  }
-
-  async getGroupsForDate(
-    schoolId: number,
-    samId: number,
-    date?: string,
-  ): Promise<Group[]> {
-    // 1. Sam이 해당 학교에 속하는지 확인하고 관련 Group들을 조회
-    const sam = await this.samRepository.findOneOrFail({
-      where: { schoolId, id: samId },
-      relations: [
-        'contracts',
-        'contracts.group',
-        'contracts.group.lesson',
-        'contracts.group.schooldays',
-      ],
-    });
-
-    if (!sam?.contracts) {
-      return [];
-    }
-
-    // 2. 주어진 날짜에 수업이 있는 Group들만 필터링
-    const targetDate = date ? new Date(date) : new Date();
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const groupsWithSchooldays = sam.contracts
-      .map((contract) => contract.group)
-      .filter((group) => {
-        // 해당 날짜에 schoolday가 있는 group들만 선택
-        return group.schooldays?.some((schoolday) => {
-          const schooldayDate = new Date(schoolday.startsAt);
-          return schooldayDate >= startOfDay && schooldayDate <= endOfDay;
-        });
-      });
-
-    // 3. 수업 시작 시간 기준으로 오름차순 정렬
-    return groupsWithSchooldays.sort((a, b) => {
-      // 해당 날짜의 첫 번째 schoolday의 시작시간 기준으로 정렬
-      const aSchoolday = a.schooldays?.find((sd) => {
-        const sdDate = new Date(sd.startsAt);
-        return sdDate >= startOfDay && sdDate <= endOfDay;
-      });
-
-      const bSchoolday = b.schooldays?.find((sd) => {
-        const sdDate = new Date(sd.startsAt);
-        return sdDate >= startOfDay && sdDate <= endOfDay;
-      });
-
-      if (!aSchoolday || !bSchoolday) {
-        return 0;
-      }
-
-      return (
-        new Date(aSchoolday.startsAt).getTime() -
-        new Date(bSchoolday.startsAt).getTime()
-      );
     });
   }
 }

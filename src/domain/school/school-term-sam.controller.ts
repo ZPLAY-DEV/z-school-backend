@@ -10,6 +10,10 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { SchoolTermSamService } from 'src/domain/school/school-term-sam.service';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import {
+  SchoolTermSamSchooldaysDocs,
+  SchoolTermSamWeeklySchooldaysDocs,
+} from './swagger/school-term-sam-swagger.decorator';
 
 @ApiTags('✳️ Schools > Terms > Sam ( 학교 > 학기 > 담임쌤 )')
 @Controller('schools')
@@ -23,6 +27,7 @@ export class SchoolTermSamController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @SchoolTermSamSchooldaysDocs()
   @Get(':schoolId/terms/:termId/sams/:samId/schooldays')
   async listSchooldays(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -36,6 +41,7 @@ export class SchoolTermSamController {
     );
   }
 
+  @SchoolTermSamWeeklySchooldaysDocs()
   @Get(':schoolId/terms/:termId/sams/:samId/weekly-schooldays')
   async listWeeklySchooldays(
     @Param('schoolId', ParseIntPipe) schoolId: number,

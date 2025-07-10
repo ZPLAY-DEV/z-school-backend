@@ -5,13 +5,13 @@ import { ApiOkPaginatedResponse } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateSamDto } from '../../sam/dto/create-sam.dto';
 import { Sam } from '../../sam/entities/sam.entity';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create School Sam Bulk
 //? ---------------------------------------------------------------------- ?//
+
 export const CreateSchoolSamBulkDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -180,6 +180,7 @@ export const CreateSchoolSamBulkDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? Create School Sam Bulk DryRun
 //? ---------------------------------------------------------------------- ?//
+
 export const CreateSchoolSamBulkDryRunDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -297,6 +298,7 @@ export const CreateSchoolSamBulkDryRunDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? School Sam List
 //? ---------------------------------------------------------------------- ?//
+
 export const SchoolSamListDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -401,6 +403,7 @@ export const SchoolSamListDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? School Sam Paginated
 //? ---------------------------------------------------------------------- ?//
+
 export const SchoolSamPaginatedDocs = () => {
   return applyDecorators(
     ApiOperation({
@@ -458,134 +461,5 @@ export const SchoolSamPaginatedDocs = () => {
       },
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
-  );
-};
-
-//? ---------------------------------------------------------------------- ?//
-//? Get School > Sam Groups For Date
-//? ---------------------------------------------------------------------- ?//
-export const GetSchoolSamGroupsForDateDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '📅 강사 특정 날짜 담당 수업 그룹 조회',
-      description: `
-**📝 기능 설명**
-- 특정 강사가 특정 날짜에 담당하는 수업 그룹들을 조회합니다
-- 강사별 일일 스케줄 확인이나 출석 관리에 활용됩니다
-- 수업 시간 순으로 정렬되어 반환됩니다
-
-**🔄 비즈니스 로직**
-1. 강사의 모든 Contract (계약) 정보 조회
-2. 지정된 날짜의 요일과 매치되는 수업 그룹 필터링
-3. 수업 기간(start ~ end)에 해당 날짜가 포함되는지 확인
-4. 수업 시작 시간 순으로 정렬하여 반환
-
-**⚠️ 중요 제약사항**
-- date 파라미터는 YYYY-MM-DD 형식 필수
-- 해당 날짜가 수업 기간 내에 포함되어야 함
-- 해당 요일에 수업이 있는 그룹만 반환
-- 강사가 해당 그룹을 담당하고 있어야 함
-
-**📊 반환 데이터**
-- **Group 정보**: 그룹 기본 정보 (이름, 정원 등)
-- **Lesson 정보**: 수업 상세 정보 (시간, 장소 등)
-- **시간 정렬**: 수업 시작 시간 오름차순
-
-**🔍 활용 예시**
-- 강사별 일일 스케줄 생성
-- 특정 날짜 수업 진행 대상 그룹 조회
-- 강사의 수업 부담도 확인
-- 시간 충돌 검사 및 스케줄 관리
-      `,
-    }),
-    ApiParam({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID - 조회할 학교의 고유 식별자',
-      example: 1,
-    }),
-    ApiParam({
-      name: 'samId',
-      type: Number,
-      description: '강사 ID - 스케줄을 조회할 강사의 고유 식별자',
-      example: 3,
-    }),
-    ApiParam({
-      name: 'date',
-      type: String,
-      description: '조회할 날짜 - YYYY-MM-DD 형식의 날짜 문자열',
-      example: '2025-01-15',
-    }),
-    ApiOkResponseTemplate({
-      description: '강사 특정 날짜 담당 수업 그룹 조회 완료',
-      type: Group,
-      isArray: true,
-    }),
-    ApiResponse({
-      status: 200,
-      description: '강사 날짜별 그룹 조회 성공',
-      schema: {
-        type: 'array',
-        items: { $ref: '#/components/schemas/Group' },
-        example: [
-          {
-            id: 5,
-            groupName: '영어회화 A반',
-            maxStudents: 20,
-            currentStudents: 15,
-            lesson: {
-              id: 1,
-              lessonName: '영어회화 초급',
-              weekday: 'WEDNESDAY',
-              startTime: '09:00',
-              endTime: '10:30',
-              location: '영어실',
-            },
-          },
-          {
-            id: 12,
-            groupName: '영어회화 B반',
-            maxStudents: 18,
-            currentStudents: 16,
-            lesson: {
-              id: 4,
-              lessonName: '영어회화 중급',
-              weekday: 'WEDNESDAY',
-              startTime: '14:00',
-              endTime: '15:30',
-              location: '영어실',
-            },
-          },
-        ],
-      },
-    }),
-    ApiResponse({
-      status: 400,
-      description: '잘못된 날짜 형식',
-      schema: {
-        type: 'object',
-        properties: {
-          statusCode: { type: 'number', example: 400 },
-          message: {
-            type: 'string',
-            example: 'Invalid date format. Use YYYY-MM-DD',
-          },
-          error: { type: 'string', example: 'Bad Request' },
-        },
-      },
-    }),
-    ApiResponse({
-      status: 404,
-      description: '존재하지 않는 학교 또는 강사',
-      schema: {
-        type: 'object',
-        properties: {
-          statusCode: { type: 'number', example: 404 },
-          message: { type: 'string', example: 'School or Sam not found' },
-          error: { type: 'string', example: 'Not Found' },
-        },
-      },
-    }),
-    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };

@@ -13,7 +13,6 @@ import { ApiTags } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 
-import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { SchoolSamService } from 'src/domain/school/school-sam.service';
@@ -21,9 +20,8 @@ import { UploadService } from 'src/services/upload/upload.service';
 import {
   CreateSchoolSamBulkDocs,
   CreateSchoolSamBulkDryRunDocs,
-  GetSchoolSamGroupsForDateDocs,
   SchoolSamListDocs,
-  SchoolSamPaginatedDocs,
+  SchoolSamPaginatedDocs
 } from './swagger/school-sam.swagger.decorator';
 
 @ApiTags('✳️ Schools > Sams ( 학교 > 담임쌤 )')
@@ -78,16 +76,6 @@ export class SchoolSamController {
     @Paginate() query: PaginateQuery,
   ): Promise<Paginated<Sam>> {
     return await this.schoolSamService.infiniteList(schoolId, query);
-  }
-
-  @GetSchoolSamGroupsForDateDocs()
-  @Get(':schoolId/sams/:samId/dates/:date')
-  async getGroupsForDate(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Param('samId', ParseIntPipe) samId: number,
-    @Param('date') date?: string,
-  ): Promise<Group[]> {
-    return await this.schoolSamService.getGroupsForDate(schoolId, samId, date);
   }
 }
 // {{hostname}}/v1/schools/1/sams/3/dates
