@@ -332,6 +332,87 @@ export const ListAvailableStudentsDocs = () => {
 };
 
 //? ---------------------------------------------------------------------- ?//
+//? List Booked Students
+//? ---------------------------------------------------------------------- ?//
+
+export const ListBookedStudentsDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '📋 반별 예약 대기 학생 목록',
+      description: `
+**📝 기능 설명**
+- 해당 반과 동일한 allowedGrades를 가진 offerings에 PENDING 상태로 예약한 학생 목록을 조회합니다
+- waitingPosition 순서(ASC)로 정렬된 대기열을 반환합니다
+- offering 확정 시 우선순위 참고용으로 활용됩니다
+
+**🔄 비즈니스 로직**
+1. 해당 반의 allowedGrades 파싱 (쉼표 구분 문자열 → 숫자 배열)
+2. 같은 lesson에 속하면서 allowedGrades가 정확히 일치하는 모든 offerings 검색
+3. 해당 offerings에 대한 PENDING 상태 booking들을 waitingPosition 오름차순으로 조회
+4. booking에 연결된 student 정보만 추출하여 반환
+
+**⚠️ 중요 제약사항**
+- group과 offering 간 직접 관계가 없으므로 lesson을 통한 간접 연결 활용
+- allowedGrades가 정확히 일치하는 offerings만 대상 (순서 무관하지만 값은 동일)
+- PENDING 상태의 booking만 조회 (CONFIRMED, CANCELED 제외)
+- waitingPosition이 null인 경우 제외
+
+**📚 예시 시나리오**
+- 1,2,3학년 대상 수학 반의 예약 대기열 확인
+- offering 확정 시 대기 순서 참고
+- 추가 반 개설 필요성 판단 기준
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '대상 반의 고유 식별자',
+      example: 1,
+    }),
+    ApiOkResponse({
+      description: '예약 대기 학생 목록 조회 성공',
+      type: [Student],
+      schema: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', example: 123 },
+            name: { type: 'string', example: '홍길동' },
+            grade: { type: 'number', example: 2 },
+            schoolId: { type: 'number', example: 1 },
+            parentId: { type: 'number', example: 45 },
+            status: { type: 'string', example: 'ACTIVE' },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        example: [
+          {
+            id: 123,
+            name: '홍길동',
+            grade: 2,
+            schoolId: 1,
+            parentId: 45,
+            status: 'ACTIVE',
+            createdAt: '2025-01-15T09:00:00Z',
+          },
+          {
+            id: 124,
+            name: '김영희',
+            grade: 3,
+            schoolId: 1,
+            parentId: 46,
+            status: 'ACTIVE',
+            createdAt: '2025-01-16T10:30:00Z',
+          },
+        ],
+      },
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
 //? Update Group
 //? ---------------------------------------------------------------------- ?//
 
@@ -501,7 +582,7 @@ export const RestoreGroupDocs = () => {
   - 시간 충돌 발생
   - 장소 사용 불가
 
-### 🔄 후속 작업
+### �� 후속 작업
 - 소속 학생들에게 복구 알림 발송
 - 수업 일정 재등록
 - 강사 스케줄 업데이트

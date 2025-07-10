@@ -45,6 +45,17 @@ export class UpdateLessonDto {
   @ValidateNested({ each: true })
   @Type(() => CreateGroupWithInstructorDto)
   groups?: CreateGroupWithInstructorDto[];
+
+  @ApiProperty({
+    description: 'category ID',
+    required: false,
+    example: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  categoryId?: number;
+
   @ApiProperty({
     description: '🈳 과목명 수정 (동일 학기 내 유니크)',
     required: false,

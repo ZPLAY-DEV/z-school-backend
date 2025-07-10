@@ -24,6 +24,7 @@ import {
   DeleteGroupDocs,
   FindGroupDocs,
   ListAvailableStudentsDocs,
+  ListBookedStudentsDocs,
   RestoreGroupDocs,
   UpdateGroupDocs,
 } from 'src/domain/group/swagger/group-swagger.decorator';
@@ -70,6 +71,7 @@ export class GroupController {
     return await this.groupService.listAvailableStudents(id);
   }
 
+  @ListBookedStudentsDocs()
   @Get(':id/booked-students')
   async listBookedStudents(
     @Param('id', ParseIntPipe) id: number,

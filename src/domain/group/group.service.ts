@@ -13,12 +13,14 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { ClassStatus } from 'src/common/enums';
+import { BookingStatus, ClassStatus } from 'src/common/enums';
 import { RemovalStatus } from 'src/common/enums/removal-status';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import {
@@ -37,6 +39,10 @@ export class GroupService {
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(Pick)
     private readonly pickRepository: Repository<Pick>,
+    @InjectRepository(Booking)
+    private readonly bookingRepository: Repository<Booking>,
+    @InjectRepository(Offering)
+    private readonly offeringRepository: Repository<Offering>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -138,22 +144,55 @@ export class GroupService {
   }
 
   async listBookedStudents(id: number): Promise<Student[]> {
+    // 1. Group을 찾고 lesson 관계를 포함하여 가져오기
     const group = await this.groupRepository.findOne({
       where: { id },
-      relations: [
-        'lesson',
-        'lesson.groups',
-        'lesson.groups.picks',
-        'lesson.school',
-        'lesson.school.students',
-      ],
+      relations: ['lesson'],
     });
 
     if (!group) {
       throw new NotFoundException('Group not found');
     }
 
-    return [];
+    // 2. Group의 allowedGrades 파싱 (쉼표로 구분된 문자열을 숫자 배열로 변환)
+    const groupAllowedGrades = group.allowedGrades
+      .split(',')
+      .map((grade) => parseInt(grade.trim()));
+
+    // 3. 해당 lesson에 속하면서 allowedGrades가 동일한 모든 offerings 찾기
+    const offerings = await this.offeringRepository
+      .createQueryBuilder('offering')
+      .where('offering.lessonId = :lessonId', { lessonId: group.lessonId })
+      .getMany();
+
+    // allowedGrades가 정확히 같은 offerings만 필터링
+    const matchingOfferings = offerings.filter((offering) => {
+      const offeringGrades = offering.allowedGrades.sort();
+      const groupGrades = groupAllowedGrades.sort();
+
+      return (
+        offeringGrades.length === groupGrades.length &&
+        offeringGrades.every((grade, index) => grade === groupGrades[index])
+      );
+    });
+
+    if (matchingOfferings.length === 0) {
+      return [];
+    }
+
+    const offeringIds = matchingOfferings.map((offering) => offering.id);
+
+    // 4. 해당 offerings에 대한 PENDING 상태의 bookings를 waitingPosition 순으로 조회
+    const bookings = await this.bookingRepository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.student', 'student')
+      .where('booking.offeringId IN (:...offeringIds)', { offeringIds })
+      .andWhere('booking.status = :status', { status: BookingStatus.PENDING })
+      .orderBy('booking.waitingPosition', 'ASC')
+      .getMany();
+
+    // 5. Student 정보만 추출하여 반환
+    return bookings.map((booking) => booking.student);
   }
 
   //? ---------------------------------------------------------------------- ?//

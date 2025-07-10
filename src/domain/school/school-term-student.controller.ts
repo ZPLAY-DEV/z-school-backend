@@ -24,6 +24,16 @@ export class SchoolTermStudentController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @Public()
+  @Get(':schoolId/terms/:termId/students/:studentId/bookings')
+  @UseInterceptors(ClassSerializerInterceptor)
+  async listBookings(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+  ): Promise<Student[]> {
+    return await this.schoolTermStudentService.list(schoolId, termId);
+  }
+
   @SchoolTermStudentListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/students')
