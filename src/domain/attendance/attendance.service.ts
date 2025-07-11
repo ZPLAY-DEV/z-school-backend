@@ -9,10 +9,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { SortOrder } from 'dynamoose/dist/General';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
-import {
-  CreateAttendanceWithStudentSchooldayDto,
-  UpsertAttendanceDto,
-} from 'src/domain/attendance/dto/upsert-attendance.dto';
+import { UpsertAttendanceDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
   IAttendance,
   IAttendanceKey,
@@ -20,13 +17,16 @@ import {
 import {
   generateDailyStudentKey,
   generateGroupKey,
+  getDateFromDailyStudentKey,
+  getGroupIdFromGroupKey,
+  getStudentIdFromDailyStudentKey,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Repository } from 'typeorm';
 
-const LIMIT = 10;
+const LIMIT = 20;
 
 @Injectable()
 export class AttendanceService {
@@ -40,6 +40,10 @@ export class AttendanceService {
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
   ) {}
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Create
+  //? ---------------------------------------------------------------------- ?//
 
   async init(): Promise<void> {
     const now = addDays(new Date(), 1);
@@ -73,96 +77,88 @@ export class AttendanceService {
     }
   }
 
-  //? notice that even if you provide createdAt and updatedAt in the payload
-  //? dynamodb will ignore them and record the timestamps with its own value.
-  //? This method works as upsert - if the item exists, it will be overwritten.
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
+
+  //? notice that records will be sorted by range key,
+  //? which is dailyStudentKey
   //?
-  async upsertWithStudentAndSchoolday(
-    dto: CreateAttendanceWithStudentSchooldayDto,
-  ): Promise<IAttendance> {
-    const { studentId, schooldayId, status, parentNote, schoolNote } = dto;
-
-    const student = await this.studentRepository.findOne({
-      where: {
-        id: studentId,
-      },
-    });
-    if (!student) {
-      throw new NotFoundException('Student not found');
-    }
-    const schoolday = await this.schooldayRepository.findOne({
-      where: {
-        id: schooldayId,
-      },
-      relations: ['group', 'group.lesson'],
-    });
-    if (!schoolday) {
-      throw new NotFoundException('Schoolday not found');
-    }
-    const expires = Math.floor(
-      addDays(schoolday.startsAt, 400).getTime() / 1000,
-    );
-    const itemKey = {
-      groupKey: generateGroupKey(schoolday.group.id),
-      dailyStudentKey: generateDailyStudentKey(
-        formatInTimeZone(schoolday.startsAt, 'Asia/Seoul', 'yyyy-MM-dd'),
-        student.id,
-        student.grade,
-        student.class,
-        student.studentCode,
-      ),
-    };
-    const itemDto = {
-      lessonId: schoolday.group.lesson.id,
-      lessonName: schoolday.group.lesson.lessonName,
-      groupId: schoolday.group.id,
-      groupName: schoolday.group.groupName,
-      studentId: student.id,
-      studentName: student.name,
-      start: formatInTimeZone(schoolday.startsAt, 'Asia/Seoul', 'HH:mm'),
-      end: formatInTimeZone(schoolday.endsAt, 'Asia/Seoul', 'HH:mm'),
-      duration: schoolday.duration,
-      ...(status && { status }),
-      ...(parentNote && { parentNote }),
-      ...(schoolNote && { schoolNote }),
-      expires,
-    };
-
-    // intentionally using exception-driven control flow
+  async fetch(
+    groupKey: string,
+    lastKey?: IAttendanceKey,
+    count?: number,
+  ): Promise<{
+    items: IAttendance[];
+    count: number;
+    lastKey?: IAttendanceKey;
+  }> {
     try {
-      const result = await this.model.create({
-        ...itemKey,
-        ...itemDto,
-      });
-      console.log(
-        '✅ created new attendance:',
-        JSON.stringify(result, null, 2),
-      );
-      return result as unknown as IAttendance;
+      const limit = count && count > 0 ? count : LIMIT;
+      const query = this.model
+        .query('groupKey')
+        .eq(groupKey)
+        .sort(SortOrder.descending)
+        .limit(limit);
+
+      const result = lastKey
+        ? await query.startAt(lastKey).exec()
+        : await query.exec();
+
+      return {
+        items: result as IAttendance[],
+        count: result.count,
+        lastKey: result.lastKey as IAttendanceKey | undefined,
+      };
     } catch (error) {
-      if (
-        error.name === 'ConditionalCheckFailedException' ||
-        error.code === 'ConditionalCheckFailedException'
-      ) {
-        try {
-          const result = await this.model.update(itemKey, itemDto);
-          console.log(
-            '✅ updated existing attendance:',
-            JSON.stringify(result, null, 2),
-          );
-          return result as unknown as IAttendance;
-        } catch (updateError) {
-          console.error(`[dynamodb] update error`, updateError);
-          throw new BadRequestException(updateError.message);
-        }
-      } else {
-        console.error(`[dynamodb] error`, error);
-        throw new BadRequestException(error.message);
-      }
+      console.error(`[dynamodb] fetch error:`, error);
+      throw new BadRequestException(error.message);
     }
   }
 
-  // async notify(dto: NotifyParentsParams): Promise<any> {}
+  //? Scan all attendance records across all groups
+  //? Used when no specific groupId is provided
+  //?
+  async scanAll(
+    lastKey?: IAttendanceKey,
+    count?: number,
+  ): Promise<{
+    items: IAttendance[];
+    count: number;
+    lastKey?: IAttendanceKey;
+  }> {
+    try {
+      const limit = count && count > 0 ? count : LIMIT;
+      const scanQuery = this.model.scan().limit(limit);
+
+      const result = lastKey
+        ? await scanQuery.startAt(lastKey).exec()
+        : await scanQuery.exec();
+
+      return {
+        items: result as IAttendance[],
+        count: result.count,
+        lastKey: result.lastKey as IAttendanceKey | undefined,
+      };
+    } catch (error) {
+      console.error(`[dynamodb] scan error:`, error);
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async findById(dto: IAttendanceKey): Promise<IAttendance> {
+    console.log(dto);
+    try {
+      return (await this.model.get(dto)) as IAttendance;
+    } catch (error) {
+      console.error(`[dynamodb] error`, error);
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
 
   //? notice that even if you provide createdAt and updatedAt in the payload
   //? dynamodb will ignore them and record the timestamps with its own value.
@@ -177,20 +173,35 @@ export class AttendanceService {
     const itemDto = {
       ...rest,
     };
-    const date = dailyStudentKey.split('#')[1];
+
+    const groupId = getGroupIdFromGroupKey(groupKey);
+    const date = getDateFromDailyStudentKey(dailyStudentKey);
+
     const group = await this.groupRepository.findOne({
       where: {
-        id: rest.groupId!,
+        id: groupId,
       },
-      relations: ['schooldays'],
+      relations: ['schooldays', 'lesson', 'picks', 'picks.student'],
     });
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
 
-    const schoolday = group?.schooldays.find(
-      (v) => formatInTimeZone(v.startsAt, 'Asia/Seoul', 'yyyy-MM-dd') === date,
-    );
+    const schoolday = group?.schooldays.find((v) => {
+      return formatInTimeZone(v.startsAt, 'Asia/Seoul', 'yyyy-MM-dd') === date;
+    });
     if (!schoolday) {
       throw new NotFoundException('Schoolday not found');
     }
+
+    const pick = group.picks.find((v) => {
+      return v.student.id === getStudentIdFromDailyStudentKey(dailyStudentKey);
+    });
+    const student = pick?.student;
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
+
     const expires = Math.floor(
       addDays(schoolday.startsAt, 400).getTime() / 1000,
     );
@@ -198,8 +209,15 @@ export class AttendanceService {
     itemDto.start = formatInTimeZone(schoolday.startsAt, 'Asia/Seoul', 'HH:mm');
     itemDto.end = formatInTimeZone(schoolday.endsAt, 'Asia/Seoul', 'HH:mm');
     itemDto.duration = schoolday.duration;
+    itemDto.lessonId = group.lesson.id;
+    itemDto.lessonName = group.lesson.lessonName;
+    itemDto.groupId = group.id;
+    itemDto.groupName = group.groupName;
+    itemDto.studentId = pick.student.id;
+    itemDto.studentName = pick.student.name;
     itemDto.expires = expires;
 
+    console.log('✅ ', JSON.stringify(itemDto, null, 2));
     // intentionally using exception-driven control flow
     try {
       const result = await this.model.create({
@@ -235,51 +253,8 @@ export class AttendanceService {
   }
 
   //? ---------------------------------------------------------------------- ?//
-  //? READ
+  //? Delete
   //? ---------------------------------------------------------------------- ?//
-
-  //? notice that records will be sorted by range key,
-  //? which is dailyStudentKey
-  //?
-  async fetch(
-    groupKey: string,
-    lastKey?: IAttendanceKey,
-  ): Promise<{
-    items: IAttendance[];
-    count: number;
-    lastKey?: IAttendanceKey;
-  }> {
-    try {
-      const query = this.model
-        .query('groupKey')
-        .eq(groupKey)
-        .sort(SortOrder.descending)
-        .limit(LIMIT);
-
-      const result = lastKey
-        ? await query.startAt(lastKey).exec()
-        : await query.exec();
-
-      return {
-        items: result as IAttendance[],
-        count: result.count,
-        lastKey: result.lastKey as IAttendanceKey | undefined,
-      };
-    } catch (error) {
-      console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error.message);
-    }
-  }
-
-  async findById(dto: IAttendanceKey): Promise<IAttendance> {
-    console.log(dto);
-    try {
-      return (await this.model.get(dto)) as IAttendance;
-    } catch (error) {
-      console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(error.message);
-    }
-  }
 
   async delete(dto: IAttendanceKey): Promise<void> {
     try {

@@ -11,6 +11,20 @@ export function generateGroupKey(groupId: number): string {
   return `GROUP#${groupId}`;
 }
 
+export function getGroupIdFromGroupKey(groupKey: string): number {
+  return Number(groupKey.split('#')[1]);
+}
+
+export function getDateFromDailyStudentKey(dailyStudentKey: string): string {
+  return dailyStudentKey.split('#')[1];
+}
+
+export function getStudentIdFromDailyStudentKey(
+  dailyStudentKey: string,
+): number {
+  return Number(dailyStudentKey.split('#')[3]);
+}
+
 /**
  * Generate daily student key for DynamoDB
  */
