@@ -1,9 +1,9 @@
 import {
-  BadRequestException,
   CallHandler,
+  ConflictException,
   ExecutionContext,
   Injectable,
-  NestInterceptor,
+  NestInterceptor
 } from '@nestjs/common';
 import { catchError, Observable, throwError } from 'rxjs';
 import { QueryFailedError } from 'typeorm';
@@ -18,9 +18,10 @@ export class DuplicateEntryErrorInterceptor implements NestInterceptor {
           (error.message.match(/.*?Unique constraint/) ||
             error.message.match(/.*?Duplicate entry/))
         ) {
-          return throwError(() => new BadRequestException('already taken'));
+          return throwError(() => new ConflictException('already taken'));
         }
         // 다른 에러는 그대로 던짐
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return throwError(() => error);
       }),
     );

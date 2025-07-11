@@ -22,22 +22,22 @@ import { UpdateParentDto } from 'src/domain/parent/dto/update-parent.dto';
  */
 export class UpdateStudentDto {
   @ApiPropertyOptional({
-    description: '학년 - 학생의 현재 학년 (1~12학년)',
+    description: '학년 - 학생의 현재 학년 (1~6학년)',
     type: Number,
     example: 4,
     minimum: 1,
-    maximum: 12,
+    maximum: 6,
   })
   @IsOptional()
   @IsInt({ message: '학년은 정수여야 합니다' })
   @Min(1, { message: '학년은 1 이상이어야 합니다' })
-  @Max(12, { message: '학년은 12 이하여야 합니다' })
+  @Max(6, { message: '학년은 6 이하여야 합니다' })
   grade?: number;
 
   @ApiPropertyOptional({
     description: '반 - 학생의 소속 반 (최대 8자)',
     type: String,
-    example: '4-1',
+    example: '4',
     maxLength: 8,
   })
   @IsOptional()
@@ -46,17 +46,17 @@ export class UpdateStudentDto {
   class?: string;
 
   @ApiPropertyOptional({
-    description: '학번/번호 - 학교 내 학생 고유번호 (1~99999)',
+    description: '학번/번호 - 반 번호 (1~200)',
     type: Number,
-    example: 2024001,
+    example: 20,
     minimum: 1,
-    maximum: 99999,
+    maximum: 200,
   })
   @IsOptional()
   @IsInt({ message: '학번은 정수여야 합니다' })
   @Type(() => Number)
   @Min(1, { message: '학번은 1 이상이어야 합니다' })
-  @Max(99999, { message: '학번은 99999 이하여야 합니다' })
+  @Max(200, { message: '학번은 200 이하여야 합니다' })
   studentCode?: number;
 
   @ApiPropertyOptional({
@@ -141,21 +141,17 @@ export class UpdateStudentDto {
 
   @ApiPropertyOptional({
     description: `부모 ID - 기존 등록된 부모로 변경할 때 사용 (선택)
-    
-🏷️ 부모 변경: parentId 제공시 parent 객체 무시`,
+parentId 제공시 parent 객체 무시`,
     type: Number,
-    example: 2,
-    minimum: 1,
+    example: 1,
+    required: false,
   })
   @IsOptional()
   @IsInt({ message: '부모 ID는 정수여야 합니다' })
-  @Min(1, { message: '부모 ID는 1 이상이어야 합니다' })
   parentId?: number;
 
   @ApiPropertyOptional({
-    description: `보호자 정보 수정 - 학생의 학부모/보호자 정보 업데이트 (선택)
-    
-⚠️ parentId가 제공되면 이 객체는 무시됩니다`,
+    description: `보호자 정보 수정 ⚠️ parentId가 제공되면 이 객체는 무시됩니다`,
     type: UpdateParentDto,
   })
   @IsOptional()

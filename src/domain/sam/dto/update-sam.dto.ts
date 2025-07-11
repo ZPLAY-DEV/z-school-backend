@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -76,24 +76,25 @@ export class UpdateSamDto {
   @MaxLength(255, { message: '비고는 255자 이하여야 합니다' })
   note?: string;
 
-  @ApiProperty({
-    description: '강사 ID',
+  @ApiPropertyOptional({
+    description: `강사 ID - 기존 등록된 강사로 변경할 때 사용 (선택)
+instructorId 제공시 instructor 객체 무시`,
     type: Number,
     example: 1,
     required: false,
   })
   @IsOptional()
   @IsInt({ message: '강사 ID는 정수여야 합니다' })
-  @Min(1, { message: '강사 ID는 1 이상이어야 합니다' })
   instructorId?: number;
 
   @ApiProperty({
-    description: '🈳 강사 정보 (부분 수정)',
+    description:
+      '🈳 강사 정보 수정 ⚠️ instructorId가 제공되면 이 객체는 무시됩니다',
     type: UpdateInstructorDto,
     required: false,
   })
-  @ValidateNested()
   @IsOptional()
+  @ValidateNested({ message: '강사 정보가 올바르지 않습니다' })
   @Type(() => UpdateInstructorDto)
   instructor?: UpdateInstructorDto;
 }

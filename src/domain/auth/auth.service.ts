@@ -376,7 +376,7 @@ export class AuthService {
         (dto.role === Role.INSTRUCTOR && user.instructor) ||
         (dto.role === Role.PARENT && user.parent)
       ) {
-        throw new ConflictException('Already registered');
+        throw new ConflictException('already registered');
       }
 
       // Update password
