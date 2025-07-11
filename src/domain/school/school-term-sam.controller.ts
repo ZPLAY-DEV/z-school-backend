@@ -19,9 +19,7 @@ import {
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolTermSamController {
-  constructor(
-    private readonly schoolTermStudentService: SchoolTermSamService,
-  ) {}
+  constructor(private readonly schoolTermSamService: SchoolTermSamService) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? Read
@@ -34,7 +32,7 @@ export class SchoolTermSamController {
     @Param('termId', ParseIntPipe) termId: number,
     @Param('samId', ParseIntPipe) samId: number,
   ): Promise<Schoolday[]> {
-    return await this.schoolTermStudentService.listSchooldays(
+    return await this.schoolTermSamService.listSchooldays(
       schoolId,
       termId,
       samId,
@@ -49,7 +47,7 @@ export class SchoolTermSamController {
     @Param('samId', ParseIntPipe) samId: number,
     @Query('date') date?: string,
   ): Promise<Record<string, Schoolday[]>> {
-    return await this.schoolTermStudentService.listWeeklySchooldays(
+    return await this.schoolTermSamService.listWeeklySchooldays(
       schoolId,
       termId,
       samId,

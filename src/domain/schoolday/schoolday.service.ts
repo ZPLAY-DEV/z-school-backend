@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { addDays } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import {
   FilterOperator,
   PaginateQuery,
@@ -122,6 +123,19 @@ export class SchooldayService {
         endsAt: [FilterOperator.EQ, FilterOperator.GTE, FilterOperator.LTE],
       },
     });
+  }
+
+  async getToday(schoolId: number, termId: number): Promise<Schoolday[]> {
+    const kstDate = toZonedTime(new Date(), 'Asia/Seoul').toISOString();
+    const today = kstDate.split('T')[0];
+
+    return await this.schooldayRepository
+      .createQueryBuilder('schoolday')
+      .leftJoinAndSelect('schoolday.group', 'group')
+      .where('DATE(schoolday.startsAt) = :today', { today })
+      .andWhere('schoolday.schoolId = :schoolId', { schoolId })
+      .andWhere('schoolday.termId = :termId', { termId })
+      .getMany();
   }
 
   async findById(id: number, relations: string[] = []): Promise<Schoolday> {

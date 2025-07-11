@@ -21,7 +21,7 @@ import {
   CreateSchoolSamBulkDocs,
   CreateSchoolSamBulkDryRunDocs,
   SchoolSamListDocs,
-  SchoolSamPaginatedDocs
+  SchoolSamPaginatedDocs,
 } from './swagger/school-sam.swagger.decorator';
 
 @ApiTags('✳️ Schools > Sams ( 학교 > 담임쌤 )')

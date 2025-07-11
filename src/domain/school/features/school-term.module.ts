@@ -15,10 +15,13 @@ import { SchoolTermOfferingController } from 'src/domain/school/school-term-offe
 import { SchoolTermOfferingService } from 'src/domain/school/school-term-offering.service';
 import { SchoolTermSamController } from 'src/domain/school/school-term-sam.controller';
 import { SchoolTermSamService } from 'src/domain/school/school-term-sam.service';
+import { SchoolTermSchooldayController } from 'src/domain/school/school-term-schoolday.controller';
+import { SchoolTermSchooldayService } from 'src/domain/school/school-term-schoolday.service';
 import { SchoolTermStudentController } from 'src/domain/school/school-term-student.controller';
 import { SchoolTermStudentService } from 'src/domain/school/school-term-student.service';
 import { SchoolTermController } from 'src/domain/school/school-term.controller';
 import { SchoolTermService } from 'src/domain/school/school-term.service';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { SqsModule } from 'src/services/aws/sqs.module';
@@ -32,6 +35,7 @@ import { SqsModule } from 'src/services/aws/sqs.module';
       Offering,
       Sam,
       School,
+      Schoolday,
       Student,
       Term,
     ]),
@@ -41,6 +45,7 @@ import { SqsModule } from 'src/services/aws/sqs.module';
   controllers: [
     SchoolTermController,
     SchoolTermSamController,
+    SchoolTermSchooldayController,
     SchoolTermStudentController,
     SchoolTermComboController,
     SchoolTermLessonController,
@@ -49,6 +54,7 @@ import { SqsModule } from 'src/services/aws/sqs.module';
   providers: [
     SchoolTermService,
     SchoolTermSamService,
+    SchoolTermSchooldayService,
     SchoolTermStudentService,
     SchoolTermComboService,
     SchoolTermLessonService,

@@ -50,11 +50,10 @@ export class SchooldayController {
   @GetTodaySchooldaysDocs()
   @Get('today')
   async getToday(
-    @Query('schoolId') schoolId?: number,
-    @Query('termId') termId?: number,
+    @Query('schoolId') schoolId: number,
+    @Query('termId') termId: number,
   ): Promise<Schoolday[]> {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
-    return await this.schooldayService.list(schoolId, termId, undefined, today);
+    return await this.schooldayService.getToday(schoolId, termId);
   }
 
   @GetSchooldayPaginatedListDocs()
