@@ -65,8 +65,13 @@ async function bootstrap() {
     defaultVersion: '1',
   });
   app.enableCors({
-    origin: '*', // 모든 origin 허용
-    credentials: false, // origin이 *일 때는 credentials를 false로 설정해야 함
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://zschool.com',
+      'https://zschool.kr',
+    ],
+    credentials: true, // 쿠키를 포함한 요청을 허용하려면 true로 설정
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // 허용할 HTTP 메서드
   });
   app.use(helmet());
