@@ -67,6 +67,7 @@ export class SchoolTermStudentService {
       .getMany();
   }
 
+  // 신청한 booking 정보 보기 (요일별로 분류)
   async listBookingStats(
     schoolId: number,
     termId: number,

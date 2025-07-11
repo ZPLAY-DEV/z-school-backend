@@ -20,14 +20,14 @@ import { ResponseSchoolTermComboDto } from '../dto/response-school-term-combo.dt
 export const GetSchoolTermComboDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '🔄 학교-학기 통합 데이터 조회',
+      summary: '🔄 학교-학기 (강좌, 담임쌤, 학생) stats 조회',
       description: `
 **📝 기능 설명**
-특정 학교의 특정 학기에 대한 모든 관련 정보(수업, 강사, 학생)를 한 번에 조회합니다.
+특정 학교의 특정 학기에 대한 모든 관련 정보(강좌, 담임쌤, 학생)를 한 번에 조회합니다.
 
 **🔄 비즈니스 로직**
-- 해당 학기에 개설된 모든 수업(Lessons) 정보 조회
-- 수업과 연결된 계약을 통해 해당 학기의 강사(Sams) 정보 중복 제거 후 조회
+- 해당 학기에 개설된 모든 강좌(Lessons) 정보 조회
+- 수업과 연결된 계약을 통해 해당 학기의 담임쌤(Sams) 정보 중복 제거 후 조회
 - 수강신청(Picks)을 통해 해당 학기에 등록된 학생(Students) 정보 중복 제거 후 조회
 - 프론트엔드에서 여러 API 호출 없이 필요한 모든 데이터를 한 번에 제공
 
