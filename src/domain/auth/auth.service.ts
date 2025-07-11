@@ -521,23 +521,42 @@ export class AuthService {
 
     const accessToken = await this.generateAccessToken(payload);
 
-    // Generate refresh token
-    const refreshToken = `Z-${user.id}-${role.charAt(0)}-${uuid.v4()}`;
-    const partialToken = `${refreshToken}-L`;
-    const hashedToken = await bcrypt.hash(refreshToken, 10);
-    const expiresAt = new Date(Date.now() + THIRTY_DAYS);
-
-    // Store token in database
-    await this.tokenRepository.upsert(
-      {
+    // Check for existing tokens first
+    const tokens = await this.tokenRepository.find({
+      where: {
         userId: user.id,
         role,
-        partialToken,
-        hashedToken,
-        expiresAt,
       },
-      ['userId', 'role', 'partialToken'],
-    );
+    });
+
+    let refreshToken: string;
+    if (tokens.length === 0) {
+      // Generate new refresh token
+      refreshToken = `Z-${user.id}-${role.charAt(0)}-${uuid.v4()}`;
+      const partialToken = `${refreshToken}-L`;
+      const hashedToken = await bcrypt.hash(refreshToken, 10);
+      const expiresAt = new Date(Date.now() + THIRTY_DAYS);
+
+      // Store token in database
+      await this.tokenRepository.upsert(
+        {
+          userId: user.id,
+          role,
+          partialToken,
+          hashedToken,
+          expiresAt,
+        },
+        ['userId', 'role', 'partialToken'],
+      );
+    } else {
+      // Reuse existing token (get the latest one)
+      const latestToken = tokens.reduce((latest, current) => {
+        return new Date(current.createdAt) > new Date(latest.createdAt)
+          ? current
+          : latest;
+      });
+      refreshToken = latestToken.partialToken.slice(0, -2);
+    }
 
     return {
       accessToken,
