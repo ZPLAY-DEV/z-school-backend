@@ -448,6 +448,7 @@ export class LessonCoreService {
         lessonId: groupData.lessonId,
         groupName: groupData.groupName,
         samId: groupData.samId,
+        samName: groupData.instructorName,
         location: groupData.location,
         capacity: groupData.capacity,
         allowedGrades: groupAllowedGrades,

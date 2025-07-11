@@ -94,7 +94,7 @@ export class SchoolStudentService {
       // Step 4: Bulk Upsert Students (MySQL 8.0+ alias 문법 사용)
       if (dtos.length > 0) {
         const studentPlaceholders = dtos
-          .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
           .join(', ');
         const studentValues: (string | number | null)[] = dtos.flatMap(
           (dto) => [
