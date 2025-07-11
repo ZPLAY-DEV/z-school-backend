@@ -448,7 +448,7 @@ export class LessonCoreService {
         lessonId: groupData.lessonId,
         groupName: groupData.groupName,
         samId: groupData.samId,
-        samName: groupData.instructorName,
+        samName: groupData.instructorName, //! sam 의 name 추가
         location: groupData.location,
         capacity: groupData.capacity,
         allowedGrades: groupAllowedGrades,

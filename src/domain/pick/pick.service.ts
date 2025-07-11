@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -11,6 +16,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { CreatePickDto, EndPickDto } from 'src/domain/pick/dto/create-pick.dto';
 import { UpdatePickDto } from 'src/domain/pick/dto/update-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { User } from 'src/domain/user/entities/user.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -22,6 +28,8 @@ export class PickService {
     private readonly pickRepository: Repository<Pick>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -29,7 +37,11 @@ export class PickService {
   //? ---------------------------------------------------------------------- ?//
 
   // 필수항목) groupId, studentId, start, note (수동으로 등록시)
-  async createPick(dtos: CreatePickDto[], role: Actor): Promise<number> {
+  async createPick(
+    dtos: CreatePickDto[],
+    role: Actor,
+    userId: number,
+  ): Promise<number> {
     const groupId = dtos[0].groupId;
     const groupWithLesson = await this.groupRepository.findOneOrFail({
       where: {
@@ -39,6 +51,24 @@ export class PickService {
     });
     const end = groupWithLesson.lesson.end;
     const termId = groupWithLesson.lesson.termId;
+
+    if (role === Actor.INSTRUCTOR) {
+      const user = await this.userRepository.findOne({
+        where: {
+          id: userId,
+        },
+        relations: ['instructor', 'instructor.sams'],
+      });
+      const sam = user?.instructor?.sams.find(
+        (sam) => sam.schoolId === groupWithLesson.lesson.schoolId,
+      );
+      if (!sam) {
+        throw new NotFoundException('sam entity not found');
+      }
+      if (!sam.editPickPermission) {
+        throw new ForbiddenException('You are not allowed to edit student');
+      }
+    }
 
     let affectedRows = 0;
 

@@ -53,7 +53,7 @@ export class PickController {
         : user.role === 'INSTRUCTOR'
           ? Actor.INSTRUCTOR
           : Actor.OTHER;
-    return await this.pickService.createPick(dtos, role);
+    return await this.pickService.createPick(dtos, role, user.id);
   }
 
   @EndPickDocs()
