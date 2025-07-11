@@ -1,19 +1,29 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
-  IsDate,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
+    IsDate,
+    IsInt,
+    IsOptional,
+    IsString,
+    Matches,
+    MaxLength,
 } from 'class-validator';
 
 /**
  * 학부모 정보 수정 DTO
  * - 실제로 업데이트 가능한 필드들만 포함
- * - userId는 수정 불가 (식별자이므로)
+ * - id는 기존 부모 정보 업데이트 시 식별자로 사용
  */
 export class UpdateParentDto {
+  @ApiPropertyOptional({
+    description: '부모 ID - 기존 부모 정보 업데이트 시 식별자',
+    type: Number,
+    example: 10,
+  })
+  @IsOptional()
+  @IsInt({ message: '부모 ID는 정수여야 합니다' })
+  id?: number;
+
   @ApiPropertyOptional({
     description: '학부모 이름 - 학부모의 실명 (최대 16자, 한글/영문만 허용)',
     type: String,

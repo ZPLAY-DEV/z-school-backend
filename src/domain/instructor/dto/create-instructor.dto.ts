@@ -5,9 +5,8 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  Matches,
   MaxLength,
-  Min,
+  Min
 } from 'class-validator';
 
 /**
@@ -47,14 +46,10 @@ export class CreateInstructorDto {
     type: String,
     example: '홍길동',
     maxLength: 16,
-    pattern: '^[가-힣a-zA-Z\\s]+$',
   })
   @IsOptional()
   @IsString({ message: '강사 이름은 문자열이어야 합니다' })
   @MaxLength(16, { message: '강사 이름은 16자 이하여야 합니다' })
-  @Matches(/^[가-힣a-zA-Z\s]+$/, {
-    message: '강사 이름은 한글, 영문, 공백만 허용됩니다',
-  })
   name?: string;
 
   @ApiProperty({
@@ -63,13 +58,9 @@ export class CreateInstructorDto {
 ⚠️ 새로운 강사 생성 시에만 필수 (id가 없는 경우)`,
     type: String,
     example: '01012345678',
-    pattern: '^[0-9]{10,11}$',
   })
   @IsOptional() // 기존 강사 연결 시에는 불필요하므로 optional로 변경
   @IsString({ message: '전화번호는 문자열이어야 합니다' })
-  @Matches(/^[0-9]{10,11}$/, {
-    message: '전화번호는 10~11자리 숫자만 입력해주세요',
-  })
   phone?: string;
 
   @ApiPropertyOptional({

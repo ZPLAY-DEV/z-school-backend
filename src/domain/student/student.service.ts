@@ -400,11 +400,79 @@ export class StudentService {
 
     // 3. 트랜잭션 내에서 업데이트 수행
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      // 학생 정보 업데이트
-      const updatedStudent = manager.merge(Student, existingStudent, dto);
+      const { parent: parentDto, parentId, ...studentDto } = dto;
+      let finalParentId = existingStudent.parentId;
+
+      // 4. 부모 정보 처리
+      if (parentId) {
+        // parentId가 제공된 경우 - 기존 부모 직접 참조로 변경
+        const existingParent = await manager.findOne(Parent, {
+          where: { id: parentId },
+        });
+        if (!existingParent) {
+          throw new NotFoundException('Parent not found');
+        }
+        finalParentId = parentId;
+      } else if (parentDto) {
+        if (parentDto.id) {
+          // parent.id가 있으면 해당 부모 정보 업데이트
+          const existingParent = await manager.findOne(Parent, {
+            where: { id: parentDto.id },
+          });
+          if (!existingParent) {
+            throw new NotFoundException('Parent not found');
+          }
+
+          // 기존 부모 정보 업데이트
+          const updatedParent = manager.merge(Parent, existingParent, {
+            name: parentDto.name,
+            phone: parentDto.phone,
+            note: parentDto.note,
+            termsAgreedAt: parentDto.termsAgreedAt,
+          });
+          await manager.save(Parent, updatedParent);
+          finalParentId = parentDto.id;
+        } else {
+          // parent.id가 없으면 현재 연결된 부모의 정보를 업데이트
+          if (existingStudent.parentId) {
+            const currentParent = await manager.findOne(Parent, {
+              where: { id: existingStudent.parentId },
+            });
+            if (!currentParent) {
+              throw new NotFoundException('Current parent not found');
+            }
+
+            // 현재 부모 정보 업데이트
+            const updatedParent = manager.merge(Parent, currentParent, {
+              name: parentDto.name,
+              phone: parentDto.phone,
+              note: parentDto.note,
+              termsAgreedAt: parentDto.termsAgreedAt,
+            });
+            await manager.save(Parent, updatedParent);
+            finalParentId = existingStudent.parentId;
+          } else {
+            // 현재 연결된 부모가 없으면 새로운 부모 생성
+            const newParent = manager.create(Parent, {
+              name: parentDto.name,
+              phone: parentDto.phone,
+              note: parentDto.note,
+              termsAgreedAt: parentDto.termsAgreedAt,
+            });
+            const savedParent = await manager.save(Parent, newParent);
+            finalParentId = savedParent.id;
+          }
+        }
+      }
+
+      // 5. 학생 정보 업데이트
+      const updatedStudent = manager.merge(Student, existingStudent, {
+        ...studentDto,
+        parentId: finalParentId,
+      });
       const savedStudent = await manager.save(Student, updatedStudent);
 
-      // 업데이트된 학생 정보 반환 (관계 포함)
+      // 6. 업데이트된 학생 정보 반환 (관계 포함)
       return await manager.findOneOrFail(Student, {
         where: { id: savedStudent.id },
         relations: ['parent'],

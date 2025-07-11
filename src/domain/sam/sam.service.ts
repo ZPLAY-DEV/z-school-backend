@@ -225,38 +225,92 @@ export class SamService {
         throw new NotFoundException(`Sam not found`);
       }
 
-      // 2. instructor 정보가 있으면 업데이트
-      if (dto.instructor) {
-        await manager.update(
-          Instructor,
-          { id: existingSam.instructorId },
-          dto.instructor,
-        );
+      const { instructor: instructorDto, instructorId, ...samDto } = dto;
+      let finalInstructorId = existingSam.instructorId;
+
+      // 2. 강사 정보 처리
+      if (instructorId) {
+        // instructorId가 제공된 경우 - 기존 강사 직접 참조로 변경
+        const existingInstructor = await manager.findOne(Instructor, {
+          where: { id: instructorId },
+        });
+        if (!existingInstructor) {
+          throw new NotFoundException('Instructor not found');
+        }
+        finalInstructorId = instructorId;
+      } else if (instructorDto) {
+        if (instructorDto.id) {
+          // instructor.id가 있으면 해당 강사 정보 업데이트
+          const existingInstructor = await manager.findOne(Instructor, {
+            where: { id: instructorDto.id },
+          });
+          if (!existingInstructor) {
+            throw new NotFoundException('Instructor not found');
+          }
+
+          // 기존 강사 정보 업데이트
+          const updatedInstructor = manager.merge(
+            Instructor,
+            existingInstructor,
+            {
+              name: instructorDto.name,
+              phone: instructorDto.phone,
+              note: instructorDto.note,
+              termsAgreedAt: instructorDto.termsAgreedAt,
+            },
+          );
+          await manager.save(Instructor, updatedInstructor);
+          finalInstructorId = instructorDto.id;
+        } else {
+          // instructor.id가 없으면 현재 연결된 강사의 정보를 업데이트
+          if (existingSam.instructorId) {
+            const currentInstructor = await manager.findOne(Instructor, {
+              where: { id: existingSam.instructorId },
+            });
+            if (!currentInstructor) {
+              throw new NotFoundException('Current instructor not found');
+            }
+
+            // 현재 강사 정보 업데이트
+            const updatedInstructor = manager.merge(
+              Instructor,
+              currentInstructor,
+              {
+                name: instructorDto.name,
+                phone: instructorDto.phone,
+                note: instructorDto.note,
+                termsAgreedAt: instructorDto.termsAgreedAt,
+              },
+            );
+            await manager.save(Instructor, updatedInstructor);
+            finalInstructorId = existingSam.instructorId;
+          } else {
+            // 현재 연결된 강사가 없으면 새로운 강사 생성
+            const newInstructor = manager.create(Instructor, {
+              name: instructorDto.name,
+              phone: instructorDto.phone,
+              note: instructorDto.note,
+              termsAgreedAt: instructorDto.termsAgreedAt,
+            });
+            const savedInstructor = await manager.save(
+              Instructor,
+              newInstructor,
+            );
+            finalInstructorId = savedInstructor.id;
+          }
+        }
       }
 
-      // 3. Sam 정보 업데이트 (instructor 정보 제외)
-      const samUpdateData = {
-        alias: dto.alias,
-        score: dto.score,
-        editFeePermission: dto.editFeePermission,
-        editPickPermission: dto.editPickPermission,
-        note: dto.note,
-      };
-
-      const sam = await manager.preload(Sam, {
-        ...samUpdateData,
-        id,
+      // 3. Sam 정보 업데이트
+      const updatedSam = manager.merge(Sam, existingSam, {
+        ...samDto,
+        instructorId: finalInstructorId,
       });
-
-      if (!sam) {
-        throw new NotFoundException(`Sam not found`);
-      }
-
-      await manager.save(Sam, sam);
+      const savedSam = await manager.save(Sam, updatedSam);
 
       // 4. 업데이트된 Sam 조회 및 반환
       return await manager.findOneOrFail(Sam, {
-        where: { id },
+        where: { id: savedSam.id },
         relations: ['instructor'],
       });
     });
