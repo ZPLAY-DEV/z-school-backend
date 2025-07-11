@@ -72,7 +72,7 @@ async function bootstrap() {
       'https://zschool.kr',
     ],
     credentials: true, // 쿠키를 포함한 요청을 허용하려면 true로 설정
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // 허용할 HTTP 메서드
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // 허용할 HTTP 메서드
   });
   app.use(helmet());
   app.use(helmet.hidePoweredBy());
