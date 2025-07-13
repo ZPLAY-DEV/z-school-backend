@@ -25,6 +25,12 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
     const req = ctx.getRequest();
     const res = ctx.getResponse();
 
+    // Check if response is already sent
+    if (res.headersSent) {
+      console.warn('⚠️ Response already sent, skipping error handling');
+      return;
+    }
+
     let httpStatus: number;
     let errorResponse: HttpErrorFormat;
 
@@ -139,7 +145,14 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
     }
 
     // Return response in HttpErrorFormat
-    res.status(httpStatus).json(errorResponse);
+    try {
+      res.status(httpStatus).json(errorResponse);
+    } catch (responseError) {
+      // If there's an error sending our custom response, fall back to super.catch()
+      console.error('❌ Error sending custom response:', responseError);
+      super.catch(exception, host);
+      return;
+    }
 
     // Add context to Sentry for 500+ errors and send Slack notification
     if (httpStatus >= 500 && process.env.NODE_ENV !== 'development') {

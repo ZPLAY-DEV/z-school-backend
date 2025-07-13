@@ -264,18 +264,29 @@ export const FindGroupDocs = () => {
 export const ListAvailableStudentsDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '👥 반 배정 가능한 학생 목록 조회',
+      summary: '👥 반 배정 가능한 모든 학생 목록',
       description: `
 ### 📋 기능 개요
 - 특정 반에 배정 가능한 학생들의 목록을 조회합니다
-- 이미 해당 반에 소속된 학생들은 제외됩니다
-- 반의 허용 학년, 수업 시간 등을 고려한 필터링된 목록 제공
+- 동일 수업(lesson)의 모든 반에 이미 소속된 학생들은 제외됩니다
+- 반의 허용 학년과 일치하는 학생만 포함하여 최적화된 목록을 제공합니다
 
-### 🎯 필터링 조건
-- **중복 배정 방지**: 이미 해당 반에 소속된 학생 제외
-- **학년 제한**: 반의 허용 학년에 해당하는 학생만 포함
-- **시간 충돌**: 같은 시간대에 다른 수업이 있는 학생 제외 (옵션)
-- **활성 상태**: 활성 상태의 학생만 포함
+### 🎯 필터링 조건 (서버 메모리 기반)
+- **학년 제한**: 반의 allowedGrades에 해당하는 학생만 포함
+  - allowedGrades는 쉼표로 구분된 문자열 (예: "1,2,3")
+  - 각 학생의 grade 필드와 비교하여 일치하는 학생만 선택
+- **중복 배정 방지**: 해당 수업(lesson)의 모든 반에 이미 소속된 학생 제외
+  - lesson.groups의 모든 picks에서 studentId 추출
+  - 이미 등록된 학생은 목록에서 제외
+- **동일 학교 소속**: 해당 수업의 school에 속한 학생만 대상
+  - lesson.school.students에서 학생 목록 가져오기
+
+### ⚙️ 처리 과정
+1. 대상 반의 lesson, lesson.groups, lesson.school.students 관계 로드
+2. allowedGrades 파싱 (쉼표 구분 → 숫자 배열)
+3. 동일 수업 내 모든 반의 picks에서 등록된 학생 ID 추출
+4. 학교 소속 학생 중에서 학년 조건 만족 + 미등록 학생 필터링
+5. 결과 배열 반환
 
 ### 📝 URL 파라미터
 - **id**: 대상 반의 고유 식별자 (숫자)
@@ -294,7 +305,8 @@ export const ListAvailableStudentsDocs = () => {
     "schoolId": 1,
     "parentId": 5,
     "status": "ACTIVE",
-    "createdAt": "2025-01-01T00:00:00Z"
+    "createdAt": "2025-01-15T09:00:00Z",
+    "updatedAt": "2025-01-15T09:00:00Z"
   },
   {
     "id": 11,
@@ -303,19 +315,26 @@ export const ListAvailableStudentsDocs = () => {
     "schoolId": 1,
     "parentId": 6,
     "status": "ACTIVE",
-    "createdAt": "2025-01-01T00:00:00Z"
+    "createdAt": "2025-01-15T09:00:00Z",
+    "updatedAt": "2025-01-15T09:00:00Z"
   }
 ]
 \`\`\`
 
 ### ❌ 실패 케이스
 - **404 Not Found**: 존재하지 않는 반 ID
+- **400 Bad Request**: 잘못된 반 ID 형식 (숫자가 아님)
 
 ### 💡 활용 예시
-- 반 구성 시 학생 선택 드롭다운
+- 반 구성 시 학생 선택 드롭다운 메뉴
 - 신규 학생 배정 인터페이스
-- 반 정원 관리
-- 수업 시간표 충돌 방지
+- 반 정원 관리 및 학생 이동 기능
+- 수업 편성 시 학생 가용성 확인
+
+### ⚠️ 주의사항
+- 동일 수업 내 다른 반에 이미 등록된 학생은 표시되지 않음
+- 학년 정보가 반의 allowedGrades와 정확히 일치하는 학생만 포함
+- 결과는 메모리 기반 필터링으로 실시간 처리됨
       `,
     }),
     ApiParam({
@@ -328,7 +347,7 @@ export const ListAvailableStudentsDocs = () => {
       description: '배정 가능한 학생 목록 조회 성공',
       type: [Student],
     }),
-    ApiStatuses(StatusCodes.NOT_FOUND),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -339,29 +358,77 @@ export const ListAvailableStudentsDocs = () => {
 export const ListBookedPendingStudentsDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '📋 반별 예약 대기 학생 목록',
+      summary: '📋 반 배정 가능한 모든 예약대기 학생 목록',
       description: `
-**📝 기능 설명**
-- 해당 반과 동일한 allowedGrades를 가진 offerings에 PENDING 상태로 예약한 학생 목록을 조회합니다
-- waitingPosition 순서(ASC)로 정렬된 대기열을 반환합니다
-- offering 확정 시 우선순위 참고용으로 활용됩니다
+### 📋 기능 개요
+- 해당 반과 동일한 허용 학년을 가진 모든 수강신청(offering)에서 PENDING 상태로 예약한 학생 목록을 조회합니다
+- 대기 순번(waitingPosition) 순서대로 정렬된 대기열을 반환합니다
+- 수강신청 확정 시 우선순위 참고용으로 활용됩니다
 
-**🔄 비즈니스 로직**
-1. 해당 반의 allowedGrades 파싱 (쉼표 구분 문자열 → 숫자 배열)
-2. 같은 lesson에 속하면서 allowedGrades가 정확히 일치하는 모든 offerings 검색
-3. 해당 offerings에 대한 PENDING 상태 booking들을 waitingPosition 오름차순으로 조회
-4. booking에 연결된 student 정보만 추출하여 반환
+### 🔄 비즈니스 로직
+1. **반 정보 조회**: 대상 반의 allowedGrades와 lessonId를 확인합니다
+2. **허용 학년 파싱**: allowedGrades를 쉼표로 구분하여 숫자 배열로 변환합니다 (예: "1,2,3" → [1,2,3])
+3. **관련 수강신청 검색**: 동일한 수업(lesson)에 속하면서 allowedGrades가 정확히 일치하는 모든 offerings를 검색합니다
+4. **예약 대기 학생 조회**: 해당 offerings의 PENDING 상태 booking들을 waitingPosition 오름차순으로 조회합니다
+5. **학생 정보 추출**: booking에 연결된 student 정보를 BookedStudentDto 형태로 변환하여 반환합니다
 
-**⚠️ 중요 제약사항**
-- group과 offering 간 직접 관계가 없으므로 lesson을 통한 간접 연결 활용
-- allowedGrades가 정확히 일치하는 offerings만 대상 (순서 무관하지만 값은 동일)
-- PENDING 상태의 booking만 조회 (CONFIRMED, CANCELED 제외)
-- waitingPosition이 null인 경우 제외
+### ⚠️ 중요 제약사항
+- **간접 관계**: group과 offering 간 직접 관계가 없으므로 lesson을 통한 간접 연결을 활용합니다
+- **정확한 학년 일치**: allowedGrades가 정확히 일치하는 offerings만 대상으로 합니다 (순서 무관하지만 값은 동일)
+- **PENDING 상태만**: PENDING 상태의 booking만 조회하며, CONFIRMED나 CANCELED는 제외됩니다
+- **대기 순번 필수**: waitingPosition이 null인 경우는 제외됩니다
 
-**📚 예시 시나리오**
-- 1,2,3학년 대상 수학 반의 예약 대기열 확인
-- offering 확정 시 대기 순서 참고
+### 📝 URL 파라미터
+- **id**: 대상 반의 고유 식별자 (숫자)
+
+### ✅ 성공 응답
+- **HTTP 200**: 조회 성공
+- **응답 데이터**: 예약 대기 학생 배열 (BookedStudentDto)
+
+### 📊 응답 예시
+\`\`\`json
+[
+  {
+    "id": 123,
+    "name": "홍길동",
+    "grade": 2,
+    "schoolId": 1,
+    "parentId": 45,
+    "status": "ACTIVE",
+    "createdAt": "2025-01-15T09:00:00Z",
+    "updatedAt": "2025-01-15T09:00:00Z",
+    "waitingPosition": 1,
+    "bookingStatus": "PENDING"
+  },
+  {
+    "id": 124,
+    "name": "김영희",
+    "grade": 3,
+    "schoolId": 1,
+    "parentId": 46,
+    "status": "ACTIVE",
+    "createdAt": "2025-01-16T10:30:00Z",
+    "updatedAt": "2025-01-16T10:30:00Z",
+    "waitingPosition": 2,
+    "bookingStatus": "PENDING"
+  }
+]
+\`\`\`
+
+### ❌ 실패 케이스
+- **404 Not Found**: 존재하지 않는 반 ID
+- **400 Bad Request**: 잘못된 반 ID 형식 (숫자가 아님)
+
+### 💡 활용 예시
+- 수강신청 확정 시 대기 순서 참고
 - 추가 반 개설 필요성 판단 기준
+- 대기 학생 현황 모니터링
+- 학부모 대기 순번 안내
+
+### 📚 시나리오 예시
+- **1,2,3학년 대상 수학 반**: 동일 허용 학년의 수학 수강신청 대기열 확인
+- **반 정원 초과 시**: 대기 순번에 따른 우선순위 처리
+- **추가 반 개설 검토**: 대기 학생 수를 바탕으로 신규 반 개설 여부 결정
       `,
     }),
     ApiParam({
@@ -378,13 +445,40 @@ export const ListBookedPendingStudentsDocs = () => {
         items: {
           type: 'object',
           properties: {
-            id: { type: 'number', example: 123 },
-            name: { type: 'string', example: '홍길동' },
-            grade: { type: 'number', example: 2 },
-            schoolId: { type: 'number', example: 1 },
-            parentId: { type: 'number', example: 45 },
-            status: { type: 'string', example: 'ACTIVE' },
-            createdAt: { type: 'string', format: 'date-time' },
+            id: { type: 'number', example: 123, description: '학생 ID' },
+            name: {
+              type: 'string',
+              example: '홍길동',
+              description: '학생 이름',
+            },
+            grade: { type: 'number', example: 2, description: '학년' },
+            schoolId: { type: 'number', example: 1, description: '학교 ID' },
+            parentId: { type: 'number', example: 45, description: '학부모 ID' },
+            status: {
+              type: 'string',
+              example: 'ACTIVE',
+              description: '학생 상태',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: '생성일시',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: '수정일시',
+            },
+            waitingPosition: {
+              type: 'number',
+              example: 1,
+              description: '대기 순번',
+            },
+            bookingStatus: {
+              type: 'string',
+              example: 'PENDING',
+              description: '예약 상태',
+            },
           },
         },
         example: [
@@ -396,6 +490,9 @@ export const ListBookedPendingStudentsDocs = () => {
             parentId: 45,
             status: 'ACTIVE',
             createdAt: '2025-01-15T09:00:00Z',
+            updatedAt: '2025-01-15T09:00:00Z',
+            waitingPosition: 1,
+            bookingStatus: 'PENDING',
           },
           {
             id: 124,
@@ -405,11 +502,14 @@ export const ListBookedPendingStudentsDocs = () => {
             parentId: 46,
             status: 'ACTIVE',
             createdAt: '2025-01-16T10:30:00Z',
+            updatedAt: '2025-01-16T10:30:00Z',
+            waitingPosition: 2,
+            bookingStatus: 'PENDING',
           },
         ],
       },
     }),
-    ApiStatuses(StatusCodes.NOT_FOUND),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };
 

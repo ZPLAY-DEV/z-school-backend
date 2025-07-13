@@ -72,7 +72,6 @@ export class GroupController {
     return await this.groupService.listAvailableStudents(id);
   }
 
-  // todo. 리스트에 booking 의 순위조회 가능하도록 수정
   @ListBookedPendingStudentsDocs()
   @Get(':id/booked-pending-students')
   async listBookedPendingStudents(

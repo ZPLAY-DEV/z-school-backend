@@ -78,17 +78,18 @@ tunnels:
   localstack:
     proto: http
     addr: 4566
+  ssh:
+    proto: tcp
+    addr: 127.0.0.1:22
   ```
-  localstack 의 경우, hostname 을 지정하여, subdomain 을 사용하면 편리한데, 이는 유료기능이다. 따라서, domain 이나 hostname 지정없이 https://abb1-58-122-170-34.ngrok-free.app 와 같은 매번 실행시 마다 랜덤하게 바뀌는 주소가 생성된다. 이 주소의 경우, `curl http://localhost:4040/api/tunnels` 라고 입력하면 알 수 있다. 
 
-
-
-1. 위 4566 포트로 터널링하는 랜덤주소를 .env.development 의 AWS_CLOUDFRONT_URL 에 값으로 사용하면 된다.
-
-2. 아래와 같이 v3 로 명명된 nestjs application 만 reload 한다. (전체 reload 하면 주소가 바뀌어져 버린다.)
+  localstack 이나 ssh 의 경우, hostname 을 지정하여, subdomain 을 사용하면 편리한데, 이는 유료기능이다. 따라서, 매번 reload 할때 마다 dynamic 하게 바뀌는 주소를 사용해야 한다. `curl http://localhost:4040/api/tunnels` 라고 입력하면, localstack 은 `https://abb1-58-122-170-34.ngrok-free.app`, ssh 는 `tcp://0.tcp.jp.ngrok.io:13485` 처럼 출력된다. (따라서 ssh 접속시, ssh user@0.tcp.jp.ngrok.io -p 13485 와 같이 입력한다.)
+  
+1. local 환경에서, 4566 포트로 터널링하는 랜덤주소를 .env.development 의 AWS_CLOUDFRONT_URL 값으로 사용하면 된다.
+2. 아래와 같이 api 로 명명된 nestjs application 만 reload 한다. (전체 reload 하면 주소가 바뀌어져 버린다.)
 
 ```bash
-pm2 reload v3
+pm2 reload api
 ```
 
 ## Deployment
@@ -103,37 +104,10 @@ pm2 reload v3
 6. 학교 > 학생 seed (Postman 의 학교 > 학생 bulk 생성 seed)
 7. 학교 > 학사일정 생성 (Postman 의 학교 > 학사일정)
 8. 학교 > 늘봄학기 > 과목 bulk 생성 (Postman 의 학교 > 블봄학기 > 과목)
-9. 학교 > 늘봄학기 > 수강신청과목 bulk 생성 (Postman 의 수강신청과목) 또는 Term > 늘봄학기 수정 (수강신청기간) 입력하면 해당 학교 해당 학기의 offerings 생성됨
-10. 수강신청입력 (각각 10건 20건 입력가능. 첫번째 사용자)
-  - `node test/booking-anyone.js`
-  - `node test/booking-first.js`
+9. 학교 > 늘봄학기 > 수강신청과목 bulk 생성 (Postman 의 수강신청과목)
 
-## Migration
+## Seed
 
-```bash
-# 작성
-```
-
-## Module & Package
-
-```bash
-# 작성 
-$ pnpm install cross-env
-$ pnpm install http-status-codes 
-$ pnpm install dotenv 
-$ pnpm install uuid
-$ pnpm install multer
-$ pnpm install 
-$ pnpm install redis ioredis
-$ pnpm install @nestjs/mapped-types
-$ pnpm install multer
-$ pnpm install qs 
-$ pnpm install uuid 
-$ pnpm install @nestjs/terminus @nestjs/axios # health check module
-$ pnpm install @aws-sdk/client-eventbridge
-$ pnpm install @aws-sdk/client-lambda
-```
-
-
-## Resources
-
+  - `node test/db-seed.js`
+  - `node test/db-book.js`
+  - `node test/db-pack.js`

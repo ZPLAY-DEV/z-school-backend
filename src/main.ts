@@ -1,7 +1,7 @@
 import {
-    BadRequestException,
-    ValidationPipe,
-    VersioningType,
+  BadRequestException,
+  ValidationPipe,
+  VersioningType,
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
