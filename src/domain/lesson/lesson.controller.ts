@@ -15,7 +15,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
-import { ExtendedStudent } from 'src/domain/lesson/dto/extended-student.dto';
+import { ExtendedStudentDto } from 'src/domain/lesson/dto/extended-student.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { LessonService } from 'src/domain/lesson/lesson.service';
@@ -76,7 +76,7 @@ export class LessonController {
   async findStudentsById(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: PaginateQuery,
-  ): Promise<Paginated<ExtendedStudent>> {
+  ): Promise<Paginated<ExtendedStudentDto>> {
     return await this.lessonService.findStudentsById(id, query);
   }
 

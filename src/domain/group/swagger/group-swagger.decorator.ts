@@ -13,6 +13,7 @@ import { RemovalStatus } from 'src/common/enums';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiEnumResponseTemplate } from 'src/common/swagger/response/api-enum.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
+import { BookedStudentDto } from 'src/domain/group/dto/booked-student.dto';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
@@ -335,7 +336,7 @@ export const ListAvailableStudentsDocs = () => {
 //? List Booked Students
 //? ---------------------------------------------------------------------- ?//
 
-export const ListBookedStudentsDocs = () => {
+export const ListBookedPendingStudentsDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '📋 반별 예약 대기 학생 목록',
@@ -371,7 +372,7 @@ export const ListBookedStudentsDocs = () => {
     }),
     ApiOkResponse({
       description: '예약 대기 학생 목록 조회 성공',
-      type: [Student],
+      type: [BookedStudentDto],
       schema: {
         type: 'array',
         items: {

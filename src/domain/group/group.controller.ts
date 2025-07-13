@@ -14,6 +14,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor, RemovalStatus } from 'src/common/enums';
+import { BookedStudentDto } from 'src/domain/group/dto/booked-student.dto';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
@@ -24,7 +25,7 @@ import {
   DeleteGroupDocs,
   FindGroupDocs,
   ListAvailableStudentsDocs,
-  ListBookedStudentsDocs,
+  ListBookedPendingStudentsDocs,
   RestoreGroupDocs,
   UpdateGroupDocs,
 } from 'src/domain/group/swagger/group-swagger.decorator';
@@ -72,12 +73,12 @@ export class GroupController {
   }
 
   // todo. 리스트에 booking 의 순위조회 가능하도록 수정
-  @ListBookedStudentsDocs()
-  @Get(':id/booked-students')
-  async listBookedStudents(
+  @ListBookedPendingStudentsDocs()
+  @Get(':id/booked-pending-students')
+  async listBookedPendingStudents(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<Student[]> {
-    return await this.groupService.listBookedStudents(id);
+  ): Promise<BookedStudentDto[]> {
+    return await this.groupService.listBookedPendingStudents(id);
   }
 
   //? ---------------------------------------------------------------------- ?//

@@ -9,7 +9,7 @@ import {
 import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
-import { ExtendedStudent } from 'src/domain/lesson/dto/extended-student.dto';
+import { ExtendedStudentDto } from 'src/domain/lesson/dto/extended-student.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -97,7 +97,7 @@ export class LessonService {
   async findStudentsById(
     id: number,
     query?: PaginateQuery,
-  ): Promise<Paginated<ExtendedStudent>> {
+  ): Promise<Paginated<ExtendedStudentDto>> {
     const queryBuilder = this.studentRepository
       .createQueryBuilder('student')
       .leftJoinAndSelect('student.parent', 'parent')
@@ -131,8 +131,8 @@ export class LessonService {
         index === self.findIndex((s) => s.id === student.id),
     );
 
-    // Student 데이터를 ExtendedStudent로 변환
-    const extendedStudents: ExtendedStudent[] = uniqueStudents.map(
+    // Student 데이터를 ExtendedStudentDto로 변환
+    const extendedStudents: ExtendedStudentDto[] = uniqueStudents.map(
       (student) => {
         // lesson id로 이미 필터링되었으므로, 첫 번째 pick을 사용
         const groupName =
@@ -145,19 +145,20 @@ export class LessonService {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { picks: _picks, ...studentWithoutPicks } = student;
 
-        return {
+        // ExtendedStudentDto 클래스 인스턴스 생성
+        return new ExtendedStudentDto({
           ...studentWithoutPicks,
           groupName,
           groupStart,
           groupStartedBy,
-        };
+        });
       },
     );
 
     return {
       ...result,
       data: extendedStudents,
-    } as Paginated<ExtendedStudent>;
+    } as Paginated<ExtendedStudentDto>;
   }
 
   //? ---------------------------------------------------------------------- ?//

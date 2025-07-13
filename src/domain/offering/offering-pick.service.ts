@@ -271,21 +271,24 @@ export class OfferingPickService {
       );
 
       if (nonSelectedStudentIds.length > 0) {
-        // VALUES를 사용한 간단한 bulk update
-        const valuePlaceholders = nonSelectedStudentIds
-          .map(() => '(?, ?, ?)')
+        // MySQL 8 호환 VALUES ROW 구문 사용
+        const valuesRows = nonSelectedStudentIds
+          .map(() => `ROW(?, ?, ?)`)
           .join(', ');
 
         const query = `
           UPDATE bookings 
-          JOIN (VALUES ${valuePlaceholders}) AS updates(student_id, new_status, new_waiting_position)
+          JOIN (
+            VALUES ${valuesRows}
+          ) AS updates(student_id, new_status, new_waiting_position)
           ON bookings.studentId = updates.student_id
-          SET bookings.status = updates.new_status, 
-              bookings.waitingPosition = updates.new_waiting_position
+          SET 
+            bookings.status = updates.new_status,
+            bookings.waitingPosition = updates.new_waiting_position
           WHERE bookings.offeringId = ?
         `;
 
-        // 각 학생의 (studentId, status, waitingPosition) 쌍으로 파라미터 구성
+        // 각 학생의 (studentId, status, waitingPosition) 파라미터 구성
         const params = [
           ...nonSelectedStudentIds.flatMap((studentId, index) => [
             studentId,

@@ -16,6 +16,7 @@ import {
 import { BookingStatus, ClassStatus } from 'src/common/enums';
 import { RemovalStatus } from 'src/common/enums/removal-status';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { BookedStudentDto } from 'src/domain/group/dto/booked-student.dto';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
@@ -143,7 +144,7 @@ export class GroupService {
     return availableStudents;
   }
 
-  async listBookedStudents(id: number): Promise<Student[]> {
+  async listBookedPendingStudents(id: number): Promise<BookedStudentDto[]> {
     // 1. Group을 찾고 lesson 관계를 포함하여 가져오기
     const group = await this.groupRepository.findOne({
       where: { id },
@@ -186,13 +187,22 @@ export class GroupService {
     const bookings = await this.bookingRepository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.student', 'student')
+      .leftJoinAndSelect('booking.offering', 'offering')
       .where('booking.offeringId IN (:...offeringIds)', { offeringIds })
       .andWhere('booking.status = :status', { status: BookingStatus.PENDING })
       .orderBy('booking.waitingPosition', 'ASC')
       .getMany();
 
-    // 5. Student 정보만 추출하여 반환
-    return bookings.map((booking) => booking.student);
+    // 5. BookedStudentDto 생성하여 반환
+    const bookedStudents: BookedStudentDto[] = bookings.map((booking) => {
+      return new BookedStudentDto({
+        ...booking.student,
+        waitingPosition: booking.waitingPosition,
+        bookingStatus: booking.status,
+      });
+    });
+
+    return bookedStudents;
   }
 
   //? ---------------------------------------------------------------------- ?//
