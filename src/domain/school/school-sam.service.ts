@@ -1,16 +1,16 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-  FilterOperator,
-  paginate,
-  Paginated,
-  PaginateQuery,
+    FilterOperator,
+    paginate,
+    Paginated,
+    PaginateQuery,
 } from 'nestjs-paginate';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 @Injectable()
 export class SchoolSamService {
   private readonly logger = new Logger(SchoolSamService.name);
@@ -25,7 +25,6 @@ export class SchoolSamService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  // todo. see if it works
   async createBulk(
     schoolId: number,
     dtos: CreateSamDto[],
@@ -35,9 +34,17 @@ export class SchoolSamService {
       return await this.checkExistingSams(dtos, schoolId);
     }
 
-    return await this.dataSource.transaction(async (manager: EntityManager) => {
+    if (!dtos.length) {
+      return [];
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 1. 학교 존재 여부 확인
-      const school = await manager.findOne(School, {
+      const school = await queryRunner.manager.findOne(School, {
         where: { id: schoolId },
       });
 
@@ -45,109 +52,114 @@ export class SchoolSamService {
         throw new NotFoundException(`School not found`);
       }
 
-      // 2. phone 기반 기존 강사 Entity 조회
-      const phoneNumbers = dtos.map((dto) => dto.instructor.phone);
+      // 2. 강사 일괄 Upsert (MySQL 8.0+ alias 문법 사용)
+      const instructors = dtos.map((dto) => dto.instructor);
 
-      const existingInstructors = await manager.find(Instructor, {
-        where: { phone: In(phoneNumbers) },
-      });
+      if (instructors.length > 0) {
+        const instructorPlaceholders = instructors
+          .map(() => '(?, ?, ?, ?)')
+          .join(', ');
+        const instructorValues: (string | number | Date | null)[] =
+          instructors.flatMap((instructor) => [
+            instructor.userId || null,
+            instructor.name || null,
+            instructor.phone || null,
+            instructor.termsAgreedAt || null,
+          ]);
 
-      const instructorMap = new Map<string, Instructor>(
-        existingInstructors.map((instructor) => [instructor.phone, instructor]),
+        await queryRunner.query(
+          `
+          INSERT INTO instructors (userId, name, phone, termsAgreedAt)
+          VALUES ${instructorPlaceholders} AS new_instructor(userId, name, phone, termsAgreedAt)
+          ON DUPLICATE KEY UPDATE 
+            userId = new_instructor.userId,
+            termsAgreedAt = new_instructor.termsAgreedAt
+          `,
+          instructorValues,
+        );
+      }
+
+      // 3. 강사 ID 조회
+      const phoneNumbers = instructors.map((i) => `'${i.phone}'`).join(',');
+      const instructorRecords = (await queryRunner.query(`
+        SELECT phone, id FROM instructors WHERE phone IN (${phoneNumbers})
+      `)) as Array<{ phone: string; id: number }>;
+
+      const instructorMap = Object.fromEntries(
+        instructorRecords.map((v) => [v.phone, v.id] as [string, number]),
       );
 
-      // 3. 기존 InstructorSchool 관계 조회
-      const existingInstructorSchools = await manager
-        .createQueryBuilder(Sam, 'sam')
-        .innerJoin('sam.instructor', 'instructor')
-        .where('sam.schoolId = :schoolId', { schoolId })
-        .andWhere('instructor.phone IN (:...phones)', { phones: phoneNumbers })
-        .getMany();
+      // 4. Sam 일괄 Upsert (MySQL 8.0+ alias 문법 사용)
+      if (dtos.length > 0) {
+        const samPlaceholders = dtos
+          .map(() => '(?, ?, ?, ?, ?, ?, ?)')
+          .join(', ');
+        const samValues: (string | number | boolean | null)[] = dtos.flatMap(
+          (dto) => [
+            instructorMap[dto.instructor.phone!] || null,
+            schoolId,
+            dto.alias || null,
+            dto.editFeePermission ?? false,
+            dto.editPickPermission ?? false,
+            dto.note || null,
+            dto.score ?? 0,
+          ],
+        );
 
-      const instructorSchoolMap = new Map<string, Sam>(
-        existingInstructorSchools.map((is) => [
-          `${is.instructorId}-${is.schoolId}`,
-          is,
-        ]),
-      );
+        await queryRunner.query(
+          `
+          INSERT INTO sams (
+            instructorId,
+            schoolId,
+            alias,
+            editFeePermission,
+            editPickPermission,
+            note,
+            score
+          )
+          VALUES ${samPlaceholders} AS new_sam(
+            instructorId,
+            schoolId,
+            alias,
+            editFeePermission,
+            editPickPermission,
+            note,
+            score
+          )
+          ON DUPLICATE KEY UPDATE 
+            alias = new_sam.alias,
+            editFeePermission = new_sam.editFeePermission,
+            editPickPermission = new_sam.editPickPermission,
+            note = new_sam.note,
+            score = new_sam.score
+          `,
+          samValues,
+        );
+      }
 
-      // 4. 병렬로 일괄 Upsert
-      const instructorPromises = dtos.map(async (dto) => {
-        try {
-          // 4.1. 강사 upsert
-          let instructor = instructorMap.get(dto.instructor.phone!);
-          if (instructor) {
-            // 기존 강사 업데이트
-            await manager.update(
-              Instructor,
-              { id: instructor.id },
-              {
-                userId: dto.instructor.userId,
-                termsAgreedAt: dto.instructor.termsAgreedAt,
-              },
-            );
-          } else {
-            // 새 강사 생성
-            instructor = manager.create(Instructor, {
-              userId: dto.instructor.userId,
-              name: dto.instructor.name,
-              phone: dto.instructor.phone,
-              termsAgreedAt: dto.instructor.termsAgreedAt,
-            });
-            instructor = await manager.save(Instructor, instructor);
-          }
+      await queryRunner.commitTransaction();
 
-          // 4.2. sam 관계 upsert
-          const samKey = `${instructor.id}-${schoolId}`;
-          let sam = instructorSchoolMap.get(samKey);
-
-          if (sam) {
-            // 기존 관계 업데이트
-            await manager.update(
-              Sam,
-              { id: sam.id },
-              {
-                instructorId: instructor.id,
-                alias: dto.alias,
-                editFeePermission: dto.editFeePermission,
-                editPickPermission: dto.editPickPermission,
-                note: dto.note,
-                score: dto.score,
-              },
-            );
-
-            // 업데이트된 Sam 조회
-            sam = await manager.findOneOrFail(Sam, {
-              where: { id: sam.id },
-            });
-          } else {
-            // 새 관계 생성
-            sam = this.samRepository.create({
-              instructorId: instructor.id,
-              schoolId,
-              alias: dto.alias,
-              editFeePermission: dto.editFeePermission ?? false,
-              editPickPermission: dto.editPickPermission ?? false,
-              note: dto.note,
-              score: dto.score ?? 0,
-            });
-            sam = await manager.save(Sam, sam);
-          }
-
-          return await manager.findOneOrFail(Sam, {
-            where: { id: sam.id },
-            relations: ['instructor'],
-          });
-        } catch (error) {
-          this.logger.error(
-            `Failed to process instructor with phone: ${dto.instructor.phone!}`,
-            error.stack,
-          );
-          throw error;
-        }
+      // 5. 생성된 Sam 조회 및 반환
+      const createdSams = await this.samRepository.find({
+        where: { schoolId },
+        relations: ['instructor'],
       });
-      return await Promise.all(instructorPromises);
-    });
+
+      return createdSams.filter((sam) =>
+        dtos.some((dto) => dto.instructor.phone === sam.instructor.phone),
+      );
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(
+        `Failed to create bulk sams for school ${schoolId}`,
+        error.stack,
+      );
+      throw error;
+    } finally {
+      if (!queryRunner.isReleased) {
+        await queryRunner.release();
+      }
+    }
   }
 
   private async checkExistingSams(

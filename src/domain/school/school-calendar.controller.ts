@@ -7,6 +7,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Public } from 'src/common/decorators/public.decorator';
 
 import { SchoolCalendarService } from 'src/domain/school/school-calendar.service';
 import { CreateSchoolCalendarDocs } from 'src/domain/school/swagger/school-calendar-swagger.decorator';
@@ -21,6 +22,12 @@ export class SchoolCalendarController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @Public()
+  @Post('calendars')
+  async createAll(): Promise<number> {
+    return await this.schoolCalendarService.createAll();
+  }
+
   @CreateSchoolCalendarDocs()
   @Post(':schoolId/calendars')
   async create(
@@ -28,8 +35,4 @@ export class SchoolCalendarController {
   ): Promise<number> {
     return await this.schoolCalendarService.create(schoolId);
   }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Read
-  //? ---------------------------------------------------------------------- ?//
 }

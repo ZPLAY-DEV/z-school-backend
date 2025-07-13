@@ -25,6 +25,13 @@ export class OfferingPickService {
     private readonly lessonRepository: Repository<Lesson>,
   ) {}
 
+  // a note on pretty confusing syntax for MySQL 8.0+
+  // https://dev.mysql.com/doc/refman/8.0/en/insert.html#insert-on-duplicate-key-update-values-row
+  // 1) INSERT ... VALUES ROW(?, ?, ?, ?, ?, ?)
+  // 2) INSERT ... VALUES (?, ?, ?, ?, ?, ?) AS new_pick(studentId, groupId, offeringId, termId, start, end)
+  // 3) UPDATE ... JOIN (VALUES ROW(?, ?, ?, ?, ?, ?)) AS new_pick(studentId, groupId, offeringId, termId, start, end ) ON ...
+  // 4) UPDATE ... JOIN (VALUES (?, ?, ?, ?, ?, ?)) AS new_pick(studentId, groupId, offeringId, termId, start, end ) ON ...
+
   //? ---------------------------------------------------------------------- ?//
   //? CREATE (pick 확정짓기)
   //? ---------------------------------------------------------------------- ?//

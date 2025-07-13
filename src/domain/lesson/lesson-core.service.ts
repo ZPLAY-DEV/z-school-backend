@@ -1,9 +1,9 @@
 import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-  UnprocessableEntityException,
+    BadRequestException,
+    Injectable,
+    Logger,
+    NotFoundException,
+    UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CalendarService } from 'src/domain/calendar/calendar.service';
@@ -18,16 +18,16 @@ import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { generateSchooldays } from 'src/helpers/lesson-days.util';
 import {
-  parseRangeFormat,
-  parseTime,
-  parseTimeFormat,
+    parseRangeFormat,
+    parseTime,
+    parseTimeFormat,
 } from 'src/helpers/parse';
 import {
-  DataSource,
-  DeepPartial,
-  EntityManager,
-  IsNull,
-  Repository,
+    DataSource,
+    DeepPartial,
+    EntityManager,
+    IsNull,
+    Repository,
 } from 'typeorm';
 
 type GroupSamData = CreateGroupWithInstructorDto & {

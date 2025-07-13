@@ -22,6 +22,14 @@ export class SchoolCalendarService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  async createAll(): Promise<number> {
+    const schools = await this.schoolRepository.find();
+    for (const school of schools) {
+      await this.create(school.id);
+    }
+    return schools.length;
+  }
+
   async create(schoolId: number): Promise<number> {
     const school = await this.schoolRepository.findOne({
       where: { id: schoolId },
