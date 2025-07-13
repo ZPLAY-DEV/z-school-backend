@@ -5,16 +5,21 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
+import { SentryExceptionCaptured } from '@sentry/nestjs';
 import * as Sentry from '@sentry/node';
+import { KnownBlock } from '@slack/types';
 import { ValidationError } from 'class-validator';
 import { HttpErrorFormat } from 'src/common/interfaces';
+import { SlackService } from 'src/services/slack/slack.service';
+import { EntityNotFoundError } from 'typeorm';
 
 @Catch()
 export class ValidationCatchAllFilter extends BaseExceptionFilter {
-  constructor() {
+  constructor(private readonly slack: SlackService) {
     super();
   }
 
+  @SentryExceptionCaptured()
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const req = ctx.getRequest();
@@ -23,27 +28,56 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
     let httpStatus: number;
     let errorResponse: HttpErrorFormat;
 
-    // Specifically handle validation errors with detailed logging
-    if (
-      exception instanceof BadRequestException &&
-      this.isValidationError(exception)
-    ) {
+    // Handle BadRequestException (including validation errors)
+    if (exception instanceof BadRequestException) {
       httpStatus = exception.getStatus();
-      errorResponse = {
-        error: 'VALIDATION_ERROR',
-        message: '입력 데이터 유효성 검사에 실패했습니다.',
-        description: req.url,
-      };
 
-      // Log detailed validation errors
-      this.logValidationErrors(exception, req);
+      // Check if this is a validation error
+      if (this.isValidationError(exception)) {
+        // Extract and format validation errors for client response
+        const validationErrors = this.extractValidationErrors(exception);
+        const formattedErrors = this.formatValidationErrors(validationErrors);
+        const errorMessages =
+          this.convertToCommaSeparatedString(formattedErrors);
+
+        errorResponse = {
+          error: 'Bad Request',
+          message:
+            errorMessages || '입력값이 유효하지 않습니다. 다시 확인해주세요.',
+          description: req.url,
+        };
+
+        // Log detailed validation errors for debugging
+        this.logValidationErrors(exception, req);
+      } else {
+        // Handle other BadRequestExceptions normally
+        const response = exception.getResponse();
+        if (typeof response === 'string') {
+          errorResponse = {
+            error: 'Bad Request',
+            message: response,
+            description: req.url,
+          };
+        } else if (typeof response === 'object' && response !== null) {
+          errorResponse = {
+            error: 'Bad Request',
+            message: (response as any).message || '잘못된 요청입니다.',
+            description: req.url,
+          };
+        } else {
+          errorResponse = {
+            error: 'Bad Request',
+            message: '잘못된 요청입니다.',
+            description: req.url,
+          };
+        }
+      }
     } else if (exception instanceof HttpException) {
       const response = exception.getResponse();
       httpStatus = exception.getStatus();
 
       if (
         typeof response === 'object' &&
-        response !== null &&
         'error' in response &&
         'message' in response
       ) {
@@ -59,10 +93,20 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
             message: '인증 오류가 발생했습니다.',
             description: req.url,
           };
+        } else if (httpStatus === 404) {
+          errorResponse = {
+            error: 'NOT_FOUND',
+            message:
+              typeof response === 'string'
+                ? response
+                : '리소스를 찾을 수 없습니다.',
+            description: req.url,
+          };
         } else {
           errorResponse = {
-            error: 'UNEXPECTED_HTTP_EXCEPTION',
-            message: '예상치 못한 HTTP 오류가 발생했습니다.',
+            error: 'HTTP_EXCEPTION',
+            message:
+              typeof response === 'string' ? response : exception.message,
             description: req.url,
           };
         }
@@ -72,28 +116,33 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
         }
       }
     } else {
-      // General error handling
-      httpStatus = 500;
-      errorResponse = {
-        error: 'INTERNAL_SERVER_ERROR',
-        message:
-          exception instanceof Error
-            ? exception.message
-            : '알 수 없는 오류가 발생했습니다.',
-        description: req.url,
-      };
-
-      // Override error message if available
-      if (exception instanceof Error && exception.message) {
-        errorResponse.message = exception.message;
+      // TypeORM EntityNotFoundError 처리
+      if (exception instanceof EntityNotFoundError) {
+        httpStatus = 404;
+        errorResponse = {
+          error: 'ENTITY_NOT_FOUND',
+          message: exception.message || '요청하신 데이터를 찾을 수 없습니다.',
+          description: req.url,
+        };
+      } else {
+        // 일반 오류 처리
+        httpStatus = 500;
+        errorResponse = {
+          error: 'INTERNAL_SERVER_ERROR',
+          message:
+            exception instanceof Error
+              ? exception.message
+              : '알 수 없는 오류가 발생했습니다.',
+          description: req.url,
+        };
       }
     }
 
     // Return response in HttpErrorFormat
     res.status(httpStatus).json(errorResponse);
 
-    // Add context to Sentry for 500+ errors
-    if (httpStatus >= 500) {
+    // Add context to Sentry for 500+ errors and send Slack notification
+    if (httpStatus >= 500 && process.env.NODE_ENV !== 'development') {
       Sentry.captureException(exception, (scope) => {
         scope.setTag('apiVersion', 'v1');
         scope.setTag('env', process.env.NODE_ENV);
@@ -117,6 +166,11 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
 
         return scope;
       });
+
+      // Send Slack notification
+      this.notifySlack(exception, errorResponse).catch((e) =>
+        console.error('🔴 Slack 전송 실패', e.stack),
+      );
     }
   }
 
@@ -130,7 +184,9 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
     );
   }
 
-  private logValidationErrors(exception: BadRequestException, req: any): void {
+  private extractValidationErrors(
+    exception: BadRequestException,
+  ): ValidationError[] {
     const response = exception.getResponse() as any;
     let validationErrors: ValidationError[] = [];
 
@@ -138,6 +194,12 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
     if (Array.isArray(response.message)) {
       validationErrors = response.message;
     }
+
+    return validationErrors;
+  }
+
+  private logValidationErrors(exception: BadRequestException, req: any): void {
+    const validationErrors = this.extractValidationErrors(exception);
 
     // Create a more readable format for the validation errors
     const formattedErrors = this.formatValidationErrors(validationErrors);
@@ -178,5 +240,71 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
     });
 
     return result;
+  }
+
+  private convertToCommaSeparatedString(
+    formattedErrors: Record<string, string[]>,
+  ): string {
+    const errorMessages: string[] = [];
+
+    Object.entries(formattedErrors).forEach(([property, messages]) => {
+      messages.forEach((message) => {
+        errorMessages.push(`${property}: ${message}`);
+      });
+    });
+
+    return errorMessages.join(', ');
+  }
+
+  async notifySlack(exception: unknown, errorResponse: HttpErrorFormat) {
+    let query = 'n/a';
+    let params = 'n/a';
+
+    if (exception instanceof HttpException) {
+      const response = exception.getResponse();
+      if (typeof response === 'object' && response !== null) {
+        query = (response as any)?.query ?? 'n/a';
+        params = (response as any)?.parameters?.join(',') ?? 'n/a';
+      }
+    }
+
+    const payload = {
+      channel: 'error',
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `*🔴 ${process.env.NODE_ENV} 환경에서 오류 발생*`,
+          },
+        },
+        {
+          type: 'section',
+          fields: [
+            {
+              type: 'mrkdwn',
+              text: `*Error:*\n${errorResponse.error}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `*Message:*\n${errorResponse.message}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `*URL:*\n${errorResponse.description}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `*Query:*\n${query}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `*Params:*\n${params}`,
+            },
+          ],
+        },
+      ] as KnownBlock[],
+    };
+    await this.slack.sendMessage(payload);
   }
 }

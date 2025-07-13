@@ -1,7 +1,7 @@
 import {
-  BadRequestException,
-  ValidationPipe,
-  VersioningType,
+    BadRequestException,
+    ValidationPipe,
+    VersioningType,
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
@@ -46,10 +46,8 @@ async function bootstrap() {
       validateCustomDecorators: true, // 커스텀 데코레이터 유효성 검사
       exceptionFactory: (e) => {
         console.log('❌ error', e);
-        // 상세 오류가 답답하면, validation-catch-all.filter.ts 를 전역필터로 적용.
-        return new BadRequestException(
-          '입력값이 유효하지 않습니다. 다시 확인해주세요.',
-        );
+        // ValidationCatchAllFilter에서 구체적인 오류 메시지 처리
+        return new BadRequestException(e);
       },
     }),
   );

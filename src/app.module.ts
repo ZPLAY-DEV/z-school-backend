@@ -12,7 +12,7 @@ import { join } from 'path';
 import { AppController } from 'src/app.controller';
 import { AppService } from 'src/app.service';
 import { configuration } from 'src/common/config/configuration';
-import { SentryCatchAllFilter } from 'src/common/filters/sentry-catch-all.filter';
+import { ValidationCatchAllFilter } from 'src/common/filters/validation-catch-all.filter';
 import { DuplicateEntryErrorInterceptor } from 'src/common/interceptors/duplicate-entry-error.interceptor';
 import { AttendanceModule } from 'src/domain/attendance/attendance.module';
 import { AuthModule } from 'src/domain/auth/auth.module';
@@ -150,16 +150,12 @@ import { UploadModule } from './services/upload/upload.module';
       useClass: DuplicateEntryErrorInterceptor, // 중복입력은 400으로 전환
     },
     // {
-    //   provide: APP_FILTER,
-    //   useClass: ValidationCatchAllFilter, // 디버깅 편리하도록 validation 오류 로깅
-    // },
-    // {
     //   provide: APP_INTERCEPTOR,
     //   useClass: HttpCacheInterceptor,
     // },
     {
       provide: APP_FILTER,
-      useClass: SentryCatchAllFilter, // 500 이상오류, Sentry/Slack 보고
+      useClass: ValidationCatchAllFilter, // 모든 오류 처리 (validation 오류 상세 메시지 + Sentry/Slack 보고)
     },
     AppService,
   ],
