@@ -29,6 +29,7 @@ export class SchoolCalendarController {
   }
 
   @CreateSchoolCalendarDocs()
+  @Public()
   @Post(':schoolId/calendars')
   async create(
     @Param('schoolId', ParseIntPipe) schoolId: number,
