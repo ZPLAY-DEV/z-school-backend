@@ -5,7 +5,6 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  Matches,
   MaxLength,
 } from 'class-validator';
 
@@ -29,27 +28,19 @@ export class UpdateParentDto {
     type: String,
     example: '김학부',
     maxLength: 16,
-    pattern: '^[가-힣a-zA-Z\\s]+$',
   })
   @IsOptional()
   @IsString({ message: '학부모 이름은 문자열이어야 합니다' })
   @MaxLength(16, { message: '학부모 이름은 16자 이하여야 합니다' })
-  @Matches(/^[가-힣a-zA-Z\s]+$/, {
-    message: '학부모 이름은 한글, 영문, 공백만 허용됩니다',
-  })
   name?: string;
 
   @ApiPropertyOptional({
     description: '전화번호 - 학부모 연락처 (하이픈 없이 숫자만, 10~11자리)',
     type: String,
     example: '01087654321',
-    pattern: '^[0-9]{10,11}$',
   })
   @IsOptional()
   @IsString({ message: '전화번호는 문자열이어야 합니다' })
-  @Matches(/^[0-9]{10,11}$/, {
-    message: '전화번호는 10~11자리 숫자만 입력해주세요',
-  })
   phone?: string;
 
   @ApiPropertyOptional({

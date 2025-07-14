@@ -23,6 +23,7 @@ import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { normalizePhone } from 'src/helpers/phone';
 
 @Injectable()
 export class StudentService {
@@ -76,7 +77,7 @@ export class StudentService {
         const newParent = manager.create(Parent, {
           userId: parentDto.userId,
           name: parentDto.name,
-          phone: parentDto.phone,
+          phone: normalizePhone(parentDto.phone),
           note: parentDto.note,
           termsAgreedAt: parentDto.termsAgreedAt,
         });
@@ -110,9 +111,18 @@ export class StudentService {
         );
       }
 
+      // 2.5. Student 데이터 정리
+      const normalizedStudentDto = {
+        ...studentDto,
+        ...(studentDto.phone && { phone: normalizePhone(studentDto.phone) }),
+        ...(studentDto.escortPhone && {
+          escortPhone: normalizePhone(studentDto.escortPhone),
+        }),
+      };
+
       // 3. Student 생성
       const student = manager.create(Student, {
-        ...studentDto,
+        ...normalizedStudentDto,
         parentId: finalParentId,
         status: dto.status,
       });

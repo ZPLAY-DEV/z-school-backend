@@ -5,11 +5,10 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  Matches,
   Max,
   MaxLength,
   Min,
-  ValidateNested,
+  ValidateNested
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
 import { UpdateParentDto } from 'src/domain/parent/dto/update-parent.dto';
@@ -64,14 +63,10 @@ export class UpdateStudentDto {
     type: String,
     example: '김학생',
     maxLength: 16,
-    pattern: '^[가-힣a-zA-Z0-9\\s]+$',
   })
   @IsOptional()
   @IsString({ message: '학생 이름은 문자열이어야 합니다' })
   @MaxLength(16, { message: '학생 이름은 16자 이하여야 합니다' })
-  @Matches(/^[가-힣a-zA-Z0-9\s]+$/, {
-    message: '학생 이름은 한글, 영문, 숫자, 공백만 허용됩니다',
-  })
   name?: string;
 
   @ApiPropertyOptional({
@@ -80,12 +75,10 @@ export class UpdateStudentDto {
     type: String,
     example: '01098765432',
     maxLength: 16,
-    pattern: '^[0-9]+$',
   })
   @IsOptional()
   @IsString({ message: '학생 전화번호는 문자열이어야 합니다' })
   @MaxLength(16, { message: '학생 전화번호는 16자 이하여야 합니다' })
-  @Matches(/^[0-9]+$/, { message: '학생 전화번호는 숫자만 입력해주세요' })
   phone?: string;
 
   @ApiPropertyOptional({
@@ -94,14 +87,10 @@ export class UpdateStudentDto {
     type: String,
     example: '01011112222',
     maxLength: 16,
-    pattern: '^[0-9]+$',
   })
   @IsOptional()
   @IsString({ message: '귀가 동행인 전화번호는 문자열이어야 합니다' })
   @MaxLength(16, { message: '귀가 동행인 전화번호는 16자 이하여야 합니다' })
-  @Matches(/^[0-9]+$/, {
-    message: '귀가 동행인 전화번호는 숫자만 입력해주세요',
-  })
   escortPhone?: string;
 
   @ApiPropertyOptional({
