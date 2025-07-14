@@ -165,7 +165,7 @@ export class StudentService {
     } else if (parentDto.phone) {
       // 새로운 부모 생성 방식 - 전화번호로 기존 부모 확인
       const existingParent = await this.parentRepository.findOne({
-        where: { phone: parentDto.phone },
+        where: { phone: normalizePhone(parentDto.phone) },
       });
       if (existingParent) {
         targetParentId = existingParent.id;
@@ -436,7 +436,7 @@ export class StudentService {
           // 기존 부모 정보 업데이트
           const updatedParent = manager.merge(Parent, existingParent, {
             name: parentDto.name,
-            phone: parentDto.phone,
+            phone: normalizePhone(parentDto.phone),
             note: parentDto.note,
             termsAgreedAt: parentDto.termsAgreedAt,
           });
@@ -455,7 +455,7 @@ export class StudentService {
             // 현재 부모 정보 업데이트
             const updatedParent = manager.merge(Parent, currentParent, {
               name: parentDto.name,
-              phone: parentDto.phone,
+              phone: normalizePhone(parentDto.phone),
               note: parentDto.note,
               termsAgreedAt: parentDto.termsAgreedAt,
             });
@@ -465,7 +465,7 @@ export class StudentService {
             // 현재 연결된 부모가 없으면 새로운 부모 생성
             const newParent = manager.create(Parent, {
               name: parentDto.name,
-              phone: parentDto.phone,
+              phone: normalizePhone(parentDto.phone),
               note: parentDto.note,
               termsAgreedAt: parentDto.termsAgreedAt,
             });
@@ -475,9 +475,18 @@ export class StudentService {
         }
       }
 
+      // 4.5. Student 데이터 정리
+      const normalizedStudentDto = {
+        ...studentDto,
+        ...(studentDto.phone && { phone: normalizePhone(studentDto.phone) }),
+        ...(studentDto.escortPhone && {
+          escortPhone: normalizePhone(studentDto.escortPhone),
+        }),
+      };
+
       // 5. 학생 정보 업데이트
       const updatedStudent = manager.merge(Student, existingStudent, {
-        ...studentDto,
+        ...normalizedStudentDto,
         parentId: finalParentId,
       });
       const savedStudent = await manager.save(Student, updatedStudent);
