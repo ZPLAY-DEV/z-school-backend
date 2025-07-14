@@ -42,8 +42,9 @@ export class CreateTermDto {
   })
   @IsNotEmpty({ message: '학교명은 필수입니다' })
   @IsString({ message: '학교명은 문자열이어야 합니다' })
+  @IsOptional()
   @MaxLength(24, { message: '학교명은 24자 이하여야 합니다' })
-  schoolName: string;
+  schoolName?: string;
 
   @ApiProperty({
     description: '학사년도 - 해당 학기가 속한 학년도 (4자리 년도)',
