@@ -1,10 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-    FilterOperator,
-    paginate,
-    Paginated,
-    PaginateQuery,
+  FilterOperator,
+  paginate,
+  Paginated,
+  PaginateQuery,
 } from 'nestjs-paginate';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
@@ -212,6 +212,7 @@ export class SchoolSamService {
         instructor: true,
         contracts: {
           group: true,
+          lesson: true,
         },
       },
       sortableColumns: ['alias'],
