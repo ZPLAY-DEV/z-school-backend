@@ -73,16 +73,23 @@ export class StudentService {
         }
         finalParentId = parentDto.id;
       } else {
-        // 새로운 부모 생성
-        const newParent = manager.create(Parent, {
-          userId: parentDto.userId,
-          name: parentDto.name,
-          phone: normalizePhone(parentDto.phone),
-          note: parentDto.note,
-          termsAgreedAt: parentDto.termsAgreedAt,
+        const existingParent = await manager.findOne(Parent, {
+          where: { phone: normalizePhone(parentDto.phone) },
         });
-        const savedParent = await manager.save(Parent, newParent);
-        finalParentId = savedParent.id;
+        if (existingParent) {
+          finalParentId = existingParent.id;
+        } else {
+          // 새로운 부모 생성
+          const newParent = manager.create(Parent, {
+            userId: parentDto.userId,
+            name: parentDto.name,
+            phone: normalizePhone(parentDto.phone),
+            note: parentDto.note,
+            termsAgreedAt: parentDto.termsAgreedAt,
+          });
+          const savedParent = await manager.save(Parent, newParent);
+          finalParentId = savedParent.id;
+        }
       }
 
       // 2. 중복 체크 - 동일 학교 내 중복 확인
@@ -163,15 +170,22 @@ export class StudentService {
       }
       targetParentId = parentDto.id;
     } else if (parentDto.phone) {
-      // 새로운 부모 생성 방식 - 전화번호로 기존 부모 확인
       const existingParent = await this.parentRepository.findOne({
         where: { phone: normalizePhone(parentDto.phone) },
       });
       if (existingParent) {
         targetParentId = existingParent.id;
       } else {
-        // 새로운 부모가 생성될 예정이므로 중복 체크 불가
-        return null;
+        // 새로운 부모 생성 방식 - 전화번호로 기존 부모 확인
+        const existingParent = await this.parentRepository.findOne({
+          where: { phone: normalizePhone(parentDto.phone) },
+        });
+        if (existingParent) {
+          targetParentId = existingParent.id;
+        } else {
+          // 새로운 부모가 생성될 예정이므로 중복 체크 불가
+          return null;
+        }
       }
     }
 
@@ -432,7 +446,6 @@ export class StudentService {
           if (!existingParent) {
             throw new NotFoundException('Parent not found');
           }
-
           // 기존 부모 정보 업데이트
           const updatedParent = manager.merge(Parent, existingParent, {
             name: parentDto.name,

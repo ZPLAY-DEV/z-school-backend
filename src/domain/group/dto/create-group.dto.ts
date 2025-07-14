@@ -161,27 +161,19 @@ export class CreateGroupDto {
     type: String,
     example: '김선생',
     maxLength: 16,
-    pattern: '^[가-힣a-zA-Z\\s]+$',
   })
   @IsOptional()
   @IsString({ message: '강사명은 문자열이어야 합니다' })
   @MaxLength(16, { message: '강사명은 16자 이하여야 합니다' })
-  @Matches(/^[가-힣a-zA-Z\s]+$/, {
-    message: '강사명은 한글, 영문, 공백만 허용됩니다',
-  })
   instructorName?: string;
 
   @ApiPropertyOptional({
     description: '강사 전화번호 - 하이픈 없이 숫자만 입력 (10~11자리)',
     type: String,
     example: '01012345678',
-    pattern: '^01[0-9]{8,9}$',
   })
   @IsOptional()
   @IsString({ message: '강사 전화번호는 문자열이어야 합니다' })
-  @Matches(/^01[0-9]{8,9}$/, {
-    message: '올바른 휴대폰 번호 형식이 아닙니다 (01012345678)',
-  })
   instructorPhone?: string;
 
   @ApiPropertyOptional({
@@ -218,27 +210,19 @@ export class CreateGroupWithInstructorDto extends CreateGroupDto {
     type: String,
     example: '김선생',
     maxLength: 16,
-    pattern: '^[가-힣a-zA-Z\\s]+$',
   })
   @IsNotEmpty({ message: '강사명은 필수입니다' })
   @IsString({ message: '강사명은 문자열이어야 합니다' })
   @MaxLength(16, { message: '강사명은 16자 이하여야 합니다' })
-  @Matches(/^[가-힣a-zA-Z\s]+$/, {
-    message: '강사명은 한글, 영문, 공백만 허용됩니다',
-  })
   declare instructorName: string;
 
   @ApiProperty({
     description: '강사 전화번호 - 하이픈 없이 숫자만 입력 (필수, 10~11자리)',
     type: String,
     example: '01012345678',
-    pattern: '^01[0-9]{8,9}$',
   })
   @IsNotEmpty({ message: '강사 전화번호는 필수입니다' })
   @IsString({ message: '강사 전화번호는 문자열이어야 합니다' })
-  @Matches(/^01[0-9]{8,9}$/, {
-    message: '올바른 휴대폰 번호 형식이 아닙니다 (01012345678)',
-  })
   declare instructorPhone: string;
 
   @ApiPropertyOptional({

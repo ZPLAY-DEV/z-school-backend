@@ -161,26 +161,18 @@ export class UpdateGroupDto {
     type: String,
     example: '이선생',
     maxLength: 16,
-    pattern: '^[가-힣a-zA-Z\\s]+$',
   })
   @IsOptional()
   @IsString({ message: '강사명은 문자열이어야 합니다' })
   @MaxLength(16, { message: '강사명은 16자 이하여야 합니다' })
-  @Matches(/^[가-힣a-zA-Z\s]+$/, {
-    message: '강사명은 한글, 영문, 공백만 허용됩니다',
-  })
   instructorName?: string;
 
   @ApiPropertyOptional({
     description: '강사 전화번호 - 하이픈 없이 숫자만 입력 (10~11자리)',
     type: String,
     example: '01087654321',
-    pattern: '^01[0-9]{8,9}$',
   })
   @IsOptional()
   @IsString({ message: '강사 전화번호는 문자열이어야 합니다' })
-  @Matches(/^01[0-9]{8,9}$/, {
-    message: '올바른 휴대폰 번호 형식이 아닙니다 (01012345678)',
-  })
   instructorPhone?: string;
 }
