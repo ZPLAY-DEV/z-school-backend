@@ -66,7 +66,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'http://localhost:3001',
-      'https://zschool.com',
+      'https://700c4970a59a.ngrok.app',
       'https://zschool.kr',
     ],
     credentials: true, // 쿠키를 포함한 요청을 허용하려면 true로 설정
