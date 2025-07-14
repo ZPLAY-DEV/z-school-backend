@@ -1,9 +1,9 @@
 import {
-    BadRequestException,
-    Injectable,
-    Logger,
-    NotFoundException,
-    UnprocessableEntityException,
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CalendarService } from 'src/domain/calendar/calendar.service';
@@ -18,16 +18,16 @@ import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { generateSchooldays } from 'src/helpers/lesson-days.util';
 import {
-    parseRangeFormat,
-    parseTime,
-    parseTimeFormat,
+  parseRangeFormat,
+  parseTime,
+  parseTimeFormat,
 } from 'src/helpers/parse';
 import {
-    DataSource,
-    DeepPartial,
-    EntityManager,
-    IsNull,
-    Repository,
+  DataSource,
+  DeepPartial,
+  EntityManager,
+  IsNull,
+  Repository,
 } from 'typeorm';
 
 type GroupSamData = CreateGroupWithInstructorDto & {
@@ -68,10 +68,12 @@ export class LessonCoreService {
         throw new NotFoundException('Term not found');
       }
 
+      const termStartDate = term.start.toString().split('T')[0];
+      const termEndDate = term.end.toString().split('T')[0];
+
       if (
-        (dto.start &&
-          new Date(`${dto.start}T08:00:00+09:00`) < new Date(term.start)) ||
-        (dto.end && new Date(`${dto.end}T08:00:00+09:00`) > new Date(term.end))
+        (dto.start && dto.start < termStartDate) ||
+        (dto.end && dto.end > termEndDate)
       ) {
         throw new BadRequestException(
           'Lesson period out of range based on the term',
