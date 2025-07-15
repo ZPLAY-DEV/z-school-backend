@@ -38,11 +38,11 @@ export class CreateStudentDto {
   schoolId: number;
 
   @ApiProperty({
-    description: '학년 - 학생의 현재 학년 (1~12학년) (필수)',
+    description: '학년 - 학생의 현재 학년 (1~6학년) (필수)',
     type: Number,
     example: 3,
     minimum: 1,
-    maximum: 12,
+    maximum: 6,
   })
   @IsNotEmpty({ message: '학년은 필수입니다' })
   @IsInt({ message: '학년은 정수여야 합니다' })

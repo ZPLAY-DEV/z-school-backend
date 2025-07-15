@@ -16,70 +16,61 @@ import { ResponseBookingDto } from 'src/domain/booking/dto/response-booking.dto'
 export const CreateBookingSwagger = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✅ 수강신청',
+      summary: '✅ Course Registration',
       description: `
-**📝 기능 설명**
-- 실시간 피드백을 제공하는 수강신청 API입니다
-- 다양한 수강신청 규칙을 지원합니다 (선착순, 재수강우선, 무작위, 누구나)
-- Redis 기반 실시간 처리로 동시성 문제를 해결합니다
+**📝 Feature Description**
+- Real-time course registration API with instant feedback
+- Supports multiple registration rules (First-come-first-served, Random, Anyone)
+- Redis-based real-time processing to handle concurrency issues
 
-**🔄 비즈니스 로직**
-1. pickRule이 '선착순'인 경우 Redis 기반 처리
-2. 기타 규칙의 경우 DB 기반 처리
-3. 수강신청 결과 실시간 반환
-4. 정원 초과 시 대기열 처리
-5. 중복 신청 방지 로직 적용
+**🔄 Business Logic**
+1. For 'FIRST' (first-come-first-served): Redis-based processing with real-time enrollment
+2. For 'RANDOM' (lottery): DB-based processing, results announced after registration period
+3. For 'ANYONE' (open enrollment): Immediate enrollment with no capacity limits
+4. Handles waiting queue when capacity is exceeded
+5. Prevents duplicate registrations
 
-**⚠️ 중요 제약사항**
-- offeringId와 studentId는 필수 파라미터
-- 동일 학생의 중복 신청 불가
-- 정원 제한 체크 (capacity > 0인 경우)
-- 수강신청 기간 내에서만 신청 가능
+**⚠️ Important Constraints**
+- offeringId and studentId are required parameters
+- No duplicate registrations for the same student
+- Capacity limit check (when capacity > 0)
+- Only available during registration period
 
-**📚 예시 시나리오**
-- 선착순 수업 실시간 수강신청
-- 재수강 우선권이 있는 수업 신청
-- 무작위 추첨 방식 수업 신청
-- 정원 제한 없는 수업 신청
+**📚 Example Scenarios**
+- Real-time first-come-first-served class registration
+- Lottery-based enrollment for popular classes
+- Open enrollment for unlimited capacity classes
+- Waiting queue management for oversubscribed courses
       `,
     }),
     ApiBody({
       type: CreateBookingDto,
       examples: {
-        선착순: {
+        'First-come-first-served': {
           value: {
             offeringId: 1,
             studentId: 1,
             capacity: 20,
-            pickRule: '선착순',
-            lessonName: '바이올린',
+            pickRule: 'FIRST',
+            lessonName: 'Violin',
           },
         },
-        재수강우선: {
+        'Random/Lottery': {
           value: {
             offeringId: 10,
             studentId: 11,
             capacity: 20,
-            pickRule: '재수강우선',
-            lessonName: '마인드크래프트',
+            pickRule: 'RANDOM',
+            lessonName: 'Minecraft',
           },
         },
-        무작위: {
-          value: {
-            offeringId: 20,
-            studentId: 21,
-            capacity: 30,
-            pickRule: '무작위',
-            lessonName: '원어민영어회화',
-          },
-        },
-        누구나: {
+        Anyone: {
           value: {
             offeringId: 30,
             studentId: 31,
             capacity: 0,
-            pickRule: '누구나',
-            lessonName: '창의교실A',
+            pickRule: 'ANYONE',
+            lessonName: 'Creative Classroom A',
           },
         },
       },
@@ -103,37 +94,37 @@ export const CreateBookingSwagger = () => {
 export const CreateLateBookingDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '⏰ 기간 만료 후 수강신청',
+      summary: '⏰ Late Course Registration',
       description: `
-**📝 기능 설명**
-- 수강신청 기간이 지난 후 관리자가 수동으로 수강신청을 처리합니다
-- 특별한 사유로 늦은 수강신청을 허용할 때 사용합니다
-- 정원 체크 없이 강제 등록이 가능합니다
+**📝 Feature Description**
+- Allows administrators to manually process course registrations after the registration period has ended
+- Used for special cases where late registration needs to be permitted
+- Enables forced registration without capacity checks
 
-**🔄 비즈니스 로직**
-1. 수강신청 기간 제한 무시
-2. 정원 초과 상관없이 등록 처리
-3. 관리자 권한으로 강제 수강신청
-4. 늦은 신청 사유 기록
-5. 즉시 승인 상태로 생성
+**🔄 Business Logic**
+1. Bypasses registration period restrictions
+2. Processes registration regardless of capacity limits
+3. Administrative override for forced registration
+4. Records reason for late registration
+5. Creates registration in pending status immediately
 
-**⚠️ 중요 제약사항**
-- 관리자 권한 필요
-- 이미 등록된 학생은 중복 등록 불가
-- 삭제된 수업이나 학생은 등록 불가
-- 특별한 사유가 있는 경우에만 사용
+**⚠️ Important Constraints**
+- Requires administrator privileges
+- Cannot register students who are already enrolled
+- Cannot register for deleted courses or students
+- Should only be used for special circumstances
 
-**📚 예시 시나리오**
-- 수강신청 기간 놓친 학생 구제
-- 전학생 등 특별 케이스 처리
-- 시스템 오류로 인한 수강신청 실패 보상
+**📚 Example Scenarios**
+- Helping students who missed the registration period
+- Processing special cases like transfer students
+- Compensating for system errors that prevented successful registration
       `,
     }),
     ApiBody({
       type: CreateLateBookingDto,
     }),
     ApiCreatedResponseTemplate({
-      description: '기간 만료 후 수강신청 성공',
+      description: 'Late course registration successful',
       type: ResponseBookingDto,
     }),
     ApiStatuses(
@@ -151,31 +142,31 @@ export const CreateLateBookingDocs = () => {
 export const CancelBookingSwagger = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '❌ 수강신청 취소',
+      summary: '❌ Cancel Course Registration',
       description: `
-**📝 기능 설명**
-- 기존 수강신청을 취소하고 대기자에게 자동 배정합니다
-- 실시간 피드백을 제공하는 수강신청 취소 API입니다
-- 취소와 동시에 대기열 관리를 수행합니다
+**📝 Feature Description**
+- Cancels existing course registration and automatically assigns to waiting students
+- Real-time course registration cancellation API with instant feedback
+- Manages waiting queue automatically upon cancellation
 
-**🔄 비즈니스 로직**
-1. pickRule이 '선착순'인 경우 Redis 기반 처리
-2. 기타 규칙의 경우 DB 기반 처리
-3. 기존 수강신청 데이터 삭제 또는 상태 변경
-4. 대기자가 있는 경우 자동 배정
-5. 업데이트된 레코드 수 반환
+**🔄 Business Logic**
+1. For 'FIRST' (first-come-first-served): Redis-based processing with real-time queue management
+2. For other rules ('RANDOM', 'ANYONE'): DB-based processing
+3. Updates existing registration data (soft delete or status change)
+4. Automatically assigns available spots to waiting students
+5. Returns the number of affected records
 
-**⚠️ 중요 제약사항**
-- 유효한 수강신청 데이터만 취소 가능
-- 이미 취소된 신청은 중복 취소 불가
-- 수강신청 취소 기간 제한 확인
-- 대기자 자동 배정 시 알림 발송
+**⚠️ Important Constraints**
+- Only valid registrations can be cancelled
+- Already cancelled registrations cannot be cancelled again
+- Cancellation period restrictions may apply
+- Automatic notification sent when waitlisted students are promoted
 
-**📚 예시 시나리오**
-- 학생이 직접 수강신청 취소
-- 관리자의 수강신청 강제 취소
-- 시스템 오류 수정을 위한 취소
-- 대기자에게 자리 양보
+**📚 Example Scenarios**
+- Student voluntarily cancels their registration
+- Administrator forcibly cancels a registration
+- System error correction through cancellation
+- Giving up a spot to waitlisted students
       `,
     }),
     ApiBody({
@@ -183,7 +174,7 @@ export const CancelBookingSwagger = () => {
       required: true,
     }),
     ApiOkResponseTemplate({
-      description: '수강신청 취소 성공',
+      description: 'Course registration cancelled successfully',
       type: Number,
     }),
     ApiStatuses(

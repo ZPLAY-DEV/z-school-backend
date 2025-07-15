@@ -78,7 +78,7 @@ export const CreateStudentDocs = () =>
 - **부모 정보**: parent 객체는 항상 필수 (parentId 미제공시)
 - **선택 정보**: class, studentCode, name, phone, escortPhone, nextStop, status, note
 - **중복 체크**: 동일 학교 내 학번 중복 불가
-- **학년 범위**: 1~12학년만 가능
+- **학년 범위**: 1~6학년만 가능
 
 ### ⚠️ 주의사항
 - parent 객체는 항상 필수 (일관성 있는 API 구조)
