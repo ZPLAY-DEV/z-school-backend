@@ -6,6 +6,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { ClassStatus } from 'src/common/enums';
 import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
@@ -238,7 +239,18 @@ export class LessonService {
   //? ---------------------------------------------------------------------- ?//
 
   async remove(id: number): Promise<Lesson> {
-    const lesson = await this.findById(id);
-    return await this.lessonRepository.remove(lesson);
+    const lesson = await this.lessonRepository.preload({
+      id,
+      ...{
+        status: ClassStatus.CANCELED,
+        deletedAt: new Date(),
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException(`Lesson not found`);
+    }
+
+    return await this.lessonRepository.save(lesson);
   }
 }

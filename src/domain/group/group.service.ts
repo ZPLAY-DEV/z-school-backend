@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -16,6 +15,7 @@ import {
 import { BookingStatus, ClassStatus } from 'src/common/enums';
 import { RemovalStatus } from 'src/common/enums/removal-status';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { BookedStudentDto } from 'src/domain/group/dto/booked-student.dto';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
@@ -23,6 +23,7 @@ import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import {
   parseRangeFormat,
@@ -40,6 +41,10 @@ export class GroupService {
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(Pick)
     private readonly pickRepository: Repository<Pick>,
+    @InjectRepository(Contract)
+    private readonly contractRepository: Repository<Contract>,
+    @InjectRepository(Schoolday)
+    private readonly schooldayRepository: Repository<Schoolday>,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
     @InjectRepository(Offering)
@@ -237,18 +242,22 @@ export class GroupService {
     if (group.status === ClassStatus.CANCELED) {
       await this.groupRepository.update(id, {
         status: ClassStatus.ACTIVE,
+        deletedBy: null,
+        note: 'restored',
       });
     } else {
       throw new UnprocessableEntityException('Group status is not canceled');
     }
-    await this.pickRepository.update(
-      group.picks.map((pick) => pick.id),
-      {
-        end: group.lesson.end, // 복구 시 종료일 초기화
-        endedBy: null, // 복구 시 종료자 정보 초기화
-        note: null, //! note needs to be null
-      },
-    );
+    if (group.picks?.length > 0) {
+      await this.pickRepository.update(
+        group.picks.map((pick) => pick.id),
+        {
+          end: group.lesson.end, // 복구 시 종료일 초기화
+          endedBy: null, // 복구 시 종료자 정보 초기화
+          note: null, //! note needs to be null
+        },
+      );
+    }
 
     return await this.findById(id, ['picks', 'lesson']);
   }
@@ -260,48 +269,37 @@ export class GroupService {
   async removeWithDto(id: number, dto: DeleteGroupDto): Promise<RemovalStatus> {
     const group = await this.findById(id);
 
-    try {
-      if (group.status === ClassStatus.PENDING) {
-        await this.groupRepository.remove(group);
-        return RemovalStatus.DELETED;
-      }
-    } catch (error) {
-      this.logger.error(error);
-      throw new BadRequestException('Removal failed');
-    }
-
     // 폐강 처리 (canceled)
-    if (group.status === ClassStatus.ACTIVE) {
+    if (
+      group.status === ClassStatus.ACTIVE ||
+      group.status === ClassStatus.PENDING
+    ) {
       await this.groupRepository.update(id, {
         status: ClassStatus.CANCELED, // no more attendance auto generation
         deletedBy: dto.role,
         note: dto.note,
       });
 
-      // set picks end date to today (Seoul timezone)
-      const today = formatInTimeZone(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
-      await this.pickRepository.update(
-        group.picks.map((pick) => pick.id),
-        {
-          end: today,
-          endedBy: dto.role,
-          note: dto.note,
-        },
-      );
+      if (group.picks?.length > 0) {
+        // set picks end date to today (Seoul timezone)
+        const today = formatInTimeZone(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
+        await this.pickRepository.update(
+          group.picks.map((pick) => pick.id),
+          {
+            end: today,
+            endedBy: dto.role,
+            note: dto.note,
+          },
+        );
+      }
 
       return RemovalStatus.CANCELED;
     }
 
     //! 이미 폐강 (canceled) 상태이면서, picks 가 존재하는 경우,
     //! 폐강전까지의 정보가 picks 에 기록되어 있으므로, 삭제에 유의
-    if (group.picks?.length > 0) {
-      throw new UnprocessableEntityException('pick item exists');
-    }
-    await this.groupRepository.update(id, {
-      note: dto.note,
-      deletedBy: dto.role,
-      deletedAt: new Date(),
-    });
-    return RemovalStatus.SOFT_DELETED;
+    throw new UnprocessableEntityException(
+      `already canceled by ${group.deletedBy}`,
+    );
   }
 }

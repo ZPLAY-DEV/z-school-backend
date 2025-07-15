@@ -57,6 +57,10 @@ export class Offering {
   @Column({ type: 'varchar', length: 32 })
   groupName: string;
 
+  @ApiProperty({ description: '🈵 강사이름', example: '홍길동' })
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  samName: string | null;
+
   @ApiProperty({ description: 'class size' })
   @Column({ type: 'tinyint', unsigned: true, default: 20 })
   capacity: number;

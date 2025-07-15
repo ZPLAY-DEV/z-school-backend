@@ -80,12 +80,8 @@ export class CreateGroupDto {
     description: '수업 시작 시간 - HH:MM 형식 (24시간제)',
     type: String,
     example: '15:00',
-    pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$',
   })
   @IsString({ message: '수업 시작 시간은 문자열이어야 합니다' })
-  @Matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: '시간 형식이 올바르지 않습니다 (HH:MM)',
-  })
   start: string;
 
   @ApiProperty({
@@ -93,12 +89,8 @@ export class CreateGroupDto {
       '수업 종료 시간 - HH:MM 형식 (24시간제, 시작 시간보다 늦어야 함)',
     type: String,
     example: '15:40',
-    pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$',
   })
   @IsString({ message: '수업 종료 시간은 문자열이어야 합니다' })
-  @Matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: '시간 형식이 올바르지 않습니다 (HH:MM)',
-  })
   end: string;
 
   @ApiPropertyOptional({

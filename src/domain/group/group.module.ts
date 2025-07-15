@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DynamooseModule } from 'nestjs-dynamoose';
 import { AttendanceSchema } from 'src/domain/attendance/entities/attendance.schema';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { GroupAttendanceController } from 'src/domain/group/group-attendance.controller';
@@ -21,6 +22,7 @@ import { NotificationModule } from 'src/services/notification/notification.modul
       Group,
       Student,
       Pick,
+      Contract,
       Schoolday,
       Departure,
       Booking,
