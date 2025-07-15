@@ -142,11 +142,7 @@ export class BookingService {
         { offeringId, studentId },
         { status: BookingStatus.CANCELED, note, deletedAt: new Date() },
       );
-      await this.offeringRepository.query(
-        'UPDATE offering SET bookingCount = GREATEST(0, bookingCount - 1) WHERE id = ?',
-        [offeringId],
-      );
-
+      await this.decrementBookingCountSafely(offeringId);
       return affected as number; // Assuming 1 row is affected
     } catch (error) {
       this.logger.error(`❌ Booking 취소 실패`, error.stack);
@@ -277,10 +273,7 @@ export class BookingService {
             snapshot,
           },
         });
-        await this.offeringRepository.query(
-          'UPDATE offering SET bookingCount = GREATEST(0, bookingCount - 1) WHERE id = ?',
-          [offeringId],
-        );
+        await this.decrementBookingCountSafely(offeringId);
 
         return snapshot.length;
       } else {
@@ -301,6 +294,13 @@ export class BookingService {
   // ------------------------------------------------------------------------ //
   // private methods
   // ------------------------------------------------------------------------ //
+
+  private async decrementBookingCountSafely(offeringId: number): Promise<void> {
+    await this.offeringRepository.query(
+      'UPDATE offering SET bookingCount = bookingCount - 1 WHERE id = ? AND bookingCount > 0',
+      [offeringId],
+    );
+  }
 
   async validateOfferingStatus(offeringId: number): Promise<void> {
     const offering = await this.offeringRepository.findOne({
