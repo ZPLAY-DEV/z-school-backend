@@ -133,14 +133,14 @@ export class BookingService {
   }
 
   async cancelWithDb(dto: CancelBookingDto): Promise<number> {
-    const { offeringId, studentId, note } = dto;
+    const { offeringId, studentId } = dto;
 
     await this.validateOfferingStatus(offeringId);
 
     try {
       const { affected } = await this.bookingRepository.update(
         { offeringId, studentId },
-        { status: BookingStatus.CANCELED, note, deletedAt: new Date() },
+        { status: BookingStatus.CANCELED },
       );
       await this.decrementBookingCountSafely(offeringId);
       return affected as number; // Assuming 1 row is affected
@@ -245,7 +245,7 @@ export class BookingService {
 
   //? my goal: upsert entire data in one go with snapshot for idempotency.
   async cancelWithRedis(dto: CancelBookingDto): Promise<number> {
-    const { offeringId, studentId, lessonName, note } = dto;
+    const { offeringId, studentId, lessonName } = dto;
     const timestamp = Date.now();
 
     await this.validateOfferingStatus(offeringId);
@@ -268,7 +268,6 @@ export class BookingService {
           data: {
             offeringId,
             studentId,
-            note, // reason to cancel
             timestamp,
             snapshot,
           },

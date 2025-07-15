@@ -95,9 +95,10 @@ export class SchoolTermOfferingService {
   //? ---------------------------------------------------------------------- ?//
 
   async infiniteList(
+    query: PaginateQuery,
     schoolId: number,
     termId: number,
-    query: PaginateQuery,
+    studentId?: number,
   ): Promise<Paginated<Offering>> {
     const queryBuilder = this.offeringRepository
       .createQueryBuilder('offering')
@@ -106,7 +107,7 @@ export class SchoolTermOfferingService {
       .where('offering.schoolId = :schoolId', { schoolId })
       .andWhere('offering.termId = :termId', { termId });
 
-    return await paginate(query, queryBuilder, {
+    const result = await paginate(query, queryBuilder, {
       sortableColumns: ['id', 'createdAt', 'updatedAt'],
       searchableColumns: ['lessonName', 'groupName'],
       defaultSortBy: [],
@@ -115,6 +116,25 @@ export class SchoolTermOfferingService {
         allowedGrades: [FilterOperator.EQ, FilterOperator.IN],
       },
     });
+
+    if (studentId) {
+      const data = result.data.map((offering) => {
+        const bookings = offering.bookings.filter(
+          (booking) => booking.studentId === +studentId,
+        );
+        return {
+          ...offering,
+          bookings,
+        } as Offering;
+      });
+
+      return {
+        ...result,
+        data,
+      };
+    }
+
+    return result;
   }
 
   async list(

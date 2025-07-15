@@ -24,13 +24,6 @@ export class CancelBookingDto {
   @IsString()
   lessonName: string;
 
-  @ApiProperty({
-    description: '삭제하는 이유',
-    example: '아이가 취소한대요.',
-  })
-  @IsString()
-  note: string;
-
   constructor(partial: Partial<CancelBookingDto>) {
     Object.assign(this, partial);
   }

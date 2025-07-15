@@ -53,11 +53,13 @@ export class SchoolTermOfferingController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
     @Paginate() query: PaginateQuery,
+    @Query('studentId') studentId?: number,
   ): Promise<Paginated<Offering>> {
     return await this.schoolTermOfferingService.infiniteList(
+      query,
       schoolId,
       termId,
-      query,
+      studentId,
     );
   }
 
