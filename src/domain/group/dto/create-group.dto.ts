@@ -56,15 +56,14 @@ export class CreateGroupDto {
 
   @ApiPropertyOptional({
     description:
-      '허용 학년 - 쉼표로 구분하거나 범위로 표시 (예: "1,2,3" 또는 "1-6")',
+      '허용 학년 - 쉼표로 구분하거나 범위로 표시 (예: "1,2,3" 또는 "1-6" 또는 "1~6")',
     type: String,
     example: '1,2,3',
-    pattern: '^[1-9,\\-\\s]+$',
   })
   @IsOptional()
   @IsString({ message: '허용 학년은 문자열이어야 합니다' })
-  @Matches(/^[1-9,\-\s]+$/, {
-    message: '허용 학년은 숫자, 쉼표, 하이픈만 허용됩니다',
+  @Matches(/^[1-9,\-~\s]+$/, {
+    message: '허용 학년은 숫자, 쉼표, 하이픈, 물결표시만 허용됩니다',
   })
   allowedGrades?: string;
 
