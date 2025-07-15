@@ -105,6 +105,11 @@ export class BookingService {
           waitingPosition,
         });
         await this.bookingRepository.save(booking);
+        await this.offeringRepository.increment(
+          { id: dto.offeringId },
+          'bookingCount',
+          1,
+        );
       }
 
       return new ResponseBookingDto({
@@ -137,10 +142,9 @@ export class BookingService {
         { offeringId, studentId },
         { status: BookingStatus.CANCELED, note, deletedAt: new Date() },
       );
-      await this.offeringRepository.decrement(
-        { id: offeringId },
-        'bookingCount',
-        1,
+      await this.offeringRepository.query(
+        'UPDATE offering SET bookingCount = GREATEST(0, bookingCount - 1) WHERE id = ?',
+        [offeringId],
       );
 
       return affected as number; // Assuming 1 row is affected
@@ -273,10 +277,9 @@ export class BookingService {
             snapshot,
           },
         });
-        await this.offeringRepository.decrement(
-          { id: offeringId },
-          'bookingCount',
-          1,
+        await this.offeringRepository.query(
+          'UPDATE offering SET bookingCount = GREATEST(0, bookingCount - 1) WHERE id = ?',
+          [offeringId],
         );
 
         return snapshot.length;

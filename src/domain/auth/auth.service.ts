@@ -104,7 +104,7 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
-    return shortlink.parent.user;
+    return { ...shortlink.parent.user, parent: shortlink.parent };
   }
 
   /**
@@ -224,6 +224,9 @@ export class AuthService {
    */
   async loginWithNanoid(nanoid: string): Promise<AuthUserDto> {
     const user = await this.validateUserWithNanoid(nanoid);
+
+    console.log(user);
+
     const { accessToken, refreshToken } = await this.generateTokensWithNanoid(
       user,
       Role.PARENT,
