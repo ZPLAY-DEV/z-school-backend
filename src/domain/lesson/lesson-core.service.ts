@@ -457,6 +457,11 @@ export class LessonCoreService {
         weekday: groupData.weekday,
         start: groupStart,
         end: groupEnd,
+        tuition: groupData.tuition,
+        bookFee: groupData.bookFee,
+        materialFee: groupData.materialFee,
+        status: groupData.status,
+        note: groupData.note,
       };
       if ('id' in groupData && groupData.id) {
         upsertData.id = Number(groupData.id);
