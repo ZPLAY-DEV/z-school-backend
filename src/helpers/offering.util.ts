@@ -48,6 +48,7 @@ export function makeOfferingsFromLessons(
         lessonId: lesson.id,
         lessonName: lesson.lessonName || `과목 #${lesson.id}`,
         groupName: group.groupName || `반 #${group.id}`,
+        samName: group.samName || `강사 미정`,
         capacity: group.capacity,
         allowedGrades: group.allowedGrades.split(',').map(Number),
         pickRule,
