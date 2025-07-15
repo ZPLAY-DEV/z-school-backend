@@ -22,6 +22,7 @@ import {
   parseTime,
   parseTimeFormat,
 } from 'src/helpers/parse';
+import { normalizePhone } from 'src/helpers/phone';
 import {
   DataSource,
   DeepPartial,
@@ -277,13 +278,22 @@ export class LessonCoreService {
     }
 
     //? 4단계) 강좌 업데이트
+    // undefined인 필드들을 제거하여 기존 값을 유지
+    const updateData = {
+      ...existingLesson,
+      schoolName: school.name,
+      operationFeeRule: school.operationFeeRule,
+    };
+
+    // dto에서 undefined가 아닌 필드들만 업데이트
+    Object.keys(dto).forEach((key) => {
+      if (dto[key] !== undefined) {
+        updateData[key] = dto[key];
+      }
+    });
+
     const updatedLesson = await manager
-      .save(Lesson, {
-        ...existingLesson,
-        ...dto,
-        schoolName: school.name,
-        operationFeeRule: school.operationFeeRule,
-      })
+      .save(Lesson, updateData)
       .catch((error) => {
         console.log(`🔴 허용하지 않는 입력 조합 오류`, error);
         throw new UnprocessableEntityException('Invalid constraint');
@@ -383,7 +393,8 @@ export class LessonCoreService {
     const groupsWithSamData: GroupSamData[] = [];
 
     for (const groupDto of dto.groups || []) {
-      const instructorKey = `${groupDto.instructorName}-${groupDto.instructorPhone}`;
+      const instructorPhone = normalizePhone(groupDto.instructorPhone);
+      const instructorKey = `${groupDto.instructorName}-${instructorPhone}`;
 
       // 이미 처리한 쌤인지 확인
       if (uniqueSams.has(instructorKey)) {
@@ -399,7 +410,7 @@ export class LessonCoreService {
       // 1. Find or create Instructor
       let instructor = await manager.getRepository('Instructor').findOne({
         where: {
-          phone: groupDto.instructorPhone,
+          phone: instructorPhone,
         },
       });
       if (!instructor) {
