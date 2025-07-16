@@ -21,16 +21,18 @@ import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
-import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import {
   parseRangeFormat,
   parseTime,
   parseTimeFormat,
 } from 'src/helpers/parse';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 @Injectable()
 export class GroupService {
@@ -41,14 +43,11 @@ export class GroupService {
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(Pick)
     private readonly pickRepository: Repository<Pick>,
-    @InjectRepository(Contract)
-    private readonly contractRepository: Repository<Contract>,
-    @InjectRepository(Schoolday)
-    private readonly schooldayRepository: Repository<Schoolday>,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
     @InjectRepository(Offering)
     private readonly offeringRepository: Repository<Offering>,
+    private readonly dataSource: DataSource,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -56,17 +55,132 @@ export class GroupService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateGroupDto): Promise<Group> {
-    if (dto.start) {
-      dto.start = parseTimeFormat(parseTime(dto.start));
-    }
-    if (dto.end) {
-      dto.end = parseTimeFormat(parseTime(dto.end));
-    }
-    if (dto.allowedGrades) {
-      dto.allowedGrades = parseRangeFormat(dto.allowedGrades).join(',');
-    }
-    const group = this.groupRepository.create(dto);
-    return await this.groupRepository.save(group);
+    return await this.dataSource.transaction(async (manager) => {
+      // 1. DTO 파싱
+      if (dto.start) {
+        dto.start = parseTimeFormat(parseTime(dto.start));
+      }
+      if (dto.end) {
+        dto.end = parseTimeFormat(parseTime(dto.end));
+      }
+      if (dto.allowedGrades) {
+        dto.allowedGrades = parseRangeFormat(dto.allowedGrades).join(',');
+      }
+
+      // 2. 필수 검증
+      if (!dto.lessonId) {
+        throw new NotFoundException('Lesson ID is required');
+      }
+
+      if (!dto.instructorId && (!dto.instructorName || !dto.instructorPhone)) {
+        throw new UnprocessableEntityException(
+          'Either instructorId or both instructorName and instructorPhone must be provided',
+        );
+      }
+
+      // 3. lesson 조회
+      const lesson = await manager.findOne(Lesson, {
+        where: { id: dto.lessonId },
+        select: ['id', 'schoolId', 'termId', 'start', 'end'],
+      });
+
+      if (!lesson) {
+        throw new NotFoundException('Lesson not found');
+      }
+
+      // 4. instructor와 sam 처리
+      let sam: Sam;
+
+      if (dto.instructorId) {
+        // 4-1. 기존 instructor 사용
+        const instructor = await manager.findOne(Instructor, {
+          where: { id: dto.instructorId },
+          relations: ['sams'],
+        });
+
+        if (!instructor) {
+          throw new NotFoundException('Instructor not found');
+        }
+
+        // 해당 school의 sam이 있는지 확인
+        const existingSam = instructor.sams?.find(
+          (s) => s.schoolId === lesson.schoolId,
+        );
+
+        if (existingSam) {
+          sam = existingSam;
+        } else {
+          // sam이 없으면 생성
+          sam = await manager.save(
+            Sam,
+            manager.create(Sam, {
+              instructorId: dto.instructorId,
+              schoolId: lesson.schoolId,
+              alias: dto.instructorName || instructor.name,
+            }),
+          );
+        }
+      } else {
+        // 4-2. 새로운 instructor 생성
+        // 전화번호 중복 확인
+        const existingInstructor = await manager.findOne(Instructor, {
+          where: { phone: dto.instructorPhone },
+          select: ['id'],
+        });
+
+        if (existingInstructor) {
+          throw new UnprocessableEntityException(
+            'The phone number is already taken',
+          );
+        }
+
+        // instructor 생성
+        const instructor = await manager.save(
+          Instructor,
+          manager.create(Instructor, {
+            name: dto.instructorName!,
+            phone: dto.instructorPhone!,
+          }),
+        );
+
+        // sam 생성
+        sam = await manager.save(
+          Sam,
+          manager.create(Sam, {
+            instructorId: instructor.id,
+            schoolId: lesson.schoolId,
+            alias: dto.instructorName!,
+          }),
+        );
+      }
+
+      // 5. group 생성
+      const groupData = {
+        ...dto,
+        samId: sam.id,
+        samName: dto.instructorName,
+      };
+
+      const savedGroup = await manager.save(
+        Group,
+        manager.create(Group, groupData),
+      );
+
+      // 6. contract 생성
+      await manager.save(
+        Contract,
+        manager.create(Contract, {
+          groupId: savedGroup.id,
+          samId: sam.id,
+          lessonId: lesson.id,
+          termId: lesson.termId,
+          start: lesson.start,
+          end: lesson.end,
+        }),
+      );
+
+      return savedGroup;
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//
