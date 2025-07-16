@@ -22,6 +22,7 @@ import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
   generateDailyStudentKey,
   generateGroupKey,
+  getGroupIdFromGroupKey,
   processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
@@ -31,7 +32,7 @@ import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { getDuration } from 'src/helpers/time';
 import { NotificationService } from 'src/services/notification/notification.service';
-import { In, Repository } from 'typeorm';
+import { In, IsNull, Raw, Repository } from 'typeorm';
 
 @Injectable()
 export class GroupAttendanceService {
@@ -448,6 +449,19 @@ export class GroupAttendanceService {
     date: string,
   ): Promise<IAttendance[]> {
     try {
+      // date 을 가지고 해당 날짜의 수업이 있는지 확인
+      const schoolday = await this.schooldayRepository.findOne({
+        where: {
+          startsAt: Raw(
+            (alias) => `DATE(CONVERT_TZ(${alias}, '+00:00', '+09:00')) = :date`,
+            { date },
+          ),
+        },
+      });
+      if (!schoolday) {
+        return [];
+      }
+
       const prefix = `DATE#${date}`;
       const result = await this.model
         .query('groupKey')
@@ -455,10 +469,48 @@ export class GroupAttendanceService {
         .where('dailyStudentKey')
         .beginsWith(prefix)
         .exec();
+      const items = result as IAttendance[];
+      console.log(`💚 items: ${items.length}`);
 
-      // No conversion needed! Dynamoose handles it automatically
-      return result as IAttendance[];
+      const itemMap = new Map<string, IAttendance>(
+        items.map((v) => [v.dailyStudentKey, v]),
+      );
+
+      const picks = await this.pickRepository.find({
+        where: {
+          groupId: getGroupIdFromGroupKey(groupKey),
+          endedBy: IsNull(),
+        },
+        relations: ['student', 'group', 'group.lesson'],
+      });
+
+      return picks.map((v) => {
+        const dailyStudentKey = generateDailyStudentKey(
+          date,
+          v.studentId,
+          v.student.grade,
+          v.student.class,
+          v.student.studentCode,
+        );
+        return (
+          itemMap.get(dailyStudentKey) ||
+          ({
+            //expires: Math.floor(addDays(new Date(), 400).getTime() / 1000),
+            groupId: v.group.id,
+            start: v.group.start,
+            end: v.group.end,
+            groupKey: groupKey,
+            lessonName: v.group.lesson.lessonName,
+            duration: getDuration(v.group.start, v.group.end),
+            studentId: v.student.id,
+            studentName: v.student.name,
+            dailyStudentKey: dailyStudentKey,
+            status: AttendanceStatus.INIT,
+          } as IAttendance)
+        );
+      });
     } catch (error) {
+      // No conversion needed! Dynamoose handles it automatically
       console.error(`[dynamodb] error`, error);
       throw new BadRequestException('출석 정보 조회에 실패했습니다.');
     }

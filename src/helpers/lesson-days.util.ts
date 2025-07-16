@@ -68,6 +68,7 @@ export function generateSchooldays(
     .map((day) => {
       const [startDateStr, startTimeStr] = day.start.split(' ');
       const [endDateStr, endTimeStr] = day.end.split(' ');
+      const today = startDateStr;
       const startsAt = new Date(`${startDateStr}T${startTimeStr}:00+09:00`);
       const endsAt = new Date(`${endDateStr}T${endTimeStr}:00+09:00`);
       const duration = differenceInMinutes(endsAt, startsAt);
@@ -78,6 +79,7 @@ export function generateSchooldays(
         groupId: group.id,
         name: lesson.lessonName,
         duration: duration,
+        today: today,
         startsAt: startsAt,
         endsAt: endsAt,
         note: null,

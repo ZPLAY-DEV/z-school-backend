@@ -53,6 +53,8 @@ export class LessonAttendanceService {
         }),
       );
 
+      console.log(`💚`, items);
+
       return items.flat();
     } catch (error) {
       console.error(`[dynamodb] error`, error);

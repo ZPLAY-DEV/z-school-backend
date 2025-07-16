@@ -50,21 +50,20 @@ export class AttendanceService {
     const ttl = Math.floor(now.getTime() / 1000); // 1일
 
     const itemKey = {
-      groupKey: generateGroupKey(1),
-      dailyStudentKey: generateDailyStudentKey('2025-01-01', 1, 1, '1', 1),
+      groupKey: generateGroupKey(80),
+      dailyStudentKey: generateDailyStudentKey('2025-07-22', 1, 1, '1', 1),
     };
 
     const itemDto = {
-      lessonId: 1,
-      lessonName: '수학',
-      groupId: 1,
-      groupName: '1학년1반',
+      lessonName: '바이올린',
+      groupId: 80,
       studentId: 1,
-      studentName: '김철수',
-      start: '14:00',
-      end: '15:00',
-      duration: 60,
-      status: AttendanceStatus.INIT,
+      studentName: '편도율',
+      start: '13:50',
+      end: '14:30',
+      duration: 40,
+      status: AttendanceStatus.EXCUSED_ABSENT,
+      parentNote: '코로나 때문에 빠집니다.',
       expires: ttl,
     };
 

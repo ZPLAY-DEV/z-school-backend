@@ -17,13 +17,14 @@ import {
 } from 'typeorm';
 
 @Entity('schooldays')
-//? 아래 조합의 쿼리를 많이 사용하여, 일부러 unique 키 이외에 인덱스를 추가함.
+//? 원하는 query 성능을 위해, 인덱스 추가.
 @Index('idx_school_term_start_end', [
   'schoolId',
   'termId',
   'startsAt',
   'endsAt',
 ])
+@Index('idx_school_term_today', ['schoolId', 'termId', 'today'])
 @Unique([
   'schoolId',
   'termId',
@@ -62,6 +63,13 @@ export class Schoolday {
   })
   @Column({ type: 'varchar', length: 16, nullable: true })
   name: string | null; // 관리자 편의를 위한 column
+
+  @ApiProperty({
+    description: '검색용 날짜',
+    example: '2025-07-16',
+  })
+  @Column({ type: 'varchar', length: 10 })
+  today: string; // '2025-07-16'
 
   @ApiProperty({
     description: '시작시각 DateTime',
