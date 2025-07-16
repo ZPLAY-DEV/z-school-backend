@@ -122,10 +122,12 @@ export class SchoolTermOfferingService {
         const bookings = offering.bookings.filter(
           (booking) => booking.studentId === +studentId,
         );
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { bookings: _, ...offeringWithoutBookings } = offering;
         return {
-          ...offering,
-          bookings,
-        } as Offering;
+          ...offeringWithoutBookings,
+          booking: bookings.length > 0 ? bookings[0] : null,
+        } as Offering & { booking: any };
       });
 
       return {
