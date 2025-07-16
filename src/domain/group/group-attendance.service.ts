@@ -449,7 +449,7 @@ export class GroupAttendanceService {
     date: string,
   ): Promise<IAttendance[]> {
     try {
-      // date 을 가지고 해당 날짜의 수업이 있는지 확인
+      // todo. to put response on the cache
       const schooldays = await this.schooldayRepository.find({
         where: {
           groupId: getGroupIdFromGroupKey(groupKey),
@@ -543,7 +543,19 @@ export class GroupAttendanceService {
     date: string,
   ): Promise<IAttendanceWithNextInfo[]> {
     try {
-      // 1. DynamoDB에서 출석 데이터 조회
+      // 1. 해당 날짜에 수업이 있는지 확인
+      const groupId = getGroupIdFromGroupKey(groupKey);
+      const schooldays = await this.schooldayRepository.find({
+        where: {
+          groupId: groupId,
+          today: date,
+        },
+      });
+      if (!schooldays || schooldays.length === 0) {
+        return [];
+      }
+
+      // 2. DynamoDB에서 기존 출석 데이터 조회
       const prefix = `DATE#${date}`;
       const items: IAttendance[] = await this.model
         .query('groupKey')
@@ -552,17 +564,62 @@ export class GroupAttendanceService {
         .beginsWith(prefix)
         .exec();
 
-      if (items.length === 0) {
+      // 3. 기존 레코드를 dailyStudentKey로 맵핑
+      const itemMap = new Map<string, IAttendance>(
+        items.map((v) => [v.dailyStudentKey, v]),
+      );
+
+      // 4. 모든 등록된 학생들(picks) 조회
+      const picks = await this.pickRepository.find({
+        where: {
+          groupId: groupId,
+          endedBy: IsNull(),
+        },
+        relations: ['student', 'group', 'group.lesson'],
+      });
+
+      if (picks.length === 0) {
         return [];
       }
 
-      // 2. 학생 ID 추출 및 현재 그룹 ID 추출
-      const studentIds = items.map((v) =>
-        this.extractStudentIdFromRangeKey(v.dailyStudentKey),
-      );
-      const groupId = Number(groupKey.split('#')[1]);
+      // 5. 완전한 출석 목록 생성 (기존 레코드 + 기본 레코드)
+      const completeAttendanceItems: IAttendance[] = picks.map((pick) => {
+        if (!pick.student) {
+          throw new BadRequestException(
+            `no student associated with group ${pick.group.id}`,
+          );
+        }
+        const dailyStudentKey = generateDailyStudentKey(
+          date,
+          pick.studentId,
+          pick.student.grade,
+          pick.student.class,
+          pick.student.studentCode,
+        );
 
-      // 3. 한 번의 쿼리로 모든 학생 정보 조회 (부모 정보 포함)
+        return (
+          itemMap.get(dailyStudentKey) ||
+          ({
+            groupId: pick.group.id,
+            start: pick.group.start,
+            end: pick.group.end,
+            groupKey: groupKey,
+            lessonId: pick.group.lessonId,
+            lessonName: pick.group.lesson.lessonName,
+            groupName: pick.group.groupName,
+            duration: getDuration(pick.group.start, pick.group.end),
+            studentId: pick.student.id,
+            studentName: pick.student.name,
+            dailyStudentKey: dailyStudentKey,
+            status: AttendanceStatus.INIT,
+          } as IAttendance)
+        );
+      });
+
+      // 6. 학생 ID 추출
+      const studentIds = completeAttendanceItems.map((item) => item.studentId!);
+
+      // 7. 한 번의 쿼리로 모든 학생 정보 조회 (부모 정보 포함)
       const students = await this.studentRepository.find({
         where: { id: In(studentIds) },
         relations: ['parent'],
@@ -693,21 +750,17 @@ export class GroupAttendanceService {
         }
       });
 
-      // 7. 출석 데이터와 확장 정보 결합 (No conversion needed!)
-      const attendancesWithNextInfo: IAttendanceWithNextInfo[] = items.map(
-        (item) => {
-          const studentId = this.extractStudentIdFromRangeKey(
-            item.dailyStudentKey,
-          );
+      // 11. 출석 데이터와 확장 정보 결합 (No conversion needed!)
+      const attendancesWithNextInfo: IAttendanceWithNextInfo[] =
+        completeAttendanceItems.map((item) => {
           return {
             ...item, // Already converted by Dynamoose!
-            student: studentMap.get(studentId),
-            isLast: studentIsLastMap.get(studentId) ?? false,
-            next: studentNextMap.get(studentId) ?? '이동장소 미지정',
-            departure: departureMap.get(studentId) ?? null,
+            student: studentMap.get(item.studentId!),
+            isLast: studentIsLastMap.get(item.studentId!) ?? false,
+            next: studentNextMap.get(item.studentId!) ?? '이동장소 미지정',
+            departure: departureMap.get(item.studentId!) ?? null,
           };
-        },
-      );
+        });
 
       return attendancesWithNextInfo;
     } catch (error) {
