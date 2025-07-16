@@ -148,6 +148,17 @@ export class UpdateGroupDto {
   note?: string;
 
   @ApiPropertyOptional({
+    description: '강사 ID - 시스템에 등록된 강사의 고유 식별자',
+    type: Number,
+    example: 1,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt({ message: '강사 ID는 정수여야 합니다' })
+  @Min(1, { message: '강사 ID는 1 이상이어야 합니다' })
+  instructorId?: number;
+
+  @ApiPropertyOptional({
     description: '강사명 - 담당 강사의 이름 (최대 16자, 한글/영문만 허용)',
     type: String,
     example: '이선생',

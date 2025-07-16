@@ -442,37 +442,101 @@ export class LessonCoreService {
     const groupsWithSamData: GroupSamData[] = [];
 
     for (const groupDto of dto.groups || []) {
-      const instructorPhone = normalizePhone(groupDto.instructorPhone);
-      const instructorKey = `${groupDto.instructorName}-${instructorPhone}`;
+      const instructorPhone = normalizePhone(groupDto.instructorPhone || '');
+      let instructorKey: string;
+      let instructor: any;
 
-      // 이미 처리한 쌤인지 확인
-      if (uniqueSams.has(instructorKey)) {
-        const samId = uniqueSams.get(instructorKey)!;
-        groupsWithSamData.push({
-          lessonId: lesson.id,
-          samId,
-          ...groupDto,
-        } as GroupSamData);
-        continue;
-      }
+      // 1. instructorId가 있으면 instructorId로 처리하고, 제공된 name/phone으로 업데이트
+      if (groupDto.instructorId) {
+        instructorKey = `id-${groupDto.instructorId}`;
 
-      // 1. Find or create Instructor
-      let instructor = await manager.getRepository('Instructor').findOne({
-        where: {
-          phone: instructorPhone,
-        },
-      });
-      if (!instructor) {
-        instructor = await manager.getRepository('Instructor').save({
-          name: groupDto.instructorName,
-          phone: groupDto.instructorPhone,
+        // 이미 처리한 강사인지 확인
+        if (uniqueSams.has(instructorKey)) {
+          const samId = uniqueSams.get(instructorKey)!;
+          groupsWithSamData.push({
+            lessonId: lesson.id,
+            samId,
+            ...groupDto,
+          } as GroupSamData);
+          continue;
+        }
+
+        // instructorId로 기존 instructor 찾기
+        instructor = await manager.getRepository('Instructor').findOne({
+          where: { id: groupDto.instructorId },
         });
+        if (!instructor) {
+          throw new NotFoundException(
+            `Instructor with ID ${groupDto.instructorId} not found`,
+          );
+        }
+
+        // 새로 제공된 name이나 phone이 있으면 업데이트
+        let needsUpdate = false;
+        if (
+          groupDto.instructorName &&
+          instructor.name !== groupDto.instructorName
+        ) {
+          instructor.name = groupDto.instructorName;
+          needsUpdate = true;
+        }
+        if (groupDto.instructorPhone && instructor.phone !== instructorPhone) {
+          instructor.phone = instructorPhone;
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          instructor = await manager
+            .getRepository('Instructor')
+            .save(instructor);
+        }
+      } else {
+        // 2. instructorId가 없으면 instructorPhone으로 처리
+        if (!groupDto.instructorName || !groupDto.instructorPhone) {
+          throw new Error(
+            'instructorName and instructorPhone are required when instructorId is not provided',
+          );
+        }
+
+        instructorKey = `${groupDto.instructorName}-${instructorPhone}`;
+
+        // 이미 처리한 강사인지 확인
+        if (uniqueSams.has(instructorKey)) {
+          const samId = uniqueSams.get(instructorKey)!;
+          groupsWithSamData.push({
+            lessonId: lesson.id,
+            samId,
+            ...groupDto,
+          } as GroupSamData);
+          continue;
+        }
+
+        // instructorPhone으로 기존 instructor 찾기 또는 생성
+        instructor = await manager.getRepository('Instructor').findOne({
+          where: { phone: instructorPhone },
+        });
+        if (!instructor) {
+          // 새 instructor 생성
+          instructor = await manager.getRepository('Instructor').save({
+            name: groupDto.instructorName,
+            phone: groupDto.instructorPhone,
+          });
+        } else {
+          // 기존 instructor가 있으면 이름을 업데이트
+          if (instructor.name !== groupDto.instructorName) {
+            instructor.name = groupDto.instructorName;
+            instructor = await manager
+              .getRepository('Instructor')
+              .save(instructor);
+          }
+        }
       }
+
       if (!instructor || !instructor.id) {
         throw new Error('Failed to find or create Instructor');
       }
 
-      // 2. Find or create Sam (by instructorId, schoolId)
+      // 3. Find or create Sam (by instructorId, schoolId)
       if (!dto.schoolId) {
         throw new Error('schoolId is required in DTO');
       }
@@ -483,8 +547,15 @@ export class LessonCoreService {
         sam = await manager.getRepository('Sam').save({
           instructorId: instructor.id,
           schoolId: dto.schoolId,
-          alias: groupDto.instructorName, // or set as needed
+          alias: groupDto.instructorName || instructor.name, // instructorName이 없으면 instructor.name 사용
         });
+      } else {
+        // 기존 sam이 있으면 alias를 업데이트 (instructorName이 제공된 경우)
+        const newAlias = groupDto.instructorName || instructor.name;
+        if (sam.alias !== newAlias) {
+          sam.alias = newAlias;
+          sam = await manager.getRepository('Sam').save(sam);
+        }
       }
       if (!sam || !sam.id) {
         throw new Error('Failed to find or create Sam');

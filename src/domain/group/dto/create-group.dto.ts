@@ -2,7 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEnum,
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
@@ -196,25 +195,39 @@ export class CreateGroupDto {
  * - 새로운 강사와 함께 반을 생성할 때 사용
  */
 export class CreateGroupWithInstructorDto extends CreateGroupDto {
+  @ApiPropertyOptional({
+    description:
+      '강사 ID - 기존 강사를 지정할 때 사용 (instructorName, instructorPhone이 함께 제공되면 해당 값들로 업데이트)',
+    type: Number,
+    example: 1,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt({ message: '강사 ID는 정수여야 합니다' })
+  @Min(1, { message: '강사 ID는 1 이상이어야 합니다' })
+  declare instructorId?: number;
+
   @ApiProperty({
-    description: '강사명 - 담당 강사의 이름 (필수, 최대 16자)',
+    description:
+      '강사명 - 담당 강사의 이름 (instructorId가 있으면 업데이트용, 없으면 새 강사 생성 시 필수, 최대 16자)',
     type: String,
     example: '김선생',
     maxLength: 16,
+    required: false,
   })
-  @IsNotEmpty({ message: '강사명은 필수입니다' })
   @IsString({ message: '강사명은 문자열이어야 합니다' })
   @MaxLength(16, { message: '강사명은 16자 이하여야 합니다' })
-  declare instructorName: string;
+  declare instructorName?: string;
 
   @ApiProperty({
-    description: '강사 전화번호 - 하이픈 없이 숫자만 입력 (필수, 10~11자리)',
+    description:
+      '강사 전화번호 - 하이픈 없이 숫자만 입력 (instructorId가 있으면 업데이트용, 없으면 새 강사 생성 시 필수, 10~11자리)',
     type: String,
     example: '01012345678',
+    required: false,
   })
-  @IsNotEmpty({ message: '강사 전화번호는 필수입니다' })
   @IsString({ message: '강사 전화번호는 문자열이어야 합니다' })
-  declare instructorPhone: string;
+  declare instructorPhone?: string;
 
   @ApiPropertyOptional({
     description: '반 ID - 기존 반을 수정할 때 사용하는 식별자',
