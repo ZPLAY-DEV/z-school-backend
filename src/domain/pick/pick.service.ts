@@ -16,6 +16,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { CreatePickDto, EndPickDto } from 'src/domain/pick/dto/create-pick.dto';
 import { UpdatePickDto } from 'src/domain/pick/dto/update-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { Repository } from 'typeorm';
 
@@ -28,6 +29,8 @@ export class PickService {
     private readonly pickRepository: Repository<Pick>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
@@ -67,6 +70,18 @@ export class PickService {
       }
       if (!sam.editPickPermission) {
         throw new ForbiddenException('You are not allowed to edit student');
+      }
+    }
+
+    // 모든 studentId 유효성 검증
+    const studentIds = [...new Set(dtos.map((dto) => dto.studentId))];
+    for (const studentId of studentIds) {
+      const student = await this.studentRepository.findOne({
+        where: { id: studentId },
+      });
+
+      if (!student) {
+        throw new NotFoundException(`Student with id ${studentId} not found`);
       }
     }
 
