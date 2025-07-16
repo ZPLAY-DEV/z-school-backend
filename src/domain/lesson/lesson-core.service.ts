@@ -184,9 +184,7 @@ export class LessonCoreService {
 
         // 5. 실제 DB 반영
         if (toDelete.length > 0) {
-          await manager
-            .getRepository('Schoolday')
-            .delete(toDelete.map((sd) => sd.id));
+          await manager.getRepository(Schoolday).remove(toDelete);
         }
         if (toInsert.length > 0) {
           await manager
@@ -401,9 +399,7 @@ export class LessonCoreService {
 
       // 5. 실제 DB 반영 (update는 불필요하므로 생략)
       if (toDelete.length > 0) {
-        await manager
-          .getRepository('Schoolday')
-          .delete(toDelete.map((sd) => sd.id));
+        await manager.getRepository(Schoolday).remove(toDelete);
       }
       if (toInsert.length > 0) {
         await manager
