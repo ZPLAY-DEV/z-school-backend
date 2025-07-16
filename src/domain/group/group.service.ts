@@ -32,7 +32,7 @@ import {
   parseTime,
   parseTimeFormat,
 } from 'src/helpers/parse';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
 
 @Injectable()
 export class GroupService {
@@ -215,6 +215,78 @@ export class GroupService {
       this.logger.error(error);
       throw new NotFoundException(error.message);
     }
+  }
+
+  async listCurrentStudents(id: number): Promise<Student[]> {
+    const picks = await this.pickRepository.find({
+      where: {
+        groupId: id,
+        endedBy: IsNull(),
+      },
+      relations: ['student'],
+    });
+    return picks.map((pick) => pick.student);
+  }
+
+  async listCanceledStudents(id: number): Promise<Student[]> {
+    const picks = await this.pickRepository.find({
+      where: {
+        groupId: id,
+        endedBy: Not(IsNull()),
+      },
+      relations: ['student'],
+    });
+    return picks.map((pick) => pick.student);
+  }
+
+  async listCurrentStudentsPaginated(
+    id: number,
+    query: PaginateQuery,
+  ): Promise<Paginated<Pick>> {
+    const queryBuilder = this.pickRepository
+      .createQueryBuilder('pick')
+      .where('pick.groupId = :groupId', { groupId: id })
+      .andWhere('pick.endedBy IS NULL');
+
+    return await paginate(query, queryBuilder, {
+      relations: {
+        student: {
+          parent: true,
+        },
+      },
+      sortableColumns: ['id', 'createdAt'],
+      searchableColumns: ['note'],
+      defaultSortBy: [['createdAt', 'ASC']],
+      filterableColumns: {
+        startedBy: [FilterOperator.EQ],
+        endedBy: [FilterOperator.EQ],
+      },
+    });
+  }
+
+  async listCanceledStudentsPaginated(
+    id: number,
+    query: PaginateQuery,
+  ): Promise<Paginated<Pick>> {
+    const queryBuilder = this.pickRepository
+      .createQueryBuilder('pick')
+      .where('pick.groupId = :groupId', { groupId: id })
+      .andWhere('pick.endedBy IS NOT NULL');
+
+    return await paginate(query, queryBuilder, {
+      relations: {
+        student: {
+          parent: true,
+        },
+      },
+      sortableColumns: ['id', 'createdAt', 'end'],
+      searchableColumns: ['note'],
+      defaultSortBy: [['end', 'DESC']],
+      filterableColumns: {
+        startedBy: [FilterOperator.EQ],
+        endedBy: [FilterOperator.EQ],
+      },
+    });
   }
 
   async listAvailableStudents(id: number): Promise<Student[]> {

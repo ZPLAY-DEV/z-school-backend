@@ -1,13 +1,18 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiExtraModels,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  getSchemaPath,
+    ApiBody,
+    ApiExtraModels,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
+import {
+    ApiOkPaginatedResponse,
+    ApiPaginationQuery,
+    FilterOperator,
+} from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { RemovalStatus } from 'src/common/enums';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
@@ -254,6 +259,176 @@ export const FindGroupDocs = () => {
       },
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? List Current Students
+//? ---------------------------------------------------------------------- ?//
+
+export const ListCurrentStudentsDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '👥 현재 수강생 목록 조회',
+      description: `
+### 📋 기능 개요
+- 특정 반(그룹)의 현재 수강중인 학생들의 목록을 조회합니다
+- 수강 종료되지 않은 활성 상태의 학생들만 반환합니다
+- 반 운영 현황 파악과 출석 관리에 활용됩니다
+
+### 🎯 조회 조건
+- **현재 수강생**: endedBy가 null인 학생들 (수강이 종료되지 않은 학생)
+- **활성 학생**: 학생 상태가 ACTIVE인 경우만 포함
+- **정렬**: 수강 시작일 순서 (createdAt ASC)
+
+### 📝 URL 파라미터
+- **id**: 대상 반의 고유 식별자 (숫자)
+
+### ✅ 성공 응답
+- **HTTP 200**: 조회 성공
+- **응답 데이터**: 현재 수강생 배열 (Student)
+
+### 📊 응답 예시
+\`\`\`json
+[
+  {
+    "id": 10,
+    "name": "김철수",
+    "grade": 2,
+    "schoolId": 1,
+    "parentId": 5,
+    "status": "ACTIVE",
+    "createdAt": "2025-01-15T09:00:00Z",
+    "updatedAt": "2025-01-15T09:00:00Z"
+  },
+  {
+    "id": 11,
+    "name": "박영희",
+    "grade": 3,
+    "schoolId": 1,
+    "parentId": 6,
+    "status": "ACTIVE",
+    "createdAt": "2025-01-15T09:00:00Z",
+    "updatedAt": "2025-01-15T09:00:00Z"
+  }
+]
+\`\`\`
+
+### ❌ 실패 케이스
+- **404 Not Found**: 존재하지 않는 반 ID
+- **400 Bad Request**: 잘못된 반 ID 형식 (숫자가 아님)
+
+### 💡 활용 예시
+- 반 출석부 생성
+- 수강생 현황 대시보드
+- 학부모 연락처 관리
+- 성적 관리 시스템
+- 반 정원 현황 확인
+
+### 🔄 관련 API
+- **페이지네이션 버전**: GET /groups/:id/current-students/paginated
+- **상세 정보 포함**: Pick 엔티티 기반 조회로 수강 기간 등 추가 정보 확인 가능
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '대상 반의 고유 식별자',
+      example: 1,
+    }),
+    ApiOkResponse({
+      description: '현재 수강생 목록 조회 성공',
+      type: [Student],
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? List Canceled Students
+//? ---------------------------------------------------------------------- ?//
+
+export const ListCanceledStudentsDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '👥 수강 취소/종료된 학생 목록 조회',
+      description: `
+### 📋 기능 개요
+- 특정 반(그룹)에서 수강을 취소하거나 종료한 학생들의 목록을 조회합니다
+- 과거 수강 이력 관리와 재수강 대상자 파악에 활용됩니다
+- 수강 종료 사유 분석과 학원 운영 개선에 도움이 됩니다
+
+### 🎯 조회 조건
+- **종료된 수강생**: endedBy가 null이 아닌 학생들 (수강이 종료된 학생)
+- **모든 상태**: 학생의 현재 상태와 무관하게 수강 종료 이력만 확인
+- **정렬**: 수강 종료일 역순 (최근 종료된 학생부터)
+
+### 📝 URL 파라미터
+- **id**: 대상 반의 고유 식별자 (숫자)
+
+### ✅ 성공 응답
+- **HTTP 200**: 조회 성공
+- **응답 데이터**: 수강 취소/종료된 학생 배열 (Student)
+
+### 📊 응답 예시
+\`\`\`json
+[
+  {
+    "id": 15,
+    "name": "이민수",
+    "grade": 1,
+    "schoolId": 1,
+    "parentId": 8,
+    "status": "ACTIVE",
+    "createdAt": "2025-01-10T09:00:00Z",
+    "updatedAt": "2025-01-20T14:30:00Z"
+  },
+  {
+    "id": 16,
+    "name": "최지은",
+    "grade": 2,
+    "schoolId": 1,
+    "parentId": 9,
+    "status": "WITHDRAWN",
+    "createdAt": "2025-01-08T09:00:00Z",
+    "updatedAt": "2025-01-18T11:20:00Z"
+  }
+]
+\`\`\`
+
+### ❌ 실패 케이스
+- **404 Not Found**: 존재하지 않는 반 ID
+- **400 Bad Request**: 잘못된 반 ID 형식 (숫자가 아님)
+
+### 💡 활용 예시
+- 수강 취소 이력 분석
+- 재수강 대상자 관리
+- 학부모 상담 자료 준비
+- 반 운영 개선 방안 도출
+- 환불 처리 이력 확인
+
+### 🔄 관련 API
+- **페이지네이션 버전**: GET /groups/:id/canceled-students/paginated
+- **상세 정보 포함**: Pick 엔티티 기반 조회로 종료 사유, 종료일 등 추가 정보 확인 가능
+
+### 📈 분석 가능한 정보
+- 수강 취소 패턴 분석
+- 학년별 중도 탈락률
+- 시기별 취소 동향
+- 재수강률 추적
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '대상 반의 고유 식별자',
+      example: 1,
+    }),
+    ApiOkResponse({
+      description: '수강 취소/종료된 학생 목록 조회 성공',
+      type: [Student],
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };
 
@@ -832,3 +1007,130 @@ export const DeleteGroupDocs = () => {
     ),
   );
 };
+
+//? ---------------------------------------------------------------------- ?//
+//? List Current Students Paginated
+//? ---------------------------------------------------------------------- ?//
+
+export const ListCurrentStudentsPaginatedDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '👥📄 현재 수강생 목록 페이지네이션 조회',
+      description: `
+### 📋 기능 개요
+- 특정 반(그룹)의 현재 수강중인 학생들을 페이지네이션으로 조회합니다
+- Pick 엔티티를 통해 학생 정보와 수강 상세 정보를 함께 제공합니다
+- 검색, 정렬, 필터링 기능을 지원합니다
+
+### 🎯 비즈니스 규칙
+- **현재 수강생**: endedBy가 null인 학생들 (수강 종료되지 않은 학생)
+- **관계 포함**: 학생 정보 + 학부모 정보 포함
+- **정렬 기본값**: 수강 시작일 순 (createdAt ASC)
+
+### 🔍 검색 & 필터링
+- **검색**: note 필드에서 키워드 검색
+- **정렬**: id, createdAt 기준 정렬 가능
+- **필터**: startedBy, endedBy 액터별 필터링
+
+### 📊 응답 데이터 구조
+- Pick 정보 (수강 기간, 비용, 등록자 등)
+- Student 정보 (학생 기본 정보)
+- Parent 정보 (학부모 연락처 등)
+      `,
+    }),
+    ApiPaginationQuery({
+      sortableColumns: ['id', 'createdAt'],
+      searchableColumns: ['note'],
+      defaultSortBy: [['createdAt', 'ASC']],
+      filterableColumns: {
+        startedBy: [FilterOperator.EQ],
+        endedBy: [FilterOperator.EQ],
+      },
+      relations: {
+        student: {
+          parent: true,
+        },
+      },
+    }),
+    ApiOkPaginatedResponse(Pick, {
+      sortableColumns: ['id', 'createdAt'],
+      searchableColumns: ['note'],
+      defaultSortBy: [['createdAt', 'ASC']],
+      filterableColumns: {
+        startedBy: [FilterOperator.EQ],
+        endedBy: [FilterOperator.EQ],
+      },
+      relations: {
+        student: {
+          parent: true,
+        },
+      },
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? List Canceled Students Paginated
+//? ---------------------------------------------------------------------- ?//
+
+export const ListCanceledStudentsPaginatedDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '👥📄 수강 취소/종료된 학생 목록 페이지네이션 조회',
+      description: `
+### 📋 기능 개요
+- 특정 반(그룹)에서 수강을 취소하거나 종료한 학생들을 페이지네이션으로 조회합니다
+- Pick 엔티티를 통해 학생 정보와 수강 상세 정보를 함께 제공합니다
+- 수강 종료 사유 및 처리자 정보 확인 가능
+
+### 🎯 비즈니스 규칙
+- **취소/종료된 학생**: endedBy가 null이 아닌 학생들 (수강이 종료된 학생)
+- **관계 포함**: 학생 정보 + 학부모 정보 포함
+- **정렬 기본값**: 수강 종료일 역순 (end DESC)
+
+### 🔍 검색 & 필터링
+- **검색**: note 필드에서 키워드 검색 (종료 사유 등)
+- **정렬**: id, createdAt, end 기준 정렬 가능
+- **필터**: startedBy, endedBy 액터별 필터링
+
+### 📊 응답 데이터 구조
+- Pick 정보 (수강 기간, 종료일, 종료자 등)
+- Student 정보 (학생 기본 정보)
+- Parent 정보 (학부모 연락처 등)
+
+### 📚 활용 시나리오
+- 수강 취소 이력 관리
+- 재수강 대상자 파악
+- 수강 종료 사유 분석
+      `,
+    }),
+    ApiPaginationQuery({
+      sortableColumns: ['id', 'createdAt', 'end'],
+      searchableColumns: ['note'],
+      defaultSortBy: [['end', 'DESC']],
+      filterableColumns: {
+        startedBy: [FilterOperator.EQ],
+        endedBy: [FilterOperator.EQ],
+      },
+      relations: {
+        student: {
+          parent: true,
+        },
+      },
+    }),
+    ApiOkPaginatedResponse(Pick, {
+      sortableColumns: ['id', 'createdAt', 'end'],
+      searchableColumns: ['note'],
+      defaultSortBy: [['end', 'DESC']],
+      filterableColumns: {
+        startedBy: [FilterOperator.EQ],
+        endedBy: [FilterOperator.EQ],
+      },
+      relations: {
+        student: {
+          parent: true,
+        },
+      },
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );

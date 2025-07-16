@@ -12,6 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor, RemovalStatus } from 'src/common/enums';
 import { BookedStudentDto } from 'src/domain/group/dto/booked-student.dto';
@@ -26,9 +27,14 @@ import {
   FindGroupDocs,
   ListAvailableStudentsDocs,
   ListBookedPendingStudentsDocs,
+  ListCanceledStudentsDocs,
+  ListCanceledStudentsPaginatedDocs,
+  ListCurrentStudentsDocs,
+  ListCurrentStudentsPaginatedDocs,
   RestoreGroupDocs,
   UpdateGroupDocs,
 } from 'src/domain/group/swagger/group-swagger.decorator';
+import { Pick as PickEntity } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 
 @ApiTags('✳️ Groups ( 반 )')
@@ -62,6 +68,40 @@ export class GroupController {
       'contracts.sam',
       'contracts.sam.instructor',
     ]);
+  }
+
+  @ListCurrentStudentsDocs()
+  @Get(':id/current-students')
+  async listCurrentStudents(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Student[]> {
+    return await this.groupService.listCurrentStudents(id);
+  }
+
+  @ListCanceledStudentsDocs()
+  @Get(':id/canceled-students')
+  async listCanceledStudents(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Student[]> {
+    return await this.groupService.listCanceledStudents(id);
+  }
+
+  @ListCurrentStudentsPaginatedDocs()
+  @Get(':id/current-students/paginated')
+  async listCurrentStudentsPaginated(
+    @Param('id', ParseIntPipe) id: number,
+    @Paginate() query: PaginateQuery,
+  ): Promise<Paginated<PickEntity>> {
+    return await this.groupService.listCurrentStudentsPaginated(id, query);
+  }
+
+  @ListCanceledStudentsPaginatedDocs()
+  @Get(':id/canceled-students/paginated')
+  async listCanceledStudentsPaginated(
+    @Param('id', ParseIntPipe) id: number,
+    @Paginate() query: PaginateQuery,
+  ): Promise<Paginated<PickEntity>> {
+    return await this.groupService.listCanceledStudentsPaginated(id, query);
   }
 
   @ListAvailableStudentsDocs()
