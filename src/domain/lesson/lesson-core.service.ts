@@ -95,14 +95,41 @@ export class LessonCoreService {
       }
 
       //? 4단계) 새로운 강좌 생성
-      const lesson = await manager.save(Lesson, {
-        ...dto,
-        start: dto.start ?? term.start,
-        end: dto.end ?? term.end,
-        schoolName: school.name,
-        frequency: dto.frequency ?? 1,
-        operationFeeRule: school.operationFeeRule,
-      });
+      const lesson = await manager
+        .save(Lesson, {
+          ...dto,
+          start: dto.start ?? term.start,
+          end: dto.end ?? term.end,
+          schoolName: school.name,
+          frequency: dto.frequency ?? 1,
+          operationFeeRule: school.operationFeeRule,
+        })
+        .catch((error) => {
+          console.log(`🔴 허용하지 않는 입력 조합 오류`, error);
+
+          // MySQL Duplicate entry 에러 처리
+          if (error.code === 'ER_DUP_ENTRY') {
+            // "Duplicate entry '1-2-축구' for key 'lessons.IDX_049a11a698520a6fe613e79468'" 에서 값 추출
+            const duplicateMatch = error.sqlMessage.match(
+              /Duplicate entry '([^']+)'/,
+            );
+            if (duplicateMatch) {
+              const duplicateValue = duplicateMatch[1];
+              const parts = duplicateValue.split('-');
+              if (parts.length === 3) {
+                const [schoolId, termId, lessonName] = parts;
+                throw new UnprocessableEntityException(
+                  `강좌명 '${lessonName}'은(는) 이미 해당 학교/학기에 존재합니다. (schoolId: ${schoolId}, termId: ${termId})`,
+                );
+              }
+            }
+            throw new UnprocessableEntityException(
+              '동일한 강좌명이 이미 존재합니다.',
+            );
+          }
+
+          throw new UnprocessableEntityException('Invalid constraint');
+        });
 
       //? 5단계) 반(Group)과 쌤(Sam) 정보 처리
       if (dto.groups?.length) {
@@ -296,6 +323,28 @@ export class LessonCoreService {
       .save(Lesson, updateData)
       .catch((error) => {
         console.log(`🔴 허용하지 않는 입력 조합 오류`, error);
+
+        // MySQL Duplicate entry 에러 처리
+        if (error.code === 'ER_DUP_ENTRY') {
+          // "Duplicate entry '1-2-축구' for key 'lessons.IDX_049a11a698520a6fe613e79468'" 에서 값 추출
+          const duplicateMatch = error.sqlMessage.match(
+            /Duplicate entry '([^']+)'/,
+          );
+          if (duplicateMatch) {
+            const duplicateValue = duplicateMatch[1];
+            const parts = duplicateValue.split('-');
+            if (parts.length === 3) {
+              const [schoolId, termId, lessonName] = parts;
+              throw new UnprocessableEntityException(
+                `lesson name already exits. (schoolId: ${schoolId}, termId: ${termId}, lessonName: ${lessonName})`,
+              );
+            }
+          }
+          throw new UnprocessableEntityException(
+            '동일한 강좌명이 이미 존재합니다.',
+          );
+        }
+
         throw new UnprocessableEntityException('Invalid constraint');
       });
 

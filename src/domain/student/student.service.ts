@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { format } from 'date-fns-tz';
 import {
   FilterOperator,
   paginate,
@@ -23,6 +24,7 @@ import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
 import { normalizePhone } from 'src/helpers/phone';
 
 @Injectable()
@@ -38,9 +40,45 @@ export class StudentService {
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
+    @InjectRepository(Term)
+    private readonly termRepository: Repository<Term>,
     private readonly s3Service: S3Service,
     private readonly dataSource: DataSource,
   ) {}
+
+  //? ---------------------------------------------------------------------- ?//
+  //? READ
+  //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * 학생이 속한 학교의 term 중에서 status에 따라 term 반환
+   * @param filter - 없으면 upcoming만, 'ongoing'이면 upcoming + ongoing 모두 반환
+   */
+  async getStudentTerms(id: number, filter?: string): Promise<Term[]> {
+    const today = format(new Date(), 'yyyy-MM-dd', { timeZone: 'Asia/Seoul' });
+
+    const student = await this.studentRepository.findOneOrFail({
+      where: { id },
+      relations: ['parent'],
+    });
+
+    const queryBuilder = this.termRepository
+      .createQueryBuilder('term')
+      .where('term.schoolId = :schoolId', { schoolId: student.schoolId });
+
+    if (filter === 'ongoing') {
+      // upcoming + ongoing: 시작 전이거나 진행 중인 term들
+      queryBuilder.andWhere(
+        '(term.start > :today) OR (term.start <= :today AND term.end >= :today)',
+        { today },
+      );
+    } else {
+      // 기본값: upcoming만 (시작 전인 term들만)
+      queryBuilder.andWhere('term.start > :today', { today });
+    }
+
+    return await queryBuilder.orderBy('term.start', 'ASC').getMany();
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? CREATE

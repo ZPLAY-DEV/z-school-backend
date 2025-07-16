@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
+import { Public } from 'src/common/decorators/public.decorator';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
@@ -35,6 +36,7 @@ import {
   RemoveStudentDocs,
   UpdateStudentDocs,
 } from 'src/domain/student/swagger/student-swagger.decorator';
+import { Term } from 'src/domain/term/entities/term.entity';
 import { UploadService } from 'src/services/upload/upload.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 
@@ -67,6 +69,15 @@ export class StudentController {
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
+
+  @Public()
+  @Get(':id/terms')
+  async getStudentTerms(
+    @Param('id') id: number,
+    @Query('filter') filter?: string,
+  ): Promise<Term[]> {
+    return await this.studentService.getStudentTerms(id, filter);
+  }
 
   @FindStudentsPaginatedDocs()
   @Get('paginated')
