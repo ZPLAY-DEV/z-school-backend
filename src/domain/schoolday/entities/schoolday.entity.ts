@@ -24,7 +24,7 @@ import {
   'startsAt',
   'endsAt',
 ])
-@Index('idx_school_term_today', ['schoolId', 'termId', 'today'])
+@Index('idx_group_id_today', ['groupId', 'today'])
 @Unique([
   'schoolId',
   'termId',

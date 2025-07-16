@@ -32,7 +32,7 @@ import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { getDuration } from 'src/helpers/time';
 import { NotificationService } from 'src/services/notification/notification.service';
-import { In, IsNull, Raw, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 
 @Injectable()
 export class GroupAttendanceService {
@@ -452,10 +452,8 @@ export class GroupAttendanceService {
       // date 을 가지고 해당 날짜의 수업이 있는지 확인
       const schoolday = await this.schooldayRepository.findOne({
         where: {
-          startsAt: Raw(
-            (alias) => `DATE(CONVERT_TZ(${alias}, '+00:00', '+09:00')) = :date`,
-            { date },
-          ),
+          today: date,
+          groupId: getGroupIdFromGroupKey(groupKey),
         },
       });
       if (!schoolday) {
