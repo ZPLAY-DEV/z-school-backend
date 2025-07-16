@@ -450,13 +450,13 @@ export class GroupAttendanceService {
   ): Promise<IAttendance[]> {
     try {
       // date 을 가지고 해당 날짜의 수업이 있는지 확인
-      const schoolday = await this.schooldayRepository.findOne({
+      const schooldays = await this.schooldayRepository.find({
         where: {
-          today: date,
           groupId: getGroupIdFromGroupKey(groupKey),
+          today: date,
         },
       });
-      if (!schoolday) {
+      if (!schooldays || schooldays.length === 0) {
         return [];
       }
 
