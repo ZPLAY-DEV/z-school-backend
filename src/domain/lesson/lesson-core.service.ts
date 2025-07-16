@@ -95,41 +95,42 @@ export class LessonCoreService {
       }
 
       //? 4단계) 새로운 강좌 생성
-      const lesson = await manager
-        .save(Lesson, {
-          ...dto,
-          start: dto.start ?? term.start,
-          end: dto.end ?? term.end,
-          schoolName: school.name,
-          frequency: dto.frequency ?? 1,
-          operationFeeRule: school.operationFeeRule,
-        })
-        .catch((error) => {
-          console.log(`🔴 허용하지 않는 입력 조합 오류`, error);
+      const createData = {
+        ...dto,
+        start: dto.start ?? term.start,
+        end: dto.end ?? term.end,
+        schoolName: school.name,
+        frequency: dto.frequency ?? 1,
+        operationFeeRule: school.operationFeeRule,
+      };
+      const lesson = await manager.save(Lesson, createData).catch((error) => {
+        console.log(
+          `🔴 create 허용하지 않는 입력 조합 오류`,
+          JSON.stringify(createData, null, 2),
+          error,
+        );
 
-          // MySQL Duplicate entry 에러 처리
-          if (error.code === 'ER_DUP_ENTRY') {
-            // "Duplicate entry '1-2-축구' for key 'lessons.IDX_049a11a698520a6fe613e79468'" 에서 값 추출
-            const duplicateMatch = error.sqlMessage.match(
-              /Duplicate entry '([^']+)'/,
-            );
-            if (duplicateMatch) {
-              const duplicateValue = duplicateMatch[1];
-              const parts = duplicateValue.split('-');
-              if (parts.length === 3) {
-                const [schoolId, termId, lessonName] = parts;
-                throw new UnprocessableEntityException(
-                  `강좌명 '${lessonName}'은(는) 이미 해당 학교/학기에 존재합니다. (schoolId: ${schoolId}, termId: ${termId})`,
-                );
-              }
+        // MySQL Duplicate entry 에러 처리
+        if (error.code === 'ER_DUP_ENTRY') {
+          // "Duplicate entry '1-2-축구' for key 'lessons.IDX_049a11a698520a6fe613e79468'" 에서 값 추출
+          const duplicateMatch = error.sqlMessage.match(
+            /Duplicate entry '([^']+)'/,
+          );
+          if (duplicateMatch) {
+            const duplicateValue = duplicateMatch[1];
+            const parts = duplicateValue.split('-');
+            if (parts.length === 3) {
+              const [schoolId, termId, lessonName] = parts;
+              throw new UnprocessableEntityException(
+                `Duplicate lesson name exits. (schoolId: ${schoolId}, termId: ${termId}, lessonName: ${lessonName})`,
+              );
             }
-            throw new UnprocessableEntityException(
-              '동일한 강좌명이 이미 존재합니다.',
-            );
           }
+          throw new UnprocessableEntityException('Duplicate entry exists.');
+        }
 
-          throw new UnprocessableEntityException('Invalid constraint');
-        });
+        throw new UnprocessableEntityException('Invalid constraint');
+      });
 
       //? 5단계) 반(Group)과 쌤(Sam) 정보 처리
       if (dto.groups?.length) {
@@ -374,9 +375,7 @@ export class LessonCoreService {
     //? 0단계) 업데이트할 강좌 찾기
     const existingLesson = await manager.findOne(Lesson, {
       where: { id },
-      relations: {
-        groups: true,
-      },
+      relations: { groups: true },
     });
     if (!existingLesson) {
       throw new NotFoundException('Lesson not found');
@@ -425,11 +424,12 @@ export class LessonCoreService {
           : { ...groupDto, lessonId: existingLesson.id };
       });
 
-      // 매핑되지 않은 기존 그룹을 찾아서 삭제
+      // 업데이트 요청에 포함된 반ID 목록
       const newGroupIds = dto.groups
         .filter((g) => g.id !== undefined)
         .map((g) => g.id);
 
+      // 강좌의 모든 반 중에서 newGroupIds 에 미포함된 반ID 목록
       const groupsToDelete = existingLesson.groups.filter(
         (group) => !newGroupIds.includes(group.id),
       );
@@ -460,7 +460,11 @@ export class LessonCoreService {
     const updatedLesson = await manager
       .save(Lesson, updateData)
       .catch((error) => {
-        console.log(`🔴 허용하지 않는 입력 조합 오류`, error);
+        console.log(
+          `🔴 update 허용하지 않는 입력 조합 오류`,
+          JSON.stringify(updateData, null, 2),
+          error,
+        );
 
         // MySQL Duplicate entry 에러 처리
         if (error.code === 'ER_DUP_ENTRY') {
@@ -474,13 +478,11 @@ export class LessonCoreService {
             if (parts.length === 3) {
               const [schoolId, termId, lessonName] = parts;
               throw new UnprocessableEntityException(
-                `lesson name already exits. (schoolId: ${schoolId}, termId: ${termId}, lessonName: ${lessonName})`,
+                `duplicate lesson name exits. (schoolId: ${schoolId}, termId: ${termId}, lessonName: ${lessonName})`,
               );
             }
           }
-          throw new UnprocessableEntityException(
-            '동일한 강좌명이 이미 존재합니다.',
-          );
+          throw new UnprocessableEntityException('Duplicate entry exists.');
         }
 
         throw new UnprocessableEntityException('Invalid constraint');
