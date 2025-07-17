@@ -54,6 +54,9 @@ export class OfferingController {
     const offering = await this.offeringService.findById(id, [
       'lesson',
       'lesson.groups',
+      'lesson.groups.contracts',
+      'lesson.groups.contracts.sam',
+      'lesson.groups.contracts.sam.instructor',
       'bookings',
       'bookings.student',
     ]);
