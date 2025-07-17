@@ -12,8 +12,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
-  Unique,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from 'typeorm';
 
 @Entity('schooldays')
@@ -25,7 +24,7 @@ import {
   'endsAt',
 ])
 @Index('idx_group_id_today', ['groupId', 'today'])
-@Unique(['schoolId', 'termId', 'lessonId', 'groupId'])
+// @Unique(['schoolId', 'termId', 'lessonId', 'groupId'])
 export class Schoolday {
   @ApiProperty({ description: 'schooldayId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
