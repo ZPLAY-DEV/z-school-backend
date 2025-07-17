@@ -74,7 +74,6 @@ export class SchoolTermOfferingController {
     return await this.schoolTermOfferingService.list(schoolId, termId, grade);
   }
 
-  @SchoolTermOfferingListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/offerings/simple')
   async getSimpleList(
@@ -82,7 +81,11 @@ export class SchoolTermOfferingController {
     @Param('termId', ParseIntPipe) termId: number,
     @Query('grade') grade: string | null = null,
   ): Promise<Offering[]> {
-    return await this.schoolTermOfferingService.list(schoolId, termId, grade);
+    return await this.schoolTermOfferingService.simpleList(
+      schoolId,
+      termId,
+      grade,
+    );
   }
 
   //? ---------------------------------------------------------------------- ?//

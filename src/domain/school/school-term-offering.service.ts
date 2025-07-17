@@ -182,6 +182,47 @@ export class SchoolTermOfferingService {
     });
   }
 
+  async simpleList(
+    schoolId: number,
+    termId: number,
+    grade: string | null = null,
+  ): Promise<(Offering & { totals: number[] })[]> {
+    const items = await this.offeringRepository
+      .createQueryBuilder('offering')
+      .leftJoinAndSelect('offering.lesson', 'lesson')
+      .leftJoinAndSelect('lesson.groups', 'groups')
+      .where('offering.schoolId = :schoolId', { schoolId })
+      .andWhere('offering.termId = :termId', { termId })
+      .orderBy('offering.id', 'DESC')
+      .getMany();
+
+    if (grade) {
+      return items
+        .filter((item: Offering) => item.allowedGrades.includes(+grade))
+        .map((v) => {
+          const { lesson, ...offeringWithoutLesson } = v;
+          const totals = lesson.groups.map(
+            (g) => g.tuition + g.bookFee + g.materialFee,
+          );
+          return {
+            ...offeringWithoutLesson,
+            totals,
+          } as Offering & { totals: number[] };
+        });
+    }
+
+    return items.map((v) => {
+      const { lesson, ...offeringWithoutLesson } = v;
+      const totals = lesson.groups.map(
+        (g) => g.tuition + g.bookFee + g.materialFee,
+      );
+      return {
+        ...offeringWithoutLesson,
+        totals,
+      } as Offering & { totals: number[] };
+    });
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
