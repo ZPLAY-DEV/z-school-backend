@@ -100,11 +100,16 @@ export class AuthService {
       relations: ['parent', 'parent.user'],
     });
 
-    if (!shortlink.parent?.user) {
-      throw new NotFoundException('User not found');
-    }
+    const user: User =
+      shortlink.parent?.user ||
+      ({
+        username: 'unknown',
+        phone: shortlink.parent?.phone,
+        email: null,
+        avatar: 'https://placehold.co/100x100',
+      } as User);
 
-    return { ...shortlink.parent.user, parent: shortlink.parent };
+    return { ...user, parent: shortlink.parent };
   }
 
   /**

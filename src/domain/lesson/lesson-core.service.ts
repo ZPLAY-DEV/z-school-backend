@@ -265,8 +265,11 @@ export class LessonCoreService {
               `🗑️ [create] Deleting ${toDelete.length} schooldays for group ${group.id}`,
             );
             try {
-              // 하드 삭제로 변경 (cascade 문제 방지)
-              await manager.getRepository(Schoolday).remove(toDelete);
+              // 하드 삭제로 변경 (cascade 문제 방지) - ID 기반 삭제로 안전하게 처리
+              // await manager.getRepository(Schoolday).remove(toDelete);
+              await manager
+                .getRepository(Schoolday)
+                .delete(toDelete.map((sd) => sd.id));
               this.logger.log(
                 `✅ [create] Successfully deleted ${toDelete.length} schooldays for group ${group.id}`,
               );
@@ -304,9 +307,6 @@ export class LessonCoreService {
                   'termId',
                   'lessonId',
                   'groupId',
-                  'name',
-                  'startsAt',
-                  'endsAt',
                 ]);
               this.logger.log(
                 `✅ [create] Successfully inserted ${toInsert.length} schooldays for group ${group.id}`,
@@ -619,8 +619,11 @@ export class LessonCoreService {
             `🗑️ [update] Deleting ${toDelete.length} schooldays for group ${group.id}`,
           );
           try {
-            // 하드 삭제로 변경 (cascade 문제 방지)
-            await manager.getRepository(Schoolday).remove(toDelete);
+            // 하드 삭제로 변경 (cascade 문제 방지) - ID 기반 삭제로 안전하게 처리
+            // await manager.getRepository(Schoolday).remove(toDelete);
+            await manager
+              .getRepository(Schoolday)
+              .delete(toDelete.map((sd) => sd.id));
             this.logger.log(
               `✅ [update] Successfully deleted ${toDelete.length} schooldays for group ${group.id}`,
             );
@@ -653,15 +656,7 @@ export class LessonCoreService {
 
             await manager
               .getRepository(Schoolday)
-              .upsert(toInsert, [
-                'schoolId',
-                'termId',
-                'lessonId',
-                'groupId',
-                'name',
-                'startsAt',
-                'endsAt',
-              ]);
+              .upsert(toInsert, ['schoolId', 'termId', 'lessonId', 'groupId']);
             this.logger.log(
               `✅ [update] Successfully inserted ${toInsert.length} schooldays for group ${group.id}`,
             );
@@ -854,7 +849,7 @@ export class LessonCoreService {
       ).join(',');
 
       const upsertData: DeepPartial<Group> = {
-        lessonId: groupData.lessonId,
+        lessonId: lesson.id,
         groupName: groupData.groupName,
         samId: groupData.samId,
         samName: groupData.instructorName, //! sam 의 name 추가

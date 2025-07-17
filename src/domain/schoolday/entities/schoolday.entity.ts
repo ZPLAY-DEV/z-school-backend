@@ -25,15 +25,7 @@ import {
   'endsAt',
 ])
 @Index('idx_group_id_today', ['groupId', 'today'])
-@Unique([
-  'schoolId',
-  'termId',
-  'lessonId',
-  'groupId',
-  'name',
-  'startsAt',
-  'endsAt',
-])
+@Unique(['schoolId', 'termId', 'lessonId', 'groupId'])
 export class Schoolday {
   @ApiProperty({ description: 'schooldayId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
