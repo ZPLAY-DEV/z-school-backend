@@ -466,13 +466,13 @@ export class AuthService {
         userId: user.id,
         phone: dto.phone,
       });
-      await this.instructorRepository.save(instructor);
+      await this.instructorRepository.upsert(instructor, ['phone']);
     } else if (dto.role === Role.PARENT) {
       const parent = new Parent({
         userId: user.id,
         phone: dto.phone,
       });
-      await this.parentRepository.save(parent);
+      await this.parentRepository.upsert(parent, ['phone']);
     } else {
       throw new BadRequestException('Invalid role');
     }
