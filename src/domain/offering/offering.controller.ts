@@ -51,10 +51,23 @@ export class OfferingController {
   async getOfferingById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Offering> {
-    return await this.offeringService.findById(id, [
+    const offering = await this.offeringService.findById(id, [
+      'lesson',
+      'lesson.groups',
       'bookings',
       'bookings.student',
     ]);
+
+    const { lesson, ...offeringWithoutLesson } = offering;
+    const selectedGroups = lesson.groups.filter((g) =>
+      offering.groupIds.includes(g.id),
+    );
+
+    return {
+      ...offeringWithoutLesson,
+      lesson: { ...lesson, groups: selectedGroups },
+      convertSimpleArraysToNumbers: () => {},
+    } as Offering;
   }
 
   @GetFormerStudentsDocs()
