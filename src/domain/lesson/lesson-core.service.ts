@@ -71,13 +71,12 @@ export class LessonCoreService {
 
       const termStartDate = term.start.toString().split('T')[0];
       const termEndDate = term.end.toString().split('T')[0];
-
       if (
         (dto.start && dto.start < termStartDate) ||
         (dto.end && dto.end > termEndDate)
       ) {
         throw new BadRequestException(
-          'Lesson period out of range based on the term',
+          `Lesson period is outside the term's range`,
         );
       }
 
@@ -205,11 +204,29 @@ export class LessonCoreService {
           this.logger.log(
             `🆕 [create] Generating new schooldays for lesson ${savedLesson.lessonName}, group ${group.groupName}`,
           );
+          console.log(`🔍 [DEBUG] Group data before generateSchooldays:`, {
+            groupId: group.id,
+            groupName: group.groupName,
+            lessonId: group.lessonId,
+          });
           const newSchooldays: Schoolday[] = generateSchooldays(
             savedLesson,
             group,
             offdays,
           );
+          console.log(
+            `🔍 [DEBUG] Generated schooldays count:`,
+            newSchooldays.length,
+          );
+          if (newSchooldays.length > 0) {
+            console.log(`🔍 [DEBUG] First generated schoolday:`, {
+              schoolId: newSchooldays[0].schoolId,
+              termId: newSchooldays[0].termId,
+              lessonId: newSchooldays[0].lessonId,
+              groupId: newSchooldays[0].groupId,
+              name: newSchooldays[0].name,
+            });
+          }
 
           if (!newSchooldays || newSchooldays.length === 0) {
             this.logger.warn(
@@ -255,6 +272,17 @@ export class LessonCoreService {
             .filter(([key]) => !newMap.has(key))
             .map(([, sd]) => sd);
 
+          console.log(
+            `🔍 [DEBUG] toInsert array for group ${group.id}:`,
+            toInsert.map((sd) => ({
+              schoolId: sd.schoolId,
+              termId: sd.termId,
+              lessonId: sd.lessonId,
+              groupId: sd.groupId,
+              name: sd.name,
+            })),
+          );
+
           this.logger.log(
             `📊 [create] Group ${group.id}: ${toInsert.length} to insert, ${toDelete.length} to delete`,
           );
@@ -299,6 +327,17 @@ export class LessonCoreService {
                   schoolday.groupId = group.id; // 강제 수정
                 }
               }
+
+              console.log(
+                `🔍 [DEBUG] toInsert array after validation for group ${group.id}:`,
+                toInsert.map((sd) => ({
+                  schoolId: sd.schoolId,
+                  termId: sd.termId,
+                  lessonId: sd.lessonId,
+                  groupId: sd.groupId,
+                  name: sd.name,
+                })),
+              );
 
               await manager
                 .getRepository(Schoolday)
@@ -363,6 +402,7 @@ export class LessonCoreService {
     dto: UpdateLessonDto,
     manager?: EntityManager,
   ): Promise<Lesson> {
+    console.log(`🥵 dto`, dto);
     // manager가 제공되지 않은 경우(직접 호출) 새로운 트랜잭션 시작
     if (!manager) {
       return this.dataSource.transaction(
@@ -375,7 +415,7 @@ export class LessonCoreService {
     //? 0단계) 업데이트할 강좌 찾기
     const existingLesson = await manager.findOne(Lesson, {
       where: { id },
-      relations: { groups: true },
+      relations: { groups: true, term: true },
     });
     if (!existingLesson) {
       throw new NotFoundException('Lesson not found');
@@ -383,7 +423,7 @@ export class LessonCoreService {
 
     //? 1단계) 학교 정보 확인
     const school = await manager.findOne(School, {
-      where: { id: dto.schoolId },
+      where: { id: dto.schoolId || existingLesson.schoolId },
     });
     if (!school) {
       throw new NotFoundException('School not found');
@@ -391,10 +431,22 @@ export class LessonCoreService {
 
     //? 2단계) 학기 정보 확인
     const term = await manager.findOne(Term, {
-      where: { id: dto.termId },
+      where: { id: dto.termId || existingLesson.termId },
     });
     if (!term) {
       throw new NotFoundException('Term not found');
+    }
+
+    const termStartDate = term.start.toString().split('T')[0];
+    const termEndDate = term.end.toString().split('T')[0];
+    if (
+      (dto.start && dto.start < termStartDate) ||
+      (dto.end && dto.end > termEndDate)
+    ) {
+      console.log(`🥵`, termStartDate, termEndDate, dto.start, dto.end);
+      throw new BadRequestException(
+        `Lesson period is outside the term's range`,
+      );
     }
 
     //? 3단계) 기존 반(group)정보 매핑
@@ -559,11 +611,29 @@ export class LessonCoreService {
         this.logger.log(
           `🆕 [update] Generating new schooldays for lesson ${finalLesson.lessonName}, group ${group.groupName}`,
         );
+        console.log(`🔍 [DEBUG] Group data before generateSchooldays:`, {
+          groupId: group.id,
+          groupName: group.groupName,
+          lessonId: group.lessonId,
+        });
         const newSchooldays: Schoolday[] = generateSchooldays(
           finalLesson,
           group,
           offdays,
         );
+        console.log(
+          `🔍 [DEBUG] Generated schooldays count:`,
+          newSchooldays.length,
+        );
+        if (newSchooldays.length > 0) {
+          console.log(`🔍 [DEBUG] First generated schoolday:`, {
+            schoolId: newSchooldays[0].schoolId,
+            termId: newSchooldays[0].termId,
+            lessonId: newSchooldays[0].lessonId,
+            groupId: newSchooldays[0].groupId,
+            name: newSchooldays[0].name,
+          });
+        }
 
         if (!newSchooldays || newSchooldays.length === 0) {
           this.logger.warn(
@@ -608,6 +678,17 @@ export class LessonCoreService {
         const toDelete = Array.from(existingMap.entries())
           .filter(([key]) => !newMap.has(key))
           .map(([, sd]) => sd);
+
+        console.log(
+          `🔍 [DEBUG] toInsert array for group ${group.id}:`,
+          toInsert.map((sd) => ({
+            schoolId: sd.schoolId,
+            termId: sd.termId,
+            lessonId: sd.lessonId,
+            groupId: sd.groupId,
+            name: sd.name,
+          })),
+        );
 
         this.logger.log(
           `📊 [update] Group ${group.id}: ${toInsert.length} to insert, ${toDelete.length} to delete`,
@@ -654,9 +735,23 @@ export class LessonCoreService {
               }
             }
 
+            console.log(
+              `🔍 [DEBUG] toInsert array after validation for group ${group.id}:`,
+              toInsert.map((sd) => ({
+                schoolId: sd.schoolId,
+                termId: sd.termId,
+                lessonId: sd.lessonId,
+                groupId: sd.groupId,
+                name: sd.name,
+              })),
+            );
+
             await manager
               .getRepository(Schoolday)
               .upsert(toInsert, ['schoolId', 'termId', 'lessonId', 'groupId']);
+
+            console.log(`🔍 [DEBUG] upsert completed for group ${group.id}`);
+
             this.logger.log(
               `✅ [update] Successfully inserted ${toInsert.length} schooldays for group ${group.id}`,
             );

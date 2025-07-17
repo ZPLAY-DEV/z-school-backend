@@ -55,11 +55,13 @@ export class LessonSubscriber implements EntitySubscriberInterface<Lesson> {
       }
 
       // 2. 새로 생성될 schooldays
+      console.log(`🔍 [SUBSCRIBER] Generating schooldays for lesson ${lesson.id}, group ${group.id} (${group.groupName})`);
       const newSchooldays: Schoolday[] = generateSchooldays(
         lesson,
         group,
         offdays,
       );
+      console.log(`🔍 [SUBSCRIBER] Generated ${newSchooldays.length} schooldays`);
       const newMap = new Map<string, Schoolday>();
       for (const sd of newSchooldays) {
         const key = `${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
@@ -70,6 +72,15 @@ export class LessonSubscriber implements EntitySubscriberInterface<Lesson> {
       const toInsert = Array.from(newMap.entries())
         .filter(([key]) => !existingMap.has(key))
         .map(([, sd]) => sd);
+      
+      console.log(`🔍 [SUBSCRIBER] toInsert for group ${group.id}:`, toInsert.map(sd => ({
+        schoolId: sd.schoolId,
+        termId: sd.termId, 
+        lessonId: sd.lessonId,
+        groupId: sd.groupId,
+        name: sd.name,
+        today: sd.today
+      })));
 
       // 4. 삭제해야 할 schooldays (existing에만 있는 것)
       const toDelete = Array.from(existingMap.entries())
@@ -83,7 +94,9 @@ export class LessonSubscriber implements EntitySubscriberInterface<Lesson> {
           .delete(toDelete.map((sd) => sd.id));
       }
       if (toInsert.length > 0) {
+        console.log(`🔍 [SUBSCRIBER] About to save ${toInsert.length} schooldays, first one groupId:`, toInsert[0]?.groupId);
         await event.manager.getRepository('Schoolday').save(toInsert);
+        console.log(`🔍 [SUBSCRIBER] Save completed`);
       }
 
       // 6. group.days 갱신
