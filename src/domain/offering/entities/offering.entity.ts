@@ -18,7 +18,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   Unique,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from 'typeorm';
 
 //? 학교 수강신청 리스트 페이지에서 보여주는 아이템.

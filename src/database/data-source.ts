@@ -1,5 +1,5 @@
-import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
+import { DataSource } from 'typeorm';
 dotenv.config();
 
 /** staged production 환경에 따른 마이그레이션 파일 셋업 */
@@ -21,7 +21,7 @@ export default new DataSource({
   synchronize: false,
   logging: false,
   entities: ['dist/**/*.entity.js'],
-  migrations: ['dist/db/migrations/*.js'],
+  migrations: ['dist/database/migrations/*.js'],
   migrationsTableName: 'migrations',
   migrationsRun: false,
 });

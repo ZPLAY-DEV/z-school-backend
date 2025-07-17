@@ -69,21 +69,13 @@ export class SchoolTermOfferingController {
   async getList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
+    @Query('studentId') studentId?: number,
     @Query('grade') grade: string | null = null,
   ): Promise<Offering[]> {
-    return await this.schoolTermOfferingService.list(schoolId, termId, grade);
-  }
-
-  @Public()
-  @Get(':schoolId/terms/:termId/offerings/simple')
-  async getSimpleList(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Param('termId', ParseIntPipe) termId: number,
-    @Query('grade') grade: string | null = null,
-  ): Promise<Offering[]> {
-    return await this.schoolTermOfferingService.simpleList(
+    return await this.schoolTermOfferingService.list(
       schoolId,
       termId,
+      studentId,
       grade,
     );
   }

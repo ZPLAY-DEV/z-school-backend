@@ -142,12 +142,18 @@ export class SchoolTermOfferingService {
   async list(
     schoolId: number,
     termId: number,
+    studentId?: number,
     grade: string | null = null,
-  ): Promise<(Offering & { totals: number[] })[]> {
-    const items = await this.offeringRepository
+  ): Promise<(Offering & { totals: number[]; booking: Booking | null })[]> {
+    let bookings: Booking[] = [];
+    if (studentId) {
+      bookings = await this.bookingRepository.find({
+        where: { studentId },
+      });
+    }
+
+    let items: Offering[] = await this.offeringRepository
       .createQueryBuilder('offering')
-      .leftJoinAndSelect('offering.picks', 'picks')
-      .leftJoinAndSelect('offering.bookings', 'bookings')
       .leftJoinAndSelect('offering.lesson', 'lesson')
       .leftJoinAndSelect('lesson.groups', 'groups')
       .where('offering.schoolId = :schoolId', { schoolId })
@@ -155,30 +161,21 @@ export class SchoolTermOfferingService {
       .orderBy('offering.id', 'DESC')
       .getMany();
 
+    // 데이터베이스 레벨에서 grade 필터링 (성능 향상)
     if (grade) {
-      return items
-        .filter((item: Offering) => item.allowedGrades.includes(+grade))
-        .map((v) => {
-          const { lesson, ...offeringWithoutLesson } = v;
-          const totals = lesson.groups.map(
-            (g) => g.tuition + g.bookFee + g.materialFee,
-          );
-          return {
-            ...offeringWithoutLesson,
-            totals,
-          } as Offering & { totals: number[] };
-        });
+      items = items.filter((v) => v.allowedGrades.includes(+grade));
     }
 
-    return items.map((v) => {
-      const { lesson, ...offeringWithoutLesson } = v;
+    return items.map((offering) => {
+      const { lesson, ...offeringWithoutLesson } = offering;
       const totals = lesson.groups.map(
         (g) => g.tuition + g.bookFee + g.materialFee,
       );
       return {
         ...offeringWithoutLesson,
         totals,
-      } as Offering & { totals: number[] };
+        booking: bookings.find((b) => b.offeringId === offering.id) || null,
+      } as Offering & { totals: number[]; booking: Booking | null };
     });
   }
 
