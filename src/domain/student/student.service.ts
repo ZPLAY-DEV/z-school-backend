@@ -263,6 +263,7 @@ export class StudentService {
   async findById(id: number): Promise<Student> {
     const student = await this.studentRepository
       .createQueryBuilder('student')
+      .leftJoinAndSelect('student.school', 'school')
       .leftJoinAndSelect('student.parent', 'parent')
       .leftJoinAndSelect('student.picks', 'pick')
       .leftJoinAndSelect('pick.group', 'group')
