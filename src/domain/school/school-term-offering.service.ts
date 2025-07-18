@@ -165,7 +165,7 @@ export class SchoolTermOfferingService {
       .getMany();
 
     const availableItems = items.filter((v) => v.allowedGrades.includes(grade));
-    const accBitmasks = availableItems
+    const accumulatedBitmasks = availableItems
       .filter((v) => selectedIds.includes(v.id))
       .reduce((acc, v) => {
         return [...acc, ...v.bitmasks];
@@ -197,7 +197,7 @@ export class SchoolTermOfferingService {
         booking: booking || null,
         selectable: booking
           ? false
-          : hasIntersection(accBitmasks, offering.bitmasks)
+          : hasIntersection(accumulatedBitmasks, offering.bitmasks)
             ? false
             : true,
       } as ResponseSchoolOfferingListDto;

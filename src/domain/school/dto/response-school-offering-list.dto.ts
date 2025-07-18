@@ -21,10 +21,6 @@ export class ResponseSchoolOfferingListDto {
   @Expose()
   lessonId: number | null;
 
-  @ApiProperty({ description: '학교명' })
-  @Expose()
-  schoolName: string;
-
   @ApiProperty({ description: '과목이름' })
   @Expose()
   lessonName: string;

@@ -197,64 +197,110 @@ export const SchoolTermOfferingListDocs = () => {
     ApiOperation({
       summary: '📋 학기별 수강신청과목 전체 목록',
       description: `
-**📝 기능 설명**
-특정 학기에 속한 모든 수강신청과목의 전체 목록을 조회합니다.
+**📝 Notes**
+Since this API has to return personalized results each time, you are required to provide the currently selected offering IDs.
 
-**🔄 비즈니스 로직**
-- 해당 학기의 모든 수강신청과목을 한 번에 조회
-- 학년별 필터링 기능으로 특정 학년이 수강 가능한 과목만 조회 가능
-- 수강신청 화면에서 학생들이 선택할 수 있는 과목 목록 제공
-- 과목별 현재 신청 인원과 최대 정원 정보 포함
+**📋 required params**
+- \`schoolId\`: 학교 ID (path parameter)
+- \`termId\`: 학기 ID (path parameter)  
+- \`studentId\`: 학생 ID (query parameter)
+- \`grade\`: 학년 (query parameter)
 
-**⚠️ 중요 제약사항**
-- 학교 ID와 학기 ID가 유효해야 함
-- 학년 필터는 1-6 범위 내에서만 유효
-- 수강신청기간이 아닌 경우에도 조회 가능 (관리자용)
-
-**📚 예시 시나리오**
-1. **학생 수강신청 화면**: 학생이 자신의 학년에 맞는 수강신청과목 목록 조회
-2. **관리자 전체 과목 관리**: 관리자가 해당 학기의 모든 수강신청과목 현황 파악
-3. **학년별 과목 확인**: 특정 학년의 학부모가 자녀가 선택할 수 있는 과목 확인
-4. **수강신청 통계**: 각 과목별 신청률과 정원 대비 현황 분석
+**📋 optional params**
+- \`selected\`: selected offerings by the student in the format of a comma separated offering Ids
 
 **API 호출 예시**
 \`\`\`
-GET /v1/schools/123/terms/456/offerings?grade=1
+GET /v1/schools/123/terms/456/offerings?studentId=789&grade=1&selected=1,2,3
 \`\`\`
 
-**성공 응답 예시**
+**Request Parameters:**
+\`\`\`
+Path Parameters:
+- schoolId: 123 (학교 ID)
+- termId: 456 (학기 ID)
+
+Query Parameters:
+- studentId: 789 (required)
+- grade: 1 (required, 1-6)
+- selected: a comma separated offering Ids (optional)
+\`\`\`
+
+**Response Example:**
 \`\`\`json
 [
   {
-    "id": 789,
+    "id": 1001,
+    "schoolId": 123,
+    "termId": 456,
+    "lessonId": 789,
     "lessonName": "수학",
     "groupName": "1-1",
+    "samName": "김선생님",
+    "capacity": 25,
+    "bookingCount": 18,
+    "prepicked": 2,
+    "allowedGrades": [1, 2],
     "pickRule": "FIRST_COME_FIRST_SERVED",
-    "allowedGrades": [1],
-    "maxStudents": 25,
-    "currentStudents": 20,
-    "isAvailable": true,
-    "instructor": {
-      "id": 101,
-      "name": "김선생님"
-    }
+    "times": [
+      {
+        "start": "09:00",
+        "end": "09:50",
+        "dayOfWeek": 1
+      },
+      {
+        "start": "10:00", 
+        "end": "10:50",
+        "dayOfWeek": 3
+      }
+    ],
+    "prepickedStudentIds": [567, 890],
+    "status": "ACTIVE",
+    "totals": [50000, 45000],
+    "booking": {
+      "id": 2001,
+      "studentId": 789,
+      "lessonName": "수학",
+      "offeringId": 1001,
+      "status": "ENROLLED",
+      "waitingPosition": 0,
+      "createdAt": "2024-01-15T09:00:00.000Z"
+    },
+    "selectable": true
   },
   {
-    "id": 790,
+    "id": 1002,
+    "schoolId": 123,
+    "termId": 456,
+    "lessonId": 790,
     "lessonName": "영어",
     "groupName": "1-2",
-    "pickRule": "LOTTERY",
+    "samName": "이선생님",
+    "capacity": 20,
+    "bookingCount": 20,
+    "prepicked": 1,
     "allowedGrades": [1],
-    "maxStudents": 20,
-    "currentStudents": 18,
-    "isAvailable": true,
-    "instructor": {
-      "id": 102,
-      "name": "이선생님"
-    }
+    "pickRule": "RANDOM",
+    "times": [
+      {
+        "start": "11:00",
+        "end": "11:50", 
+        "dayOfWeek": 2
+      }
+    ],
+    "prepickedStudentIds": [234],
+    "status": "ACTIVE",
+    "totals": [40000],
+    "booking": null,
+    "selectable": false
   }
 ]
 \`\`\`
+
+**📊 Response Fields**
+- \`totals\`: the total cost array for each class (tuition + textbook fee + material fee)
+- \`booking\`: booking record if exists
+- \`selectable\`: "true" (able to select the class), "false" (unable to select the class. bitmasks intersection found)
       `,
     }),
     ApiParam({
@@ -268,10 +314,22 @@ GET /v1/schools/123/terms/456/offerings?grade=1
       example: 456,
     }),
     ApiQuery({
+      name: 'studentId',
+      description: '학생 ID (필수)',
+      required: true,
+      example: 789,
+    }),
+    ApiQuery({
       name: 'grade',
-      description: '학년 필터 (1-6)',
-      required: false,
+      description: '학년 (1-6, 필수)',
+      required: true,
       example: 1,
+    }),
+    ApiQuery({
+      name: 'selected',
+      description: '선택된 과목만 조회 (선택적)',
+      required: false,
+      example: 'true',
     }),
     ApiOkResponseTemplate({
       description: '수강신청과목 전체 목록 조회 완료',
