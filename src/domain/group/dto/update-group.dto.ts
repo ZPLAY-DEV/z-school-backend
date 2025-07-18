@@ -6,7 +6,7 @@ import {
   IsString,
   Matches,
   MaxLength,
-  Min
+  Min,
 } from 'class-validator';
 import { ClassStatus, Weekday } from 'src/common/enums';
 

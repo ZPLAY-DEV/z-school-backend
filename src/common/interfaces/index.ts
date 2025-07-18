@@ -181,6 +181,10 @@ export interface IRequestUser {
   role: Role;
   refreshToken?: string;
 }
+export interface IDailyEscortInfo {
+  escortPhone: string;
+  nextStop: string;
+}
 
 //? ---------------------------------------------------------------------- ?//
 //? Refactor By Types -> Interface

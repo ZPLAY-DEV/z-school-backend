@@ -194,7 +194,7 @@ export class SchoolSamService {
         'contracts.group',
       ],
       order: {
-        id: 'ASC',
+        alias: 'ASC',
       },
     });
   }

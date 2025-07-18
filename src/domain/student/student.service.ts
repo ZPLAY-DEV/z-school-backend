@@ -161,7 +161,44 @@ export class StudentService {
         ...studentDto,
         ...(studentDto.phone && { phone: normalizePhone(studentDto.phone) }),
         ...(studentDto.escortPhone && {
-          escortPhone: normalizePhone(studentDto.escortPhone),
+          phone: normalizePhone(studentDto.escortPhone),
+        }),
+        ...(studentDto.nextStop && { nextStop: studentDto.nextStop }),
+        ...(studentDto.monday?.escortPhone && {
+          monday: {
+            ...studentDto.monday,
+            phone: normalizePhone(studentDto.monday.escortPhone),
+          },
+        }),
+        ...(studentDto.tuesday?.escortPhone && {
+          tuesday: {
+            ...studentDto.tuesday,
+            phone: normalizePhone(studentDto.tuesday.escortPhone),
+          },
+        }),
+        ...(studentDto.wednesday?.escortPhone && {
+          wednesday: {
+            ...studentDto.wednesday,
+            phone: normalizePhone(studentDto.wednesday.escortPhone),
+          },
+        }),
+        ...(studentDto.thursday?.escortPhone && {
+          thursday: {
+            ...studentDto.thursday,
+            phone: normalizePhone(studentDto.thursday.escortPhone),
+          },
+        }),
+        ...(studentDto.friday?.escortPhone && {
+          friday: {
+            ...studentDto.friday,
+            phone: normalizePhone(studentDto.friday.escortPhone),
+          },
+        }),
+        ...(studentDto.saturday?.escortPhone && {
+          saturday: {
+            ...studentDto.saturday,
+            phone: normalizePhone(studentDto.saturday.escortPhone),
+          },
         }),
       };
 

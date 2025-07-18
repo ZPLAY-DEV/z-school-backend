@@ -39,7 +39,7 @@ export class SchoolNewsletterService {
 
     return await this.newsletterRepository.find({
       where: whereCondition,
-      order: { id: 'ASC' },
+      order: { id: 'DESC' },
     });
   }
 

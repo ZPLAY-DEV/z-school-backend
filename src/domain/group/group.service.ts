@@ -434,16 +434,18 @@ export class GroupService {
     } else {
       throw new UnprocessableEntityException('Group status is not canceled');
     }
-    if (group.picks?.length > 0) {
-      await this.pickRepository.update(
-        group.picks.map((pick) => pick.id),
-        {
-          end: group.lesson.end, // 복구 시 종료일 초기화
-          endedBy: null, // 복구 시 종료자 정보 초기화
-          note: null, //! note needs to be null
-        },
-      );
-    }
+
+    // 복구시 취소했던 사람을 다시 수강자로 변경할 필요없어서 주석처리
+    // if (group.picks?.length > 0) {
+    //   await this.pickRepository.update(
+    //     group.picks.map((pick) => pick.id),
+    //     {
+    //       end: group.lesson.end,
+    //       endedBy: null,
+    //       note: null,
+    //     },
+    //   );
+    // }
 
     return await this.findById(id, ['picks', 'lesson']);
   }
