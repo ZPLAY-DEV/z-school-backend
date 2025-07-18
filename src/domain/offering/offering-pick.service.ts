@@ -54,7 +54,7 @@ export class OfferingPickService {
     });
 
     offering.lesson.groups.forEach((group) => {
-      if (!group.schooldays || group.schooldays.length < 0) {
+      if (!group.schooldays || group.schooldays.length <= 0) {
         throw new BadRequestException('수업일이 없습니다.');
       }
     });
