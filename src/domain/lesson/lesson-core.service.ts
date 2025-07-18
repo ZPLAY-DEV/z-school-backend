@@ -630,10 +630,10 @@ export class LessonCoreService {
           where: { phone: instructorPhone },
         });
         if (!instructor) {
-          // 새 instructor 생성
+          // 새 instructor 생성 - normalize된 전화번호 사용
           instructor = await manager.getRepository('Instructor').save({
             name: groupDto.instructorName,
-            phone: groupDto.instructorPhone,
+            phone: instructorPhone,
           });
         } else {
           // 기존 instructor가 있으면 이름을 업데이트
