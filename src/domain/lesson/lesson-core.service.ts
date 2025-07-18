@@ -142,248 +142,8 @@ export class LessonCoreService {
         relations: { groups: true, category: true },
       });
 
-      const offdays: string[] = await this.calendarService.findByDateRange(
-        savedLesson.schoolId,
-        savedLesson.start,
-        savedLesson.end,
-      );
-
       //? 6단계) 학업요일 days 정보 및 schooldays 처리
-      this.logger.log(
-        `🔄 [create] Processing schooldays for lesson ${savedLesson.id} with ${savedLesson.groups.length} groups`,
-      );
-
-      for (const group of savedLesson.groups) {
-        try {
-          this.logger.log(
-            `📝 [create] Processing schooldays for group ${group.id} (${group.groupName})`,
-          );
-
-          // 1. 기존 schooldays 조회 및 검증 (새로 생성된 경우 보통 없지만, 안전을 위해)
-          const existingSchooldays = await manager
-            .getRepository(Schoolday)
-            .find({
-              where: { groupId: group.id },
-              select: [
-                'id',
-                'schoolId',
-                'termId',
-                'lessonId',
-                'groupId',
-                'name',
-                'startsAt',
-                'endsAt',
-              ],
-            });
-
-          this.logger.log(
-            `📊 [create] Found ${existingSchooldays.length} existing schooldays for group ${group.id}`,
-          );
-
-          // 2. 기존 schooldays를 key-value로 변환 (unique constraint 기준)
-          const existingMap = new Map<string, Schoolday>();
-          for (const sd of existingSchooldays) {
-            if (
-              !sd.schoolId ||
-              !sd.termId ||
-              !sd.lessonId ||
-              !sd.groupId ||
-              !sd.startsAt ||
-              !sd.endsAt
-            ) {
-              this.logger.warn(
-                `⚠️ [create] Invalid schoolday data found: ${JSON.stringify(sd)}`,
-              );
-              continue;
-            }
-            const key = `${sd.schoolId}|${sd.termId}|${sd.lessonId}|${sd.groupId}|${sd.name || ''}|${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
-            existingMap.set(key, sd);
-          }
-
-          // 3. 새로 생성될 schooldays 생성 및 검증
-          this.logger.log(
-            `🆕 [create] Generating new schooldays for lesson ${savedLesson.lessonName}, group ${group.groupName}`,
-          );
-          console.log(`🔍 [DEBUG] Group data before generateSchooldays:`, {
-            groupId: group.id,
-            groupName: group.groupName,
-            lessonId: group.lessonId,
-          });
-          const newSchooldays: Schoolday[] = generateSchooldays(
-            savedLesson,
-            group,
-            offdays,
-          );
-          console.log(
-            `🔍 [DEBUG] Generated schooldays count:`,
-            newSchooldays.length,
-          );
-          if (newSchooldays.length > 0) {
-            console.log(`🔍 [DEBUG] First generated schoolday:`, {
-              schoolId: newSchooldays[0].schoolId,
-              termId: newSchooldays[0].termId,
-              lessonId: newSchooldays[0].lessonId,
-              groupId: newSchooldays[0].groupId,
-              name: newSchooldays[0].name,
-            });
-          }
-
-          if (!newSchooldays || newSchooldays.length === 0) {
-            this.logger.warn(
-              `⚠️ [create] No schooldays generated for group ${group.id}. This might indicate an issue with lesson schedule.`,
-            );
-            group.days = 0;
-            await manager.save(group);
-            continue;
-          }
-
-          this.logger.log(
-            `📊 [create] Generated ${newSchooldays.length} new schooldays for group ${group.id}`,
-          );
-
-          // 4. 새로운 schooldays를 key-value로 변환 및 검증
-          const newMap = new Map<string, Schoolday>();
-          for (const sd of newSchooldays) {
-            if (
-              !sd.schoolId ||
-              !sd.termId ||
-              !sd.lessonId ||
-              !sd.groupId ||
-              !sd.startsAt ||
-              !sd.endsAt
-            ) {
-              this.logger.error(
-                `❌ [create] Invalid generated schoolday: ${JSON.stringify(sd)}`,
-              );
-              throw new Error(
-                `Invalid schoolday generated for group ${group.id}`,
-              );
-            }
-            const key = `${sd.schoolId}|${sd.termId}|${sd.lessonId}|${sd.groupId}|${sd.name || ''}|${sd.startsAt.toISOString()}|${sd.endsAt.toISOString()}`;
-            newMap.set(key, sd);
-          }
-
-          // 5. 차이점 계산
-          const toInsert = Array.from(newMap.entries())
-            .filter(([key]) => !existingMap.has(key))
-            .map(([, sd]) => sd);
-
-          const toDelete = Array.from(existingMap.entries())
-            .filter(([key]) => !newMap.has(key))
-            .map(([, sd]) => sd);
-
-          console.log(
-            `🔍 [DEBUG] toInsert array for group ${group.id}:`,
-            toInsert.map((sd) => ({
-              schoolId: sd.schoolId,
-              termId: sd.termId,
-              lessonId: sd.lessonId,
-              groupId: sd.groupId,
-              name: sd.name,
-            })),
-          );
-
-          this.logger.log(
-            `📊 [create] Group ${group.id}: ${toInsert.length} to insert, ${toDelete.length} to delete`,
-          );
-
-          // 6. 삭제 작업 (먼저 실행, 보통 create에서는 없지만 안전을 위해)
-          if (toDelete.length > 0) {
-            this.logger.log(
-              `🗑️ [create] Deleting ${toDelete.length} schooldays for group ${group.id}`,
-            );
-            try {
-              // 하드 삭제로 변경 (cascade 문제 방지) - ID 기반 삭제로 안전하게 처리
-              // await manager.getRepository(Schoolday).remove(toDelete);
-              await manager
-                .getRepository(Schoolday)
-                .delete(toDelete.map((sd) => sd.id));
-              this.logger.log(
-                `✅ [create] Successfully deleted ${toDelete.length} schooldays for group ${group.id}`,
-              );
-            } catch (deleteError) {
-              this.logger.error(
-                `❌ [create] Failed to delete schooldays for group ${group.id}:`,
-                deleteError,
-              );
-              throw new Error(
-                `Failed to delete existing schooldays for group ${group.id}: ${deleteError.message}`,
-              );
-            }
-          }
-
-          // 7. 삽입 작업
-          if (toInsert.length > 0) {
-            this.logger.log(
-              `➕ [create] Inserting ${toInsert.length} schooldays for group ${group.id}`,
-            );
-            try {
-              // 각 schoolday의 데이터 무결성 최종 검증
-              for (const schoolday of toInsert) {
-                if (!schoolday.groupId || schoolday.groupId !== group.id) {
-                  this.logger.error(
-                    `❌ [create] Invalid groupId in schoolday: expected ${group.id}, got ${schoolday.groupId}`,
-                  );
-                  schoolday.groupId = group.id; // 강제 수정
-                }
-              }
-
-              console.log(
-                `🔍 [DEBUG] toInsert array after validation for group ${group.id}:`,
-                toInsert.map((sd) => ({
-                  schoolId: sd.schoolId,
-                  termId: sd.termId,
-                  lessonId: sd.lessonId,
-                  groupId: sd.groupId,
-                  name: sd.name,
-                })),
-              );
-
-              await manager
-                .getRepository(Schoolday)
-                .upsert(toInsert, [
-                  'schoolId',
-                  'termId',
-                  'lessonId',
-                  'groupId',
-                ]);
-              this.logger.log(
-                `✅ [create] Successfully inserted ${toInsert.length} schooldays for group ${group.id}`,
-              );
-            } catch (insertError) {
-              this.logger.error(
-                `❌ [create] Failed to insert schooldays for group ${group.id}:`,
-                insertError,
-              );
-              throw new Error(
-                `Failed to insert new schooldays for group ${group.id}: ${insertError.message}`,
-              );
-            }
-          }
-
-          // 8. group.days 갱신
-          const finalDaysCount = newSchooldays.length;
-          if (group.days !== finalDaysCount) {
-            this.logger.log(
-              `📊 [create] Updating group ${group.id} days: ${group.days} -> ${finalDaysCount}`,
-            );
-            group.days = finalDaysCount;
-            await manager.save(group);
-          }
-
-          this.logger.log(
-            `✅ [create] Successfully processed schooldays for group ${group.id}: ${finalDaysCount} total days`,
-          );
-        } catch (error) {
-          this.logger.error(
-            `❌ [create] Error processing schooldays for group ${group.id}:`,
-            error,
-          );
-          throw new Error(
-            `Failed to process schooldays for group ${group.id}: ${error.message}`,
-          );
-        }
-      }
+      await this.syncSchooldaysForLesson(savedLesson, manager, 'create');
 
       return savedLesson;
     });
@@ -551,21 +311,60 @@ export class LessonCoreService {
       relations: { groups: true, category: true },
     });
 
-    const offdays: string[] = await this.calendarService.findByDateRange(
-      finalLesson.schoolId,
-      finalLesson.start,
-      finalLesson.end,
-    );
-
     //? 6단계) 학업요일 days 정보 및 schooldays 처리
+    await this.syncSchooldaysForLesson(finalLesson, manager, 'update');
+
+    return finalLesson;
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? PUBLIC METHODS FOR SCHOOLDAYS SYNC
+  //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * 강좌의 schooldays를 동기화합니다 (외부 호출용)
+   * 트랜잭션 컨텍스트를 생성하여 내부 private 메서드를 호출합니다.
+   */
+  async syncSchooldaysForLessonById(lessonId: number): Promise<void> {
+    return await this.dataSource.transaction(async (manager: EntityManager) => {
+      const lesson = await manager.findOneOrFail(Lesson, {
+        where: { id: lessonId },
+        relations: { groups: true },
+      });
+
+      await this.syncSchooldaysForLesson(lesson, manager, 'external');
+    });
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? HELPER METHODS
+  //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * 강좌의 그룹들에 대해 schooldays를 동기화합니다.
+   * 기존 schooldays와 새로 생성될 schooldays를 비교하여
+   * 추가/삭제/업데이트를 수행합니다.
+   */
+  private async syncSchooldaysForLesson(
+    lesson: Lesson,
+    manager: EntityManager,
+    context: string = 'sync',
+  ): Promise<void> {
     this.logger.log(
-      `🔄 [update] Processing schooldays for lesson ${finalLesson.id} with ${finalLesson.groups.length} groups`,
+      `🔄 [${context}] Processing schooldays for lesson ${lesson.id} with ${lesson.groups.length} groups`,
     );
 
-    for (const group of finalLesson.groups) {
+    // offdays 정보 조회
+    const offdays: string[] = await this.calendarService.findByDateRange(
+      lesson.schoolId,
+      lesson.start,
+      lesson.end,
+    );
+
+    for (const group of lesson.groups) {
       try {
         this.logger.log(
-          `📝 [update] Processing schooldays for group ${group.id} (${group.groupName})`,
+          `📝 [${context}] Processing schooldays for group ${group.id} (${group.groupName})`,
         );
 
         // 1. 기존 schooldays 조회 및 검증
@@ -584,7 +383,7 @@ export class LessonCoreService {
         });
 
         this.logger.log(
-          `📊 [update] Found ${existingSchooldays.length} existing schooldays for group ${group.id}`,
+          `📊 [${context}] Found ${existingSchooldays.length} existing schooldays for group ${group.id}`,
         );
 
         // 2. 기존 schooldays를 key-value로 변환 (unique constraint 기준)
@@ -599,7 +398,7 @@ export class LessonCoreService {
             !sd.endsAt
           ) {
             this.logger.warn(
-              `⚠️ [update] Invalid schoolday data found: ${JSON.stringify(sd)}`,
+              `⚠️ [${context}] Invalid schoolday data found: ${JSON.stringify(sd)}`,
             );
             continue;
           }
@@ -609,35 +408,17 @@ export class LessonCoreService {
 
         // 3. 새로 생성될 schooldays 생성 및 검증
         this.logger.log(
-          `🆕 [update] Generating new schooldays for lesson ${finalLesson.lessonName}, group ${group.groupName}`,
+          `🆕 [${context}] Generating new schooldays for lesson ${lesson.lessonName}, group ${group.groupName}`,
         );
-        console.log(`🔍 [DEBUG] Group data before generateSchooldays:`, {
-          groupId: group.id,
-          groupName: group.groupName,
-          lessonId: group.lessonId,
-        });
         const newSchooldays: Schoolday[] = generateSchooldays(
-          finalLesson,
+          lesson,
           group,
           offdays,
         );
-        console.log(
-          `🔍 [DEBUG] Generated schooldays count:`,
-          newSchooldays.length,
-        );
-        if (newSchooldays.length > 0) {
-          console.log(`🔍 [DEBUG] First generated schoolday:`, {
-            schoolId: newSchooldays[0].schoolId,
-            termId: newSchooldays[0].termId,
-            lessonId: newSchooldays[0].lessonId,
-            groupId: newSchooldays[0].groupId,
-            name: newSchooldays[0].name,
-          });
-        }
 
         if (!newSchooldays || newSchooldays.length === 0) {
           this.logger.warn(
-            `⚠️ [update] No schooldays generated for group ${group.id}. This might indicate an issue with lesson schedule.`,
+            `⚠️ [${context}] No schooldays generated for group ${group.id}. This might indicate an issue with lesson schedule.`,
           );
           group.days = 0;
           await manager.save(group);
@@ -645,7 +426,7 @@ export class LessonCoreService {
         }
 
         this.logger.log(
-          `📊 [update] Generated ${newSchooldays.length} new schooldays for group ${group.id}`,
+          `📊 [${context}] Generated ${newSchooldays.length} new schooldays for group ${group.id}`,
         );
 
         // 4. 새로운 schooldays를 key-value로 변환 및 검증
@@ -660,7 +441,7 @@ export class LessonCoreService {
             !sd.endsAt
           ) {
             this.logger.error(
-              `❌ [update] Invalid generated schoolday: ${JSON.stringify(sd)}`,
+              `❌ [${context}] Invalid generated schoolday: ${JSON.stringify(sd)}`,
             );
             throw new Error(
               `Invalid schoolday generated for group ${group.id}`,
@@ -679,38 +460,25 @@ export class LessonCoreService {
           .filter(([key]) => !newMap.has(key))
           .map(([, sd]) => sd);
 
-        console.log(
-          `🔍 [DEBUG] toInsert array for group ${group.id}:`,
-          toInsert.map((sd) => ({
-            schoolId: sd.schoolId,
-            termId: sd.termId,
-            lessonId: sd.lessonId,
-            groupId: sd.groupId,
-            name: sd.name,
-          })),
-        );
-
         this.logger.log(
-          `📊 [update] Group ${group.id}: ${toInsert.length} to insert, ${toDelete.length} to delete`,
+          `📊 [${context}] Group ${group.id}: ${toInsert.length} to insert, ${toDelete.length} to delete`,
         );
 
         // 6. 삭제 작업 (먼저 실행)
         if (toDelete.length > 0) {
           this.logger.log(
-            `🗑️ [update] Deleting ${toDelete.length} schooldays for group ${group.id}`,
+            `🗑️ [${context}] Deleting ${toDelete.length} schooldays for group ${group.id}`,
           );
           try {
-            // 하드 삭제로 변경 (cascade 문제 방지) - ID 기반 삭제로 안전하게 처리
-            // await manager.getRepository(Schoolday).remove(toDelete);
             await manager
               .getRepository(Schoolday)
               .delete(toDelete.map((sd) => sd.id));
             this.logger.log(
-              `✅ [update] Successfully deleted ${toDelete.length} schooldays for group ${group.id}`,
+              `✅ [${context}] Successfully deleted ${toDelete.length} schooldays for group ${group.id}`,
             );
           } catch (deleteError) {
             this.logger.error(
-              `❌ [update] Failed to delete schooldays for group ${group.id}:`,
+              `❌ [${context}] Failed to delete schooldays for group ${group.id}:`,
               deleteError,
             );
             throw new Error(
@@ -722,42 +490,28 @@ export class LessonCoreService {
         // 7. 삽입 작업
         if (toInsert.length > 0) {
           this.logger.log(
-            `➕ [update] Inserting ${toInsert.length} schooldays for group ${group.id}`,
+            `➕ [${context}] Inserting ${toInsert.length} schooldays for group ${group.id}`,
           );
           try {
             // 각 schoolday의 데이터 무결성 최종 검증
             for (const schoolday of toInsert) {
               if (!schoolday.groupId || schoolday.groupId !== group.id) {
                 this.logger.error(
-                  `❌ [update] Invalid groupId in schoolday: expected ${group.id}, got ${schoolday.groupId}`,
+                  `❌ [${context}] Invalid groupId in schoolday: expected ${group.id}, got ${schoolday.groupId}`,
                 );
                 schoolday.groupId = group.id; // 강제 수정
               }
             }
 
-            console.log(
-              `🔍 [DEBUG] toInsert array after validation for group ${group.id}:`,
-              toInsert.map((sd) => ({
-                schoolId: sd.schoolId,
-                termId: sd.termId,
-                lessonId: sd.lessonId,
-                groupId: sd.groupId,
-                name: sd.name,
-              })),
-            );
-
             await manager
               .getRepository(Schoolday)
               .upsert(toInsert, ['schoolId', 'termId', 'lessonId', 'groupId']);
-
-            console.log(`🔍 [DEBUG] upsert completed for group ${group.id}`);
-
             this.logger.log(
-              `✅ [update] Successfully inserted ${toInsert.length} schooldays for group ${group.id}`,
+              `✅ [${context}] Successfully inserted ${toInsert.length} schooldays for group ${group.id}`,
             );
           } catch (insertError) {
             this.logger.error(
-              `❌ [update] Failed to insert schooldays for group ${group.id}:`,
+              `❌ [${context}] Failed to insert schooldays for group ${group.id}:`,
               insertError,
             );
             throw new Error(
@@ -770,18 +524,18 @@ export class LessonCoreService {
         const finalDaysCount = newSchooldays.length;
         if (group.days !== finalDaysCount) {
           this.logger.log(
-            `📊 [update] Updating group ${group.id} days: ${group.days} -> ${finalDaysCount}`,
+            `📊 [${context}] Updating group ${group.id} days: ${group.days} -> ${finalDaysCount}`,
           );
           group.days = finalDaysCount;
           await manager.save(group);
         }
 
         this.logger.log(
-          `✅ [update] Successfully processed schooldays for group ${group.id}: ${finalDaysCount} total days`,
+          `✅ [${context}] Successfully processed schooldays for group ${group.id}: ${finalDaysCount} total days`,
         );
       } catch (error) {
         this.logger.error(
-          `❌ [update] Error processing schooldays for group ${group.id}:`,
+          `❌ [${context}] Error processing schooldays for group ${group.id}:`,
           error,
         );
         throw new Error(
@@ -789,13 +543,7 @@ export class LessonCoreService {
         );
       }
     }
-
-    return finalLesson;
   }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? HELPER METHODS
-  //? ---------------------------------------------------------------------- ?//
 
   private async processGroups(
     lesson: Lesson,
