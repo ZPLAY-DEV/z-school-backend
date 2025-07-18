@@ -65,6 +65,8 @@ export function generateSchooldays(
     groupName: group.groupName,
   });
 
+  console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀 offdays', JSON.stringify(offdays, null, 2));
+
   const calendarDays: ICalendarDay[] = calculateLessonDays(
     lesson,
     group,
