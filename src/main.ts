@@ -65,8 +65,10 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3000',
-      'http://localhost:3001',
-      'https://700c4970a59a.ngrok.app',
+      'http://schoolhub.co.kr',
+      'https://schoolhub.co.kr',
+      'http://admin.schoolhub.co.kr',
+      'https://admin.schoolhub.co.kr',
       'http://app.schoolhub.co.kr',
       'https://app.schoolhub.co.kr',
     ],
