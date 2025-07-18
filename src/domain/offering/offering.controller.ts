@@ -11,6 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
 
 import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
@@ -71,6 +72,11 @@ export class OfferingController {
       lesson: { ...lesson, groups: selectedGroups },
       convertSimpleArraysToNumbers: () => {},
     } as Offering;
+  }
+
+  @Get(':id/bookings')
+  async getBookings(@Param('id', ParseIntPipe) id: number): Promise<Booking[]> {
+    return await this.offeringService.findBookings(id);
   }
 
   @GetFormerStudentsDocs()

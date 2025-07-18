@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TermType } from 'src/common/enums';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -44,6 +45,15 @@ export class OfferingService {
       console.error(error);
       throw new NotFoundException(`Offering not found`);
     }
+  }
+
+  async findBookings(offeringId: number): Promise<Booking[]> {
+    const offering = await this.offeringRepository.findOneOrFail({
+      where: { id: offeringId },
+      relations: ['bookings', 'bookings.student'],
+    });
+
+    return offering.bookings;
   }
 
   async findFormerStudents(offeringId: number): Promise<Student[]> {
