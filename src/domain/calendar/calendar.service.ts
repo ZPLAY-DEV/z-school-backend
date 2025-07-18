@@ -35,15 +35,15 @@ export class CalendarService {
 
   async findByDateRange(
     schoolId: number,
-    startDate: string, // 예: "2025-08-01"
-    endDate: string, // 예: "2025-08-31"
+    start: string, // 예: "2025-08-01"
+    end: string, // 예: "2025-08-31"
   ): Promise<string[]> {
     const dates = await this.calendarRepository
       .createQueryBuilder('calendar')
       .where('calendar.schoolId = :schoolId', { schoolId })
-      .andWhere('calendar.date >= :startDate AND calendar.date <= :endDate', {
-        startDate,
-        endDate,
+      .andWhere('calendar.date >= :start AND calendar.date <= :end', {
+        start,
+        end,
       })
       .orderBy('calendar.date', 'ASC')
       .getMany();
