@@ -67,7 +67,8 @@ async function bootstrap() {
       'http://localhost:3000',
       'http://localhost:3001',
       'https://700c4970a59a.ngrok.app',
-      'https://zschool.kr',
+      'http://app.schoolhub.co.kr',
+      'https://app.schoolhub.co.kr',
     ],
     credentials: true, // 쿠키를 포함한 요청을 허용하려면 true로 설정
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // 허용할 HTTP 메서드
