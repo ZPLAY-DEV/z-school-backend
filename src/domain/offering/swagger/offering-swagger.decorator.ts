@@ -262,7 +262,7 @@ export const GetOfferingByIdDocs = () => {
 export const GetFormerStudentsDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '👨‍🎓 이전 수강생 목록 조회',
+      summary: '👨‍🎓 지난학기 수강생 목록',
       description: `
 **📝 기능 설명**
 - 해당 수강신청과목의 이전 수강생 목록을 조회합니다
@@ -295,7 +295,7 @@ export const GetFormerStudentsDocs = () => {
       example: 123,
     }),
     ApiOkResponse({
-      description: '이전 수강생 목록 조회 완료',
+      description: '지난학기 수강생 목록 조회 완료',
       type: [Student],
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
@@ -309,19 +309,46 @@ export const GetFormerStudentsDocs = () => {
 export const GetBookingsDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '📋 수강신청 목록 조회',
+      summary: '📋 수강신청과목 신청자 목록',
       description: `
 **📝 기능 설명**
 - 특정 수강신청과목에 신청한 모든 수강신청(예약) 목록을 조회합니다
-- 현재 수강신청 현황과 학생 정보를 확인할 수 있습니다
-- 수강신청 상태 및 관리에 필요한 데이터를 제공합니다
+- **각 수강신청에는 학생 정보(booking.student)가 포함되어 제공됩니다**
+- 현재 수강신청 현황과 학생 세부정보를 한번에 확인할 수 있습니다
 
 **🔄 비즈니스 로직**
 1. offeringId로 해당 과목 확인
 2. 해당 과목에 대한 모든 활성 수강신청 조회
-3. 수강신청한 학생 정보와 함께 반환
+3. **각 수강신청마다 학생 정보를 함께 조인하여 반환**
 4. 수강신청 상태별 정렬 및 필터링
-5. 완전한 수강신청 목록 제공
+5. 완전한 수강신청 목록과 학생 정보 제공
+
+**📊 응답 데이터 구조**
+\`\`\`
+[
+  {
+    "id": 1,
+    "offeringId": 123,
+    "studentId": 456,
+    "lessonName": "수학",
+    "waitingPosition": 0,
+    "status": "ENROLLED",
+    "note": "특이사항 없음",
+    "createdAt": "2024-01-15T09:00:00Z",
+    "updatedAt": "2024-01-15T09:00:00Z",
+    "student": {
+      "id": 456,
+      "name": "김철수",
+      "grade": 3,
+      "class": "1반",
+      "studentCode": 12,
+      "schoolName": "서울초등학교",
+      "parentName": "김부모",
+      "phoneNumber": "010-1234-5678"
+    }
+  }
+]
+\`\`\`
 
 **⚠️ 중요 제약사항**
 - offeringId는 필수 파라미터
@@ -330,8 +357,8 @@ export const GetBookingsDocs = () => {
 - 수강신청 상태에 따른 접근 권한 적용
 
 **📚 예시 시나리오**
-- 수강신청 현황 관리
-- 수강생 명단 확인
+- 수강신청 현황 관리 (학생 이름, 학년 포함)
+- 수강생 명단 확인 (연락처 정보 포함)
 - 수강신청 승인/거부 처리
 - 정원 대비 신청자 수 확인
       `,
@@ -343,8 +370,26 @@ export const GetBookingsDocs = () => {
       example: 123,
     }),
     ApiOkResponse({
-      description: '수강신청 목록 조회 완료',
+      description: '수강신청 목록 조회 완료 (각 booking에 student 정보 포함)',
       type: [Booking],
+      schema: {
+        type: 'array',
+        items: {
+          allOf: [
+            { $ref: '#/components/schemas/Booking' },
+            {
+              type: 'object',
+              properties: {
+                student: {
+                  $ref: '#/components/schemas/Student',
+                  description: '수강신청한 학생의 상세 정보',
+                },
+              },
+              required: ['student'],
+            },
+          ],
+        },
+      },
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
   );
