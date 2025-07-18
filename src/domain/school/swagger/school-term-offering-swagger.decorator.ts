@@ -16,6 +16,7 @@ import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { ResponseSchoolOfferingListDto } from 'src/domain/school/dto/response-school-offering-list.dto';
 
 const SCHOOL_TERM_OFFERING_CONFIG: PaginateConfig<Offering> = {
   sortableColumns: ['id', 'lessonName', 'groupName'] as const,
@@ -274,7 +275,7 @@ GET /v1/schools/123/terms/456/offerings?grade=1
     }),
     ApiOkResponseTemplate({
       description: '수강신청과목 전체 목록 조회 완료',
-      type: Offering,
+      type: ResponseSchoolOfferingListDto,
       isArray: true,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),

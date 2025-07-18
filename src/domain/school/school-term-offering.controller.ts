@@ -13,6 +13,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { ResponseSchoolOfferingListDto } from 'src/domain/school/dto/response-school-offering-list.dto';
 import { SchoolTermOfferingService } from 'src/domain/school/school-term-offering.service';
 import {
   CreateSchoolTermOfferingsDocs,
@@ -69,14 +70,16 @@ export class SchoolTermOfferingController {
   async getList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
-    @Query('studentId') studentId?: number,
-    @Query('grade') grade: string | null = null,
-  ): Promise<Offering[]> {
+    @Query('studentId') studentId: number,
+    @Query('grade') grade: number,
+    @Query('selected') selected?: string,
+  ): Promise<ResponseSchoolOfferingListDto[]> {
     return await this.schoolTermOfferingService.list(
       schoolId,
       termId,
       studentId,
       grade,
+      selected,
     );
   }
 

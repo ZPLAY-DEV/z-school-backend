@@ -9,6 +9,7 @@ import {
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { ResponseSchoolOfferingListDto } from 'src/domain/school/dto/response-school-offering-list.dto';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { makeOfferingsFromLessons } from 'src/helpers/offering.util';
 import { Repository } from 'typeorm';
@@ -142,17 +143,19 @@ export class SchoolTermOfferingService {
   async list(
     schoolId: number,
     termId: number,
-    studentId?: number,
-    grade: string | null = null,
-  ): Promise<(Offering & { totals: number[]; booking: Booking | null })[]> {
-    let bookings: Booking[] = [];
-    if (studentId) {
-      bookings = await this.bookingRepository.find({
-        where: { studentId },
-      });
-    }
-
-    let items: Offering[] = await this.offeringRepository
+    studentId: number,
+    grade: number,
+    selected?: string,
+  ): Promise<ResponseSchoolOfferingListDto[]> {
+    const hasIntersection = (pool: number[], target: number[]) => {
+      const set = new Set(pool);
+      return target.some((v) => set.has(v));
+    };
+    const bookings = await this.bookingRepository.find({
+      where: { studentId },
+    });
+    const selectedIds = selected?.split(',').map((v) => +v) || [];
+    const items: Offering[] = await this.offeringRepository
       .createQueryBuilder('offering')
       .leftJoinAndSelect('offering.lesson', 'lesson')
       .leftJoinAndSelect('lesson.groups', 'groups')
@@ -161,21 +164,43 @@ export class SchoolTermOfferingService {
       .orderBy('offering.id', 'DESC')
       .getMany();
 
-    // 데이터베이스 레벨에서 grade 필터링 (성능 향상)
-    if (grade) {
-      items = items.filter((v) => v.allowedGrades.includes(+grade));
-    }
+    const availableItems = items.filter((v) => v.allowedGrades.includes(grade));
+    const accBitmasks = availableItems
+      .filter((v) => selectedIds.includes(v.id))
+      .reduce((acc, v) => {
+        return [...acc, ...v.bitmasks];
+      }, []);
 
-    return items.map((offering) => {
-      const { lesson, ...offeringWithoutLesson } = offering;
-      const totals = lesson.groups.map(
+    return availableItems.map((offering) => {
+      const totals = offering.lesson.groups.map(
         (g) => g.tuition + g.bookFee + g.materialFee,
       );
+      const booking = bookings.find((v) => v.offeringId === offering.id);
+
       return {
-        ...offeringWithoutLesson,
+        id: offering.id,
+        schoolId: offering.schoolId,
+        termId: offering.termId,
+        lessonId: offering.lessonId,
+        lessonName: offering.lessonName,
+        groupName: offering.groupName,
+        samName: offering.samName,
+        capacity: offering.capacity,
+        bookingCount: offering.bookings.length,
+        prepicked: offering.picks.length,
+        allowedGrades: offering.allowedGrades,
+        pickRule: offering.pickRule,
+        times: offering.times,
+        prepickedStudentIds: offering.prepickedStudentIds,
+        status: offering.status,
         totals,
-        booking: bookings.find((b) => b.offeringId === offering.id) || null,
-      } as Offering & { totals: number[]; booking: Booking | null };
+        booking: booking || null,
+        selectable: booking
+          ? false
+          : hasIntersection(accBitmasks, offering.bitmasks)
+            ? false
+            : true,
+      } as ResponseSchoolOfferingListDto;
     });
   }
 
