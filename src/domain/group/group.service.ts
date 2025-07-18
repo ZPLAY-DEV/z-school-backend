@@ -429,7 +429,7 @@ export class GroupService {
       await this.groupRepository.update(id, {
         status: ClassStatus.ACTIVE,
         deletedBy: null,
-        note: 'restored',
+        note: null,
       });
     } else {
       throw new UnprocessableEntityException('Group status is not canceled');
