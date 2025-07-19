@@ -17,6 +17,17 @@ export class AppController {
     return { version };
   }
 
+  @ApiOperation({ summary: '⚙️ 상태 조회' })
+  @Public()
+  @Get('/health')
+  health(): { status: string; timestamp: string; uptime: number } {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    };
+  }
+
   @ApiOperation({ summary: '⚙️ 수강신청내용 Redis에서 삭제' })
   @Public()
   @HttpCode(200)
