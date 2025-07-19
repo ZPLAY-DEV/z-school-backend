@@ -41,10 +41,9 @@ export class OrmConfig implements TypeOrmOptionsFactory {
       bigNumberStrings: true,
       supportBigNumbers: true,
       logging: !isProduction,
-      // migrations: ['dist/migrations/**/*{.ts,.js}'],
-      // cli: {
-      //   migrationsDir: 'dist/migrations',
-      // },
+      // migrations: ['dist/database/migrations/*.js'],
+      // migrationsTableName: 'migrations',
+      // migrationsRun: false,
     };
   }
 }
