@@ -18,7 +18,6 @@ RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
-COPY .env.production .env
 
 # Build the application
 RUN pnpm run build
@@ -45,7 +44,6 @@ RUN pnpm install --prod --frozen-lockfile && \
 
 # Copy built application from builder stage
 COPY --from=builder --chown=chuck:nodejs /usr/src/app/dist ./dist
-COPY --from=builder --chown=chuck:nodejs /usr/src/app/.env .env
 
 # Change ownership of the app directory
 RUN chown -R chuck:nodejs /usr/src/app
