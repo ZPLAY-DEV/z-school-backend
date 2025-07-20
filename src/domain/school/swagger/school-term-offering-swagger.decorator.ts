@@ -198,7 +198,7 @@ export const SchoolTermOfferingListDocs = () => {
       summary: '📋 학기별 수강신청과목 전체 목록',
       description: `
 **📝 Notes**
-Since this API has to return personalized results each time, you are required to provide the currently selected offering IDs.
+NO NEED TO PROVIDE \`selected\` PARAMETER ANYMORE.
 
 **📋 required params**
 - \`schoolId\`: 학교 ID (path parameter)
@@ -206,12 +206,9 @@ Since this API has to return personalized results each time, you are required to
 - \`studentId\`: 학생 ID (query parameter)
 - \`grade\`: 학년 (query parameter)
 
-**📋 optional params**
-- \`selected\`: selected offerings by the student in the format of a comma separated offering Ids
-
 **API 호출 예시**
 \`\`\`
-GET /v1/schools/123/terms/456/offerings?studentId=789&grade=1&selected=1,2,3
+GET /v1/schools/123/terms/456/offerings?studentId=789&grade=1
 \`\`\`
 
 **Request Parameters:**
@@ -223,7 +220,6 @@ Path Parameters:
 Query Parameters:
 - studentId: 789 (required)
 - grade: 1 (required, 1-6)
-- selected: a comma separated offering Ids (optional)
 \`\`\`
 
 **Response Example:**
@@ -241,7 +237,7 @@ Query Parameters:
     "bookingCount": 18,
     "prepicked": 2,
     "allowedGrades": [1, 2],
-    "pickRule": "FIRST_COME_FIRST_SERVED",
+    "pickRule": "FIRST",
     "times": [
       {
         "start": "09:00",

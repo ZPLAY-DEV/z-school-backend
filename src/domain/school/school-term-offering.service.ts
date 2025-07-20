@@ -145,23 +145,11 @@ export class SchoolTermOfferingService {
     termId: number,
     studentId: number,
     grade: number,
-    selected?: string,
   ): Promise<ResponseSchoolOfferingListDto[]> {
-    console.log('🚀 ~ :', schoolId, termId, studentId, grade, selected);
-
-    const hasIntersection = (pool: number[], target: number[]) => {
-      const set = new Set(pool);
-      return target.some((v) => set.has(v));
-    };
-
-    console.log('🚀 ~ hasIntersection:', hasIntersection);
-
     const bookings = await this.bookingRepository.find({
       where: { studentId },
     });
-    const selectedIds = selected?.split(',').map((v) => +v) || [];
-
-    console.log('🚀 ~ selectedIds:', selectedIds);
+    const selectedIds = bookings.map((v) => v.offeringId) || [];
 
     const items: Offering[] = await this.offeringRepository
       .createQueryBuilder('offering')
@@ -171,18 +159,22 @@ export class SchoolTermOfferingService {
       .andWhere('offering.termId = :termId', { termId })
       .orderBy('offering.id', 'DESC')
       .getMany();
-
-    const availableItems = items.filter((v) => v.allowedGrades.includes(grade));
-
-    console.log('🚀 ~ availableItems:', availableItems);
-    const accumulatedBitmasks = availableItems
+    const availableOfferings = items.filter((v) =>
+      v.allowedGrades.includes(grade),
+    );
+    const accumulatedBitmasks = availableOfferings
       .filter((v) => selectedIds.includes(v.id))
       .reduce((acc, v) => {
         return [...acc, ...v.bitmasks];
       }, []);
-    console.log('🚀 ~ accumulatedBitmasks:', accumulatedBitmasks);
 
-    return availableItems.map((offering) => {
+    availableOfferings.map((v, i) =>
+      console.log(`🚀 ~ ${v.id} bitmask ${i + 1}:`, v.bitmasks.join(',')),
+    );
+    console.log('🚀 ~ selectedIds:', selectedIds);
+    console.log('🚀 ~ accumulatedBitmasks:', accumulatedBitmasks.join(','));
+
+    return availableOfferings.map((offering) => {
       const totals = offering.lesson.groups.map(
         (g) => g.tuition + g.bookFee + g.materialFee,
       );
@@ -208,7 +200,7 @@ export class SchoolTermOfferingService {
         booking: booking || null,
         selectable: booking
           ? false
-          : hasIntersection(accumulatedBitmasks, offering.bitmasks)
+          : this.hasIntersection(accumulatedBitmasks, offering.bitmasks)
             ? false
             : true,
       } as ResponseSchoolOfferingListDto;
@@ -284,5 +276,16 @@ export class SchoolTermOfferingService {
         `Processing condition not met: ${error.message}`,
       );
     }
+  }
+
+  /**
+   * 두 배열 간의 교집합이 있는지 확인
+   * @param pool 첫 번째 배열
+   * @param target 두 번째 배열
+   * @returns 교집합이 있으면 true, 없으면 false
+   */
+  private hasIntersection(pool: number[], target: number[]) {
+    const set = new Set(pool);
+    return target.some((v) => set.has(v));
   }
 }

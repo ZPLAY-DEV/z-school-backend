@@ -72,14 +72,12 @@ export class SchoolTermOfferingController {
     @Param('termId', ParseIntPipe) termId: number,
     @Query('studentId') studentId: number,
     @Query('grade') grade: number,
-    @Query('selected') selected?: string,
   ): Promise<ResponseSchoolOfferingListDto[]> {
     return await this.schoolTermOfferingService.list(
       schoolId,
       termId,
       studentId,
       grade,
-      selected,
     );
   }
 
