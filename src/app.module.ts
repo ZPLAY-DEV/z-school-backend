@@ -53,7 +53,6 @@ import { UploadModule } from './services/upload/upload.module';
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: process.env.NODE_ENV === 'dev' ? '.env.dev' : '.env.prod',
       load: [configuration],
     }),
     SentryModule.forRoot(),

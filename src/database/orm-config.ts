@@ -9,6 +9,7 @@ export class OrmConfig implements TypeOrmOptionsFactory {
   private readonly environment: string;
   constructor(private readonly configService: ConfigService) {
     this.environment = this.configService.get<string>('nodeEnv', 'dev');
+    console.log('🚀 ~ OrmConfig ~ this.environment:', this.environment);
   }
 
   async createTypeOrmOptions(): Promise<TypeOrmModuleOptions> {

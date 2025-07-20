@@ -6,7 +6,7 @@ import { IAwsConfig, IRdbConfig } from 'src/common/interfaces';
  * - 사용하지 않는 환경변수 제거 필요 ( 현재 보일러 플레이트에서 가져온 사용하지 않는 리소스가 너무 많음 )
  */
 export const configuration = () => ({
-  nodeEnv: process.env.NODE_ENV ?? 'local',
+  nodeEnv: process.env.NODE_ENV ?? 'dev',
   appPort: Number(process.env.APP_PORT ?? '3001'),
   appUrl: process.env.APP_URL,
   timeZone: process.env.TIME_ZONE,
