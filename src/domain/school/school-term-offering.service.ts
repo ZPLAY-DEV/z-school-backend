@@ -147,14 +147,22 @@ export class SchoolTermOfferingService {
     grade: number,
     selected?: string,
   ): Promise<ResponseSchoolOfferingListDto[]> {
+    console.log('🚀 ~ :', schoolId, termId, studentId, grade, selected);
+
     const hasIntersection = (pool: number[], target: number[]) => {
       const set = new Set(pool);
       return target.some((v) => set.has(v));
     };
+
+    console.log('🚀 ~ hasIntersection:', hasIntersection);
+
     const bookings = await this.bookingRepository.find({
       where: { studentId },
     });
     const selectedIds = selected?.split(',').map((v) => +v) || [];
+
+    console.log('🚀 ~ selectedIds:', selectedIds);
+
     const items: Offering[] = await this.offeringRepository
       .createQueryBuilder('offering')
       .leftJoinAndSelect('offering.lesson', 'lesson')
@@ -165,11 +173,14 @@ export class SchoolTermOfferingService {
       .getMany();
 
     const availableItems = items.filter((v) => v.allowedGrades.includes(grade));
+
+    console.log('🚀 ~ availableItems:', availableItems);
     const accumulatedBitmasks = availableItems
       .filter((v) => selectedIds.includes(v.id))
       .reduce((acc, v) => {
         return [...acc, ...v.bitmasks];
       }, []);
+    console.log('🚀 ~ accumulatedBitmasks:', accumulatedBitmasks);
 
     return availableItems.map((offering) => {
       const totals = offering.lesson.groups.map(
@@ -186,8 +197,8 @@ export class SchoolTermOfferingService {
         groupName: offering.groupName,
         samName: offering.samName,
         capacity: offering.capacity,
-        bookingCount: offering.bookings.length,
-        prepicked: offering.picks.length,
+        bookingCount: offering.bookingCount,
+        prepicked: offering.prepicked,
         allowedGrades: offering.allowedGrades,
         pickRule: offering.pickRule,
         times: offering.times,
