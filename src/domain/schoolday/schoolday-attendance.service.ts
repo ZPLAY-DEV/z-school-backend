@@ -54,7 +54,7 @@ export class SchooldayAttendanceService {
   ) {
     const environment = this.configService.get<string>(
       'nodeEnv',
-      'development',
+      'dev',
     );
     this.attendanceTableName = `${environment}_attendance_table`;
   }

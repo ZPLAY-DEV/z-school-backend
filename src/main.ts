@@ -79,7 +79,7 @@ async function bootstrap() {
   // see https://expressjs.com/en/guide/behind-proxies.html
   app.set('trust proxy', true);
 
-  if (configService.get<string>('nodeEnv') === 'development') {
+  if (configService.get<string>('nodeEnv') === 'dev') {
     initSwagger(app);
   }
 

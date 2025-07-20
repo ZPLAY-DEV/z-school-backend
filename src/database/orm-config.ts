@@ -8,7 +8,7 @@ import { IAwsConfig, IRdbConfig } from 'src/common/interfaces';
 export class OrmConfig implements TypeOrmOptionsFactory {
   private readonly environment: string;
   constructor(private readonly configService: ConfigService) {
-    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.environment = this.configService.get<string>('nodeEnv', 'dev');
   }
 
   async createTypeOrmOptions(): Promise<TypeOrmModuleOptions> {
@@ -17,12 +17,12 @@ export class OrmConfig implements TypeOrmOptionsFactory {
     // if (nodeEnv === 'ecs' && !awsConfig) {
     //   throw new Error('AWS configuration is required in ECS environment');
     // }
-    if (this.environment === 'production' && !awsConfig) {
+    if (this.environment === 'prod' && !awsConfig) {
       throw new Error('AWS configuration is not defined.');
     }
 
     const databaseConfig =
-      this.environment === 'production'
+      this.environment === 'prod'
         ? await getAwsDatabaseConfig(awsConfig)
         : this.configService.getOrThrow<IRdbConfig>('database');
 
@@ -38,11 +38,11 @@ export class OrmConfig implements TypeOrmOptionsFactory {
       database: databaseConfig.dbname,
       subscribers: ['dist/**/*.subscriber{.ts,.js}'],
       entities: ['dist/**/*.entity{.ts,.js}'],
-      synchronize: this.environment !== 'production',
+      synchronize: this.environment !== 'prod',
       timezone: 'Z', // UTC
       bigNumberStrings: true,
       supportBigNumbers: true,
-      logging: this.environment !== 'production',
+      logging: this.environment !== 'prod',
       // migrations: ['dist/database/migrations/*.js'],
       // migrationsTableName: 'migrations',
       // migrationsRun: false,

@@ -45,7 +45,7 @@ export class S3Service implements OnModuleInit {
     this.s3 = new S3Client({
       region: region,
       forcePathStyle:
-        this.configService.get<string>('nodeEnv') === 'development',
+        this.configService.get<string>('nodeEnv') === 'dev',
       ...(endpoint && { endpoint }),
     });
   }
@@ -168,7 +168,7 @@ export class S3Service implements OnModuleInit {
 
       // development 환경에서 localstack URL을 ngrok URL로 변환
       let finalUrl = signedUrl;
-      if (this.configService.get<string>('nodeEnv') === 'development') {
+      if (this.configService.get<string>('nodeEnv') === 'dev') {
         // ngrok URL이 설정되어 있고, localhost:4566이 포함된 경우 변환
         const ngrokUrl =
           this.configService.get<string>('aws.cloudfrontUrl') ||

@@ -53,10 +53,7 @@ import { UploadModule } from './services/upload/upload.module';
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath:
-        process.env.NODE_ENV === 'development'
-          ? '.env.development'
-          : '.env.production',
+      envFilePath: process.env.NODE_ENV === 'dev' ? '.env.dev' : '.env.prod',
       load: [configuration],
     }),
     SentryModule.forRoot(),
@@ -96,7 +93,7 @@ import { UploadModule } from './services/upload/upload.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         local:
-          configService.get<string>('nodeEnv') === 'development'
+          configService.get<string>('nodeEnv') === 'dev'
             ? 'http://localhost:4566'
             : false,
         aws: {
@@ -107,7 +104,7 @@ import { UploadModule } from './services/upload/upload.module';
             configService.get<string>('aws.secretAccessKey') ?? 'test',
         },
         table: {
-          create: configService.get<string>('nodeEnv') === 'development', // create dynamo tables in local env
+          create: configService.get<string>('nodeEnv') === 'dev', // create dynamo tables in local env
           prefix: `${configService.get<string>('nodeEnv')}_`,
           suffix: '_table',
         },

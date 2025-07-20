@@ -3,12 +3,12 @@ import { DataSource } from 'typeorm';
 dotenv.config();
 
 /** staged production 환경에 따른 마이그레이션 파일 셋업 */
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'dev') {
   console.log('migration dev environment');
-  dotenv.config({ path: './.env.development' });
+  dotenv.config({ path: './.env.dev' });
 } else {
   console.log('migration prod environment');
-  dotenv.config({ path: './.env.production' });
+  dotenv.config({ path: './.env.prod' });
 }
 
 export default new DataSource({

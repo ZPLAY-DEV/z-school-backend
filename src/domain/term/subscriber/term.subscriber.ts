@@ -24,7 +24,7 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
     private readonly configService: ConfigService,
   ) {
     dataSource.subscribers.push(this);
-    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.environment = this.configService.get<string>('nodeEnv', 'dev');
     this.appUrl = this.configService.get<string>(
       'appUrl',
       'http://localhost:3000',

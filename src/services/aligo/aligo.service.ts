@@ -28,7 +28,7 @@ export class AligoService {
   };
 
   constructor(private readonly configService: ConfigService) {
-    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.environment = this.configService.get<string>('nodeEnv', 'dev');
     this.baseUrl =
       this.configService.get<string>('aligo.url') || 'https://apis.aligo.in';
     this.auth = {
@@ -90,7 +90,7 @@ export class AligoService {
     const baseDto = {
       sender: sender || ZPLAY_SEOUL_NUMBER,
       msg_type: 'SMS',
-      testmode_yn: this.environment === 'production' ? 'N' : 'Y', // todo. remove this
+      testmode_yn: this.environment === 'prod' ? 'N' : 'Y', // todo. remove this
     };
 
     const batches = chunk(dtos, 500);
@@ -178,7 +178,7 @@ export class AligoService {
     const baseDto = {
       sender: sender || ZPLAY_SEOUL_NUMBER,
       msg_type: 'SMS',
-      testmode_yn: this.environment === 'production' ? 'N' : 'Y', // todo. remove this
+      testmode_yn: this.environment === 'prod' ? 'N' : 'Y', // todo. remove this
     };
 
     const batches = chunk(dtos, 500);

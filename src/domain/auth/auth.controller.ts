@@ -47,7 +47,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
   ) {
-    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.environment = this.configService.get<string>('nodeEnv', 'dev');
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -68,14 +68,14 @@ export class AuthController {
 
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: this.environment === 'production',
+      secure: this.environment === 'prod',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
     });
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: this.environment === 'production',
+      secure: this.environment === 'prod',
       sameSite: 'lax',
       path: '/',
       maxAge: THIRTY_DAYS,
@@ -95,14 +95,14 @@ export class AuthController {
 
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: this.environment === 'production',
+      secure: this.environment === 'prod',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
     });
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: this.environment === 'production',
+      secure: this.environment === 'prod',
       sameSite: 'lax',
       path: '/',
       maxAge: THIRTY_DAYS,
@@ -136,14 +136,14 @@ export class AuthController {
 
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: this.environment === 'production',
+      secure: this.environment === 'prod',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
     });
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: this.environment === 'production',
+      secure: this.environment === 'prod',
       sameSite: 'lax',
       path: '/',
       maxAge: THIRTY_DAYS,
@@ -164,14 +164,14 @@ export class AuthController {
 
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: this.environment === 'production',
+      secure: this.environment === 'prod',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
     });
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: this.environment === 'production',
+      secure: this.environment === 'prod',
       sameSite: 'lax',
       path: '/',
       maxAge: THIRTY_DAYS,
@@ -224,7 +224,7 @@ export class AuthController {
     // Update accessToken cookie only
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: this.environment === 'production',
+      secure: this.environment === 'prod',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
@@ -274,7 +274,7 @@ export class AuthController {
     // Clear cookies regardless of token status
     const cookieOptions = {
       httpOnly: true,
-      secure: this.environment === 'production',
+      secure: this.environment === 'prod',
       sameSite: 'lax' as const,
       path: '/',
     };

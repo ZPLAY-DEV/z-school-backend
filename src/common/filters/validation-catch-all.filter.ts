@@ -23,7 +23,7 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
     private readonly configService: ConfigService,
   ) {
     super();
-    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.environment = this.configService.get<string>('nodeEnv', 'dev');
   }
 
   @SentryExceptionCaptured()
@@ -162,7 +162,7 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
     }
 
     // Add context to Sentry for 500+ errors and send Slack notification
-    if (httpStatus >= 500 && this.environment !== 'development') {
+    if (httpStatus >= 500 && this.environment !== 'dev') {
       Sentry.captureException(exception, (scope) => {
         scope.setTag('apiVersion', 'v1');
         scope.setTag('env', this.environment);

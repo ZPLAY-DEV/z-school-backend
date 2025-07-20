@@ -60,7 +60,7 @@ export class AuthService {
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
   ) {
-    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.environment = this.configService.get<string>('nodeEnv', 'dev');
     this.appUrl = this.configService.get<string>(
       'appUrl',
       'http://localhost:3000',
@@ -640,7 +640,7 @@ export class AuthService {
    * Send registration notification to Slack
    */
   private async sendRegistrationSlack(user: User, role: Role): Promise<void> {
-    if (this.environment !== 'development') {
+    if (this.environment !== 'dev') {
       const userId = user.id;
       const username = user.username ?? role;
       await this.slack.sendMessage({

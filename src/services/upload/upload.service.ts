@@ -21,7 +21,7 @@ export class UploadService {
     private readonly configService: ConfigService,
     private readonly s3Service: S3Service,
   ) {
-    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.environment = this.configService.get<string>('nodeEnv', 'dev');
     this.cloudFrontUrl = this.configService.get<string>(
       'aws.cloudfrontUrl',
       'https://localhost.localstack.cloud:4566', // fallback url
@@ -59,7 +59,7 @@ export class UploadService {
       }
 
       const fileUrl =
-        this.configService.get<string>('nodeEnv') === 'development'
+        this.configService.get<string>('nodeEnv') === 'dev'
           ? `${this.cloudFrontUrl}/${this.s3FilesBucket}/${fullPath}`
           : `${this.cloudFrontUrl}/${fullPath}`;
 
