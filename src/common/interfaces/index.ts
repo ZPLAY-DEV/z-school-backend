@@ -8,14 +8,15 @@ export interface IAwsConfig {
   secretAccessKey: string;
   // secretsManagerEndpoint: string;
   // secretsDbArn: string;
-  cloudfrontUrl: string;
   s3Endpoint?: string;
+  sqsEndpoint?: string;
+  firehoseEndpoint?: string;
+  // essentials
+  cloudfrontUrl: string;
   s3FilesBucket: string;
   s3LogsBucket: string;
-  sqsEndpoint?: string;
-  sqsPrimaryUrl: string;
-  sqsDeadNewsletterUrl: string;
-  firehoseEndpoint?: string;
+  sqsPqUrl: string;
+  sqsDlqUrl: string;
   firehoseStreamName: string;
   ssmParameterName: string;
 }

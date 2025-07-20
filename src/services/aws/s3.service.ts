@@ -44,8 +44,7 @@ export class S3Service implements OnModuleInit {
     // 일반 작업용 S3 클라이언트 (localstack 내부 호출)
     this.s3 = new S3Client({
       region: region,
-      forcePathStyle:
-        this.configService.get<string>('nodeEnv') === 'dev',
+      forcePathStyle: this.configService.get<string>('nodeEnv') !== 'prod',
       ...(endpoint && { endpoint }),
     });
   }

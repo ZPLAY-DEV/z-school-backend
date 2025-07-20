@@ -5,13 +5,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as cookieParser from 'cookie-parser';
 import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import helmet from 'helmet';
 import { AppModule } from 'src/app.module';
-import { RedisIoAdapter } from 'src/common/adapters/redis-io-adapter';
 import { initSwagger } from './common/swagger/swagger-config';
 import './instrument'; // import this first!
 // import { ConfigService } from '@nestjs/config';
@@ -22,18 +20,17 @@ async function bootstrap() {
   });
   const configService = app.get<ConfigService>(ConfigService);
 
-  app.connectMicroservice({
-    transport: Transport.REDIS,
-    options: {
-      host: configService.getOrThrow('redis.host'),
-      port: configService.getOrThrow('redis.port'),
-    },
-  });
-  await app.startAllMicroservices();
-
-  const redisIoAdapter = new RedisIoAdapter(app);
-  await redisIoAdapter.connectToRedis();
-  app.useWebSocketAdapter(redisIoAdapter);
+  // app.connectMicroservice({
+  //   transport: Transport.REDIS,
+  //   options: {
+  //     host: configService.getOrThrow('redis.host'),
+  //     port: configService.getOrThrow('redis.port'),
+  //   },
+  // });
+  // await app.startAllMicroservices();
+  // const redisIoAdapter = new RedisIoAdapter(app);
+  // await redisIoAdapter.connectToRedis();
+  // app.useWebSocketAdapter(redisIoAdapter);
 
   app.useGlobalPipes(
     new ValidationPipe({

@@ -7,15 +7,9 @@ import {
   REDIS_BOOKING_OPTIONS,
   REDIS_CACHE_CLIENT,
   REDIS_CACHE_OPTIONS,
-  REDIS_MESSAGE_CLIENT,
-  REDIS_MESSAGE_OPTIONS,
-  REDIS_TRACKING_CLIENT,
-  REDIS_TRACKING_OPTIONS,
 } from 'src/common/constants';
-import { RedisTrackingService } from 'src/services/redis/redis-tracking.service';
-import { RedisBookingService } from './redis-booking.service';
-import { RedisCacheService } from './redis-cache.service';
-import { RedisMessageService } from './redis-message.service';
+import { RedisBookingService } from 'src/services/redis/redis-booking.service';
+import { RedisCacheService } from 'src/services/redis/redis-cache.service';
 
 @Module({
   providers: [
@@ -38,7 +32,10 @@ import { RedisMessageService } from './redis-message.service';
         host: configService.get<string>('redis.host', 'localhost'),
         port: configService.get<number>('redis.port', 6379),
         password: configService.get<string>('redis.password', ''),
-        db: configService.get<number>('redis.cacheDb', 0),
+        // prod 가 아닌 환경의 경우에만 db 0 지정
+        ...(configService.get<string>('nodeEnv') !== 'prod' && {
+          db: 0,
+        }),
         keyPrefix: 'cache:',
       }),
       inject: [ConfigService],
@@ -47,72 +44,58 @@ import { RedisMessageService } from './redis-message.service';
     {
       provide: REDIS_BOOKING_OPTIONS,
       useFactory: (configService: ConfigService) => ({
-        host: configService.get<string>('redis.host', 'localhost'),
-        port: configService.get<number>('redis.port', 6379),
-        password: configService.get<string>('redis.password', ''),
-        db: configService.get<number>('redis.bookingDb', 1),
+        host: configService.get<string>('redisBooking.host', 'localhost'),
+        port: configService.get<number>('redisBooking.port', 6379),
+        password: configService.get<string>('redisBooking.password', ''),
+        // prod 가 아닌 환경의 경우에만 db 1 지정
+        ...(configService.get<string>('nodeEnv') !== 'prod' && {
+          db: 1,
+        }),
       }),
       inject: [ConfigService],
     },
     // Tracking options provider
-    {
-      provide: REDIS_TRACKING_OPTIONS,
-      useFactory: (configService: ConfigService) => ({
-        host: configService.get<string>('redis.host', 'localhost'),
-        port: configService.get<number>('redis.port', 6379),
-        password: configService.get<string>('redis.password', ''),
-        db: configService.get<number>('redis.dispatchDb', 2),
-      }),
-      inject: [ConfigService],
-    },
-    // Messaging options provider
-    {
-      provide: REDIS_MESSAGE_OPTIONS,
-      useFactory: (configService: ConfigService) => ({
-        host: configService.get<string>('redis.host', 'localhost'),
-        port: configService.get<number>('redis.port', 6379),
-        password: configService.get<string>('redis.password', ''),
-        db: configService.get<number>('redis.messageDb', 3),
-        keyPrefix: 'message:',
-      }),
-      inject: [ConfigService],
-    },
-    // Service providers
-    RedisBookingService,
+    // {
+    //   provide: REDIS_TRACKING_OPTIONS,
+    //   useFactory: (configService: ConfigService) => ({
+    //     host: configService.get<string>('redis.host', 'localhost'),
+    //     port: configService.get<number>('redis.port', 6379),
+    //     password: configService.get<string>('redis.password', ''),
+    //     db: configService.get<number>('redis.dispatchDb', 2),
+    //   }),
+    //   inject: [ConfigService],
+    // },
     RedisCacheService,
-    RedisMessageService,
-    RedisTrackingService,
-    // Cache options provider
-    {
-      provide: REDIS_BOOKING_CLIENT,
-      useExisting: RedisBookingService,
-    },
-    // Dispatch client provider
-    {
-      provide: REDIS_TRACKING_CLIENT,
-      useExisting: RedisTrackingService,
-    },
-    // Cache client provider
+    RedisBookingService,
+    // RedisTrackingService,
+    // RedisMessageService,
     {
       provide: REDIS_CACHE_CLIENT,
       useExisting: RedisCacheService,
     },
-    // Message client provider
     {
-      provide: REDIS_MESSAGE_CLIENT,
-      useExisting: RedisMessageService,
+      provide: REDIS_BOOKING_CLIENT,
+      useExisting: RedisBookingService,
     },
+    // {
+    //   provide: REDIS_TRACKING_CLIENT,
+    //   useExisting: RedisTrackingService,
+    // },
+    // {
+    //   provide: REDIS_MESSAGE_CLIENT,
+    //   useExisting: RedisMessageService,
+    // },
   ],
   exports: [
     KEYV_REDIS,
-    REDIS_BOOKING_CLIENT,
-    REDIS_TRACKING_CLIENT,
     REDIS_CACHE_CLIENT,
-    REDIS_MESSAGE_CLIENT,
-    RedisBookingService,
-    RedisTrackingService,
+    REDIS_BOOKING_CLIENT,
+    // REDIS_TRACKING_CLIENT,
+    // REDIS_MESSAGE_CLIENT,
     RedisCacheService,
-    RedisMessageService,
+    RedisBookingService,
+    // RedisTrackingService,
+    // RedisMessageService,
   ],
 })
 export class RedisModule {}

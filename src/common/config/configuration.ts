@@ -25,20 +25,6 @@ export const configuration = () => ({
       : 6379,
     password: process.env.REDIS_CACHE_PASSWORD,
   },
-  redisCache: {
-    host: process.env.REDIS_CACHE_HOST ?? 'localhost',
-    port: process.env.REDIS_CACHE_PORT
-      ? Number(process.env.REDIS_CACHE_PORT)
-      : 6379,
-    password: process.env.REDIS_CACHE_PASSWORD,
-  },
-  redisPubSub: {
-    host: process.env.REDIS_PUBSUB_HOST ?? 'localhost',
-    port: process.env.REDIS_PUBSUB_PORT
-      ? Number(process.env.REDIS_PUBSUB_PORT)
-      : 6379,
-    password: process.env.REDIS_PUBSUB_PASSWORD,
-  },
   redisBooking: {
     host: process.env.REDIS_BOOKING_HOST ?? 'localhost',
     port: process.env.REDIS_BOOKING_PORT
@@ -46,6 +32,13 @@ export const configuration = () => ({
       : 6379,
     password: process.env.REDIS_BOOKING_PASSWORD,
   },
+  // redisPubSub: {
+  //   host: process.env.REDIS_PUBSUB_HOST ?? 'localhost',
+  //   port: process.env.REDIS_PUBSUB_PORT
+  //     ? Number(process.env.REDIS_PUBSUB_PORT)
+  //     : 6379,
+  //   password: process.env.REDIS_PUBSUB_PASSWORD,
+  // },
   jwt: {
     authSecret: process.env.AUTH_TOKEN_SECRET,
     refreshSecret: process.env.REFRESH_TOKEN_SECRET,
@@ -63,14 +56,15 @@ export const configuration = () => ({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     // secretsManagerEndpoint: process.env.AWS_SECRETS_MANAGER_ENDPOINT,
     // secretsDbArn: process.env.AWS_SECRETS_DB_ARN,
-    cloudfrontUrl: process.env.AWS_CLOUDFRONT_URL,
     s3Endpoint: process.env.AWS_S3_ENDPOINT,
+    sqsEndpoint: process.env.AWS_SQS_ENDPOINT,
+    firehoseEndpoint: process.env.AWS_FIREHOSE_ENDPOINT,
+    // essentials
+    cloudfrontUrl: process.env.AWS_CLOUDFRONT_URL,
     s3FilesBucket: process.env.AWS_S3_FILES_BUCKET,
     s3LogsBucket: process.env.AWS_S3_LOGS_BUCKET,
-    sqsEndpoint: process.env.AWS_SQS_ENDPOINT,
-    sqsPrimaryUrl: process.env.AWS_SQS_PQ_URL,
-    sqsDeadNewsletterUrl: process.env.AWS_SQS_DLQ_URL,
-    firehoseEndpoint: process.env.AWS_FIREHOSE_ENDPOINT,
+    sqsPqUrl: process.env.AWS_SQS_PQ_URL,
+    sqsDlqUrl: process.env.AWS_SQS_DLQ_URL,
     firehoseStreamName: process.env.AWS_FIREHOSE_STREAM_NAME,
     ssmParameterName: process.env.AWS_SSM_PARAMETER_NAME,
   } as IAwsConfig,

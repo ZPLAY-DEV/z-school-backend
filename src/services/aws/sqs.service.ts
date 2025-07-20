@@ -20,18 +20,20 @@ export class SqsService implements OnModuleInit {
       accessKeyId: string;
       secretAccessKey: string;
       sqsEndpoint: string;
-      queueUrl: string;
+      sqsPqUrl: string;
+      sqsDlqUrl: string;
     },
   ) {
+    const endpoint = sqsOptions.sqsEndpoint;
     this.sqsClient = new SQSClient({
       region: sqsOptions.region,
-      endpoint: sqsOptions.sqsEndpoint,
       credentials: {
         accessKeyId: sqsOptions.accessKeyId,
         secretAccessKey: sqsOptions.secretAccessKey,
       },
+      ...(endpoint && { endpoint }),
     });
-    this.queueUrl = sqsOptions.queueUrl;
+    this.queueUrl = sqsOptions.sqsPqUrl;
   }
 
   onModuleInit() {

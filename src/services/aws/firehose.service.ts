@@ -45,7 +45,7 @@ export class FirehoseService implements OnModuleInit {
     this.client = new FirehoseClient({
       region,
       maxAttempts: this.maxRetries,
-      ...(credentials && { credentials }),
+      credentials: credentials,
       ...(endpoint && { endpoint }),
     });
   }
