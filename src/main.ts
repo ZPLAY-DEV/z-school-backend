@@ -3,6 +3,7 @@ import {
   ValidationPipe,
   VersioningType,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -11,7 +12,6 @@ import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import helmet from 'helmet';
 import { AppModule } from 'src/app.module';
 import { RedisIoAdapter } from 'src/common/adapters/redis-io-adapter';
-import { loadEnvConfig } from './common/config/env.config';
 import { initSwagger } from './common/swagger/swagger-config';
 import './instrument'; // import this first!
 // import { ConfigService } from '@nestjs/config';
@@ -20,16 +20,13 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
   });
-  // const configService = app.get<ConfigService>(ConfigService);
-  const { env } = loadEnvConfig();
+  const configService = app.get<ConfigService>(ConfigService);
 
   app.connectMicroservice({
     transport: Transport.REDIS,
     options: {
-      host: process.env.REDIS_HOST,
-      port: Number(process.env.REDIS_CACHE_PORT),
-      // host: configService.getOrThrow('redis.host'),
-      // port: configService.getOrThrow('redis.port'),
+      host: configService.getOrThrow('redis.host'),
+      port: configService.getOrThrow('redis.port'),
     },
   });
   await app.startAllMicroservices();
@@ -82,13 +79,15 @@ async function bootstrap() {
   // see https://expressjs.com/en/guide/behind-proxies.html
   app.set('trust proxy', true);
 
-  if (env === 'development') {
+  if (configService.get<string>('nodeEnv') === 'development') {
     initSwagger(app);
   }
 
-  const port = Number(process.env.APP_PORT) || 3001;
+  const port = Number(configService.get<string>('appPort')) || 3001;
   await app.listen(port, () => {
-    console.log(`🚀 Application is running on port ${port} in ${env} mode!`);
+    console.log(
+      `🚀 Application is running on port ${port} in ${configService.get<string>('nodeEnv')} mode!`,
+    );
   });
 }
 
