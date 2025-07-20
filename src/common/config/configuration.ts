@@ -56,13 +56,13 @@ export const configuration = () => ({
   },
   firebase:
     process.env.GOOGLE_APPLICATION_CREDENTIALS ??
-    './fb-admin-gogi.account-key.json',
+    './school-hub.fb-admin-key.json',
   aws: {
     defaultRegion: process.env.AWS_DEFAULT_REGION,
     accessKey: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    secretsManagerEndpoint: process.env.AWS_SECRETS_MANAGER_ENDPOINT,
-    secretsDbArn: process.env.AWS_SECRETS_DB_ARN,
+    // secretsManagerEndpoint: process.env.AWS_SECRETS_MANAGER_ENDPOINT,
+    // secretsDbArn: process.env.AWS_SECRETS_DB_ARN,
     cloudfrontUrl: process.env.AWS_CLOUDFRONT_URL,
     s3Endpoint: process.env.AWS_S3_ENDPOINT,
     s3FilesBucket: process.env.AWS_S3_FILES_BUCKET,
@@ -72,6 +72,7 @@ export const configuration = () => ({
     sqsDeadNewsletterUrl: process.env.AWS_SQS_DLQ_URL,
     firehoseEndpoint: process.env.AWS_FIREHOSE_ENDPOINT,
     firehoseStreamName: process.env.AWS_FIREHOSE_STREAM_NAME,
+    ssmParameterName: process.env.AWS_SSM_PARAMETER_NAME,
   } as IAwsConfig,
   slack: {
     token: process.env.SLACK_TOKEN,
@@ -80,15 +81,6 @@ export const configuration = () => ({
   },
   sentry: {
     dsn: process.env.SENTRY_DSN,
-  },
-  toss: {
-    secretKey: process.env.TOSS_SECRET_KEY,
-    clientKey: process.env.TOSS_CLIENT_KEY,
-    apiBaseUrl: 'https://api.tosspayments.com/v1',
-  },
-  deliveryTracker: {
-    clientId: process.env.DELIVERY_TRACKER_CLIENT_ID,
-    clientSecret: process.env.DELIVERY_TRACKER_CLIENT_SECRET,
   },
   aligo: {
     url: process.env.ALIGO_URL || 'https://apis.aligo.in',

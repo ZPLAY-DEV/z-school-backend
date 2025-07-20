@@ -2,15 +2,6 @@ import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 dotenv.config();
 
-/** staged production 환경에 따른 마이그레이션 파일 셋업 */
-if (process.env.NODE_ENV === 'dev') {
-  console.log('migration dev environment');
-  dotenv.config({ path: './.env.dev' });
-} else {
-  console.log('migration prod environment');
-  dotenv.config({ path: './.env.prod' });
-}
-
 export default new DataSource({
   type: process.env.DB_ENGINE as 'mysql',
   host: process.env.DB_HOST,

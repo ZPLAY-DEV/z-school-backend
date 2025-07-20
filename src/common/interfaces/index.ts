@@ -6,17 +6,18 @@ export interface IAwsConfig {
   defaultRegion: string;
   accessKey: string;
   secretAccessKey: string;
-  secretsManagerEndpoint: string;
-  secretsDbArn: string;
+  // secretsManagerEndpoint: string;
+  // secretsDbArn: string;
   cloudfrontUrl: string;
-  s3Endpoint: string;
+  s3Endpoint?: string;
   s3FilesBucket: string;
   s3LogsBucket: string;
-  sqsEndpoint: string;
+  sqsEndpoint?: string;
   sqsPrimaryUrl: string;
   sqsDeadNewsletterUrl: string;
-  firehoseEndpoint: string;
+  firehoseEndpoint?: string;
   firehoseStreamName: string;
+  ssmParameterName: string;
 }
 export interface IRdbConfig {
   engine: string;

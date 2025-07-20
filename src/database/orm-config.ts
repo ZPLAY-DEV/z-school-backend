@@ -1,30 +1,27 @@
+import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
-import { getAwsDatabaseConfig } from 'src/common/config/aws-database';
 import { IAwsConfig, IRdbConfig } from 'src/common/interfaces';
 
 @Injectable()
 export class OrmConfig implements TypeOrmOptionsFactory {
   private readonly environment: string;
+
   constructor(private readonly configService: ConfigService) {
     this.environment = this.configService.get<string>('nodeEnv', 'dev');
-    console.log('🚀 ~ OrmConfig ~ this.environment:', this.environment);
   }
 
   async createTypeOrmOptions(): Promise<TypeOrmModuleOptions> {
     const awsConfig = this.configService.getOrThrow<IAwsConfig>('aws');
 
-    // if (nodeEnv === 'ecs' && !awsConfig) {
-    //   throw new Error('AWS configuration is required in ECS environment');
-    // }
     if (this.environment === 'prod' && !awsConfig) {
       throw new Error('AWS configuration is not defined.');
     }
 
     const databaseConfig =
       this.environment === 'prod'
-        ? await getAwsDatabaseConfig(awsConfig)
+        ? await this.getAwsDatabaseConfig(awsConfig)
         : this.configService.getOrThrow<IRdbConfig>('database');
 
     if (!databaseConfig) {
@@ -49,4 +46,21 @@ export class OrmConfig implements TypeOrmOptionsFactory {
       // migrationsRun: false,
     };
   }
+
+  getAwsDatabaseConfig = async (awsConfig: IAwsConfig): Promise<IRdbConfig> => {
+    const client = new SSMClient({
+      region: awsConfig.defaultRegion,
+    });
+    const getParameterCommand = new GetParameterCommand({
+      Name: awsConfig.ssmParameterName,
+      WithDecryption: true,
+    });
+    const { Parameter } = await client.send(getParameterCommand);
+    if (!Parameter?.Value || typeof Parameter.Value !== 'string') {
+      throw new Error('Parameter value is undefined or not a string');
+    }
+
+    const parameterValue: string = Parameter.Value;
+    return JSON.parse(parameterValue) as IRdbConfig;
+  };
 }
