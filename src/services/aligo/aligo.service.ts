@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ZPLAY_SEOUL_NUMBER } from 'src/common/constants';
 import { chunk } from 'src/helpers/array';
 import { delay } from 'src/helpers/time';
@@ -19,17 +20,20 @@ export interface SmsBatchResult {
 @Injectable()
 export class AligoService {
   private readonly logger = new Logger(AligoService.name);
+  private readonly environment: string;
   private readonly baseUrl: string;
   private readonly auth: {
     key: string;
     user_id: string;
   };
 
-  constructor() {
-    this.baseUrl = process.env.ALIGO_URL || 'https://apis.aligo.in';
+  constructor(private readonly configService: ConfigService) {
+    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.baseUrl =
+      this.configService.get<string>('aligo.url') || 'https://apis.aligo.in';
     this.auth = {
-      key: process.env.ALIGO_KEY || '',
-      user_id: process.env.ALIGO_UID || '',
+      key: this.configService.get<string>('aligo.key') || '',
+      user_id: this.configService.get<string>('aligo.uid') || '',
     };
   }
 
@@ -86,7 +90,7 @@ export class AligoService {
     const baseDto = {
       sender: sender || ZPLAY_SEOUL_NUMBER,
       msg_type: 'SMS',
-      testmode_yn: process.env.NODE_ENV === 'production' ? 'N' : 'Y', // todo. remove this line
+      testmode_yn: this.environment === 'production' ? 'N' : 'Y', // todo. remove this
     };
 
     const batches = chunk(dtos, 500);
@@ -174,7 +178,7 @@ export class AligoService {
     const baseDto = {
       sender: sender || ZPLAY_SEOUL_NUMBER,
       msg_type: 'SMS',
-      testmode_yn: process.env.NODE_ENV === 'production' ? 'N' : 'Y', // todo. remove this line
+      testmode_yn: this.environment === 'production' ? 'N' : 'Y', // todo. remove this
     };
 
     const batches = chunk(dtos, 500);

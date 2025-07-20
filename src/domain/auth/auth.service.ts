@@ -44,6 +44,9 @@ interface TokenData {
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly environment: string;
+  private readonly appUrl: string;
+
   private readonly userRepository: Repository<User>;
   private readonly instructorRepository: Repository<Instructor>;
   private readonly parentRepository: Repository<Parent>;
@@ -57,6 +60,12 @@ export class AuthService {
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
   ) {
+    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.appUrl = this.configService.get<string>(
+      'appUrl',
+      'http://localhost:3000',
+    );
+
     this.userRepository = this.dataSource.getRepository(User);
     this.instructorRepository = this.dataSource.getRepository(Instructor);
     this.parentRepository = this.dataSource.getRepository(Parent);
@@ -631,12 +640,12 @@ export class AuthService {
    * Send registration notification to Slack
    */
   private async sendRegistrationSlack(user: User, role: Role): Promise<void> {
-    if (this.configService.get('env') !== 'development') {
+    if (this.environment !== 'development') {
       const userId = user.id;
       const username = user.username ?? role;
       await this.slack.sendMessage({
         channel: 'activity',
-        text: `[${process.env.NODE_ENV}-api] 🥳 회원가입(credentials) : <${process.env.APP_URL}/users/${userId}|${username}>`,
+        text: `[${this.environment}-api] 🥳 회원가입(credentials) : <${this.appUrl}/users/${userId}|${username}>`,
       });
     }
   }

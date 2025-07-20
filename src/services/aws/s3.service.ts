@@ -26,40 +26,32 @@ export interface S3DeleteResult {
 export class S3Service implements OnModuleInit {
   private readonly logger = new Logger(S3Service.name);
   private readonly s3: S3Client;
-  private readonly s3ForPresigned: S3Client; // presigned URL용 별도 클라이언트
   private readonly bucket: string;
-  private readonly region: string;
   private readonly cloudfrontUrl: string;
-  private readonly s3Endpoint: string;
 
   constructor(@Inject(ConfigService) private configService: ConfigService) {
+    // Validate required environment variables
+    const region =
+      this.configService.get<string>('aws.defaultRegion') ?? 'ap-northeast-2';
+    const endpoint = this.configService.get<string>('aws.s3Endpoint');
     this.bucket =
       this.configService.get<string>('aws.s3FilesBucket') ??
       'afterschool-files-bucket';
-    this.region =
-      this.configService.get<string>('aws.defaultRegion') ?? 'ap-northeast-2';
     this.cloudfrontUrl =
       this.configService.get<string>('aws.cloudfrontUrl') ??
       'https://localhost.localstack.cloud:4566';
 
-    this.s3Endpoint =
-      this.configService.get<string>('aws.s3Endpoint') ??
-      'http://localhost:4566';
-
     // 일반 작업용 S3 클라이언트 (localstack 내부 호출)
     this.s3 = new S3Client({
-      endpoint: this.s3Endpoint,
-      region: this.region,
-      forcePathStyle: process.env.NODE_ENV === 'development',
+      region: region,
+      forcePathStyle:
+        this.configService.get<string>('nodeEnv') === 'development',
+      ...(endpoint && { endpoint }),
     });
   }
 
   onModuleInit() {
-    try {
-      this.logger.log(`AWS S3 service initialized w/ bucket: ${this.bucket}`);
-    } catch (error) {
-      console.error('❌ Failed to initialize AWS S3 service:', error);
-    }
+    this.logger.log(`AWS S3 service initialized w/ bucket: ${this.bucket}`);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -176,9 +168,11 @@ export class S3Service implements OnModuleInit {
 
       // development 환경에서 localstack URL을 ngrok URL로 변환
       let finalUrl = signedUrl;
-      if (process.env.NODE_ENV === 'development') {
+      if (this.configService.get<string>('nodeEnv') === 'development') {
         // ngrok URL이 설정되어 있고, localhost:4566이 포함된 경우 변환
-        const ngrokUrl = process.env.AWS_CLOUDFRONT_URL || this.cloudfrontUrl;
+        const ngrokUrl =
+          this.configService.get<string>('aws.cloudfrontUrl') ||
+          this.cloudfrontUrl;
         if (signedUrl.includes('localhost:4566')) {
           finalUrl = signedUrl.replace('http://localhost:4566', ngrokUrl);
           this.logger.log(`🔄 LocalStack URL → ngrok: ${finalUrl}`);
@@ -228,9 +222,5 @@ export class S3Service implements OnModuleInit {
   // 설정값 getter 메서드들
   getBucket(): string {
     return this.bucket;
-  }
-
-  getRegion(): string {
-    return this.region;
   }
 }

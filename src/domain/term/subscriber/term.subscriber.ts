@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -14,12 +15,20 @@ import {
 @Injectable()
 export class TermSubscriber implements EntitySubscriberInterface<Term> {
   private readonly logger = new Logger(TermSubscriber.name);
+  private readonly environment: string;
+  private readonly appUrl: string;
 
   constructor(
     dataSource: DataSource,
     private readonly slack: SlackService,
+    private readonly configService: ConfigService,
   ) {
     dataSource.subscribers.push(this);
+    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.appUrl = this.configService.get<string>(
+      'appUrl',
+      'http://localhost:3000',
+    );
   }
 
   listenTo(): any {
@@ -69,7 +78,6 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
     // 2. set isOfferingReady to true
     // 3. Slack 알림 발송
     if (term && oldStatus === null && newStatus !== null) {
-      // todo. offerings 생성하기
       try {
         await this.makeOfferings(term, event.manager);
       } catch (error) {
@@ -122,13 +130,11 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
    * Send term registration notification to Slack
    */
   private async sendTermRegistrationNotification(term: Term): Promise<void> {
-    if (process.env.NODE_ENV !== 'development') {
-      const termId = term.id;
-      const termName = term.termName;
-      await this.slack.sendMessage({
-        channel: 'activity',
-        text: `[${process.env.NODE_ENV}-api] 🥳 Term 수강신청일 등록 : <${process.env.APP_URL}/terms/${termId}|${termName}>`,
-      });
-    }
+    const termId = term.id;
+    const termName = term.termName;
+    await this.slack.sendMessage({
+      channel: 'activity',
+      text: `[${this.environment}-api] 🥳 Term 수강신청일 등록 : <${this.appUrl}/terms/${termId}|${termName}>`,
+    });
   }
 }

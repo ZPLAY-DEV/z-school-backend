@@ -30,10 +30,6 @@ export class UploadService {
       'aws.s3FilesBucket',
       'afterschool-files-bucket',
     );
-
-    this.logger.log(
-      `UploadService initialized for environment: ${this.environment}`,
-    );
   }
 
   /**
@@ -63,7 +59,7 @@ export class UploadService {
       }
 
       const fileUrl =
-        process.env.NODE_ENV === 'development'
+        this.configService.get<string>('nodeEnv') === 'development'
           ? `${this.cloudFrontUrl}/${this.s3FilesBucket}/${fullPath}`
           : `${this.cloudFrontUrl}/${fullPath}`;
 

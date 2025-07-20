@@ -73,15 +73,6 @@ export const configuration = () => ({
     firehoseEndpoint: process.env.AWS_FIREHOSE_ENDPOINT,
     firehoseStreamName: process.env.AWS_FIREHOSE_STREAM_NAME,
   } as IAwsConfig,
-  // naver: {
-  //   accessKey: process.env.NAVER_ACCESS_KEY,
-  //   secretKey: process.env.NAVER_SECRET_KEY,
-  //   smsServiceId: process.env.NAVER_SMS_SERVICE_ID,
-  //   smsSecretKey: process.env.NAVER_SMS_SECRET_KEY,
-  //   smsphone: process.env.NAVER_SMS_PHONE_NUMBER,
-  //   alimtalkServiceId: process.env.NAVER_ALIMTALK_SERVICE_ID,
-  //   plusFriendId: process.env.NAVER_PLUS_FRIEND_ID,
-  // },
   slack: {
     token: process.env.SLACK_TOKEN,
     activityChannel: process.env.SLACK_CHANNEL_ACTIVITY,
@@ -98,5 +89,13 @@ export const configuration = () => ({
   deliveryTracker: {
     clientId: process.env.DELIVERY_TRACKER_CLIENT_ID,
     clientSecret: process.env.DELIVERY_TRACKER_CLIENT_SECRET,
+  },
+  aligo: {
+    url: process.env.ALIGO_URL || 'https://apis.aligo.in',
+    key: process.env.ALIGO_KEY || '',
+    uid: process.env.ALIGO_UID || '',
+  },
+  neis: {
+    apiKey: process.env.NEIS_API_KEY || '',
   },
 });

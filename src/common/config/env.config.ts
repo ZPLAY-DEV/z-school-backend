@@ -3,6 +3,7 @@ import * as path from 'path';
 
 /**
  * cross-env 환경에 맞춰 bootstrap 시점에 env 파일을 로드
+ * 이 파일은 애플리케이션 시작 전에 실행되므로 process.env를 직접 사용
  */
 export function loadEnvConfig() {
   const env = process.env.NODE_ENV || 'development';

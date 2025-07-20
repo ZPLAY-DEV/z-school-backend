@@ -11,6 +11,7 @@ import {
   UnauthorizedException,
   UseInterceptors,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiTags } from '@nestjs/swagger';
 import { Request as ExpressRequest, Response } from 'express';
 import { ONE_HOUR, THIRTY_DAYS } from 'src/common/constants';
@@ -40,7 +41,14 @@ import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
 @ApiTags('✳️ Auth ( 인증 )')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  private readonly environment: string;
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {
+    this.environment = this.configService.get<string>('nodeEnv', 'development');
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Public) 가입, 이메일인증, 비번재설정
@@ -60,14 +68,14 @@ export class AuthController {
 
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.environment === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
     });
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.environment === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: THIRTY_DAYS,
@@ -87,14 +95,14 @@ export class AuthController {
 
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.environment === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
     });
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.environment === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: THIRTY_DAYS,
@@ -128,14 +136,14 @@ export class AuthController {
 
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.environment === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
     });
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.environment === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: THIRTY_DAYS,
@@ -156,14 +164,14 @@ export class AuthController {
 
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.environment === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
     });
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.environment === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: THIRTY_DAYS,
@@ -216,7 +224,7 @@ export class AuthController {
     // Update accessToken cookie only
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.environment === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
@@ -266,7 +274,7 @@ export class AuthController {
     // Clear cookies regardless of token status
     const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.environment === 'production',
       sameSite: 'lax' as const,
       path: '/',
     };

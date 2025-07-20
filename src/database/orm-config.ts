@@ -6,23 +6,25 @@ import { IAwsConfig, IRdbConfig } from 'src/common/interfaces';
 
 @Injectable()
 export class OrmConfig implements TypeOrmOptionsFactory {
-  constructor(private readonly configService: ConfigService) {}
+  private readonly environment: string;
+  constructor(private readonly configService: ConfigService) {
+    this.environment = this.configService.get<string>('nodeEnv', 'development');
+  }
 
   async createTypeOrmOptions(): Promise<TypeOrmModuleOptions> {
-    // const nodeEnv = this.configService.getOrThrow<string>('nodeEnv');
-    const isProduction = process.env.NODE_ENV === 'production';
     const awsConfig = this.configService.getOrThrow<IAwsConfig>('aws');
 
     // if (nodeEnv === 'ecs' && !awsConfig) {
     //   throw new Error('AWS configuration is required in ECS environment');
     // }
-    if (isProduction && !awsConfig) {
+    if (this.environment === 'production' && !awsConfig) {
       throw new Error('AWS configuration is not defined.');
     }
 
-    const databaseConfig = isProduction
-      ? await getAwsDatabaseConfig(awsConfig)
-      : this.configService.getOrThrow<IRdbConfig>('database');
+    const databaseConfig =
+      this.environment === 'production'
+        ? await getAwsDatabaseConfig(awsConfig)
+        : this.configService.getOrThrow<IRdbConfig>('database');
 
     if (!databaseConfig) {
       throw new Error('Database configuration is not defined');
@@ -36,11 +38,11 @@ export class OrmConfig implements TypeOrmOptionsFactory {
       database: databaseConfig.dbname,
       subscribers: ['dist/**/*.subscriber{.ts,.js}'],
       entities: ['dist/**/*.entity{.ts,.js}'],
-      synchronize: !isProduction,
+      synchronize: this.environment !== 'production',
       timezone: 'Z', // UTC
       bigNumberStrings: true,
       supportBigNumbers: true,
-      logging: !isProduction,
+      logging: this.environment !== 'production',
       // migrations: ['dist/database/migrations/*.js'],
       // migrationsTableName: 'migrations',
       // migrationsRun: false,

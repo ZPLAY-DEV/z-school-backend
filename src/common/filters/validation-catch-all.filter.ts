@@ -4,6 +4,7 @@ import {
   Catch,
   HttpException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { SentryExceptionCaptured } from '@sentry/nestjs';
 import * as Sentry from '@sentry/node';
@@ -15,8 +16,14 @@ import { EntityNotFoundError } from 'typeorm';
 
 @Catch()
 export class ValidationCatchAllFilter extends BaseExceptionFilter {
-  constructor(private readonly slack: SlackService) {
+  private readonly environment: string;
+
+  constructor(
+    private readonly slack: SlackService,
+    private readonly configService: ConfigService,
+  ) {
     super();
+    this.environment = this.configService.get<string>('nodeEnv', 'development');
   }
 
   @SentryExceptionCaptured()
@@ -155,10 +162,10 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
     }
 
     // Add context to Sentry for 500+ errors and send Slack notification
-    if (httpStatus >= 500 && process.env.NODE_ENV !== 'development') {
+    if (httpStatus >= 500 && this.environment !== 'development') {
       Sentry.captureException(exception, (scope) => {
         scope.setTag('apiVersion', 'v1');
-        scope.setTag('env', process.env.NODE_ENV);
+        scope.setTag('env', this.environment);
 
         // User info
         if (req.user) {
@@ -288,7 +295,7 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `*🔴 ${process.env.NODE_ENV} 환경에서 오류 발생*`,
+            text: `*🔴 ${this.environment} 환경에서 오류 발생*`,
           },
         },
         {
