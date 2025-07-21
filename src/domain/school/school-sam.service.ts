@@ -200,12 +200,17 @@ export class SchoolSamService {
   }
 
   async infiniteList(
-    schoolId: number,
     query: PaginateQuery,
+    schoolId: number,
+    termId?: number,
   ): Promise<Paginated<Sam>> {
     const queryBuilder = this.samRepository
       .createQueryBuilder('sam')
       .where('sam.schoolId = :schoolId', { schoolId });
+
+    if (query.filter) {
+      queryBuilder.andWhere('sam.termId = :termId', { termId });
+    }
 
     return await paginate<Sam>(query, queryBuilder, {
       relations: {

@@ -478,7 +478,7 @@ export class LessonCoreService {
             );
           } catch (deleteError) {
             this.logger.error(
-              `❌ [${context}] Failed to delete schooldays for group ${group.id}:`,
+              `❌ [${context}] Failed to delete  for group ${group.id}:`,
               deleteError,
             );
             throw new Error(

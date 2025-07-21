@@ -320,12 +320,19 @@ export class NewsletterService {
         newsletter,
         dedupedStudents,
       );
+
+      console.log(`✳️ shortlinks`, JSON.stringify(shortlinks, null, 2));
+
       // newsletter 업데이트
-      newsletter.payload = this.buildNotificationPayload(
+      const payload = this.buildNotificationPayload(
         newsletter,
         shortlinks,
         dedupedStudents,
       );
+
+      console.log(`✳️ payload`, JSON.stringify(payload, null, 2));
+
+      newsletter.payload = payload;
       newsletter.status = SendStatus.SCHEDULED;
       newsletter.studentIds = studentIds;
       await manager.save(newsletter);
@@ -597,7 +604,7 @@ export class NewsletterService {
     role: string;
     messages: any[];
   } {
-    const url = `https://zschool.kr`;
+    const url = `https://스쿨허브.kr`;
     return {
       type: newsletter.type as string,
       schoolId: newsletter.schoolId,
@@ -632,7 +639,7 @@ export class NewsletterService {
     role: string;
     messages: any[];
   } {
-    const url = `https://zschool.kr`;
+    const url = `https://스쿨허브.kr`;
     return {
       type: newsletter.type as string,
       schoolId: newsletter.schoolId,
