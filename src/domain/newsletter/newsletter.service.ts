@@ -115,6 +115,7 @@ export class NewsletterService {
   ): Promise<Newsletter> {
     const newsletter = await this.newsletterRepository.findOne({
       where: { schoolId, termId },
+      order: { id: 'DESC' },
     });
 
     if (!newsletter) {
@@ -134,7 +135,7 @@ export class NewsletterService {
         status: SendStatus.SCHEDULED,
         scheduledAt: LessThan(nowInUTC),
       },
-      order: { scheduledAt: 'ASC' },
+      order: { scheduledAt: 'DESC' },
     });
 
     return newsletters as Newsletter[];
