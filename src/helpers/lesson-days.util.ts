@@ -73,6 +73,11 @@ export function generateSchooldays(
     offdays,
   );
 
+  console.log(
+    '🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀 calendarDays',
+    JSON.stringify(calendarDays, null, 2),
+  );
+
   const schooldays = calendarDays
     .filter((day) => day.isClassDay)
     .map((day) => {

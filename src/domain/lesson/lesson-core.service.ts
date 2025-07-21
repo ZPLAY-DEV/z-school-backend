@@ -97,7 +97,7 @@ export class LessonCoreService {
       const createData = {
         ...dto,
         start: dto.start ?? term.start,
-        end: dto.end ?? term.end,
+        end: term.end,
         schoolName: school.name,
         frequency: dto.frequency ?? 1,
         operationFeeRule: school.operationFeeRule,
