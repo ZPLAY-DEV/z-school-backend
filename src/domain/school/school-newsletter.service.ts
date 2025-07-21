@@ -64,7 +64,7 @@ export class SchoolNewsletterService {
     return await paginate<Newsletter>(query, queryBuilder, {
       sortableColumns: ['id'],
       searchableColumns: ['title', 'body'],
-      defaultSortBy: [['id', 'ASC']],
+      defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
         type: [FilterOperator.EQ, FilterOperator.IN],
         mode: [FilterOperator.EQ, FilterOperator.IN],
