@@ -296,7 +296,7 @@ export class BookingService {
 
   private async decrementBookingCountSafely(offeringId: number): Promise<void> {
     await this.offeringRepository.query(
-      'UPDATE offering SET bookingCount = bookingCount - 1 WHERE id = ? AND bookingCount > 0',
+      'UPDATE offerings SET bookingCount = bookingCount - 1 WHERE id = ? AND bookingCount > 0',
       [offeringId],
     );
   }
