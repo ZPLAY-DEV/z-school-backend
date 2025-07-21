@@ -56,20 +56,37 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
-  app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://schoolhub.co.kr',
-      'https://schoolhub.co.kr',
-      'http://admin.schoolhub.co.kr',
-      'https://admin.schoolhub.co.kr',
-      'http://app.schoolhub.co.kr',
-      'https://app.schoolhub.co.kr',
-    ],
-    credentials: true, // 쿠키를 포함한 요청을 허용하려면 true로 설정
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // 허용할 HTTP 메서드
+
+  // 개발 환경에서 모든 origin 허용 (테스트용)
+  const corsOrigins =
+    configService.get<string>('nodeEnv') === 'dev'
+      ? true // 모든 origin 허용
+      : [
+          'http://localhost:3000',
+          'https://schoolhub.co.kr',
+          'https://admin.schoolhub.co.kr',
+          'https://app.schoolhub.co.kr',
+        ];
+
+  console.log('🔧 CORS Configuration:', {
+    origins: corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
-  app.use(helmet());
+
+  app.enableCors({
+    origin: corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  });
+
+  // Helmet 설정을 CORS와 호환되도록 조정
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
   app.use(helmet.hidePoweredBy());
   app.use(cookieParser());
 

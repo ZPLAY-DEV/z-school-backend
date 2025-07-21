@@ -645,7 +645,7 @@ const data = [
             allowedGrades: '1~6',
             weekday: '월',
             start: '1:00pm',
-            end: '4:20pm',
+            end: '1:40pm',
           },
           {
             instructorName: '미정',
@@ -656,7 +656,7 @@ const data = [
             allowedGrades: '1~6',
             weekday: '화',
             start: '1:00pm',
-            end: '4:20pm',
+            end: '1:40pm',
           },
           {
             instructorName: '미정',
@@ -667,7 +667,7 @@ const data = [
             allowedGrades: '1~6',
             weekday: '수',
             start: '1:00pm',
-            end: '4:20pm',
+            end: '1:40pm',
           },
           {
             instructorName: '미정',
@@ -678,7 +678,7 @@ const data = [
             allowedGrades: '1~6',
             weekday: '목',
             start: '1:00pm',
-            end: '4:20pm',
+            end: '1:40pm',
           },
           {
             instructorName: '미정',
@@ -689,7 +689,7 @@ const data = [
             allowedGrades: '1~6',
             weekday: '금',
             start: '1:00pm',
-            end: '4:20pm',
+            end: '1:40pm',
           },
         ],
       },
@@ -758,7 +758,7 @@ const data = [
             allowedGrades: '1',
             weekday: '월',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
           {
             instructorName: '강희숙',
@@ -769,7 +769,7 @@ const data = [
             allowedGrades: '1',
             weekday: '화',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
           {
             instructorName: '강희숙',
@@ -780,7 +780,7 @@ const data = [
             allowedGrades: '1',
             weekday: '수',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
           {
             instructorName: '강희숙',
@@ -791,7 +791,7 @@ const data = [
             allowedGrades: '1',
             weekday: '목',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
           {
             instructorName: '강희숙',
@@ -802,7 +802,7 @@ const data = [
             allowedGrades: '1',
             weekday: '금',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
         ],
       },
@@ -825,7 +825,7 @@ const data = [
             allowedGrades: '1',
             weekday: '월',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
           {
             instructorName: '마선희',
@@ -836,7 +836,7 @@ const data = [
             allowedGrades: '1',
             weekday: '화',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
           {
             instructorName: '마선희',
@@ -847,7 +847,7 @@ const data = [
             allowedGrades: '1',
             weekday: '수',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
           {
             instructorName: '마선희',
@@ -858,7 +858,7 @@ const data = [
             allowedGrades: '1',
             weekday: '목',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
           {
             instructorName: '마선희',
@@ -869,7 +869,7 @@ const data = [
             allowedGrades: '1',
             weekday: '금',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
         ],
       },
@@ -892,7 +892,7 @@ const data = [
             allowedGrades: '1',
             weekday: '월',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
           {
             instructorName: '탁은혜',
@@ -903,7 +903,7 @@ const data = [
             allowedGrades: '1',
             weekday: '화',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
           {
             instructorName: '탁은혜',
@@ -914,7 +914,7 @@ const data = [
             allowedGrades: '1',
             weekday: '수',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
           {
             instructorName: '탁은혜',
@@ -925,7 +925,7 @@ const data = [
             allowedGrades: '1',
             weekday: '목',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
           {
             instructorName: '탁은혜',
@@ -936,7 +936,7 @@ const data = [
             allowedGrades: '1',
             weekday: '금',
             start: '1:20pm',
-            end: '3:20pm',
+            end: '2:20pm',
           },
         ],
       },
