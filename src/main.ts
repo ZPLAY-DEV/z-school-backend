@@ -57,22 +57,12 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  // 개발 환경에서 모든 origin 허용 (테스트용)
-  const corsOrigins =
-    configService.get<string>('nodeEnv') === 'dev'
-      ? true // 모든 origin 허용
-      : [
-          'http://localhost:3000',
-          'https://schoolhub.co.kr',
-          'https://admin.schoolhub.co.kr',
-          'https://app.schoolhub.co.kr',
-        ];
-
-  console.log('🔧 CORS Configuration:', {
-    origins: corsOrigins,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  });
+  const corsOrigins = [
+    'http://localhost:3000',
+    'https://schoolhub.co.kr',
+    'https://admin.schoolhub.co.kr',
+    'https://app.schoolhub.co.kr',
+  ];
 
   app.enableCors({
     origin: corsOrigins,
