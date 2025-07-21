@@ -103,6 +103,7 @@ export class SchoolTermOfferingService {
   ): Promise<Paginated<Offering>> {
     const queryBuilder = this.offeringRepository
       .createQueryBuilder('offering')
+      .leftJoinAndSelect('offering.lesson', 'lesson')
       .leftJoinAndSelect('offering.picks', 'picks')
       .leftJoinAndSelect('offering.bookings', 'bookings')
       .where('offering.schoolId = :schoolId', { schoolId })
@@ -113,6 +114,7 @@ export class SchoolTermOfferingService {
       searchableColumns: ['lessonName', 'groupName'],
       defaultSortBy: [],
       filterableColumns: {
+        'lesson.categoryId': [FilterOperator.EQ, FilterOperator.IN],
         pickRule: [FilterOperator.EQ, FilterOperator.IN],
         allowedGrades: [FilterOperator.EQ, FilterOperator.IN],
       },
