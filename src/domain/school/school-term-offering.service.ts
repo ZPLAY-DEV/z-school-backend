@@ -145,6 +145,29 @@ export class SchoolTermOfferingService {
   async list(
     schoolId: number,
     termId: number,
+    grade: string | null = null,
+  ): Promise<Offering[]> {
+    const items = await this.offeringRepository
+      .createQueryBuilder('offering')
+      .leftJoinAndSelect('offering.picks', 'picks')
+      .leftJoinAndSelect('offering.bookings', 'bookings')
+      .where('offering.schoolId = :schoolId', { schoolId })
+      .andWhere('offering.termId = :termId', { termId })
+      .orderBy('offering.id', 'DESC')
+      .getMany();
+
+    if (grade) {
+      return items.filter((item: Offering) =>
+        item.allowedGrades.includes(+grade),
+      );
+    }
+
+    return items;
+  }
+
+  async personalList(
+    schoolId: number,
+    termId: number,
     studentId: number,
     grade: number,
   ): Promise<ResponseSchoolOfferingListDto[]> {
@@ -169,12 +192,6 @@ export class SchoolTermOfferingService {
       .reduce((acc, v) => {
         return [...acc, ...v.bitmasks];
       }, []);
-
-    availableOfferings.map((v, i) =>
-      console.log(`🚀 ~ ${v.id} bitmask ${i + 1}:`, v.bitmasks.join(',')),
-    );
-    console.log('🚀 ~ selectedIds:', selectedIds);
-    console.log('🚀 ~ accumulatedBitmasks:', accumulatedBitmasks.join(','));
 
     return availableOfferings.map((offering) => {
       const totals = offering.lesson.groups.map(
@@ -206,47 +223,6 @@ export class SchoolTermOfferingService {
             ? false
             : true,
       } as ResponseSchoolOfferingListDto;
-    });
-  }
-
-  async simpleList(
-    schoolId: number,
-    termId: number,
-    grade: string | null = null,
-  ): Promise<(Offering & { totals: number[] })[]> {
-    const items = await this.offeringRepository
-      .createQueryBuilder('offering')
-      .leftJoinAndSelect('offering.lesson', 'lesson')
-      .leftJoinAndSelect('lesson.groups', 'groups')
-      .where('offering.schoolId = :schoolId', { schoolId })
-      .andWhere('offering.termId = :termId', { termId })
-      .orderBy('offering.id', 'DESC')
-      .getMany();
-
-    if (grade) {
-      return items
-        .filter((item: Offering) => item.allowedGrades.includes(+grade))
-        .map((v) => {
-          const { lesson, ...offeringWithoutLesson } = v;
-          const totals = lesson.groups.map(
-            (g) => g.tuition + g.bookFee + g.materialFee,
-          );
-          return {
-            ...offeringWithoutLesson,
-            totals,
-          } as Offering & { totals: number[] };
-        });
-    }
-
-    return items.map((v) => {
-      const { lesson, ...offeringWithoutLesson } = v;
-      const totals = lesson.groups.map(
-        (g) => g.tuition + g.bookFee + g.materialFee,
-      );
-      return {
-        ...offeringWithoutLesson,
-        totals,
-      } as Offering & { totals: number[] };
     });
   }
 

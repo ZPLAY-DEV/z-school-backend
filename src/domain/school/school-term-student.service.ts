@@ -61,6 +61,8 @@ export class SchoolTermStudentService {
     return await this.bookingRepository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.offering', 'offering')
+      .leftJoinAndSelect('offering.lesson', 'lesson')
+      .leftJoinAndSelect('lesson.groups', 'groups')
       .where('booking.studentId = :studentId', { studentId })
       .andWhere('offering.schoolId = :schoolId', { schoolId })
       .andWhere('offering.termId = :termId', { termId })
