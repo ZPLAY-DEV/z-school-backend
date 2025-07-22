@@ -162,19 +162,28 @@ export class NewsletterService {
         .getRepository(Student)
         .createQueryBuilder('student')
         .leftJoinAndSelect('student.parent', 'parent')
+        .leftJoinAndSelect('parent.shortlinks', 'shortlinks')
         .where('student.id IN (:...studentIds)', {
           studentIds: newsletter.studentIds,
         })
         .getMany();
 
-      const studentReadInfos: StudentReadInfo[] = students.map((student) => ({
-        id: student.id,
-        name: student.name,
-        grade: student.grade,
-        class: student.class,
-        studentCode: student.studentCode,
-        read: readParentIds.includes(student.parent.id),
-      }));
+      const studentReadInfos: StudentReadInfo[] = students.map((student) => {
+        const link = student.parent.shortlinks?.find(
+          (v) => v.newsletterId === newsletter.id,
+        );
+        return {
+          id: student.id,
+          name: student.name,
+          grade: student.grade,
+          class: student.class,
+          studentCode: student.studentCode,
+          link: link
+            ? `https://app.schoolhub.co.kr/parent/nanoid/${link.nanoid}`
+            : null,
+          read: readParentIds.includes(student.parent.id),
+        };
+      });
 
       return new NewsletterDetailResponseDto(
         newsletter,

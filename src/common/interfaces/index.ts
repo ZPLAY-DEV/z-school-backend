@@ -310,5 +310,6 @@ export type StudentReadInfo = {
   grade: number;
   class: string;
   studentCode: number;
+  link: string | null;
   read: boolean;
 };

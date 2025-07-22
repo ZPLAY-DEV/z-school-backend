@@ -49,6 +49,7 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # dotenv environment variable files
+.env
 .env.*
 
 # firebase service account key for FCM
