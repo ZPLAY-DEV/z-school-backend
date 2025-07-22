@@ -138,10 +138,10 @@ export class BookingService {
     await this.validateOfferingStatus(offeringId);
 
     try {
-      const { affected } = await this.bookingRepository.update(
-        { offeringId, studentId },
-        { status: BookingStatus.CANCELED },
-      );
+      const { affected } = await this.bookingRepository.delete({
+        offeringId,
+        studentId,
+      });
       await this.decrementBookingCountSafely(offeringId);
       return affected as number; // Assuming 1 row is affected
     } catch (error) {
