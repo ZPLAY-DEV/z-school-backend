@@ -203,7 +203,16 @@ export class StartPickDto extends PickBaseDto {
   })
   @IsOptional()
   @IsInt({ message: '책값은 정수여야 합니다' })
-  @Min(0, { message: '책값은 0 이상이어야 합니다' })
+  tuition?: number;
+
+  @ApiPropertyOptional({
+    description: '학생별 개별 책값 (원) - 미입력시 기본값 0으로 설정됨',
+    example: 15000,
+    minimum: 0,
+    default: 0,
+  })
+  @IsOptional()
+  @IsInt({ message: '책값은 정수여야 합니다' })
   bookFee?: number;
 
   @ApiPropertyOptional({
