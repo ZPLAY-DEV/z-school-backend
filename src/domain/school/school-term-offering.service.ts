@@ -6,6 +6,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { Weekday } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -172,6 +173,7 @@ export class SchoolTermOfferingService {
     grade: number,
     categoryId?: number,
     booking?: boolean,
+    weekday?: boolean,
   ): Promise<ResponseSchoolOfferingListDto[]> {
     const bookings = await this.bookingRepository.find({
       where: { studentId },
@@ -237,7 +239,45 @@ export class SchoolTermOfferingService {
       return result;
     }
 
-    return result.filter((v) => v.booking !== null);
+    const filteredResult = result.filter((v) => v.booking !== null);
+
+    // weekday 파라미터가 true인 경우 요일별로 그룹화하여 반환
+    if (weekday) {
+      const resultWithWeekday: ResponseSchoolOfferingListDto[] = [];
+
+      for (const offering of filteredResult) {
+        // offering의 times에서 weekday 정보 추출
+        if (offering.times) {
+          for (const timeRange of offering.times) {
+            // 각 timeRange의 weekday에 해당하는 offering을 별도로 생성
+            if (timeRange.weekday) {
+              resultWithWeekday.push({
+                ...offering,
+                weekday: timeRange.weekday,
+              });
+            }
+          }
+        }
+      }
+
+      // 요일 순서대로 정렬 (월~토)
+      const weekdayOrder = [
+        Weekday.MONDAY,
+        Weekday.TUESDAY,
+        Weekday.WEDNESDAY,
+        Weekday.THURSDAY,
+        Weekday.FRIDAY,
+        Weekday.SATURDAY,
+      ];
+
+      return resultWithWeekday.sort((a, b) => {
+        const aIndex = weekdayOrder.indexOf(a.weekday!);
+        const bIndex = weekdayOrder.indexOf(b.weekday!);
+        return aIndex - bIndex;
+      });
+    }
+
+    return filteredResult;
   }
 
   //? ---------------------------------------------------------------------- ?//

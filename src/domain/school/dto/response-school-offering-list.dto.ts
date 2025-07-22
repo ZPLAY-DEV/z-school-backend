@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { ClassStatus, PickRule } from 'src/common/enums';
+import { ClassStatus, PickRule, Weekday } from 'src/common/enums';
 import { ITimeRange } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 
@@ -101,4 +101,12 @@ export class ResponseSchoolOfferingListDto {
   })
   @Expose()
   selectable: boolean;
+
+  @ApiProperty({
+    description: '수업 요일 (weekday=true일 때만 포함)',
+    enum: Weekday,
+    required: false,
+  })
+  @Expose()
+  weekday?: Weekday;
 }

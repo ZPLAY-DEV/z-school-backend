@@ -84,6 +84,7 @@ export class SchoolTermOfferingController {
     @Query('grade') grade: number,
     @Query('categoryId') categoryId?: number,
     @Query('booking') booking?: boolean,
+    @Query('weekday') weekday?: boolean,
   ): Promise<ResponseSchoolOfferingListDto[]> {
     return await this.schoolTermOfferingService.personalList(
       schoolId,
@@ -92,6 +93,7 @@ export class SchoolTermOfferingController {
       grade,
       categoryId,
       booking,
+      weekday,
     );
   }
 
