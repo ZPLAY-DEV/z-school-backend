@@ -170,18 +170,25 @@ export class SchoolTermOfferingService {
     termId: number,
     studentId: number,
     grade: number,
+    categoryId?: number,
   ): Promise<ResponseSchoolOfferingListDto[]> {
     const bookings = await this.bookingRepository.find({
       where: { studentId },
     });
     const selectedIds = bookings.map((v) => v.offeringId) || [];
 
-    const items: Offering[] = await this.offeringRepository
+    const queryBuilder = this.offeringRepository
       .createQueryBuilder('offering')
       .leftJoinAndSelect('offering.lesson', 'lesson')
       .leftJoinAndSelect('lesson.groups', 'groups')
       .where('offering.schoolId = :schoolId', { schoolId })
-      .andWhere('offering.termId = :termId', { termId })
+      .andWhere('offering.termId = :termId', { termId });
+
+    if (categoryId) {
+      queryBuilder.andWhere('lesson.categoryId = :categoryId', { categoryId });
+    }
+
+    const items: Offering[] = await queryBuilder
       .orderBy('offering.id', 'DESC')
       .getMany();
     const availableOfferings = items.filter((v) =>
