@@ -35,6 +35,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.826.0
         version: 3.842.0
+      '@faker-js/faker':
+        specifier: ^9.8.0
+        version: 9.9.0
       '@keyv/redis':
         specifier: ^4.4.0
         version: 4.5.0(keyv@5.3.4)
@@ -216,9 +219,6 @@ importers:
       '@eslint/js':
         specifier: ^9.28.0
         version: 9.30.1
-      '@faker-js/faker':
-        specifier: ^9.8.0
-        version: 9.9.0
       '@nestjs/cli':
         specifier: ^11.0.7
         version: 11.0.7(@swc/cli@0.7.7(@swc/core@1.12.9)(chokidar@4.0.3))(@swc/core@1.12.9)(@types/node@22.16.0)
