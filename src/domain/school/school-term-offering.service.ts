@@ -171,6 +171,7 @@ export class SchoolTermOfferingService {
     studentId: number,
     grade: number,
     categoryId?: number,
+    booking?: boolean,
   ): Promise<ResponseSchoolOfferingListDto[]> {
     const bookings = await this.bookingRepository.find({
       where: { studentId },
@@ -200,7 +201,7 @@ export class SchoolTermOfferingService {
         return [...acc, ...v.bitmasks];
       }, []);
 
-    return availableOfferings.map((offering) => {
+    const result = availableOfferings.map((offering) => {
       const totals = offering.lesson.groups.map(
         (g) => g.tuition + g.bookFee + g.materialFee,
       );
@@ -231,6 +232,12 @@ export class SchoolTermOfferingService {
             : true,
       } as ResponseSchoolOfferingListDto;
     });
+
+    if (!booking) {
+      return result;
+    }
+
+    return result.filter((v) => v.booking !== null);
   }
 
   //? ---------------------------------------------------------------------- ?//

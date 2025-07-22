@@ -83,6 +83,7 @@ export class SchoolTermOfferingController {
     @Query('studentId') studentId: number,
     @Query('grade') grade: number,
     @Query('categoryId') categoryId?: number,
+    @Query('booking') booking?: boolean,
   ): Promise<ResponseSchoolOfferingListDto[]> {
     return await this.schoolTermOfferingService.personalList(
       schoolId,
@@ -90,6 +91,7 @@ export class SchoolTermOfferingController {
       studentId,
       grade,
       categoryId,
+      booking,
     );
   }
 
