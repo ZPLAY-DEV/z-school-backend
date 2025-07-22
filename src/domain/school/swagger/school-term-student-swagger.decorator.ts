@@ -1,23 +1,23 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-  ApiOkPaginatedResponse,
-  ApiPaginationQuery,
-  FilterOperator,
-  PaginateConfig,
+    ApiOkPaginatedResponse,
+    ApiPaginationQuery,
+    FilterOperator,
+    PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { ResponseSchoolTermStudentBookingsDto } from '../dto/response-school-term-student-bookings.dto';
 
 // Group 페이지네이션 설정
 const GROUP_CONFIG: PaginateConfig<Group> = {
@@ -124,15 +124,19 @@ export const SchoolTermStudentBookingsDocs = () =>
 
 ### 🔄 비즈니스 로직
 - 해당 학교, 학기에서 학생이 신청한 모든 수강신청 목록 조회
+- **요일별로 그룹화**: offering의 lesson.groups의 weekday 정보를 기반으로 요일별로 분류
+- **중복 허용**: 같은 offering이 여러 요일에 있으면 각 요일별로 별도 booking으로 표시
+- **순차 정렬**: 월요일부터 토요일까지 순차적으로 정렬
 - 수강신청 상태(대기, 확정, 취소 등) 포함
 - 수강신청 일시 및 상세 정보 제공
 - **항상 offering 정보 포함**: 각 booking에는 연관된 Offering 엔티티가 항상 포함됩니다
 
 ### 📊 응답 데이터 구조
-- Booking[]: 수강신청 목록 배열
+- Booking[]: 수강신청 목록 배열 (요일별로 정렬됨)
+- booking.weekday: 수업 요일 (월, 화, 수, 목, 금, 토)
 - booking.offering: 각 수강신청에 연관된 Offering 엔티티 (필수 포함)
 - offering.schoolId, offering.termId: 해당 학교 및 학기 정보
-- offering.times: 수업 시간 정보 등
+- offering.lesson.groups: 수업 그룹 정보 (weekday 포함)
 
 ### 💡 사용 시점
 - 학생 수강 이력 조회
@@ -148,6 +152,7 @@ export const SchoolTermStudentBookingsDocs = () =>
     "offeringId": 456,
     "studentId": 123,
     "lessonName": "수학",
+    "weekday": "월",
     "waitingPosition": 0,
     "status": "CONFIRMED",
     "note": null,
@@ -161,13 +166,47 @@ export const SchoolTermStudentBookingsDocs = () =>
       "description": "기초 수학 과정",
       "capacity": 20,
       "price": 150000,
-      "times": [
-        {
-          "weekday": "월",
-          "startTime": "14:00",
-          "endTime": "15:00"
-        }
-      ],
+      "lesson": {
+        "groups": [
+          {
+            "weekday": "월",
+            "start": "14:00",
+            "end": "15:00"
+          }
+        ]
+      },
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  },
+  {
+    "id": 1,
+    "offeringId": 456,
+    "studentId": 123,
+    "lessonName": "수학",
+    "weekday": "수",
+    "waitingPosition": 0,
+    "status": "CONFIRMED",
+    "note": null,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z",
+    "offering": {
+      "id": 456,
+      "schoolId": 1,
+      "termId": 1,
+      "title": "수학 기초반",
+      "description": "기초 수학 과정",
+      "capacity": 20,
+      "price": 150000,
+      "lesson": {
+        "groups": [
+          {
+            "weekday": "수",
+            "start": "14:00",
+            "end": "15:00"
+          }
+        ]
+      },
       "createdAt": "2024-01-01T00:00:00.000Z",
       "updatedAt": "2024-01-01T00:00:00.000Z"
     }
@@ -195,8 +234,8 @@ export const SchoolTermStudentBookingsDocs = () =>
       example: 1,
     }),
     ApiOkResponseTemplate({
-      description: '✅ 학생 수강신청 목록 (offering 정보 포함)',
-      type: Booking,
+      description: '✅ 학생 수강신청 목록 (요일별로 그룹화됨)',
+      type: ResponseSchoolTermStudentBookingsDto,
       isArray: true,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
