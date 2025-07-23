@@ -482,7 +482,7 @@ export class GroupAttendanceService {
           },
           {
             groupId: getGroupIdFromGroupKey(groupKey),
-            endedBy: Not(IsNull()), //! 전학간 경우
+            endedBy: Not(IsNull()), //! 전학간 경우 중 유효한 기간
             end: MoreThanOrEqual(date),
           },
         ],

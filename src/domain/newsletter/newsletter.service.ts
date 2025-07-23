@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { subDays } from 'date-fns';
 import { fromZonedTime } from 'date-fns-tz';
 import { nanoid } from 'nanoid';
 import {
@@ -15,6 +16,7 @@ import {
 import { SendStatus } from 'src/common/enums/send-status';
 import { StudentReadInfo } from 'src/common/interfaces';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
+import { CreateRegistrationNewsletterDto } from 'src/domain/newsletter/dto/create-registration-newsletter.dto';
 import { NewsletterDetailResponseDto } from 'src/domain/newsletter/dto/response-extended-newsletter.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
@@ -50,11 +52,12 @@ export class NewsletterService {
 
   //? 학생 대상 발송
   async create(dto: CreateNewsletterDto): Promise<Newsletter> {
+    const { schoolId, termId, scheduledAt, type, ...rest } = dto;
     // 모든 validation을 transaction 밖에서 처리 (Auto-increment ID 낭비 방지)
-    const school = await this.checkSchoolValidity(dto);
-    const term = await this.checkTermValidity(dto);
+    const school = await this.checkSchoolValidity(schoolId, scheduledAt);
+    const term = await this.checkTermValidity(termId);
     if (dto.type === NewsletterType.REGISTRATION) {
-      await this.checkExistingNewsletterWithDto(dto);
+      await this.checkExistingNewsletterWithDto(schoolId, termId, type);
     }
 
     return await this.dataSource.transaction(async (manager: EntityManager) => {
@@ -69,6 +72,44 @@ export class NewsletterService {
         await this.handleSendingNewsletter(newsletter, manager);
       }
 
+      return newsletter;
+    });
+  }
+
+  async createRegistrationNewsletter(
+    dto: CreateRegistrationNewsletterDto,
+  ): Promise<Newsletter> {
+    const { schoolId, termId, images } = dto;
+
+    const term = await this.checkTermValidity(termId);
+    const scheduledAt = subDays(term.bookingStart!, 3);
+    const school = await this.checkSchoolValidity(schoolId, scheduledAt);
+    await this.checkExistingNewsletterWithDto(
+      schoolId,
+      termId,
+      NewsletterType.REGISTRATION,
+    );
+
+    return await this.dataSource.transaction(async (manager: EntityManager) => {
+      // 뉴스레터 생성
+      const newsletter = await this.createNewsletter(manager, {
+        schoolId,
+        termId,
+        schoolName: school.name,
+        termName: term.termName,
+        title: `${school.name} ${term.termName} 수강신청 바로가기`,
+        body: '',
+        images,
+        type: NewsletterType.REGISTRATION,
+        // target: NewsletterTarget.GRADE,
+        // targetItems: [1, 2, 3, 4, 5, 6],
+        target: NewsletterTarget.STUDENT,
+        targetItems: [1],
+        targetLabel: `${school.name} 전교생`,
+        scheduledAt,
+      });
+      // scheduledAt이 설정된 경우 이벤트 처리
+      await this.handleSendingNewsletter(newsletter, manager);
       return newsletter;
     });
   }
@@ -554,42 +595,47 @@ export class NewsletterService {
   // validations
   // ------------------------------------------------------------------------ //
 
-  private async checkSchoolValidity(dto: CreateNewsletterDto): Promise<School> {
+  private async checkSchoolValidity(schoolId, scheduledAt): Promise<School> {
     const school = await this.dataSource.getRepository(School).findOne({
-      where: { id: dto.schoolId },
+      where: { id: schoolId },
     });
     if (!school) {
       throw new NotFoundException('School not found');
     }
-    if (dto.scheduledAt && !school.phone) {
+    if (scheduledAt && !school.phone) {
       throw new BadRequestException('Missing phone info in school');
     }
     return school;
   }
 
-  private async checkTermValidity(dto: CreateNewsletterDto): Promise<Term> {
+  private async checkTermValidity(termId): Promise<Term> {
     const term = await this.dataSource
       .getRepository(Term)
-      .findOne({ where: { id: dto.termId } });
+      .findOne({ where: { id: termId } });
     if (!term) {
       throw new NotFoundException('Term not found');
+    }
+    if (!term.bookingStart) {
+      throw new BadRequestException('Term bookingStart is not set');
     }
     return term;
   }
 
   private async checkExistingNewsletterWithDto(
-    dto: CreateNewsletterDto,
+    schoolId: number,
+    termId: number,
+    type: NewsletterType,
   ): Promise<void> {
     const newsletters = await this.dataSource.getRepository(Newsletter).find({
       where: {
-        schoolId: dto.schoolId,
-        termId: dto.termId,
+        schoolId,
+        termId,
       },
     });
 
     if (newsletters && newsletters.length > 0) {
       if (
-        dto.type === NewsletterType.REGISTRATION &&
+        type === NewsletterType.REGISTRATION &&
         newsletters.some(
           (newsletter) =>
             newsletter.status === SendStatus.SENT ||
