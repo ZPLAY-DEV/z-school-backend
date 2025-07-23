@@ -1,16 +1,17 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiExtraModels,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  getSchemaPath,
+    ApiBody,
+    ApiExtraModels,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
+import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { CreateTermDto } from '../dto/create-term.dto';
 import { UpdateTermDto } from '../dto/update-term.dto';
@@ -159,7 +160,7 @@ export const FindTermDocs = () => {
 - **운영 정보**: 학기 유형, 상태
 - **수강신청 정보**: 수강신청 일정, 준비 상태, 학생 확정 방식
 - **설정 정보**: 시간 중복 허용 여부
-- **연관 데이터**: offerings (수강신청 과목 목록)
+- **연관 데이터**: offerings (수강신청 과목 목록), registrationNewsletter (수강신청 뉴스레터)
 
 ### 📝 URL 파라미터
 - **id**: 조회할 학기의 고유 식별자 (숫자)
@@ -192,9 +193,14 @@ export const FindTermDocs = () => {
       "lessonName": "영어회화",
       "maxStudents": 20,
       "currentStudents": 15
-    },
-    :
+    }
   ],
+  "registrationNewsletter": {
+    "id": 1,
+    "title": "2025-1학기 수강신청 안내",
+    "body": "수강신청 관련 안내사항입니다.",
+    "type": "REGISTRATION"
+  },
   "createdAt": "2025-01-01T00:00:00Z",
   "updatedAt": "2025-01-15T10:30:00Z"
 }
@@ -216,7 +222,7 @@ export const FindTermDocs = () => {
       description: '조회할 학기의 고유 식별자',
       example: 1,
     }),
-    ApiExtraModels(Term, Offering),
+    ApiExtraModels(Term, Offering, Newsletter),
     ApiOkResponse({
       description: '학기 상세 조회 성공 - 연관 정보 포함',
       schema: {
@@ -228,6 +234,12 @@ export const FindTermDocs = () => {
                 type: 'array',
                 items: { $ref: getSchemaPath(Offering) },
                 description: '수강신청 과목 목록',
+              },
+              registrationNewsletter: {
+                $ref: getSchemaPath(Newsletter),
+                description:
+                  '수강신청 뉴스레터 (type이 REGISTRATION인 newsletter)',
+                nullable: true,
               },
             },
           },

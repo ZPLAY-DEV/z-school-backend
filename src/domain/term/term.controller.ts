@@ -47,7 +47,11 @@ export class TermController {
   @Public()
   @Get(':id')
   async getTermById(@Param('id', ParseIntPipe) id: number): Promise<Term> {
-    return await this.termService.findById(id, ['offerings']);
+    const term = await this.termService.findById(id, [
+      'offerings',
+      'newsletters',
+    ]);
+    return term;
   }
 
   //? ---------------------------------------------------------------------- ?//

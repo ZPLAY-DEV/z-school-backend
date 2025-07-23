@@ -1,7 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose } from 'class-transformer';
 import { format } from 'date-fns-tz';
-import { PickRule, TermStatus, TermType } from 'src/common/enums';
+import {
+  NewsletterType,
+  PickRule,
+  TermStatus,
+  TermType,
+} from 'src/common/enums';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -161,7 +166,22 @@ export class Term {
   public offerings: Offering[];
 
   @OneToMany(() => Newsletter, (newsletter: Newsletter) => newsletter.term)
+  @Exclude()
   public newsletters: Newsletter[];
+
+  @ApiProperty({
+    description: '수강신청 뉴스레터 (type이 REGISTRATION인 newsletter)',
+    type: () => Newsletter,
+    nullable: true,
+  })
+  @Expose()
+  get registrationNewsletter(): Newsletter | null {
+    if (!this.newsletters) return null;
+    return (
+      this.newsletters.find((n) => n.type === NewsletterType.REGISTRATION) ||
+      null
+    );
+  }
 
   //? Constructor ---------------------------------------------------------- ?//
 

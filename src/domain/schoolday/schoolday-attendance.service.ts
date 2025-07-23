@@ -52,10 +52,7 @@ export class SchooldayAttendanceService {
     private readonly dynamoService: DynamoService,
     private readonly configService: ConfigService,
   ) {
-    const environment = this.configService.get<string>(
-      'nodeEnv',
-      'dev',
-    );
+    const environment = this.configService.get<string>('nodeEnv', 'dev');
     this.attendanceTableName = `${environment}_attendance_table`;
   }
 
@@ -307,7 +304,7 @@ export class SchooldayAttendanceService {
   }
 
   /**
-   * 전학생 처리: start/end 기간 확인
+   * 그만둔 학생 처리: start/end 기간 확인
    */
   private isStudentActiveOnDate(pick: Pick, date: Date): boolean {
     const hasStart = pick.start?.trim();
