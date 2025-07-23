@@ -42,8 +42,9 @@ RUN pnpm install --prod --frozen-lockfile && \
     pnpm prune --prod && \
     pnpm store prune
 
-# Copy built application from builder stage
+# Copy built application and static files from builder stage
 COPY --from=builder --chown=chuck:nodejs /usr/src/app/dist ./dist
+COPY --from=builder --chown=chuck:nodejs /usr/src/app/static ./static
 
 # Change ownership of the app directory
 RUN chown -R chuck:nodejs /usr/src/app
