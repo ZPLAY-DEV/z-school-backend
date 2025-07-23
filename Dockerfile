@@ -1,5 +1,5 @@
 # Multi-stage build for NestJS with pnpm and Node 20
-FROM node:20-alpine AS base
+FROM --platform=linux/amd64 node:20-alpine AS base
 
 # Install pnpm globally
 RUN npm install -g pnpm
