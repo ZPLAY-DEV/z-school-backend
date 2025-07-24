@@ -32,7 +32,7 @@ import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { getDuration } from 'src/helpers/time';
 import { NotificationService } from 'src/services/notification/notification.service';
-import { In, IsNull, Repository } from 'typeorm';
+import { In, IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
 
 @Injectable()
 export class GroupAttendanceService {
@@ -446,7 +446,7 @@ export class GroupAttendanceService {
 
   async findAttendancesByDate(
     groupKey: string,
-    date: string,
+    date: string, // `2025-07-22`
   ): Promise<IAttendance[]> {
     try {
       // todo. to put response on the cache
@@ -475,10 +475,17 @@ export class GroupAttendanceService {
       );
 
       const picks = await this.pickRepository.find({
-        where: {
-          groupId: getGroupIdFromGroupKey(groupKey),
-          endedBy: IsNull(),
-        },
+        where: [
+          {
+            groupId: getGroupIdFromGroupKey(groupKey),
+            endedBy: IsNull(), //! 전학가지 않은 경우
+          },
+          {
+            groupId: getGroupIdFromGroupKey(groupKey),
+            endedBy: Not(IsNull()), //! 전학간 경우 중 유효한 기간
+            end: MoreThanOrEqual(date),
+          },
+        ],
         relations: ['student', 'group', 'group.lesson'],
       });
 

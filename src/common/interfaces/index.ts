@@ -6,17 +6,19 @@ export interface IAwsConfig {
   defaultRegion: string;
   accessKey: string;
   secretAccessKey: string;
-  secretsManagerEndpoint: string;
-  secretsDbArn: string;
+  // secretsManagerEndpoint: string;
+  // secretsDbArn: string;
+  s3Endpoint?: string;
+  sqsEndpoint?: string;
+  firehoseEndpoint?: string;
+  // essentials
   cloudfrontUrl: string;
-  s3Endpoint: string;
   s3FilesBucket: string;
   s3LogsBucket: string;
-  sqsEndpoint: string;
-  sqsPrimaryUrl: string;
-  sqsDeadNewsletterUrl: string;
-  firehoseEndpoint: string;
+  sqsPqUrl: string;
+  sqsDlqUrl: string;
   firehoseStreamName: string;
+  ssmParameterName: string;
 }
 export interface IRdbConfig {
   engine: string;
@@ -181,6 +183,10 @@ export interface IRequestUser {
   role: Role;
   refreshToken?: string;
 }
+export interface IDailyEscortInfo {
+  escortPhone: string;
+  nextStop: string;
+}
 
 //? ---------------------------------------------------------------------- ?//
 //? Refactor By Types -> Interface
@@ -304,5 +310,6 @@ export type StudentReadInfo = {
   grade: number;
   class: string;
   studentCode: number;
+  link: string | null;
   read: boolean;
 };

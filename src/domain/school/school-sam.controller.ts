@@ -7,7 +7,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
@@ -72,10 +72,10 @@ export class SchoolSamController {
   @SchoolSamPaginatedDocs()
   @Get(':schoolId/sams/paginated')
   async infiniteList(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
     @Paginate() query: PaginateQuery,
+    @Param('schoolId', ParseIntPipe) schoolId: number,
   ): Promise<Paginated<Sam>> {
-    return await this.schoolSamService.infiniteList(schoolId, query);
+    return await this.schoolSamService.infiniteList(query, schoolId);
   }
 }
 // {{hostname}}/v1/schools/1/sams/3/dates

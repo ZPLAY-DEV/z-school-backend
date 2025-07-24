@@ -13,6 +13,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -25,6 +26,7 @@ import {
 //? - 수강신청기간에만 valid 한 entries 이 들어 있으면 되므로 학기 정보는 필요없음.
 
 @Entity('offerings')
+@Index(['schoolId', 'termId'])
 @Unique(['schoolId', 'termId', 'lessonId', 'groupName'])
 export class Offering {
   @ApiProperty({ description: 'offeringId', example: 1 })

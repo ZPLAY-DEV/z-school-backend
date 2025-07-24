@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { addMonths, format } from 'date-fns';
 import * as qs from 'qs';
 import { CalendarType } from 'src/common/enums';
@@ -49,7 +50,11 @@ interface NeisApiResponse {
 
 @Injectable()
 export class NeisService {
-  private authKey: string = process.env.NEIS_API_KEY || '';
+  private neisAuthKey: string;
+
+  constructor(private readonly configService: ConfigService) {
+    this.neisAuthKey = this.configService.get<string>('neis.apiKey') || '';
+  }
 
   async getCalendar({
     authorityCode,
@@ -63,7 +68,7 @@ export class NeisService {
     const options = {
       ATPT_OFCDC_SC_CODE: authorityCode,
       SD_SCHUL_CODE: schoolCode,
-      KEY: this.authKey,
+      KEY: this.neisAuthKey,
       Type: 'json',
       pIndex: 1,
       pSize: 100, // 최대 100개

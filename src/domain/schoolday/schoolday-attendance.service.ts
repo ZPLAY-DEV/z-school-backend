@@ -4,6 +4,7 @@ import {
   TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { addDays } from 'date-fns';
 import { fromZonedTime } from 'date-fns-tz';
@@ -38,11 +39,10 @@ import { formatDateInKST } from 'src/helpers/time';
 import { DynamoService } from 'src/services/aws/dynamo.service';
 import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 
-const ATTENDANCE_TABLE_NAME = `${process.env.NODE_ENV}_attendance_table`;
-
 @Injectable()
 export class SchooldayAttendanceService {
   private readonly logger = new Logger(SchooldayAttendanceService.name);
+  private readonly attendanceTableName: string;
 
   constructor(
     @InjectRepository(Schoolday)
@@ -50,7 +50,11 @@ export class SchooldayAttendanceService {
     @InjectRepository(Term)
     private readonly termRepository: Repository<Term>,
     private readonly dynamoService: DynamoService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    const environment = this.configService.get<string>('nodeEnv', 'dev');
+    this.attendanceTableName = `${environment}_attendance_table`;
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Create
@@ -300,7 +304,7 @@ export class SchooldayAttendanceService {
   }
 
   /**
-   * 전학생 처리: start/end 기간 확인
+   * 그만둔 학생 처리: start/end 기간 확인
    */
   private isStudentActiveOnDate(pick: Pick, date: Date): boolean {
     const hasStart = pick.start?.trim();
@@ -362,7 +366,7 @@ export class SchooldayAttendanceService {
         if ('PutRequest' in item) {
           return {
             Put: {
-              TableName: ATTENDANCE_TABLE_NAME,
+              TableName: this.attendanceTableName,
               Item: item.PutRequest.Item,
               ConditionExpression: 'attribute_not_exists(groupKey)',
             },
@@ -370,7 +374,7 @@ export class SchooldayAttendanceService {
         } else {
           return {
             Delete: {
-              TableName: ATTENDANCE_TABLE_NAME,
+              TableName: this.attendanceTableName,
               Key: item.DeleteRequest.Key,
             },
           };
@@ -402,7 +406,7 @@ export class SchooldayAttendanceService {
         if ('PutRequest' in item) {
           await this.dynamoService.send(
             new PutCommand({
-              TableName: ATTENDANCE_TABLE_NAME,
+              TableName: this.attendanceTableName,
               Item: item.PutRequest.Item,
               ConditionExpression:
                 'attribute_not_exists(groupKey) AND attribute_not_exists(dailyStudentKey)',
@@ -411,7 +415,7 @@ export class SchooldayAttendanceService {
         } else {
           await this.dynamoService.send(
             new DeleteCommand({
-              TableName: ATTENDANCE_TABLE_NAME,
+              TableName: this.attendanceTableName,
               Key: item.DeleteRequest.Key,
             }),
           );

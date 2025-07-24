@@ -1,5 +1,6 @@
 import { FirehoseClient, PutRecordCommand } from '@aws-sdk/client-firehose';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { delay } from 'src/helpers/time';
 
 export interface FirehoseRecord {
@@ -20,38 +21,31 @@ export class FirehoseService implements OnModuleInit {
   private readonly maxRetries = 3;
   private readonly retryDelayMs = 1000;
 
-  constructor() {
+  constructor(private readonly configService: ConfigService) {
     // Validate required environment variables
-    const region = process.env.AWS_DEFAULT_REGION;
-    const streamName =
-      process.env.AWS_FIREHOSE_STREAM_NAME || 'notification-logs-stream';
-
-    if (!region) {
-      throw new Error('AWS_DEFAULT_REGION environment variable is required');
-    }
-
-    if (!streamName) {
-      throw new Error('FIREHOSE_STREAM_NAME environment variable is required');
-    }
-
-    this.deliveryStreamName = streamName;
-
-    // AWS 인증 정보 설정
+    const region =
+      this.configService.get<string>('aws.defaultRegion') ?? 'ap-northeast-2';
+    const accessKey = this.configService.get<string>('aws.accessKey');
+    const secretAccessKey = this.configService.get<string>(
+      'aws.secretAccessKey',
+    );
+    const endpoint = this.configService.get<string>('aws.firehoseEndpoint');
     const credentials =
-      process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+      accessKey && secretAccessKey
         ? {
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            accessKeyId: accessKey,
+            secretAccessKey: secretAccessKey,
           }
         : undefined; // AWS SDK가 기본 credential chain 사용 (IAM role, AWS profile 등)
 
-    // LocalStack 엔드포인트 설정
-    const endpoint = process.env.AWS_FIREHOSE_ENDPOINT;
+    this.deliveryStreamName =
+      this.configService.get<string>('aws.firehoseStreamName') ||
+      'notification-logs-stream';
 
     this.client = new FirehoseClient({
       region,
       maxAttempts: this.maxRetries,
-      ...(credentials && { credentials }),
+      credentials: credentials,
       ...(endpoint && { endpoint }),
     });
   }

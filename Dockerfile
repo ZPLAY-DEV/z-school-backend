@@ -1,40 +1,59 @@
-# https://www.tomray.dev/nestjs-docker-production
-FROM node:18-alpine
+# Multi-stage build for NestJS with pnpm and Node 20
+FROM --platform=linux/amd64 node:20-alpine AS base
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Build stage
+FROM base AS builder
+
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
+COPY *.account-key.json ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN pnpm run build
+
+# Production stage
+FROM node:20-alpine AS production
+
+# Install pnpm
+RUN npm install -g pnpm
 
 # Create app directory
 WORKDIR /usr/src/app
 
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-COPY package*.json ./
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S chuck -u 1001 -G nodejs
+
+# Copy package files and install production dependencies only
+COPY package.json pnpm-lock.yaml* ./
 COPY *.account-key.json ./
+RUN pnpm install --prod --frozen-lockfile && \
+    pnpm prune --prod && \
+    pnpm store prune
 
-# Install app dependencies
-# RUN apk add --update --no-cache python3 build-base gcc && ln -sf /usr/bin/python3 /usr/bin/python
-# add libraries; sudo so non-root user added downstream can get sudo
-RUN apk add --no-cache \
-  sudo \
-  curl \
-  build-base \
-  g++ \
-  libpng \
-  libpng-dev \
-  jpeg-dev \
-  pango-dev \
-  cairo-dev \
-  giflib-dev \
-  python3 \
-  && ln -sf /usr/bin/python3 /usr/bin/python \
-  ;
-RUN npm install
+# Copy built application and static files from builder stage
+COPY --from=builder --chown=chuck:nodejs /usr/src/app/dist ./dist
+COPY --from=builder --chown=chuck:nodejs /usr/src/app/static ./static
 
-# Bundle app source
-COPY . .
-COPY .env.production .env
+# Change ownership of the app directory
+RUN chown -R chuck:nodejs /usr/src/app
 
-# Creates a "dist" folder with the production build
-RUN npm run build
+# Switch to non-root user
+USER chuck
 
-# ENV NODE_ENV production
+# Expose port
+EXPOSE 3001
 
-# Start the server using the production build
-CMD [ "node", "dist/main.js" ]
+# Start the application
+CMD ["node", "dist/main.js"]

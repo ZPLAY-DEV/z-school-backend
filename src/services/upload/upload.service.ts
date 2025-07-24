@@ -21,7 +21,7 @@ export class UploadService {
     private readonly configService: ConfigService,
     private readonly s3Service: S3Service,
   ) {
-    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.environment = this.configService.get<string>('nodeEnv', 'dev');
     this.cloudFrontUrl = this.configService.get<string>(
       'aws.cloudfrontUrl',
       'https://localhost.localstack.cloud:4566', // fallback url
@@ -29,10 +29,6 @@ export class UploadService {
     this.s3FilesBucket = this.configService.get<string>(
       'aws.s3FilesBucket',
       'afterschool-files-bucket',
-    );
-
-    this.logger.log(
-      `UploadService initialized for environment: ${this.environment}`,
     );
   }
 
@@ -63,7 +59,7 @@ export class UploadService {
       }
 
       const fileUrl =
-        process.env.NODE_ENV === 'development'
+        this.configService.get<string>('nodeEnv') === 'dev'
           ? `${this.cloudFrontUrl}/${this.s3FilesBucket}/${fullPath}`
           : `${this.cloudFrontUrl}/${fullPath}`;
 

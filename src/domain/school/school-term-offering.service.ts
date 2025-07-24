@@ -6,9 +6,11 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { Weekday } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { ResponseSchoolOfferingListDto } from 'src/domain/school/dto/response-school-offering-list.dto';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { makeOfferingsFromLessons } from 'src/helpers/offering.util';
 import { Repository } from 'typeorm';
@@ -102,6 +104,7 @@ export class SchoolTermOfferingService {
   ): Promise<Paginated<Offering>> {
     const queryBuilder = this.offeringRepository
       .createQueryBuilder('offering')
+      .leftJoinAndSelect('offering.lesson', 'lesson')
       .leftJoinAndSelect('offering.picks', 'picks')
       .leftJoinAndSelect('offering.bookings', 'bookings')
       .where('offering.schoolId = :schoolId', { schoolId })
@@ -112,6 +115,7 @@ export class SchoolTermOfferingService {
       searchableColumns: ['lessonName', 'groupName'],
       defaultSortBy: [],
       filterableColumns: {
+        'lesson.categoryId': [FilterOperator.EQ, FilterOperator.IN],
         pickRule: [FilterOperator.EQ, FilterOperator.IN],
         allowedGrades: [FilterOperator.EQ, FilterOperator.IN],
       },
@@ -162,6 +166,120 @@ export class SchoolTermOfferingService {
     return items;
   }
 
+  async personalList(
+    schoolId: number,
+    termId: number,
+    studentId: number,
+    grade: number,
+    categoryId?: number,
+    booking?: boolean,
+    weekday?: boolean,
+  ): Promise<ResponseSchoolOfferingListDto[]> {
+    const bookings = await this.bookingRepository.find({
+      where: { studentId },
+    });
+    const selectedIds = bookings.map((v) => v.offeringId) || [];
+
+    const queryBuilder = this.offeringRepository
+      .createQueryBuilder('offering')
+      .leftJoinAndSelect('offering.lesson', 'lesson')
+      .leftJoinAndSelect('lesson.groups', 'groups')
+      .where('offering.schoolId = :schoolId', { schoolId })
+      .andWhere('offering.termId = :termId', { termId });
+
+    if (categoryId) {
+      queryBuilder.andWhere('lesson.categoryId = :categoryId', { categoryId });
+    }
+
+    const items: Offering[] = await queryBuilder
+      .orderBy('offering.id', 'DESC')
+      .getMany();
+    const availableOfferings = items.filter((v) =>
+      v.allowedGrades.includes(grade),
+    );
+    const accumulatedBitmasks = availableOfferings
+      .filter((v) => selectedIds.includes(v.id))
+      .reduce((acc, v) => {
+        return [...acc, ...v.bitmasks];
+      }, []);
+
+    const result = availableOfferings.map((offering) => {
+      const totals = offering.lesson.groups.map(
+        (g) => g.tuition + g.bookFee + g.materialFee,
+      );
+      const booking = bookings.find((v) => v.offeringId === offering.id);
+
+      return {
+        id: offering.id,
+        schoolId: offering.schoolId,
+        termId: offering.termId,
+        lessonId: offering.lessonId,
+        lessonName: offering.lessonName,
+        groupName: offering.groupName,
+        samName: offering.samName,
+        capacity: offering.capacity,
+        bookingCount: offering.bookingCount,
+        prepicked: offering.prepicked,
+        allowedGrades: offering.allowedGrades,
+        pickRule: offering.pickRule,
+        times: offering.times,
+        prepickedStudentIds: offering.prepickedStudentIds,
+        status: offering.status,
+        totals,
+        booking: booking || null,
+        selectable: booking
+          ? false
+          : this.hasIntersection(accumulatedBitmasks, offering.bitmasks)
+            ? false
+            : true,
+      } as ResponseSchoolOfferingListDto;
+    });
+
+    if (!booking) {
+      return result;
+    }
+
+    const filteredResult = result.filter((v) => v.booking !== null);
+
+    // weekday 파라미터가 true인 경우 요일별로 그룹화하여 반환
+    if (weekday) {
+      const resultWithWeekday: ResponseSchoolOfferingListDto[] = [];
+
+      for (const offering of filteredResult) {
+        // offering의 times에서 weekday 정보 추출
+        if (offering.times) {
+          for (const timeRange of offering.times) {
+            // 각 timeRange의 weekday에 해당하는 offering을 별도로 생성
+            if (timeRange.weekday) {
+              resultWithWeekday.push({
+                ...offering,
+                weekday: timeRange.weekday,
+              });
+            }
+          }
+        }
+      }
+
+      // 요일 순서대로 정렬 (월~토)
+      const weekdayOrder = [
+        Weekday.MONDAY,
+        Weekday.TUESDAY,
+        Weekday.WEDNESDAY,
+        Weekday.THURSDAY,
+        Weekday.FRIDAY,
+        Weekday.SATURDAY,
+      ];
+
+      return resultWithWeekday.sort((a, b) => {
+        const aIndex = weekdayOrder.indexOf(a.weekday!);
+        const bIndex = weekdayOrder.indexOf(b.weekday!);
+        return aIndex - bIndex;
+      });
+    }
+
+    return filteredResult;
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
@@ -190,5 +308,16 @@ export class SchoolTermOfferingService {
         `Processing condition not met: ${error.message}`,
       );
     }
+  }
+
+  /**
+   * 두 배열 간의 교집합이 있는지 확인
+   * @param pool 첫 번째 배열
+   * @param target 두 번째 배열
+   * @returns 교집합이 있으면 true, 없으면 false
+   */
+  private hasIntersection(pool: number[], target: number[]) {
+    const set = new Set(pool);
+    return target.some((v) => set.has(v));
   }
 }

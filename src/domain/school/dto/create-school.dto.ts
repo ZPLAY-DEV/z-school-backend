@@ -99,7 +99,7 @@ export class CreateSchoolDto {
 
   @ApiProperty({
     description: '🈳 Promotional video URLs',
-    example: ['https://cdn.zschool.com/schools/promos/1.mp4'],
+    example: ['https://cdn.schoolhub.co.kr/schools/promos/1.mp4'],
     required: false,
     type: [String],
   })

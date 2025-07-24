@@ -58,12 +58,27 @@ export function generateSchooldays(
   group: Group,
   offdays: string[] = [],
 ): Schoolday[] {
+  console.log(`🔍 [DEBUG] generateSchooldays called with:`, {
+    lessonId: lesson.id,
+    lessonName: lesson.lessonName,
+    groupId: group.id,
+    groupName: group.groupName,
+  });
+
+  console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀 offdays', JSON.stringify(offdays, null, 2));
+
   const calendarDays: ICalendarDay[] = calculateLessonDays(
     lesson,
     group,
     offdays,
   );
-  return calendarDays
+
+  console.log(
+    '🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀 calendarDays',
+    JSON.stringify(calendarDays, null, 2),
+  );
+
+  const schooldays = calendarDays
     .filter((day) => day.isClassDay)
     .map((day) => {
       const [startDateStr, startTimeStr] = day.start.split(' ');
@@ -72,7 +87,7 @@ export function generateSchooldays(
       const startsAt = new Date(`${startDateStr}T${startTimeStr}:00+09:00`);
       const endsAt = new Date(`${endDateStr}T${endTimeStr}:00+09:00`);
       const duration = differenceInMinutes(endsAt, startsAt);
-      return {
+      const schoolday = {
         schoolId: lesson.schoolId,
         termId: lesson.termId,
         lessonId: lesson.id,
@@ -84,5 +99,21 @@ export function generateSchooldays(
         endsAt: endsAt,
         note: null,
       } as Schoolday;
+
+      console.log(`🔍 [DEBUG] Generated schoolday:`, {
+        schoolId: schoolday.schoolId,
+        termId: schoolday.termId,
+        lessonId: schoolday.lessonId,
+        groupId: schoolday.groupId,
+        name: schoolday.name,
+        today: schoolday.today,
+      });
+
+      return schoolday;
     });
+
+  console.log(
+    `🔍 [DEBUG] generateSchooldays returning ${schooldays.length} schooldays`,
+  );
+  return schooldays;
 }

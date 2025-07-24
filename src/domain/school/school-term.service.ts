@@ -20,8 +20,7 @@ export class SchoolTermService {
     const queryBuilder = this.termRepository
       .createQueryBuilder('term')
       .where('term.schoolId = :schoolId', { schoolId })
-      .orderBy('term.schoolYear', 'ASC')
-      .addOrderBy('term.id', 'ASC');
+      .orderBy('term.id', 'DESC');
 
     return await queryBuilder.getMany();
   }

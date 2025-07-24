@@ -111,6 +111,8 @@ export class SchoolTermLessonService {
         ['id', 'DESC'],
       ],
       filterableColumns: {
+        termId: [FilterOperator.EQ],
+        categoryId: [FilterOperator.EQ],
         'category.name': [FilterOperator.EQ, FilterOperator.IN],
         'category.slug': [FilterOperator.EQ, FilterOperator.IN],
         'groups.weekday': [FilterOperator.EQ, FilterOperator.IN],

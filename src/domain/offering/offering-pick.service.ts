@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BookingStatus, ClassStatus, PickRule } from 'src/common/enums';
 import { IPickKeys } from 'src/common/interfaces';
@@ -47,6 +51,12 @@ export class OfferingPickService {
         'lesson.groups',
         'lesson.groups.schooldays',
       ],
+    });
+
+    offering.lesson.groups.forEach((group) => {
+      if (!group.schooldays || group.schooldays.length <= 0) {
+        throw new BadRequestException('수업일이 없습니다.');
+      }
     });
 
     // console.log('🚀 offering', JSON.stringify(offering, null, 2));

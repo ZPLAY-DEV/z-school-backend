@@ -13,6 +13,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
+import { IDailyEscortInfo } from 'src/common/interfaces';
 import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
 
 /**
@@ -23,7 +24,7 @@ import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
  *   - 기존 부모 연결: parent.id 포함 (다른 parent 필드들은 무시됨)
  *   - 새로운 부모 생성: parent.id 제외, parent.phone 필수
  *   - 직접 참조: parentId 제공 (parent 객체 무시됨)
- * - 선택: class, studentCode, name, phone, escortPhone, nextStop, status, note
+ * - 선택: class, studentCode, name, phone, monday~saturday(요일별 보호자 정보), status, note
  */
 export class CreateStudentDto {
   @ApiProperty({
@@ -135,6 +136,48 @@ export class CreateStudentDto {
   @IsString({ message: '하교후 가는 곳은 문자열이어야 합니다' })
   @MaxLength(32, { message: '하교후 가는 곳은 32자 이하여야 합니다' })
   nextStop?: string;
+
+  @ApiPropertyOptional({
+    description: '월요일 보호자 정보 - 전화번호와 하교 후 가는 곳',
+    example: { phone: '01022223333', nextStop: '태권도 학원' },
+  })
+  @IsOptional()
+  monday?: IDailyEscortInfo;
+
+  @ApiPropertyOptional({
+    description: '화요일 보호자 정보 - 전화번호와 하교 후 가는 곳',
+    example: { phone: '01022223333', nextStop: '태권도 학원' },
+  })
+  @IsOptional()
+  tuesday?: IDailyEscortInfo;
+
+  @ApiPropertyOptional({
+    description: '수요일 보호자 정보 - 전화번호와 하교 후 가는 곳',
+    example: { phone: '01022223333', nextStop: '태권도 학원' },
+  })
+  @IsOptional()
+  wednesday?: IDailyEscortInfo;
+
+  @ApiPropertyOptional({
+    description: '목요일 보호자 정보 - 전화번호와 하교 후 가는 곳',
+    example: { phone: '01022223333', nextStop: '태권도 학원' },
+  })
+  @IsOptional()
+  thursday?: IDailyEscortInfo;
+
+  @ApiPropertyOptional({
+    description: '금요일 보호자 정보 - 전화번호와 하교 후 가는 곳',
+    example: { phone: '01022223333', nextStop: '태권도 학원' },
+  })
+  @IsOptional()
+  friday?: IDailyEscortInfo;
+
+  @ApiPropertyOptional({
+    description: '토요일 보호자 정보 - 전화번호와 하교 후 가는 곳',
+    example: { phone: '01022223333', nextStop: '태권도 학원' },
+  })
+  @IsOptional()
+  saturday?: IDailyEscortInfo;
 
   @ApiPropertyOptional({
     description: '비고 - 학생에 대한 추가 정보나 특이사항 (최대 255자)',

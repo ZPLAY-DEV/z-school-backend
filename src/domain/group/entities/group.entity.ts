@@ -7,16 +7,16 @@ import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import {
-    Column,
-    CreateDateColumn,
-    DeleteDateColumn,
-    Entity,
-    JoinColumn,
-    ManyToOne,
-    OneToMany,
-    PrimaryGeneratedColumn,
-    Unique,
-    UpdateDateColumn,
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  Unique,
+  UpdateDateColumn,
 } from 'typeorm';
 
 // Group 보단 Class 가 더 적합하겠지만, Class 는 reserved keyword 이므로 탈락

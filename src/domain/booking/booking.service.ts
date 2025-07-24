@@ -138,10 +138,10 @@ export class BookingService {
     await this.validateOfferingStatus(offeringId);
 
     try {
-      const { affected } = await this.bookingRepository.update(
-        { offeringId, studentId },
-        { status: BookingStatus.CANCELED },
-      );
+      const { affected } = await this.bookingRepository.delete({
+        offeringId,
+        studentId,
+      });
       await this.decrementBookingCountSafely(offeringId);
       return affected as number; // Assuming 1 row is affected
     } catch (error) {
@@ -296,7 +296,7 @@ export class BookingService {
 
   private async decrementBookingCountSafely(offeringId: number): Promise<void> {
     await this.offeringRepository.query(
-      'UPDATE offering SET bookingCount = bookingCount - 1 WHERE id = ? AND bookingCount > 0',
+      'UPDATE offerings SET bookingCount = bookingCount - 1 WHERE id = ? AND bookingCount > 0',
       [offeringId],
     );
   }

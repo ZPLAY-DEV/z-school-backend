@@ -5,7 +5,6 @@ import {
   IsOptional,
   IsString,
   Matches,
-  Max,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -43,13 +42,9 @@ export class UpdateGroupDto {
     description: '정원 - 반의 최대 수용 가능 인원 (1~100명)',
     type: Number,
     example: 25,
-    minimum: 1,
-    maximum: 100,
   })
   @IsOptional()
   @IsInt({ message: '정원은 정수여야 합니다' })
-  @Min(1, { message: '정원은 1명 이상이어야 합니다' })
-  @Max(100, { message: '정원은 100명 이하여야 합니다' })
   capacity?: number;
 
   @ApiPropertyOptional({

@@ -11,6 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
 
 import { CreateOfferingDto } from 'src/domain/offering/dto/create-offering.dto';
 import { UpdateOfferingDto } from 'src/domain/offering/dto/update-offering.dto';
@@ -18,6 +19,7 @@ import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { OfferingService } from 'src/domain/offering/offering.service';
 import {
   CreateOfferingDocs,
+  GetBookingsDocs,
   GetFormerStudentsDocs,
   GetOfferingByIdDocs,
   RemoveOfferingDocs,
@@ -51,10 +53,32 @@ export class OfferingController {
   async getOfferingById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Offering> {
-    return await this.offeringService.findById(id, [
+    const offering = await this.offeringService.findById(id, [
+      'lesson',
+      'lesson.groups',
+      'lesson.groups.contracts',
+      'lesson.groups.contracts.sam',
+      'lesson.groups.contracts.sam.instructor',
       'bookings',
       'bookings.student',
     ]);
+
+    const { lesson, ...offeringWithoutLesson } = offering;
+    const selectedGroups = lesson.groups.filter((g) =>
+      offering.groupIds.includes(g.id),
+    );
+
+    return {
+      ...offeringWithoutLesson,
+      lesson: { ...lesson, groups: selectedGroups },
+      convertSimpleArraysToNumbers: () => {},
+    } as Offering;
+  }
+
+  @GetBookingsDocs()
+  @Get(':id/bookings')
+  async getBookings(@Param('id', ParseIntPipe) id: number): Promise<Booking[]> {
+    return await this.offeringService.findBookings(id);
   }
 
   @GetFormerStudentsDocs()

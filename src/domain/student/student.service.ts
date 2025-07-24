@@ -161,7 +161,44 @@ export class StudentService {
         ...studentDto,
         ...(studentDto.phone && { phone: normalizePhone(studentDto.phone) }),
         ...(studentDto.escortPhone && {
-          escortPhone: normalizePhone(studentDto.escortPhone),
+          phone: normalizePhone(studentDto.escortPhone),
+        }),
+        ...(studentDto.nextStop && { nextStop: studentDto.nextStop }),
+        ...(studentDto.monday?.escortPhone && {
+          monday: {
+            ...studentDto.monday,
+            phone: normalizePhone(studentDto.monday.escortPhone),
+          },
+        }),
+        ...(studentDto.tuesday?.escortPhone && {
+          tuesday: {
+            ...studentDto.tuesday,
+            phone: normalizePhone(studentDto.tuesday.escortPhone),
+          },
+        }),
+        ...(studentDto.wednesday?.escortPhone && {
+          wednesday: {
+            ...studentDto.wednesday,
+            phone: normalizePhone(studentDto.wednesday.escortPhone),
+          },
+        }),
+        ...(studentDto.thursday?.escortPhone && {
+          thursday: {
+            ...studentDto.thursday,
+            phone: normalizePhone(studentDto.thursday.escortPhone),
+          },
+        }),
+        ...(studentDto.friday?.escortPhone && {
+          friday: {
+            ...studentDto.friday,
+            phone: normalizePhone(studentDto.friday.escortPhone),
+          },
+        }),
+        ...(studentDto.saturday?.escortPhone && {
+          saturday: {
+            ...studentDto.saturday,
+            phone: normalizePhone(studentDto.saturday.escortPhone),
+          },
         }),
       };
 
@@ -263,6 +300,7 @@ export class StudentService {
   async findById(id: number): Promise<Student> {
     const student = await this.studentRepository
       .createQueryBuilder('student')
+      .leftJoinAndSelect('student.school', 'school')
       .leftJoinAndSelect('student.parent', 'parent')
       .leftJoinAndSelect('student.picks', 'pick')
       .leftJoinAndSelect('pick.group', 'group')
@@ -445,106 +483,77 @@ export class StudentService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateStudentDto): Promise<Student> {
-    // 1. 기존 학생 존재 여부 확인
     const existingStudent = await this.studentRepository.findOneOrFail({
       where: { id },
       relations: ['parent'],
     });
 
-    // 2. 업데이트할 데이터가 있는지 확인
-    const fieldsToUpdate = Object.keys(dto).filter(
-      (key) => dto[key as keyof UpdateStudentDto] !== undefined,
-    );
-
-    if (fieldsToUpdate.length === 0) {
+    if (Object.keys(dto).length === 0) {
       return existingStudent;
     }
 
-    // 3. 트랜잭션 내에서 업데이트 수행
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       const { parent: parentDto, parentId, ...studentDto } = dto;
+
+      // 부모 정보 처리
       let finalParentId = existingStudent.parentId;
-
-      // 4. 부모 정보 처리
       if (parentId) {
-        // parentId가 제공된 경우 - 기존 부모 직접 참조로 변경
-        const existingParent = await manager.findOne(Parent, {
-          where: { id: parentId },
-        });
-        if (!existingParent) {
-          throw new NotFoundException('Parent not found');
-        }
         finalParentId = parentId;
-      } else if (parentDto) {
-        if (parentDto.id) {
-          // parent.id가 있으면 해당 부모 정보 업데이트
-          const existingParent = await manager.findOne(Parent, {
-            where: { id: parentDto.id },
-          });
-          if (!existingParent) {
-            throw new NotFoundException('Parent not found');
-          }
-          // 기존 부모 정보 업데이트
-          const updatedParent = manager.merge(Parent, existingParent, {
-            name: parentDto.name,
-            phone: normalizePhone(parentDto.phone),
-            note: parentDto.note,
+      } else if (parentDto && existingStudent.parentId) {
+        await manager.update(Parent, existingStudent.parentId, {
+          ...(parentDto.name && { name: parentDto.name }),
+          ...(parentDto.phone && { phone: normalizePhone(parentDto.phone) }),
+          ...(parentDto.note && { note: parentDto.note }),
+          ...(parentDto.termsAgreedAt && {
             termsAgreedAt: parentDto.termsAgreedAt,
-          });
-          await manager.save(Parent, updatedParent);
-          finalParentId = parentDto.id;
-        } else {
-          // parent.id가 없으면 현재 연결된 부모의 정보를 업데이트
-          if (existingStudent.parentId) {
-            const currentParent = await manager.findOne(Parent, {
-              where: { id: existingStudent.parentId },
-            });
-            if (!currentParent) {
-              throw new NotFoundException('Current parent not found');
-            }
-
-            // 현재 부모 정보 업데이트
-            const updatedParent = manager.merge(Parent, currentParent, {
-              name: parentDto.name,
-              phone: normalizePhone(parentDto.phone),
-              note: parentDto.note,
-              termsAgreedAt: parentDto.termsAgreedAt,
-            });
-            await manager.save(Parent, updatedParent);
-            finalParentId = existingStudent.parentId;
-          } else {
-            // 현재 연결된 부모가 없으면 새로운 부모 생성
-            const newParent = manager.create(Parent, {
-              name: parentDto.name,
-              phone: normalizePhone(parentDto.phone),
-              note: parentDto.note,
-              termsAgreedAt: parentDto.termsAgreedAt,
-            });
-            const savedParent = await manager.save(Parent, newParent);
-            finalParentId = savedParent.id;
-          }
-        }
+          }),
+        });
       }
 
-      // 4.5. Student 데이터 정리
-      const normalizedStudentDto = {
+      // 학생 데이터 정리
+      const normalizedData = {
         ...studentDto,
         ...(studentDto.phone && { phone: normalizePhone(studentDto.phone) }),
         ...(studentDto.escortPhone && {
           escortPhone: normalizePhone(studentDto.escortPhone),
         }),
+        parentId: finalParentId,
       };
 
-      // 5. 학생 정보 업데이트
-      const updatedStudent = manager.merge(Student, existingStudent, {
-        ...normalizedStudentDto,
-        parentId: finalParentId,
-      });
-      const savedStudent = await manager.save(Student, updatedStudent);
+      // unique 제약 조건 체크 및 upsert
+      const hasUniqueFieldChanges = ['grade', 'class', 'studentCode'].some(
+        (field) => normalizedData[field] !== undefined,
+      );
 
-      // 6. 업데이트된 학생 정보 반환 (관계 포함)
+      if (hasUniqueFieldChanges) {
+        const targetCondition = {
+          schoolId: existingStudent.schoolId,
+          grade: normalizedData.grade ?? existingStudent.grade,
+          class: normalizedData.class ?? existingStudent.class,
+          studentCode:
+            normalizedData.studentCode ?? existingStudent.studentCode,
+        };
+
+        const conflictStudent = await manager.findOne(Student, {
+          where: targetCondition,
+        });
+
+        if (conflictStudent && conflictStudent.id !== id) {
+          // 기존 레코드에 병합 후 현재 레코드 삭제
+          await manager.update(Student, conflictStudent.id, normalizedData);
+          await manager.update(Student, id, { deletedAt: new Date() });
+
+          return await manager.findOneOrFail(Student, {
+            where: { id: conflictStudent.id },
+            relations: ['parent'],
+          });
+        }
+      }
+
+      // 일반 업데이트
+      await manager.update(Student, id, normalizedData);
       return await manager.findOneOrFail(Student, {
-        where: { id: savedStudent.id },
+        where: { id },
         relations: ['parent'],
       });
     });

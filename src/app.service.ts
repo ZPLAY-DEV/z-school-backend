@@ -6,26 +6,19 @@ import {
 } from '@nestjs/common';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import {
-  REDIS_BOOKING_CLIENT,
-  REDIS_CACHE_CLIENT,
-  REDIS_TRACKING_CLIENT,
-} from 'src/common/constants';
+import { REDIS_BOOKING_CLIENT, REDIS_CACHE_CLIENT } from 'src/common/constants';
 import { RedisBookingService } from 'src/services/redis/redis-booking.service';
 import { RedisCacheService } from 'src/services/redis/redis-cache.service';
-import { RedisTrackingService } from 'src/services/redis/redis-tracking.service';
 
 @Injectable()
 export class AppService {
   private readonly logger = new Logger(AppService.name);
 
   constructor(
-    @Inject(REDIS_BOOKING_CLIENT)
-    private readonly redisBookingService: RedisBookingService,
-    @Inject(REDIS_TRACKING_CLIENT)
-    private readonly redisTrackingService: RedisTrackingService,
     @Inject(REDIS_CACHE_CLIENT)
     private readonly redisCacheService: RedisCacheService,
+    @Inject(REDIS_BOOKING_CLIENT)
+    private readonly redisBookingService: RedisBookingService,
   ) {}
 
   getVersion(): string {

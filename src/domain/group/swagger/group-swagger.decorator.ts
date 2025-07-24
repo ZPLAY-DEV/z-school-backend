@@ -1,17 +1,17 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiExtraModels,
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    getSchemaPath,
+  ApiBody,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-    ApiOkPaginatedResponse,
-    ApiPaginationQuery,
-    FilterOperator,
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { RemovalStatus } from 'src/common/enums';

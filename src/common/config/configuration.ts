@@ -6,7 +6,7 @@ import { IAwsConfig, IRdbConfig } from 'src/common/interfaces';
  * - 사용하지 않는 환경변수 제거 필요 ( 현재 보일러 플레이트에서 가져온 사용하지 않는 리소스가 너무 많음 )
  */
 export const configuration = () => ({
-  nodeEnv: process.env.NODE_ENV ?? 'local',
+  nodeEnv: process.env.NODE_ENV ?? 'dev',
   appPort: Number(process.env.APP_PORT ?? '3001'),
   appUrl: process.env.APP_URL,
   timeZone: process.env.TIME_ZONE,
@@ -25,20 +25,6 @@ export const configuration = () => ({
       : 6379,
     password: process.env.REDIS_CACHE_PASSWORD,
   },
-  redisCache: {
-    host: process.env.REDIS_CACHE_HOST ?? 'localhost',
-    port: process.env.REDIS_CACHE_PORT
-      ? Number(process.env.REDIS_CACHE_PORT)
-      : 6379,
-    password: process.env.REDIS_CACHE_PASSWORD,
-  },
-  redisPubSub: {
-    host: process.env.REDIS_PUBSUB_HOST ?? 'localhost',
-    port: process.env.REDIS_PUBSUB_PORT
-      ? Number(process.env.REDIS_PUBSUB_PORT)
-      : 6379,
-    password: process.env.REDIS_PUBSUB_PASSWORD,
-  },
   redisBooking: {
     host: process.env.REDIS_BOOKING_HOST ?? 'localhost',
     port: process.env.REDIS_BOOKING_PORT
@@ -46,6 +32,13 @@ export const configuration = () => ({
       : 6379,
     password: process.env.REDIS_BOOKING_PASSWORD,
   },
+  // redisPubSub: {
+  //   host: process.env.REDIS_PUBSUB_HOST ?? 'localhost',
+  //   port: process.env.REDIS_PUBSUB_PORT
+  //     ? Number(process.env.REDIS_PUBSUB_PORT)
+  //     : 6379,
+  //   password: process.env.REDIS_PUBSUB_PASSWORD,
+  // },
   jwt: {
     authSecret: process.env.AUTH_TOKEN_SECRET,
     refreshSecret: process.env.REFRESH_TOKEN_SECRET,
@@ -56,32 +49,25 @@ export const configuration = () => ({
   },
   firebase:
     process.env.GOOGLE_APPLICATION_CREDENTIALS ??
-    './fb-admin-gogi.account-key.json',
+    './school-hub.fb-admin-key.json',
   aws: {
     defaultRegion: process.env.AWS_DEFAULT_REGION,
     accessKey: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    secretsManagerEndpoint: process.env.AWS_SECRETS_MANAGER_ENDPOINT,
-    secretsDbArn: process.env.AWS_SECRETS_DB_ARN,
-    cloudfrontUrl: process.env.AWS_CLOUDFRONT_URL,
+    // secretsManagerEndpoint: process.env.AWS_SECRETS_MANAGER_ENDPOINT,
+    // secretsDbArn: process.env.AWS_SECRETS_DB_ARN,
     s3Endpoint: process.env.AWS_S3_ENDPOINT,
+    sqsEndpoint: process.env.AWS_SQS_ENDPOINT,
+    firehoseEndpoint: process.env.AWS_FIREHOSE_ENDPOINT,
+    // essentials
+    cloudfrontUrl: process.env.AWS_CLOUDFRONT_URL,
     s3FilesBucket: process.env.AWS_S3_FILES_BUCKET,
     s3LogsBucket: process.env.AWS_S3_LOGS_BUCKET,
-    sqsEndpoint: process.env.AWS_SQS_ENDPOINT,
-    sqsPrimaryUrl: process.env.AWS_SQS_PQ_URL,
-    sqsDeadNewsletterUrl: process.env.AWS_SQS_DLQ_URL,
-    firehoseEndpoint: process.env.AWS_FIREHOSE_ENDPOINT,
+    sqsPqUrl: process.env.AWS_SQS_PQ_URL,
+    sqsDlqUrl: process.env.AWS_SQS_DLQ_URL,
     firehoseStreamName: process.env.AWS_FIREHOSE_STREAM_NAME,
+    ssmParameterName: process.env.AWS_SSM_PARAMETER_NAME,
   } as IAwsConfig,
-  // naver: {
-  //   accessKey: process.env.NAVER_ACCESS_KEY,
-  //   secretKey: process.env.NAVER_SECRET_KEY,
-  //   smsServiceId: process.env.NAVER_SMS_SERVICE_ID,
-  //   smsSecretKey: process.env.NAVER_SMS_SECRET_KEY,
-  //   smsphone: process.env.NAVER_SMS_PHONE_NUMBER,
-  //   alimtalkServiceId: process.env.NAVER_ALIMTALK_SERVICE_ID,
-  //   plusFriendId: process.env.NAVER_PLUS_FRIEND_ID,
-  // },
   slack: {
     token: process.env.SLACK_TOKEN,
     activityChannel: process.env.SLACK_CHANNEL_ACTIVITY,
@@ -90,13 +76,12 @@ export const configuration = () => ({
   sentry: {
     dsn: process.env.SENTRY_DSN,
   },
-  toss: {
-    secretKey: process.env.TOSS_SECRET_KEY,
-    clientKey: process.env.TOSS_CLIENT_KEY,
-    apiBaseUrl: 'https://api.tosspayments.com/v1',
+  aligo: {
+    url: process.env.ALIGO_URL || 'https://apis.aligo.in',
+    key: process.env.ALIGO_KEY || '',
+    uid: process.env.ALIGO_UID || '',
   },
-  deliveryTracker: {
-    clientId: process.env.DELIVERY_TRACKER_CLIENT_ID,
-    clientSecret: process.env.DELIVERY_TRACKER_CLIENT_SECRET,
+  neis: {
+    apiKey: process.env.NEIS_API_KEY || '',
   },
 });

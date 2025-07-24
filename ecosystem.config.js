@@ -13,7 +13,7 @@ module.exports = {
       autorestart: true,
       exec_mode: 'cluster',
       env: {
-        NODE_ENV: 'development',
+        NODE_ENV: 'dev',
       },
     },
     {

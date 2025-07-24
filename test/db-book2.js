@@ -49,7 +49,7 @@ async function postBookings(offering, students, token) {
   const matchedStudents = [...students].filter((student) => grades.includes(student.grade));
   const randomStudents = matchedStudents
     .sort(() => Math.random() - 0.5)
-    .slice(0, 30);
+    .slice(0, 20);
 
   for (const student of randomStudents) {
     const dto = {

@@ -9,6 +9,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { Weekday } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -16,6 +17,7 @@ import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { getEnglishWeekday } from 'src/helpers/date';
 import { Repository } from 'typeorm';
+import { ResponseSchoolTermStudentBookingsDto } from './dto/response-school-term-student-bookings.dto';
 
 @Injectable()
 export class SchoolTermStudentService {
@@ -57,14 +59,56 @@ export class SchoolTermStudentService {
     schoolId: number,
     termId: number,
     studentId: number,
-  ): Promise<Booking[]> {
-    return await this.bookingRepository
+  ): Promise<ResponseSchoolTermStudentBookingsDto[]> {
+    const bookings = await this.bookingRepository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.offering', 'offering')
       .where('booking.studentId = :studentId', { studentId })
       .andWhere('offering.schoolId = :schoolId', { schoolId })
       .andWhere('offering.termId = :termId', { termId })
       .getMany();
+
+    // 요일별로 그룹화 (월~토만)
+    const weekdayGroups: Partial<Record<Weekday, Booking[]>> = {
+      [Weekday.MONDAY]: [],
+      [Weekday.TUESDAY]: [],
+      [Weekday.WEDNESDAY]: [],
+      [Weekday.THURSDAY]: [],
+      [Weekday.FRIDAY]: [],
+      [Weekday.SATURDAY]: [],
+    };
+
+    for (const booking of bookings) {
+      const offering = booking.offering;
+
+      // offering의 times에서 weekday 정보 추출
+      if (offering.times) {
+        for (const timeRange of offering.times) {
+          // 각 timeRange의 weekday에 해당하는 그룹에 booking 추가
+          if (timeRange.weekday && weekdayGroups[timeRange.weekday]) {
+            weekdayGroups[timeRange.weekday]!.push(booking);
+          }
+        }
+      }
+    }
+
+    // 월요일부터 토요일까지 순차적으로 Response DTO 생성
+    const weekdayOrder = [
+      Weekday.MONDAY,
+      Weekday.TUESDAY,
+      Weekday.WEDNESDAY,
+      Weekday.THURSDAY,
+      Weekday.FRIDAY,
+      Weekday.SATURDAY,
+    ];
+
+    return weekdayOrder.map(
+      (weekday) =>
+        new ResponseSchoolTermStudentBookingsDto(
+          weekday,
+          weekdayGroups[weekday] || [],
+        ),
+    );
   }
 
   // 신청한 booking 정보 보기 (요일별로 분류)

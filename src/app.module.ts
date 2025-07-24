@@ -53,10 +53,6 @@ import { UploadModule } from './services/upload/upload.module';
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath:
-        process.env.NODE_ENV === 'development'
-          ? '.env.development'
-          : '.env.production',
       load: [configuration],
     }),
     SentryModule.forRoot(),
@@ -92,21 +88,26 @@ import { UploadModule } from './services/upload/upload.module';
         };
       },
     }),
-    DynamooseModule.forRoot({
-      local:
-        process.env.NODE_ENV === 'development'
-          ? 'http://localhost:4566'
-          : false,
-      aws: {
-        region: process.env.AWS_DEFAULT_REGION ?? 'ap-northeast-2',
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? 'test',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? 'test',
-      },
-      table: {
-        create: process.env.NODE_ENV === 'development', // create dynamo tables in local env
-        prefix: `${process.env.NODE_ENV}_`,
-        suffix: '_table',
-      },
+    DynamooseModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        local:
+          configService.get<string>('nodeEnv') === 'dev'
+            ? 'http://localhost:4566'
+            : false,
+        aws: {
+          region:
+            configService.get<string>('aws.defaultRegion') ?? 'ap-northeast-2',
+          accessKeyId: configService.get<string>('aws.accessKey') ?? 'test',
+          secretAccessKey:
+            configService.get<string>('aws.secretAccessKey') ?? 'test',
+        },
+        table: {
+          create: configService.get<string>('nodeEnv') === 'dev', // create dynamo tables in local env
+          prefix: `${configService.get<string>('nodeEnv')}_`,
+          suffix: '_table',
+        },
+      }),
     }),
     AttendanceModule,
     AuthModule,
