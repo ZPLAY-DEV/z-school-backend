@@ -135,8 +135,29 @@ export class AuthService {
       // Check if user exists and create/update as needed
       const user = await this.findOrCreateUserWithPhone(dto);
 
-      // Create role-specific entity
-      await this.createRoleSpecificEntity(user, dto);
+      if (dto.role === Role.INSTRUCTOR) {
+        const instructor = await this.instructorRepository.findOne({
+          where: { phone: dto.phone },
+        });
+        if (instructor) {
+          instructor.userId = user.id; // userId 할당
+          await this.instructorRepository.upsert(instructor, ['phone']);
+        } else {
+          throw new ConflictException('pre-registered instructor not found');
+        }
+      } else if (dto.role === Role.PARENT) {
+        const parent = await this.parentRepository.findOne({
+          where: { phone: dto.phone },
+        });
+        if (parent) {
+          parent.userId = user.id;
+          await this.parentRepository.upsert(parent, ['phone']);
+        } else {
+          throw new ConflictException('pre-registered parent not found');
+        }
+      } else {
+        throw new BadRequestException('Invalid role');
+      }
 
       // Reload user with updated relations
       const updatedUser = await this.reloadUserWithRelations(user.id);
@@ -343,6 +364,7 @@ export class AuthService {
     }
 
     const user = tokenRecord.user;
+    const hasRole = this.checkUserHasRole(user, role);
     if (!hasRole) {
       throw new UnauthorizedException('Access denied');
     }
@@ -411,7 +433,13 @@ export class AuthService {
   ): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { phone: dto.phone },
-      relations: ['instructor', 'parent', 'manager'],
+      relations: [
+        'instructor',
+        'instructor.sams',
+        'instructor.sams.school',
+        'parent',
+        'manager',
+      ],
     });
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -431,7 +459,13 @@ export class AuthService {
       // Return refreshed user data
       const updatedUser = await this.userRepository.findOne({
         where: { id: user.id },
-        relations: ['instructor', 'parent', 'manager'],
+        relations: [
+          'instructor',
+          'instructor.sams',
+          'instructor.sams.school',
+          'parent',
+          'manager',
+        ],
       });
 
       if (!updatedUser) {
@@ -489,30 +523,6 @@ export class AuthService {
       });
 
       return await this.userRepository.save(newUser);
-    }
-  }
-
-  /**
-   * Create role-specific entity for a user
-   */
-  private async createRoleSpecificEntity(
-    user: User,
-    dto: UserCredentialsDtoWithPhone,
-  ): Promise<void> {
-    if (dto.role === Role.INSTRUCTOR) {
-      const instructor = new Instructor({
-        userId: user.id,
-        phone: dto.phone,
-      });
-      await this.instructorRepository.upsert(instructor, ['phone']);
-    } else if (dto.role === Role.PARENT) {
-      const parent = new Parent({
-        userId: user.id,
-        phone: dto.phone,
-      });
-      await this.parentRepository.upsert(parent, ['phone']);
-    } else {
-      throw new BadRequestException('Invalid role');
     }
   }
 

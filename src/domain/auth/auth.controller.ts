@@ -131,7 +131,7 @@ export class AuthController {
   async login(
     @Body() dto: UserCredentialsDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthUserDto> {
+  ): Promise<any> {
     const tokens = await this.authService.login(dto);
 
     res.cookie('accessToken', tokens.accessToken, {
