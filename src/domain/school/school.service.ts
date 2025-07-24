@@ -7,6 +7,7 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { Region } from 'src/common/enums';
+import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { S3Service } from 'src/services/aws/s3.service';
 import { In, Repository } from 'typeorm';
@@ -100,6 +101,14 @@ export class SchoolService {
       where: { id: In(ids) },
       relations: ['options'],
     });
+  }
+
+  async getLessons(id: number): Promise<Lesson[]> {
+    const school = await this.findById(id, ['lessons']);
+    if (!school.lessons || school.lessons.length === 0) {
+      return [];
+    }
+    return school.lessons;
   }
 
   //? ---------------------------------------------------------------------- ?//

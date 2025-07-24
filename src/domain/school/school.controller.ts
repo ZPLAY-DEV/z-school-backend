@@ -59,6 +59,11 @@ export class SchoolController {
     return await this.schoolService.list(region);
   }
 
+  @Get(':id/lessons')
+  async getLessons(@Param('id', ParseIntPipe) id: number) {
+    return await this.schoolService.getLessons(id);
+  }
+
   @PaginatedSchoolsDocs()
   @Get('paginated')
   async infiniteList(
