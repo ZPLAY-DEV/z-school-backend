@@ -15,8 +15,7 @@ import { SqsService } from 'src/services/aws/sqs.service';
         accessKeyId: configService.get<string>('aws.accessKey') || 'test',
         secretAccessKey:
           configService.get<string>('aws.secretAccessKey') || 'test',
-        sqsEndpoint:
-          configService.get<string>('aws.sqsEndpoint') || 'your-sqs-endpoint',
+        sqsEndpoint: configService.get<string>('aws.sqsEndpoint'),
         sqsPqUrl: configService.get<string>('aws.sqsPqUrl') || 'pq-url',
         sqsDlqUrl: configService.get<string>('aws.sqsDlqUrl') || 'dlq-url',
       }),

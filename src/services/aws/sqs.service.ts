@@ -38,7 +38,7 @@ export class SqsService implements OnModuleInit {
 
   onModuleInit() {
     this.logger.log(
-      `AWS SQS service initialized for endpoint: ${this.sqsOptions.sqsEndpoint}`,
+      `AWS SQS service initialized for region: ${this.sqsOptions.region}`,
     );
   }
 
@@ -55,6 +55,7 @@ export class SqsService implements OnModuleInit {
     }
   }
 
+  //! 미 사용
   async updateQueuePolicy(ruleArn: string): Promise<void> {
     try {
       //? 기존 정책 가져오기
@@ -62,11 +63,7 @@ export class SqsService implements OnModuleInit {
         QueueUrl: this.queueUrl,
         AttributeNames: ['Policy'],
       });
-      console.log('getAttributesCommand', getAttributesCommand);
-
       const { Attributes } = await this.sqsClient.send(getAttributesCommand);
-      console.log('Attributes', Attributes);
-
       const policy = Attributes?.Policy
         ? JSON.parse(Attributes.Policy)
         : {

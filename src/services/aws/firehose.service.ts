@@ -29,7 +29,7 @@ export class FirehoseService implements OnModuleInit {
     const secretAccessKey = this.configService.get<string>(
       'aws.secretAccessKey',
     );
-    const endpoint = this.configService.get<string>('aws.firehoseEndpoint');
+    const endpoint = this.configService.get<string>('aws.endpoint');
     const credentials =
       accessKey && secretAccessKey
         ? {

@@ -33,7 +33,7 @@ export class S3Service implements OnModuleInit {
     // Validate required environment variables
     const region =
       this.configService.get<string>('aws.defaultRegion') ?? 'ap-northeast-2';
-    const endpoint = this.configService.get<string>('aws.s3Endpoint');
+    const endpoint = this.configService.get<string>('aws.endpoint');
     this.bucket =
       this.configService.get<string>('aws.s3FilesBucket') ??
       'afterschool-files-bucket';
