@@ -27,7 +27,7 @@ export class SchoolTermSamService {
     schoolId: number,
     termId: number,
     samId: number,
-  ): Promise<{ group: Group; offering: Offering }[]> {
+  ): Promise<Offering[]> {
     const queryBuilder = this.samRepository
       .createQueryBuilder('sam')
       .leftJoinAndSelect('sam.contracts', 'contract')
@@ -46,18 +46,7 @@ export class SchoolTermSamService {
         const offering = contract.group.lesson.offerings.find((offering) =>
           offering.groupIds.includes(groupId),
         )!;
-
-        // offerings 속성을 제외한 lesson 객체 생성
-        const { _, ...lessonWithoutOfferings } = contract.group.lesson;
-        const cleanGroup = {
-          ...contract.group,
-          lesson: lessonWithoutOfferings,
-        } as Group;
-
-        return {
-          group: cleanGroup,
-          offering: offering,
-        };
+        return offering;
       }) || []
     );
   }

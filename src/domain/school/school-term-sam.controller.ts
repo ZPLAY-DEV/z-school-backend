@@ -8,7 +8,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Group } from 'src/domain/group/entities/group.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { SchoolTermSamService } from 'src/domain/school/school-term-sam.service';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
@@ -27,12 +26,12 @@ export class SchoolTermSamController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @Get(':schoolId/terms/:termId/sams/:samId/groups')
+  @Get(':schoolId/terms/:termId/sams/:samId/offerings')
   async listOfferings(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
     @Param('samId', ParseIntPipe) samId: number,
-  ): Promise<{ group: Group; offering: Offering }[]> {
+  ): Promise<Offering[]> {
     return await this.schoolTermSamService.listOfferings(
       schoolId,
       termId,
