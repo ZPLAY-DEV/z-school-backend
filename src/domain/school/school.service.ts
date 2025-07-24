@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -12,6 +12,7 @@ import { S3Service } from 'src/services/aws/s3.service';
 import { In, Repository } from 'typeorm';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { UpdateSchoolDto } from './dto/update-school.dto';
+import { Lesson } from '../lesson/entities/lesson.entity';
 
 @Injectable()
 export class SchoolService {
@@ -126,6 +127,14 @@ export class SchoolService {
   async remove(id: number): Promise<School> {
     const school = await this.findById(id);
     return await this.schoolRepository.remove(school);
+  }
+
+  async getLessons(id: number): Promise<Lesson[]> {
+    const school = await this.findById(id, ['lessons']);
+    if (!school.lessons || school.lessons.length === 0) {
+     return [];
+    }
+    return school.lessons;
   }
 
   async deleteFromS3(url: string): Promise<void> {
