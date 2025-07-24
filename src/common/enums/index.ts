@@ -10,6 +10,7 @@ export * from './event-status';
 export * from './gender';
 export * from './ledger-type';
 export * from './newsletter-type';
+export * from './notification-type';
 export * from './permission';
 export * from './pick-rule';
 export * from './platform-type';
@@ -24,3 +25,4 @@ export * from './term-status';
 export * from './term-type';
 export * from './time-unit';
 export * from './weekday';
+
