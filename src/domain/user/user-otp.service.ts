@@ -8,16 +8,13 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as bcrypt from 'bcrypt';
 import { addMinutes, isAfter } from 'date-fns';
 import * as random from 'randomstring';
 import { NotificationType } from 'src/common/enums';
-import { UpdateUserDto } from 'src/domain/user/dto/update-user.dto';
 import { Secret } from 'src/domain/user/entities/secret.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { normalizePhone } from 'src/helpers/phone';
 import { AligoService } from 'src/services/aligo/aligo.service';
-import { DeepPartial } from 'typeorm';
 import { Repository } from 'typeorm/repository/Repository';
 
 @Injectable()
@@ -102,12 +99,7 @@ export class UserOtpService {
   //? 본인인증 OTP 검사 후, User 업데이트
   //? ---------------------------------------------------------------------- ?//
 
-  async updateUserIfOtpMatches(
-    val: string,
-    otp: string,
-    role: string, // PARENT or INSTRUCTOR
-    dto: UpdateUserDto,
-  ): Promise<User> {
+  async checkOtp(val: string, otp: string): Promise<Secret> {
     const phone = val.includes('@') ? null : normalizePhone(val);
     const email = val.includes('@') ? val : null;
     const where = email ? { email } : phone ? { phone } : undefined;
@@ -115,40 +107,25 @@ export class UserOtpService {
       throw new BadRequestException('Invalid key');
     }
 
-    const dbUser = await this.userRepository.findOne({ where });
-    if (!dbUser) {
-      throw new NotFoundException('User not found');
-    }
-
     const secret = await this.secretRepository.findOne({
-      where: { key: val },
+      where: {
+        key: val,
+        otp: otp,
+      },
     });
     if (!secret) {
-      throw new UnprocessableEntityException('otp unavailable');
+      throw new NotFoundException('OTP mismatched');
     }
 
     const now = new Date();
     // secret.updatedAt을 기준으로 3분 후의 시간 계산
-    const expiredAt = addMinutes(new Date(secret.updatedAt), 3);
+    const expiredAt = addMinutes(new Date(secret.updatedAt), 1);
 
     if (isAfter(now, expiredAt)) {
       throw new UnprocessableEntityException(`otp expired`);
     }
-    if (secret.otp !== otp) {
-      throw new UnprocessableEntityException('otp mismatched');
-    }
 
-    const updatedDto = { ...dto };
-    if (Object.prototype.hasOwnProperty.call(dto, 'password')) {
-      const salt = await bcrypt.genSalt(10);
-      const passwordHash = await bcrypt.hash(dto.password, salt);
-      updatedDto.password = passwordHash;
-    }
-    const user = await this.userRepository.preload({
-      id: dbUser.id,
-      ...updatedDto,
-    });
-    return await this.userRepository.save(user as DeepPartial<User>);
+    return secret;
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -167,7 +144,8 @@ export class UserOtpService {
   ON DUPLICATE KEY \
   UPDATE `key`=new_secret.`key`, \
   `otp`=new_secret.`otp`, \
-  `role`=new_secret.`role`',
+  `role`=new_secret.`role`, \
+  updatedAt=NOW()',
       [key, pass, role],
     );
     return pass as string;

@@ -15,8 +15,7 @@ import { ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ThrottlerBehindProxyGuard } from 'src/common/guards/throttler-behind-proxy.guard';
-import { UpdateUserDto } from 'src/domain/user/dto/update-user.dto';
-import { User } from 'src/domain/user/entities/user.entity';
+import { Secret } from 'src/domain/user/entities/secret.entity';
 import { UserOtpService } from 'src/domain/user/user-otp.service';
 
 @UseInterceptors(ClassSerializerInterceptor)
@@ -33,10 +32,10 @@ export class UserOtpController {
   @Throttle({ default: { limit: 2, ttl: 60000 } })
   @Public()
   @HttpCode(HttpStatus.OK)
-  @Post(':key/new/:role')
+  @Post(':key/nonexisting')
   async sendOtpForNonExistingUser(
     @Param('key') key: string,
-    @Param('role') role: string,
+    @Body('role') role: string,
   ): Promise<any> {
     if (
       role.toLowerCase() !== 'parent' &&
@@ -56,14 +55,14 @@ export class UserOtpController {
   @Throttle({ default: { limit: 2, ttl: 60000 } })
   @Public()
   @HttpCode(HttpStatus.OK)
-  @Post(':key/otp/:role')
+  @Post(':key/otp')
   async sendOtpForExistingUser(
     @Param('key') key: string,
-    @Param('role') role: string,
+    @Body('role') role: string,
   ): Promise<string> {
     if (
-      role.toLowerCase() !== 'parent' &&
-      role.toLowerCase() !== 'instructor'
+      role.toUpperCase() !== 'PARENT' &&
+      role.toUpperCase() !== 'INSTRUCTOR'
     ) {
       throw new BadRequestException('Invalid role');
     }
@@ -74,19 +73,11 @@ export class UserOtpController {
 
   @ApiOperation({ description: 'OTP 코드 검사 및 User 갱신' })
   @Public()
-  @HttpCode(HttpStatus.OK)
   @Patch(':key/otp')
   async checkOtp(
     @Param('key') key: string,
-    @Param('otp') otp: string,
-    @Param('role') role: string,
-    @Body() dto: UpdateUserDto,
-  ): Promise<User> {
-    return await this.userOtpService.updateUserIfOtpMatches(
-      key,
-      otp,
-      role,
-      dto,
-    );
+    @Body('otp') otp: string,
+  ): Promise<Secret> {
+    return await this.userOtpService.checkOtp(key, otp);
   }
 }
