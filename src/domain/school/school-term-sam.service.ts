@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { endOfWeek, startOfWeek } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Repository } from 'typeorm';
@@ -21,6 +22,45 @@ export class SchoolTermSamService {
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
+
+  async listOfferings(
+    schoolId: number,
+    termId: number,
+    samId: number,
+  ): Promise<{ group: Group; offering: Offering }[]> {
+    const queryBuilder = this.samRepository
+      .createQueryBuilder('sam')
+      .leftJoinAndSelect('sam.contracts', 'contract')
+      .leftJoinAndSelect('contract.group', 'group')
+      .leftJoinAndSelect('group.lesson', 'lesson')
+      .leftJoinAndSelect('lesson.offerings', 'offerings')
+      .where('sam.id = :samId', { samId })
+      .andWhere('sam.schoolId = :schoolId', { schoolId })
+      .andWhere('contract.termId = :termId', { termId })
+      .andWhere('contract.endedBy IS NULL');
+
+    const sam = await queryBuilder.getOne();
+    return (
+      sam?.contracts.map((contract) => {
+        const groupId = contract.group.id;
+        const offering = contract.group.lesson.offerings.find((offering) =>
+          offering.groupIds.includes(groupId),
+        )!;
+
+        // offerings 속성을 제외한 lesson 객체 생성
+        const { _, ...lessonWithoutOfferings } = contract.group.lesson;
+        const cleanGroup = {
+          ...contract.group,
+          lesson: lessonWithoutOfferings,
+        } as Group;
+
+        return {
+          group: cleanGroup,
+          offering: offering,
+        };
+      }) || []
+    );
+  }
 
   async listSchooldays(
     schoolId: number,
