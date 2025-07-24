@@ -83,7 +83,13 @@ export class AuthService {
 
     const user = await this.userRepository.findOne({
       where: { username },
-      relations: ['instructor', 'parent', 'manager'],
+      relations: [
+        'instructor',
+        'instructor.sams',
+        'instructor.sams.school',
+        'parent',
+        'manager',
+      ],
     });
 
     if (!user) {
@@ -219,14 +225,38 @@ export class AuthService {
   /**
    * Log in a user and generate auth tokens
    */
-  async login(dto: UserCredentialsDto): Promise<AuthUserDto> {
+  async login(dto: UserCredentialsDto): Promise<any> {
     const user = await this.validateUser(dto);
     const { accessToken, refreshToken } = await this.generateTokens(
       user,
       dto.role,
     );
+
     return {
-      user: plainToClass(UserDto, user, { excludeExtraneousValues: true }),
+      user: {
+        id: user.id,
+        username: user.username,
+        phone: user.phone,
+        avatar: user.avatar,
+        createdAt: user.createdAt,
+        manager: user.manager,
+        parent: user.parent,
+        instructor: user.instructor
+          ? {
+              id: user.instructor?.id ?? 0,
+              name: user.instructor?.name ?? null,
+              phone: user.instructor?.phone ?? null,
+              sams:
+                user.instructor?.sams?.map((sam) => {
+                  return {
+                    samId: sam.id,
+                    schoolId: sam.school.id,
+                    schoolName: sam.school.name,
+                  };
+                }) ?? [],
+            }
+          : null,
+      },
       role: dto.role,
       accessToken,
       refreshToken,
@@ -313,7 +343,6 @@ export class AuthService {
     }
 
     const user = tokenRecord.user;
-    const hasRole = this.checkUserHasRole(user, role);
     if (!hasRole) {
       throw new UnauthorizedException('Access denied');
     }
