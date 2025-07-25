@@ -23,10 +23,10 @@ COPY . .
 RUN pnpm run build
 
 # Production stage
-FROM node:20-alpine AS production
+FROM base AS production
 
-# Install pnpm
-RUN npm install -g pnpm
+# Install curl to run health check
+RUN apk add --no-cache curl
 
 # Create app directory
 WORKDIR /usr/src/app
