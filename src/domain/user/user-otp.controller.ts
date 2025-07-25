@@ -8,13 +8,10 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
 import { Public } from 'src/common/decorators/public.decorator';
-import { ThrottlerBehindProxyGuard } from 'src/common/guards/throttler-behind-proxy.guard';
 import { Secret } from 'src/domain/user/entities/secret.entity';
 import { UserOtpService } from 'src/domain/user/user-otp.service';
 
@@ -28,8 +25,8 @@ export class UserOtpController {
   //? ---------------------------------------------------------------------- ?//
 
   @ApiOperation({ description: 'non-existing user(phone/email) 으로 OTP 발급' })
-  @UseGuards(ThrottlerBehindProxyGuard)
-  @Throttle({ default: { limit: 2, ttl: 60000 } })
+  // @UseGuards(ThrottlerBehindProxyGuard)
+  // @Throttle({ default: { limit: 2, ttl: 60000 } })
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post(':key/nonexisting')
@@ -51,8 +48,8 @@ export class UserOtpController {
   }
 
   @ApiOperation({ description: 'existing user(phone/email) 으로 OTP 발급' })
-  @UseGuards(ThrottlerBehindProxyGuard)
-  @Throttle({ default: { limit: 2, ttl: 60000 } })
+  // @UseGuards(ThrottlerBehindProxyGuard)
+  // @Throttle({ default: { limit: 2, ttl: 60000 } })
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post(':key/otp')

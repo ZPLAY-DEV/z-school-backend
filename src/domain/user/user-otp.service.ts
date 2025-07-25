@@ -118,8 +118,8 @@ export class UserOtpService {
     }
 
     const now = new Date();
-    // secret.updatedAt을 기준으로 3분 후의 시간 계산
-    const expiredAt = addMinutes(new Date(secret.updatedAt), 1);
+    // secret.updatedAt을 기준으로 5분 후의 시간 계산
+    const expiredAt = addMinutes(new Date(secret.updatedAt), 5);
 
     if (isAfter(now, expiredAt)) {
       throw new UnprocessableEntityException(`otp expired`);
