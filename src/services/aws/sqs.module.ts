@@ -12,9 +12,8 @@ import { SqsService } from 'src/services/aws/sqs.service';
       useFactory: (configService: ConfigService) => ({
         region:
           configService.get<string>('aws.defaultRegion') || 'ap-northeast-2',
-        accessKeyId: configService.get<string>('aws.accessKey') || 'test',
-        secretAccessKey:
-          configService.get<string>('aws.secretAccessKey') || 'test',
+        accessKeyId: configService.get<string>('aws.accessKey'),
+        secretAccessKey: configService.get<string>('aws.secretAccessKey'),
         sqsEndpoint: configService.get<string>('aws.sqsEndpoint'),
         sqsPqUrl: configService.get<string>('aws.sqsPqUrl') || 'pq-url',
         sqsDlqUrl: configService.get<string>('aws.sqsDlqUrl') || 'dlq-url',

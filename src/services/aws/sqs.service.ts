@@ -1,6 +1,7 @@
 import {
   GetQueueAttributesCommand,
   SQSClient,
+  SQSClientConfig,
   SendMessageCommand,
   SetQueueAttributesCommand,
 } from '@aws-sdk/client-sqs';
@@ -17,22 +18,34 @@ export class SqsService implements OnModuleInit {
     @Inject(AWS_SQS_OPTIONS)
     private readonly sqsOptions: {
       region: string;
-      accessKeyId: string;
-      secretAccessKey: string;
-      sqsEndpoint: string;
+      accessKeyId?: string;
+      secretAccessKey?: string;
+      sqsEndpoint?: string;
       sqsPqUrl: string;
       sqsDlqUrl: string;
     },
   ) {
     const endpoint = sqsOptions.sqsEndpoint;
-    this.sqsClient = new SQSClient({
+
+    // AWS SDK가 자동으로 IAM 역할을 사용하도록 credentials 제거
+    // LocalStack 환경에서만 endpoint와 credentials 사용
+    const sqsConfig: SQSClientConfig = {
       region: sqsOptions.region,
-      credentials: {
-        accessKeyId: sqsOptions.accessKeyId,
-        secretAccessKey: sqsOptions.secretAccessKey,
-      },
-      ...(endpoint && { endpoint }),
-    });
+    };
+
+    if (endpoint) {
+      // LocalStack 환경
+      sqsConfig.endpoint = endpoint;
+      if (sqsOptions.accessKeyId && sqsOptions.secretAccessKey) {
+        sqsConfig.credentials = {
+          accessKeyId: sqsOptions.accessKeyId,
+          secretAccessKey: sqsOptions.secretAccessKey,
+        };
+      }
+    }
+    // AWS 환경에서는 IAM 역할 자동 사용 (credentials 없음)
+
+    this.sqsClient = new SQSClient(sqsConfig);
     this.queueUrl = sqsOptions.sqsPqUrl;
   }
 
