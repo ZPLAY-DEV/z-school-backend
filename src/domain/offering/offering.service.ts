@@ -50,7 +50,7 @@ export class OfferingService {
   async findBookings(offeringId: number): Promise<Booking[]> {
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
-      relations: ['bookings', 'bookings.student'],
+      relations: ['bookings', 'bookings.student', 'bookings.student.parent'],
     });
 
     return offering.bookings;
