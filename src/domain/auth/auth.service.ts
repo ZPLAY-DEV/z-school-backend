@@ -135,30 +135,6 @@ export class AuthService {
       // Check if user exists and create/update as needed
       const user = await this.findOrCreateUserWithPhone(dto);
 
-      if (dto.role === Role.INSTRUCTOR) {
-        const instructor = await this.instructorRepository.findOne({
-          where: { phone: dto.phone },
-        });
-        if (instructor) {
-          instructor.userId = user.id; // userId 할당
-          await this.instructorRepository.upsert(instructor, ['phone']);
-        } else {
-          throw new ConflictException('pre-registered instructor not found');
-        }
-      } else if (dto.role === Role.PARENT) {
-        const parent = await this.parentRepository.findOne({
-          where: { phone: dto.phone },
-        });
-        if (parent) {
-          parent.userId = user.id;
-          await this.parentRepository.upsert(parent, ['phone']);
-        } else {
-          throw new ConflictException('pre-registered parent not found');
-        }
-      } else {
-        throw new BadRequestException('Invalid role');
-      }
-
       // Reload user with updated relations
       const updatedUser = await this.reloadUserWithRelations(user.id);
 
@@ -433,6 +409,55 @@ export class AuthService {
   ): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { phone: dto.phone },
+    });
+
+    if (user) {
+      throw new ConflictException('already registered');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    if (dto.role === Role.INSTRUCTOR) {
+      const instructor = await this.instructorRepository.findOne({
+        where: { phone: dto.phone },
+        relations: ['sams'],
+      });
+      if (instructor) {
+        const user = await this.userRepository.save(
+          new User({
+            username: dto.phone,
+            phone: dto.phone,
+            password: hashedPassword,
+          }),
+        );
+        instructor.userId = user?.id; // userId 할당
+        await this.instructorRepository.upsert(instructor, ['phone']);
+      } else {
+        throw new ConflictException('pre-registered instructor not found');
+      }
+    } else if (dto.role === Role.PARENT) {
+      const parent = await this.parentRepository.findOne({
+        where: { phone: dto.phone },
+      });
+      if (parent) {
+        const user = await this.userRepository.save(
+          new User({
+            username: dto.phone,
+            phone: dto.phone,
+            password: hashedPassword,
+          }),
+        );
+        parent.userId = user.id; // userId 할당
+        await this.parentRepository.upsert(parent, ['phone']);
+      } else {
+        throw new ConflictException('pre-registered parent not found');
+      }
+    } else {
+      throw new BadRequestException('Invalid role');
+    }
+
+    return await this.userRepository.findOneOrFail({
+      where: { phone: dto.phone },
       relations: [
         'instructor',
         'instructor.sams',
@@ -441,48 +466,6 @@ export class AuthService {
         'manager',
       ],
     });
-
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-    if (user) {
-      // Check if already registered with this role
-      if (
-        (dto.role === Role.INSTRUCTOR && user.instructor) ||
-        (dto.role === Role.PARENT && user.parent)
-      ) {
-        throw new ConflictException('already registered');
-      }
-
-      // Update password
-      await this.userRepository.update(user.id, { password: hashedPassword });
-
-      // Return refreshed user data
-      const updatedUser = await this.userRepository.findOne({
-        where: { id: user.id },
-        relations: [
-          'instructor',
-          'instructor.sams',
-          'instructor.sams.school',
-          'parent',
-          'manager',
-        ],
-      });
-
-      if (!updatedUser) {
-        throw new BadRequestException('Internal database error');
-      }
-
-      return updatedUser;
-    } else {
-      // Create new user
-      const newUser = new User({
-        username: dto.username ?? dto.phone,
-        phone: dto.phone,
-        password: hashedPassword,
-      });
-
-      return await this.userRepository.save(newUser);
-    }
   }
 
   /**
