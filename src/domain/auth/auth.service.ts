@@ -476,7 +476,7 @@ export class AuthService {
     } else {
       // Create new user
       const newUser = new User({
-        username: dto.username,
+        username: dto.username ?? dto.phone,
         phone: dto.phone,
         password: hashedPassword,
       });
