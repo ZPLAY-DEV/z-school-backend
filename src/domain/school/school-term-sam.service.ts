@@ -7,6 +7,9 @@ import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Repository } from 'typeorm';
+import {
+  ResponseSchoolTermSamOfferingDto
+} from './dto/response-school-term-sam-offering.dto';
 
 @Injectable()
 export class SchoolTermSamService {
@@ -23,11 +26,29 @@ export class SchoolTermSamService {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  async listOfferings(
+  //? 담임쌤의 수강중인 반 조회
+  // async listGroups(
+  //   schoolId: number,
+  //   termId: number,
+  //   samId: number,
+  // ): Promise<Group[]> {
+  //   const queryBuilder = this.groupRepository
+  //     .createQueryBuilder('group')
+  //     .leftJoinAndSelect('group.contracts', 'contract')
+  //     .leftJoin('contract.sam', 'sam')
+  //     .where('contract.samId = :samId', { samId })
+  //     .andWhere('sam.schoolId = :schoolId', { schoolId })
+  //     .andWhere('contract.termId = :termId', { termId })
+  //     .andWhere('contract.endedBy IS NULL');
+
+  //   return await queryBuilder.getMany();
+  // }
+
+  async listGroups(
     schoolId: number,
     termId: number,
     samId: number,
-  ): Promise<Offering[]> {
+  ): Promise<Group[]> {
     const queryBuilder = this.samRepository
       .createQueryBuilder('sam')
       .leftJoinAndSelect('sam.contracts', 'contract')
@@ -42,13 +63,93 @@ export class SchoolTermSamService {
     const sam = await queryBuilder.getOne();
     return (
       sam?.contracts.map((contract) => {
-        const groupId = contract.group.id;
-        const offering = contract.group.lesson.offerings.find((offering) =>
-          offering.groupIds.includes(groupId),
-        )!;
-        return offering;
+        return contract.group;
       }) || []
     );
+  }
+
+  async listOfferings(
+    schoolId: number,
+    termId: number,
+    samId: number,
+  ): Promise<ResponseSchoolTermSamOfferingDto[]> {
+    const queryBuilder = this.samRepository
+      .createQueryBuilder('sam')
+      .leftJoinAndSelect('sam.contracts', 'contract')
+      .leftJoinAndSelect('contract.group', 'group')
+      .leftJoinAndSelect('group.lesson', 'lesson')
+      .leftJoinAndSelect('lesson.offerings', 'offering')
+      .where('sam.id = :samId', { samId })
+      .andWhere('sam.schoolId = :schoolId', { schoolId })
+      .andWhere('contract.termId = :termId', { termId })
+      .andWhere('contract.endedBy IS NULL');
+
+    const sam = await queryBuilder.getOne();
+
+    if (!sam) {
+      return [];
+    }
+
+    // 담임쌤의 contracts에서 unique한 offering들을 수집
+    const offeringMap = new Map<number, Offering>();
+    sam.contracts?.forEach((contract) => {
+      if (contract.group?.lesson?.offerings) {
+        contract.group.lesson.offerings.forEach((offering) => {
+          const groupId = contract.group.id;
+          if (offering.groupIds.includes(groupId)) {
+            offeringMap.set(offering.id, offering);
+          }
+        });
+      }
+    });
+
+    const uniqueOfferings = Array.from(offeringMap.values());
+
+    // 각 offering에 대해 groupIds에 해당하는 그룹들의 tuition 정보를 가져오기
+    const result: ResponseSchoolTermSamOfferingDto[] = [];
+
+    for (const offering of uniqueOfferings) {
+      // offering.groupIds에 해당하는 그룹들의 정보 조회
+      const groups = await this.groupRepository
+        .createQueryBuilder('group')
+        .where('group.id IN (:...groupIds)', { groupIds: offering.groupIds })
+        .getMany();
+
+      // 그룹 totals 정보 생성
+      const totals: number[] = groups.map((group) => {
+        return group.tuition + group.bookFee + group.materialFee;
+      });
+
+      // ResponseSchoolTermSamOfferingDto 생성
+      const offeringDto: ResponseSchoolTermSamOfferingDto = {
+        id: offering.id,
+        schoolId: offering.schoolId,
+        termId: offering.termId,
+        lessonId: offering.lessonId,
+        schoolName: offering.schoolName,
+        lessonName: offering.lessonName,
+        groupName: offering.groupName,
+        samName: offering.samName,
+        capacity: offering.capacity,
+        bookingCount: offering.bookingCount,
+        prepicked: offering.prepicked,
+        allowedGrades: offering.allowedGrades,
+        pickRule: offering.pickRule,
+        times: offering.times,
+        bitmasks: offering.bitmasks,
+        groupIds: offering.groupIds,
+        prepickedStudentIds: offering.prepickedStudentIds,
+        lastSyncTimestamp: offering.lastSyncTimestamp,
+        status: offering.status,
+        createdAt: offering.createdAt,
+        updatedAt: offering.updatedAt,
+        totals: totals,
+      };
+
+      result.push(offeringDto);
+    }
+
+    return result;
   }
 
   async listSchooldays(
@@ -178,23 +279,5 @@ export class SchoolTermSamService {
       this.logger.error('listWeeklySchooldays 오류:', error);
       throw error;
     }
-  }
-
-  //? 담임쌤의 수강중인 반 조회
-  async listGroups(
-    schoolId: number,
-    termId: number,
-    samId: number,
-  ): Promise<Group[]> {
-    const queryBuilder = this.groupRepository
-      .createQueryBuilder('group')
-      .leftJoinAndSelect('group.contracts', 'contract')
-      .leftJoin('contract.sam', 'sam')
-      .where('contract.samId = :samId', { samId })
-      .andWhere('sam.schoolId = :schoolId', { schoolId })
-      .andWhere('contract.termId = :termId', { termId })
-      .andWhere('contract.endedBy IS NULL');
-
-    return await queryBuilder.getMany();
   }
 }

@@ -130,7 +130,7 @@ export class AuthService {
   /**
    * Register a parent or instructor user with phone number
    */
-  async register(dto: UserCredentialsDtoWithPhone): Promise<AuthUserDto> {
+  async register(dto: UserCredentialsDtoWithPhone): Promise<any> {
     try {
       // Check if user exists and create/update as needed
       const user = await this.findOrCreateUserWithPhone(dto);
@@ -148,9 +148,30 @@ export class AuthService {
 
       // Return response
       return {
-        user: plainToClass(UserDto, user, {
-          excludeExtraneousValues: true,
-        }),
+        user: {
+          id: user.id,
+          username: user.username,
+          phone: user.phone,
+          avatar: user.avatar,
+          createdAt: user.createdAt,
+          manager: user.manager,
+          parent: user.parent,
+          instructor: user.instructor
+            ? {
+                id: user.instructor?.id ?? 0,
+                name: user.instructor?.name ?? null,
+                phone: user.instructor?.phone ?? null,
+                sams:
+                  user.instructor?.sams?.map((sam) => {
+                    return {
+                      samId: sam.id,
+                      schoolId: sam.school.id,
+                      schoolName: sam.school.name,
+                    };
+                  }) ?? [],
+              }
+            : null,
+        },
         role: dto.role,
         accessToken,
         refreshToken,
@@ -401,8 +422,10 @@ export class AuthService {
   ): Promise<User> {
     let user = await this.userRepository.findOne({
       where: { phone: dto.phone },
+      relations: ['instructor', 'parent', 'manager'],
     });
 
+    console.log(`🟢🟢🟢🟢`, user);
     if (user) {
       if (
         (dto.role === Role.INSTRUCTOR && user.instructor) ||
