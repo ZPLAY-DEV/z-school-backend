@@ -135,23 +135,20 @@ export class AuthService {
       // Check if user exists and create/update as needed
       const user = await this.findOrCreateUserWithPhone(dto);
 
-      // Reload user with updated relations
-      const updatedUser = await this.reloadUserWithRelations(user.id);
-
       // Generate tokens
       const { accessToken, refreshToken } = await this.generateTokens(
-        updatedUser,
+        user,
         dto.role,
       );
 
       // 💥 fire and forget) Send Slack notification
-      this.sendRegistrationSlack(updatedUser, dto.role).catch((error) => {
+      this.sendRegistrationSlack(user, dto.role).catch((error) => {
         this.logger.warn('Failed to send Slack notification', error);
       });
 
       // Return response
       return {
-        user: plainToClass(UserDto, updatedUser, {
+        user: plainToClass(UserDto, user, {
           excludeExtraneousValues: true,
         }),
         role: dto.role,
