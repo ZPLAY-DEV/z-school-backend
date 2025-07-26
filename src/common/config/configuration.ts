@@ -54,11 +54,8 @@ export const configuration = () => ({
     defaultRegion: process.env.AWS_DEFAULT_REGION,
     accessKey: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    // secretsManagerEndpoint: process.env.AWS_SECRETS_MANAGER_ENDPOINT,
-    // secretsDbArn: process.env.AWS_SECRETS_DB_ARN,
-    s3Endpoint: process.env.AWS_S3_ENDPOINT,
+    endpoint: process.env.AWS_ENDPOINT,
     sqsEndpoint: process.env.AWS_SQS_ENDPOINT,
-    firehoseEndpoint: process.env.AWS_FIREHOSE_ENDPOINT,
     // essentials
     cloudfrontUrl: process.env.AWS_CLOUDFRONT_URL,
     s3FilesBucket: process.env.AWS_S3_FILES_BUCKET,

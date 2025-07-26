@@ -14,6 +14,7 @@ import { UserOtpController } from 'src/domain/user/user-otp.controller';
 import { UserOtpService } from 'src/domain/user/user-otp.service';
 import { UserController } from 'src/domain/user/user.controller';
 import { UserService } from 'src/domain/user/user.service';
+import { AligoModule } from 'src/services/aligo/aligo.module';
 import { S3Module } from 'src/services/aws/s3.module';
 import { SqsModule } from 'src/services/aws/sqs.module';
 import { FcmModule } from 'src/services/fcm/fcm.module';
@@ -44,6 +45,7 @@ import { UserRepository } from './user.repository';
     S3Module,
     SqsModule,
     SlackModule,
+    AligoModule,
     FcmModule,
   ],
   providers: [

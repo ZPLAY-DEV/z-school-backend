@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { subDays } from 'date-fns';
 import { fromZonedTime } from 'date-fns-tz';
 import { nanoid } from 'nanoid';
@@ -37,13 +38,19 @@ import { DataSource, EntityManager, In, LessThan } from 'typeorm';
 export class NewsletterService {
   private readonly newsletterRepository;
   private readonly logger = new Logger(NewsletterService.name);
+  private readonly domain;
   constructor(
     private readonly dataSource: DataSource,
     private readonly slack: SlackService,
+    private readonly configService: ConfigService,
     // @Inject(REDIS_TRACKING_CLIENT)
     // private readonly redisTrackingService: RedisTrackingService,
   ) {
     this.newsletterRepository = this.dataSource.getRepository(Newsletter);
+    this.domain =
+      this.configService.get('nodeEnv') === 'prod'
+        ? 'https://스쿨허브.kr'
+        : 'https://dev.스쿨허브.kr';
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -659,7 +666,6 @@ export class NewsletterService {
     role: string;
     messages: any[];
   } {
-    const url = `https://스쿨허브.kr`;
     return {
       type: newsletter.type as string,
       schoolId: newsletter.schoolId,
@@ -676,7 +682,7 @@ export class NewsletterService {
           title: translateNewsletterType(newsletter.type),
           body: isFcm
             ? `${newsletter.title}`
-            : `${newsletter.title} ${url}/${shortlink?.nanoid}`,
+            : `${newsletter.title} ${this.domain}/${shortlink?.nanoid}`,
           role: 'PARENT',
           page: 'newsletters',
           args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
@@ -694,7 +700,6 @@ export class NewsletterService {
     role: string;
     messages: any[];
   } {
-    const url = `https://스쿨허브.kr`;
     return {
       type: newsletter.type as string,
       schoolId: newsletter.schoolId,
@@ -708,7 +713,7 @@ export class NewsletterService {
           title: `[재발송] ${translateNewsletterType(newsletter.type)}`,
           body: isFcm
             ? `${newsletter.title}`
-            : `[재발송] ${newsletter.title} ${url}/${shortlink?.nanoid}`,
+            : `[재발송] ${newsletter.title} ${this.domain}/${shortlink?.nanoid}`,
           role: 'PARENT',
           page: shortlink.page,
           args: shortlink.args,

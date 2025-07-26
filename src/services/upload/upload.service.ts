@@ -13,7 +13,7 @@ export interface UploadOptions {
 export class UploadService {
   private readonly logger = new Logger(UploadService.name);
   private readonly environment: string;
-  private readonly cloudFrontUrl: string;
+  private readonly cloudfrontUrl: string;
   private readonly s3FilesBucket: string;
   private readonly DEFAULT_EXPIRES_IN = 600; // 10분
 
@@ -22,7 +22,7 @@ export class UploadService {
     private readonly s3Service: S3Service,
   ) {
     this.environment = this.configService.get<string>('nodeEnv', 'dev');
-    this.cloudFrontUrl = this.configService.get<string>(
+    this.cloudfrontUrl = this.configService.get<string>(
       'aws.cloudfrontUrl',
       'https://localhost.localstack.cloud:4566', // fallback url
     );
@@ -54,14 +54,13 @@ export class UploadService {
         expiresIn,
       );
 
-      if (!this.cloudFrontUrl) {
+      if (!this.cloudfrontUrl) {
         throw new Error('CloudFront URL is not configured');
       }
 
-      const fileUrl =
-        this.configService.get<string>('nodeEnv') === 'dev'
-          ? `${this.cloudFrontUrl}/${this.s3FilesBucket}/${fullPath}`
-          : `${this.cloudFrontUrl}/${fullPath}`;
+      const fileUrl = this.s3FilesBucket.startsWith('afterschool')
+        ? `${this.cloudfrontUrl}/${this.s3FilesBucket}/${fullPath}`
+        : `${this.cloudfrontUrl}/${fullPath}`;
 
       console.log('📎 fileUrl', fileUrl);
 
@@ -119,13 +118,13 @@ export class UploadService {
   private isValidUrl(url: string): boolean {
     return !!(
       url?.trim() &&
-      this.cloudFrontUrl &&
-      url.includes(this.cloudFrontUrl)
+      this.cloudfrontUrl &&
+      url.includes(this.cloudfrontUrl)
     );
   }
 
   private extractPathFromUrl(url: string): string {
-    return url.replace(`${this.cloudFrontUrl}/`, '');
+    return url.replace(`${this.cloudfrontUrl}/`, '');
   }
 
   private isValidMimeType(mimeType: string): boolean {

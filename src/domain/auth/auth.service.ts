@@ -83,7 +83,13 @@ export class AuthService {
 
     const user = await this.userRepository.findOne({
       where: { username },
-      relations: ['instructor', 'parent', 'manager'],
+      relations: [
+        'instructor',
+        'instructor.sams',
+        'instructor.sams.school',
+        'parent',
+        'manager',
+      ],
     });
 
     if (!user) {
@@ -124,33 +130,48 @@ export class AuthService {
   /**
    * Register a parent or instructor user with phone number
    */
-  async register(dto: UserCredentialsDtoWithPhone): Promise<AuthUserDto> {
+  async register(dto: UserCredentialsDtoWithPhone): Promise<any> {
     try {
       // Check if user exists and create/update as needed
       const user = await this.findOrCreateUserWithPhone(dto);
 
-      // Create role-specific entity
-      await this.createRoleSpecificEntity(user, dto);
-
-      // Reload user with updated relations
-      const updatedUser = await this.reloadUserWithRelations(user.id);
-
       // Generate tokens
       const { accessToken, refreshToken } = await this.generateTokens(
-        updatedUser,
+        user,
         dto.role,
       );
 
       // 💥 fire and forget) Send Slack notification
-      this.sendRegistrationSlack(updatedUser, dto.role).catch((error) => {
+      this.sendRegistrationSlack(user, dto.role).catch((error) => {
         this.logger.warn('Failed to send Slack notification', error);
       });
 
       // Return response
       return {
-        user: plainToClass(UserDto, updatedUser, {
-          excludeExtraneousValues: true,
-        }),
+        user: {
+          id: user.id,
+          username: user.username,
+          phone: user.phone,
+          avatar: user.avatar,
+          createdAt: user.createdAt,
+          manager: user.manager,
+          parent: user.parent,
+          instructor: user.instructor
+            ? {
+                id: user.instructor?.id ?? 0,
+                name: user.instructor?.name ?? null,
+                phone: user.instructor?.phone ?? null,
+                sams:
+                  user.instructor?.sams?.map((sam) => {
+                    return {
+                      samId: sam.id,
+                      schoolId: sam.school.id,
+                      schoolName: sam.school.name,
+                    };
+                  }) ?? [],
+              }
+            : null,
+        },
         role: dto.role,
         accessToken,
         refreshToken,
@@ -172,28 +193,22 @@ export class AuthService {
       }
 
       // Check if user exists and create/update as needed
-      const user = await this.findOrCreateManager(dto);
-
-      // Create manager entity
-      await this.createManagerEntity(user);
-
-      // Reload user with updated relations
-      const updatedUser = await this.reloadUserWithRelations(user.id);
+      const user = await this.createManager(dto);
 
       // Generate tokens
       const { accessToken, refreshToken } = await this.generateTokens(
-        updatedUser,
+        user,
         dto.role,
       );
 
       // 💥 fire and forget) Send Slack notification
-      this.sendRegistrationSlack(updatedUser, dto.role).catch((error) => {
+      this.sendRegistrationSlack(user, dto.role).catch((error) => {
         this.logger.warn('Failed to send Slack notification', error);
       });
 
       // Return response
       return {
-        user: plainToClass(UserDto, updatedUser, {
+        user: plainToClass(UserDto, user, {
           excludeExtraneousValues: true,
         }),
         role: dto.role,
@@ -219,14 +234,38 @@ export class AuthService {
   /**
    * Log in a user and generate auth tokens
    */
-  async login(dto: UserCredentialsDto): Promise<AuthUserDto> {
+  async login(dto: UserCredentialsDto): Promise<any> {
     const user = await this.validateUser(dto);
     const { accessToken, refreshToken } = await this.generateTokens(
       user,
       dto.role,
     );
+
     return {
-      user: plainToClass(UserDto, user, { excludeExtraneousValues: true }),
+      user: {
+        id: user.id,
+        username: user.username,
+        phone: user.phone,
+        avatar: user.avatar,
+        createdAt: user.createdAt,
+        manager: user.manager,
+        parent: user.parent,
+        instructor: user.instructor
+          ? {
+              id: user.instructor?.id ?? 0,
+              name: user.instructor?.name ?? null,
+              phone: user.instructor?.phone ?? null,
+              sams:
+                user.instructor?.sams?.map((sam) => {
+                  return {
+                    samId: sam.id,
+                    schoolId: sam.school.id,
+                    schoolName: sam.school.name,
+                  };
+                }) ?? [],
+            }
+          : null,
+      },
       role: dto.role,
       accessToken,
       refreshToken,
@@ -375,142 +414,104 @@ export class AuthService {
   }
 
   /**
-   * Find an existing user by phone or create a new one
+   * 이미 존재하는 사용자일 수 있다.
+   * 예를 들면, 강사 이면서, 학부모.
    */
   private async findOrCreateUserWithPhone(
     dto: UserCredentialsDtoWithPhone,
   ): Promise<User> {
-    const user = await this.userRepository.findOne({
+    let user = await this.userRepository.findOne({
       where: { phone: dto.phone },
       relations: ['instructor', 'parent', 'manager'],
     });
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-
+    console.log(`🟢🟢🟢🟢`, user);
     if (user) {
-      // Check if already registered with this role
       if (
         (dto.role === Role.INSTRUCTOR && user.instructor) ||
         (dto.role === Role.PARENT && user.parent)
       ) {
         throw new ConflictException('already registered');
       }
-
-      // Update password
-      await this.userRepository.update(user.id, { password: hashedPassword });
-
-      // Return refreshed user data
-      const updatedUser = await this.userRepository.findOne({
-        where: { id: user.id },
-        relations: ['instructor', 'parent', 'manager'],
-      });
-
-      if (!updatedUser) {
-        throw new BadRequestException('Internal database error');
-      }
-
-      return updatedUser;
     } else {
-      // Create new user
-      const newUser = new User({
-        username: dto.username,
-        phone: dto.phone,
-        password: hashedPassword,
-      });
-
-      return await this.userRepository.save(newUser);
+      const hashedPassword = await bcrypt.hash(dto.password, 10);
+      user = await this.userRepository.save(
+        new User({
+          username: dto.phone,
+          phone: dto.phone,
+          password: hashedPassword,
+        }),
+      );
     }
+
+    if (dto.role === Role.INSTRUCTOR) {
+      const instructor = await this.instructorRepository.findOne({
+        where: { phone: dto.phone },
+        relations: ['sams'],
+      });
+      if (instructor) {
+        instructor.userId = user?.id; // userId 할당
+        await this.instructorRepository.upsert(instructor, ['phone']);
+      } else {
+        throw new ConflictException('pre-registered instructor not found');
+      }
+    } else if (dto.role === Role.PARENT) {
+      const parent = await this.parentRepository.findOne({
+        where: { phone: dto.phone },
+      });
+      if (parent) {
+        parent.userId = user.id; // userId 할당
+        await this.parentRepository.upsert(parent, ['phone']);
+      } else {
+        throw new ConflictException('pre-registered parent not found');
+      }
+    } else {
+      throw new BadRequestException('Invalid role');
+    }
+
+    return await this.userRepository.findOneOrFail({
+      where: { phone: dto.phone },
+      relations: [
+        'instructor',
+        'instructor.sams',
+        'instructor.sams.school',
+        'parent',
+        'manager',
+      ],
+    });
   }
 
   /**
    * Find an existing manager by username or create a new one
    */
-  private async findOrCreateManager(dto: UserCredentialsDto): Promise<User> {
-    const user = await this.userRepository.findOne({
+  private async createManager(dto: UserCredentialsDto): Promise<User> {
+    const dbUser = await this.userRepository.findOne({
       where: { username: dto.username },
       relations: ['instructor', 'parent', 'manager'],
     });
 
+    if (dbUser) {
+      throw new ConflictException('already registered');
+    }
+
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-    if (user) {
-      if (user.manager) {
-        throw new ConflictException('Already registered');
-      }
-
-      // Update password
-      await this.userRepository.update(user.id, { password: hashedPassword });
-
-      // Return refreshed user data
-      const updatedUser = await this.userRepository.findOne({
-        where: { id: user.id },
-        relations: ['instructor', 'parent', 'manager'],
-      });
-
-      if (!updatedUser) {
-        throw new BadRequestException('Internal database error');
-      }
-
-      return updatedUser;
-    } else {
-      // Create new user
-      const newUser = new User({
+    // Create new user
+    const user = await this.userRepository.save(
+      new User({
         username: dto.username,
         password: hashedPassword,
-      });
-
-      return await this.userRepository.save(newUser);
-    }
-  }
-
-  /**
-   * Create role-specific entity for a user
-   */
-  private async createRoleSpecificEntity(
-    user: User,
-    dto: UserCredentialsDtoWithPhone,
-  ): Promise<void> {
-    if (dto.role === Role.INSTRUCTOR) {
-      const instructor = new Instructor({
+      }),
+    );
+    await this.managerRepository.save(
+      new Manager({
         userId: user.id,
-        phone: dto.phone,
-      });
-      await this.instructorRepository.upsert(instructor, ['phone']);
-    } else if (dto.role === Role.PARENT) {
-      const parent = new Parent({
-        userId: user.id,
-        phone: dto.phone,
-      });
-      await this.parentRepository.upsert(parent, ['phone']);
-    } else {
-      throw new BadRequestException('Invalid role');
-    }
-  }
+      }),
+    );
 
-  /**
-   * Create manager entity for a user
-   */
-  private async createManagerEntity(user: User): Promise<void> {
-    const manager = new Manager({
-      userId: user.id,
-    });
-    await this.managerRepository.save(manager);
-  }
-
-  /**
-   * Reload a user with all relevant relations
-   */
-  private async reloadUserWithRelations(userId: number): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
+    return await this.userRepository.findOneOrFail({
+      where: { id: user.id },
       relations: ['instructor', 'parent', 'manager'],
     });
-
-    if (!user) {
-      throw new BadRequestException('Internal database error');
-    }
-
-    return user;
   }
 
   /**

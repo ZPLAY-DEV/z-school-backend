@@ -8,9 +8,12 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { SchoolTermSamService } from 'src/domain/school/school-term-sam.service';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { ResponseSchoolTermSamOfferingDto } from './dto/response-school-term-sam-offering.dto';
 import {
+  SchoolTermSamOfferingsDocs,
   SchoolTermSamSchooldaysDocs,
   SchoolTermSamWeeklySchooldaysDocs,
 } from './swagger/school-term-sam-swagger.decorator';
@@ -24,6 +27,29 @@ export class SchoolTermSamController {
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
+
+  @Get(':schoolId/terms/:termId/sams/:samId/groups')
+  async listGroups(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+    @Param('samId', ParseIntPipe) samId: number,
+  ): Promise<Group[]> {
+    return await this.schoolTermSamService.listGroups(schoolId, termId, samId);
+  }
+
+  @SchoolTermSamOfferingsDocs()
+  @Get(':schoolId/terms/:termId/sams/:samId/offerings')
+  async listOfferings(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+    @Param('samId', ParseIntPipe) samId: number,
+  ): Promise<ResponseSchoolTermSamOfferingDto[]> {
+    return await this.schoolTermSamService.listOfferings(
+      schoolId,
+      termId,
+      samId,
+    );
+  }
 
   @SchoolTermSamSchooldaysDocs()
   @Get(':schoolId/terms/:termId/sams/:samId/schooldays')
