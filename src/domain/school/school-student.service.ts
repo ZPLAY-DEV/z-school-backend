@@ -98,7 +98,7 @@ export class SchoolStudentService {
       // Step 4: Bulk Upsert Students (MySQL 8.0+ alias 문법 사용)
       if (dtos.length > 0) {
         const studentPlaceholders = dtos
-          .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
           .join(', ');
         const studentValues: (string | number | null)[] = dtos.flatMap(
           (dto) => [
@@ -114,6 +114,7 @@ export class SchoolStudentService {
             dto.escortPhone || null,
             dto.nextStop || null,
             dto.note || null,
+            dto.status || 'ATTENDING',
           ],
         );
 
@@ -129,7 +130,8 @@ export class SchoolStudentService {
             phone,
             escortPhone,
             nextStop,
-            note
+            note,
+            status
           )
           VALUES ${studentPlaceholders} AS new_student(
             name,
@@ -141,7 +143,8 @@ export class SchoolStudentService {
             phone,
             escortPhone,
             nextStop,
-            note
+            note,
+            status
           )
           ON DUPLICATE KEY UPDATE 
             schoolId = new_student.schoolId,
@@ -153,7 +156,8 @@ export class SchoolStudentService {
             phone = new_student.phone,
             escortPhone = new_student.escortPhone,
             nextStop = new_student.nextStop,
-            note = new_student.note
+            note = new_student.note,
+            status = new_student.status
         `,
           studentValues,
         );
