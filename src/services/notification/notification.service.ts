@@ -43,6 +43,22 @@ export class NotificationService {
     }
   }
 
+  async text(data: { body: string; phone: string }): Promise<{
+    success: boolean;
+  }> {
+    try {
+      await this.sqsClient.sendMessage({
+        type: 'SEND_TEXT',
+        data,
+      });
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error('Failed to send message to SQS', error);
+      return { success: false };
+    }
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? 나머지 private 함수들
   //? ---------------------------------------------------------------------- ?//

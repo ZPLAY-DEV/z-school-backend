@@ -8,7 +8,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { addMinutes, isAfter } from 'date-fns';
 import * as random from 'randomstring';
-import { NotificationType } from 'src/common/enums';
 import { Secret } from 'src/domain/user/entities/secret.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { normalizePhone } from 'src/helpers/phone';
@@ -149,21 +148,11 @@ export class UserOtpService {
   }
 
   async _sendSmsTo(phone: string, otp: string): Promise<any> {
-    const body = `[스쿨허브] 인증코드 ${otp}`;
     try {
-      //! We can't call aligoService. Instead, use SQS where the NAT Gateway is whitelisted.
-      await this.notificationService.send({
-        type: NotificationType.OTHER,
-        schoolId: 0,
-        role: 'PARENT',
-        messages: [
-          {
-            id: 0,
-            body: body,
-            phone: phone,
-            role: 'PARENT',
-          },
-        ],
+      //! use SQS where the NAT Gateway is whitelisted.
+      await this.notificationService.text({
+        body: `[스쿨허브] 인증코드 ${otp}`,
+        phone: phone,
       });
     } catch (e) {
       console.log(e);
