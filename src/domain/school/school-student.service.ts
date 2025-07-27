@@ -10,6 +10,7 @@ import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-grades.dto';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { normalizePhone } from 'src/helpers/phone';
 import { DataSource, Repository } from 'typeorm';
 import { School } from './entities/school.entity';
 
@@ -54,7 +55,10 @@ export class SchoolStudentService {
       }
 
       // Step 2: Upsert Parents (MySQL 8.0+ alias 문법 사용)
-      const parents = dtos.map((v) => v.parent);
+      const parents = dtos.map((v) => ({
+        ...v.parent,
+        phone: normalizePhone(v.parent.phone),
+      }));
 
       if (parents.length > 0) {
         const parentPlaceholders = parents.map(() => '(?, ?, ?, ?)').join(', ');
@@ -99,7 +103,9 @@ export class SchoolStudentService {
         const studentValues: (string | number | null)[] = dtos.flatMap(
           (dto) => [
             dto.name || null,
-            dto.parent.phone ? parentMap[dto.parent.phone] || null : null,
+            dto.parent.phone
+              ? parentMap[normalizePhone(dto.parent.phone) as string] || null
+              : null,
             schoolId,
             dto.grade || null,
             dto.class || null,

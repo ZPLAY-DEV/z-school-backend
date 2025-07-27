@@ -60,7 +60,7 @@ export class AuthController {
   async register(
     @Body() dto: UserCredentialsDtoWithPhone,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthUserDto> {
+  ): Promise<any> {
     if (!dto.username) {
       dto.username = dto.phone;
     }
@@ -81,7 +81,7 @@ export class AuthController {
       maxAge: THIRTY_DAYS,
     });
 
-    return tokens;
+    return tokens; // added more props for sams and it ended up returning any
   }
 
   @RegisterManagerDocs()

@@ -17,21 +17,23 @@ import { CreateInstructorDto } from 'src/domain/instructor/dto/create-instructor
  * 담임쌤 생성 DTO
  * - 새로운 담임쌤을 시스템에 등록할 때 사용
  * - 필수: schoolId, alias, instructor (또는 instructorId)
- * - 강사 연결 방식:
- *   - 기존 강사 연결: instructor.id 포함 (다른 instructor 필드들은 무시됨)
- *   - 새로운 강사 생성: instructor.id 제외, instructor.phone 필수
- *   - 직접 참조: instructorId 제공 (instructor 객체 무시됨)
- * - 선택: score, editFeePermission, editPickPermission, note
+ * - instructor 연결 방식:
+ *   - instructor.id 포함시, 기존 instructor 를 찾아서 해당 instructor 의 정보 수정
+ *   - instructor.id 미포함시, phone 으로 instructor 가 있는지 검사
+ *     - 기존 insturctor 발견시, 해당 instructor 의 정보 수정
+ *     - 기존 insturctor 미발견시, 새로운 instructor 생성
  */
 export class CreateSamDto {
   @ApiProperty({
-    description: '학교 ID - 담임쌤이 소속될 학교의 고유 식별자 (필수)',
+    description:
+      '학교 ID - 담임쌤이 소속될 학교의 고유 식별자. 생략시 param 에서 전달',
     type: Number,
     example: 1,
     minimum: 1,
   })
   @IsInt({ message: '학교 ID는 정수여야 합니다' })
-  schoolId: number;
+  @IsOptional()
+  schoolId?: number;
 
   @ApiProperty({
     description:
