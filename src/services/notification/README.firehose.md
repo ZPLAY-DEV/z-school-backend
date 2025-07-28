@@ -5,16 +5,16 @@
 
 ## 파티셔닝 구조
 ```
-logs/year=2025/month=01/day=15/hour=09/school=123/type=ping.exit/
+logs/year=2025/month=01/day=15/hour=09/school=123/type=SCHOOL/
 ```
 
 ### Message Types
-- `ping.exit`: 하교알림
-- `ping.class`: 수업관련알림  
-- `ping.other`: 기타알림
-- `dispatch.registration`: 수강신청
-- `dispatch.notice`: 공지사항
-- `dispatch.survey`: 설문조사
+- `SCHOOL`: 하교알림
+- `CLASS`: 수업관련알림  
+- `OTHER`: 기타알림
+- `REGISTRATION`: 수강신청
+- `NEWS`: 공지사항
+- `SURVEY`: 설문조사
 
 ### 2. 비즈니스 로직 기반 파티셔닝
 
@@ -25,12 +25,12 @@ school=123/  (개별 학교ID)
 
 #### Message Type 파티션
 ```
-type=ping.exit/           (하교알림)
-type=ping.class/          (수업관련알림)
-type=ping.other/          (기타알림)
-type=dispatch.registration/ (수강신청)
-type=dispatch.notice/       (공지사항)
-type=dispatch.survey/       (설문조사)
+type=SCHOOL/           (하교알림)
+type=CLASS/          (수업관련알림)
+type=OTHER/          (기타알림)
+type=REGISTRATION/ (수강신청)
+type=NEWS/       (공지사항)
+type=SURVEY/       (설문조사)
 ```
 
 ## Firehose 설정 예시
@@ -131,7 +131,7 @@ FROM notification_logs
 WHERE year = '2024' 
   AND month = '03'
   AND day BETWEEN '01' AND '07'
-  AND type IN ('ping.exit', 'ping.class')  -- 파티션 필터링
+  AND type IN ('SCHOOL', 'CLASS')  -- 파티션 필터링
 GROUP BY type
 ```
 
@@ -146,7 +146,7 @@ FROM notification_logs
 WHERE year = '2024'
   AND month = '03'
   AND school = 1234
-  AND type = 'ping.exit'  -- 하교알림만 파티션 스캔
+  AND type = 'SCHOOL'  -- 하교알림만 파티션 스캔
 GROUP BY day
 ORDER BY day
 ```

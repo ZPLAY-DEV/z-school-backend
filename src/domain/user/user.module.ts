@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Category } from 'src/domain/category/entities/category.entity';
+import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
+import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
 import { Provider } from 'src/domain/user/entities/provider.entity';
@@ -23,12 +25,14 @@ import { UserRepository } from './user.repository';
   imports: [
     TypeOrmModule.forFeature([
       Category,
-      Subsidy,
+      Instructor,
+      Manager,
+      Parent,
       Provider,
       Secret,
-      User,
       Student,
-      Manager,
+      Subsidy,
+      User,
     ]),
     ThrottlerModule.forRoot([
       {
