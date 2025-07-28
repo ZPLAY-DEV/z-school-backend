@@ -84,7 +84,7 @@ export class StudentService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  //! somehow we prefer to use upsert instead of create
+  //! this is create not upsert. maybe we need to change this.
   async create(dto: CreateStudentDto): Promise<Student> {
     return await this.dataSource.transaction(async (manager) => {
       const { parent: parentDto, parentId, ...studentDto } = dto;
@@ -135,21 +135,16 @@ export class StudentService {
         schoolId: studentDto.schoolId,
         grade: studentDto.grade,
       };
-
-      // class 조건 추가 (null 처리)
-      if (studentDto.class !== undefined) {
-        whereCondition.class = studentDto.class || IsNull();
+      if (studentDto.class) {
+        whereCondition.class = studentDto.class;
       }
-
-      // studentCode 조건 추가 (null 처리)
-      if (studentDto.studentCode !== undefined) {
-        whereCondition.studentCode = studentDto.studentCode || IsNull();
+      if (studentDto.studentCode) {
+        whereCondition.studentCode = studentDto.studentCode;
       }
 
       const existingStudent = await manager.findOne(Student, {
         where: whereCondition,
       });
-
       if (existingStudent) {
         throw new ConflictException(
           'Student with same school, grade, class, and studentCode already exists',
@@ -271,14 +266,14 @@ export class StudentService {
         grade: dto.grade,
       };
 
-      // class 조건 추가 (null 처리)
-      if (dto.class !== undefined) {
-        whereCondition.class = dto.class || IsNull();
+      // class 조건 추가
+      if (dto.class) {
+        whereCondition.class = dto.class;
       }
 
-      // studentCode 조건 추가 (null 처리)
-      if (dto.studentCode !== undefined) {
-        whereCondition.studentCode = dto.studentCode || IsNull();
+      // studentCode 조건 추가
+      if (dto.studentCode) {
+        whereCondition.studentCode = dto.studentCode;
       }
 
       const existingStudent = await this.studentRepository.findOne({
@@ -539,9 +534,9 @@ export class StudentService {
         });
 
         if (conflictStudent && conflictStudent.id !== id) {
-          // 기존 레코드에 병합 후 현재 레코드 삭제
+          // 기존 레코드에 병합 후 현재 레코드 삭제 (hard delete)
           await manager.update(Student, conflictStudent.id, normalizedData);
-          await manager.update(Student, id, { deletedAt: new Date() });
+          await manager.delete(Student, id);
 
           return await manager.findOneOrFail(Student, {
             where: { id: conflictStudent.id },
