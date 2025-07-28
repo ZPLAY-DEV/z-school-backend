@@ -59,7 +59,7 @@ export class NewsletterService {
 
   //? 학생 대상 발송
   async create(dto: CreateNewsletterDto): Promise<Newsletter> {
-    const { schoolId, termId, scheduledAt, type, ...rest } = dto;
+    const { schoolId, termId, scheduledAt, type } = dto;
     // 모든 validation을 transaction 밖에서 처리 (Auto-increment ID 낭비 방지)
     const school = await this.checkSchoolValidity(schoolId, scheduledAt);
     const term = await this.checkTermValidity(termId);
@@ -108,10 +108,11 @@ export class NewsletterService {
         body: '',
         images,
         type: NewsletterType.REGISTRATION,
+        // todo. ☠️☠️☠️☠️☠️☠️☠️☠️☠️☠️ NEED TO BE CHANGED !!
         // target: NewsletterTarget.GRADE,
         // targetItems: [1, 2, 3, 4, 5, 6],
         target: NewsletterTarget.STUDENT,
-        targetItems: [1],
+        targetItems: [859, 860, 861, 862],
         targetLabel: `${school.name} 전교생`,
         scheduledAt,
       });
@@ -351,11 +352,34 @@ export class NewsletterService {
   // private methods for newsletters
   // ------------------------------------------------------------------------ //
 
-  //? 뉴스레터 생성
+  //? 뉴스레터 생성 (upsert for REGISTRATION type only)
   private async createNewsletter(
     manager: EntityManager,
     dto: CreateNewsletterDto,
   ): Promise<Newsletter> {
+    // REGISTRATION 타입인 경우에만 upsert 로직 적용
+    if (dto.type === NewsletterType.REGISTRATION) {
+      // 기존 뉴스레터가 있는지 확인 (schoolId, termId, type으로)
+      const existingNewsletter = await manager.findOne(Newsletter, {
+        where: {
+          schoolId: dto.schoolId,
+          termId: dto.termId,
+          type: dto.type,
+        },
+      });
+
+      if (existingNewsletter) {
+        // 기존 뉴스레터가 있으면 업데이트
+        const updatedNewsletter = manager.merge(
+          Newsletter,
+          existingNewsletter,
+          dto,
+        );
+        return await manager.save(updatedNewsletter);
+      }
+    }
+
+    // REGISTRATION이 아니거나 기존 뉴스레터가 없는 경우 새로 생성
     const newsletter = manager.create(Newsletter, dto);
     return await manager.save(newsletter);
   }
@@ -643,11 +667,7 @@ export class NewsletterService {
     if (newsletters && newsletters.length > 0) {
       if (
         type === NewsletterType.REGISTRATION &&
-        newsletters.some(
-          (newsletter) =>
-            newsletter.status === SendStatus.SENT ||
-            newsletter.status === SendStatus.SCHEDULED,
-        )
+        newsletters.some((newsletter) => newsletter.status === SendStatus.SENT)
       ) {
         throw new BadRequestException(
           '❌ Registration newsletter already sent or scheduled.',
