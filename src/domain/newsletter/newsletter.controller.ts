@@ -12,6 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Public } from 'src/common/decorators/public.decorator';
 import { NewsletterType } from 'src/common/enums';
 import { IS3Urls } from 'src/common/interfaces';
 import { CreateRegistrationNewsletterDto } from 'src/domain/newsletter/dto/create-registration-newsletter.dto';
@@ -131,6 +132,7 @@ export class NewsletterController {
   }
 
   @MarkAsReadDocs()
+  @Public()
   @Patch(':id/parents/:parentId/read')
   async markAsRead(
     @Param('id', ParseIntPipe) newsletterId: number,
