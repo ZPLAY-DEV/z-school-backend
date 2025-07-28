@@ -10,6 +10,7 @@ import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-grades.dto';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { normalizePhone } from 'src/helpers/phone';
 import { DataSource, Repository } from 'typeorm';
 import { School } from './entities/school.entity';
 
@@ -54,7 +55,10 @@ export class SchoolStudentService {
       }
 
       // Step 2: Upsert Parents (MySQL 8.0+ alias 문법 사용)
-      const parents = dtos.map((v) => v.parent);
+      const parents = dtos.map((v) => ({
+        ...v.parent,
+        phone: normalizePhone(v.parent.phone),
+      }));
 
       if (parents.length > 0) {
         const parentPlaceholders = parents.map(() => '(?, ?, ?, ?)').join(', ');
@@ -94,12 +98,14 @@ export class SchoolStudentService {
       // Step 4: Bulk Upsert Students (MySQL 8.0+ alias 문법 사용)
       if (dtos.length > 0) {
         const studentPlaceholders = dtos
-          .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
           .join(', ');
         const studentValues: (string | number | null)[] = dtos.flatMap(
           (dto) => [
             dto.name || null,
-            dto.parent.phone ? parentMap[dto.parent.phone] || null : null,
+            dto.parent.phone
+              ? parentMap[normalizePhone(dto.parent.phone) as string] || null
+              : null,
             schoolId,
             dto.grade || null,
             dto.class || null,
@@ -108,6 +114,7 @@ export class SchoolStudentService {
             dto.escortPhone || null,
             dto.nextStop || null,
             dto.note || null,
+            dto.status || 'ATTENDING',
           ],
         );
 
@@ -123,7 +130,8 @@ export class SchoolStudentService {
             phone,
             escortPhone,
             nextStop,
-            note
+            note,
+            status
           )
           VALUES ${studentPlaceholders} AS new_student(
             name,
@@ -135,7 +143,8 @@ export class SchoolStudentService {
             phone,
             escortPhone,
             nextStop,
-            note
+            note,
+            status
           )
           ON DUPLICATE KEY UPDATE 
             schoolId = new_student.schoolId,
@@ -147,7 +156,8 @@ export class SchoolStudentService {
             phone = new_student.phone,
             escortPhone = new_student.escortPhone,
             nextStop = new_student.nextStop,
-            note = new_student.note
+            note = new_student.note,
+            status = new_student.status
         `,
           studentValues,
         );

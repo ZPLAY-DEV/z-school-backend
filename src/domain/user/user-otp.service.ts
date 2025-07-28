@@ -1,20 +1,17 @@
 import {
   BadRequestException,
-  Inject,
   Injectable,
   Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { addMinutes, isAfter } from 'date-fns';
 import * as random from 'randomstring';
-import { NotificationType } from 'src/common/enums';
 import { Secret } from 'src/domain/user/entities/secret.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { normalizePhone } from 'src/helpers/phone';
-import { AligoService } from 'src/services/aligo/aligo.service';
+import { NotificationService } from 'src/services/notification/notification.service';
 import { Repository } from 'typeorm/repository/Repository';
 
 @Injectable()
@@ -26,8 +23,7 @@ export class UserOtpService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Secret)
     private readonly secretRepository: Repository<Secret>,
-    @Inject(ConfigService) private configService: ConfigService, // global
-    private readonly aligoService: AligoService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   //! ---------------------------------------------------------------------- ?//
@@ -152,16 +148,11 @@ export class UserOtpService {
   }
 
   async _sendSmsTo(phone: string, otp: string): Promise<any> {
-    const body = `[스쿨허브] 인증코드 ${otp}`;
     try {
-      // Instead of directly sending SMS, queue the message in SQS
-      await this.aligoService.sendSingleMessageToSingleDestination({
-        id: 0,
+      //! use SQS where the NAT Gateway is whitelisted.
+      await this.notificationService.text({
+        body: `[스쿨허브] 인증코드 ${otp}`,
         phone: phone,
-        body: body,
-        type: NotificationType.OTHER,
-        schoolId: 0,
-        role: 'PARENT',
       });
     } catch (e) {
       console.log(e);

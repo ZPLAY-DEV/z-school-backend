@@ -1,14 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { formatInTimeZone } from 'date-fns-tz';
+import { AWS_SQS_CLIENT } from 'src/common/constants';
 import { School } from 'src/domain/school/entities/school.entity';
 import { User } from 'src/domain/user/entities/user.entity';
-import { AligoService } from 'src/services/aligo/aligo.service';
 import { FirehoseService } from 'src/services/aws/firehose.service';
-import { FcmService } from 'src/services/fcm/fcm.service';
+import { SqsService } from 'src/services/aws/sqs.service';
 import {
-  MultiFcmMessages,
   MultiMixedMessages,
-  MultiSmsMessages,
   NotificationResult,
 } from 'src/services/notification/types';
 import { DataSource, In, Repository } from 'typeorm';
@@ -20,8 +18,8 @@ export class NotificationService {
   private readonly userRepository: Repository<User>;
 
   constructor(
-    private readonly fcmService: FcmService,
-    private readonly aligoService: AligoService,
+    @Inject(AWS_SQS_CLIENT)
+    private readonly sqsClient: SqsService,
     private readonly firehoseService: FirehoseService,
     private readonly dataSource: DataSource,
   ) {
@@ -29,131 +27,36 @@ export class NotificationService {
     this.userRepository = this.dataSource.getRepository(User);
   }
 
-  async send(data: MultiMixedMessages): Promise<NotificationResult[]> {
-    const results: NotificationResult[] = [];
-    const allInvalidTokens: string[] = [];
-    let fcmSuccessCount: number = 0;
-    let fcmFailureCount: number = 0;
-    let smsSuccessCount: number = 0;
-    let smsFailureCount: number = 0;
-    const school = await this.getSchool(+data.schoolId);
-
-    // todo. if type is DISPATCH_NEWS, dedupe may be needed
-    // it's considered as SMS if token is not available
-    const fcmMessages = data.messages.filter((msg) => msg.token);
-    const smsMessages = data.messages.filter((msg) => !msg.token);
-
-    //? FCM 전송
-    if (fcmMessages.length > 0) {
-      const multiFcmMessages: MultiFcmMessages = {
-        messages: fcmMessages.map((msg) => ({
-          id: msg.id,
-          token: msg.token!,
-          title: (msg.title ?? school.name) as string | undefined,
-          body: msg.body,
-          role: msg.role,
-          page: msg.page,
-          args: msg.args,
-        })),
-        type: data.type,
-        schoolId: data.schoolId,
-        role: data.role,
-      };
-
-      const fcmResult =
-        await this.fcmService.sendMultipleMessagesToMultipleDestinations(
-          multiFcmMessages,
-        );
-
-      // FCM 결과를 NotificationResult 형식으로 변환
-      fcmResult.results.forEach((result) => {
-        results.push({
-          success: result.success,
-          error: result.error,
-          id: result.id,
-        });
-      });
-
-      fcmSuccessCount = fcmResult.successCount;
-      fcmFailureCount = fcmResult.failureCount;
-
-      // Invalid tokens 수집
-      allInvalidTokens.push(...fcmResult.invalidTokens);
-    }
-
-    // Invalid tokens 일괄 무효화
-    if (allInvalidTokens.length > 0) {
-      await this.nullifyUserPushTokens(allInvalidTokens);
-    }
-
-    //? SMS 전송
-    if (school.phone === null || school.isFrugal) {
-      this.logger.log(
-        `🖐️ ${school.name} phone: ${school.phone}, inFrugalMode: ${school.isFrugal}`,
-      );
-      // 모두 실패처리
-      smsMessages.map((msg) => {
-        results.push({
-          success: false,
-          error: school.isFrugal
-            ? new Error('School activates frugal mode')
-            : new Error('School phone is not set'),
-          id: msg.id,
-        });
-      });
-      smsSuccessCount = 0;
-      smsFailureCount = smsMessages.length;
-    } else {
-      this.logger.log(
-        `🖐️ ${smsMessages.length} sms messages sent from ${school.phone}`,
-      );
-
-      if (smsMessages.length > 0) {
-        const multiSmsMessages: MultiSmsMessages = {
-          messages: smsMessages.map((msg) => ({
-            id: msg.id,
-            phone: msg.phone!,
-            title: (msg.title ?? school.name) as string | undefined,
-            body: msg.body,
-          })),
-          type: data.type,
-          schoolId: data.schoolId,
-          role: data.role,
-        };
-
-        const smsResult =
-          await this.aligoService.sendMultipleMessagesToMultipleDestinations(
-            multiSmsMessages,
-            school.phone,
-          );
-        console.log(`🔥 smsResult: ${JSON.stringify(smsResult)}`);
-
-        smsResult.results.forEach((result) => {
-          results.push({
-            success: result.success,
-            error: result.error,
-            id: result.id,
-          });
-        });
-
-        smsSuccessCount = smsResult.successCount;
-        smsFailureCount = smsResult.failureCount;
-      }
-    }
-
-    if (data.role === 'PARENT' || smsMessages.length > 0) {
-      await this.logToFirehose(
+  async send(data: MultiMixedMessages): Promise<{
+    success: boolean;
+  }> {
+    try {
+      await this.sqsClient.sendMessage({
+        type: 'SEND_MESSAGES',
         data,
-        school,
-        results,
-        fcmSuccessCount,
-        fcmFailureCount,
-        smsSuccessCount,
-        smsFailureCount,
-      );
-    }
+      });
 
-    return results;
+      return { success: true };
+    } catch (error) {
+      this.logger.error('Failed to send message to SQS', error);
+      return { success: false };
+    }
+  }
+
+  async text(data: { body: string; phone: string }): Promise<{
+    success: boolean;
+  }> {
+    try {
+      await this.sqsClient.sendMessage({
+        type: 'SEND_TEXT',
+        data,
+      });
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error('Failed to send message to SQS', error);
+      return { success: false };
+    }
   }
 
   //? ---------------------------------------------------------------------- ?//

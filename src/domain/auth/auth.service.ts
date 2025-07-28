@@ -25,6 +25,7 @@ import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { Token } from 'src/domain/user/entities/token.entity';
 import { User } from 'src/domain/user/entities/user.entity';
+import { normalizePhone } from 'src/helpers/phone';
 import { SlackService } from 'src/services/slack/slack.service';
 import { DataSource, MoreThan, Repository } from 'typeorm';
 import * as uuid from 'uuid';
@@ -133,7 +134,10 @@ export class AuthService {
   async register(dto: UserCredentialsDtoWithPhone): Promise<any> {
     try {
       // Check if user exists and create/update as needed
-      const user = await this.findOrCreateUserWithPhone(dto);
+      const user = await this.findOrCreateUserWithPhone({
+        ...dto,
+        phone: normalizePhone(dto.phone) as string,
+      });
 
       // Generate tokens
       const { accessToken, refreshToken } = await this.generateTokens(
