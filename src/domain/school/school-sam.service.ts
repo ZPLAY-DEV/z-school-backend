@@ -508,7 +508,6 @@ export class SchoolSamService {
   ): Promise<Paginated<Sam>> {
     const queryBuilder = this.samRepository
       .createQueryBuilder('sam')
-      .leftJoinAndSelect('sam.contracts', 'contracts')
       .where('sam.schoolId = :schoolId', { schoolId });
 
     return await paginate<Sam>(query, queryBuilder, {
@@ -524,8 +523,9 @@ export class SchoolSamService {
       defaultSortBy: [['id', 'ASC']],
       filterableColumns: {
         alias: [FilterOperator.EQ, FilterOperator.ILIKE],
-        'contracts.termId': [FilterOperator.EQ],
+        'instructor.name': [FilterOperator.EQ, FilterOperator.ILIKE],
         'instructor.phone': [FilterOperator.EQ, FilterOperator.ILIKE],
+        'contracts.termId': [FilterOperator.EQ],
       },
     });
   }
