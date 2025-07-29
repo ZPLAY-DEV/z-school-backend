@@ -1,4 +1,5 @@
 import {
+  Body,
   ClassSerializerInterceptor,
   Controller,
   HttpCode,
@@ -26,6 +27,14 @@ export class OfferingPickController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateAutoPickDocs()
+  @Post('all/picks')
+  @HttpCode(200)
+  async createAutoPicks(@Body() dto: CreateAutoPickDto): Promise<number[]> {
+    console.log('🚀 dto', dto);
+    return this.offeringPickService.createAutoPicks(dto);
+  }
+
   @CreateOfferingPickDocs()
   @Post(':offeringId/picks')
   @HttpCode(200)
@@ -33,12 +42,5 @@ export class OfferingPickController {
     @Param('offeringId', ParseIntPipe) offeringId: number,
   ): Promise<ResponseCreateOfferingPickDto> {
     return this.offeringPickService.create(offeringId);
-  }
-
-  @CreateAutoPickDocs()
-  @Post('all/picks')
-  @HttpCode(200)
-  async createAutoPicks(dto: CreateAutoPickDto): Promise<number[]> {
-    return this.offeringPickService.createAutoPicks(dto);
   }
 }
