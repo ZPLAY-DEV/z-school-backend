@@ -101,6 +101,7 @@ export class SchoolTermLessonService {
       relations: {
         groups: {
           contracts: { sam: true },
+          picks: true,
         },
         category: true,
       },
