@@ -16,7 +16,10 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
-import { generateSchooldays } from 'src/helpers/lesson-days.util';
+import {
+  calculateLessonDays,
+  generateSchooldays,
+} from 'src/helpers/lesson-days.util';
 import {
   parseRangeFormat,
   parseTime,
@@ -142,7 +145,7 @@ export class LessonCoreService {
         relations: { groups: true, category: true },
       });
 
-      //? 6단계) 학업요일 days 정보 및 schooldays 처리
+      //? 6단계) 학업요일 days 정보 및 schooldays 처리 (weekNumber 포함)
       await this.syncSchooldaysForLesson(savedLesson, manager, 'create');
 
       return savedLesson;
@@ -354,12 +357,18 @@ export class LessonCoreService {
       `🔄 [${context}] Processing schooldays for lesson ${lesson.id} with ${lesson.groups.length} groups`,
     );
 
-    // offdays 정보 조회
+    // offdays 정보 조회 (lesson 단위로 캐싱)
     const offdays: string[] = await this.calendarService.findByDateRange(
       lesson.schoolId,
       lesson.start,
       lesson.end,
     );
+
+    // lesson 정보 캐싱 (term 포함)
+    const lessonWithTerm = await manager.findOne(Lesson, {
+      where: { id: lesson.id },
+      relations: ['term'],
+    });
 
     for (const group of lesson.groups) {
       try {
@@ -379,6 +388,7 @@ export class LessonCoreService {
             'name',
             'startsAt',
             'endsAt',
+            'weekNumber',
           ],
         });
 
@@ -533,6 +543,14 @@ export class LessonCoreService {
         this.logger.log(
           `✅ [${context}] Successfully processed schooldays for group ${group.id}: ${finalDaysCount} total days`,
         );
+
+        // 9. weekNumber 재넘버링 (schooldays 생성/수정 후) - 캐시된 데이터 전달
+        await this.renumberWeekNumbersForGroup(
+          group,
+          manager,
+          lessonWithTerm || undefined,
+          offdays,
+        );
       } catch (error) {
         this.logger.error(
           `❌ [${context}] Error processing schooldays for group ${group.id}:`,
@@ -542,6 +560,100 @@ export class LessonCoreService {
           `Failed to process schooldays for group ${group.id}: ${error.message}`,
         );
       }
+    }
+  }
+
+  /**
+   * 특정 group의 schooldays weekNumber를 재넘버링 (연휴를 건너뛰고 연속적으로) - 최적화 버전
+   */
+  private async renumberWeekNumbersForGroup(
+    group: Group,
+    manager: EntityManager,
+    cachedLesson?: Lesson,
+    cachedOffdays?: string[],
+  ): Promise<void> {
+    try {
+      // 1. 캐시된 데이터 사용 또는 새로 조회
+      const lesson =
+        cachedLesson ||
+        (await manager.findOne(Lesson, {
+          where: { id: group.lessonId },
+          relations: ['term'],
+        }));
+
+      if (!lesson) {
+        this.logger.error(`❌ Lesson not found for group ${group.id}`);
+        return;
+      }
+
+      const offdays =
+        cachedOffdays ||
+        (await this.calendarService.findByDateRange(
+          lesson.schoolId,
+          lesson.start,
+          lesson.end,
+        ));
+
+      // 2. calendarDays 생성 (연휴 정보 포함)
+      const calendarDays = calculateLessonDays(lesson, group, offdays);
+
+      // 3. 연휴를 건너뛰고 연속적인 weekNumber 부여
+      // 최신 schooldays를 DB에서 직접 조회
+      const sortedSchooldays = await manager.getRepository(Schoolday).find({
+        where: { groupId: group.id },
+        order: { startsAt: 'ASC' },
+      });
+
+      this.logger.log(
+        `🔍 [DEBUG] Found ${sortedSchooldays.length} schooldays for group ${group.id}`,
+      );
+
+      // calendarDays에서 isClassDay가 true인 날짜들만 weekNumber 부여
+      // 공휴일은 주차 계산에서 제외하고 연속적으로 번호 부여
+      const classDays = calendarDays.filter((day) => day.isClassDay);
+
+      // 검증: classDays와 sortedSchooldays의 개수가 같아야 함
+      if (classDays.length !== sortedSchooldays.length) {
+        this.logger.warn(
+          `⚠️ Mismatch between classDays (${classDays.length}) and sortedSchooldays (${sortedSchooldays.length}) for group ${group.id}`,
+        );
+      }
+
+      // 4. 연속적인 weekNumber 부여 (1부터 시작) - Bulk Update
+      const schooldaysToUpdate = sortedSchooldays
+        .filter((schoolday) => schoolday.startsAt)
+        .map((schoolday, index) => ({
+          id: schoolday.id,
+          weekNumber: index + 1,
+        }));
+
+      if (schooldaysToUpdate.length > 0) {
+        // 더 효율적인 Bulk update - CASE WHEN 사용
+        const caseWhenClause = schooldaysToUpdate
+          .map(({ id, weekNumber }) => `WHEN id = ${id} THEN ${weekNumber}`)
+          .join(' ');
+
+        await manager
+          .createQueryBuilder()
+          .update(Schoolday)
+          .set({ weekNumber: () => `CASE ${caseWhenClause} END` })
+          .whereInIds(schooldaysToUpdate.map((s) => s.id))
+          .execute();
+
+        this.logger.log(
+          `🔍 [DEBUG] Bulk updated ${schooldaysToUpdate.length} schooldays for group ${group.id}`,
+        );
+      }
+
+      this.logger.log(
+        `✅ Renumbered ${schooldaysToUpdate.length} schooldays for group ${group.id} (continuous weekNumber)`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to renumber weekNumbers for group ${group.id}:`,
+        error,
+      );
+      throw error;
     }
   }
 

@@ -305,6 +305,75 @@ export class SchoolTermStudentService {
     return await queryBuilder.getMany();
   }
 
+  //? 학생의 수강중인 반 조회 (요일별로 분리)
+  async listGroupsWeekly(
+    schoolId: number,
+    termId: number,
+    studentId: number,
+  ): Promise<Record<string, Group[]>> {
+    const groups = await this.groupRepository
+      .createQueryBuilder('group')
+      .leftJoinAndSelect('group.picks', 'pick')
+      .leftJoinAndSelect('group.schooldays', 'schoolday')
+      .leftJoin('pick.student', 'student')
+      .where('pick.studentId = :studentId', { studentId })
+      .andWhere('student.schoolId = :schoolId', { schoolId })
+      .andWhere('pick.termId = :termId', { termId })
+      .andWhere('pick.endedBy IS NULL')
+      .getMany();
+
+    // 요일별 결과 객체 초기화
+    const result: Record<string, Group[]> = {
+      SUN: [],
+      MON: [],
+      TUE: [],
+      WED: [],
+      THU: [],
+      FRI: [],
+      SAT: [],
+    };
+
+    // 각 그룹을 요일별로 분류
+    for (const group of groups) {
+      if (group.schooldays && group.schooldays.length > 0) {
+        // 각 그룹의 schooldays에서 가장 마지막 수업 시간 찾기
+        const lastSchoolday = group.schooldays.reduce((latest, current) => {
+          return current.startsAt > latest.startsAt ? current : latest;
+        });
+
+        // 가장 마지막 수업의 요일 결정
+        const dayOfWeek = lastSchoolday.startsAt.getDay();
+        const weekdayKey = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][
+          dayOfWeek
+        ];
+
+        result[weekdayKey].push(group);
+      }
+    }
+
+    // 각 요일별로 가장 마지막 수업이 제일 마지막에 오도록 정렬
+    Object.keys(result).forEach((day) => {
+      result[day].sort((a, b) => {
+        // 각 그룹의 가장 마지막 수업 시간 비교
+        const aLastSchoolday = a.schooldays?.reduce((latest, current) => {
+          return current.startsAt > latest.startsAt ? current : latest;
+        });
+        const bLastSchoolday = b.schooldays?.reduce((latest, current) => {
+          return current.startsAt > latest.startsAt ? current : latest;
+        });
+
+        if (!aLastSchoolday || !bLastSchoolday) return 0;
+
+        // 가장 마지막 수업이 나중에 끝나는 그룹이 뒤에 오도록 정렬
+        return (
+          aLastSchoolday.startsAt.getTime() - bLastSchoolday.startsAt.getTime()
+        );
+      });
+    });
+
+    return result;
+  }
+
   //? 학생의 수강중인 반 조회 (페이지네이션)
   async infiniteListGroups(
     schoolId: number,

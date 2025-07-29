@@ -1,4 +1,4 @@
-import { getMonth, getWeek, getYear } from 'date-fns';
+import { differenceInCalendarWeeks, getMonth, getYear } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { Weekday } from 'src/common/enums';
 
@@ -10,8 +10,17 @@ export const getMonthNumber = (date: Date): number => {
   return getYear(date) * 100 + getMonth(date) + 1;
 };
 
-export const getWeekNumber = (date: Date): number => {
-  return getYear(date) * 100 + getWeek(date);
+export const getWeekNumber = (
+  start: Date | string,
+  current: Date | string,
+): number => {
+  const startDate =
+    start instanceof Date ? start : getLocalDateFromString(start);
+  const currentDate =
+    current instanceof Date ? current : getLocalDateFromString(current);
+  return (
+    differenceInCalendarWeeks(currentDate, startDate, { weekStartsOn: 1 }) + 1
+  );
 };
 
 export const getKoreanWeekday = (date: string): string => {

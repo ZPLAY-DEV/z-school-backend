@@ -63,6 +63,10 @@ export class Schoolday {
   @Column({ type: 'varchar', length: 10 })
   today: string; // '2025-07-16'
 
+  @ApiProperty({ description: '주차', example: 1 })
+  @Column({ type: 'tinyint', unsigned: true })
+  weekNumber: number;
+
   @ApiProperty({
     description: '시작시각 DateTime',
     example: '2025-05-27T08:00:00+09:00',

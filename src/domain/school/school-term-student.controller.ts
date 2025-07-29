@@ -125,6 +125,19 @@ export class SchoolTermStudentController {
     );
   }
 
+  @Get(':schoolId/terms/:termId/students/:studentId/weekly-groups')
+  async listGroupsWeekly(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+  ): Promise<Record<string, Group[]>> {
+    return await this.schoolTermStudentService.listGroupsWeekly(
+      schoolId,
+      termId,
+      studentId,
+    );
+  }
+
   @SchoolTermStudentGroupsPaginatedDocs()
   @Get(':schoolId/terms/:termId/students/:studentId/groups/paginated')
   async infiniteListGroups(

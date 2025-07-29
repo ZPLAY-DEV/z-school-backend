@@ -21,10 +21,14 @@ export function calculateLessonDays(
   const timeZone = 'Asia/Seoul';
   const calendarDays: ICalendarDay[] = [];
 
-  if (lesson.start && lesson.end) {
+  // lesson.start와 lesson.end가 없으면 term.start와 term.end를 사용
+  const startDateStr = lesson.start || lesson.term?.start;
+  const endDateStr = lesson.end || lesson.term?.end;
+
+  if (startDateStr && endDateStr) {
     // 1. 시작일 종료일 사이에 반이 있는 요일의 모든 날짜 추출
-    const startDate = new Date(`${lesson.start}T00:00:00+09:00`);
-    const endDate = new Date(`${lesson.end}T23:59:59+09:00`);
+    const startDate = new Date(`${startDateStr}T00:00:00+09:00`);
+    const endDate = new Date(`${endDateStr}T23:59:59+09:00`);
     const dates: Date[] = getDatesForWeekdayBetween(
       startDate,
       endDate,
@@ -78,12 +82,16 @@ export function generateSchooldays(
     JSON.stringify(calendarDays, null, 2),
   );
 
+  // 연속적인 주차 번호를 위해 모든 calendarDays에 대해 순차적으로 처리
+  let weekNumber = 1; // 첫 번째 주차부터 시작
+
   const schooldays = calendarDays
     .filter((day) => day.isClassDay)
     .map((day) => {
       const [startDateStr, startTimeStr] = day.start.split(' ');
       const [endDateStr, endTimeStr] = day.end.split(' ');
       const today = startDateStr;
+
       const startsAt = new Date(`${startDateStr}T${startTimeStr}:00+09:00`);
       const endsAt = new Date(`${endDateStr}T${endTimeStr}:00+09:00`);
       const duration = differenceInMinutes(endsAt, startsAt);
@@ -95,10 +103,11 @@ export function generateSchooldays(
         name: lesson.lessonName,
         duration: duration,
         today: today,
+        weekNumber: weekNumber++,
         startsAt: startsAt,
         endsAt: endsAt,
         note: null,
-      } as Schoolday;
+      } as unknown as Schoolday;
 
       console.log(`🔍 [DEBUG] Generated schoolday:`, {
         schoolId: schoolday.schoolId,

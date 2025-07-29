@@ -244,10 +244,7 @@ export class GroupAttendanceService {
         this.extractDateFromRangeKey(dto.dailyStudentKey),
       );
       const uniqueDtosDates = [...new Set(dtosDates)];
-      const validSchoolDates = group.schooldays.map((schoolday) => {
-        const date = new Date(schoolday.startsAt);
-        return date.toISOString().split('T')[0]; // YYYY-MM-DD 형식
-      });
+      const validSchoolDates = group.schooldays.map((v) => v.today);
       const invalidDates = uniqueDtosDates.filter(
         (date) => !validSchoolDates.includes(date),
       );
@@ -527,6 +524,7 @@ export class GroupAttendanceService {
    * @description
    * 기본 출석 정보에 추가로 다음 정보들을 포함합니다:
    * - student: Student entity (부모 정보 포함)
+   * - isLast: 마지막 수업인지 여부
    * - next: 다음 수업명 또는 student.nextStop
    * - departure: 해당 학생의 당일 하교 정보 (있는 경우)
    *
@@ -584,7 +582,6 @@ export class GroupAttendanceService {
         },
         relations: ['student', 'group', 'group.lesson'],
       });
-
       if (picks.length === 0) {
         return [];
       }
@@ -624,7 +621,7 @@ export class GroupAttendanceService {
       });
 
       // 6. 학생 ID 추출
-      const studentIds = completeAttendanceItems.map((item) => item.studentId!);
+      const studentIds = picks.map((v) => v.studentId);
 
       // 7. 한 번의 쿼리로 모든 학생 정보 조회 (부모 정보 포함)
       const students = await this.studentRepository.find({
@@ -641,7 +638,7 @@ export class GroupAttendanceService {
         ],
       });
 
-      // 학생 ID를 key로 하는 Map 생성 (빠른 lookup을 위해)
+      // 학생 ID를 key로 하는 student Map 생성 (빠른 lookup을 위해)
       // 각 student entity는 response에서 student 필드로 반환됨
       const studentMap = new Map(
         students.map((student) => [student.id, student]),
