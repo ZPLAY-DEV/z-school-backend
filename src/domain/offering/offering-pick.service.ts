@@ -10,23 +10,27 @@ import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { ResponseCreateOfferingPickDto } from 'src/domain/group/dto/response-create-offering-pick.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { CreateAutoPickDto } from 'src/domain/offering/dto/create-auto-pick.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
 import { In, Repository } from 'typeorm';
 
 @Injectable()
 export class OfferingPickService {
   constructor(
-    @InjectRepository(Offering)
-    private readonly offeringRepository: Repository<Offering>,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
-    @InjectRepository(Pick)
-    private readonly pickRepository: Repository<Pick>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
+    @InjectRepository(Offering)
+    private readonly offeringRepository: Repository<Offering>,
+    @InjectRepository(Pick)
+    private readonly pickRepository: Repository<Pick>,
+    @InjectRepository(Term)
+    private readonly termRepository: Repository<Term>,
   ) {}
 
   // a note on pretty confusing syntax for MySQL 8.0+
@@ -115,6 +119,39 @@ export class OfferingPickService {
           ? 0
           : offering.capacity - selectedStudentIds.length,
     });
+  }
+
+  async createAutoPicks(dto: CreateAutoPickDto): Promise<number[]> {
+    const term = await this.termRepository.findOneOrFail({
+      where: { id: dto.termId },
+    });
+    if (term.bookingEnd && term.bookingEnd > new Date()) {
+      throw new BadRequestException('아직 수강신청 종료 전 입니다.');
+    }
+
+    const selectedOfferingIds: number[] = [];
+    const { schoolId, termId } = dto;
+
+    const offerings = await this.offeringRepository.find({
+      where: { schoolId, termId, status: ClassStatus.PENDING },
+      relations: ['bookings', 'term'],
+    });
+
+    for (const offering of offerings) {
+      if (offering.pickRule === PickRule.RANDOM) {
+        if (
+          offering.bookings.length <=
+          offering.capacity - offering.prepicked
+        ) {
+          selectedOfferingIds.push(offering.id);
+          await this.create(offering.id);
+        }
+      } else {
+        selectedOfferingIds.push(offering.id);
+        await this.create(offering.id);
+      }
+    }
+    return selectedOfferingIds;
   }
 
   //? ---------------------------------------------------------------------- ?//

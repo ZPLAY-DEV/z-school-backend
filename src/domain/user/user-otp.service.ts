@@ -8,6 +8,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { addMinutes, isAfter } from 'date-fns';
 import * as random from 'randomstring';
+import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Secret } from 'src/domain/user/entities/secret.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { normalizePhone } from 'src/helpers/phone';
@@ -21,6 +23,10 @@ export class UserOtpService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Parent)
+    private readonly parentRepository: Repository<Parent>,
+    @InjectRepository(Instructor)
+    private readonly instructorRepository: Repository<Instructor>,
     @InjectRepository(Secret)
     private readonly secretRepository: Repository<Secret>,
     private readonly notificationService: NotificationService,
@@ -64,31 +70,33 @@ export class UserOtpService {
   //? ---------------------------------------------------------------------- ?//
 
   async sendOtpForExistingUser(val: string, role: string): Promise<void> {
-    const phone = val.includes('@') ? null : normalizePhone(val);
-    const email = val.includes('@') ? val : null;
-    const where = email ? { email } : phone ? { phone } : undefined;
-    if (!where) {
+    const phone = normalizePhone(val);
+
+    if (!phone) {
       throw new BadRequestException('Invalid key');
     }
 
-    const dbUser = await this.userRepository.findOne({ where });
-    if (!dbUser) {
-      throw new NotFoundException('User not found');
+    if (role.toUpperCase() === 'PARENT') {
+      const parent = await this.parentRepository.findOne({ where: { phone } });
+      if (!parent) {
+        throw new NotFoundException('Parent not found');
+      }
+    } else {
+      const instructor = await this.instructorRepository.findOne({
+        where: { phone },
+      });
+      if (!instructor) {
+        throw new NotFoundException('Instructor not found');
+      }
     }
 
     let otp = '';
-    if (phone) {
-      if (phone.startsWith('01094867')) {
-        otp = await this._upsertOtpUsingDb(phone, role, '0000');
-      } else {
-        otp = await this._upsertOtpUsingDb(phone, role);
-      }
-      await this._sendSmsTo(phone, otp);
+    if (phone.startsWith('01094867')) {
+      otp = await this._upsertOtpUsingDb(phone, role, '0000');
     } else {
-      if (!email) throw new Error('Email is required');
-      const otp = await this._upsertOtpUsingDb(email, role);
-      await this._sendEmailTo(email, otp);
+      otp = await this._upsertOtpUsingDb(phone, role);
     }
+    await this._sendSmsTo(phone, otp);
   }
 
   //? ---------------------------------------------------------------------- ?//
