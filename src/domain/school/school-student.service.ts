@@ -235,7 +235,6 @@ export class SchoolStudentService {
   ): Promise<Paginated<Student>> {
     const queryBuilder = this.studentRepository
       .createQueryBuilder('student')
-      .leftJoinAndSelect('student.picks', 'picks')
       .where('student.schoolId = :schoolId', { schoolId });
 
     return await paginate<Student>(query, queryBuilder, {
