@@ -11,10 +11,19 @@ import { OfferingService } from 'src/domain/offering/offering.service';
 import { OfferingSubscriber } from 'src/domain/offering/subscriber/offering.subscriber';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Offering, Booking, Pick, Student, Group, Lesson]),
+    TypeOrmModule.forFeature([
+      Booking,
+      Group,
+      Lesson,
+      Offering,
+      Pick,
+      Student,
+      Term,
+    ]),
   ],
   providers: [OfferingService, OfferingPickService, OfferingSubscriber],
   controllers: [OfferingController, OfferingPickController],
