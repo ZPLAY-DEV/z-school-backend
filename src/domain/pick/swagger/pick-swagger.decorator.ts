@@ -55,6 +55,7 @@ export const StartPickDocs = () =>
       summary: '🟢 학생 반 등록 시작 (중간 편입)',
       description: `
 **📝 기능 설명**
+- IN CASE WE HAVE A PROBLEM WITH THE TIME CONFLICT, 422 error will be returned with the student names that have time conflicts.
 - 중간에 반에 참여하는 학생을 등록합니다
 - 수업시작일을 기록하여 해당 날짜부터 출석체크가 시작됩니다
 - 학생별 개별 교재비/재료비 설정이 가능합니다

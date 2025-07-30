@@ -142,3 +142,42 @@ export function getSortedWeekdays(days: string[]): string {
 
   return sorted.join('·');
 }
+
+/**
+ * 두 시간 범위가 충돌하는지 확인하는 함수
+ * @param oneWeekday 첫 번째 시간의 요일
+ * @param oneStart 첫 번째 시간의 시작 시간 (HH:MM)
+ * @param oneEnd 첫 번째 시간의 종료 시간 (HH:MM)
+ * @param twoWeekday 두 번째 시간의 요일
+ * @param twoStart 두 번째 시간의 시작 시간 (HH:MM)
+ * @param twoEnd 두 번째 시간의 종료 시간 (HH:MM)
+ * @returns 충돌하면 true, 충돌하지 않으면 false
+ */
+export function isTimeConflict(
+  oneWeekday: Weekday,
+  oneStart: string,
+  oneEnd: string,
+  twoWeekday: Weekday,
+  twoStart: string,
+  twoEnd: string,
+): boolean {
+  // 요일이 다르면 충돌하지 않음
+  if (oneWeekday !== twoWeekday) {
+    return false;
+  }
+
+  // 시간을 분 단위로 변환
+  const [oneStartHour, oneStartMinute] = parseTime(oneStart);
+  const [oneEndHour, oneEndMinute] = parseTime(oneEnd);
+  const [twoStartHour, twoStartMinute] = parseTime(twoStart);
+  const [twoEndHour, twoEndMinute] = parseTime(twoEnd);
+
+  const oneStartMinutes = oneStartHour * 60 + oneStartMinute;
+  const oneEndMinutes = oneEndHour * 60 + oneEndMinute;
+  const twoStartMinutes = twoStartHour * 60 + twoStartMinute;
+  const twoEndMinutes = twoEndHour * 60 + twoEndMinute;
+
+  // 시간 충돌 검증
+  // 두 시간 범위가 겹치는 경우: (oneStart < twoEnd) && (twoStart < oneEnd)
+  return oneStartMinutes < twoEndMinutes && twoStartMinutes < oneEndMinutes;
+}

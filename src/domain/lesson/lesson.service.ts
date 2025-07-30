@@ -99,7 +99,7 @@ export class LessonService {
       .leftJoinAndSelect('student.picks', 'pick')
       .leftJoinAndSelect('pick.group', 'group')
       .leftJoin('group.lesson', 'lesson')
-      .where('lesson.id = :lessonId', { lessonId: id }); // 중복 학생 제거는 후처리에서 수행
+      .where('lesson.id = :lessonId', { lessonId: id });
 
     const result = await paginate(
       query || { page: 1, limit: 20, path: '' },
@@ -108,6 +108,7 @@ export class LessonService {
         sortableColumns: ['id', 'name', 'grade', 'class', 'studentCode'],
         searchableColumns: ['name'],
         defaultSortBy: [
+          ['id', 'ASC'],
           ['grade', 'ASC'],
           ['class', 'ASC'],
           ['studentCode', 'ASC'],
@@ -120,16 +121,15 @@ export class LessonService {
       },
     );
 
-    // 중복 학생 제거 (동일한 student.id를 가진 경우)
+    //! edge case 대응. 혹시 모를 중복 학생 제거 (동일한 student.id를 가진 경우)
     const uniqueStudents = result.data.filter(
       (student, index, self) =>
-        index === self.findIndex((s) => s.id === student.id),
+        index === self.findIndex((v) => v.id === student.id),
     );
 
     // Student 데이터를 ExtendedStudentDto로 변환
     const extendedStudents: ExtendedStudentDto[] = uniqueStudents.map(
       (student) => {
-        // lesson id로 이미 필터링되었으므로, 첫 번째 pick을 사용
         const groupName =
           student.picks && student.picks.length > 1
             ? `${student.picks[0].group.groupName} 외 ${student.picks.length - 1}개`

@@ -73,11 +73,12 @@ export function makeOfferingsFromLessons(
     offering.groupIds = Array.from(new Set(offering.groupIds));
   }
   for (const offering of offerings) {
+    const groupName = offering.groupName.split(' ')[0];
     const weekdayz = getSortedWeekdays(
       [...offering.times].map((v) => v.weekday),
     );
     const gradez = compressRangeFormat(offering.allowedGrades.join(','));
-    offering.groupName = `${offering.lessonName} ${weekdayz}요일반 (${gradez}학년)`;
+    offering.groupName = `${groupName} ${weekdayz}요일반 (${gradez}학년)`;
   }
 
   return offerings;

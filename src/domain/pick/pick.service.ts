@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -18,6 +19,7 @@ import { UpdatePickDto } from 'src/domain/pick/dto/update-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
+import { isTimeConflict } from 'src/helpers/parse';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -50,9 +52,9 @@ export class PickService {
       where: {
         id: groupId,
       },
-      relations: ['lesson'],
+      relations: ['lesson', 'lesson.term'],
     });
-    const end = groupWithLesson.lesson.end;
+    const end = groupWithLesson.lesson.end || groupWithLesson.lesson.term.end;
     const termId = groupWithLesson.lesson.termId;
 
     if (role === Actor.INSTRUCTOR) {
@@ -75,14 +77,17 @@ export class PickService {
 
     // 모든 studentId 유효성 검증
     const studentIds = [...new Set(dtos.map((dto) => dto.studentId))];
-    for (const studentId of studentIds) {
-      const student = await this.studentRepository.findOne({
-        where: { id: studentId },
-      });
+    await this._validateStudents(studentIds);
 
-      if (!student) {
-        throw new NotFoundException(`Student with id ${studentId} not found`);
-      }
+    // 시간 충돌 검증
+    const conflictingStudentNames = await this._validateTimeConflicts(
+      dtos,
+      groupWithLesson,
+    );
+    if (conflictingStudentNames.length > 0) {
+      throw new UnprocessableEntityException(
+        conflictingStudentNames.join(', '),
+      );
     }
 
     let affectedRows = 0;
@@ -118,6 +123,67 @@ export class PickService {
     }
 
     return affectedRows;
+  }
+
+  /**
+   * 학생들의 시간 충돌을 검증하는 private 메서드
+   * @param dtos 새로 추가하려는 pick DTO 배열
+   * @param newGroup 새로 추가하려는 group 정보
+   * @returns 충돌하는 학생들의 이름 배열
+   */
+  private async _validateTimeConflicts(
+    dtos: CreatePickDto[],
+    newGroup: Group,
+  ): Promise<string[]> {
+    const conflictingStudentNames: string[] = [];
+    const studentIds = [...new Set(dtos.map((dto) => dto.studentId))];
+
+    for (const studentId of studentIds) {
+      // 해당 학생의 모든 picks 조회
+      const existingPicks = await this.pickRepository.find({
+        where: { studentId },
+        relations: ['group'],
+      });
+
+      // 각 기존 pick과 새로운 group의 시간 충돌 검증
+      for (const existingPick of existingPicks) {
+        if (
+          isTimeConflict(
+            existingPick.group.weekday,
+            existingPick.group.start,
+            existingPick.group.end,
+            newGroup.weekday,
+            newGroup.start,
+            newGroup.end,
+          )
+        ) {
+          // 충돌하는 학생의 이름 조회
+          const student = await this.studentRepository.findOne({
+            where: { id: studentId },
+            select: ['name'],
+          });
+
+          if (student && !conflictingStudentNames.includes(student.name)) {
+            conflictingStudentNames.push(student.name);
+          }
+          break; // 한 학생당 하나의 충돌만 체크하면 되므로 break
+        }
+      }
+    }
+
+    return conflictingStudentNames;
+  }
+
+  private async _validateStudents(studentIds: number[]): Promise<void> {
+    for (const studentId of studentIds) {
+      const student = await this.studentRepository.findOne({
+        where: { id: studentId },
+      });
+
+      if (!student) {
+        throw new NotFoundException(`Student with id ${studentId} not found`);
+      }
+    }
   }
 
   async endPick(dto: EndPickDto): Promise<Pick> {
