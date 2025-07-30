@@ -1,6 +1,7 @@
 import {
   DeleteCommand,
   PutCommand,
+  ScanCommand,
   TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { Injectable, Logger } from '@nestjs/common';
@@ -29,6 +30,7 @@ import {
   CreateDynamoRecordWithDateDto,
   CreateDynamoRecordWithRangeDto,
   DeleteAttendanceBySchoolTermDto,
+  DeleteGroupAttendanceWithDateDto,
   ResponseAttendanceDto,
 } from 'src/domain/schoolday/dto/response-attendance.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
@@ -141,6 +143,18 @@ export class SchooldayAttendanceService {
 
     const deleteRequests = this.buildDeleteRequests(validSchooldays);
     return this.executeBatchOperations(deleteRequests);
+  }
+
+  async deleteGroupAttendanceWithDate(
+    dto: DeleteGroupAttendanceWithDateDto,
+  ): Promise<ResponseAttendanceDto> {
+    const dateString = getDateString(dto.date);
+    return this.deleteGroupAttendancesWithScan(
+      dto.schoolId,
+      dto.termId,
+      dto.groupId,
+      dateString,
+    );
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -454,6 +468,95 @@ export class SchooldayAttendanceService {
     return this.executeBatchOperations(deleteRequests);
   }
 
+  private async deleteGroupAttendances(
+    schoolId: number,
+    termId: number,
+    groupId: number,
+    date: string,
+  ): Promise<ResponseAttendanceDto> {
+    const schooldays = await this.fetchSchooldaysByDateAndGroup(
+      schoolId,
+      termId,
+      groupId,
+      date,
+    );
+
+    // 유효한 수업일들만 필터링
+    const validSchooldays = schooldays.filter((schoolday) =>
+      this.isValidSchooldayForAttendance(schoolday),
+    );
+
+    const deleteRequests = this.buildDeleteRequests(validSchooldays);
+    return this.executeBatchOperations(deleteRequests);
+  }
+
+  private async deleteGroupAttendancesWithScan(
+    schoolId: number,
+    termId: number,
+    groupId: number,
+    date: string,
+  ): Promise<ResponseAttendanceDto> {
+    // 1. 해당 날짜에 수업이 있는지 확인
+    const schooldays = await this.fetchSchooldaysByDateAndGroup(
+      schoolId,
+      termId,
+      groupId,
+      date,
+    );
+
+    if (schooldays.length === 0) {
+      return { schooldays: 0, failedBatches: 0, alreadyExists: 0 };
+    }
+
+    // 2. 유효한 수업일들만 필터링
+    const validSchooldays = schooldays.filter((schoolday) =>
+      this.isValidSchooldayForAttendance(schoolday),
+    );
+
+    if (validSchooldays.length === 0) {
+      return { schooldays: 0, failedBatches: 0, alreadyExists: 0 };
+    }
+
+    // 3. DynamoDB에서 실제 존재하는 레코드만 스캔하여 삭제
+    const groupKey = generateGroupKey(groupId);
+    const prefix = `DATE#${date}`;
+
+    try {
+      const existingItems = await this.dynamoService.send(
+        new ScanCommand({
+          TableName: this.attendanceTableName,
+          FilterExpression:
+            'groupKey = :groupKey AND begins_with(dailyStudentKey, :prefix)',
+          ExpressionAttributeValues: {
+            ':groupKey': groupKey,
+            ':prefix': prefix,
+          },
+        }),
+      );
+
+      if (!existingItems.Items || existingItems.Items.length === 0) {
+        return { schooldays: 0, failedBatches: 0, alreadyExists: 0 };
+      }
+
+      // 4. 실제 존재하는 레코드들만 삭제 요청 생성
+      const deleteRequests: DeleteRequest[] = existingItems.Items.map(
+        (item) => ({
+          DeleteRequest: {
+            Key: {
+              groupKey: item.groupKey,
+              dailyStudentKey: item.dailyStudentKey,
+            },
+          },
+        }),
+      );
+
+      return this.executeBatchOperations(deleteRequests);
+    } catch (error) {
+      this.logger.error('Failed to scan attendance records', error);
+      return { schooldays: 0, failedBatches: 1, alreadyExists: 0 };
+    }
+  }
+
   private buildDeleteRequests(schooldays: Schoolday[]): DeleteRequest[] {
     if (schooldays.length === 0) {
       return [];
@@ -565,6 +668,34 @@ export class SchooldayAttendanceService {
       where: {
         schoolId,
         termId,
+      },
+      relations: {
+        group: {
+          picks: { student: true },
+          lesson: true,
+        },
+      },
+    });
+  }
+
+  /**
+   * 특정 날짜와 그룹에 해당하는 수업일들을 조회
+   */
+  private async fetchSchooldaysByDateAndGroup(
+    schoolId: number,
+    termId: number,
+    groupId: number,
+    targetDate: string,
+  ): Promise<Schoolday[]> {
+    const { startsAt, endsAt } = this.parseDateRange(targetDate);
+
+    return this.schooldayRepository.find({
+      where: {
+        schoolId,
+        termId,
+        groupId,
+        startsAt: MoreThanOrEqual(startsAt),
+        endsAt: LessThanOrEqual(endsAt),
       },
       relations: {
         group: {

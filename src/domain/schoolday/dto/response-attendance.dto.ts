@@ -1,11 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsDateString,
-  IsInt,
-  IsNumber,
-  IsObject,
-  IsOptional,
-  IsString,
+    IsDateString,
+    IsInt,
+    IsNumber,
+    IsObject,
+    IsOptional,
+    IsString,
 } from 'class-validator';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 
@@ -114,4 +114,23 @@ export class DeleteAttendanceBySchoolTermDto {
   @ApiProperty({ description: '학기ID', example: 1 })
   @IsInt()
   termId: number;
+}
+
+export class DeleteGroupAttendanceWithDateDto {
+  @ApiProperty({ description: '학교ID', example: 1 })
+  @IsInt()
+  schoolId: number;
+
+  @ApiProperty({ description: '학기ID', example: 1 })
+  @IsInt()
+  termId: number;
+
+  @ApiProperty({ description: '그룹ID', example: 1 })
+  @IsInt()
+  groupId: number;
+
+  @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
+  @IsString()
+  @IsDateString()
+  date: string; // "2025-08-14" 형식으로 저장
 }
