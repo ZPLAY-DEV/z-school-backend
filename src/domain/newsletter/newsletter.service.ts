@@ -112,7 +112,7 @@ export class NewsletterService {
         // target: NewsletterTarget.GRADE,
         // targetItems: [1, 2, 3, 4, 5, 6],
         target: NewsletterTarget.STUDENT,
-        targetItems: [859, 860, 861, 862],
+        targetItems: [901, 902, 903, 904],
         targetLabel: `${school.name} 전교생`,
         scheduledAt,
       });
