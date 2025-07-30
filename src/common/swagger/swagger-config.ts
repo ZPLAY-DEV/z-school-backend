@@ -9,7 +9,7 @@ import {
  * 스웨거 문서 설정
  */
 export const swaggerConfig = new DocumentBuilder()
-  .setTitle('Scoollink Rest API Docs')
+  .setTitle('SchoolHub Rest API Docs')
   .setDescription('V3 API built on top of NestJS 11.x')
   .setVersion('3.0')
   .addBearerAuth({
@@ -26,7 +26,7 @@ export const swaggerConfig = new DocumentBuilder()
  */
 export const initSwagger = (app: INestApplication) => {
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api-docs', app, swaggerDocument, swaggerOptions);
+  SwaggerModule.setup('docs', app, swaggerDocument, swaggerOptions);
 };
 
 /**

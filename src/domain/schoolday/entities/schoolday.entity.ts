@@ -60,8 +60,20 @@ export class Schoolday {
     description: '검색용 날짜',
     example: '2025-07-16',
   })
-  @Column({ type: 'varchar', length: 10 })
+  @Column({ type: 'varchar', length: 10, comment: '수업일' })
   today: string; // '2025-07-16'
+
+  @ApiProperty({
+    description: '원래 날짜',
+    example: '2025-07-16',
+  })
+  @Column({
+    type: 'varchar',
+    length: 10,
+    nullable: true,
+    comment: '원래 수업일',
+  })
+  original: string | null; // '2025-07-20'
 
   @ApiProperty({ description: '주차', example: 1 })
   @Column({ type: 'tinyint', unsigned: true })

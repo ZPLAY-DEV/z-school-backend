@@ -17,7 +17,7 @@ export const REDIS_TRACKING_CLIENT = 'REDIS_TRACKING_CLIENT';
 
 export const FIREBASE_AUTH = 'FIREBASE_AUTH';
 export const FIREBASE_CLOUD_MESSAGING = 'FIREBASE_CLOUD_MESSAGING';
-export const DEFAULT_AVATAR_URL = 'https://cdn.scoollink.com/icons/user.png';
+export const DEFAULT_AVATAR_URL = 'https://cdn.스쿨허브.kr/icons/user.png';
 
 export const ONE_MIN = 1000 * 60 * 1; // access token and cookie expiry window for testing
 export const TEN_MINS = 1000 * 60 * 10; // access token and cookie expiry window for testing
