@@ -18,6 +18,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
+import { BulkUpdateSamsDto } from '../dto/bulk-update-sams.dto';
 import { CreateSamDto } from '../dto/create-sam.dto';
 import { UpdateSamDto } from '../dto/update-sam.dto';
 
@@ -372,6 +373,113 @@ export const UpdateSamDocs = () =>
       type: Sam,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? Bulk Update Sams
+//? ---------------------------------------------------------------------- ?//
+
+export const BulkUpdateSamsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '📝 담임쌤(Sam) 일괄 수정',
+      description: `
+### 📋 기능 설명
+여러 담임쌤의 정보를 한 번에 일괄 수정합니다.
+
+### 🏷️ 수정 가능한 필드
+- **schoolId**: 학교 ID 변경
+- **alias**: 담임쌤 별칭/호칭
+- **score**: 평가 점수 (0~100점)
+- **editFeePermission**: 수업료 편집 권한
+- **editPickPermission**: 픽업 편집 권한
+- **note**: 비고/특이사항
+
+### 📌 비즈니스 규칙
+- **필수 정보**: samIds (수정할 담임쌤 ID 목록)
+- **트랜잭션**: 모든 수정이 성공하거나 모두 실패 (원자성 보장)
+- **존재 확인**: 모든 samIds가 유효한지 사전 검증
+- **강사 정보**: 강사 정보는 변경하지 않음 (개별 수정 권장)
+
+### ⚠️ 주의사항
+- 최소 1개 이상의 담임쌤 ID가 필요합니다
+- 존재하지 않는 담임쌤 ID가 있으면 전체 작업이 실패합니다
+- 강사 정보 변경이 필요한 경우 개별 수정 API를 사용하세요
+- 모든 수정은 트랜잭션으로 처리되어 일관성을 보장합니다
+      `,
+    }),
+    ApiBody({
+      type: BulkUpdateSamsDto,
+      examples: {
+        'score-update': {
+          summary: '🎯 평가 점수 일괄 수정',
+          description: '여러 담임쌤의 평가 점수를 동일하게 수정',
+          value: {
+            samIds: [1, 2, 3, 4],
+            score: 90,
+            note: '2025년도 평가 기준으로 점수 조정',
+          },
+        },
+        'permission-update': {
+          summary: '🔐 권한 일괄 수정',
+          description: '여러 담임쌤의 권한을 동일하게 수정',
+          value: {
+            samIds: [1, 2, 3],
+            editFeePermission: true,
+            editPickPermission: false,
+            note: '권한 정책 변경에 따른 조정',
+          },
+        },
+        'alias-update': {
+          summary: '🏷️ 별칭 일괄 수정',
+          description: '여러 담임쌤의 별칭을 동일하게 수정',
+          value: {
+            samIds: [1, 2, 3, 4, 5],
+            alias: '수학전문',
+            score: 88,
+            note: '수학 전문 강사로 재분류',
+          },
+        },
+        'comprehensive-update': {
+          summary: '📋 종합 정보 일괄 수정',
+          description: '담임쌤 정보를 종합적으로 일괄 수정',
+          value: {
+            samIds: [1, 2, 3],
+            alias: '영어전문',
+            score: 95,
+            editFeePermission: true,
+            editPickPermission: true,
+            note: '영어 전문 강사로 재배치 및 권한 부여',
+          },
+        },
+        'minimal-update': {
+          summary: '⭐ 최소 정보 일괄 수정',
+          description: '최소한의 정보만으로 일괄 수정',
+          value: {
+            samIds: [1, 2],
+            score: 80,
+          },
+        },
+      },
+    }),
+    ApiOkResponseTemplate({
+      description: '✅ 담임쌤 일괄 수정 성공',
+      type: Sam,
+      isArray: true,
+    }),
+    ApiResponse({
+      status: StatusCodes.BAD_REQUEST,
+      description:
+        '🚫 요청 데이터 오류 - 필수 필드 누락, 데이터 형식 오류, 빈 배열',
+    }),
+    ApiResponse({
+      status: StatusCodes.NOT_FOUND,
+      description: '🔍 리소스 없음 - 존재하지 않는 담임쌤 ID 또는 강사 ID',
+    }),
+    ApiResponse({
+      status: StatusCodes.CONFLICT,
+      description: '⚠️ 데이터 충돌 - 강사 정보 업데이트 중 충돌',
+    }),
   );
 
 //? ---------------------------------------------------------------------- ?//

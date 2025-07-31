@@ -16,11 +16,13 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Group } from 'src/domain/group/entities/group.entity';
+import { BulkUpdateSamsDto } from 'src/domain/sam/dto/bulk-update-sams.dto';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { SamService } from 'src/domain/sam/sam.service';
 import {
+  BulkUpdateSamsDocs,
   CreateSamDocs,
   GetSamByIdDocs,
   GetSamGroupsDocs,
@@ -82,6 +84,12 @@ export class SamController {
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
+
+  @BulkUpdateSamsDocs()
+  @Patch('bulk')
+  async updateBulk(@Body() dto: BulkUpdateSamsDto): Promise<Sam[]> {
+    return await this.samService.bulkUpdate(dto);
+  }
 
   @UpdateSamDocs()
   @Patch(':id')

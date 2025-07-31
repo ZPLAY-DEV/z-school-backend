@@ -8,11 +8,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { BulkUpdateSamsDto } from 'src/domain/sam/dto/bulk-update-sams.dto';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 @Injectable()
 export class SamService {
   private readonly logger = new Logger(SamService.name);
@@ -212,6 +213,41 @@ export class SamService {
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
+
+  async bulkUpdate(dto: BulkUpdateSamsDto): Promise<Sam[]> {
+    return await this.dataSource.transaction(async (manager: EntityManager) => {
+      const { samIds, ...updateData } = dto;
+      const updatedSams: Sam[] = [];
+
+      // 1. 모든 Sam 존재 여부 확인
+      const existingSams = await manager.find(Sam, {
+        where: { id: In(samIds) },
+        relations: ['instructor'],
+      });
+
+      if (existingSams.length !== samIds.length) {
+        const foundIds = existingSams.map((sam) => sam.id);
+        const missingIds = samIds.filter((id) => !foundIds.includes(id));
+        throw new NotFoundException(`Sams not found: ${missingIds.join(', ')}`);
+      }
+
+      // 2. 각 Sam에 대해 업데이트 수행
+      for (const existingSam of existingSams) {
+        // 3. Sam 정보 업데이트 (강사 정보는 변경하지 않음)
+        const updatedSam = manager.merge(Sam, existingSam, updateData);
+        const savedSam = await manager.save(Sam, updatedSam);
+
+        // 4. 업데이트된 Sam 조회 및 배열에 추가
+        const finalSam = await manager.findOneOrFail(Sam, {
+          where: { id: savedSam.id },
+          relations: ['instructor'],
+        });
+        updatedSams.push(finalSam);
+      }
+
+      return updatedSams;
+    });
+  }
 
   async update(id: number, dto: UpdateSamDto): Promise<Sam> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
