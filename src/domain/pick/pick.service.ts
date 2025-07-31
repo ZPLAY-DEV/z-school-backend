@@ -187,10 +187,9 @@ export class PickService {
   }
 
   async endPick(dto: EndPickDto): Promise<Pick> {
-    const pick = await this.findPickByGroupIdAndStudentId(
-      dto.groupId,
-      dto.studentId,
-    );
+    const pick = await this.pickRepository.findOneOrFail({
+      where: { groupId: dto.groupId, studentId: dto.studentId },
+    });
     if (!pick) {
       throw new NotFoundException('pick entity not found');
     }
@@ -207,18 +206,25 @@ export class PickService {
     return pick;
   }
 
+  async endPickRollback(dto: EndPickDto): Promise<Pick> {
+    const pick = await this.pickRepository.findOneOrFail({
+      where: { groupId: dto.groupId, studentId: dto.studentId },
+      relations: ['group', 'group.lesson', 'group.lesson.term'],
+    });
+    if (!pick) {
+      throw new NotFoundException('pick entity not found');
+    }
+    await this.pickRepository.update(pick.id, {
+      endedBy: null,
+      end: pick.group.lesson.end || pick.group.lesson.term.end,
+    });
+
+    return pick;
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
-
-  async findPickByGroupIdAndStudentId(
-    groupId: number,
-    studentId: number,
-  ): Promise<Pick> {
-    return await this.pickRepository.findOneOrFail({
-      where: { groupId, studentId },
-    });
-  }
 
   async listStudents(groupId: number): Promise<Pick[]> {
     return await this.pickRepository.find({

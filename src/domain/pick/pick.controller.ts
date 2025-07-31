@@ -79,19 +79,9 @@ export class PickController {
   @HttpCode(200)
   @Patch('end/rollback')
   async endPickRollback(
-    @Body() dto: EndPickDto,
-    @CurrentUserIdAndRole() user: { id: number; role: string },
+    @Body() dto: { groupId: number; studentId: number },
   ): Promise<Pick> {
-    const role =
-      user.role === 'MANAGER'
-        ? Actor.MANAGER
-        : user.role === 'INSTRUCTOR'
-          ? Actor.INSTRUCTOR
-          : Actor.OTHER;
-    return await this.pickService.endPick({
-      ...dto,
-      endedBy: role,
-    });
+    return await this.pickService.endPickRollback(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
