@@ -75,6 +75,25 @@ export class PickController {
     });
   }
 
+  @EndPickDocs()
+  @HttpCode(200)
+  @Patch('end/rollback')
+  async endPickRollback(
+    @Body() dto: EndPickDto,
+    @CurrentUserIdAndRole() user: { id: number; role: string },
+  ): Promise<Pick> {
+    const role =
+      user.role === 'MANAGER'
+        ? Actor.MANAGER
+        : user.role === 'INSTRUCTOR'
+          ? Actor.INSTRUCTOR
+          : Actor.OTHER;
+    return await this.pickService.endPick({
+      ...dto,
+      endedBy: role,
+    });
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//

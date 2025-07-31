@@ -152,9 +152,6 @@ importers:
       http-status-codes:
         specifier: ^2.3.0
         version: 2.3.0
-      ioredis:
-        specifier: ^5.6.1
-        version: 5.6.1
       keyv:
         specifier: ^5.3.3
         version: 5.3.4
@@ -7257,7 +7254,8 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.16.0
 
-  '@ioredis/commands@1.2.0': {}
+  '@ioredis/commands@1.2.0':
+    optional: true
 
   '@isaacs/balanced-match@4.0.1': {}
 
@@ -10620,6 +10618,7 @@ snapshots:
       standard-as-callback: 2.1.0
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   ipaddr.js@1.9.1: {}
 
@@ -11185,11 +11184,13 @@ snapshots:
 
   lodash.clonedeep@4.5.0: {}
 
-  lodash.defaults@4.2.0: {}
+  lodash.defaults@4.2.0:
+    optional: true
 
   lodash.includes@4.3.0: {}
 
-  lodash.isarguments@3.1.0: {}
+  lodash.isarguments@3.1.0:
+    optional: true
 
   lodash.isboolean@3.0.3: {}
 
@@ -11760,11 +11761,13 @@ snapshots:
 
   real-require@0.2.0: {}
 
-  redis-errors@1.2.0: {}
+  redis-errors@1.2.0:
+    optional: true
 
   redis-parser@3.0.0:
     dependencies:
       redis-errors: 1.2.0
+    optional: true
 
   redis@4.7.1:
     dependencies:
@@ -12061,7 +12064,8 @@ snapshots:
     dependencies:
       escape-string-regexp: 2.0.0
 
-  standard-as-callback@2.1.0: {}
+  standard-as-callback@2.1.0:
+    optional: true
 
   statuses@2.0.1: {}
 
