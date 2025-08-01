@@ -206,7 +206,10 @@ export class PickService {
     return pick;
   }
 
-  async endPickRollback(dto: EndPickDto): Promise<Pick> {
+  async endPickRollback(dto: {
+    groupId: number;
+    studentId: number;
+  }): Promise<Pick> {
     const pick = await this.pickRepository.findOneOrFail({
       where: { groupId: dto.groupId, studentId: dto.studentId },
       relations: ['group', 'group.lesson', 'group.lesson.term'],
