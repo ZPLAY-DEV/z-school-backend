@@ -18,7 +18,7 @@ import { Student } from 'src/domain/student/entities/student.entity';
         name: 'Attendance',
         schema: AttendanceSchema,
         options: {
-          tableName: 'attendance', // e.g. local_attendance_table
+          tableName: 'attendance', // e.g. dev_attendance_table
         },
       },
     ]),
@@ -27,4 +27,12 @@ import { Student } from 'src/domain/student/entities/student.entity';
   controllers: [AttendanceController],
   exports: [AttendanceService],
 })
-export class AttendanceModule {}
+export class AttendanceModule {
+  constructor() {
+    console.log('📊 AttendanceModule initialized');
+    console.log('  - Dynamoose table name: attendance');
+    console.log(
+      '  - Expected full table name: dev_attendance_table (with prefix/suffix)',
+    );
+  }
+}

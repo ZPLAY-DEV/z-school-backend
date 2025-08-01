@@ -46,33 +46,67 @@ export class AttendanceService {
   //? ---------------------------------------------------------------------- ?//
 
   async init(): Promise<void> {
-    const now = addDays(new Date(), 1);
-    const ttl = Math.floor(now.getTime() / 1000); // 1일
-
-    const itemKey = {
-      groupKey: generateGroupKey(80),
-      dailyStudentKey: generateDailyStudentKey('2025-07-22', 1, 1, '1', 1),
-    };
-
-    const itemDto = {
-      lessonName: '바이올린',
-      groupId: 80,
-      studentId: 1,
-      studentName: '편도율',
-      start: '13:50',
-      end: '14:30',
-      duration: 40,
-      status: AttendanceStatus.EXCUSED_ABSENT,
-      parentNote: '코로나 때문에 빠집니다.',
-      expires: ttl,
-    };
+    console.log('🚀 Starting init() function...');
 
     try {
+      console.log('📋 Checking model injection...');
+      console.log('Model type:', typeof this.model);
+      console.log(
+        'Model methods:',
+        Object.getOwnPropertyNames(Object.getPrototypeOf(this.model)),
+      );
+
+      const now = addDays(new Date(), 1);
+      const ttl = Math.floor(now.getTime() / 1000); // 1일
+
+      const itemKey = {
+        groupKey: generateGroupKey(80),
+        dailyStudentKey: generateDailyStudentKey('2025-07-22', 1, 1, '1', 1),
+      };
+
+      const itemDto = {
+        lessonName: '바이올린',
+        groupId: 80,
+        studentId: 1,
+        studentName: '편도율',
+        start: '13:50',
+        end: '14:30',
+        duration: 40,
+        status: AttendanceStatus.EXCUSED_ABSENT,
+        parentNote: '코로나 때문에 빠집니다.',
+        expires: ttl,
+      };
+
+      console.log('🔑 Generated itemKey:', JSON.stringify(itemKey, null, 2));
+      console.log('📝 Generated itemDto:', JSON.stringify(itemDto, null, 2));
+      console.log('🔄 Attempting to call model.update()...');
+
       // update() 메서드를 사용하여 upsert 효과 구현
-      await this.model.update(itemKey, itemDto);
-      console.log('✅ created/updated attendance record in init()');
+      const result = await this.model.update(itemKey, itemDto);
+      console.log(
+        '✅ Successfully created/updated attendance record in init()',
+      );
+      console.log('📊 Result:', JSON.stringify(result, null, 2));
     } catch (error) {
-      console.error(`🚨`, error);
+      console.error('🚨 Error in init() function:');
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+
+      // Dynamoose 관련 추가 정보
+      if (error.$metadata) {
+        console.error(
+          'AWS Metadata:',
+          JSON.stringify(error.$metadata, null, 2),
+        );
+      }
+      if (error.__type) {
+        console.error('AWS Error Type:', error.__type);
+      }
+
+      throw error; // 에러를 다시 던져서 애플리케이션 시작을 중단시킴
     }
   }
 
