@@ -30,6 +30,7 @@ import {
   SoftDeleteSamDocs,
   UpdateSamDocs,
 } from 'src/domain/sam/swagger/sam.swagger.decorator';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 
 @ApiTags('✳️ Sams ( 담임쌤 )')
 @Controller('sams')
@@ -62,11 +63,20 @@ export class SamController {
 
   @GetSamGroupsDocs()
   @Get(':id/groups')
-  async findGroupsById(
+  async getGroupsById(
     @Param('id', ParseIntPipe) id: number,
     @Query('termId') termId?: number,
   ): Promise<Group[]> {
-    return await this.samService.findGroupsById(id, termId);
+    return await this.samService.getGroupsById(id, termId);
+  }
+
+  @GetSamGroupsDocs()
+  @Get(':id/schooldays')
+  async getSchooldaysByDate(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('date') date?: string,
+  ): Promise<Schoolday[]> {
+    return await this.samService.getSchooldaysByDate(id, date);
   }
 
   @GetSamByIdDocs()

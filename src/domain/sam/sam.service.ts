@@ -5,14 +5,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { format } from 'date-fns';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
-import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { BulkUpdateSamsDto } from 'src/domain/sam/dto/bulk-update-sams.dto';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 @Injectable()
 export class SamService {
@@ -186,7 +187,7 @@ export class SamService {
     }
   }
 
-  async findGroupsById(id: number, termId?: number): Promise<Group[]> {
+  async getGroupsById(id: number, termId?: number): Promise<Group[]> {
     const sam = await this.samRepository.findOneOrFail({
       where: { id },
       relations: ['contracts', 'contracts.group', 'contracts.group.lesson'],
@@ -201,13 +202,40 @@ export class SamService {
     return sam?.contracts.map((contract) => contract.group) ?? [];
   }
 
-  async findLessonsById(id: number): Promise<Lesson[]> {
+  async getSchooldaysByDate(id: number, date?: string): Promise<Schoolday[]> {
+    const today = date ? date : format(new Date(), 'yyyy-MM-dd');
     const sam = await this.samRepository.findOneOrFail({
       where: { id },
-      relations: ['contracts', 'contracts.lesson'],
+      relations: [
+        'contracts',
+        'contracts.group',
+        'contracts.group.schooldays',
+        'contracts.group.schooldays.departures',
+      ],
     });
-    // todo. deduplicate lessons
-    return sam?.contracts.map((contract) => contract.lesson) ?? [];
+
+    // SAM의 모든 contracts의 groups에서 schooldays를 수집
+    const allSchooldays: Schoolday[] = [];
+
+    for (const contract of sam.contracts) {
+      if (contract.group?.schooldays) {
+        // 각 schoolday에 group 정보를 명시적으로 할당 (schooldays 제외)
+        const schooldaysWithGroup = contract.group.schooldays.map(
+          (schoolday) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { schooldays: _, ...groupWithoutSchooldays } = contract.group;
+            return {
+              ...schoolday,
+              group: groupWithoutSchooldays as any, // 타입 단언으로 순환 참조 방지
+            };
+          },
+        );
+        allSchooldays.push(...schooldaysWithGroup);
+      }
+    }
+
+    // today와 일치하는 schooldays만 필터링
+    return allSchooldays.filter((schoolday) => schoolday.today === today);
   }
 
   //? ---------------------------------------------------------------------- ?//

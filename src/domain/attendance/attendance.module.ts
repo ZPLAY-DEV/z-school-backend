@@ -8,8 +8,6 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 
-//! With correct module configuration, the local dynamoDB is populated automatically
-//! as soon as executing any creation method.
 @Module({
   imports: [
     TypeOrmModule.forFeature([Schoolday, Group, Student]),
@@ -27,12 +25,4 @@ import { Student } from 'src/domain/student/entities/student.entity';
   controllers: [AttendanceController],
   exports: [AttendanceService],
 })
-export class AttendanceModule {
-  constructor() {
-    console.log('📊 AttendanceModule initialized');
-    console.log('  - Dynamoose table name: attendance');
-    console.log(
-      '  - Expected full table name: dev_attendance_table (with prefix/suffix)',
-    );
-  }
-}
+export class AttendanceModule {}

@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { addDays } from 'date-fns';
-import { format, fromZonedTime } from 'date-fns-tz';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
 import { NotificationType } from 'src/common/enums/notification-type';
@@ -350,7 +349,6 @@ export class GroupAttendanceService {
     date: string, //! e.g. "2025-06-08" <- 하이픈 반드시 포함
     dto: CreateAttendanceWithGroupStudentDto,
   ): Promise<IAttendance> {
-    console.log('🔍 [DEBUG] upsert dto:', JSON.stringify(dto, null, 2));
     const group = await this.groupRepository.findOneOrFail({
       where: { id: dto.groupId },
       relations: ['lesson', 'schooldays'],
@@ -358,11 +356,7 @@ export class GroupAttendanceService {
     const student = await this.studentRepository.findOneOrFail({
       where: { id: dto.studentId },
     });
-    const schoolday = group.schooldays.find(
-      (v) =>
-        format(fromZonedTime(v.startsAt, 'Asia/Seoul'), 'yyyy-MM-dd') ===
-        `${date}`,
-    );
+    const schoolday = group.schooldays.find((v) => v.today === `${date}`);
     if (!schoolday) {
       throw new NotFoundException('해당일에 수업이 없습니다.');
     }
@@ -397,7 +391,7 @@ export class GroupAttendanceService {
       ...(typeof dto.parentNote === 'string' && {
         parentNotedAt: new Date(),
       }),
-      //! 조퇴에서만 parentNotedAt 이 조퇴알림시각으로 사용되어서 빼버림.
+      //! 조퇴에서만 schoolNotedAt 이 조퇴알림시각으로 사용되어서 빼버림.
       //! ...(typeof dto.schoolNote === 'string' && {
       //!   schoolNotedAt: new Date(),
       //! }),
@@ -413,6 +407,8 @@ export class GroupAttendanceService {
         '✅ created new attendance:',
         JSON.stringify(result, null, 2),
       );
+
+      await this.updateSchooldayDailyStudentKeys(schoolday, dailyStudentKey);
       return result; // No conversion needed anymore!
     } catch (error) {
       if (
@@ -424,6 +420,10 @@ export class GroupAttendanceService {
           console.log(
             '✅ updated existing attendance:',
             JSON.stringify(result, null, 2),
+          );
+          await this.updateSchooldayDailyStudentKeys(
+            schoolday,
+            dailyStudentKey,
           );
           return result; // No conversion needed anymore!
         } catch (updateError) {
@@ -985,5 +985,23 @@ export class GroupAttendanceService {
     date: string,
   ): Promise<IAttendance[]> {
     return this.findAttendancesByDate(groupKey, date);
+  }
+
+  private async updateSchooldayDailyStudentKeys(
+    schoolday: Schoolday,
+    dailyStudentKey: string,
+  ): Promise<void> {
+    const updatedKeys = Array.from(
+      new Set([...(schoolday.dailyStudentKeys ?? []), dailyStudentKey]),
+    );
+
+    await this.schooldayRepository
+      .createQueryBuilder()
+      .update(Schoolday)
+      .set({
+        dailyStudentKeys: updatedKeys,
+      })
+      .where('id = :id', { id: schoolday.id })
+      .execute();
   }
 }

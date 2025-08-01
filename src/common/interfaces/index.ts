@@ -4,7 +4,7 @@ import { BookingStatus, Role, Weekday } from 'src/common/enums';
 
 export interface IAwsConfig {
   defaultRegion: string;
-  accessKey: string;
+  accessKeyId: string;
   secretAccessKey: string;
   // secretsManagerEndpoint: string;
   // secretsDbArn: string;

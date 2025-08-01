@@ -107,6 +107,10 @@ export class Schoolday {
   })
   updatedBy: Actor | null;
 
+  @ApiProperty({ description: '🈳 학부모 선알림 record 의 rangeKey' })
+  @Column('simple-array', { nullable: true })
+  dailyStudentKeys: string[] | null;
+
   @ApiProperty({ description: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;

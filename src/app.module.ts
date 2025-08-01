@@ -98,17 +98,8 @@ import { UploadModule } from './services/upload/upload.module';
             configService.get<string>('aws.defaultRegion') ?? 'ap-northeast-2',
         };
 
-        console.log('🔧 DynamooseModule configuration:');
-        console.log('  - nodeEnv:', nodeEnv);
-        console.log('  - awsEndpoint:', awsEndpoint);
-        console.log('  - awsConfig:', JSON.stringify(awsConfig, null, 2));
-        console.log('  - local mode:', awsEndpoint ? true : false);
-        console.log('  - table create:', awsEndpoint ? true : false);
-        console.log('  - table prefix:', `${nodeEnv}_`);
-        console.log('  - table suffix:', '_table');
-
         return {
-          local: awsEndpoint ? true : false,
+          local: awsEndpoint ? awsEndpoint : false,
           aws: awsConfig,
           table: {
             create: awsEndpoint ? true : false,

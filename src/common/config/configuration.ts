@@ -52,7 +52,7 @@ export const configuration = () => ({
     './school-hub.fb-admin-key.json',
   aws: {
     defaultRegion: process.env.AWS_DEFAULT_REGION,
-    accessKey: process.env.AWS_ACCESS_KEY_ID,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     endpoint: process.env.AWS_ENDPOINT,
     sqsEndpoint: process.env.AWS_SQS_ENDPOINT,

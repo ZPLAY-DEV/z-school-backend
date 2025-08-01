@@ -20,6 +20,10 @@ export class DynamoService implements OnModuleInit {
     const dynamoConfig: {
       region: string;
       endpoint?: string;
+      credentials?: {
+        accessKeyId: string;
+        secretAccessKey: string;
+      };
     } = {
       region: this.region,
     };
@@ -27,6 +31,10 @@ export class DynamoService implements OnModuleInit {
     // LocalStack 환경
     if (endpoint) {
       dynamoConfig.endpoint = endpoint;
+      dynamoConfig.credentials = {
+        accessKeyId: 'test',
+        secretAccessKey: 'test',
+      };
     }
 
     this.ddb = new DynamoDBClient(dynamoConfig);
