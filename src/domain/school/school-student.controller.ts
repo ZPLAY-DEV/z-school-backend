@@ -5,8 +5,6 @@ import {
   Controller,
   Get,
   Param,
-  ParseArrayPipe,
-  ParseBoolPipe,
   ParseIntPipe,
   Post,
   Query,
@@ -108,16 +106,15 @@ export class SchoolStudentController {
   @Get(':schoolId/students')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Query('grade', ParseIntPipe) grade?: number,
-    @Query('grades', new ParseArrayPipe({ items: Number, separator: ',' }))
-    grades?: number[],
-    @Query('attendingOnly', ParseBoolPipe) attendingOnly?: boolean,
+    @Query('grade') grade?: number,
+    @Query('grades') grades?: string,
+    @Query('attendingOnly') attendingOnly?: string,
   ): Promise<Student[]> {
     return await this.schoolStudentService.list(
       schoolId,
-      grade,
-      grades,
-      attendingOnly,
+      grade ? Number(grade) : undefined,
+      grades ? grades.split(',').map(Number) : undefined,
+      attendingOnly ? attendingOnly === 'true' : undefined,
     );
   }
 

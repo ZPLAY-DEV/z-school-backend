@@ -10,9 +10,4 @@ export class UpdateUserOtpDto extends PartialType(CreateUserDto) {
   @IsNotEmpty()
   @IsString()
   otp: string;
-
-  @ApiProperty({ description: 'role' })
-  @IsNotEmpty()
-  @IsString()
-  role: string; // PARENT or INSTRUCTOR
 }

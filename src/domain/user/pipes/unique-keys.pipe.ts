@@ -11,7 +11,10 @@ export class UniqueKeysPipe implements PipeTransform {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async transform(value: Record<string, any>, _metadata: ArgumentMetadata) {
-    if (Object.prototype.hasOwnProperty.call(value, 'username')) {
+    if (
+      value.username &&
+      Object.prototype.hasOwnProperty.call(value, 'username')
+    ) {
       const user = await this.userService.findByUniqueKey({
         where: { username: value.username },
       });
@@ -20,7 +23,7 @@ export class UniqueKeysPipe implements PipeTransform {
       }
     }
 
-    if (Object.prototype.hasOwnProperty.call(value, 'email')) {
+    if (value.email && Object.prototype.hasOwnProperty.call(value, 'email')) {
       const user = await this.userService.findByUniqueKey({
         where: { email: value.email },
       });
@@ -29,7 +32,7 @@ export class UniqueKeysPipe implements PipeTransform {
       }
     }
 
-    if (Object.prototype.hasOwnProperty.call(value, 'phone')) {
+    if (value.phone && Object.prototype.hasOwnProperty.call(value, 'phone')) {
       const user = await this.userService.findByUniqueKey({
         where: { phone: value.phone },
       });

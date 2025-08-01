@@ -16,6 +16,9 @@ import {
   paginate,
 } from 'nestjs-paginate';
 import * as random from 'randomstring';
+import { Role } from 'src/common/enums';
+import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { ChangePasswordDto } from 'src/domain/user/dto/change-password.dto';
 import { ChangeUsernameDto } from 'src/domain/user/dto/change-username.dto';
 import { CreateUserDto } from 'src/domain/user/dto/create-user.dto';
@@ -23,6 +26,7 @@ import { DeleteUserDto } from 'src/domain/user/dto/delete-user.dto';
 import { UpdateUserDto } from 'src/domain/user/dto/update-user.dto';
 import { Provider } from 'src/domain/user/entities/provider.entity';
 import { User } from 'src/domain/user/entities/user.entity';
+import { normalizePhone } from 'src/helpers/phone';
 import { S3Service } from 'src/services/aws/s3.service';
 import { SlackService } from 'src/services/slack/slack.service';
 import { DataSource, DeepPartial, FindOneOptions } from 'typeorm';
@@ -35,6 +39,10 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Parent)
+    private readonly parentRepository: Repository<Parent>,
+    @InjectRepository(Instructor)
+    private readonly instructorRepository: Repository<Instructor>,
     private readonly slack: SlackService,
     private readonly s3Service: S3Service,
     private dataSource: DataSource, // for transaction
@@ -46,7 +54,41 @@ export class UserService {
 
   // User 생성
   async create(dto: CreateUserDto): Promise<User> {
-    return await this.userRepository.save(this.userRepository.create(dto));
+    const phone = normalizePhone(dto.username);
+    console.log('🔥 phone', phone);
+    console.log('🔥 dto', dto);
+    let user: User | undefined;
+    if (dto.role === Role.INSTRUCTOR) {
+      const instructor = await this.instructorRepository.findOne({
+        where: { phone },
+      });
+      if (instructor) {
+        user = await this.userRepository.save(
+          this.userRepository.create({ ...dto, username: phone, phone }),
+        );
+        await this.instructorRepository.update(instructor.id, {
+          userId: user.id,
+        });
+      }
+    } else {
+      const parent = await this.parentRepository.findOne({
+        where: { phone },
+      });
+      if (parent) {
+        user = await this.userRepository.save(
+          this.userRepository.create({ ...dto, username: phone, phone }),
+        );
+        await this.parentRepository.update(parent.id, { userId: user.id });
+      }
+    }
+
+    if (!user) {
+      throw new BadRequestException(
+        `the phone # ${dto.username} is not allowed`,
+      );
+    }
+
+    return user;
   }
 
   //? ---------------------------------------------------------------------- ?//

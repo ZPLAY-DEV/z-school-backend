@@ -9311,6 +9311,41 @@ const data = [
     uri: `schools/1/terms/1/offerings/bulk`,
     payload: {},
   },
+  {
+    uri: `users`,
+    payload: {
+      username: '010-8907-2911',
+      password: 'password',
+    },
+  },
+  {
+    uri: `users`,
+    payload: {
+      username: '010-9486-7415',
+      password: 'password',
+    },
+  },
+  {
+    uri: `users`,
+    payload: {
+      username: '010-2044-0571',
+      password: 'password',
+    },
+  },
+  {
+    uri: `users`,
+    payload: {
+      username: '010-9392-4027',
+      password: 'password',
+    },
+  },
+  {
+    uri: `users`,
+    payload: {
+      username: '010-7656-1964',
+      password: 'password',
+    },
+  },
 ];
 
 async function loginAndGetToken() {
