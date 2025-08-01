@@ -5,8 +5,11 @@ import {
   Controller,
   Get,
   Param,
+  ParseArrayPipe,
+  ParseBoolPipe,
   ParseIntPipe,
   Post,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -105,8 +108,17 @@ export class SchoolStudentController {
   @Get(':schoolId/students')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Query('grade', ParseIntPipe) grade?: number,
+    @Query('grades', new ParseArrayPipe({ items: Number, separator: ',' }))
+    grades?: number[],
+    @Query('attendingOnly', ParseBoolPipe) attendingOnly?: boolean,
   ): Promise<Student[]> {
-    return await this.schoolStudentService.list(schoolId);
+    return await this.schoolStudentService.list(
+      schoolId,
+      grade,
+      grades,
+      attendingOnly,
+    );
   }
 
   @SchoolStudentListPaginatedDocs()

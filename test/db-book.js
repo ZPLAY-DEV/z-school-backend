@@ -32,8 +32,8 @@ async function getOfferings(token) {
   return await res.json();
 }
 
-async function getStudents(token) {
-  const res = await fetch(`${url}/schools/1/students`, {
+async function getStudents(token, grades) {
+  const res = await fetch(`${url}/schools/1/students?isAttending=true&grades=${grades.join(',')}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -90,10 +90,8 @@ async function run() {
   const offerings = await getOfferings(token);
   console.log('✅ offerings', offerings);
 
-  const students = await getStudents(token);
-  console.log('✅ students', students);
-
   for (const offering of offerings) {
+    const students = await getStudents(token, offering.allowedGrades);
     await postBookings(offering, students, token);
   }
 }

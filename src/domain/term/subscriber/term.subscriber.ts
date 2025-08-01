@@ -47,7 +47,7 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
     // 2. set isOfferingReady to true
     // 3. Slack 알림 발송
     if (term && term.bookingStart && term.bookingEnd) {
-      // todo. offerings 생성하기
+      //? offerings 생성하기
       await this.makeOfferings(term, event.manager);
       await event.manager
         .createQueryBuilder()
@@ -79,6 +79,7 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
     // 3. Slack 알림 발송
     if (term && oldStatus === null && newStatus !== null) {
       try {
+        //? offerings 생성하기
         await this.makeOfferings(term, event.manager);
       } catch (error) {
         this.logger.error('Failed to make offerings', error);

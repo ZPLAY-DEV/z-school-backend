@@ -6,6 +6,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { StudentStatus } from 'src/common/enums';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-grades.dto';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
@@ -215,16 +216,34 @@ export class SchoolStudentService {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  async list(schoolId: number): Promise<Student[]> {
+  async list(
+    schoolId: number,
+    grade?: number,
+    grades?: number[],
+    attendingOnly?: boolean,
+  ): Promise<Student[]> {
     const queryBuilder = this.studentRepository
       .createQueryBuilder('student')
       .leftJoinAndSelect('student.parent', 'parent')
       .leftJoinAndSelect('student.picks', 'picks')
       .where('student.schoolId = :schoolId', { schoolId })
-      // .andWhere('student.isActive = :isActive', { isActive: true })
       .orderBy('student.grade', 'ASC')
       .addOrderBy('student.class', 'ASC')
       .addOrderBy('student.studentCode', 'ASC');
+
+    if (grade) {
+      queryBuilder.andWhere('student.grade = :grade', { grade });
+    }
+
+    if (grades) {
+      queryBuilder.andWhere('student.grade IN (:...grades)', { grades });
+    }
+
+    if (attendingOnly) {
+      queryBuilder.andWhere('student.status = :status', {
+        status: StudentStatus.ATTENDING,
+      });
+    }
 
     return await queryBuilder.getMany();
   }

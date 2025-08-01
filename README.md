@@ -9,12 +9,12 @@ z-school backend application
 ## Project setup
 
 ```bash
-$ git clone https://github.com/ZPLAY-DEV/z-school-backend.git  # clone repo
-$ cd z-school-backend # move repo
-$ pnpm install # dependency install (npm i -g pnpm)
-$ touch .env.development .env.production # create environment  => https://www.notion.so/v3-Enviroment-Setup-1d24351cd47a80a7963fd12488874d4f
+$ git clone https://github.com/ZPLAY-DEV/z-school-backend.git
+$ cd z-school-backend
+$ pnpm install
+$ touch .env
 $ docker compose up -d
-$ pnpm start:dev # start dev mode 
+$ pnpm start:dev
 ```
 - `docker-compose.yml` and `.env` files are available @
 [notion wiki] (https://www.notion.so/v3-Enviroment-Setup-1d24351cd47a80a7963fd12488874d4f)
@@ -47,16 +47,16 @@ $ pnpm run test:cov
 
 ## Docker Container
 
-AWS 다양한 인프라를 사용하고 있기 때문에, 반드시 `docker-compose up -d` 해야만 정상동작이 가능하다. 기본적으로 /Users/Shared/docker 라는 절대경로로 지정한 폴더하위에 모든 데이터가 저장되도록 만들었으나, 일부 sqs 나 lambda 는 persist 되지 않아서 재부팅시 마다 다시 실행해야하는 경우도 있다.
+LocalStack 을 사용하기 때문에, `docker compose up -d` 후 정상동작이 가능하다. 기본 제공하는 `docker-compose.yml` 의 설정은, /Users/Shared/docker 라는 절대경로에 모든 데이터가 저장된다.
 
 아래의 두개 폴더에서 람다함수를 각각 설치해야한다. 설치설명은 각각의 리포 리드미 정보에서 찾아 볼 수 도 있다.
 
 - https://github.com/ZPLAY-DEV/v3-sqs-lambda
 - https://github.com/ZPLAY-DEV/v3-events-lambda
 
-## Swagger (Api Docs)
+## Swagger (Docs)
 
-- http://localhost:3001/api-docs
+- http://localhost:3001/docs
 
 ## ngrok 으로 실행
 
@@ -85,7 +85,7 @@ tunnels:
 
   localstack 이나 ssh 의 경우, hostname 을 지정하여, subdomain 을 사용하면 편리한데, 이는 유료기능이다. 따라서, 매번 reload 할때 마다 dynamic 하게 바뀌는 주소를 사용해야 한다. `curl http://localhost:4040/api/tunnels` 라고 입력하면, localstack 은 `https://abb1-58-122-170-34.ngrok-free.app`, ssh 는 `tcp://0.tcp.jp.ngrok.io:13485` 처럼 출력된다. (따라서 ssh 접속시, ssh user@0.tcp.jp.ngrok.io -p 13485 와 같이 입력한다.)
   
-1. local 환경에서, 4566 포트로 터널링하는 랜덤주소를 .env.development 의 AWS_CLOUDFRONT_URL 값으로 사용하면 된다.
+1. local 환경에서, 4566 포트로 터널링하는 랜덤주소를 .env 의 AWS_CLOUDFRONT_URL 값으로 설정한다.
 2. 아래와 같이 api 로 명명된 nestjs application 만 reload 한다. (전체 reload 하면 주소가 바뀌어져 버린다.)
 
 ```bash
@@ -111,3 +111,17 @@ pm2 reload api
   - `node test/db-seed.js`
   - `node test/db-book.js`
   - `node test/db-pack.js`
+
+## TypeORM
+
+### 주요 subscriber
+
+> Subscriber 로직은 **code cohesion** 이 떨어지기 때문에, 오류가 나는 경우 디버깅이 쉽지 않다. 따라서, 가급적 사용하지 않았고, 현재 사용중인 Subscriber 들은 기억을 상기 시키기 위해서 아래에 정리한다.
+
+1. TermSubscriber
+
+- `term.bookingStart` 가 변경되는 경우, 처음 설정되는 상황인지 파악하여 처음 설정되는 경우, offering 을 생성한다.
+
+1. OfferingSubscriber
+
+- `offering.prepickedStudentIds` 가 변경되는 경우, 항상 picked 수를 update 한다.

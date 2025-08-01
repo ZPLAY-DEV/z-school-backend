@@ -10,7 +10,7 @@ const data = [
     payload: {
       name: '신동초등학교',
       authorityCode: 'K10',
-      phone: '0260527000', // '0332434302',
+      phone: '0332434302', // '0332434302',
       region: 'GANGWON',
       schoolCode: '7812075',
       address: '강원특별자치도 춘천시 우두로 100',
@@ -228,6 +228,58 @@ const data = [
           phone: '010-4878-6233',
         },
       },
+
+      {
+        grade: 1,
+        class: '1',
+        studentCode: 20,
+        name: '김영희',
+        status: 'ATTENDING',
+        parent: {
+          phone: '010-8907-2911',
+        },
+      },
+      {
+        grade: 1,
+        class: '1',
+        studentCode: 21,
+        name: '오진석',
+        status: 'ATTENDING',
+        parent: {
+          phone: '010-9486-7415',
+        },
+      },
+      {
+        grade: 1,
+        class: '1',
+        studentCode: 22,
+        name: '제이슨',
+        status: 'ATTENDING',
+        parent: {
+          phone: '010-2044-0571',
+        },
+      },
+      {
+        grade: 1,
+        class: '1',
+        studentCode: 23,
+        name: '김민지',
+        status: 'ATTENDING',
+        parent: {
+          phone: '010-9392-4027',
+        },
+      },
+      {
+        grade: 1,
+        class: '1',
+        studentCode: 24,
+        name: '스쿠럽',
+        status: 'ATTENDING',
+        parent: {
+          phone: '010-7656-1964',
+        },
+      },
+
       {
         grade: 1,
         class: '2',
