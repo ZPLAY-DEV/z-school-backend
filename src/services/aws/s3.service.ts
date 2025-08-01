@@ -39,14 +39,23 @@ export class S3Service implements OnModuleInit {
       'afterschool-files-bucket';
     this.cloudfrontUrl =
       this.configService.get<string>('aws.cloudfrontUrl') ??
-      'https://localhost.localstack.cloud:4566';
+      '';
 
-    // 일반 작업용 S3 클라이언트 (localstack 내부 호출)
-    this.s3 = new S3Client({
+    // S3 클라이언트 설정
+    const s3Config: any = {
       region: region,
-      forcePathStyle: this.configService.get<string>('nodeEnv') !== 'prod',
-      ...(endpoint && { endpoint }),
-    });
+    };
+
+    if (endpoint) {
+      // LocalStack 환경
+      s3Config.endpoint = endpoint;
+      s3Config.forcePathStyle = true;
+    } else {
+      // AWS 환경에서는 IAM 역할 자동 사용
+      s3Config.forcePathStyle = false;
+    }
+
+    this.s3 = new S3Client(s3Config);
   }
 
   onModuleInit() {

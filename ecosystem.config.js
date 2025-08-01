@@ -15,6 +15,11 @@ module.exports = {
       env: {
         NODE_ENV: 'dev',
       },
+      env_production: {
+        NODE_ENV: 'production',
+        AWS_ENDPOINT: '',  // 실제 AWS 환경에서는 endpoint 비우기
+        AWS_SQS_ENDPOINT: '',  // 실제 AWS 환경에서는 endpoint 비우기
+      },
     },
     {
       name: 'ngrok',

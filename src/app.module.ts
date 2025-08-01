@@ -90,24 +90,24 @@ import { UploadModule } from './services/upload/upload.module';
     }),
     DynamooseModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        local:
-          configService.get<string>('nodeEnv') === 'dev'
-            ? 'http://localhost:4566'
-            : false,
-        aws: {
+      useFactory: (configService: ConfigService) => {
+        const nodeEnv = configService.get<string>('nodeEnv');
+        const awsEndpoint = configService.get<string>('aws.endpoint');
+        const awsConfig = {
           region:
             configService.get<string>('aws.defaultRegion') ?? 'ap-northeast-2',
-          accessKeyId: configService.get<string>('aws.accessKey') ?? 'test',
-          secretAccessKey:
-            configService.get<string>('aws.secretAccessKey') ?? 'test',
-        },
-        table: {
-          create: configService.get<string>('nodeEnv') === 'dev', // create dynamo tables in local env
-          prefix: `${configService.get<string>('nodeEnv')}_`,
-          suffix: '_table',
-        },
-      }),
+        };
+
+        return {
+          local: awsEndpoint ? true : false,
+          aws: awsConfig,
+          table: {
+            create: nodeEnv === 'dev', // create dynamo tables in local env
+            prefix: `${nodeEnv}_`,
+            suffix: '_table',
+          },
+        };
+      },
     }),
     AttendanceModule,
     AuthModule,

@@ -15,18 +15,21 @@ export class DynamoService implements OnModuleInit {
     this.region =
       this.configService.get<string>('aws.defaultRegion') ?? 'ap-northeast-2';
     const endpoint = this.configService.get<string>('aws.endpoint');
-    const accessKey = this.configService.get<string>('aws.accessKey') ?? 'test';
-    const secretAccessKey =
-      this.configService.get<string>('aws.secretAccessKey') ?? 'test';
 
-    this.ddb = new DynamoDBClient({
+    // AWS SDK가 자동으로 IAM 역할을 사용하도록 credentials 설정
+    const dynamoConfig: {
+      region: string;
+      endpoint?: string;
+    } = {
       region: this.region,
-      credentials: {
-        accessKeyId: accessKey,
-        secretAccessKey: secretAccessKey,
-      },
-      ...(endpoint && { endpoint }),
-    });
+    };
+
+    // LocalStack 환경
+    if (endpoint) {
+      dynamoConfig.endpoint = endpoint;
+    }
+
+    this.ddb = new DynamoDBClient(dynamoConfig);
     this.docClient = DynamoDBDocumentClient.from(this.ddb);
   }
 
