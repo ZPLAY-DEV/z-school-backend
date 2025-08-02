@@ -111,17 +111,17 @@ export class Schoolday {
   @Column('simple-array', { nullable: true })
   dailyStudentKeys: string[] | null;
 
-  @ApiProperty({ description: '비고' })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  note: string | null;
-
-  // ------------------------------------------------------------------------ //
-
   @Column({ type: 'timestamp', nullable: true, comment: '시작 알림 시각' })
   startNotifiedAt: Date | null;
 
   @Column({ type: 'timestamp', nullable: true, comment: '종료 알림 시각' })
   endNotifiedAt: Date | null;
+
+  @ApiProperty({ description: '비고' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  note: string | null;
+
+  // ------------------------------------------------------------------------ //
 
   @Exclude()
   @ApiProperty({ description: 'createdAt' })
