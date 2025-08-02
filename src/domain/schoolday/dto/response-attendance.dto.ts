@@ -1,11 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-    IsDateString,
-    IsInt,
-    IsNumber,
-    IsObject,
-    IsOptional,
-    IsString,
+  IsDateString,
+  IsInt,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
 } from 'class-validator';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 
@@ -97,9 +97,9 @@ export class BuildAttendanceBodyDto {
   @IsString()
   end: string;
 
-  @ApiProperty({ description: 'duration', example: 40 })
-  @IsNumber()
-  duration: number;
+  @ApiProperty({ description: 'weekday', example: '월' })
+  @IsString()
+  weekday: string;
 
   @ApiProperty({ description: 'expires', example: 1718438400 })
   @IsNumber()

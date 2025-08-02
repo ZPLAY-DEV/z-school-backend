@@ -189,6 +189,47 @@ export class AttendanceService {
     }
   }
 
+  /**
+   * Fetch attendance records by groupId and comma separated rangeKeys
+   * @param groupId - Group ID to generate partition key
+   * @param rangeKeys - Comma separated rangeKeys string
+   * @returns Array of attendance records
+   */
+  async fetchByKeys(
+    groupId: number,
+    rangeKeys: string[],
+  ): Promise<IAttendance[]> {
+    try {
+      const groupKey = generateGroupKey(groupId);
+
+      if (rangeKeys.length === 0) {
+        return [];
+      }
+
+      const results: IAttendance[] = [];
+
+      // DynamoDB batchGet을 사용하여 여러 키를 한 번에 조회
+      const keys = rangeKeys.map((dailyStudentKey) => ({
+        groupKey,
+        dailyStudentKey,
+      }));
+
+      const batchResults = await this.model.batchGet(keys);
+
+      // batchGet 결과에서 유효한 아이템들만 필터링
+      for (const item of batchResults) {
+        if (item) {
+          results.push(item as IAttendance);
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.error(`[dynamodb] fetchByKeys error:`, error);
+      throw new BadRequestException(error.message);
+    }
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//

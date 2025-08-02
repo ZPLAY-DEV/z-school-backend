@@ -19,7 +19,10 @@ import {
   AttendanceKeyDto,
   UpsertAttendanceDto,
 } from 'src/domain/attendance/dto/upsert-attendance.dto';
-import { IAttendanceKey } from 'src/domain/attendance/entities/attendance.interface';
+import {
+  IAttendance,
+  IAttendanceKey,
+} from 'src/domain/attendance/entities/attendance.interface';
 import {
   DeleteAttendanceDocs,
   FetchAttendanceDocs,
@@ -118,6 +121,25 @@ export class AttendanceController {
         throw error;
       }
 
+      throw new BadRequestException(
+        `출석 목록 조회에 실패했습니다: ${error.message}`,
+      );
+    }
+  }
+
+  @Public()
+  @Post('batch')
+  async fetchByKeys(
+    @Body() body: { groupId: number; rangeKeys: string[] },
+  ): Promise<IAttendance[]> {
+    try {
+      const result = await this.attendancesService.fetchByKeys(
+        body.groupId,
+        body.rangeKeys,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to fetch attendance records by keys', error);
       throw new BadRequestException(
         `출석 목록 조회에 실패했습니다: ${error.message}`,
       );

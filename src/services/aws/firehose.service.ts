@@ -25,15 +25,15 @@ export class FirehoseService implements OnModuleInit {
     // Validate required environment variables
     const region =
       this.configService.get<string>('aws.defaultRegion') ?? 'ap-northeast-2';
-    const accessKey = this.configService.get<string>('aws.accessKey');
+    const accessKeyId = this.configService.get<string>('aws.accessKeyId');
     const secretAccessKey = this.configService.get<string>(
       'aws.secretAccessKey',
     );
     const endpoint = this.configService.get<string>('aws.endpoint');
     const credentials =
-      accessKey && secretAccessKey
+      accessKeyId && secretAccessKey
         ? {
-            accessKeyId: accessKey,
+            accessKeyId: accessKeyId,
             secretAccessKey: secretAccessKey,
           }
         : undefined; // AWS SDK가 기본 credential chain 사용 (IAM role, AWS profile 등)

@@ -54,15 +54,13 @@ export const configuration = () => ({
     defaultRegion: process.env.AWS_DEFAULT_REGION,
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    cloudfrontUrl: process.env.AWS_CLOUDFRONT_URL,
     endpoint: process.env.AWS_ENDPOINT,
     sqsEndpoint: process.env.AWS_SQS_ENDPOINT,
     // essentials
-    cloudfrontUrl: process.env.AWS_CLOUDFRONT_URL,
-    s3FilesBucket: process.env.AWS_S3_FILES_BUCKET,
-    s3LogsBucket: process.env.AWS_S3_LOGS_BUCKET,
     sqsPqUrl: process.env.AWS_SQS_PQ_URL,
     sqsDlqUrl: process.env.AWS_SQS_DLQ_URL,
-    firehoseStreamName: process.env.AWS_FIREHOSE_STREAM_NAME,
+    s3FilesBucket: process.env.AWS_S3_FILES_BUCKET,
     ssmParameterName: process.env.AWS_SSM_PARAMETER_NAME,
   } as IAwsConfig,
   slack: {

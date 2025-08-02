@@ -45,8 +45,8 @@ export const AttendanceSchema = new Schema(
       type: String,
       required: true,
     },
-    duration: {
-      type: Number,
+    weekday: {
+      type: String,
       required: true,
     },
     status: {

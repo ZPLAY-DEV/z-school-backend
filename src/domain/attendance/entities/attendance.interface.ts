@@ -15,7 +15,7 @@ export interface IAttendanceCore extends IAttendanceKey {
   studentName?: string;
   start?: string; // e.g. "14:00"
   end?: string; // e.g. "14:40"
-  duration?: number; // e.g. 40
+  weekday?: string; // e.g. '월'
   status?: AttendanceStatus;
   expires?: number; // for 400 days (a bit longer than 365 days)
 }

@@ -117,6 +117,22 @@ export class Schoolday {
   @Column({ type: 'timestamp', nullable: true, comment: '종료 알림 시각' })
   endNotifiedAt: Date | null;
 
+  @ApiProperty({ description: '출석', example: 0 })
+  @Column({ type: 'tinyint', unsigned: true, default: 0 })
+  presentCount: number;
+
+  @ApiProperty({ description: '결석', example: 0 })
+  @Column({ type: 'tinyint', unsigned: true, default: 0 })
+  absentCount: number;
+
+  @ApiProperty({ description: '지각', example: 0 })
+  @Column({ type: 'tinyint', unsigned: true, default: 0 })
+  lateCount: number;
+
+  @ApiProperty({ description: '조퇴', example: 0 })
+  @Column({ type: 'tinyint', unsigned: true, default: 0 })
+  leftCount: number;
+
   @ApiProperty({ description: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;

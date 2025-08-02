@@ -54,6 +54,19 @@ export function buildAttendanceItem(item: IAttendanceCore): IAttendanceCore {
 }
 
 /**
+ * Convert comma separated rangeKeys string to array
+ */
+export function parseRangeKeys(rangeKeys: string): string[] {
+  if (!rangeKeys || rangeKeys.trim() === '') {
+    return [];
+  }
+  return rangeKeys
+    .split(',')
+    .map((key) => key.trim())
+    .filter((key) => key.length > 0);
+}
+
+/**
  * Process attendance items into AttendanceReport array
  * Extracts common logic for grouping and formatting attendance data
  */
