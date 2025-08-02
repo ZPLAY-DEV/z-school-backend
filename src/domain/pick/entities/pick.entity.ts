@@ -45,14 +45,6 @@ export class Pick {
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '이 학생의 정확한 교재비', example: 12000 })
-  @Column({ type: 'int', unsigned: true, default: 0 })
-  bookFee: number;
-
-  @ApiProperty({ description: '이 학생의 정확한 재료비', example: 8200 })
-  @Column({ type: 'int', unsigned: true, default: 0 })
-  materialFee: number;
-
   @ApiProperty({
     description: '🈵 누가 수업시작일 등록했나?',
     default: null,

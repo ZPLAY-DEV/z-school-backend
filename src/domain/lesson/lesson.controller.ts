@@ -64,8 +64,8 @@ export class LessonController {
   async findById(@Param('id', ParseIntPipe) id: number): Promise<Lesson> {
     return await this.lessonService.findById(id, [
       'groups',
-      'groups.contracts.sam',
-      'groups.contracts.sam.instructor',
+      'groups.sam',
+      'groups.sam.instructor',
       'groups.picks',
       'category',
     ]);

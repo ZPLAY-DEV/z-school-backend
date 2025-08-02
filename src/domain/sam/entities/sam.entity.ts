@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { SamStatus } from 'src/common/enums/sam-status';
 import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
-import { Payout } from 'src/domain/payout/entities/payout.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import {
   Column,
@@ -83,6 +83,14 @@ export class Sam {
   })
   editPickPermission: boolean;
 
+  @ApiProperty({ description: '학생의 상태. 유효, 전학', example: 'ACTIVE' })
+  @Column({
+    type: 'enum',
+    enum: SamStatus,
+    default: SamStatus.ACTIVE,
+  })
+  status: SamStatus;
+
   @ApiProperty({ description: '🈳 비고', example: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
@@ -114,11 +122,8 @@ export class Sam {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @OneToMany(() => Payout, (payout) => payout.sam)
-  payouts: Payout[]; // 월급
-
   @OneToMany(() => Contract, (contract) => contract.sam)
-  contracts: Contract[]; // 가르치는 과목
+  contracts: Contract[]; // 가르치는 과목관련 계약
 
   @OneToMany(() => Group, (group) => group.sam)
   groups: Group[]; // 담당 그룹

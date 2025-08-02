@@ -3,6 +3,7 @@ import { Exclude } from 'class-transformer';
 import { Actor } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Payout } from 'src/domain/payout/entities/payout.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import {
   Column,
@@ -11,6 +12,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
@@ -125,4 +127,9 @@ export class Contract {
   @ManyToOne(() => Lesson, (lesson) => lesson.contracts)
   @JoinColumn({ name: 'lessonId' })
   lesson: Lesson;
+
+  //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @OneToMany(() => Payout, (payout) => payout.contract)
+  payouts: Payout[]; // 월급
 }

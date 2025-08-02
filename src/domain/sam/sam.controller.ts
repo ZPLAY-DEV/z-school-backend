@@ -74,9 +74,10 @@ export class SamController {
   @Get(':id/schooldays')
   async getSchooldaysByDate(
     @Param('id', ParseIntPipe) id: number,
+    @Query('termId') termId?: number,
     @Query('date') date?: string,
   ): Promise<Schoolday[]> {
-    return await this.samService.getSchooldaysByDate(id, date);
+    return await this.samService.getSchooldaysByDate(id, termId, date);
   }
 
   @GetSamByIdDocs()

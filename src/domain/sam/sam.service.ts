@@ -187,6 +187,8 @@ export class SamService {
     }
   }
 
+  //? Sam > Groups 은 term 필터링이 불가능하므로,
+  //? Sam > Contracts > Groups 으로 조회하는 방법을 사용한다.
   async getGroupsById(id: number, termId?: number): Promise<Group[]> {
     const sam = await this.samRepository.findOneOrFail({
       where: { id },
@@ -195,14 +197,20 @@ export class SamService {
 
     if (termId) {
       sam.contracts = sam.contracts.filter(
-        (contract) => contract.group.lesson.termId === Number(termId),
+        (contract) => contract.termId === Number(termId),
       );
     }
 
     return sam?.contracts.map((contract) => contract.group) ?? [];
   }
 
-  async getSchooldaysByDate(id: number, date?: string): Promise<Schoolday[]> {
+  //? Sam > Groups 은 term 필터링이 불가능하므로,
+  //? Sam > Contracts > Groups 으로 조회하는 방법을 사용한다.
+  async getSchooldaysByDate(
+    id: number,
+    termId?: number,
+    date?: string,
+  ): Promise<Schoolday[]> {
     const today = date ? date : format(new Date(), 'yyyy-MM-dd');
     const sam = await this.samRepository.findOneOrFail({
       where: { id },
@@ -218,24 +226,26 @@ export class SamService {
     const allSchooldays: Schoolday[] = [];
 
     for (const contract of sam.contracts) {
+      if (termId && contract.termId !== Number(termId)) {
+        continue;
+      }
+
       if (contract.group?.schooldays) {
-        // 각 schoolday에 group 정보를 명시적으로 할당 (schooldays 제외)
-        const schooldaysWithGroup = contract.group.schooldays.map(
-          (schoolday) => {
+        const schooldaysWithGroup = contract.group.schooldays
+          .filter((schoolday) => schoolday.today === today)
+          .map((schoolday) => {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { schooldays: _, ...groupWithoutSchooldays } = contract.group;
             return {
               ...schoolday,
               group: groupWithoutSchooldays as any, // 타입 단언으로 순환 참조 방지
             };
-          },
-        );
+          });
         allSchooldays.push(...schooldaysWithGroup);
       }
     }
 
-    // today와 일치하는 schooldays만 필터링
-    return allSchooldays.filter((schoolday) => schoolday.today === today);
+    return allSchooldays;
   }
 
   //? ---------------------------------------------------------------------- ?//
