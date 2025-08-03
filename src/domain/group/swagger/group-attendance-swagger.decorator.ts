@@ -1,5 +1,10 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiParam } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+} from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
@@ -161,55 +166,58 @@ export const FindAttendanceByDateWithExtendedDataDocs = () => {
 export const UpsertAttendanceDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '✏️ 출석 정보 등록/수정',
+      summary: 'Create or update attendance for a specific student',
       description: `
-### 🎯 기능 개요
-특정 학생의 출석 정보를 등록하거나 수정합니다.
-기존 출석 정보가 있으면 업데이트하고, 없으면 새로 생성합니다.
+### Overview
+Creates or updates attendance information for a specific student on a given date.
 
-### 📋 매개변수
-- \`groupId\`: 반 ID (숫자)
-- \`date\`: 출석 날짜 (YYYY-MM-DD 형식)
-- \`studentId\`: 학생 ID (숫자)
+### Request Body
+\`CreateAttendanceWithGroupStudentDto\` - Student attendance information
 
-### 📝 요청 본문
-- 출석 상태 및 관련 메모 정보
-- 학부모 메모, 학교 메모 포함 가능
+**Required fields:**
+- \`status\`: Attendance status (PRESENT, ABSENT, LATE, LEFT, EXCUSED_ABSENT, EXCUSED_LATE, EXCUSED_LEFT)
 
-### 🏷️ 출석 상태
-- PRESENT: 출석, ABSENT: 결석, LATE: 지각, LEFT: 조퇴
-- EXCUSED_*: 사전 통보된 상태들
+**Optional fields:**
+- \`parentNote\`: Message from parent to school
+- \`schoolNote\`: Message from school to parent
 
-### 💡 주요 활용
-- 강사의 실시간 출석 체크
-- 관리자의 출석 정정
-- 사전 통보 처리 (병원, 조퇴 등)
+### Response
+Returns the created or updated attendance object.
 
-### ⚠️ 주의사항
-- 해당 날짜에 수업이 없는 경우 오류가 발생합니다.
-- 반과 학생이 존재하지 않는 경우 오류가 발생합니다.
+### Use Cases
+- Real-time attendance checking by instructor
+- Attendance correction by administrator
+- Pre-notification processing (hospital visits, early leave, etc.)
+
+### Attendance Status Types
+- **PRESENT**: Present, **ABSENT**: Absent, **LATE**: Late, **LEFT**: Early leave
+- **EXCUSED_***: Pre-notified statuses (excused absence, excused late, excused early leave)
+
+### Notes
+- Returns error if no class exists on the specified date
+- Returns error if group or student does not exist
       `,
     }),
     ApiParam({
       name: 'groupId',
       type: 'number',
-      description: '반 ID',
+      description: 'Group ID',
       example: 123,
     }),
     ApiParam({
       name: 'date',
       type: 'string',
-      description: '출석 날짜 (YYYY-MM-DD)',
+      description: 'Attendance date (YYYY-MM-DD)',
       example: '2025-01-15',
     }),
     ApiParam({
       name: 'studentId',
       type: 'number',
-      description: '학생 ID',
+      description: 'Student ID',
       example: 456,
     }),
     ApiOkResponseTemplate({
-      description: '출석 정보 등록/수정 성공',
+      description: 'Attendance created or updated successfully',
       type: Object,
       isArray: false,
     }),
@@ -306,41 +314,139 @@ export const GetReportDocs = () => {
 export const StartAttendanceDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '🔔 출석 시작 알림',
+      summary: 'Start attendance check for a group',
       description: `
-### 🎯 기능 개요
-특정 반의 수업 시작을 알리고 출석 체크를 시작합니다.
-해당 반 학생들에게 출석 시작 알림을 전송합니다.
+### Overview
+Initiates attendance check for a specific group. **Must be called with all students' attendance status**.
 
-### 📋 매개변수
-- \`groupId\`: 반 ID (숫자)
+### Request Body
+\`CreateAttendanceWithKeyDto[]\` - Array of student attendance status objects
 
-### 📝 요청 본문
-- \`AttendanceStatusDto[]\`: 학생별 출석 상태 정보 배열
+**Required fields:**
+- \`groupKey\`: Group identifier (format: GROUP#{groupId})
+- \`dailyStudentKey\`: Daily student key (format: DATE#{date}#STUDENT#{studentId}#{classInfo})
+- \`status\`: Attendance status (PRESENT, ABSENT, LATE, LEFT, etc.)
 
-### 🔔 주요 기능
-- 해당 반 학생들에게 출석 체크 시작 알림 전송
-- 출석 상태를 INIT으로 초기화
-- 실시간 알림 시스템 활성화
-- 강사 대시보드에 출석 현황 표시
+**Optional fields:**
+- \`parentNote\`: Message from parent to school
+- \`schoolNote\`: Message from school to parent
 
-### 📊 응답 데이터
-- 알림이 전송된 학생 수 반환
+### Response
+Returns the number of students notified.
 
-### 💡 활용 시나리오
-- 수업 시작 시 자동 호출
-- 강사가 수동으로 출석 체크 시작
-- 지각 학생 관리 시작점
+### Use Cases
+- Automatic call at class start time
+- Manual attendance check initiation by instructor
+- Late student management
       `,
+    }),
+    ApiBody({
+      description: 'Student attendance status array',
+      schema: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            groupKey: {
+              type: 'string',
+              description: 'Group identifier (format: GROUP#{groupId})',
+              example: 'GROUP#25',
+            },
+            dailyStudentKey: {
+              type: 'string',
+              description:
+                'Daily student key (format: DATE#{date}#STUDENT#{studentId}#{classInfo})',
+              example: 'DATE#2025-08-18#STUDENT#343#3-1-12',
+            },
+            status: {
+              type: 'string',
+              description: 'Attendance status',
+              enum: [
+                'PRESENT',
+                'ABSENT',
+                'LATE',
+                'LEFT',
+                'EXCUSED_ABSENT',
+                'EXCUSED_LATE',
+                'EXCUSED_LEFT',
+              ],
+              example: 'PRESENT',
+            },
+            parentNote: {
+              type: 'string',
+              description: 'Message from parent to school',
+              example: '감사합니다.',
+            },
+            schoolNote: {
+              type: 'string',
+              description: 'Message from school to parent',
+              example: '감사합니다.',
+            },
+          },
+          required: ['groupKey', 'dailyStudentKey', 'status'],
+        },
+        example: [
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#343#3-1-12',
+            status: 'LEFT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#356#3-2-03',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#371#3-2-18',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#377#3-3-02',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#397#3-3-22',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#407#3-4-10',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#443#3-6-02',
+            status: 'EXCUSED_ABSENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#567#4-4-09',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#592#4-5-10',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#706#5-4-10',
+            status: 'PRESENT',
+          },
+        ],
+      },
     }),
     ApiParam({
       name: 'groupId',
       type: 'number',
-      description: '반 ID',
+      description: 'Group ID',
       example: 123,
     }),
     ApiOkResponseTemplate({
-      description: '출석 시작 알림 전송 성공',
+      description: 'Attendance start notification sent successfully',
       type: Number,
       isArray: false,
     }),
@@ -354,41 +460,139 @@ export const StartAttendanceDocs = () => {
 export const EndAttendanceDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '🔕 출석 종료 알림',
+      summary: 'End attendance check for a group',
       description: `
-### 🎯 기능 개요
-특정 반의 수업 종료를 알리고 출석 체크를 마감합니다.
-미처리된 출석 상태를 정리하고 최종 출석 현황을 확정합니다.
+### Overview
+Finalizes attendance check for a specific group. **Must be called with all students' attendance status**.
 
-### 📋 매개변수
-- \`groupId\`: 반 ID (숫자)
+### Request Body
+\`CreateAttendanceWithKeyDto[]\` - Array of final student attendance status objects
 
-### 📝 요청 본문
-- \`AttendanceStatusDto[]\`: 학생별 최종 출석 상태 정보 배열
+**Required fields:**
+- \`groupKey\`: Group identifier (format: GROUP#{groupId})
+- \`dailyStudentKey\`: Daily student key (format: DATE#{date}#STUDENT#{studentId}#{classInfo})
+- \`status\`: Final attendance status (PRESENT, ABSENT, LATE, LEFT, etc.)
 
-### 🔕 주요 기능
-- 해당 반의 출석 체크 마감
-- 미처리된 출석 상태를 ABSENT로 자동 변경
-- 출석 마감 알림 전송
-- 출석 통계 및 리포트 업데이트
+**Optional fields:**
+- \`parentNote\`: Message from parent to school
+- \`schoolNote\`: Message from school to parent
 
-### 📊 응답 데이터
-- 출석 마감 처리 결과 (숫자)
+### Response
+Returns the number of students processed.
 
-### 💡 활용 시나리오
-- 수업 종료 시 자동 호출
-- 강사가 수동으로 출석 마감
-- 일일 출석 정리 작업
+### Use Cases
+- Automatic call at class end time
+- Manual attendance completion by instructor
+- Daily attendance cleanup
       `,
+    }),
+    ApiBody({
+      description: 'Student attendance status array',
+      schema: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            groupKey: {
+              type: 'string',
+              description: 'Group identifier (format: GROUP#{groupId})',
+              example: 'GROUP#25',
+            },
+            dailyStudentKey: {
+              type: 'string',
+              description:
+                'Daily student key (format: DATE#{date}#STUDENT#{studentId}#{classInfo})',
+              example: 'DATE#2025-08-18#STUDENT#343#3-1-12',
+            },
+            status: {
+              type: 'string',
+              description: 'Attendance status',
+              enum: [
+                'PRESENT',
+                'ABSENT',
+                'LATE',
+                'LEFT',
+                'EXCUSED_ABSENT',
+                'EXCUSED_LATE',
+                'EXCUSED_LEFT',
+              ],
+              example: 'PRESENT',
+            },
+            parentNote: {
+              type: 'string',
+              description: 'Message from parent to school',
+              example: '감사합니다.',
+            },
+            schoolNote: {
+              type: 'string',
+              description: 'Message from school to parent',
+              example: '감사합니다.',
+            },
+          },
+          required: ['groupKey', 'dailyStudentKey', 'status'],
+        },
+        example: [
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#343#3-1-12',
+            status: 'LEFT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#356#3-2-03',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#371#3-2-18',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#377#3-3-02',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#397#3-3-22',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#407#3-4-10',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#443#3-6-02',
+            status: 'EXCUSED_ABSENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#567#4-4-09',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#592#4-5-10',
+            status: 'PRESENT',
+          },
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#706#5-4-10',
+            status: 'PRESENT',
+          },
+        ],
+      },
     }),
     ApiParam({
       name: 'groupId',
       type: 'number',
-      description: '반 ID',
+      description: 'Group ID',
       example: 123,
     }),
     ApiOkResponseTemplate({
-      description: '출석 종료 처리 성공',
+      description: 'Attendance end processing completed successfully',
       type: Number,
       isArray: false,
     }),
@@ -402,41 +606,101 @@ export const EndAttendanceDocs = () => {
 export const CustomAttendanceDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '🎯 커스텀 출석 처리',
+      summary: 'Process custom attendance for a group',
       description: `
-### 🎯 기능 개요
-특정 반의 출석 상태를 사용자 정의 방식으로 처리합니다.
-일반적인 시작/종료 프로세스와는 별도로 유연한 출석 처리가 가능합니다.
+### Overview
+Processes attendance for a small number of students in a group using custom logic.
+**Will send notification to parents. Therefore, must be called with "schoolNote".**
 
-### 📋 매개변수
-- \`groupId\`: 대상 반의 ID (숫자)
+### Request Body
+\`CreateAttendanceWithKeyDto[]\` - Array of student attendance status objects
 
-### 📝 요청 본문
-- \`CreateAttendanceWithKeyDto[]\`: 학생별 출석 상태 정보 배열
+**Required fields:**
+- \`groupKey\`: Group identifier (format: GROUP#{groupId})
+- \`dailyStudentKey\`: Daily student key (format: DATE#{date}#STUDENT#{studentId}#{classInfo})
+- \`status\`: Attendance status (PRESENT, ABSENT, LATE, LEFT, etc.)
+- \`schoolNote\`: Message from school to parent (required for notifications)
 
-### 🎯 사용 시나리오
-- **보강 수업**: 정규 수업 시간 외 추가 수업
-- **특별 활동**: 체험학습, 견학 등 일반 수업과 다른 형태
-- **긴급 상황**: 급작스러운 일정 변경이나 임시 조치
-- **수동 조정**: 출석 상태의 수동 보정이 필요한 경우
+**Optional fields:**
+- \`parentNote\`: Message from parent to school (**not used with this API**)
 
-### 🔧 주요 기능
-- 표준 출석 프로세스를 우회한 직접적인 출석 상태 설정
-- 실시간 알림 시스템과 연동
-- 출석 기록의 즉시 반영
+### Response
+Returns the number of students processed.
 
-### 📊 응답 데이터
-- 처리된 학생 수 (숫자)
+### Use Cases
+- Sam updates individual student attendance status
+- Manager updates attendance status for multiple students
+
+### Features
+- Direct attendance status setting bypassing standard procedures
+- Real-time notification system integration
+- Immediate attendance record reflection
       `,
+    }),
+    ApiBody({
+      description: 'Student attendance status array with school note',
+      schema: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            groupKey: {
+              type: 'string',
+              description: 'Group identifier (format: GROUP#{groupId})',
+              example: 'GROUP#25',
+            },
+            dailyStudentKey: {
+              type: 'string',
+              description:
+                'Daily student key (format: DATE#{date}#STUDENT#{studentId}#{classInfo})',
+              example: 'DATE#2025-08-18#STUDENT#567#4-4-09',
+            },
+            status: {
+              type: 'string',
+              description: 'Attendance status',
+              enum: [
+                'PRESENT',
+                'ABSENT',
+                'LATE',
+                'LEFT',
+                'EXCUSED_ABSENT',
+                'EXCUSED_LATE',
+                'EXCUSED_LEFT',
+              ],
+              example: 'LEFT',
+            },
+            parentNote: {
+              type: 'string',
+              description: 'Message from parent to school',
+              example: '감사합니다.',
+            },
+            schoolNote: {
+              type: 'string',
+              description:
+                'Message from school to parent (required for notifications)',
+              example: '급똥으로 인한 조퇴.',
+            },
+          },
+          required: ['groupKey', 'dailyStudentKey', 'status', 'schoolNote'],
+        },
+        example: [
+          {
+            groupKey: 'GROUP#25',
+            dailyStudentKey: 'DATE#2025-08-18#STUDENT#567#4-4-09',
+            status: 'LEFT',
+            schoolNote: '급똥으로 인한 조퇴.',
+          },
+        ],
+      },
     }),
     ApiParam({
       name: 'groupId',
       type: 'number',
-      description: '반 ID',
+      description: 'Group ID',
       example: 123,
     }),
     ApiOkResponseTemplate({
-      description: '커스텀 출석 처리 성공',
+      description: 'Custom attendance processing completed successfully',
       type: Number,
       isArray: false,
     }),
