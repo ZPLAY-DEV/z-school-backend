@@ -29,7 +29,7 @@ export interface IAttendance extends IAttendanceCore {
   updatedAt?: Date; // Dynamoose timestamps
 }
 
-export interface IAttendanceWithNextInfo extends IAttendance {
+export interface IAttendanceWithNextStop extends IAttendance {
   next: string; // Next class name or student's nextStop
   student?: any; // Student entity with parent info
   departure?: Departure | null; // Departure entity with schoolday info

@@ -89,7 +89,7 @@ export const ListSchooldaysDocs = () =>
             name: { type: 'string', example: '수학A반' },
             startsAt: { type: 'string', example: '2025-01-15T14:00:00.000Z' },
             endsAt: { type: 'string', example: '2025-01-15T15:00:00.000Z' },
-            duration: { type: 'number', example: 60 },
+            weekday: { type: 'string', example: '월' },
             updatedBy: { type: 'string', example: 'MANAGER', nullable: true },
             note: { type: 'string', example: '정상 수업', nullable: true },
             group: {

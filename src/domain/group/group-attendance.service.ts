@@ -15,10 +15,11 @@ import {
 import {
   IAttendance,
   IAttendanceKey,
-  IAttendanceWithNextInfo,
+  IAttendanceWithNextStop,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
+  filterNoSql,
   generateDailyStudentKey,
   generateGroupKey,
   getDateFromDailyStudentKey,
@@ -31,7 +32,6 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { getDuration } from 'src/helpers/time';
 import { NotificationService } from 'src/services/notification/notification.service';
 import { In, IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
 
@@ -54,8 +54,7 @@ export class GroupAttendanceService {
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? Notify
-  //? 미발송 case 들은 아래 문서를 참고.
+  //? 수업시작 알림 (미발송 case 들은 아래 문서 참고.)
   //? https://www.notion.so/v3-DynamoDB-1fb4351cd47a80519649db17d05763d2
   //? ---------------------------------------------------------------------- ?//
 
@@ -136,6 +135,10 @@ export class GroupAttendanceService {
     return messages.length;
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? 수업종료 알림 (미발송 case 들은 아래 문서 참고.)
+  //? https://www.notion.so/v3-DynamoDB-1fb4351cd47a80519649db17d05763d2
+  //? ---------------------------------------------------------------------- ?//
   async notifyEnd(
     groupId: number,
     dtos: CreateAttendanceWithKeyDto[],
@@ -384,7 +387,6 @@ export class GroupAttendanceService {
       throw new NotFoundException('해당일에 수업이 없습니다.');
     }
 
-    const duration = getDuration(group.start, group.end);
     const expires = Math.floor(addDays(new Date(), 400).getTime() / 1000);
     const groupKey = generateGroupKey(group.id);
     const dailyStudentKey = generateDailyStudentKey(
@@ -399,8 +401,19 @@ export class GroupAttendanceService {
       groupKey,
       dailyStudentKey,
     };
-    const itemDto = {
-      ...dto, // status, parentNote, schoolNote, isRead
+
+    // 기존 항목 조회
+    let existing: IAttendance | null = null;
+    try {
+      existing = await this.model.get(itemKey);
+    } catch (err) {
+      console.warn(`[dynamoose] get 실패:`, err);
+      existing = null;
+    }
+
+    const newData: Partial<IAttendance> = {
+      ...existing,
+      ...filterNoSql(dto), // status, parentNote, schoolNote
       lessonId: group.lessonId,
       lessonName: group.lesson.lessonName,
       groupId: group.id,
@@ -409,54 +422,47 @@ export class GroupAttendanceService {
       studentName: student.name,
       start: group.start,
       end: group.end,
-      duration: duration,
-      expires: expires,
-      ...(typeof dto.parentNote === 'string' && {
-        parentNotedAt: new Date(),
-      }),
-      //! 조퇴에서만 schoolNotedAt 이 조퇴알림시각으로 사용되어서 빼버림.
-      //! ...(typeof dto.schoolNote === 'string' && {
-      //!   schoolNotedAt: new Date(),
-      //! }),
+      weekday: group.weekday,
+      expires,
+      ...(typeof dto.parentNote === 'string' &&
+        dto.parentNote !== existing?.parentNote && {
+          parentNotedAt: new Date(),
+        }),
+
+      ...(typeof dto.schoolNote === 'string' &&
+        dto.schoolNote !== existing?.schoolNote && {
+          schoolNotedAt: new Date(),
+        }),
     };
 
-    // intentionally using exception-driven control flow
     try {
-      const result = await this.model.create({
-        ...itemKey,
-        ...itemDto,
-      });
-      console.log(
-        '✅ created new attendance:',
-        JSON.stringify(result, null, 2),
-      );
+      let result: IAttendance;
 
-      await this.updateSchooldayDailyStudentKeys(schoolday, dailyStudentKey);
-      return result; // No conversion needed anymore!
-    } catch (error) {
-      if (
-        error.name === 'ConditionalCheckFailedException' ||
-        error.code === 'ConditionalCheckFailedException'
-      ) {
-        try {
-          const result = await this.model.update(itemKey, itemDto);
-          console.log(
-            '✅ updated existing attendance:',
-            JSON.stringify(result, null, 2),
-          );
-          await this.updateSchooldayDailyStudentKeys(
-            schoolday,
-            dailyStudentKey,
-          );
-          return result; // No conversion needed anymore!
-        } catch (updateError) {
-          console.error(`[dynamodb] update error`, updateError);
-          throw new BadRequestException('출석 정보 업데이트에 실패했습니다.');
-        }
+      if (existing) {
+        const {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          groupKey,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          dailyStudentKey,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          updatedAt,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          createdAt,
+          ...updateFields
+        } = newData;
+        result = await this.model.update(itemKey, updateFields);
       } else {
-        console.error(`[dynamodb] update error`, error);
-        throw new BadRequestException('출석 정보 생성에 실패했습니다.');
+        // ✅ 없으면 create (완전 생성)
+        result = await this.model.create({
+          ...itemKey,
+          ...newData,
+        });
       }
+
+      return result;
+    } catch (err) {
+      console.error(`[dynamoose v4] upsert error`, err);
+      throw new BadRequestException(err.message);
     }
   }
 
@@ -521,15 +527,15 @@ export class GroupAttendanceService {
           itemMap.get(dailyStudentKey) ||
           ({
             //expires: Math.floor(addDays(new Date(), 400).getTime() / 1000),
+            groupKey: groupKey,
+            dailyStudentKey: dailyStudentKey,
             groupId: v.group.id,
             start: v.group.start,
             end: v.group.end,
-            groupKey: groupKey,
+            weekday: v.group.weekday,
             lessonName: v.group.lesson.lessonName,
-            duration: getDuration(v.group.start, v.group.end),
             studentId: v.student.id,
             studentName: v.student.name,
-            dailyStudentKey: dailyStudentKey,
             status: AttendanceStatus.INIT,
           } as IAttendance)
         );
@@ -554,7 +560,7 @@ export class GroupAttendanceService {
    * @param groupKey DynamoDB 그룹 키 (e.g., "GROUP#48")
    * @param date 조회할 날짜 (e.g., "2025-06-08")
    *
-   * @returns IAttendanceWithNextInfo[]
+   * @returns IAttendanceWithNextStop[]
    * - 기본 출석 정보 + student entity + next 필드 + departure 정보
    * - student: { id, name, grade, class, studentCode, parent }
    * - next: string (다음 수업명 또는 student.nextStop)
@@ -569,7 +575,7 @@ export class GroupAttendanceService {
   async findAttendancesByDateWithExtendedData(
     groupKey: string,
     date: string,
-  ): Promise<IAttendanceWithNextInfo[]> {
+  ): Promise<IAttendanceWithNextStop[]> {
     try {
       // 1. 해당 날짜에 수업이 있는지 확인
       const groupId = getGroupIdFromGroupKey(groupKey);
@@ -634,7 +640,7 @@ export class GroupAttendanceService {
             lessonId: pick.group.lessonId,
             lessonName: pick.group.lesson.lessonName,
             groupName: pick.group.groupName,
-            duration: getDuration(pick.group.start, pick.group.end),
+            weekday: pick.group.weekday,
             studentId: pick.student.id,
             studentName: pick.student.name,
             dailyStudentKey: dailyStudentKey,
@@ -778,7 +784,7 @@ export class GroupAttendanceService {
       });
 
       // 11. 출석 데이터와 확장 정보 결합 (No conversion needed!)
-      const attendancesWithNextInfo: IAttendanceWithNextInfo[] =
+      const attendancesWithNextInfo: IAttendanceWithNextStop[] =
         completeAttendanceItems.map((item) => {
           return {
             ...item, // Already converted by Dynamoose!
@@ -806,7 +812,7 @@ export class GroupAttendanceService {
   }
 
   //? ---------------------------------------------------------------------- ?//
-  //? Utility Methods
+  //? Private Utility Methods
   //? ---------------------------------------------------------------------- ?//
 
   /**
@@ -815,7 +821,7 @@ export class GroupAttendanceService {
    * 사용 시나리오:
    * - 대부분의 레코드가 변경될 것으로 예상되는 경우
    */
-  async updateAttendanceStatusInBulk(
+  private async updateAttendanceStatusInBulk(
     dtos: CreateAttendanceWithKeyDto[],
   ): Promise<IAttendance[]> {
     try {
@@ -848,7 +854,7 @@ export class GroupAttendanceService {
    * 사용 시나리오:
    * - 대부분 변경이 없을 것으로 예상되는 경우
    */
-  async updateAttendanceStatusInBulkOptimized(
+  private async updateAttendanceStatusInBulkOptimized(
     dtos: CreateAttendanceWithKeyDto[],
   ): Promise<IAttendance[]> {
     try {
@@ -868,7 +874,7 @@ export class GroupAttendanceService {
         }),
       );
 
-      // 2. 상태가 실제로 변경되거나 schoolNote가 있는 것만 필터링
+      // 2. 변경대상 (새로지정, 상태변경, schoolNote 변경) 추출
       const recordsToUpdate = currentRecords.filter(
         ({ dto, currentRecord }) =>
           !currentRecord ||
@@ -884,7 +890,7 @@ export class GroupAttendanceService {
         return currentRecords.map((v) => v.currentRecord as IAttendance);
       }
 
-      // 3. 변경이 필요한 것만 update 실행
+      // 3. 추출한 변경대상만 update 실행
       const updatePromises = recordsToUpdate.map(({ dto }) =>
         this.model.update(
           {

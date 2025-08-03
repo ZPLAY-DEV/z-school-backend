@@ -1,16 +1,16 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    ApiQuery,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-    ApiOkPaginatedResponse,
-    ApiPaginationQuery,
-    FilterOperator,
-    PaginateConfig,
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
+  PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
@@ -440,7 +440,7 @@ export const SchoolTermStudentSchooldaysDocs = () =>
     "name": "수학",
     "startsAt": "2024-05-27T08:00:00+09:00",
     "endsAt": "2024-05-27T09:00:00+09:00",
-    "duration": 60,
+    "weekday": "월",
     "updatedBy": null,
     "note": null,
     "startNotifiedAt": null,
@@ -477,7 +477,7 @@ export const SchoolTermStudentSchooldaysDocs = () =>
     "name": "영어",
     "startsAt": "2024-05-29T15:00:00+09:00",
     "endsAt": "2024-05-29T16:00:00+09:00",
-    "duration": 60,
+    "weekday": "수",
     "updatedBy": "MANAGER",
     "note": "보강 수업",
     "startNotifiedAt": "2024-05-29T14:50:00+09:00",
@@ -953,7 +953,7 @@ export const SchoolTermStudentWeeklySchooldaysDocs = () =>
       "name": "수학",
       "startsAt": "2024-06-03T14:40:00+09:00",
       "endsAt": "2024-06-03T15:20:00+09:00",
-      "duration": 40,
+      "weekday": "월",
       "updatedBy": null,
       "note": null,
       "startNotifiedAt": null,
@@ -984,7 +984,7 @@ export const SchoolTermStudentWeeklySchooldaysDocs = () =>
       "name": "과학",
       "startsAt": "2024-06-03T16:00:00+09:00",
       "endsAt": "2024-06-03T17:00:00+09:00",
-      "duration": 60,
+      "weekday": "월",
       "updatedBy": null,
       "note": null,
       "startNotifiedAt": "2024-06-03T15:50:00+09:00",
@@ -1018,7 +1018,7 @@ export const SchoolTermStudentWeeklySchooldaysDocs = () =>
       "name": "영어",
       "startsAt": "2024-06-05T15:00:00+09:00",
       "endsAt": "2024-06-05T16:00:00+09:00",
-      "duration": 60,
+      "weekday": "수",
       "updatedBy": "MANAGER",
       "note": "보강 수업",
       "startNotifiedAt": "2024-06-05T14:50:00+09:00",

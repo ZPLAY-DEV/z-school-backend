@@ -77,11 +77,6 @@ export function generateSchooldays(
     offdays,
   );
 
-  console.log(
-    '🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀 calendarDays',
-    JSON.stringify(calendarDays, null, 2),
-  );
-
   // 연속적인 주차 번호를 위해 모든 calendarDays에 대해 순차적으로 처리
   let weekNumber = 1; // 첫 번째 주차부터 시작
 

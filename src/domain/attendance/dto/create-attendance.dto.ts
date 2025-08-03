@@ -52,9 +52,9 @@ export class CreateAttendanceDto {
   @IsString()
   end: string;
 
-  @ApiProperty({ description: '🈵 duration (minutes)' })
-  @IsNumber()
-  duration: number;
+  @ApiProperty({ description: '🈵 weekday (e.g. "월")' })
+  @IsString()
+  weekday: string;
 
   @ApiProperty({
     description: '🈵 status',

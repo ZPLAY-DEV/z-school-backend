@@ -19,7 +19,6 @@ import {
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { getDuration } from 'src/helpers/time';
 import { In, IsNull, Repository } from 'typeorm';
 
 @Injectable()
@@ -123,7 +122,7 @@ export class LessonAttendanceService {
             lessonId: pick.group.lessonId,
             lessonName: pick.group.lesson.lessonName,
             groupName: pick.group.groupName,
-            duration: getDuration(pick.group.start, pick.group.end),
+            weekday: pick.group.weekday,
             studentId: pick.student.id,
             studentName: pick.student.name,
             dailyStudentKey: dailyStudentKey,

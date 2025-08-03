@@ -16,7 +16,7 @@ import {
 } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
   IAttendance,
-  IAttendanceWithNextInfo,
+  IAttendanceWithNextStop,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
@@ -112,7 +112,7 @@ export class GroupAttendanceController {
   async findByDateWithExtendedData(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('date') date: string,
-  ): Promise<IAttendanceWithNextInfo[]> {
+  ): Promise<IAttendanceWithNextStop[]> {
     const groupKey = generateGroupKey(groupId);
     return await this.groupAttendancesService.findAttendancesByDateWithExtendedData(
       groupKey,

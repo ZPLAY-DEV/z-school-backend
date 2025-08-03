@@ -71,7 +71,7 @@ export class AttendanceService {
         studentName: '편도율',
         start: '13:50',
         end: '14:30',
-        duration: 40,
+        weekday: '월',
         status: AttendanceStatus.EXCUSED_ABSENT,
         parentNote: '코로나 때문에 빠집니다.',
         expires: ttl,
@@ -234,95 +234,88 @@ export class AttendanceService {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  //? notice that even if you provide createdAt and updatedAt in the payload
-  //? dynamodb will ignore them and record the timestamps with its own value.
-  //? This method works as upsert - if the item exists, it will be overwritten.
-  //?
   async upsert(dto: UpsertAttendanceDto): Promise<IAttendance> {
     const { groupKey, dailyStudentKey, ...rest } = dto;
-    const itemKey = {
-      groupKey,
-      dailyStudentKey,
-    };
-    const itemDto = {
-      ...rest,
-    };
+    const itemKey = { groupKey, dailyStudentKey };
 
     const groupId = getGroupIdFromGroupKey(groupKey);
     const date = getDateFromDailyStudentKey(dailyStudentKey);
 
     const group = await this.groupRepository.findOne({
-      where: {
-        id: groupId,
-      },
+      where: { id: groupId },
       relations: ['schooldays', 'lesson', 'picks', 'picks.student'],
     });
-    if (!group) {
-      throw new NotFoundException('Group not found');
-    }
+    if (!group) throw new NotFoundException('Group not found');
 
-    const schoolday = group?.schooldays.find((v) => {
-      return formatInTimeZone(v.startsAt, 'Asia/Seoul', 'yyyy-MM-dd') === date;
-    });
-    if (!schoolday) {
-      throw new NotFoundException('Schoolday not found');
-    }
+    const schoolday = group.schooldays.find(
+      (v) => formatInTimeZone(v.startsAt, 'Asia/Seoul', 'yyyy-MM-dd') === date,
+    );
+    if (!schoolday) throw new NotFoundException('Schoolday not found');
 
-    const pick = group.picks.find((v) => {
-      return v.student.id === getStudentIdFromDailyStudentKey(dailyStudentKey);
-    });
-    const student = pick?.student;
-    if (!student) {
-      throw new NotFoundException('Student not found');
-    }
+    const pick = group.picks.find(
+      (v) => v.student.id === getStudentIdFromDailyStudentKey(dailyStudentKey),
+    );
+    if (!pick?.student) throw new NotFoundException('Student not found');
 
     const expires = Math.floor(
       addDays(schoolday.startsAt, 400).getTime() / 1000,
     );
 
-    itemDto.start = formatInTimeZone(schoolday.startsAt, 'Asia/Seoul', 'HH:mm');
-    itemDto.end = formatInTimeZone(schoolday.endsAt, 'Asia/Seoul', 'HH:mm');
-    itemDto.duration = schoolday.duration;
-    itemDto.lessonId = group.lesson.id;
-    itemDto.lessonName = group.lesson.lessonName;
-    itemDto.groupId = group.id;
-    itemDto.groupName = group.groupName;
-    itemDto.studentId = pick.student.id;
-    itemDto.studentName = pick.student.name;
-    itemDto.expires = expires;
-
-    console.log('✅ ', JSON.stringify(itemDto, null, 2));
-    // intentionally using exception-driven control flow
+    // 기존 항목 조회
+    let existing: IAttendance | null = null;
     try {
-      const result = await this.model.create({
-        ...itemKey,
-        ...itemDto,
-      });
-      console.log(
-        '✅ created new attendance:',
-        JSON.stringify(result, null, 2),
-      );
-      return result as unknown as IAttendance;
-    } catch (error) {
-      if (
-        error.name === 'ConditionalCheckFailedException' ||
-        error.code === 'ConditionalCheckFailedException'
-      ) {
-        try {
-          const result = await this.model.update(itemKey, itemDto);
-          console.log(
-            '✅ updated existing attendance:',
-            JSON.stringify(result, null, 2),
-          );
-          return result as unknown as IAttendance;
-        } catch (updateError) {
-          console.error(`[dynamodb] update error`, updateError);
-          throw new BadRequestException(updateError.message);
-        }
+      existing = await this.model.get(itemKey);
+    } catch (err) {
+      console.warn(`[dynamoose] get 실패:`, err);
+      existing = null;
+    }
+
+    const newData = {
+      ...rest,
+      lessonId: group.lesson.id,
+      lessonName: group.lesson.lessonName,
+      groupId: group.id,
+      groupName: group.groupName,
+      studentId: pick.student.id,
+      studentName: pick.student.name,
+      start: formatInTimeZone(schoolday.startsAt, 'Asia/Seoul', 'HH:mm'),
+      end: formatInTimeZone(schoolday.endsAt, 'Asia/Seoul', 'HH:mm'),
+      weekday: group.weekday,
+      expires,
+    };
+
+    if (
+      rest.parentNote !== undefined &&
+      rest.parentNote !== existing?.parentNote
+    ) {
+      newData.parentNotedAt = new Date();
+    }
+
+    if (
+      rest.schoolNote !== undefined &&
+      rest.schoolNote !== existing?.schoolNote
+    ) {
+      newData.schoolNotedAt = new Date();
+    }
+
+    try {
+      let result: IAttendance;
+
+      if (existing) {
+        // ✅ 존재하면 update (부분 갱신)
+        result = await this.model.update(itemKey, newData);
       } else {
-        console.error(`[dynamodb] error`, error);
-        throw new BadRequestException(error.message);
+        // ✅ 없으면 create (완전 생성)
+        result = await this.model.create({
+          ...itemKey,
+          ...newData,
+        });
       }
+
+      return result;
+    } catch (err) {
+      console.error(`[dynamoose v4] upsert error`, err);
+      throw new BadRequestException(err.message);
     }
   }
 
