@@ -23,6 +23,11 @@ export const getWeekNumber = (
   );
 };
 
+export const getWeekNumberFromKoreanWeekday = (weekday: string): number => {
+  const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+  return weekdays.indexOf(weekday);
+};
+
 export const getKoreanWeekday = (date: string): string => {
   const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
   const dateObj = new Date(date);

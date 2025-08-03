@@ -13,7 +13,6 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
-import { IDailyEscortInfo } from 'src/common/interfaces';
 import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
 
 /**
@@ -115,69 +114,14 @@ export class CreateStudentDto {
   phone?: string;
 
   @ApiPropertyOptional({
-    description:
-      '귀가 동행인 전화번호 - 하교시 함께 가는 사람의 연락처 (하이픈 없이 숫자만, 최대 16자)',
-    type: String,
-    example: '01022223333',
-    maxLength: 16,
-  })
-  @IsOptional()
-  @IsString({ message: '귀가 동행인 전화번호는 문자열이어야 합니다' })
-  @MaxLength(16, { message: '귀가 동행인 전화번호는 16자 이하여야 합니다' })
-  escortPhone?: string;
-
-  @ApiPropertyOptional({
-    description: '하교후 가는 곳 - 하교 후 주로 향하는 장소 (최대 32자)',
-    type: String,
-    example: '태권도 학원',
-    maxLength: 32,
+    description: '요일별 하교장소',
+    type: [String],
+    example: 'comma separated string',
+    maxLength: 255,
   })
   @IsOptional()
   @IsString({ message: '하교후 가는 곳은 문자열이어야 합니다' })
-  @MaxLength(32, { message: '하교후 가는 곳은 32자 이하여야 합니다' })
   nextStop?: string;
-
-  @ApiPropertyOptional({
-    description: '월요일 보호자 정보 - 전화번호와 하교 후 가는 곳',
-    example: { phone: '01022223333', nextStop: '태권도 학원' },
-  })
-  @IsOptional()
-  monday?: IDailyEscortInfo;
-
-  @ApiPropertyOptional({
-    description: '화요일 보호자 정보 - 전화번호와 하교 후 가는 곳',
-    example: { phone: '01022223333', nextStop: '태권도 학원' },
-  })
-  @IsOptional()
-  tuesday?: IDailyEscortInfo;
-
-  @ApiPropertyOptional({
-    description: '수요일 보호자 정보 - 전화번호와 하교 후 가는 곳',
-    example: { phone: '01022223333', nextStop: '태권도 학원' },
-  })
-  @IsOptional()
-  wednesday?: IDailyEscortInfo;
-
-  @ApiPropertyOptional({
-    description: '목요일 보호자 정보 - 전화번호와 하교 후 가는 곳',
-    example: { phone: '01022223333', nextStop: '태권도 학원' },
-  })
-  @IsOptional()
-  thursday?: IDailyEscortInfo;
-
-  @ApiPropertyOptional({
-    description: '금요일 보호자 정보 - 전화번호와 하교 후 가는 곳',
-    example: { phone: '01022223333', nextStop: '태권도 학원' },
-  })
-  @IsOptional()
-  friday?: IDailyEscortInfo;
-
-  @ApiPropertyOptional({
-    description: '토요일 보호자 정보 - 전화번호와 하교 후 가는 곳',
-    example: { phone: '01022223333', nextStop: '태권도 학원' },
-  })
-  @IsOptional()
-  saturday?: IDailyEscortInfo;
 
   @ApiPropertyOptional({
     description: '비고 - 학생에 대한 추가 정보나 특이사항 (최대 255자)',

@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
 import { StudentStatus } from 'src/common/enums';
-import { IDailyEscortInfo } from 'src/common/interfaces';
+import { Weekday } from 'src/common/enums/weekday';
+import { IDailyEscort } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
@@ -81,87 +82,21 @@ export class Student {
   })
   status: StudentStatus;
 
-  @ApiProperty({
-    description: '대표. 보호자 전화번호 (숫자만 입력)',
-    example: '01012345678',
-  })
-  @Column({ type: 'varchar', length: 16, nullable: true })
-  escortPhone: string | null;
+  // @ApiProperty({
+  //   description: '귀가동행인 전화번호 (숫자만 입력)',
+  //   example: '01012345678',
+  // })
+  // @Column({ type: 'varchar', length: 16, nullable: true })
+  // escortPhone: string | null;
 
-  @ApiProperty({ description: '대표. 하교후 목적지', example: '독서실' })
+  @ApiProperty({ description: '요일별 하교후 목적지', example: 'encrypted' })
   @Column({
     type: 'varchar',
-    length: 32,
+    length: 255,
     nullable: true,
-    comment: '하교후 목적지',
+    comment: 'weekNumber 별 하교후 목적지',
   })
   nextStop: string | null;
-
-  @ApiProperty({
-    description: '월요일 보호자 정보',
-    example: { phone: '01012345678', nextStop: '노래방' },
-  })
-  @Column({
-    type: 'json',
-    nullable: true,
-    comment: '월요일 보호자 전화번호 및 하교 목적지',
-  })
-  monday: IDailyEscortInfo | null;
-
-  @ApiProperty({
-    description: '화요일 보호자 정보',
-    example: { phone: '01012345678', nextStop: '피씨방' },
-  })
-  @Column({
-    type: 'json',
-    nullable: true,
-    comment: '화요일 보호자 전화번호 및 하교 목적지',
-  })
-  tuesday: IDailyEscortInfo | null;
-
-  @ApiProperty({
-    description: '수요일 보호자 정보',
-    example: { phone: '01012345678', nextStop: '풀스방' },
-  })
-  @Column({
-    type: 'json',
-    nullable: true,
-    comment: '수요일 보호자 전화번호 및 하교 목적지',
-  })
-  wednesday: IDailyEscortInfo | null;
-
-  @ApiProperty({
-    description: '목요일 보호자 정보',
-    example: { phone: '01012345678', nextStop: '비디오방' },
-  })
-  @Column({
-    type: 'json',
-    nullable: true,
-    comment: '목요일 보호자 전화번호 및 하교 목적지',
-  })
-  thursday: IDailyEscortInfo | null;
-
-  @ApiProperty({
-    description: '금요일 보호자 정보',
-    example: { phone: '01012345678', nextStop: '공부방' },
-  })
-  @Column({
-    type: 'json',
-    nullable: true,
-    comment: '금요일 보호자 전화번호 및 하교 목적지',
-  })
-  friday: IDailyEscortInfo | null;
-
-  @ApiProperty({
-    description: '토요일 보호자 정보',
-    example: { phone: '01012345678', nextStop: '오락실' },
-  })
-  @Column({
-    type: 'json',
-    nullable: true,
-    comment: '토요일 보호자 전화번호 및 하교 목적지',
-  })
-  saturday: IDailyEscortInfo | null;
 
   @ApiProperty({ description: '🈳 비고', example: '비고내용' })
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -215,5 +150,45 @@ export class Student {
 
   constructor(partial: Partial<Student>) {
     Object.assign(this, partial);
+  }
+
+  //? Getters -------------------------------------------------------------- ?//
+
+  get nextStops(): Record<Weekday, IDailyEscort> {
+    const stops = this.nextStop?.split(',') || [];
+    const weekdays: Weekday[] = [
+      Weekday.MONDAY,
+      Weekday.TUESDAY,
+      Weekday.WEDNESDAY,
+      Weekday.THURSDAY,
+      Weekday.FRIDAY,
+      Weekday.SATURDAY,
+    ];
+
+    const result: Record<Weekday, IDailyEscort> = {} as Record<
+      Weekday,
+      IDailyEscort
+    >;
+
+    weekdays.forEach((weekday, index) => {
+      const stopData = stops[index];
+
+      if (stopData) {
+        const [place, name, phone] = stopData.split('|');
+        result[weekday] = {
+          place: place || '미지정',
+          name: name || '미지정',
+          phone: phone || '미지정',
+        };
+      } else {
+        result[weekday] = {
+          place: '미지정',
+          name: '미지정',
+          phone: '미지정',
+        };
+      }
+    });
+
+    return result;
   }
 }

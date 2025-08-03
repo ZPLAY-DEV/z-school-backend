@@ -26,7 +26,7 @@ const SCHOOL_STUDENT_CONFIG: PaginateConfig<Student> = {
     picks: true,
   },
   sortableColumns: ['grade', 'class', 'studentCode'],
-  searchableColumns: ['name', 'parent.phone', 'escortPhone'],
+  searchableColumns: ['name', 'parent.phone'],
   defaultSortBy: [
     ['grade', 'ASC'],
     ['class', 'ASC'],

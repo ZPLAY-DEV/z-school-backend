@@ -565,53 +565,67 @@ export class GroupAttendanceService {
       );
 
       // 4. 모든 등록된 학생들(picks) 조회
-      const picks = await this.pickRepository.find({
-        where: {
-          groupId: groupId,
-          endedBy: IsNull(),
-        },
-        relations: ['student', 'group', 'group.lesson'],
+      const picks =
+        (await this.pickRepository.find({
+          where: {
+            groupId: groupId,
+          },
+          relations: ['student', 'group', 'group.lesson'],
+        })) || [];
+
+      const filteredPicks = picks.filter((v) => {
+        if (v.startedBy !== null && v.start > date) {
+          return false;
+        }
+        if (v.endedBy !== null && v.end < date) {
+          return false;
+        }
+        return true;
       });
-      if (picks.length === 0) {
+
+      if (filteredPicks.length < 1) {
         return [];
       }
+      const weekday = filteredPicks[0].group.weekday; // 오늘 수업으로부터 요일 추출
 
       // 5. 완전한 출석 목록 생성 (기존 레코드 + 기본 레코드)
-      const completeAttendanceItems: IAttendance[] = picks.map((pick) => {
-        if (!pick.student) {
-          throw new BadRequestException(
-            `no student associated with group ${pick.group.id}`,
+      const completeAttendanceItems: IAttendance[] = filteredPicks.map(
+        (pick) => {
+          if (!pick.student) {
+            throw new BadRequestException(
+              `no student associated with group ${pick.group.id}`,
+            );
+          }
+          const dailyStudentKey = generateDailyStudentKey(
+            date,
+            pick.studentId,
+            pick.student.grade,
+            pick.student.class,
+            pick.student.studentCode,
           );
-        }
-        const dailyStudentKey = generateDailyStudentKey(
-          date,
-          pick.studentId,
-          pick.student.grade,
-          pick.student.class,
-          pick.student.studentCode,
-        );
 
-        return (
-          itemMap.get(dailyStudentKey) ||
-          ({
-            groupId: pick.group.id,
-            start: pick.group.start,
-            end: pick.group.end,
-            groupKey: groupKey,
-            lessonId: pick.group.lessonId,
-            lessonName: pick.group.lesson.lessonName,
-            groupName: pick.group.groupName,
-            weekday: pick.group.weekday,
-            studentId: pick.student.id,
-            studentName: pick.student.name,
-            dailyStudentKey: dailyStudentKey,
-            status: AttendanceStatus.INIT,
-          } as IAttendance)
-        );
-      });
+          return (
+            itemMap.get(dailyStudentKey) ||
+            ({
+              groupId: pick.group.id,
+              start: pick.group.start,
+              end: pick.group.end,
+              groupKey: groupKey,
+              lessonId: pick.group.lessonId,
+              lessonName: pick.group.lesson.lessonName,
+              groupName: pick.group.groupName,
+              weekday: pick.group.weekday,
+              studentId: pick.student.id,
+              studentName: pick.student.name,
+              dailyStudentKey: dailyStudentKey,
+              status: AttendanceStatus.INIT,
+            } as IAttendance)
+          );
+        },
+      );
 
       // 6. 학생 ID 추출
-      const studentIds = picks.map((v) => v.studentId);
+      const studentIds = filteredPicks.map((v) => v.studentId);
 
       // 7. 한 번의 쿼리로 모든 학생 정보 조회 (부모 정보 포함)
       const students = await this.studentRepository.find({
@@ -655,7 +669,7 @@ export class GroupAttendanceService {
         departures.map((departure) => [departure.studentId, departure]),
       );
 
-      // 5. 한 번의 최적화된 쿼리로 각 학생의 해당 날짜 모든 그룹 스케줄 조회
+      // 5. 한 번의 최적화된 쿼리로 각 학생의 해당일 모든 그룹 스케줄 조회
       const studentScheduleData: {
         studentId: number;
         groupId: number;
@@ -672,9 +686,7 @@ export class GroupAttendanceService {
           'schoolday.endsAt as endsAt',
         ])
         .where('pick.studentId IN (:...studentIds)', { studentIds })
-        .andWhere('DATE(schoolday.startsAt) = :targetDate', {
-          targetDate: date,
-        })
+        .andWhere('schoolday.today = :date', { date })
         .orderBy('pick.studentId')
         .addOrderBy('schoolday.endsAt', 'ASC')
         .getRawMany();
@@ -715,8 +727,8 @@ export class GroupAttendanceService {
         if (currentIndex === -1) {
           // 현재 그룹을 찾을 수 없는 경우
           const student = studentMap.get(studentId);
-          const nextStop = student?.nextStop;
-          const finalNext = nextStop || '하교장소 미지정';
+          const nextStop = student?.nextStops[weekday];
+          const finalNext = nextStop?.place || '하교장소 미지정';
           console.log(
             `❌ [DEBUG] Student ${studentId}: Group not found, student=${JSON.stringify(student)}, nextStop="${nextStop}", finalNext="${finalNext}"`,
           );
@@ -725,8 +737,8 @@ export class GroupAttendanceService {
         } else if (currentIndex === schedule.length - 1) {
           // 마지막 그룹인 경우
           const student = studentMap.get(studentId);
-          const nextStop = student?.nextStop;
-          const finalNext = nextStop || '하교장소 미지정';
+          const nextStop = student?.nextStops[weekday];
+          const finalNext = nextStop?.place || '하교장소 미지정';
           console.log(
             `🏁 [DEBUG] Student ${studentId}: Last group, student=${JSON.stringify(student)}, nextStop="${nextStop}", finalNext="${finalNext}"`,
           );
@@ -735,7 +747,7 @@ export class GroupAttendanceService {
         } else {
           // 다음 그룹이 있는 경우
           const nextGroup = schedule[currentIndex + 1];
-          const finalNext = nextGroup.groupName || '수업명 미지정';
+          const finalNext = nextGroup.groupName || '반이름 미지정';
           console.log(
             `➡️ [DEBUG] Student ${studentId}: Next group, nextGroup=${JSON.stringify(nextGroup)}, finalNext="${finalNext}"`,
           );

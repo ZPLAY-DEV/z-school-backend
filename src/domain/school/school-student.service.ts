@@ -112,7 +112,6 @@ export class SchoolStudentService {
             dto.class || null,
             dto.studentCode || null,
             dto.phone || null,
-            dto.escortPhone || null,
             dto.nextStop || null,
             dto.note || null,
             dto.status || 'ATTENDING',
@@ -129,7 +128,6 @@ export class SchoolStudentService {
             class,
             studentCode,
             phone,
-            escortPhone,
             nextStop,
             note,
             status
@@ -142,7 +140,6 @@ export class SchoolStudentService {
             class,
             studentCode,
             phone,
-            escortPhone,
             nextStop,
             note,
             status
@@ -155,7 +152,6 @@ export class SchoolStudentService {
             parentId = new_student.parentId,
             studentCode = new_student.studentCode,
             phone = new_student.phone,
-            escortPhone = new_student.escortPhone,
             nextStop = new_student.nextStop,
             note = new_student.note,
             status = new_student.status
@@ -262,7 +258,7 @@ export class SchoolStudentService {
         picks: true,
       },
       sortableColumns: ['grade', 'class', 'studentCode'],
-      searchableColumns: ['name', 'parent.phone', 'escortPhone'],
+      searchableColumns: ['name', 'parent.phone'],
       defaultSortBy: [
         ['grade', 'ASC'],
         ['class', 'ASC'],

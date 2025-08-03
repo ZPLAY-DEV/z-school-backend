@@ -180,9 +180,10 @@ export interface IRequestUser {
   role: Role;
   refreshToken?: string;
 }
-export interface IDailyEscortInfo {
-  escortPhone: string;
-  nextStop: string;
+export interface IDailyEscort {
+  place: string;
+  name: string;
+  phone: string;
 }
 
 //? ---------------------------------------------------------------------- ?//
