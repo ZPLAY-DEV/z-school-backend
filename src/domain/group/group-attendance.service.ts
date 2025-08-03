@@ -23,6 +23,7 @@ import {
   generateGroupKey,
   getDateFromDailyStudentKey,
   getGroupIdFromGroupKey,
+  getStudentIdFromDailyStudentKey,
   processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
@@ -91,26 +92,19 @@ export class GroupAttendanceService {
         return true;
       })
       .map((v) => v.student);
-
     if (allStudents.length !== dtos.length) {
       throw new BadRequestException(
         'the number of dtos must match with total number of students',
       );
     }
-    // todo. 로직 개선. 메시지 모두 spec 에 맞도록!
-    const studentIds = dtos
-      .filter((v) => v.status !== AttendanceStatus.INIT)
-      .filter((v) => v.status !== AttendanceStatus.ABSENT)
-      .filter((v) => v.status !== AttendanceStatus.EXCUSED_ABSENT)
-      .filter((v) => v.status !== AttendanceStatus.EXCUSED_LATE)
-      .map((v) => this.extractStudentIdFromRangeKey(v.dailyStudentKey));
-    const statusMap = new Map<number, string>();
+    const studentMessageMap = new Map<number, string>();
     dtos.forEach((dto) => {
-      statusMap.set(
-        this.extractStudentIdFromRangeKey(dto.dailyStudentKey),
+      studentMessageMap.set(
+        getStudentIdFromDailyStudentKey(dto.dailyStudentKey),
         this.translateStatusInStartContext(dto.status),
       );
     });
+    const studentIds = Array.from(studentMessageMap.keys());
     const messages = allStudents
       .filter((v) => studentIds.includes(v.id))
       .map((v: Student) => {
@@ -119,16 +113,21 @@ export class GroupAttendanceService {
           phone: v.parent.phone,
           token: v.parent.user?.pushToken ?? null,
           title: `${group.lesson.schoolName}`,
-          body: `${v.name} 학생 ${group.lesson.lessonName} : ${statusMap.get(v.id)}`,
+          body: `${group.lesson.lessonName} 수업시작 ${v.name} 학생: ${studentMessageMap.get(v.id)}`,
           role: 'PARENT',
         };
       });
     // Dynamo 상태 업데이트 (무조건 모두 변경한다.)
     await this.updateAttendanceStatusInBulk(dtos);
-    // 수업시작문자 발송시각 업데이트
+    // 수업시작알림 카운트 및 발송시각 업데이트
     await this.updateSchooldayCountsAndStartNotifiedAt(dtos, groupId, date);
+    // 수업시작알림 SMS/Notification 발송
     await this.notificationService.send({
-      messages,
+      messages: messages.filter(
+        (v) =>
+          v.body.endsWith('선통보 조퇴') ||
+          (!v.body.endsWith('결석') && !v.body.endsWith('지각')),
+      ),
       type: NotificationType.CLASS,
       schoolId: group.lesson.schoolId,
       role: 'PARENT',
@@ -138,10 +137,13 @@ export class GroupAttendanceService {
   }
 
   async notifyEnd(
-    groupId: number, //! e.g. 48
+    groupId: number,
     dtos: CreateAttendanceWithKeyDto[],
   ): Promise<number> {
-    // MySQL 읽고
+    if (dtos.length === 0) {
+      throw new BadRequestException('dtos is empty');
+    }
+    const date = getDateFromDailyStudentKey(dtos[0].dailyStudentKey);
     const group = await this.groupRepository.findOneOrFail({
       where: { id: groupId },
       relations: [
@@ -152,20 +154,34 @@ export class GroupAttendanceService {
         'picks.student.parent.user',
       ],
     });
-    const allStudents = group.picks.map((v) => v.student);
-    const studentIds = dtos
-      .filter((v) => v.status !== AttendanceStatus.INIT)
-      .filter((v) => v.status !== AttendanceStatus.LEFT)
-      .filter((v) => v.status !== AttendanceStatus.EXCUSED_ABSENT)
-      .filter((v) => v.status !== AttendanceStatus.EXCUSED_LEFT)
-      .map((v) => this.extractStudentIdFromRangeKey(v.dailyStudentKey));
-    const statusMap = new Map<number, string>();
+
+    // startedBy가 null이 아니라면, start가 date보다 같거나 이전인지 확인
+    // endedBy가 null이 아니라면, end가 date보다 같거나 이후인지 확인
+    const allStudents = group.picks
+      .filter((v) => {
+        if (v.startedBy !== null && v.start > date) {
+          return false;
+        }
+        if (v.endedBy !== null && v.end < date) {
+          return false;
+        }
+        return true;
+      })
+      .map((v) => v.student);
+    if (allStudents.length !== dtos.length) {
+      throw new BadRequestException(
+        'the number of dtos must match with total number of students',
+      );
+    }
+
+    const studentMessageMap = new Map<number, string>();
     dtos.forEach((dto) => {
-      statusMap.set(
-        this.extractStudentIdFromRangeKey(dto.dailyStudentKey),
+      studentMessageMap.set(
+        getStudentIdFromDailyStudentKey(dto.dailyStudentKey),
         this.translateStatusInOtherContext(dto.status),
       );
     });
+    const studentIds = Array.from(studentMessageMap.keys());
     const messages = allStudents
       .filter((v) => studentIds.includes(v.id))
       .map((v: Student) => {
@@ -174,30 +190,23 @@ export class GroupAttendanceService {
           phone: v.parent.phone,
           token: v.parent.user?.pushToken ?? null,
           title: `${group.lesson.schoolName}`,
-          body: `${v.name} 학생 ${group.lesson.lessonName} : ${statusMap.get(v.id)}`,
+          body: `${group.lesson.lessonName} 수업종료 ${v.name} 학생: ${studentMessageMap.get(v.id)}`,
           role: 'PARENT',
         };
       });
     // Dynamo 상태 업데이트 (변경이 필요한 것만 변경한다.)
     await this.updateAttendanceStatusInBulkOptimized(dtos);
+    // 수업시작알림 카운트 및 발송시각 업데이트
+    await this.updateSchooldayCountsAndEndNotifiedAt(dtos, groupId, date);
+    // 수업시작알림 SMS/Notification 발송
     await this.notificationService.send({
-      messages,
+      messages: messages.filter(
+        (v) => !v.body.endsWith('조퇴') && !v.body.endsWith('선통보 결석'),
+      ),
       type: NotificationType.CLASS,
       schoolId: group.lesson.schoolId,
       role: 'PARENT',
     });
-
-    // 수업종료문자 발송시각 업데이트
-    if (dtos.length > 0) {
-      const date = dtos[0].dailyStudentKey.split('#')[1]; // "DATE#2025-06-16#STUDENT#..." -> "2025-06-16"
-      await this.schooldayRepository
-        .createQueryBuilder()
-        .update(Schoolday)
-        .set({ endNotifiedAt: new Date() })
-        .where('groupId = :groupId', { groupId })
-        .andWhere('DATE(startsAt) = :date', { date })
-        .execute();
-    }
 
     return messages.length;
   }
@@ -256,7 +265,7 @@ export class GroupAttendanceService {
 
       // DTOs에서 날짜 추출 및 검증
       const dtosDates = dtos.map((dto) =>
-        this.extractDateFromRangeKey(dto.dailyStudentKey),
+        getDateFromDailyStudentKey(dto.dailyStudentKey),
       );
       const uniqueDtosDates = [...new Set(dtosDates)];
       const validSchoolDates = group.schooldays.map((v) => v.today);
@@ -273,16 +282,14 @@ export class GroupAttendanceService {
 
       const allStudents = group.picks.map((v) => v.student);
       const schoolNoteMap = new Map<number, string>();
-      const statusMap = new Map<number, string>();
+      const studentMessageMap = new Map<number, string>();
 
       console.log('🗺️ [notifyCustom] Building student maps...');
       dtos.forEach((dto) => {
-        const studentId = this.extractStudentIdFromRangeKey(
-          dto.dailyStudentKey,
-        );
+        const studentId = getStudentIdFromDailyStudentKey(dto.dailyStudentKey);
         const message = dto.schoolNote || '조퇴합니다.';
         schoolNoteMap.set(studentId, message);
-        statusMap.set(
+        studentMessageMap.set(
           studentId,
           this.translateStatusInOtherContext(dto.status),
         );
@@ -307,7 +314,7 @@ export class GroupAttendanceService {
         .filter((v) => studentIds.includes(v.id))
         .map((v: Student) => {
           const schoolNote = schoolNoteMap.get(v.id);
-          const status = statusMap.get(v.id);
+          const status = studentMessageMap.get(v.id);
           const message = {
             id: v.parent.id,
             phone: v.parent.phone,
@@ -828,9 +835,6 @@ export class GroupAttendanceService {
         ),
       );
       const results = await Promise.all(updatePromises);
-      console.log(
-        `✅ Bulk updated ${results.length} attendance records (unconditional)`,
-      );
       return results;
     } catch (error) {
       console.error(`[dynamodb] bulk update error`, error);
@@ -839,20 +843,14 @@ export class GroupAttendanceService {
   }
 
   /**
-   * WCU 최적화된 벌크 업데이트 - 실제로 상태가 변경되는 경우에만 update 실행
+   * 벌크 업데이트 (WCU 최적화)
    *
    * 사용 시나리오:
-   * - 변경률이 낮을 것으로 예상되는 경우 (변경률 < 80%)
-   * - WCU 비용 절약이 중요한 경우
-   * - 레코드 수가 많고 대부분 변경이 없을 것으로 예상되는 경우
+   * - 대부분 변경이 없을 것으로 예상되는 경우
    */
   async updateAttendanceStatusInBulkOptimized(
     dtos: CreateAttendanceWithKeyDto[],
-  ): Promise<{
-    updatedCount: number;
-    skippedCount: number;
-    results: IAttendance[];
-  }> {
+  ): Promise<IAttendance[]> {
     try {
       // 1. 현재 상태 조회
       const currentRecords = await Promise.all(
@@ -883,13 +881,7 @@ export class GroupAttendanceService {
         console.log(
           `⏭️ No status changes needed, skipping all ${dtos.length} records`,
         );
-        return {
-          updatedCount: 0,
-          skippedCount: dtos.length,
-          results: currentRecords
-            .map((r) => r.currentRecord)
-            .filter(Boolean) as IAttendance[],
-        };
+        return currentRecords.map((v) => v.currentRecord as IAttendance);
       }
 
       // 3. 변경이 필요한 것만 update 실행
@@ -910,17 +902,8 @@ export class GroupAttendanceService {
       );
 
       const results = await Promise.all(updatePromises);
-      const skippedCount = dtos.length - recordsToUpdate.length;
-
-      console.log(
-        `✅ Optimized bulk update: ${results.length} updated, ${skippedCount} skipped (WCU saved: ${skippedCount})`,
-      );
-
-      return {
-        updatedCount: results.length,
-        skippedCount,
-        results: [] as IAttendance[],
-      };
+      // const skippedCount = dtos.length - recordsToUpdate.length;
+      return results;
     } catch (error) {
       console.error(`[dynamodb] optimized bulk update error`, error);
       throw new BadRequestException(
@@ -929,28 +912,8 @@ export class GroupAttendanceService {
     }
   }
 
-  /**
-   * Extract student IDs from DTOs
-   * dailyStudentKey format: "DATE#2025-06-16#STUDENT#51#2-3-51" => 2025-06-16
-   */
-  private extractDateFromRangeKey(dailyStudentKey: string): string {
-    const parts = dailyStudentKey.split('#');
-    return parts[1];
-  }
-
-  /**
-   * Extract student IDs from DTOs
-   * dailyStudentKey format: "DATE#2025-06-16#STUDENT#51#2-3-51" => 51
-   */
-  private extractStudentIdFromRangeKey(dailyStudentKey: string): number {
-    const parts = dailyStudentKey.split('#');
-    return Number(parts[3]);
-  }
-
   private translateStatusInStartContext(status: AttendanceStatus): string {
     switch (status) {
-      case AttendanceStatus.INIT:
-        return '출석체크 이전';
       case AttendanceStatus.PRESENT:
         return '출석';
       case AttendanceStatus.ABSENT:
@@ -964,18 +927,16 @@ export class GroupAttendanceService {
       case AttendanceStatus.EXCUSED_LATE:
         return '선통보 지각';
       case AttendanceStatus.EXCUSED_LEFT:
-        return '선통보 조퇴';
+        return '출석'; // '선통보 조퇴';
       default:
-        return '하교';
+        return '-';
     }
   }
 
   private translateStatusInOtherContext(status: AttendanceStatus): string {
     switch (status) {
-      case AttendanceStatus.INIT:
-        return '출석채크 이전';
       case AttendanceStatus.PRESENT:
-        return '종료';
+        return '출석';
       case AttendanceStatus.ABSENT:
         return '결석';
       case AttendanceStatus.LATE:
@@ -989,7 +950,7 @@ export class GroupAttendanceService {
       case AttendanceStatus.EXCUSED_LEFT:
         return '조퇴 선통보';
       default:
-        return '하교';
+        return '-';
     }
   }
 
@@ -1003,6 +964,9 @@ export class GroupAttendanceService {
     return this.findAttendancesByDate(groupKey, date);
   }
 
+  /**
+   * 학부모가 parentNote 를 남길때마다 그 학생의 키를 schoolday 에 추가
+   */
   private async updateSchooldayDailyStudentKeys(
     schoolday: Schoolday,
     dailyStudentKey: string,
@@ -1021,6 +985,9 @@ export class GroupAttendanceService {
       .execute();
   }
 
+  /**
+   * schoolday 카운트 업데이트 및 시작알림 발송시각 업데이트
+   */
   private async updateSchooldayCountsAndStartNotifiedAt(
     dtos: CreateAttendanceWithKeyDto[],
     groupId: number,
@@ -1051,6 +1018,49 @@ export class GroupAttendanceService {
       .update(Schoolday)
       .set({
         startNotifiedAt: new Date(),
+        presentCount,
+        absentCount,
+        lateCount,
+        leftCount,
+      })
+      .where('groupId = :groupId', { groupId })
+      .andWhere('DATE(startsAt) = :date', { date })
+      .execute();
+  }
+
+  /**
+   * schoolday 카운트 업데이트 및 종료알림 발송시각 업데이트
+   */
+  private async updateSchooldayCountsAndEndNotifiedAt(
+    dtos: CreateAttendanceWithKeyDto[],
+    groupId: number,
+    date: string,
+  ): Promise<void> {
+    // 각 출석 상태별 카운트 계산
+    const presentCount = dtos.filter(
+      (dto) => dto.status === AttendanceStatus.PRESENT,
+    ).length;
+    const absentCount = dtos.filter(
+      (dto) =>
+        dto.status === AttendanceStatus.ABSENT ||
+        dto.status === AttendanceStatus.EXCUSED_ABSENT,
+    ).length;
+    const lateCount = dtos.filter(
+      (dto) =>
+        dto.status === AttendanceStatus.LATE ||
+        dto.status === AttendanceStatus.EXCUSED_LATE,
+    ).length;
+    const leftCount = dtos.filter(
+      (dto) =>
+        dto.status === AttendanceStatus.LEFT ||
+        dto.status === AttendanceStatus.EXCUSED_LEFT,
+    ).length;
+
+    await this.schooldayRepository
+      .createQueryBuilder()
+      .update(Schoolday)
+      .set({
+        endNotifiedAt: new Date(),
         presentCount,
         absentCount,
         lateCount,
