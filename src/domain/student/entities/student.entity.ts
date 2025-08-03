@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
 import { StudentStatus } from 'src/common/enums';
 import { Weekday } from 'src/common/enums/weekday';
 import { IDailyEscort } from 'src/common/interfaces';
@@ -154,6 +154,18 @@ export class Student {
 
   //? Getters -------------------------------------------------------------- ?//
 
+  @Expose()
+  @ApiProperty({
+    description: '요일별 하교후 목적지 정보',
+    example: {
+      월: { place: '집', name: '엄마', phone: '01012345678' },
+      화: { place: '학원', name: '선생님', phone: '01087654321' },
+      수: { place: '미지정', name: '미지정', phone: '미지정' },
+      목: { place: '미지정', name: '미지정', phone: '미지정' },
+      금: { place: '미지정', name: '미지정', phone: '미지정' },
+      토: { place: '미지정', name: '미지정', phone: '미지정' },
+    },
+  })
   get nextStops(): Record<Weekday, IDailyEscort> {
     const stops = this.nextStop?.split(',') || [];
     const weekdays: Weekday[] = [

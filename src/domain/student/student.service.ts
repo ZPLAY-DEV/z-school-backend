@@ -254,20 +254,20 @@ export class StudentService {
 
   //? 학생 상세 정보 조회
   async findById(id: number): Promise<Student> {
-    const student = await this.studentRepository
-      .createQueryBuilder('student')
-      .leftJoinAndSelect('student.school', 'school')
-      .leftJoinAndSelect('student.parent', 'parent')
-      .leftJoinAndSelect('student.picks', 'pick')
-      .leftJoinAndSelect('pick.group', 'group')
-      .leftJoinAndSelect('group.schooldays', 'schoolday')
-      .where('student.id = :id', { id })
-      .getOne();
+    const student = await this.studentRepository.findOne({
+      where: { id },
+      relations: [
+        'school',
+        'parent',
+        'picks',
+        'picks.group',
+        'picks.group.schooldays',
+      ],
+    });
 
     if (!student) {
       throw new NotFoundException('Student not found');
     }
-
     return student;
   }
 
