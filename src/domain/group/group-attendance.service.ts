@@ -96,6 +96,7 @@ export class GroupAttendanceService {
         'the number of dtos must match with total number of students',
       );
     }
+
     const studentMessageMap = new Map<number, string>();
     dtos.forEach((dto) => {
       studentMessageMap.set(
@@ -120,7 +121,7 @@ export class GroupAttendanceService {
     await this.updateAttendanceStatusInBulk(dtos);
     // 수업시작알림 카운트 및 발송시각 업데이트
     await this.updateSchooldayCountsAndStartNotifiedAt(dtos, groupId, date);
-    // 수업시작알림 SMS/Notification 발송
+    //! 수업시작알림 SMS/Notification 발송
     await this.notificationService.send({
       messages: messages.filter(
         (v) =>
@@ -139,6 +140,7 @@ export class GroupAttendanceService {
   //? 수업종료 알림 (미발송 case 들은 아래 문서 참고.)
   //? https://www.notion.so/v3-DynamoDB-1fb4351cd47a80519649db17d05763d2
   //? ---------------------------------------------------------------------- ?//
+
   async notifyEnd(
     groupId: number,
     dtos: CreateAttendanceWithKeyDto[],
@@ -199,9 +201,9 @@ export class GroupAttendanceService {
       });
     // Dynamo 상태 업데이트 (변경이 필요한 것만 변경한다.)
     await this.updateAttendanceStatusInBulkOptimized(dtos);
-    // 수업시작알림 카운트 및 발송시각 업데이트
+    // 수업종료알림 카운트 및 발송시각 업데이트
     await this.updateSchooldayCountsAndEndNotifiedAt(dtos, groupId, date);
-    // 수업시작알림 SMS/Notification 발송
+    //! 수업종료알림 SMS/Notification 발송
     await this.notificationService.send({
       messages: messages.filter(
         (v) => !v.body.endsWith('조퇴') && !v.body.endsWith('선통보 결석'),
@@ -214,140 +216,102 @@ export class GroupAttendanceService {
     return messages.length;
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? 커스텀 알림
+  //? https://www.notion.so/v3-DynamoDB-1fb4351cd47a80519649db17d05763d2
+  //? ---------------------------------------------------------------------- ?//
+
   async notifyCustom(
     groupId: number,
     dtos: CreateAttendanceWithKeyDto[],
   ): Promise<number> {
-    console.log('🚀 [notifyCustom] Starting custom notification process');
-    console.log('📊 [notifyCustom] Input params:', {
-      groupId,
-      dtosLength: dtos.length,
-      dtos: dtos.map((dto) => ({
-        dailyStudentKey: dto.dailyStudentKey,
-        status: dto.status,
-        schoolNote: dto.schoolNote || '조퇴합니다.',
-        hasSchoolNote: !!dto.schoolNote,
-      })),
+    if (dtos.length === 0) {
+      throw new BadRequestException('dtos is empty');
+    }
+
+    const date = getDateFromDailyStudentKey(dtos[0].dailyStudentKey);
+
+    // 모든 dto의 groupId가 파라미터로 받은 groupId와 일치하는지 validation
+    const groupIds = dtos.map((v) => getGroupIdFromGroupKey(v.groupKey));
+    const invalidGroupIds = groupIds.filter((id) => id !== groupId);
+    if (invalidGroupIds.length > 0) {
+      throw new BadRequestException(
+        `found invalid groupIds: ${invalidGroupIds.join(', ')}`,
+      );
+    }
+
+    // used to have dto date validation. probably too edge cases.
+    const group = await this.groupRepository.findOneOrFail({
+      where: { id: groupId },
+      relations: [
+        'lesson',
+        'picks',
+        'picks.student',
+        'picks.student.parent',
+        'picks.student.parent.user',
+      ],
     });
 
-    // dtos가 없거나 비어있으면 조기 반환
-    if (!dtos || dtos.length === 0) {
-      console.log('⚠️ [notifyCustom] No DTOs provided, returning 0');
-      return 0;
-    }
+    // startedBy가 null이 아니라면, start가 date보다 같거나 이전인지 확인
+    // endedBy가 null이 아니라면, end가 date보다 같거나 이후인지 확인
+    const allStudents = group.picks
+      .filter((v) => {
+        if (v.startedBy !== null && v.start > date) {
+          return false;
+        }
+        if (v.endedBy !== null && v.end < date) {
+          return false;
+        }
+        return true;
+      })
+      .map((v) => v.student);
 
-    // 모든 dto의 groupId가 파라미터로 받은 groupId와 일치하는지 확인
-    const groupIds = dtos.map((v) => +v.groupKey.split('#')[1]);
-    const invalidGroupIds = groupIds.filter((id) => id !== groupId);
+    const studentMessageMap = new Map<number, string>();
+    const schoolNoteMap = new Map<number, string>();
+    dtos.forEach((dto) => {
+      const studentId = getStudentIdFromDailyStudentKey(dto.dailyStudentKey);
+      const translatedStatus = this.translateStatusInOtherContext(dto.status);
+      const schoolNote = dto.schoolNote || '-';
+      studentMessageMap.set(studentId, translatedStatus);
+      schoolNoteMap.set(studentId, schoolNote);
+    });
+    const studentIds = Array.from(studentMessageMap.keys());
 
-    if (invalidGroupIds.length > 0) {
-      console.log('❌ [notifyCustom] Invalid group IDs found:', {
-        expectedGroupId: groupId,
-        foundGroupIds: groupIds,
-        invalidGroupIds,
-      });
+    // validate if studentIds are in allStudents
+    const invalidStudentIds = studentIds.filter(
+      (id) => !allStudents.some((v) => v.id === id),
+    );
+    if (invalidStudentIds.length > 0) {
       throw new BadRequestException(
-        `잘못된 그룹 ID가 포함되어 있습니다. expected: ${groupId}, found: ${invalidGroupIds.join(', ')}`,
+        `found invalid studentIds: ${invalidStudentIds.join(', ')}`,
       );
     }
-
     try {
-      // MySQL 읽고
-      console.log('🔍 [notifyCustom] Fetching group data from MySQL...');
-      const group = await this.groupRepository.findOneOrFail({
-        where: { id: groupId },
-        relations: [
-          'lesson',
-          'picks',
-          'picks.student',
-          'picks.student.parent',
-          'picks.student.parent.user',
-          'schooldays',
-        ],
-      });
-
-      // DTOs에서 날짜 추출 및 검증
-      const dtosDates = dtos.map((dto) =>
-        getDateFromDailyStudentKey(dto.dailyStudentKey),
-      );
-      const uniqueDtosDates = [...new Set(dtosDates)];
-      const validSchoolDates = group.schooldays.map((v) => v.today);
-      const invalidDates = uniqueDtosDates.filter(
-        (date) => !validSchoolDates.includes(date),
-      );
-
-      if (invalidDates.length > 0) {
-        console.log('❌ [notifyCustom] Invalid dates found:', invalidDates);
-        throw new BadRequestException(
-          `다음 날짜들은 해당 그룹의 수업일이 아닙니다: ${invalidDates.join(', ')}`,
-        );
-      }
-
-      const allStudents = group.picks.map((v) => v.student);
-      const schoolNoteMap = new Map<number, string>();
-      const studentMessageMap = new Map<number, string>();
-
-      console.log('🗺️ [notifyCustom] Building student maps...');
-      dtos.forEach((dto) => {
-        const studentId = getStudentIdFromDailyStudentKey(dto.dailyStudentKey);
-        const message = dto.schoolNote || '조퇴합니다.';
-        schoolNoteMap.set(studentId, message);
-        studentMessageMap.set(
-          studentId,
-          this.translateStatusInOtherContext(dto.status),
-        );
-      });
-
-      const studentIds = Array.from(schoolNoteMap.keys());
-      console.log('🎯 [notifyCustom] Target student IDs:', studentIds);
-
-      const allStudentIds = allStudents.map((s) => s.id);
-      const intersection = studentIds.filter((id) =>
-        allStudentIds.includes(id),
-      );
-
-      if (intersection.length === 0) {
-        console.log('❌ [notifyCustom] No matching students found in group');
-        throw new NotFoundException(
-          '해당 그룹에서 대상 학생을 찾을 수 없습니다.',
-        );
-      }
+      const updatedDtos: CreateAttendanceWithKeyDto[] = dtos.map((dto) => ({
+        ...dto,
+        schoolNote: dto.schoolNote,
+        schoolNotedAt: new Date(),
+      }));
 
       const messages = allStudents
-        .filter((v) => studentIds.includes(v.id))
+        .filter((s: Student) => studentIds.includes(s.id))
         .map((v: Student) => {
-          const schoolNote = schoolNoteMap.get(v.id);
           const status = studentMessageMap.get(v.id);
-          const message = {
+          const schoolNote = schoolNoteMap.get(v.id);
+          return {
             id: v.parent.id,
             phone: v.parent.phone,
             token: v.parent.user?.pushToken ?? null,
             title: `${group.lesson.schoolName}`,
-            body: `${v.name} 학생 ${status} : ${schoolNote}`,
+            body: `${group.lesson.lessonName} 수업알림 ${v.name} 학생: ${status}(${schoolNote})`,
             role: 'PARENT',
           };
-          console.log(
-            `💬 [notifyCustom] Created message for student ${v.id} (${v.name}):`,
-            message,
-          );
-          return message;
         });
 
-      console.log('📧 [notifyCustom] Total messages to send:', messages.length);
-
+      console.log('💚 messages: ', JSON.stringify(messages, null, 2));
       // Dynamo 상태 업데이트
-      console.log('🔄 [notifyCustom] Preparing DynamoDB update...');
-      const updatedDtos = dtos.map((dto) => ({
-        ...dto,
-        schoolNote: dto.schoolNote || '조퇴합니다.',
-        schoolNotedAt: new Date(),
-      }));
-
-      console.log(
-        '💾 [notifyCustom] Executing DynamoDB bulk update...',
-        JSON.stringify(updatedDtos, null, 2),
-      );
       await this.updateAttendanceStatusInBulk(updatedDtos);
+      //! 커스텀 알림 SMS/Notification 발송
       await this.notificationService.send({
         messages,
         type: NotificationType.CLASS,
@@ -355,14 +319,9 @@ export class GroupAttendanceService {
         role: 'PARENT',
       });
 
-      console.log(
-        '🎉 [notifyCustom] Process completed successfully, returning message count:',
-        messages.length,
-      );
       return messages.length;
     } catch (error) {
       console.error('❌ [notifyCustom] Error occurred:', error);
-      console.error('🔥 [notifyCustom] Error stack:', error.stack);
       throw error;
     }
   }
