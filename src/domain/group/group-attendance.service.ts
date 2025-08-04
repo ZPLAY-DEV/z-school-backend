@@ -420,6 +420,9 @@ export class GroupAttendanceService {
         });
       }
 
+      // forgot to update schoolday.dailyStudentKeys
+      await this.updateSchooldayDailyStudentKeys(schoolday, dailyStudentKey);
+
       return result;
     } catch (err) {
       console.error(`[dynamoose v4] upsert error`, err);
@@ -730,7 +733,7 @@ export class GroupAttendanceService {
           const nextStop = student?.nextStops[weekday];
           const finalNext = nextStop?.place || '하교장소 미지정';
           console.log(
-            `❌ [DEBUG] Student ${studentId}: Group not found, student=${JSON.stringify(student)}, nextStop="${nextStop}", finalNext="${finalNext}"`,
+            `❌ [DEBUG] Student ${studentId}: Group not found, student=${JSON.stringify(student)}, nextStop="${nextStop?.name}", finalNext="${finalNext}"`,
           );
           studentNextMap.set(studentId, finalNext);
           studentIsLastMap.set(studentId, true); // 그룹을 찾을 수 없는 경우는 마지막으로 간주
@@ -740,7 +743,7 @@ export class GroupAttendanceService {
           const nextStop = student?.nextStops[weekday];
           const finalNext = nextStop?.place || '하교장소 미지정';
           console.log(
-            `🏁 [DEBUG] Student ${studentId}: Last group, student=${JSON.stringify(student)}, nextStop="${nextStop}", finalNext="${finalNext}"`,
+            `🏁 [DEBUG] Student ${studentId}: Last group, student=${JSON.stringify(student)}, nextStop="${nextStop?.name}", finalNext="${finalNext}"`,
           );
           studentNextMap.set(studentId, finalNext);
           studentIsLastMap.set(studentId, true); // 마지막 그룹

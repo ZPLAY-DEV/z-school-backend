@@ -65,7 +65,7 @@ export class Group {
     enum: Weekday,
     example: Weekday.MONDAY,
   })
-  @Column({ type: 'enum', enum: Weekday })
+  @Column({ type: 'enum', enum: Weekday, default: Weekday.MONDAY })
   weekday: Weekday;
 
   @ApiProperty({ description: '수업 시작 시간 (HH:mm)', example: '14:40' })

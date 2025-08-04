@@ -23,7 +23,7 @@ const data = [
       schoolYear: 2025,
       schoolName: '신동초등학교',
       termName: '하반기',
-      start: '2025-08-18',
+      start: '2025-08-01',
       end: '2026-02-10',
     },
   },
@@ -31,10 +31,10 @@ const data = [
     uri: `categories/seed`,
     payload: {},
   },
-  {
-    uri: `schools/1/calendars`,
-    payload: {},
-  },
+  // {
+  //   uri: `schools/1/calendars`,
+  //   payload: {},
+  // },
   {
     uri: `schools/1/students/bulk`,
     payload: [

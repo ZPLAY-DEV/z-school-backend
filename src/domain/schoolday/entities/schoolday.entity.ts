@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { Actor } from 'src/common/enums';
+import { Actor, Weekday } from 'src/common/enums';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import {
@@ -63,9 +63,13 @@ export class Schoolday {
   @Column({ type: 'varchar', length: 10, comment: '수업일' })
   today: string; // '2025-07-16'
 
-  @ApiProperty({ description: 'weekday', example: '월' })
-  @Column({ type: 'varchar', length: 1 })
-  weekday: string;
+  @ApiProperty({
+    description: '수업 요일',
+    enum: Weekday,
+    example: Weekday.MONDAY,
+  })
+  @Column({ type: 'enum', enum: Weekday, default: Weekday.MONDAY })
+  weekday: Weekday;
 
   @ApiProperty({
     description: '원래 날짜',
