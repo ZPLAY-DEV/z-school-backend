@@ -63,6 +63,10 @@ export class Schoolday {
   @Column({ type: 'varchar', length: 10, comment: '수업일' })
   today: string; // '2025-07-16'
 
+  @ApiProperty({ description: 'weekday', example: '월' })
+  @Column({ type: 'varchar', length: 1 })
+  weekday: string;
+
   @ApiProperty({
     description: '원래 날짜',
     example: '2025-07-16',

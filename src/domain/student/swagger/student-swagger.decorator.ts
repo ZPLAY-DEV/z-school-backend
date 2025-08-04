@@ -349,10 +349,10 @@ export const FindStudentByIdDocs = () =>
 export const FindStudentSchooldaysDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '📅 학생 수업일 조회 ❌ deprecated',
+      summary: '📅 오늘의 수업 또는 특정일의 수업 조회',
       description: `
 ### 📋 기능 설명
-특정 학생의 수업일 목록을 조회합니다.
+특정 학생의 오늘 수업 또는 특정일의 수업 일정을 조회합니다.
 
 ### 🔍 필터링 옵션
 - **termId**: 특정 학기의 수업일만 조회

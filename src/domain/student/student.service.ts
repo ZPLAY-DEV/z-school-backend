@@ -261,7 +261,7 @@ export class StudentService {
         'parent',
         'picks',
         'picks.group',
-        'picks.group.schooldays',
+        // 'picks.group.schooldays',
       ],
     });
 
@@ -272,43 +272,50 @@ export class StudentService {
   }
 
   //? 학생의 수업일 조회
-  async findSchooldaysById(id: number, termId?: number): Promise<Schoolday[]> {
-    const queryBuilder = this.studentRepository
-      .createQueryBuilder('student')
-      .leftJoinAndSelect('student.picks', 'pick')
-      .leftJoinAndSelect('pick.group', 'group')
-      .leftJoinAndSelect('group.schooldays', 'schoolday')
-      .where('student.id = :id', { id })
-      .andWhere('pick.endedBy IS NULL'); // 현재 수강중인 반만 조회
-
-    // termId가 제공되면 해당 학기의 picks만 필터링
-    if (termId) {
-      queryBuilder.andWhere('pick.termId = :termId', {
-        termId: Number(termId),
-      });
-    }
-
-    const student = await queryBuilder.getOne();
-
-    if (!student) {
-      throw new NotFoundException('Student not found');
-    }
-
-    // 학생의 picks에서 모든 schooldays 추출
-    const schooldays: Schoolday[] = [];
-    student.picks?.forEach((pick) => {
-      if (pick.group && pick.group.schooldays) {
-        schooldays.push(...pick.group.schooldays);
-      }
+  async getSchooldaysByDate(
+    id: number,
+    termId?: number,
+    date?: string,
+  ): Promise<Schoolday[]> {
+    const today = date ? date : format(new Date(), 'yyyy-MM-dd');
+    const student = await this.studentRepository.findOneOrFail({
+      where: { id },
+      relations: [
+        'picks',
+        'picks.group',
+        'picks.group.schooldays',
+        'picks.group.schooldays.departures',
+      ],
     });
 
-    // 중복 제거 (같은 schoolday가 여러 group에 있을 수 있다면...)
-    // const uniqueSchooldays = schooldays.filter(
-    //   (schoolday, index, self) =>
-    //     index === self.findIndex((s) => s.id === schoolday.id),
-    // );
+    // Student 의 모든 picks의 groups에서 schooldays를 수집
+    const allSchooldays: Schoolday[] = [];
 
-    return schooldays;
+    if (!student.picks) {
+      return [];
+    }
+
+    for (const pick of student.picks) {
+      if (termId && pick.termId !== Number(termId)) {
+        continue;
+      }
+
+      if (pick.group && pick.group.schooldays) {
+        const schooldaysWithGroup = pick.group.schooldays
+          .filter((schoolday) => schoolday.today === today)
+          .map((schoolday) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { schooldays: _, ...groupWithoutSchooldays } = pick.group;
+            return {
+              ...schoolday,
+              group: groupWithoutSchooldays as any, // 타입 단언으로 순환 참조 방지
+            };
+          });
+        allSchooldays.push(...schooldaysWithGroup);
+      }
+    }
+
+    return allSchooldays;
   }
 
   //? 학생의 수강 신청 내역 조회

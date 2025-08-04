@@ -18,6 +18,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { BulkUpdateSamsDto } from '../dto/bulk-update-sams.dto';
 import { CreateSamDto } from '../dto/create-sam.dto';
 import { UpdateSamDto } from '../dto/update-sam.dto';
@@ -306,18 +307,31 @@ export const GetSamByIdDocs = () =>
 export const GetSamGroupsDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary:
-        '학교에 속한 강사의 반 & 학생 상세 조회 --- 학교에 속한 강사의 상세 수업정보 조회',
+      summary: '📚 강의중인 반 조회',
       description: `
-      - 학교에 속한 특정 강사가 관리하는 반 목록을 조회한다.
-      - 반 목록에는 반 정보와 반 학생 목록이 포함된다.
-      - termId를 전달하면 해당 학기의 반만 필터링하여 조회된다.
+### 📋 기능 설명
+담임쌤이 현재 강의중인 반 목록을 조회합니다.
+
+### 🏷️ 조회 조건
+- **기본**: 담임쌤이 담당하는 모든 반 조회
+- **학기 필터**: termId 전달 시 해당 학기의 반만 필터링
+- **활성 반**: 현재 강의중인 반만 조회
+
+### 📌 비즈니스 규칙
+- 담임쌤이 담당하는 반만 조회됩니다
+- 학기별로 필터링 가능합니다
+- 반 정보와 함께 수업 정보도 포함됩니다
+
+### 💡 사용 시점
+- 담임쌤 대시보드에서 현재 담당 반 확인
+- 학기별 반 관리
+- 수업 일정 확인
       `,
     }),
     ApiParam({
       name: 'id',
       type: Number,
-      description: '강사 ID',
+      description: '담임쌤 ID',
     }),
     ApiQuery({
       name: 'termId',
@@ -327,7 +341,7 @@ export const GetSamGroupsDocs = () =>
     }),
     ApiExtraModels(Group, Lesson),
     ApiOkResponse({
-      description: '학교에 속한 강사의 반 & 학생 상세 조회',
+      description: '✅ 강의중인 반 목록 조회 성공',
       schema: {
         type: 'array',
         items: {
@@ -344,6 +358,75 @@ export const GetSamGroupsDocs = () =>
           ],
         },
       },
+    }),
+    ApiResponse({
+      status: StatusCodes.NOT_FOUND,
+      description: '🔍 리소스 없음 - 존재하지 않는 담임쌤 ID',
+    }),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? Get Sam Schooldays
+//? ---------------------------------------------------------------------- ?//
+
+export const GetSamSchooldaysDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '📅 오늘의 수업 또는 특정일의 수업 조회',
+      description: `
+### 📋 기능 설명
+담임쌤의 오늘 수업 또는 특정일의 수업 일정을 조회합니다.
+
+### 🏷️ 조회 조건
+- **기본**: 오늘 날짜의 수업 조회
+- **특정일**: date 파라미터로 특정 날짜의 수업 조회
+- **학기 필터**: termId 전달 시 해당 학기의 수업만 필터링
+
+### 📌 비즈니스 규칙
+- 담임쌤이 담당하는 수업만 조회됩니다
+- 날짜별로 필터링 가능합니다
+- 학기별로 필터링 가능합니다
+- 수업 정보와 함께 반 정보도 포함됩니다
+
+### 💡 사용 시점
+- 담임쌤 대시보드에서 오늘 수업 확인
+- 특정 날짜의 수업 일정 확인
+- 학기별 수업 관리
+- 수업 준비 및 계획
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '담임쌤 ID',
+    }),
+    ApiQuery({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID (선택사항, 전달 시 해당 학기의 수업만 필터링)',
+      required: false,
+    }),
+    ApiQuery({
+      name: 'date',
+      type: String,
+      description: '조회할 날짜 (YYYY-MM-DD 형식, 선택사항, 기본값: 오늘)',
+      required: false,
+    }),
+    ApiExtraModels(Schoolday),
+    ApiOkResponse({
+      description: '✅ 수업 일정 조회 성공',
+      schema: {
+        type: 'array',
+        items: { $ref: getSchemaPath(Schoolday) },
+      },
+    }),
+    ApiResponse({
+      status: StatusCodes.NOT_FOUND,
+      description: '🔍 리소스 없음 - 존재하지 않는 담임쌤 ID',
+    }),
+    ApiResponse({
+      status: StatusCodes.BAD_REQUEST,
+      description: '🚫 요청 데이터 오류 - 잘못된 날짜 형식',
     }),
   );
 

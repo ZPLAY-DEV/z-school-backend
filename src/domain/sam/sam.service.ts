@@ -230,7 +230,7 @@ export class SamService {
         continue;
       }
 
-      if (contract.group?.schooldays) {
+      if (contract.group && contract.group?.schooldays) {
         const schooldaysWithGroup = contract.group.schooldays
           .filter((schoolday) => schoolday.today === today)
           .map((schoolday) => {

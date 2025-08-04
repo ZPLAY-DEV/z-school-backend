@@ -93,14 +93,14 @@ export class StudentController {
     return await this.studentService.findById(id);
   }
 
-  //! @deprecated
   @FindStudentSchooldaysDocs()
   @Get(':id/schooldays')
-  async findSchooldaysById(
+  async getSchooldaysByDate(
     @Param('id') id: number,
     @Query('termId') termId?: number,
+    @Query('date') date?: string,
   ): Promise<Schoolday[]> {
-    return await this.studentService.findSchooldaysById(id, termId);
+    return await this.studentService.getSchooldaysByDate(id, termId, date);
   }
 
   //! @deprecated

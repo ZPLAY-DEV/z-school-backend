@@ -26,6 +26,7 @@ import {
   CreateSamDocs,
   GetSamByIdDocs,
   GetSamGroupsDocs,
+  GetSamSchooldaysDocs,
   SamDryRunDocs,
   SoftDeleteSamDocs,
   UpdateSamDocs,
@@ -70,7 +71,7 @@ export class SamController {
     return await this.samService.getGroupsById(id, termId);
   }
 
-  @GetSamGroupsDocs()
+  @GetSamSchooldaysDocs()
   @Get(':id/schooldays')
   async getSchooldaysByDate(
     @Param('id', ParseIntPipe) id: number,
