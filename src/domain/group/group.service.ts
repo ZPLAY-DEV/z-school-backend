@@ -290,47 +290,34 @@ export class GroupService {
   }
 
   async listAvailableStudents(id: number): Promise<Student[]> {
-    // 1. Group을 찾고 lesson과 lesson.groups, lesson.school 관계를 포함하여 가져오기
+    // 1. Group 정보만 가져오기 (필요한 정보만)
     const group = await this.groupRepository.findOne({
       where: { id },
-      relations: [
-        'lesson',
-        'lesson.groups',
-        'lesson.groups.picks',
-        'lesson.school',
-        'lesson.school.students',
-      ],
+      relations: ['lesson'],
     });
 
     if (!group) {
       throw new NotFoundException('Group not found');
     }
 
-    // 2. allowedGrades 파싱 (쉼표로 구분된 문자열을 숫자 배열로 변환)
+    // 2. allowedGrades 파싱
     const allowedGrades = group.allowedGrades
       .split(',')
       .map((grade) => parseInt(grade.trim()));
 
-    // 3. lesson의 모든 groups의 picks에서 studentId 추출
-    const excludedStudentIds = new Set<number>();
-    group.lesson.groups.forEach((lessonGroup) => {
-      lessonGroup.picks?.forEach((pick) => {
-        if (pick.studentId) {
-          excludedStudentIds.add(pick.studentId);
-        }
-      });
-    });
-
-    // 4. school의 students 중에서 조건에 맞는 학생들 필터링
-    const availableStudents = group.lesson.school.students.filter((student) => {
-      // grade가 allowedGrades에 포함되어야 함
-      const gradeMatches = allowedGrades.includes(student.grade);
-
-      // picks에 포함되지 않아야 함
-      const notInPicks = !excludedStudentIds.has(student.id);
-
-      return gradeMatches && notInPicks;
-    });
+    // 3. 데이터베이스 레벨에서 직접 쿼리하여 성능 최적화
+    const availableStudents = await this.dataSource
+      .createQueryBuilder(Student, 'student')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .where('student.schoolId = :schoolId', {
+        schoolId: group.lesson.schoolId,
+      })
+      .andWhere('student.grade IN (:...allowedGrades)', { allowedGrades })
+      .andWhere(
+        'student.id NOT IN (SELECT DISTINCT pick.studentId FROM picks pick INNER JOIN `groups` g ON pick.groupId = g.id WHERE g.lessonId = :lessonId AND pick.studentId IS NOT NULL)',
+        { lessonId: group.lessonId },
+      )
+      .getMany();
 
     return availableStudents;
   }
