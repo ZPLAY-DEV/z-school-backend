@@ -304,7 +304,10 @@ export class StudentService {
 
       if (pick.group && pick.group.schooldays) {
         const schooldaysWithGroup = pick.group.schooldays
-          .filter((schoolday) => schoolday.today === today)
+          .filter(
+            (schoolday) =>
+              schoolday.today === today || schoolday.original === today,
+          )
           .map((schoolday) => {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { schooldays: _, ...groupWithoutSchooldays } = pick.group;
@@ -316,14 +319,6 @@ export class StudentService {
         allSchooldays.push(...schooldaysWithGroup);
       }
     }
-
-    // todo. 변경전 수업일 추가 필요. 하지만 시간 정보는 없다.
-    // add original schooldays
-    // const originalSchooldays = student.picks
-    //   .filter((pick) => pick.group && pick.group.schooldays)
-    //   .map((pick) => pick.group.schooldays)
-    //   .flat();
-    // allSchooldays.push(...originalSchooldays);
 
     return allSchooldays;
   }

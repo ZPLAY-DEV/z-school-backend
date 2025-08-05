@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { format } from 'date-fns';
+import { Weekday } from 'src/common/enums';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
+import { getKoreanWeekday } from 'src/helpers/date';
 import { formatDateInKST } from 'src/helpers/time';
 import { DataSource, EntitySubscriberInterface, UpdateEvent } from 'typeorm';
 
@@ -37,10 +40,24 @@ export class SchooldaySubscriber
     // 안바뀌었다면, 종료
     if (!(startChanged || endChanged)) return;
 
-    schoolday.original = formatDateInKST(prev.startsAt);
-    schoolday.today = formatDateInKST(schoolday.startsAt);
+    // original을 먼저 설정 (이전 today 값 또는 이전 startsAt의 날짜)
+    schoolday.original = prev?.today ?? formatDateInKST(prev.startsAt);
 
-    await event.manager.save(Schoolday, schoolday);
+    // 새로운 today 값 계산
+    const today = format(schoolday.startsAt, 'yyyy-MM-dd');
+    schoolday.today = today;
+    schoolday.weekday = getKoreanWeekday(today) as Weekday;
+
+    this.logger.log(
+      `Schoolday update - prev.today: ${prev?.today}, new today: ${today}, original: ${schoolday.original}`,
+    );
+
+    // save 대신 update를 사용하여 무한 루프 방지
+    await event.manager.update(Schoolday, schoolday.id, {
+      original: schoolday.original,
+      today: schoolday.today,
+      weekday: schoolday.weekday,
+    });
 
     // 혹시 schoolday.original 에 있는 다이나모 출석부 (attendance)가 있다면 삭제
     await this.schooldayAttendanceService.deleteGroupAttendanceWithDate({

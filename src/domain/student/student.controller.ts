@@ -19,7 +19,6 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { DailyNextStopDto } from 'src/domain/student/dto/update-student-next-stop.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { StudentService } from 'src/domain/student/student.service';
@@ -35,8 +34,7 @@ import {
   FindStudentSchooldaysDocs,
   FindStudentsPaginatedDocs,
   RemoveStudentDocs,
-  UpdateStudentDocs,
-  UpdateStudentNextStopDocs,
+  UpdateStudentDocs
 } from 'src/domain/student/swagger/student-swagger.decorator';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { UploadService } from 'src/services/upload/upload.service';
@@ -164,18 +162,6 @@ export class StudentController {
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
-
-  /**
-   * @deprecated update() 메서드의 nextStops 필드를 사용하세요.
-   */
-  @UpdateStudentNextStopDocs()
-  @Patch(':id/escort')
-  async updateEscortInfo(
-    @Param('id') id: number,
-    @Body() dtos: DailyNextStopDto[],
-  ): Promise<Student> {
-    return await this.studentService.updateEscortInfo(id, dtos);
-  }
 
   @UpdateStudentDocs()
   @Patch(':id')
