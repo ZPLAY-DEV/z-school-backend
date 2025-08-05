@@ -26,6 +26,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
+import { UpdateStudentNextStopDto } from 'src/domain/student/dto/update-student-next-stop.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 
 // Student 페이지네이션 설정
@@ -660,6 +661,128 @@ export const UpdateStudentDocs = () =>
     ApiResponse({
       status: StatusCodes.CONFLICT,
       description: '⚠️ 데이터 충돌 - 동일 학교 내 학번 중복',
+    }),
+  );
+
+export const UpdateStudentNextStopDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '📍 학생 하교장소 수정',
+      description: `
+### 📋 기능 설명
+학생의 요일별 하교장소 정보를 수정합니다.
+
+### 📅 요일별 정보 구조
+각 요일(월~토)마다 다음 정보를 포함:
+- **place**: 하교 후 가는 장소 (필수)
+- **name**: 함께 가는 사람 이름 (선택, nullable)
+- **phone**: 함께 가는 사람 전화번호 (선택, nullable)
+
+### 📝 데이터 형식
+- 요일은 한글 키로 구분: 월, 화, 수, 목, 금, 토
+- 모든 요일 정보를 한 번에 전송
+- name과 phone은 null 값 허용
+
+### ⚠️ 주의사항
+- 기존 하교장소 정보는 완전히 덮어쓰기
+- 모든 요일 정보를 포함하여 전송
+- 전화번호는 하이픈 없이 숫자만 입력
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '수정할 학생 ID',
+      example: 1,
+    }),
+    ApiBody({
+      type: UpdateStudentNextStopDto,
+      examples: {
+        complete_update: {
+          summary: '전체 하교장소 정보 수정',
+          description: '모든 요일의 하교장소 정보를 한 번에 수정',
+          value: {
+            월: {
+              place: '당구장',
+              name: '친구',
+              phone: '01012340001',
+            },
+            화: {
+              place: '찜질방',
+              name: '친구',
+              phone: '01012340002',
+            },
+            수: {
+              place: '당구장',
+              name: '친구',
+              phone: '01012340003',
+            },
+            목: {
+              place: '탁구장',
+              name: '친구',
+              phone: '01012340004',
+            },
+            금: {
+              place: '게임방',
+              name: '친구',
+              phone: '01012340005',
+            },
+            토: {
+              place: '노래방',
+              name: '친구',
+              phone: '01012340006',
+            },
+          },
+        },
+        nullable_fields: {
+          summary: 'nullable 필드 예시',
+          description: 'name과 phone이 null인 경우',
+          value: {
+            월: {
+              place: '집',
+              name: null,
+              phone: null,
+            },
+            화: {
+              place: '학원',
+              name: '엄마',
+              phone: null,
+            },
+            수: {
+              place: '도서관',
+              name: null,
+              phone: '01012340000',
+            },
+            목: {
+              place: '집',
+              name: null,
+              phone: null,
+            },
+            금: {
+              place: '학원',
+              name: '엄마',
+              phone: '01012340000',
+            },
+            토: {
+              place: '집',
+              name: null,
+              phone: null,
+            },
+          },
+        },
+      },
+    }),
+    ApiOkResponseTemplate({
+      description: '✅ 학생 하교장소 수정 완료',
+      type: Student,
+    }),
+    ApiResponse({
+      status: StatusCodes.BAD_REQUEST,
+      description: '🚫 요청 데이터 오류 - 잘못된 데이터 형식, 필수 필드 누락',
+    }),
+    ApiResponse({
+      status: StatusCodes.NOT_FOUND,
+      description: '🔍 학생 없음 - 존재하지 않는 학생 ID',
     }),
   );
 

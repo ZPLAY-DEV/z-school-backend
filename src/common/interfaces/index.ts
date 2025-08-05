@@ -182,8 +182,8 @@ export interface IRequestUser {
 }
 export interface IDailyEscort {
   place: string;
-  name: string;
-  phone: string;
+  name: string | null;
+  phone: string | null;
 }
 
 //? ---------------------------------------------------------------------- ?//

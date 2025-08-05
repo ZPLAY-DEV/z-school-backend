@@ -23,6 +23,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
+import { UpdateStudentNextStopDto } from 'src/domain/student/dto/update-student-next-stop.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -532,6 +533,36 @@ export class StudentService {
     });
   }
 
+  /**
+   * 학생 하교장소 정보 수정
+   * 요일별 하교 후 가는 장소와 함께 가는 사람 정보를 업데이트합니다.
+   */
+  async updateEscortInfo(
+    id: number,
+    dto: UpdateStudentNextStopDto,
+  ): Promise<Student> {
+    const student = await this.studentRepository.findOne({
+      where: { id },
+      relations: ['parent'],
+    });
+
+    if (!student) {
+      throw new NotFoundException(`Student with ID ${id} not found`);
+    }
+
+    // nextStop 필드를 파이프(|)로 구분된 문자열로 저장
+    const nextStop = this._convertToString(dto);
+
+    await this.studentRepository.update(id, {
+      nextStop: nextStop,
+    });
+
+    return await this.studentRepository.findOneOrFail({
+      where: { id },
+      relations: ['parent'],
+    });
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
@@ -566,6 +597,27 @@ export class StudentService {
       where: { id },
       withDeleted: true,
     });
+  }
+
+  /**
+   * 하교장소 DTO를 파이프(|)로 구분된 문자열로 변환
+   * 형식: "장소|이름|전화번호,장소|이름|전화번호,..."
+   */
+  private _convertToString(dto: UpdateStudentNextStopDto): string {
+    const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const parts: string[] = [];
+
+    for (const day of days) {
+      const dayData = dto[day];
+      if (dayData && dayData.place) {
+        const place = dayData.place || '';
+        const name = dayData.name || '';
+        const phone = dayData.phone || '';
+        parts.push(`${place}|${name}|${phone}`);
+      }
+    }
+
+    return parts.join(',');
   }
 
   //? 학생 이미지 삭제

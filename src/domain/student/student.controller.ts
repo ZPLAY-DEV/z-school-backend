@@ -19,6 +19,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { UpdateStudentNextStopDto } from 'src/domain/student/dto/update-student-next-stop.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { StudentService } from 'src/domain/student/student.service';
@@ -35,6 +36,7 @@ import {
   FindStudentsPaginatedDocs,
   RemoveStudentDocs,
   UpdateStudentDocs,
+  UpdateStudentNextStopDocs,
 } from 'src/domain/student/swagger/student-swagger.decorator';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { UploadService } from 'src/services/upload/upload.service';
@@ -162,6 +164,15 @@ export class StudentController {
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
+
+  @UpdateStudentNextStopDocs()
+  @Patch(':id/escort')
+  async updateEscortInfo(
+    @Param('id') id: number,
+    @Body() dto: UpdateStudentNextStopDto,
+  ): Promise<Student> {
+    return await this.studentService.updateEscortInfo(id, dto);
+  }
 
   @UpdateStudentDocs()
   @Patch(':id')
