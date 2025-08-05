@@ -27,6 +27,7 @@ import {
   FindAttendanceByDateDocs,
   FindAttendanceByDateWithExtendedDataDocs,
   GetReportDocs,
+  GetStudentMonthlyReportDocs,
   StartAttendanceDocs,
   UpsertAttendanceDocs,
 } from 'src/domain/group/swagger/group-attendance-swagger.decorator';
@@ -117,6 +118,21 @@ export class GroupAttendanceController {
     return await this.groupAttendancesService.findAttendancesByDateWithExtendedData(
       groupKey,
       date,
+    );
+  }
+
+  @GetStudentMonthlyReportDocs()
+  @Get(':groupId/attendances/:month/students/:studentId')
+  async getStudentMonthlyReport(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('month') month: string,
+    @Param('studentId', ParseIntPipe) studentId: number,
+  ): Promise<IAttendance[]> {
+    const groupKey = generateGroupKey(groupId);
+    return await this.groupAttendancesService.getStudentMonthlyReport(
+      groupKey,
+      month,
+      studentId,
     );
   }
 

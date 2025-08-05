@@ -1,9 +1,9 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -703,6 +703,115 @@ Returns the number of students processed.
       description: 'Custom attendance processing completed successfully',
       type: Number,
       isArray: false,
+    }),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Get Student Monthly Report
+//? ---------------------------------------------------------------------- ?//
+export const GetStudentMonthlyReportDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '📊 Get student monthly attendance report',
+      description: `
+### Overview
+Retrieves monthly attendance data for a specific student in a group.
+Returns all attendance records for the specified month filtered by student ID.
+
+### Parameters
+- \`groupId\`: Group ID (number)
+- \`month\`: Target month (YYYY-MM format, e.g., "2025-08")
+- \`studentId\`: Student ID (number)
+
+### Response
+Returns an array of attendance records for the specified student in the given month.
+
+### Use Cases
+- Monthly attendance analysis for individual students
+- Parent portal monthly attendance display
+- Student attendance pattern analysis
+- Academic performance tracking
+
+### Data Structure
+- Each record contains daily attendance information
+- Records are filtered by student ID from monthly data
+- DynamoDB query uses beginsWith on dailyStudentKey with month prefix
+
+### Performance Notes
+- Uses DynamoDB beginsWith query for efficient monthly data retrieval
+- Client-side filtering by student ID for precise results
+- Optimized for monthly report generation
+      `,
+    }),
+    ApiParam({
+      name: 'groupId',
+      type: 'number',
+      description: 'Group ID',
+      example: 123,
+    }),
+    ApiParam({
+      name: 'month',
+      type: 'string',
+      description: 'Target month (YYYY-MM format)',
+      example: '2025-08',
+    }),
+    ApiParam({
+      name: 'studentId',
+      type: 'number',
+      description: 'Student ID',
+      example: 456,
+    }),
+    ApiOkResponse({
+      description: 'Student monthly attendance report retrieved successfully',
+      schema: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            groupKey: {
+              type: 'string',
+              example: 'GROUP#123',
+            },
+            dailyStudentKey: {
+              type: 'string',
+              example: 'DATE#2025-08-15#STUDENT#456#3-1-12',
+            },
+            studentName: {
+              type: 'string',
+              example: 'John Doe',
+            },
+            lessonName: {
+              type: 'string',
+              example: 'Mathematics',
+            },
+            status: {
+              type: 'string',
+              enum: ['INIT', 'PRESENT', 'ABSENT', 'LATE', 'LEFT', 'EXCUSED_ABSENT', 'EXCUSED_LATE', 'EXCUSED_LEFT'],
+              example: 'PRESENT',
+            },
+            parentNote: {
+              type: 'string',
+              example: 'Thank you for your attention.',
+            },
+            schoolNote: {
+              type: 'string',
+              example: 'Student participated well in class.',
+            },
+            parentNotedAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-08-15T09:00:00Z',
+            },
+            schoolNotedAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-08-15T09:00:00Z',
+            },
+          },
+        },
+      },
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
   );

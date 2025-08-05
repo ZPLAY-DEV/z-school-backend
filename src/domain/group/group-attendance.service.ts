@@ -788,6 +788,47 @@ export class GroupAttendanceService {
     return processAttendanceReport(items);
   }
 
+  /**
+   * 특정 학생의 월별 출석 데이터를 조회합니다.
+   *
+   * @param groupKey DynamoDB 그룹 키 (e.g., "GROUP#48")
+   * @param month 조회할 월 (e.g., "2025-08")
+   * @param studentId 학생 ID
+   *
+   * @returns 해당 월의 특정 학생 출석 데이터 배열
+   */
+  async getStudentMonthlyReport(
+    groupKey: string,
+    month: string,
+    studentId: number,
+  ): Promise<IAttendance[]> {
+    try {
+      // 월별 prefix 생성 (e.g., "DATE#2025-08")
+      const monthPrefix = `DATE#${month}`;
+
+      // 해당 월의 모든 출석 데이터 조회
+      const result = await this.model
+        .query('groupKey')
+        .eq(groupKey)
+        .where('dailyStudentKey')
+        .beginsWith(monthPrefix)
+        .exec();
+
+      const items = result as IAttendance[];
+
+      // 특정 학생의 데이터만 필터링
+      const filteredItems = items.filter(
+        (item) =>
+          getStudentIdFromDailyStudentKey(item.dailyStudentKey) === studentId,
+      );
+
+      return filteredItems;
+    } catch (error) {
+      console.error(`[dynamodb] getStudentMonthlyReport error`, error);
+      throw new BadRequestException('학생 월별 출석 정보 조회에 실패했습니다.');
+    }
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Private Utility Methods
   //? ---------------------------------------------------------------------- ?//
