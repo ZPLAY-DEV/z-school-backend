@@ -96,6 +96,7 @@ export function generateSchooldays(
         name: lesson.lessonName,
         duration: duration,
         today: today,
+        weekday: group.weekday,
         weekNumber: weekNumber++,
         startsAt: startsAt,
         endsAt: endsAt,

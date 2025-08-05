@@ -164,7 +164,7 @@ export class UserOtpService {
       });
     } catch (e) {
       console.log(e);
-      throw new BadRequestException('nCloud smsClient error');
+      throw new BadRequestException('aligo smsClient error');
     }
   }
 

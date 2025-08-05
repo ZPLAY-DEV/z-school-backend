@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { format } from 'date-fns-tz';
 import {
   FilterOperator,
+  FilterSuffix,
   paginate,
   PaginateConfig,
   Paginated,
@@ -315,6 +316,14 @@ export class StudentService {
       }
     }
 
+    // todo. 변경전 수업일 추가 필요. 하지만 시간 정보는 없다.
+    // add original schooldays
+    // const originalSchooldays = student.picks
+    //   .filter((pick) => pick.group && pick.group.schooldays)
+    //   .map((pick) => pick.group.schooldays)
+    //   .flat();
+    // allSchooldays.push(...originalSchooldays);
+
     return allSchooldays;
   }
 
@@ -429,9 +438,13 @@ export class StudentService {
   //? 학생 목록 조회 (페이지네이션)
   async infiniteList(query: PaginateQuery): Promise<Paginated<Student>> {
     const queryBuilder = this.studentRepository.createQueryBuilder('student');
+
     const config: PaginateConfig<Student> = {
+      relations: ['picks'],
       sortableColumns: ['id', 'name'],
       filterableColumns: {
+        schoolId: [FilterOperator.EQ],
+        picks: [FilterOperator.NULL, FilterSuffix.NOT],
         name: [FilterOperator.ILIKE],
         phone: [FilterOperator.ILIKE],
         note: [FilterOperator.ILIKE],

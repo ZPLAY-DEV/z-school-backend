@@ -294,6 +294,60 @@ export class PickService {
     });
   }
 
+  //? termId로 학생 목록 조회 (studentId 중복 제거)
+  async listStudentsByTerm(termId: number): Promise<Pick[]> {
+    return await this.pickRepository
+      .createQueryBuilder('pick')
+      .leftJoinAndSelect('pick.student', 'student')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .leftJoinAndSelect('pick.group', 'group')
+      .leftJoinAndSelect('group.lesson', 'lesson')
+      .where('lesson.termId = :termId', { termId })
+      .andWhere('pick.deletedAt IS NULL')
+      .groupBy(
+        'pick.studentId, pick.id, student.id, parent.id, group.id, lesson.id',
+      )
+      .orderBy('student.name', 'ASC')
+      .getMany();
+  }
+
+  //? termId로 학생 목록 조회 (페이지네이션, studentId 중복 제거)
+  async listStudentsByTermPaginated(
+    termId: number,
+    query: PaginateQuery,
+  ): Promise<Paginated<Pick>> {
+    const queryBuilder = this.pickRepository
+      .createQueryBuilder('pick')
+      .leftJoinAndSelect('pick.student', 'student')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .leftJoinAndSelect('pick.group', 'group')
+      .leftJoinAndSelect('group.lesson', 'lesson')
+      .where('lesson.termId = :termId', { termId })
+      .andWhere('pick.deletedAt IS NULL')
+      .groupBy(
+        'pick.studentId, pick.id, student.id, parent.id, group.id, lesson.id',
+      );
+
+    return await paginate(query, queryBuilder, {
+      relations: {
+        student: {
+          parent: true,
+        },
+        group: {
+          lesson: true,
+        },
+      },
+      sortableColumns: ['id', 'student.name'],
+      searchableColumns: ['student.name', 'student.phone', 'note'],
+      defaultSortBy: [['student.name', 'ASC']] as any,
+      filterableColumns: {
+        'student.schoolId': [FilterOperator.EQ],
+        enrolledBy: [FilterOperator.EQ],
+        deletedBy: [FilterOperator.EQ],
+      },
+    });
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//

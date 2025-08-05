@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
+  FilterSuffix,
   paginate,
   Paginated,
   PaginateQuery,
@@ -265,12 +266,14 @@ export class SchoolStudentService {
         ['studentCode', 'ASC'],
       ],
       filterableColumns: {
+        termId: [FilterOperator.EQ],
         grade: [FilterOperator.EQ],
         class: [FilterOperator.EQ],
         studentCode: [FilterOperator.EQ],
         name: [FilterOperator.EQ, FilterOperator.ILIKE],
         status: [FilterOperator.EQ, FilterOperator.IN],
-        'picks.termId': [FilterOperator.EQ],
+        picks: [FilterOperator.NULL, FilterSuffix.NOT],
+        // 'picks.termId': [FilterOperator.EQ],
         note: [FilterOperator.EQ, FilterOperator.ILIKE, FilterOperator.NULL],
       },
     });

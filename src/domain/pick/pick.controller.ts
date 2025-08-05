@@ -122,6 +122,23 @@ export class PickController {
     return await this.pickService.studentInfiniteList(groupId, query);
   }
 
+  //? termId로 학생 목록 조회 (studentId 중복 제거)
+  @Get('terms/:termId/students')
+  async getStudentsByTerm(
+    @Param('termId', ParseIntPipe) termId: number,
+  ): Promise<Pick[]> {
+    return await this.pickService.listStudentsByTerm(termId);
+  }
+
+  //? termId로 학생 목록 조회 (페이지네이션, studentId 중복 제거)
+  @Get('terms/:termId/students/paginated')
+  async getStudentsByTermPaginated(
+    @Param('termId', ParseIntPipe) termId: number,
+    @Paginate() query: PaginateQuery,
+  ): Promise<Paginated<Pick>> {
+    return await this.pickService.listStudentsByTermPaginated(termId, query);
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//

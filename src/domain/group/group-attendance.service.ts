@@ -552,6 +552,7 @@ export class GroupAttendanceService {
       if (!schooldays || schooldays.length === 0) {
         return [];
       }
+      const weekday = schooldays[0].weekday;
 
       // 2. DynamoDB에서 기존 출석 데이터 조회
       const prefix = `DATE#${date}`;
@@ -589,7 +590,7 @@ export class GroupAttendanceService {
       if (filteredPicks.length < 1) {
         return [];
       }
-      const weekday = filteredPicks[0].group.weekday; // 오늘 수업으로부터 요일 추출
+      //const weekday = filteredPicks[0].group.weekday; // 오늘 수업으로부터 요일 추출
 
       // 5. 완전한 출석 목록 생성 (기존 레코드 + 기본 레코드)
       const completeAttendanceItems: IAttendance[] = filteredPicks.map(
