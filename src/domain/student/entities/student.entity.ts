@@ -9,6 +9,7 @@ import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
+import { normalizePhone } from 'src/helpers/phone';
 import {
   Column,
   CreateDateColumn,
@@ -21,6 +22,7 @@ import {
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
+import { DailyNextStopDto } from '../dto/update-student-next-stop.dto';
 
 @Entity('students')
 @Unique(['schoolId', 'grade', 'class', 'studentCode'])
@@ -177,6 +179,31 @@ export class Student {
         name: stop.split('|')[1] || '',
         phone: stop.split('|')[2] || '',
       }));
+    }
+  }
+
+  //? Setters -------------------------------------------------------------- ?//
+
+  /**
+   * DailyNextStopDto[] 배열을 받아서 nextStop 필드를 설정
+   * @param dtos - 요일별 하교장소 정보 배열
+   */
+  setNextStops(dtos: DailyNextStopDto[]): void {
+    if (!dtos || dtos.length === 0) {
+      this.nextStop = null;
+      return;
+    }
+
+    if (dtos.length < 6) {
+      const firstItem = dtos[0];
+      this.nextStop = `${firstItem.place}|${firstItem.name || ''}|${normalizePhone(firstItem.phone || '') || ''}`;
+    } else {
+      this.nextStop = dtos
+        .map(
+          (dto) =>
+            `${dto.place}|${dto.name || ''}|${normalizePhone(dto.phone || '') || ''}`,
+        )
+        .join(',');
     }
   }
 }

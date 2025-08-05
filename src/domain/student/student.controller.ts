@@ -165,6 +165,9 @@ export class StudentController {
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
 
+  /**
+   * @deprecated update() 메서드의 nextStops 필드를 사용하세요.
+   */
   @UpdateStudentNextStopDocs()
   @Patch(':id/escort')
   async updateEscortInfo(

@@ -587,88 +587,141 @@ export const FindStudentCanceledGroupsPaginatedDocs = () =>
 export const UpdateStudentDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '✏️ 학생 정보 수정',
+      summary: '✏️ Update Student Information',
       description: `
-### 📋 기능 설명
-기존 학생의 정보를 수정합니다.
+### 📋 Function Description
+Update existing student information.
 
-### 🔄 수정 가능 항목
-- **학생 정보**: grade, class, studentCode, name, phone, escortPhone, nextStop, status, note
-- **학부모 정보**: name, phone, note, termsAgreedAt
+### 🔄 Updatable Fields
+- **Student Info**: grade, class, studentCode, name, phone, nextStop, nextStops, status, note
+- **Parent Info**: name, phone, note, termsAgreedAt
 
-### ⛔ 수정 불가 항목
-- **schoolId**: 학교 변경은 전학 프로세스 필요
-- **parentId**: 학부모 변경은 별도 프로세스 필요
+### 📍 Next Stop Information (nextStops)
+- **nextStops**: Array of daily next stop information (Recommended)
+  - place: Destination after school (Required)
+  - name: Person accompanying the student (Optional)
+  - phone: Phone number of accompanying person (Optional)
+- **nextStop**: String format next stop (Legacy support)
 
-### ⚠️ 주의사항
-- 부분 업데이트 지원 (변경할 필드만 전송)
-- 학번 중복 체크 (동일 학교 내)
-- 전화번호 형식 검증
+### 📊 nextStops Array Support Cases
+1. **Empty Array []**: Clears nextStop field (sets to null)
+2. **Single Item**: Uses only the first item
+   Example: [{"place": "Home", "name": "Mom", "phone": "01012345678"}]
+3. **2-5 Items**: Uses only the first item (legacy compatibility)
+   Example: [{"place": "Home", "name": "Mom", "phone": "01012345678"}, {"place": "Academy", "name": null, "phone": null}]
+4. **6 Items (Complete Week)**: Uses all items for full week coverage
+   Example: 6 items representing Monday to Saturday
+5. **6+ Items**: Uses all items (comma-separated format)
+
+### ⛔ Non-updatable Fields
+- **schoolId**: School change requires transfer process
+- **parentId**: Parent change requires separate process
+
+### ⚠️ Important Notes
+- Partial update supported (send only fields to change)
+- Student code duplicate check (within same school)
+- Phone number format validation
+- Use either nextStops or nextStop, not both (nextStops recommended)
+- Empty array clears next stop information
+- Null values for name and phone are supported
       `,
     }),
     ApiParam({
       name: 'id',
       type: Number,
-      description: '수정할 학생 ID',
+      description: 'Student ID to update',
       example: 1,
     }),
     ApiBody({
       type: UpdateStudentDto,
       examples: {
         grade_update: {
-          summary: '학년 승급',
-          description: '학년만 업데이트',
+          summary: 'Grade Promotion',
+          description: 'Update grade only',
           value: {
             grade: 4,
             class: '4-1',
           },
         },
         contact_update: {
-          summary: '연락처 정보 수정',
-          description: '학생 및 학부모 연락처 수정',
+          summary: 'Contact Information Update',
+          description: 'Update student and parent contact information',
           value: {
             phone: '01098765432',
-            escortPhone: '01011112222',
             parent: {
               phone: '01087654321',
-              note: '평일 오후에만 연락 가능',
+              note: 'Available only on weekday afternoons',
             },
           },
         },
+        nextstops_single: {
+          summary: 'Single Next Stop Update',
+          description: 'Update with single next stop information',
+          value: {
+            nextStops: [{ place: 'Home', name: 'Mom', phone: '01012345678' }],
+          },
+        },
+        nextstops_complete: {
+          summary: 'Complete Week Next Stop Update',
+          description:
+            'Update with full week next stop information (Recommended)',
+          value: {
+            nextStops: [
+              { place: 'Home', name: 'Mom', phone: '01012345678' },
+              { place: 'Academy', name: null, phone: null },
+              { place: 'Library', name: 'Friend', phone: '01087654321' },
+              { place: 'Home', name: null, phone: null },
+              { place: 'Academy', name: 'Mom', phone: '01012345678' },
+              { place: 'Home', name: null, phone: null },
+            ],
+          },
+        },
+        nextstops_clear: {
+          summary: 'Clear Next Stop Information',
+          description: 'Clear next stop information by sending empty array',
+          value: {
+            nextStops: [],
+          },
+        },
         status_update: {
-          summary: '재학 상태 변경',
-          description: '전학 처리',
+          summary: 'Student Status Change',
+          description: 'Transfer process',
           value: {
             status: 'TRANSFERRED',
-            note: '2025년 1월 전학',
+            note: 'Transferred in January 2025',
           },
         },
       },
     }),
     ApiOkResponseTemplate({
-      description: '✅ 학생 정보 수정 완료',
+      description: '✅ Student information updated successfully',
       type: Student,
     }),
     ApiResponse({
       status: StatusCodes.BAD_REQUEST,
       description:
-        '🚫 요청 데이터 오류 - 잘못된 데이터 형식, 학년 범위 초과, 전화번호 형식 오류',
+        '🚫 Request data error - Invalid data format, grade range exceeded, phone format error',
     }),
     ApiResponse({
       status: StatusCodes.NOT_FOUND,
-      description: '🔍 리소스 없음 - 존재하지 않는 학생 ID',
+      description: '🔍 Resource not found - Non-existent student ID',
     }),
     ApiResponse({
       status: StatusCodes.CONFLICT,
-      description: '⚠️ 데이터 충돌 - 동일 학교 내 학번 중복',
+      description:
+        '⚠️ Data conflict - Student code duplicate within same school',
     }),
   );
 
 export const UpdateStudentNextStopDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '📍 학생 하교장소 수정',
+      summary: '📍 학생 하교장소 수정 (Deprecated)',
       description: `
+### ⚠️ Deprecated
+이 엔드포인트는 더 이상 권장되지 않습니다. 
+대신 \`PATCH /students/:id\` 엔드포인트의 \`nextStops\` 필드를 사용하세요.
+
 ### 📋 기능 설명
 학생의 요일별 하교장소 정보를 수정합니다.
 

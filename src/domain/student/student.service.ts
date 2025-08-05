@@ -471,7 +471,7 @@ export class StudentService {
     }
 
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      const { parent: parentDto, parentId, ...studentDto } = dto;
+      const { parent: parentDto, parentId, nextStops, ...studentDto } = dto;
 
       // 부모 정보 처리
       let finalParentId = existingStudent.parentId;
@@ -486,6 +486,12 @@ export class StudentService {
             termsAgreedAt: parentDto.termsAgreedAt,
           }),
         });
+      }
+
+      // nextStops 처리
+      if (nextStops) {
+        const nextStop = this._convertToString(nextStops);
+        studentDto.nextStop = nextStop;
       }
 
       // 학생 데이터 정리
@@ -537,6 +543,7 @@ export class StudentService {
   /**
    * 학생 하교장소 정보 수정
    * 요일별 하교 후 가는 장소와 함께 가는 사람 정보를 업데이트합니다.
+   * @deprecated update() 메서드의 nextStops 필드를 사용하세요.
    */
   async updateEscortInfo(
     id: number,
@@ -606,6 +613,10 @@ export class StudentService {
    * null 값은 빈 문자열로 처리
    */
   private _convertToString(dtos: DailyNextStopDto[]): string {
+    if (!dtos || dtos.length === 0) {
+      return '';
+    }
+
     if (dtos.length < 6) {
       const firstItem = dtos[0];
       return `${firstItem.place}|${firstItem.name || ''}|${normalizePhone(firstItem.phone || '') || ''}`;

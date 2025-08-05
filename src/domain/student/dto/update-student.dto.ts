@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
 import { UpdateParentDto } from 'src/domain/parent/dto/update-parent.dto';
+import { DailyNextStopDto } from './update-student-next-stop.dto';
 
 /**
  * 학생 정보 수정 DTO
@@ -77,14 +78,27 @@ export class UpdateStudentDto {
   phone?: string;
 
   @ApiPropertyOptional({
-    description: '요일별 하교장소',
-    type: [String],
+    description: '요일별 하교장소 (문자열 형식 - 레거시 지원)',
+    type: String,
     example: 'comma separated string',
     maxLength: 255,
   })
   @IsOptional()
   @IsString({ message: '하교후 가는 곳은 문자열이어야 합니다' })
   nextStop?: string;
+
+  @ApiPropertyOptional({
+    description: '요일별 하교장소 정보 (배열 형식 - 권장)',
+    type: [DailyNextStopDto],
+    example: [
+      { place: '집', name: '엄마', phone: '01012345678' },
+      { place: '학원', name: null, phone: null },
+    ],
+  })
+  @IsOptional()
+  @ValidateNested({ each: true, message: '하교장소 정보가 올바르지 않습니다' })
+  @Type(() => DailyNextStopDto)
+  nextStops?: DailyNextStopDto[];
 
   @ApiPropertyOptional({
     description: '재학 상태 - ATTENDING: 재학중, TRANSFERRED: 전학',
