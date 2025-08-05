@@ -23,7 +23,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
-import { UpdateStudentNextStopDto } from 'src/domain/student/dto/update-student-next-stop.dto';
+import { DailyNextStopDto } from 'src/domain/student/dto/update-student-next-stop.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -540,7 +540,7 @@ export class StudentService {
    */
   async updateEscortInfo(
     id: number,
-    dto: UpdateStudentNextStopDto,
+    dtos: DailyNextStopDto[],
   ): Promise<Student> {
     const student = await this.studentRepository.findOne({
       where: { id },
@@ -552,7 +552,7 @@ export class StudentService {
     }
 
     // nextStop 필드를 파이프(|)로 구분된 문자열로 저장
-    const nextStop = this._convertToString(dto);
+    const nextStop = this._convertToString(dtos);
 
     await this.studentRepository.update(id, {
       nextStop: nextStop,
@@ -604,21 +604,15 @@ export class StudentService {
    * 하교장소 DTO를 파이프(|)로 구분된 문자열로 변환
    * 형식: "장소|이름|전화번호,장소|이름|전화번호,..."
    */
-  private _convertToString(dto: UpdateStudentNextStopDto): string {
-    const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    const parts: string[] = [];
-
-    for (const day of days) {
-      const dayData = dto[day];
-      if (dayData && dayData.place) {
-        const place = dayData.place || '';
-        const name = dayData.name || '';
-        const phone = dayData.phone || '';
-        parts.push(`${place}|${name}|${phone}`);
-      }
+  private _convertToString(dtos: DailyNextStopDto[]): string {
+    if (dtos.length < 6) {
+      const firstItem = dtos[0];
+      return `${firstItem.place}|${firstItem.name}|${firstItem.phone}`;
+    } else {
+      return dtos
+        .map((dto) => `${dto.place}|${dto.name}|${dto.phone}`)
+        .join(',');
     }
-
-    return parts.join(',');
   }
 
   //? 학생 이미지 삭제

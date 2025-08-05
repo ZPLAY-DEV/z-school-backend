@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose } from 'class-transformer';
 import { StudentStatus } from 'src/common/enums';
-import { Weekday } from 'src/common/enums/weekday';
 import { IDailyEscort } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
@@ -166,41 +165,23 @@ export class Student {
       토: { place: '미지정', name: '미지정', phone: '미지정' },
     },
   })
-  get nextStops(): Record<Weekday, IDailyEscort> {
+  get nextStops(): IDailyEscort[] {
     const stops = this.nextStop?.split(',') || [];
-    const weekdays: Weekday[] = [
-      Weekday.MONDAY,
-      Weekday.TUESDAY,
-      Weekday.WEDNESDAY,
-      Weekday.THURSDAY,
-      Weekday.FRIDAY,
-      Weekday.SATURDAY,
-    ];
 
-    const result: Record<Weekday, IDailyEscort> = {} as Record<
-      Weekday,
-      IDailyEscort
-    >;
-
-    weekdays.forEach((weekday, index) => {
-      const stopData = stops[index];
-
-      if (stopData) {
-        const [place, name, phone] = stopData.split('|');
-        result[weekday] = {
-          place: place || '미지정',
-          name: name || '미지정',
-          phone: phone || '미지정',
-        };
-      } else {
-        result[weekday] = {
-          place: '미지정',
-          name: '미지정',
-          phone: '미지정',
-        };
-      }
-    });
-
-    return result;
+    if (stops.length < 6) {
+      return stops.length > 0
+        ? stops[0].split('|').map((stop) => ({
+            place: stop.split('|')[0],
+            name: stop.split('|')[1],
+            phone: stop.split('|')[2],
+          }))
+        : [{ place: '미지정', name: '미지정', phone: '미지정' }];
+    } else {
+      return stops.map((stop) => ({
+        place: stop.split('|')[0],
+        name: stop.split('|')[1],
+        phone: stop.split('|')[2],
+      }));
+    }
   }
 }
