@@ -156,31 +156,26 @@ export class Student {
   @Expose()
   @ApiProperty({
     description: '요일별 하교후 목적지 정보',
-    example: {
-      월: { place: '집', name: '엄마', phone: '01012345678' },
-      화: { place: '학원', name: '선생님', phone: '01087654321' },
-      수: { place: '미지정', name: '미지정', phone: '미지정' },
-      목: { place: '미지정', name: '미지정', phone: '미지정' },
-      금: { place: '미지정', name: '미지정', phone: '미지정' },
-      토: { place: '미지정', name: '미지정', phone: '미지정' },
-    },
+    example: [{ place: '집', name: '엄마', phone: '01012345678' }],
   })
   get nextStops(): IDailyEscort[] {
     const stops = this.nextStop?.split(',') || [];
 
     if (stops.length < 6) {
       return stops.length > 0
-        ? stops[0].split('|').map((stop) => ({
-            place: stop.split('|')[0],
-            name: stop.split('|')[1],
-            phone: stop.split('|')[2],
-          }))
-        : [{ place: '미지정', name: '미지정', phone: '미지정' }];
+        ? [
+            {
+              place: stops[0].split('|')[0] || '',
+              name: stops[0].split('|')[1] || '',
+              phone: stops[0].split('|')[2] || '',
+            },
+          ]
+        : [{ place: '', name: '', phone: '' }];
     } else {
       return stops.map((stop) => ({
-        place: stop.split('|')[0],
-        name: stop.split('|')[1],
-        phone: stop.split('|')[2],
+        place: stop.split('|')[0] || '',
+        name: stop.split('|')[1] || '',
+        phone: stop.split('|')[2] || '',
       }));
     }
   }

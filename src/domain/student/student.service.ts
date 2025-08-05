@@ -603,14 +603,18 @@ export class StudentService {
   /**
    * 하교장소 DTO를 파이프(|)로 구분된 문자열로 변환
    * 형식: "장소|이름|전화번호,장소|이름|전화번호,..."
+   * null 값은 빈 문자열로 처리
    */
   private _convertToString(dtos: DailyNextStopDto[]): string {
     if (dtos.length < 6) {
       const firstItem = dtos[0];
-      return `${firstItem.place}|${firstItem.name}|${firstItem.phone}`;
+      return `${firstItem.place}|${firstItem.name || ''}|${normalizePhone(firstItem.phone || '') || ''}`;
     } else {
       return dtos
-        .map((dto) => `${dto.place}|${dto.name}|${dto.phone}`)
+        .map(
+          (dto) =>
+            `${dto.place}|${dto.name || ''}|${normalizePhone(dto.phone || '') || ''}`,
+        )
         .join(',');
     }
   }
