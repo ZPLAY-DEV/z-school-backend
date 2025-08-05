@@ -94,6 +94,7 @@ export class SchoolTermLessonService {
   ): Promise<Paginated<Lesson>> {
     const queryBuilder = this.lessonRepository
       .createQueryBuilder('lesson')
+      .leftJoinAndSelect('lesson.category', 'category')
       .where('lesson.schoolId = :schoolId', { schoolId })
       .andWhere('lesson.termId = :termId', { termId });
 
