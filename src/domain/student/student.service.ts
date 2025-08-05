@@ -443,6 +443,7 @@ export class StudentService {
     const config: PaginateConfig<Student> = {
       relations: ['picks'],
       sortableColumns: ['id', 'name'],
+      searchableColumns: ['name', 'phone', 'note'],
       filterableColumns: {
         schoolId: [FilterOperator.EQ],
         picks: [FilterOperator.NULL, FilterSuffix.NOT],

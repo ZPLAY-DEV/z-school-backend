@@ -14,6 +14,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { StudentStatus } from 'src/common/enums';
 
+import { Public } from 'src/common/decorators/public.decorator';
 import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-grades.dto';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -119,6 +120,7 @@ export class SchoolStudentController {
   }
 
   @SchoolStudentListPaginatedDocs()
+  @Public()
   @Get(':schoolId/students/paginated')
   async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
