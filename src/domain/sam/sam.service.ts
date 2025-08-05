@@ -69,16 +69,41 @@ export class SamService {
         }
         finalInstructorId = instructorDto.id;
       } else {
-        // 새로운 강사 생성
-        const newInstructor = manager.create(Instructor, {
-          userId: instructorDto.userId,
-          name: instructorDto.name,
-          phone: instructorDto.phone,
-          note: instructorDto.note,
-          termsAgreedAt: instructorDto.termsAgreedAt,
-        });
-        const savedInstructor = await manager.save(Instructor, newInstructor);
-        finalInstructorId = savedInstructor.id;
+        // instructorDto.phone을 사용해서 기존 강사 검사
+        if (instructorDto.phone) {
+          const existingInstructor = await manager.findOne(Instructor, {
+            where: { phone: instructorDto.phone },
+          });
+          if (existingInstructor) {
+            // 기존 강사가 있으면 해당 강사 사용
+            finalInstructorId = existingInstructor.id;
+          } else {
+            // 기존 강사가 없으면 새로 생성
+            const newInstructor = manager.create(Instructor, {
+              userId: instructorDto.userId,
+              name: instructorDto.name,
+              phone: instructorDto.phone,
+              note: instructorDto.note,
+              termsAgreedAt: instructorDto.termsAgreedAt,
+            });
+            const savedInstructor = await manager.save(
+              Instructor,
+              newInstructor,
+            );
+            finalInstructorId = savedInstructor.id;
+          }
+        } else {
+          // phone이 없는 경우 새로 생성
+          const newInstructor = manager.create(Instructor, {
+            userId: instructorDto.userId,
+            name: instructorDto.name,
+            phone: instructorDto.phone,
+            note: instructorDto.note,
+            termsAgreedAt: instructorDto.termsAgreedAt,
+          });
+          const savedInstructor = await manager.save(Instructor, newInstructor);
+          finalInstructorId = savedInstructor.id;
+        }
       }
 
       // 3. 중복 체크 - 동일 학교 내 강사 중복
