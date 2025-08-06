@@ -6,54 +6,51 @@ import {
   DeleteDateColumn,
   Entity,
   PrimaryGeneratedColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('histories')
 export class History {
-  @ApiProperty({ description: 'messageId', example: 1 })
-  @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
-  id: number;
+  @ApiProperty({ description: 'UUID message ID' })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @ApiProperty({ description: '학생 ID', example: 1 })
-  @Column({ type: 'int', unsigned: true })
-  schoolId: number;
-
-  @ApiProperty({ description: '과목 ID', example: 1 })
-  @Column({ type: 'int', unsigned: true })
-  termId: number;
+  // 기본 발송 text() 일땐 학교정보가 없으므로 `전화번호`, send() 일땐 학교명 포함하므로 `학교명#아이디` 조합
+  @ApiProperty({
+    description: '학교 이름#schoolId, 또는 전화번호',
+    example: '대도초등학교#666',
+  })
+  @Column({ type: 'varchar', length: 48, nullable: true })
+  target: string | null;
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: 'sms Id' })
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @ApiProperty({ description: '알리고 SMS 전송응답', example: '1119353388' })
+  @Column({ type: 'varchar', length: 64, nullable: true })
   smsId: string | null;
 
-  @ApiProperty({ description: 'fcm Id' })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  fcmId: string | null;
-
-  @ApiProperty({ description: 'kakao Id' })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  kakaoId: string | null;
-
-  @ApiProperty({ description: 'message count' })
+  @ApiProperty({ description: '알리고에 요청한 메시지 갯수' })
   @Column({ type: 'int', unsigned: true })
   smsCount: number;
 
-  @ApiProperty({ description: 'message count' })
+  @ApiProperty({
+    description: 'FCM 메시지 전송응답',
+    example: '0:1699450123456789%abcdef1234567890',
+  })
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  fcmId: string | null;
+
+  @ApiProperty({ description: 'FCM에 요청한 메시지 갯수' })
   @Column({ type: 'int', unsigned: true })
   fcmCount: number;
 
-  @ApiProperty({ description: 'message count' })
-  @Column({ type: 'int', unsigned: true })
-  kakaoCount: number;
-
-  @ApiProperty({ description: 'total message count' })
+  @ApiProperty({
+    description: '그래서 종합적으로 몇개 메시지를 보냈나?',
+  })
   @Column({ type: 'int', unsigned: true })
   total: number;
 
-  @ApiProperty({ description: '🈳 비고', example: '입력한 참고사항' })
+  @ApiProperty({ description: '🈳 비고', example: '비고 내용' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
 
