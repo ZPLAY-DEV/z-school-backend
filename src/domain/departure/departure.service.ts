@@ -45,7 +45,6 @@ export class DepartureService {
       }
 
       const departure = this.departureRepository.create(dto);
-
       await this.notificationService.send({
         type: NotificationType.SCHOOL,
         schoolId: student.schoolId,
@@ -61,7 +60,6 @@ export class DepartureService {
           },
         ],
       });
-
       return await this.departureRepository.save(departure);
     } catch (error) {
       if (error.code === 'ER_DUP_ENTRY') {

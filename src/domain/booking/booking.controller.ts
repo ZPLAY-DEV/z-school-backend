@@ -1,7 +1,9 @@
 import { Body, Controller, Delete, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PickRule } from 'src/common/enums';
-
+import { BookingService } from 'src/domain/booking/booking.service';
+import { CancelBookingDto } from 'src/domain/booking/dto/cancel-booking.dto';
+import { CreateBookingDto } from 'src/domain/booking/dto/create-booking.dto';
 import { CreateLateBookingDto } from 'src/domain/booking/dto/create-late-booking.dto';
 import { ResponseBookingDto } from 'src/domain/booking/dto/response-booking.dto';
 import {
@@ -9,9 +11,6 @@ import {
   CreateBookingSwagger,
   CreateLateBookingDocs,
 } from 'src/domain/booking/swagger/booking-swagger.decorator';
-import { BookingService } from './booking.service';
-import { CancelBookingDto } from './dto/cancel-booking.dto';
-import { CreateBookingDto } from './dto/create-booking.dto';
 
 @ApiTags('✳️ Bookings ( 수강신청 )')
 @Controller('bookings')
