@@ -8,6 +8,7 @@ import { addDays } from 'date-fns';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
 import { NotificationType } from 'src/common/enums/notification-type';
+import { IDailyEscort } from 'src/common/interfaces';
 import {
   CreateAttendanceWithGroupStudentDto,
   CreateAttendanceWithKeyDto,
@@ -32,6 +33,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { getWeekNumberFromKoreanWeekday } from 'src/helpers/date';
 import { NotificationService } from 'src/services/notification/notification.service';
 import { In, IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
 
@@ -552,7 +554,7 @@ export class GroupAttendanceService {
       if (!schooldays || schooldays.length === 0) {
         return [];
       }
-      const weekday = schooldays[0].weekday;
+      const weekNumber = getWeekNumberFromKoreanWeekday(schooldays[0].weekday);
 
       // 2. DynamoDB에서 기존 출석 데이터 조회
       const prefix = `DATE#${date}`;
@@ -731,8 +733,11 @@ export class GroupAttendanceService {
         if (currentIndex === -1) {
           // 현재 그룹을 찾을 수 없는 경우
           const student = studentMap.get(studentId);
-          const nextStop = student?.nextStops[weekday];
-          const finalNext = nextStop?.place || '하교장소 미지정';
+          const nextStop = this.getStudentEscort(
+            weekNumber,
+            student?.nextStops,
+          );
+          const finalNext = nextStop?.place || '미지정';
           console.log(
             `❌ [DEBUG] Student ${studentId}: Group not found, student=${JSON.stringify(student)}, nextStop="${nextStop?.name}", finalNext="${finalNext}"`,
           );
@@ -741,8 +746,11 @@ export class GroupAttendanceService {
         } else if (currentIndex === schedule.length - 1) {
           // 마지막 그룹인 경우
           const student = studentMap.get(studentId);
-          const nextStop = student?.nextStops[weekday];
-          const finalNext = nextStop?.place || '하교장소 미지정';
+          const nextStop = this.getStudentEscort(
+            weekNumber,
+            student?.nextStops,
+          );
+          const finalNext = nextStop?.place || '미지정';
           console.log(
             `🏁 [DEBUG] Student ${studentId}: Last group, student=${JSON.stringify(student)}, nextStop="${nextStop?.name}", finalNext="${finalNext}"`,
           );
@@ -934,6 +942,24 @@ export class GroupAttendanceService {
         '출석 정보 최적화 일괄 업데이트에 실패했습니다.',
       );
     }
+  }
+
+  private getStudentEscort(
+    weekNumber: number,
+    stops?: IDailyEscort[],
+  ): IDailyEscort {
+    if (!stops) {
+      return {
+        place: '',
+        name: '',
+        phone: '',
+      };
+    }
+
+    if (stops.length < 6) {
+      return stops[0];
+    }
+    return stops[weekNumber - 1];
   }
 
   private translateStatusInStartContext(status: AttendanceStatus): string {
