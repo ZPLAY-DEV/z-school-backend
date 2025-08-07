@@ -133,6 +133,7 @@ export class GroupAttendanceService {
       ),
       type: NotificationType.CLASS,
       schoolId: group.lesson.schoolId,
+      // schoolName: group.lesson.schoolName,
       role: 'PARENT',
     });
 
@@ -214,6 +215,7 @@ export class GroupAttendanceService {
       ),
       type: NotificationType.CLASS,
       schoolId: group.lesson.schoolId,
+      // schoolName: group.lesson.schoolName,
       role: 'PARENT',
     });
 
@@ -320,6 +322,7 @@ export class GroupAttendanceService {
         messages,
         type: NotificationType.CLASS,
         schoolId: group.lesson.schoolId,
+        // schoolName: group.lesson.schoolName,
         role: 'PARENT',
       });
 
@@ -392,10 +395,10 @@ export class GroupAttendanceService {
           parentNotedAt: new Date(),
         }),
 
-      ...(typeof dto.schoolNote === 'string' &&
-        dto.schoolNote !== existing?.schoolNote && {
-          schoolNotedAt: new Date(),
-        }),
+      // ...(typeof dto.schoolNote === 'string' &&
+      //   dto.schoolNote !== existing?.schoolNote && {
+      //     schoolNotedAt: new Date(),
+      //   }),
     };
 
     try {
@@ -860,9 +863,9 @@ export class GroupAttendanceService {
           {
             status: dto.status,
             ...(dto.schoolNote !== undefined && { schoolNote: dto.schoolNote }),
-            ...(dto.schoolNote !== undefined && {
-              schoolNotedAt: new Date(), // Direct Date object!
-            }),
+            // ...(dto.schoolNote !== undefined && {
+            //   schoolNotedAt: new Date(), // Direct Date object!
+            // }),
           },
         ),
       );
@@ -926,9 +929,9 @@ export class GroupAttendanceService {
           {
             status: dto.status,
             ...(dto.schoolNote !== undefined && { schoolNote: dto.schoolNote }),
-            ...(dto.schoolNote !== undefined && {
-              schoolNotedAt: new Date(), // Direct Date object!
-            }),
+            // ...(dto.schoolNote !== undefined && {
+            //   schoolNotedAt: new Date(), // Direct Date object!
+            // }),
           },
         ),
       );

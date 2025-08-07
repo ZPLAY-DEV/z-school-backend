@@ -48,6 +48,7 @@ export class DepartureService {
       await this.notificationService.send({
         type: NotificationType.SCHOOL,
         schoolId: student.schoolId,
+        // schoolName: student.school.name,
         role: 'PARENT',
         messages: [
           {
