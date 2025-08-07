@@ -5,7 +5,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { format } from 'date-fns';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { BulkUpdateSamsDto } from 'src/domain/sam/dto/bulk-update-sams.dto';
@@ -236,7 +235,6 @@ export class SamService {
     termId?: number,
     date?: string,
   ): Promise<Schoolday[]> {
-    const today = date ? date : format(new Date(), 'yyyy-MM-dd');
     const sam = await this.samRepository.findOneOrFail({
       where: { id },
       relations: [
@@ -257,7 +255,14 @@ export class SamService {
 
       if (contract.group && contract.group?.schooldays) {
         const schooldaysWithGroup = contract.group.schooldays
-          .filter((schoolday) => schoolday.today === today)
+          .filter((schoolday) => {
+            // date가 undefined인 경우 모든 schoolday 반환
+            if (!date) {
+              return true;
+            }
+            // date가 있는 경우 해당 날짜의 schoolday만 반환
+            return schoolday.today === date;
+          })
           .map((schoolday) => {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { schooldays: _, ...groupWithoutSchooldays } = contract.group;
