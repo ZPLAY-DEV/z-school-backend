@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsDate,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { AttendanceStatus } from 'src/common/enums';
 import { UpdateAttendanceDto } from 'src/domain/attendance/dto/update-attendance.dto';
 
@@ -103,13 +109,31 @@ export class CreateAttendanceWithKeyDto extends AttendanceKeyDto {
   parentNote?: string;
 
   @ApiProperty({
+    description: '🈵 optional date',
+    default: 'date',
+    required: false,
+  })
+  @IsOptional()
+  @IsDate()
+  parentNotedAt?: Date;
+
+  @ApiProperty({
     description: '🈵 학교에서 학생·학부모에 남긴 메시지',
     default: '감사합니다.',
     required: false,
   })
   @IsOptional()
   @IsString()
-  schoolNote?: string | null;
+  schoolNote?: string;
+
+  @ApiProperty({
+    description: '🈵 optional date',
+    default: '감사합니다.',
+    required: false,
+  })
+  @IsOptional()
+  @IsDate()
+  schoolNotedAt?: Date;
 }
 
 export class CreateAttendanceWithStudentSchooldayDto extends StudentSchooldayDto {

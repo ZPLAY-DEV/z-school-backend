@@ -863,9 +863,9 @@ export class GroupAttendanceService {
           {
             status: dto.status,
             ...(dto.schoolNote !== undefined && { schoolNote: dto.schoolNote }),
-            // ...(dto.schoolNote !== undefined && {
-            //   schoolNotedAt: new Date(), // Direct Date object!
-            // }),
+            ...(dto.schoolNotedAt !== undefined && {
+              schoolNotedAt: dto.schoolNotedAt,
+            }),
           },
         ),
       );
@@ -929,9 +929,9 @@ export class GroupAttendanceService {
           {
             status: dto.status,
             ...(dto.schoolNote !== undefined && { schoolNote: dto.schoolNote }),
-            // ...(dto.schoolNote !== undefined && {
-            //   schoolNotedAt: new Date(), // Direct Date object!
-            // }),
+            ...(dto.schoolNotedAt !== undefined && {
+              schoolNotedAt: dto.schoolNotedAt,
+            }),
           },
         ),
       );
