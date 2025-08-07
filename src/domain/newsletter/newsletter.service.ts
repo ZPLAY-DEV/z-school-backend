@@ -62,7 +62,7 @@ export class NewsletterService {
     const { schoolId, termId, scheduledAt, type } = dto;
     // 모든 validation을 transaction 밖에서 처리 (Auto-increment ID 낭비 방지)
     const school = await this.checkSchoolValidity(schoolId, scheduledAt);
-    const term = await this.checkTermValidity(termId);
+    const term = await this.checkTermValidity(termId, dto.type);
     if (dto.type === NewsletterType.REGISTRATION) {
       await this.checkExistingNewsletterWithDto(schoolId, termId, type);
     }
@@ -88,7 +88,7 @@ export class NewsletterService {
   ): Promise<Newsletter> {
     const { schoolId, termId, images } = dto;
 
-    const term = await this.checkTermValidity(termId);
+    const term = await this.checkTermValidity(termId, 'REGISTRATION');
     const scheduledAt = subDays(term.bookingStart!, 3);
     const school = await this.checkSchoolValidity(schoolId, scheduledAt);
     await this.checkExistingNewsletterWithDto(
@@ -635,14 +635,14 @@ export class NewsletterService {
     return school;
   }
 
-  private async checkTermValidity(termId): Promise<Term> {
+  private async checkTermValidity(termId, type: string): Promise<Term> {
     const term = await this.dataSource
       .getRepository(Term)
       .findOne({ where: { id: termId } });
     if (!term) {
       throw new NotFoundException('Term not found');
     }
-    if (!term.bookingStart) {
+    if (type === 'REGISTRATION' && !term.bookingStart) {
       throw new BadRequestException('Term bookingStart is not set');
     }
     return term;

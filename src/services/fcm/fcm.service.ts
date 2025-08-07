@@ -214,14 +214,14 @@ export class FcmService {
 
   /*
   [
-    [ // 그룹 1: title/body/role/page/args 동일
+    [ // 그룹 1: title/body/role/page/args 완전히 동일한 내용 => 배치발송가능
       { id: 1, token: 'tokenA', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '123' },
       { id: 2, token: 'tokenB', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '123' },
     ],
-    [ // 그룹 2: 다른 title/body/role
+    [ // 그룹 2: 다른 title/body/role => 배치발송 불가능
       { id: 3, token: 'tokenC', title: 'Alert', body: 'Another message', role: 'INSTRUCTOR' },
     ],
-    [ // 그룹 3: args 다름
+    [ // 그룹 3: args 다름 => 배치발송 불가능
       { id: 4, token: 'tokenD', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '456' },
     ]
   ]
