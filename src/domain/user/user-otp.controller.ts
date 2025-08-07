@@ -8,7 +8,7 @@ import {
   Param,
   Patch,
   Post,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';

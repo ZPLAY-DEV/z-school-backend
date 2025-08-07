@@ -4,7 +4,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsOptional,
-  IsString
+  IsString,
 } from 'class-validator';
 import { DEFAULT_AVATAR_URL } from 'src/common/constants';
 import { Role } from 'src/common/enums';

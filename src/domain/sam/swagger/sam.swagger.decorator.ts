@@ -372,13 +372,13 @@ export const GetSamGroupsDocs = () =>
 export const GetSamSchooldaysDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '📅 오늘의 수업 또는 특정일의 수업 조회',
+      summary: '📅 모든 수업 또는 특정일의 수업 조회',
       description: `
 ### 📋 기능 설명
-담임쌤의 오늘 수업 또는 특정일의 수업 일정을 조회합니다.
+담임쌤의 모든 수업 또는 특정일의 수업 일정을 조회합니다.
 
 ### 🏷️ 조회 조건
-- **기본**: 오늘 날짜의 수업 조회
+- **기본**: 모든 수업일 조회
 - **특정일**: date 파라미터로 특정 날짜의 수업 조회
 - **학기 필터**: termId 전달 시 해당 학기의 수업만 필터링
 
@@ -389,7 +389,7 @@ export const GetSamSchooldaysDocs = () =>
 - 수업 정보와 함께 반 정보도 포함됩니다
 
 ### 💡 사용 시점
-- 담임쌤 대시보드에서 오늘 수업 확인
+- 담임쌤 대시보드에서 전체 수업 일정 확인
 - 특정 날짜의 수업 일정 확인
 - 학기별 수업 관리
 - 수업 준비 및 계획
@@ -409,7 +409,8 @@ export const GetSamSchooldaysDocs = () =>
     ApiQuery({
       name: 'date',
       type: String,
-      description: '조회할 날짜 (YYYY-MM-DD 형식, 선택사항, 기본값: 오늘)',
+      description:
+        '조회할 날짜 (YYYY-MM-DD 형식, 선택사항, 미전달 시 모든 수업일 조회)',
       required: false,
     }),
     ApiExtraModels(Schoolday),

@@ -7,7 +7,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';

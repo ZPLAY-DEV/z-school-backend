@@ -1,9 +1,9 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -788,7 +788,16 @@ Returns an array of attendance records for the specified student in the given mo
             },
             status: {
               type: 'string',
-              enum: ['INIT', 'PRESENT', 'ABSENT', 'LATE', 'LEFT', 'EXCUSED_ABSENT', 'EXCUSED_LATE', 'EXCUSED_LEFT'],
+              enum: [
+                'INIT',
+                'PRESENT',
+                'ABSENT',
+                'LATE',
+                'LEFT',
+                'EXCUSED_ABSENT',
+                'EXCUSED_LATE',
+                'EXCUSED_LEFT',
+              ],
               example: 'PRESENT',
             },
             parentNote: {

@@ -38,8 +38,7 @@ export class S3Service implements OnModuleInit {
       this.configService.get<string>('aws.s3FilesBucket') ??
       'afterschool-files-bucket';
     this.cloudfrontUrl =
-      this.configService.get<string>('aws.cloudfrontUrl') ??
-      '';
+      this.configService.get<string>('aws.cloudfrontUrl') ?? '';
 
     // S3 클라이언트 설정
     const s3Config: any = {

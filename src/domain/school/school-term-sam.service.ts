@@ -7,9 +7,7 @@ import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Repository } from 'typeorm';
-import {
-  ResponseSchoolTermSamOfferingDto
-} from './dto/response-school-term-sam-offering.dto';
+import { ResponseSchoolTermSamOfferingDto } from './dto/response-school-term-sam-offering.dto';
 
 @Injectable()
 export class SchoolTermSamService {

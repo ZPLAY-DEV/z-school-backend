@@ -279,7 +279,6 @@ export class StudentService {
     termId?: number,
     date?: string,
   ): Promise<Schoolday[]> {
-    const today = date ? date : format(new Date(), 'yyyy-MM-dd');
     const student = await this.studentRepository.findOneOrFail({
       where: { id },
       relations: [
@@ -304,10 +303,12 @@ export class StudentService {
 
       if (pick.group && pick.group.schooldays) {
         const schooldaysWithGroup = pick.group.schooldays
-          .filter(
-            (schoolday) =>
-              schoolday.today === today || schoolday.original === today,
-          )
+          .filter((schoolday) => {
+            if (!date) {
+              return true;
+            }
+            return schoolday.today === date || schoolday.original === date;
+          })
           .map((schoolday) => {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { schooldays: _, ...groupWithoutSchooldays } = pick.group;

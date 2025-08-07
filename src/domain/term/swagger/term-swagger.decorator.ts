@@ -1,11 +1,11 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiExtraModels,
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    getSchemaPath,
+  ApiBody,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';

@@ -256,11 +256,9 @@ export class SamService {
       if (contract.group && contract.group?.schooldays) {
         const schooldaysWithGroup = contract.group.schooldays
           .filter((schoolday) => {
-            // date가 undefined인 경우 모든 schoolday 반환
             if (!date) {
               return true;
             }
-            // date가 있는 경우 해당 날짜의 schoolday만 반환
             return schoolday.today === date;
           })
           .map((schoolday) => {

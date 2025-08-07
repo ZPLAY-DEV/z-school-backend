@@ -1,9 +1,9 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    ApiQuery,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';

@@ -34,7 +34,7 @@ import {
   FindStudentSchooldaysDocs,
   FindStudentsPaginatedDocs,
   RemoveStudentDocs,
-  UpdateStudentDocs
+  UpdateStudentDocs,
 } from 'src/domain/student/swagger/student-swagger.decorator';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { UploadService } from 'src/services/upload/upload.service';

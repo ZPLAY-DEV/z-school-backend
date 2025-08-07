@@ -6,7 +6,7 @@ import {
   IsInt,
   IsNumber,
   IsOptional,
-  Min
+  Min,
 } from 'class-validator';
 
 export class BulkUpdateSamsDto {
