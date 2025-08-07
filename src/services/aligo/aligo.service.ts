@@ -97,16 +97,16 @@ export class AligoService {
     const results: NotificationResult[] = [];
     const failedPhones: string[] = [];
     const batchIds: number[] = [];
-    let numberOfSuccess: number = 0;
-    let numberOfFailure: number = 0;
+    let totalSuccessCount: number = 0;
+    let totalFailureCount: number = 0;
 
     for (const [index, batch] of batches.entries()) {
       try {
         const bulkResponse = await this.sendBulk(baseDto, batch);
         const messageId = Number(bulkResponse.msg_id);
 
-        numberOfSuccess += Number(bulkResponse.success_cnt) || 0;
-        numberOfFailure += Number(bulkResponse.error_cnt) || 0;
+        totalSuccessCount += Number(bulkResponse.success_cnt) || 0;
+        totalFailureCount += Number(bulkResponse.error_cnt) || 0;
         batchIds.push(messageId);
 
         if (index < batches.length - 1) {
@@ -114,7 +114,7 @@ export class AligoService {
           await delay(100);
         }
       } catch (error) {
-        numberOfFailure += batch.length;
+        totalFailureCount += batch.length;
         batch.forEach((v) => {
           failedPhones.push(v.phone);
           results.push({
@@ -160,8 +160,8 @@ export class AligoService {
     return {
       results,
       failedPhones,
-      successCount: numberOfSuccess,
-      failureCount: numberOfFailure,
+      successCount: totalSuccessCount,
+      failureCount: totalFailureCount,
     };
   }
 

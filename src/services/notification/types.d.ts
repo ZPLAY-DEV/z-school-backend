@@ -8,15 +8,15 @@ export type PartitioningMeta = {
 };
 
 export type PhonePair = {
-  id: number; // firehose 로깅을 위함
+  id: number; // 로깅을 위한 parentId
   phone: string;
 };
 export type TokenPair = {
-  id: number; // firehose 로깅을 위함
+  id: number; // 로깅을 위한 parentId
   token: string;
 };
 export type MixedPair = {
-  id: number; // firehose 로깅을 위함
+  id: number; // 로깅을 위한 parentId
   token?: string | null;
   phone?: string;
 };
@@ -65,6 +65,7 @@ export type MultiMixedMessages = {
 
 export type NotificationResult = {
   success: boolean;
+  messageId?: string;
   error?: Error;
   id?: number;
 };

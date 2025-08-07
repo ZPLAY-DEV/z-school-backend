@@ -12,6 +12,7 @@ import {
 } from 'src/services/notification/types';
 
 export interface FcmBatchResult {
+  // schoolId: number
   results: NotificationResult[];
   invalidTokens: string[];
   successCount: number;
@@ -61,20 +62,25 @@ export class FcmService {
   async sendSingleMessageToMultipleDestinations(
     data: BroadcastFcmMessage,
   ): Promise<FcmBatchResult> {
-    const tokens = data.tokenPairs.map((pair) => pair.token);
-    const validTokens = tokens.filter((v) => v && v.trim());
+    // 1. 유효한 토큰을 가진 pair 만 추림
+    const validTokenPairs = data.tokenPairs.filter(
+      (pair) => pair.token && pair.token.trim(),
+    );
+
+    // 2. 500개씩 배치로 나눔
+    const tokenPairBatches = chunk(validTokenPairs, 500);
 
     let totalSuccessCount = 0;
     let totalFailureCount = 0;
     const results: NotificationResult[] = [];
     const invalidTokens: string[] = [];
 
-    const tokenBatches = chunk(validTokens, 500);
+    for (const [index, tokenPairBatch] of tokenPairBatches.entries()) {
+      const batchTokens = tokenPairBatch.map((pair) => pair.token);
 
-    for (const [index, batch] of tokenBatches.entries()) {
       try {
         const payload = this.buildMulticastMessage(
-          batch,
+          batchTokens,
           { title: data.title, body: data.body },
           { role: data.role, page: data.page, args: data.args },
         );
@@ -83,48 +89,35 @@ export class FcmService {
         totalSuccessCount += result.successCount;
         totalFailureCount += result.failureCount;
 
-        // Collect invalid tokens
-        result.responses.forEach((response, index) => {
-          const token = batch[index];
-          const tokenPair = data.tokenPairs.find(
-            (pair) => pair.token === token,
-          );
+        result.responses.forEach((response, idx) => {
+          const tokenPair = tokenPairBatch[idx];
 
-          if (!response.success) {
-            const errorCode = response.error?.code;
-
-            if (this.isInvalidToken(errorCode)) {
-              invalidTokens.push(token);
-            }
+          if (!response.success && this.isInvalidToken(response.error?.code)) {
+            invalidTokens.push(tokenPair.token);
           }
 
-          const notificationResult: NotificationResult = {
+          results.push({
             success: response.success,
+            messageId: response.messageId,
             error: response.error
               ? new Error(response.error.message || 'FCM send failed')
               : undefined,
-            id: tokenPair?.id,
-          };
-
-          results.push(notificationResult);
+            id: tokenPair.id,
+          });
         });
 
-        if (index < tokenBatches.length - 1) {
+        if (index < tokenPairBatches.length - 1) {
           // delay between batches to avoid rate limiting
           await delay(100);
         }
       } catch (error) {
-        totalFailureCount += batch.length;
+        totalFailureCount += tokenPairBatch.length;
 
-        // Add failed results for each token in the batch
-        batch.forEach((token) => {
-          const tokenPair = data.tokenPairs.find(
-            (pair) => pair.token === token,
-          );
+        tokenPairBatch.forEach((pair) => {
           results.push({
             success: false,
             error: error instanceof Error ? error : new Error(String(error)),
-            id: tokenPair?.id,
+            id: pair?.id,
           });
         });
       }

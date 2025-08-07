@@ -324,7 +324,7 @@ export type FcmData = {
 };
 
 export type MixedPair = {
-  id: number;              // 사용자 ID (로깅용)
+  id: number;              // 학부모 ID (로깅용)
   token?: string | null;   // FCM 토큰 (있으면 FCM 우선)
   phone?: string;          // 전화번호 (token 없으면 SMS)
 };

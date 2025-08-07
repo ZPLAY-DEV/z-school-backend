@@ -23,26 +23,46 @@ export class History {
   @Column({ type: 'varchar', length: 48, nullable: true })
   target: string | null;
 
+  @ApiProperty({
+    description: '내용',
+    example: '알림 내용',
+  })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  content: string | null;
+
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '알리고 SMS 전송응답', example: '1119353388' })
-  @Column({ type: 'varchar', length: 64, nullable: true })
-  smsId: string | null;
-
-  @ApiProperty({ description: '알리고에 요청한 메시지 갯수' })
+  @ApiProperty({ description: '알리고에 요청한 알림 갯수' })
   @Column({ type: 'int', unsigned: true })
-  smsCount: number;
+  smsTotalCount: number;
 
-  @ApiProperty({
-    description: 'FCM 메시지 전송응답',
-    example: '0:1699450123456789%abcdef1234567890',
-  })
-  @Column({ type: 'varchar', length: 64, nullable: true })
-  fcmId: string | null;
-
-  @ApiProperty({ description: 'FCM에 요청한 메시지 갯수' })
+  @ApiProperty({ description: '알리고에 요청한 알림중 성공 갯수' })
   @Column({ type: 'int', unsigned: true })
-  fcmCount: number;
+  smsSuccessCount: number;
+
+  @ApiProperty({ description: '알리고에 요청한 알림중 실패 갯수' })
+  @Column({ type: 'int', unsigned: true })
+  smsFailureCount: number;
+
+  @ApiProperty({ description: '알리고에 요청한 사용자ID들' })
+  @Column({ type: 'json', nullable: true })
+  smsRecipientIds: string[];
+
+  @ApiProperty({ description: 'Firebase에 요청한 알림 갯수' })
+  @Column({ type: 'int', unsigned: true })
+  fcmTotalCount: number;
+
+  @ApiProperty({ description: 'Firebase에 요청한 알림중 성공 갯수' })
+  @Column({ type: 'int', unsigned: true })
+  fcmSuccessCount: number;
+
+  @ApiProperty({ description: 'Firebase에 요청한 알림중 실패 갯수' })
+  @Column({ type: 'int', unsigned: true })
+  fcmFailureCount: number;
+
+  @ApiProperty({ description: 'Firebase에 요청한 사용자ID들' })
+  @Column({ type: 'json', nullable: true })
+  fcmRecipientIds: string[];
 
   @ApiProperty({
     description: '그래서 종합적으로 몇개 메시지를 보냈나?',
