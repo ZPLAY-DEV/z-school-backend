@@ -1,10 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsNumber,
+  IsOptional,
+  IsString
+} from 'class-validator';
 
-export class CreateDepartureDto {
-  @ApiProperty({ description: '학생 아이디', example: 1 })
-  @IsNumber()
-  studentId: number;
+export class CreateDepartureBulkDto {
+  @ApiProperty({ description: '학생 아이디', example: [1, 2, 3] })
+  @IsArray()
+  @IsNumber({}, { each: true })
+  studentIds: number[];
 
   @ApiProperty({ description: '실제 마지막 참석 수업 아이디', example: 1 })
   @IsNumber()
@@ -25,4 +31,6 @@ export class CreateDepartureDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+
 }

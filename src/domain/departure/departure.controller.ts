@@ -14,11 +14,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { CreateDepartureBulkDto } from 'src/domain/departure/dto/create-departure-bulk.dto';
 import { DepartureService } from './departure.service';
 import { CreateDepartureDto } from './dto/create-departure.dto';
 import { UpdateDepartureDto } from './dto/update-departure.dto';
 import { Departure } from './entities/departure.entity';
 import {
+  CreateDepartureBulkDocs,
   CreateDepartureDocs,
   DeleteDepartureDocs,
   FindAllDeparturesDocs,
@@ -44,6 +46,12 @@ export class DepartureController {
     @Body() createDepartureDto: CreateDepartureDto,
   ): Promise<Departure> {
     return await this.departureService.create(createDepartureDto);
+  }
+
+  @CreateDepartureBulkDocs()
+  @Post('bulk')
+  async createBulk(@Body() dto: CreateDepartureBulkDto): Promise<Departure[]> {
+    return await this.departureService.createBulk(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//

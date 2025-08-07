@@ -10,6 +10,7 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
+import { CreateDepartureBulkDto } from '../dto/create-departure-bulk.dto';
 import { CreateDepartureDto } from '../dto/create-departure.dto';
 import { UpdateDepartureDto } from '../dto/update-departure.dto';
 import { Departure } from '../entities/departure.entity';
@@ -99,6 +100,84 @@ export const CreateDepartureDocs = () => {
     ApiCreatedResponseTemplate({
       description: '하교 기록 생성 완료',
       type: Departure,
+    }),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Create Departure Bulk
+//? ---------------------------------------------------------------------- ?//
+
+export const CreateDepartureBulkDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '🚌 Bulk Create Departure Records',
+      description: `
+**📝 Function Description**
+- Creates departure records for multiple students simultaneously
+- Sends departure notifications to each student's parents
+- Efficient method for processing bulk departures
+
+**🔄 Business Logic**
+1. Validate student ID list
+2. Retrieve parent information for each student
+3. Create departure records in bulk
+4. Send individual departure notifications to each parent
+5. Return created departure records list
+
+**⚠️ Important Constraints**
+- studentIds array is required parameter
+- All students must be from the same school
+- Non-existent student IDs will return error
+- Duplicate departure records cannot be created
+
+**📚 Example Scenarios**
+- Process all students' departure after class ends
+- Bulk departure records for specific class students
+- Process departure for students after events
+      `,
+    }),
+    ApiBody({
+      type: CreateDepartureBulkDto,
+      description: 'Information required for bulk departure record creation',
+      examples: {
+        allStudents: {
+          summary: 'All Students Departure Processing',
+          description: 'Recording departure for all students after class ends',
+          value: {
+            studentIds: [1, 2, 3, 4, 5],
+            schooldayId: 15,
+            date: '2025-01-15',
+            note: 'Normal departure',
+          },
+        },
+        classStudents: {
+          summary: 'Specific Class Students Departure',
+          description: 'Processing departure for specific class students only',
+          value: {
+            studentIds: [10, 11, 12],
+            schooldayId: 16,
+            date: '2025-01-15',
+            note: 'Grade 3 Class 1 departure',
+          },
+        },
+        eventStudents: {
+          summary: 'Event Participants Departure',
+          description: 'Processing departure for students who participated in special events',
+          value: {
+            studentIds: [20, 21, 22, 23],
+            schooldayId: 17,
+            date: '2025-01-15',
+            note: 'Sports day participants departure',
+          },
+        },
+      },
+    }),
+    ApiCreatedResponseTemplate({
+      description: 'Bulk departure records created successfully',
+      type: Departure,
+      isArray: true,
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
   );
