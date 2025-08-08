@@ -35,7 +35,7 @@ import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { getWeekNumberFromKoreanWeekday } from 'src/helpers/date';
 import { NotificationService } from 'src/services/notification/notification.service';
-import { In, IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
+import { Between, In, Repository } from 'typeorm';
 
 @Injectable()
 export class GroupAttendanceService {
@@ -441,76 +441,120 @@ export class GroupAttendanceService {
 
   async findAttendancesByDate(
     groupKey: string,
-    date: string, // `2025-07-22`
+    date: string, // `2025-07-22` 또는 `2025-08` (월 단위)
   ): Promise<IAttendance[]> {
     try {
-      // todo. to put response on the cache
-      const schooldays = await this.schooldayRepository.find({
-        where: {
-          groupId: getGroupIdFromGroupKey(groupKey),
-          today: date,
-        },
-      });
-      if (!schooldays || schooldays.length === 0) {
+      const groupId = getGroupIdFromGroupKey(groupKey);
+      console.log(`🔍 Searching for groupId: ${groupId}, date: ${date}`);
+
+      // 1. 해당 월의 모든 수업일(schooldays) 조회
+      let schooldays: Schoolday[];
+
+      if (date.includes('-') && date.split('-').length === 3) {
+        // yyyy-MM-dd 형식인 경우 (특정 날짜)
+        schooldays = await this.schooldayRepository.find({
+          where: {
+            groupId: groupId,
+            today: date,
+          },
+        });
+      } else {
+        // yyyy-MM 형식인 경우 (월 단위) - DB 레벨에서 필터링
+        const year = parseInt(date.split('-')[0]);
+        const month = parseInt(date.split('-')[1]);
+
+        // 해당 월의 시작일과 종료일 계산
+        const startOfMonth = new Date(year, month - 1, 1); // 월은 0-based
+        const endOfMonth = new Date(year, month, 0); // 다음 달의 0일 = 이번 달의 마지막 날
+
+        schooldays = await this.schooldayRepository.find({
+          where: {
+            groupId: groupId,
+            startsAt: Between(startOfMonth, endOfMonth),
+          },
+        });
+      }
+
+      if (schooldays.length === 0) {
         return [];
       }
 
-      const prefix = `DATE#${date}`;
-      const result = await this.model
-        .query('groupKey')
-        .eq(groupKey)
-        .where('dailyStudentKey')
-        .beginsWith(prefix)
-        .exec();
-      const items = result as IAttendance[];
-      console.log(`💚 items: ${items.length}`);
+      // 2. 해당 월의 모든 attendance 데이터 조회 (DynamoDB)
+      const allAttendanceItems: IAttendance[] = [];
 
-      const itemMap = new Map<string, IAttendance>(
-        items.map((v) => [v.dailyStudentKey, v]),
+      for (const schoolday of schooldays) {
+        const prefix = `DATE#${schoolday.today}`;
+        const result = await this.model
+          .query('groupKey')
+          .eq(groupKey)
+          .where('dailyStudentKey')
+          .beginsWith(prefix)
+          .exec();
+
+        const items = result as IAttendance[];
+        allAttendanceItems.push(...items);
+      }
+
+      console.log(
+        `💚 Found ${allAttendanceItems.length} attendance items from DynamoDB`,
       );
 
+      const itemMap = new Map<string, IAttendance>(
+        allAttendanceItems.map((v) => [v.dailyStudentKey, v]),
+      );
+
+      // 3. 해당 그룹의 모든 학생 정보 조회
       const picks = await this.pickRepository.find({
         where: [
           {
-            groupId: getGroupIdFromGroupKey(groupKey),
-            endedBy: IsNull(), //! 전학가지 않은 경우
-          },
-          {
-            groupId: getGroupIdFromGroupKey(groupKey),
-            endedBy: Not(IsNull()), //! 전학간 경우 중 유효한 기간
-            end: MoreThanOrEqual(date),
+            groupId: groupId,
           },
         ],
-        relations: ['student', 'group', 'group.lesson'],
+        relations: ['group', 'group.lesson', 'student'],
       });
 
-      return picks.map((v) => {
-        const dailyStudentKey = generateDailyStudentKey(
-          date,
-          v.studentId,
-          v.student.grade,
-          v.student.class,
-          v.student.studentCode,
-        );
-        return (
-          itemMap.get(dailyStudentKey) ||
-          ({
-            //expires: Math.floor(addDays(new Date(), 400).getTime() / 1000),
-            groupKey: groupKey,
-            dailyStudentKey: dailyStudentKey,
-            groupId: v.group.id,
-            start: v.group.start,
-            end: v.group.end,
-            weekday: v.group.weekday,
-            lessonName: v.group.lesson.lessonName,
-            studentId: v.student.id,
-            studentName: v.student.name,
-            status: AttendanceStatus.INIT,
-          } as IAttendance)
-        );
-      });
+      console.log(`📋 Found ${picks.length} picks`);
+
+      // 4. 각 수업일별로 attendance 생성
+      const attendances: IAttendance[] = [];
+
+      for (const schoolday of schooldays) {
+        console.log(`🔄 Processing schoolday: ${schoolday.today}`);
+
+        for (const pick of picks) {
+          const dailyStudentKey = generateDailyStudentKey(
+            schoolday.today, // schoolday.today를 사용
+            pick.studentId,
+            pick.student.grade,
+            pick.student.class,
+            pick.student.studentCode,
+          );
+
+          const attendance =
+            itemMap.get(dailyStudentKey) ||
+            ({
+              groupKey: groupKey,
+              dailyStudentKey: dailyStudentKey,
+              lessonId: pick.group.lessonId,
+              lessonName: pick.group.lesson.lessonName,
+              groupId: pick.group.id,
+              groupName: pick.group.groupName,
+              studentId: pick.student.id,
+              studentName: pick.student.name,
+              start: pick.group.start,
+              end: pick.group.end,
+              weekday: pick.group.weekday,
+              status: AttendanceStatus.INIT,
+            } as IAttendance);
+
+          attendances.push(attendance);
+        }
+      }
+
+      console.log(`🎯 Final result: ${attendances.length} attendances created`);
+
+      return attendances;
     } catch (error) {
-      // No conversion needed! Dynamoose handles it automatically
       console.error(`[dynamodb] error`, error);
       throw new BadRequestException('출석 정보 조회에 실패했습니다.');
     }
