@@ -357,22 +357,24 @@ export class NewsletterService {
     manager: EntityManager,
     dto: CreateNewsletterDto,
   ): Promise<Newsletter> {
-    // 기존 뉴스레터가 있는지 확인 (schoolId, termId, type으로)
-    const existingNewsletter = await manager.findOne(Newsletter, {
-      where: {
-        schoolId: dto.schoolId,
-        termId: dto.termId,
-        type: dto.type,
-      },
-    });
+    // REGISTRATION 타입인 경우에만 기존 뉴스레터 확인
+    if (dto.type === NewsletterType.REGISTRATION) {
+      const existingNewsletter = await manager.findOne(Newsletter, {
+        where: {
+          schoolId: dto.schoolId,
+          termId: dto.termId,
+          type: dto.type,
+        },
+      });
 
-    if (existingNewsletter) {
-      const updatedNewsletter = manager.merge(
-        Newsletter,
-        existingNewsletter,
-        dto,
-      );
-      return await manager.save(updatedNewsletter);
+      if (existingNewsletter) {
+        const updatedNewsletter = manager.merge(
+          Newsletter,
+          existingNewsletter,
+          dto,
+        );
+        return await manager.save(updatedNewsletter);
+      }
     }
 
     // REGISTRATION이 아니거나 기존 뉴스레터가 없는 경우 새로 생성

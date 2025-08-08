@@ -49,7 +49,7 @@ export class CreateNewsletterDto {
     required: true,
   })
   @IsString()
-  @MaxLength(32)
+  @MaxLength(64)
   title: string;
 
   @ApiProperty({
