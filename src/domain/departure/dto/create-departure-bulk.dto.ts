@@ -1,10 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsArray,
-  IsNumber,
-  IsOptional,
-  IsString
-} from 'class-validator';
+import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateDepartureBulkDto {
   @ApiProperty({ description: '학생 아이디', example: [1, 2, 3] })
@@ -31,6 +26,4 @@ export class CreateDepartureBulkDto {
   @IsOptional()
   @IsString()
   note?: string;
-
-
 }

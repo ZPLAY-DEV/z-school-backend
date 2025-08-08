@@ -164,7 +164,8 @@ export const CreateDepartureBulkDocs = () => {
         },
         eventStudents: {
           summary: 'Event Participants Departure',
-          description: 'Processing departure for students who participated in special events',
+          description:
+            'Processing departure for students who participated in special events',
           value: {
             studentIds: [20, 21, 22, 23],
             schooldayId: 17,

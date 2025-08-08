@@ -79,7 +79,7 @@ export class PickController {
   @HttpCode(200)
   @Patch('end/rollback')
   async endPickRollback(
-    @Body() dto: { groupId: number; studentId: number },
+    @Body() dto: { groupId: number; studentId: number; termId: number },
   ): Promise<Pick> {
     return await this.pickService.endPickRollback(dto);
   }

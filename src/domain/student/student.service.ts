@@ -434,47 +434,7 @@ export class StudentService {
 
   //? 학생 목록 조회 (페이지네이션)
   async infiniteList(query: PaginateQuery): Promise<Paginated<Student>> {
-    // termId 필터를 별도로 처리하고 query.filter에서 제거
-    let termId: number | undefined;
-    if (query.filter?.termId) {
-      termId = Number(query.filter.termId);
-      // query.filter에서 termId 제거하여 nestjs-paginate가 처리하지 않도록 함
-      delete query.filter.termId;
-    }
-
-    // termId가 있는 경우 완전히 수동으로 처리
-    if (termId) {
-      const queryBuilder = this.studentRepository
-        .createQueryBuilder('student')
-        .leftJoinAndSelect('student.picks', 'picks')
-        .where((qb) => {
-          const subQuery = qb
-            .subQuery()
-            .select('DISTINCT subStudent.id')
-            .from('students', 'subStudent')
-            .innerJoin('subStudent.picks', 'subPick')
-            .where('subPick.termId = :termId', { termId })
-            .andWhere('subPick.deletedAt IS NULL')
-            .getQuery();
-          return 'student.id IN ' + subQuery;
-        })
-        .setParameter('termId', termId);
-
-      const config: PaginateConfig<Student> = {
-        relations: ['picks'],
-        sortableColumns: ['id', 'name'],
-        searchableColumns: ['name', 'phone', 'note'],
-        filterableColumns: {
-          schoolId: [FilterOperator.EQ],
-          picks: [FilterOperator.NULL, FilterSuffix.NOT],
-          name: [FilterOperator.ILIKE],
-          phone: [FilterOperator.ILIKE],
-          note: [FilterOperator.ILIKE],
-        },
-      };
-
-      return paginate(query, queryBuilder, config);
-    }
+    const queryBuilder = this.studentRepository.createQueryBuilder('student');
 
     // termId가 없는 경우 기본 처리
     const config: PaginateConfig<Student> = {
@@ -490,7 +450,7 @@ export class StudentService {
       },
     };
 
-    return paginate(query, this.studentRepository, config);
+    return paginate(query, queryBuilder, config);
   }
 
   //? ---------------------------------------------------------------------- ?//

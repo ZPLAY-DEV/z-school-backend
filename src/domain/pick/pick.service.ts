@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -14,7 +15,11 @@ import {
 } from 'nestjs-paginate';
 import { Actor } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { CreatePickDto, EndPickDto } from 'src/domain/pick/dto/create-pick.dto';
+import {
+  CreatePickDto,
+  EndPickDto,
+  StartPickDto,
+} from 'src/domain/pick/dto/create-pick.dto';
 import { UpdatePickDto } from 'src/domain/pick/dto/update-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -43,10 +48,14 @@ export class PickService {
 
   // 필수항목) groupId, studentId, start, note (수동으로 등록시)
   async createPick(
-    dtos: CreatePickDto[],
+    dtos: StartPickDto[],
     role: Actor,
     userId: number,
   ): Promise<number> {
+    if (dtos.length === 0) {
+      throw new BadRequestException('dtos is empty');
+    }
+
     const groupId = dtos[0].groupId;
     const groupWithLesson = await this.groupRepository.findOneOrFail({
       where: {
@@ -55,7 +64,7 @@ export class PickService {
       relations: ['lesson', 'lesson.term'],
     });
     const end = groupWithLesson.lesson.end || groupWithLesson.lesson.term.end;
-    const termId = groupWithLesson.lesson.termId;
+    const termId = dtos[0].termId || groupWithLesson.lesson.termId;
 
     if (role === Actor.INSTRUCTOR) {
       const user = await this.userRepository.findOne({
@@ -83,6 +92,7 @@ export class PickService {
     const conflictingStudentNames = await this._validateTimeConflicts(
       dtos,
       groupWithLesson,
+      termId,
     );
     if (conflictingStudentNames.length > 0) {
       throw new UnprocessableEntityException(
@@ -98,6 +108,7 @@ export class PickService {
         where: {
           groupId: dto.groupId,
           studentId: dto.studentId,
+          termId: termId,
         },
       });
 
@@ -134,6 +145,7 @@ export class PickService {
   private async _validateTimeConflicts(
     dtos: CreatePickDto[],
     newGroup: Group,
+    termId: number,
   ): Promise<string[]> {
     const conflictingStudentNames: string[] = [];
     const studentIds = [...new Set(dtos.map((dto) => dto.studentId))];
@@ -141,7 +153,7 @@ export class PickService {
     for (const studentId of studentIds) {
       // 해당 학생의 모든 picks 조회
       const existingPicks = await this.pickRepository.find({
-        where: { studentId },
+        where: { studentId, termId },
         relations: ['group'],
       });
 
@@ -187,21 +199,22 @@ export class PickService {
   }
 
   async endPick(dto: EndPickDto): Promise<Pick> {
+    const { groupId, studentId, termId, end, endedBy, note } = dto;
     const pick = await this.pickRepository.findOneOrFail({
-      where: { groupId: dto.groupId, studentId: dto.studentId },
+      where: { groupId, studentId, termId },
     });
     if (!pick) {
       throw new NotFoundException('pick entity not found');
     }
     await this.pickRepository.update(pick.id, {
-      note: dto.note,
-      endedBy: dto.endedBy,
-      end: dto.end,
+      note,
+      endedBy,
+      end,
     });
 
-    pick.note = dto.note ?? null;
-    pick.endedBy = dto.endedBy ?? Actor.OTHER;
-    pick.end = dto.end;
+    pick.note = note ?? null;
+    pick.endedBy = endedBy ?? Actor.OTHER;
+    pick.end = end;
 
     return pick;
   }
@@ -209,9 +222,11 @@ export class PickService {
   async endPickRollback(dto: {
     groupId: number;
     studentId: number;
+    termId: number;
   }): Promise<Pick> {
+    const { groupId, studentId, termId } = dto;
     const pick = await this.pickRepository.findOneOrFail({
-      where: { groupId: dto.groupId, studentId: dto.studentId },
+      where: { groupId, studentId, termId },
       relations: ['group', 'group.lesson', 'group.lesson.term'],
     });
     if (!pick) {
