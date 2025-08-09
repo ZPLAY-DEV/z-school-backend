@@ -1,17 +1,17 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiExtraModels,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  getSchemaPath,
+    ApiBody,
+    ApiExtraModels,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-  ApiOkPaginatedResponse,
-  ApiPaginationQuery,
-  FilterOperator,
+    ApiOkPaginatedResponse,
+    ApiPaginationQuery,
+    FilterOperator,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { RemovalStatus } from 'src/common/enums';
@@ -521,6 +521,87 @@ export const ListAvailableStudentsDocs = () => {
     ApiOkResponse({
       description: '배정 가능한 학생 목록 조회 성공',
       type: [Student],
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? List Available Students Paginated
+//? ---------------------------------------------------------------------- ?//
+
+export const ListAvailableStudentsPaginatedDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '👥📄 반 배정 가능한 학생 목록 (페이지네이션)',
+      description: `
+### 📋 기능 개요
+- 특정 반에 배정 가능한 학생들의 목록을 페이지네이션과 검색 기능으로 조회합니다
+- 동일 수업(lesson)의 모든 반에 이미 소속된 학생들은 제외됩니다
+- 반의 허용 학년과 일치하는 학생만 포함하여 최적화된 목록을 제공합니다
+
+### 🎯 필터링 조건 (DB 쿼리 최적화)
+- **학년 제한**: 반의 allowedGrades에 해당하는 학생만 포함
+  - allowedGrades는 쉼표로 구분된 문자열 (예: "1,2,3")
+  - 각 학생의 grade 필드와 비교하여 일치하는 학생만 선택
+- **중복 배정 방지**: 해당 수업(lesson)의 모든 반에 이미 소속된 학생 제외
+  - 현재 수강중인 학생(pick.endedBy IS NULL)만 제외
+  - 과거에 수강했지만 현재는 수강하지 않는 학생은 포함
+- **동일 학교 소속**: 해당 수업의 school에 속한 학생만 대상
+
+### 🔍 검색 및 필터링
+- **검색 가능**: name, phone 필드에서 키워드 검색
+- **정렬 가능**: id, name, grade, createdAt 기준 정렬
+- **필터링**: grade, status로 추가 필터링
+- **정렬 기본값**: 이름 순 (name ASC)
+
+### 📊 응답 데이터 구조
+- Student 정보 (학생 기본 정보)
+- Parent 정보 (학부모 연락처 등) 포함
+- 페이지네이션 메타데이터 포함
+
+### ⚙️ 성능 최적화
+- DB 쿼리 레벨에서 조건 필터링으로 메모리 사용량 최소화
+- nestjs-paginate를 활용한 효율적인 페이지네이션
+- 인덱스 활용 가능한 쿼리 구조로 설계
+
+### 📝 URL 파라미터
+- **id**: 대상 반의 고유 식별자 (숫자)
+
+### 💡 활용 예시
+- 반 배정 관리 화면에서 검색 가능한 학생 목록
+- 학생 이름으로 빠른 검색 및 배정
+- 학년별 필터링으로 대상 학생 확인
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '반(그룹) ID',
+    }),
+    ApiPaginationQuery({
+      sortableColumns: ['id', 'name', 'grade', 'createdAt'],
+      searchableColumns: ['name', 'phone'],
+      defaultSortBy: [['name', 'ASC']],
+      filterableColumns: {
+        grade: [FilterOperator.EQ],
+        status: [FilterOperator.EQ],
+      },
+      relations: {
+        parent: true,
+      },
+    }),
+    ApiOkPaginatedResponse(Student, {
+      sortableColumns: ['id', 'name', 'grade', 'createdAt'],
+      searchableColumns: ['name', 'phone'],
+      defaultSortBy: [['name', 'ASC']],
+      filterableColumns: {
+        grade: [FilterOperator.EQ],
+        status: [FilterOperator.EQ],
+      },
+      relations: {
+        parent: true,
+      },
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );

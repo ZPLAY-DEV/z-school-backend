@@ -322,6 +322,58 @@ export class GroupService {
     return availableStudents;
   }
 
+  async listAvailableStudentsPaginated(
+    id: number,
+    query: PaginateQuery,
+  ): Promise<Paginated<Student>> {
+    // 1. Group 정보만 가져오기 (필요한 정보만)
+    const group = await this.groupRepository.findOne({
+      where: { id },
+      relations: ['lesson'],
+    });
+
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+
+    // 2. allowedGrades 파싱
+    const allowedGrades = group.allowedGrades
+      .split(',')
+      .map((grade) => parseInt(grade.trim()));
+
+    // 3. nestjs-paginate를 사용한 최적화된 QueryBuilder 구성
+    const queryBuilder = this.dataSource
+      .createQueryBuilder(Student, 'student')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .where('student.schoolId = :schoolId', {
+        schoolId: group.lesson.schoolId,
+      })
+      .andWhere('student.grade IN (:...allowedGrades)', { allowedGrades })
+      .andWhere(
+        'student.id NOT IN (SELECT DISTINCT pick.studentId FROM picks pick INNER JOIN `groups` g ON pick.groupId = g.id WHERE g.lessonId = :lessonId AND pick.studentId IS NOT NULL AND pick.endedBy IS NULL)',
+        { lessonId: group.lessonId },
+      );
+
+    // 4. nestjs-paginate로 페이지네이션 적용
+    return await paginate(query, queryBuilder, {
+      relations: {
+        parent: true,
+      },
+      sortableColumns: ['id', 'name', 'grade', 'createdAt'],
+      searchableColumns: ['name', 'phone'],
+      defaultSortBy: [
+        ['grade', 'ASC'],
+        ['class', 'ASC'],
+        ['studentCode', 'ASC'],
+      ],
+      filterableColumns: {
+        name: [FilterOperator.EQ, FilterOperator.ILIKE],
+        grade: [FilterOperator.EQ],
+        status: [FilterOperator.EQ],
+      },
+    });
+  }
+
   async listBookedPendingStudents(id: number): Promise<BookedStudentDto[]> {
     // 1. Group을 찾고 lesson 관계를 포함하여 가져오기
     const group = await this.groupRepository.findOne({

@@ -26,6 +26,7 @@ import {
   DeleteGroupDocs,
   FindGroupDocs,
   ListAvailableStudentsDocs,
+  ListAvailableStudentsPaginatedDocs,
   ListBookedPendingStudentsDocs,
   ListCanceledStudentsDocs,
   ListCanceledStudentsPaginatedDocs,
@@ -110,6 +111,15 @@ export class GroupController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Student[]> {
     return await this.groupService.listAvailableStudents(id);
+  }
+
+  @ListAvailableStudentsPaginatedDocs()
+  @Get(':id/available-students/paginated')
+  async listAvailableStudentsPaginated(
+    @Param('id', ParseIntPipe) id: number,
+    @Paginate() query: PaginateQuery,
+  ): Promise<Paginated<Student>> {
+    return await this.groupService.listAvailableStudentsPaginated(id, query);
   }
 
   @ListBookedPendingStudentsDocs()
