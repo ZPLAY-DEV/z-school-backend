@@ -1,5 +1,12 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import {
+  FilterOperator,
+  paginate,
+  Paginated,
+  PaginateQuery,
+} from 'nestjs-paginate';
+import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { NeisService } from 'src/services/neis/neis.service';
 import { DataSource, Repository } from 'typeorm';
@@ -14,6 +21,8 @@ export class SchoolCalendarService {
   constructor(
     @InjectRepository(School)
     private readonly schoolRepository: Repository<School>,
+    @InjectRepository(Calendar)
+    private readonly calendarRepository: Repository<Calendar>,
     private dataSource: DataSource, // for transaction
     private readonly neisService: NeisService,
   ) {}
@@ -90,5 +99,44 @@ export class SchoolCalendarService {
         await queryRunner.release();
       }
     }
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
+
+  async list(schoolId: number): Promise<Calendar[]> {
+    const queryBuilder = this.calendarRepository
+      .createQueryBuilder('calendar')
+      .where('calendar.schoolId = :schoolId', { schoolId })
+      .orderBy('calendar.id', 'DESC');
+
+    return await queryBuilder.getMany();
+  }
+
+  async infiniteList(
+    schoolId: number,
+    query: PaginateQuery,
+  ): Promise<Paginated<Calendar>> {
+    console.log(`🔥🔥🔥🔥 `, query);
+
+    const queryBuilder = this.calendarRepository
+      .createQueryBuilder('calendar')
+      .where('calendar.schoolId = :schoolId', { schoolId });
+
+    return await paginate<Calendar>(query, queryBuilder, {
+      relations: {
+        school: true,
+      },
+      sortableColumns: ['id', 'date'],
+      searchableColumns: ['name'],
+      defaultSortBy: [['id', 'DESC']],
+      filterableColumns: {
+        name: [FilterOperator.EQ, FilterOperator.ILIKE],
+        date: [FilterOperator.EQ, FilterOperator.GTE, FilterOperator.LTE],
+        status: [FilterOperator.EQ, FilterOperator.IN],
+        note: [FilterOperator.EQ, FilterOperator.ILIKE, FilterOperator.NULL],
+      },
+    });
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -11,6 +11,8 @@ import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { Repository } from 'typeorm';
 @Injectable()
 export class CalendarService {
+  private readonly logger = new Logger(CalendarService.name);
+
   constructor(
     @InjectRepository(Calendar)
     private readonly calendarRepository: Repository<Calendar>,
@@ -51,21 +53,21 @@ export class CalendarService {
     return dates.map((calendar) => calendar.date);
   }
 
-  // async findById(id: number, relations: string[] = []): Promise<Calendar> {
-  //   try {
-  //     return relations.length > 0
-  //       ? await this.calendarRepository.findOneOrFail({
-  //           where: { id },
-  //           relations,
-  //         })
-  //       : await this.calendarRepository.findOneOrFail({
-  //           where: { id },
-  //         });
-  //   } catch (error) {
-  //     this.logger.error(error);
-  //     throw new NotFoundException(HttpErrorConstants.NOT_FOUND_ENTITY);
-  //   }
-  // }
+  async findById(id: number, relations: string[] = []): Promise<Calendar> {
+    try {
+      return relations.length > 0
+        ? await this.calendarRepository.findOneOrFail({
+            where: { id },
+            relations,
+          })
+        : await this.calendarRepository.findOneOrFail({
+            where: { id },
+          });
+    } catch (error) {
+      this.logger.error(error);
+      throw new NotFoundException('calendar not found');
+    }
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Update

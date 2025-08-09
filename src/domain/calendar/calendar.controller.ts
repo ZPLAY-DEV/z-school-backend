@@ -3,6 +3,7 @@ import {
   ClassSerializerInterceptor,
   Controller,
   Delete,
+  Get,
   Param,
   ParseIntPipe,
   Patch,
@@ -33,6 +34,15 @@ export class CalendarController {
     @Body() dto: UpdateCalendarDto,
   ): Promise<Calendar> {
     return await this.calendarService.update(id, dto);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
+
+  @Get(':id')
+  async findById(@Param('id') id: number): Promise<Calendar> {
+    return await this.calendarService.findById(id, ['school']);
   }
 
   //? ---------------------------------------------------------------------- ?//
