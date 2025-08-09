@@ -19,7 +19,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { IS3Urls } from 'src/common/interfaces';
 import { ChangePasswordDto } from 'src/domain/user/dto/change-password.dto';
 import { ChangeUsernameDto } from 'src/domain/user/dto/change-username.dto';
-import { DeleteUserDto } from 'src/domain/user/dto/delete-user.dto';
+import { WithdrawUserDto } from 'src/domain/user/dto/withdraw-user.dto';
 import { User } from 'src/domain/user/entities/user.entity';
 import { AvatarInterceptor } from 'src/domain/user/interceptors/avatar-interceptor';
 import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
@@ -192,7 +192,7 @@ export class UserController {
   // @UseInterceptors(ClassSerializerInterceptor)
   async remove(
     @Param('userId') userId: number,
-    @Body() dto: DeleteUserDto,
+    @Body() dto: WithdrawUserDto,
   ): Promise<void> {
     return await this.userService.quit(userId, dto);
   }

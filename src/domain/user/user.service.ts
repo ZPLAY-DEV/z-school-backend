@@ -22,8 +22,8 @@ import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { ChangePasswordDto } from 'src/domain/user/dto/change-password.dto';
 import { ChangeUsernameDto } from 'src/domain/user/dto/change-username.dto';
 import { CreateUserDto } from 'src/domain/user/dto/create-user.dto';
-import { DeleteUserDto } from 'src/domain/user/dto/delete-user.dto';
 import { UpdateUserDto } from 'src/domain/user/dto/update-user.dto';
+import { WithdrawUserDto } from 'src/domain/user/dto/withdraw-user.dto';
 import { User } from 'src/domain/user/entities/user.entity';
 import { normalizePhone } from 'src/helpers/phone';
 import { S3Service } from 'src/services/aws/s3.service';
@@ -240,8 +240,8 @@ export class UserService {
   // User 비밀번호 갱신
   async changePassword(id: number, dto: ChangePasswordDto): Promise<User> {
     const user = await this.findById(id);
-    if (dto.current) {
-      if (!user.password) throw new ForbiddenException('invalid credentials');
+    if (user.password) {
+      if (!dto.current) throw new ForbiddenException('invalid credentials');
       const passwordMatches = await bcrypt.compare(dto.current, user.password);
       if (!passwordMatches) {
         throw new ForbiddenException('invalid credentials');
@@ -266,15 +266,46 @@ export class UserService {
   }
 
   // User 탈퇴
-  async quit(id: number, dto: DeleteUserDto): Promise<void> {
-    const user = await this.findById(id, ['parent', 'instructor']);
+  async quit(id: number, dto: WithdrawUserDto): Promise<void> {
+    const user = await this.findById(id, [
+      'parent',
+      'instructor',
+      'instructor.sams',
+      'instructor.sams.contracts',
+    ]);
+
+    console.log('🔥 user', JSON.stringify(user, null, 2));
+
+    if (user.password) {
+      if (!dto.current) throw new ForbiddenException('invalid credentials');
+      const passwordMatches = await bcrypt.compare(dto.current, user.password);
+      if (!passwordMatches) {
+        throw new ForbiddenException('invalid credentials');
+      }
+    }
+
+    if (dto.role === Role.INSTRUCTOR && user.instructor) {
+      if (user.instructor.sams.length > 0) {
+        for (const sam of user.instructor.sams) {
+          for (const contract of sam.contracts) {
+            const now = new Date();
+            if (
+              !contract.endedBy &&
+              new Date(contract.start) <= now &&
+              new Date(contract.end) > now
+            ) {
+              throw new ForbiddenException('instructor has active contracts');
+            }
+          }
+        }
+      }
+      await this._resetInstructor(user.instructor.phone);
+    }
+    if (dto.role === Role.PARENT && user.parent) {
+      await this._resetParent(user.parent.phone);
+    }
+
     try {
-      if (dto.role === Role.INSTRUCTOR && user.instructor) {
-        await this._resetInstructor(user.instructor.phone);
-      }
-      if (dto.role === Role.PARENT && user.parent) {
-        await this._resetParent(user.parent.phone);
-      }
       await this._voidPersonalInformationAndUpsertWithdrawals(id, dto);
       // await this.softRemove(id);
     } catch (error) {
@@ -282,10 +313,10 @@ export class UserService {
       throw new BadRequestException();
     }
 
-    // await this.slack.sendMessage({
-    //   channel: 'activity',
-    //   text: `다음 사용자가 탈퇴했습니다.\n- 아이디: ${id}\n- 이름: ${user.username}\n- 전화: ${user.phone}\n- 이메일: ${user.email}`,
-    // });
+    await this.slack.sendMessage({
+      channel: 'activity',
+      text: `다음 사용자가 탈퇴했습니다.\n- 아이디: ${id}\n- 이름: ${user.username}\n- 역할: ${dto.role}`,
+    });
   }
 
   async _deleteLedger(id: number) {
@@ -309,7 +340,7 @@ export class UserService {
 
   async _voidPersonalInformationAndUpsertWithdrawals(
     id: number,
-    dto: DeleteUserDto,
+    dto: WithdrawUserDto,
   ): Promise<any> {
     const user = await this.findById(id);
     const postfix = random.generate({ length: 4, charset: 'numeric' });
