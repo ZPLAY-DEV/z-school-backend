@@ -24,7 +24,6 @@ import { ChangeUsernameDto } from 'src/domain/user/dto/change-username.dto';
 import { CreateUserDto } from 'src/domain/user/dto/create-user.dto';
 import { DeleteUserDto } from 'src/domain/user/dto/delete-user.dto';
 import { UpdateUserDto } from 'src/domain/user/dto/update-user.dto';
-import { Provider } from 'src/domain/user/entities/provider.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { normalizePhone } from 'src/helpers/phone';
 import { S3Service } from 'src/services/aws/s3.service';
@@ -266,209 +265,70 @@ export class UserService {
     return await this.userRepository.remove(user);
   }
 
-  async removeAvatar(id: number): Promise<void> {
-    const user = await this.findById(id);
-    const url = user.avatar;
-    if (url) {
-      await this.s3Service.delete(url);
-    }
-  }
-
   // User 탈퇴
   async quit(id: number, dto: DeleteUserDto): Promise<void> {
-    const user = await this.findById(id);
+    const user = await this.findById(id, ['parent', 'instructor']);
     try {
-      await this._deleteInquiryComment(id);
-      await this._deleteConnection(id);
-      await this._deleteFlag(id);
-      await this._deleteHate(id);
-      await this._deleteInquiry(id);
-      await this._deleteJoin(id);
-      await this._deleteEvent(id);
-      await this._deleteLedger(id);
-      await this._deleteLike(id);
-      await this._deleteEvent(id);
-      await this._deletePlea(id);
-      await this._deleteProfile(id);
-      await this._deleteProvider(id);
-      await this._deleteFeedComment(id);
-      await this._deleteReportUserFeed(id);
-      await this._deleteReportUserEvent(id);
-      await this._deleteReportUserUser(id);
-      await this._deleteEventComment(id);
-      await this._voidPersonalInformationAndUpsertWithdrawals(
-        id,
-        dto.message ?? '',
-      );
+      if (dto.role === Role.INSTRUCTOR && user.instructor) {
+        await this._resetInstructor(user.instructor.phone);
+      }
+      if (dto.role === Role.PARENT && user.parent) {
+        await this._resetParent(user.parent.phone);
+      }
+      await this._voidPersonalInformationAndUpsertWithdrawals(id, dto);
       // await this.softRemove(id);
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException();
     }
 
-    await this.slack.sendMessage({
-      channel: 'activity',
-      text: `다음 사용자가 탈퇴했습니다.\n- 아이디:${id}\n- 이름:${user.username}\n- 전화:${user.phone}\n- 이메일:${user.email}`,
-    });
+    // await this.slack.sendMessage({
+    //   channel: 'activity',
+    //   text: `다음 사용자가 탈퇴했습니다.\n- 아이디: ${id}\n- 이름: ${user.username}\n- 전화: ${user.phone}\n- 이메일: ${user.email}`,
+    // });
   }
 
-  async _deleteInquiryComment(id: number) {
-    await this.userRepository.manager.query(
-      'UPDATE `opinion` SET deletedAt=NOW() WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deleteConnection(id: number) {
-    await this.userRepository.manager.query(
-      'UPDATE `connection` SET deletedAt=NOW() WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deleteFlag(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `flag` WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deleteFriendship(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `friendship` WHERE userId = ? OR traineeId = ?',
-      [id, id],
-    );
-  }
-  async _deleteHate(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `hate` WHERE userId = ? OR traineeId = ?',
-      [id, id],
-    );
-  }
-  async _deleteImpression(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `impression` WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deleteInquiry(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `inquiry` WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deleteInterest(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `interest` WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deleteJoin(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `join` WHERE userId = ? OR traineeId = ?',
-      [id, id],
-    );
-  }
   async _deleteLedger(id: number) {
     await this.userRepository.manager.query(
-      'DELETE FROM `ledger` WHERE userId = ?',
+      'DELETE FROM `ledgers` WHERE userId = ?',
       [id],
     );
   }
-  async _deleteLike(id: number) {
+  async _resetInstructor(phone: string) {
     await this.userRepository.manager.query(
-      'DELETE FROM `like` WHERE userId = ?',
-      [id],
+      'UPDATE `instructors` SET userId=NULL, name=NULL, note=NULL, termsAgreedAt=NULL WHERE phone = ?',
+      [phone],
     );
   }
-  async _deleteEvent(id: number) {
+  async _resetParent(phone: string) {
     await this.userRepository.manager.query(
-      'UPDATE `event` SET deletedAt=NOW() WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deletePlea(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `plea` WHERE userId = ? OR traineeId = ?',
-      [id, id],
-    );
-  }
-  async _deleteProfile(id: number) {
-    await this.userRepository.manager.query(
-      'UPDATE `profile` SET balance=0, bio=NULL, mbti=NULL, region=NULL, occupation=NULL, education=NULL,fyis=NULL,images=NULL WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deleteProvider(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `provider` WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deleteReaction(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `reaction` WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deleteFeedComment(id: number) {
-    await this.userRepository.manager.query(
-      'UPDATE `comment` SET deletedAt=NOW() WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deleteReportUserFeed(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `report_connection` WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deleteReportUserEvent(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `user_event_report` WHERE userId = ?',
-      [id],
-    );
-  }
-  async _deleteReportUserUser(id: number) {
-    await this.userRepository.manager.query(
-      'DELETE FROM `user_user_report` WHERE userId = ? OR accusedUserId = ?',
-      [id, id],
-    );
-  }
-  async _deleteEventComment(id: number) {
-    await this.userRepository.manager.query(
-      'UPDATE `thread` SET deletedAt=NOW() WHERE userId = ?',
-      [id],
+      'UPDATE `parents` SET userId=NULL, name=NULL, note=NULL, termsAgreedAt=NULL WHERE phone = ?',
+      [phone],
     );
   }
 
   async _voidPersonalInformationAndUpsertWithdrawals(
     id: number,
-    message: string,
+    dto: DeleteUserDto,
   ): Promise<any> {
-    const user = await this.findById(id, ['providers']);
-    const phone =
-      user.phone && user.phone.length > 4 ? user.phone.substring(3) : 'n/a';
-    const postfix = random.generate({ length: 5, charset: 'numeric' });
+    const user = await this.findById(id);
+    const postfix = random.generate({ length: 4, charset: 'numeric' });
+    const prefix = user.username.split('.')[0];
+    const username = `${prefix}.${postfix}(탈퇴)`;
 
-    user.username = `${user.username}(탈퇴)`; // unique key
+    user.username = username; // unique key
     user.email = null; // unique key
-    user.phone = `${phone}:${postfix}`; // unique key
+    user.phone = null; // unique key
     await this.userRepository.save(user);
-    await this.userRepository.manager.query(
-      'UPDATE `user` SET password=NULL,career=NULL,avatar=NULL,pushToken=NULL,refreshTokenHash=NULL,isActive=0 WHERE id = ?',
-      [id],
-    );
 
     // add a withdrawal entry (MySQL 8.0+ alias 문법 사용)
-    await Promise.all(
-      user.providers.map(async (v: Provider) => {
-        await this.userRepository.manager.query(
-          'INSERT IGNORE INTO `withdrawal` (userId, providerId, reason) VALUES (?, ?, ?) AS new_withdrawal(userId, providerId, reason) \
+    await this.userRepository.manager.query(
+      'INSERT IGNORE INTO `withdrawals` (userId, role, reason) VALUES (?, ?, ?) AS new_withdrawal(userId, role, reason) \
 ON DUPLICATE KEY UPDATE \
 userId = new_withdrawal.userId, \
-providerId = new_withdrawal.providerId, \
+role = new_withdrawal.role, \
 reason = new_withdrawal.reason',
-          [v.providerId, message, id],
-        );
-      }),
+      [id, dto.role, dto.reason],
     );
   }
 }

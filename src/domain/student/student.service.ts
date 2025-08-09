@@ -626,12 +626,4 @@ export class StudentService {
         .join(',');
     }
   }
-
-  //? 학생 이미지 삭제
-  async deleteImages(url: string): Promise<void> {
-    const fileName = url.split('/').pop();
-    if (fileName) {
-      await this.s3Service.delete(fileName);
-    }
-  }
 }

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Role } from 'src/common/enums';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
   Column,
@@ -7,9 +8,11 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 @Entity('withdrawals')
+@Unique(['userId'])
 export class Withdrawal {
   @ApiProperty({ description: 'withdrawalId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
@@ -19,15 +22,16 @@ export class Withdrawal {
   @Column({ type: 'int', unsigned: true, nullable: true })
   userId: number | null; // to make it available to Repository.
 
-  @ApiProperty({
-    description:
-      'provider 의 providerId 를 모두 저장하여, 같은 id 가 탈퇴이후 다시 사용되는지 체크하기 위함',
+  @ApiProperty({ description: '🈵 role' })
+  @Column({
+    type: 'enum',
+    enum: Role,
+    default: Role.PARENT,
   })
-  @Column({ length: 128, unique: true })
-  providerId: string;
+  role: Role;
 
   @ApiProperty({ description: 'reason to quit' })
-  @Column({ type: 'varchar', length: 80, nullable: true })
+  @Column({ type: 'varchar', length: 64, nullable: true })
   reason: string | null;
 
   @CreateDateColumn()

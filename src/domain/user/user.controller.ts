@@ -50,18 +50,6 @@ export class UserController {
     return await this.userService.create(dto);
   }
 
-  @Post(':id/s3urls')
-  async generateS3Urls(
-    @Param('id', ParseIntPipe) id: number,
-    @Body()
-    dto: {
-      mimeType: string;
-    },
-  ): Promise<IS3Urls> {
-    const path = [`users`, `${id}`, `avatar`].join('/');
-    return await this.uploadService.generateUploadUrls(path, dto.mimeType);
-  }
-
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
@@ -209,9 +197,19 @@ export class UserController {
     return await this.userService.quit(userId, dto);
   }
 
-  @ApiOperation({ description: 'User 아바타 이미지 삭제' })
-  @Delete(':userId/image')
-  async deleteImages(@Param('userId') userId: number): Promise<void> {
-    await this.userService.removeAvatar(userId);
+  //? ---------------------------------------------------------------------- ?//
+  //? Extras
+  //? ---------------------------------------------------------------------- ?//
+
+  @Post('s3urls')
+  async generateS3Urls(
+    @Body()
+    dto: {
+      userId: number;
+      mimeType: string;
+    },
+  ): Promise<IS3Urls> {
+    const path = [`users`, `${dto.userId}`, `avatar`].join('/');
+    return await this.uploadService.generateUploadUrls(path, dto.mimeType);
   }
 }

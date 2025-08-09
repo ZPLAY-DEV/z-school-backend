@@ -19,7 +19,6 @@ import { SqsModule } from 'src/services/aws/sqs.module';
 import { NotificationModule } from 'src/services/notification/notification.module';
 import { SlackModule } from 'src/services/slack/slack.module';
 import { UploadModule } from 'src/services/upload/upload.module';
-import { UserRepository } from './user.repository';
 
 @Module({
   imports: [
@@ -50,7 +49,6 @@ import { UserRepository } from './user.repository';
     // UserNotificationListener,
     UserService,
     UserOtpService,
-    UserRepository,
   ],
   controllers: [UserController, UserOtpController],
 })

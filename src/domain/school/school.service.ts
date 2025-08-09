@@ -136,8 +136,4 @@ export class SchoolService {
     const school = await this.findById(id);
     return await this.schoolRepository.remove(school);
   }
-
-  async deleteFromS3(url: string): Promise<void> {
-    await this.s3Service.delete(url);
-  }
 }
