@@ -90,6 +90,7 @@ export class OfferingPickService {
         offeringId,
         offering.capacity - offering.prepicked,
         offering.termId,
+        offering.prepickedStudentIds,
         sameGradeGroups,
       );
     } else if (offering.pickRule === PickRule.RANDOM) {
@@ -97,6 +98,7 @@ export class OfferingPickService {
         offeringId,
         offering.capacity - offering.prepicked,
         offering.termId,
+        offering.prepickedStudentIds,
         sameGradeGroups,
       );
     } else {
@@ -104,20 +106,18 @@ export class OfferingPickService {
         offeringId,
         offering.capacity - offering.prepicked,
         offering.termId,
+        offering.prepickedStudentIds,
         sameGradeGroups,
       );
     }
 
-    // console.log('🚀 picks', selectedStudentIds);
+    const filled = selectedStudentIds.length + offering.prepicked;
 
     return new ResponseCreateOfferingPickDto({
       pickRule: offering.pickRule,
       capacity: offering.capacity,
-      filled: selectedStudentIds.length,
-      unfilled:
-        offering.capacity - selectedStudentIds.length < 0
-          ? 0
-          : offering.capacity - selectedStudentIds.length,
+      filled: filled,
+      unfilled: offering.capacity - filled,
     });
   }
 
@@ -182,6 +182,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     termId: number,
+    prepickedStudentIds: number[],
     sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
@@ -192,7 +193,10 @@ export class OfferingPickService {
     });
     const allStudentIds = bookings.map((v) => v.studentId);
     // 선착순이므로 정원 내에서만 학생을 선택
-    const selectedStudentIds = allStudentIds.slice(0, capacity);
+    const selectedStudentIds = [
+      ...allStudentIds.slice(0, capacity),
+      ...prepickedStudentIds,
+    ];
 
     // 같은 묶음 group 들에는 동일한 학생을 할당 (일주일에 수업이 1번 이상있는 수업은 같은 묶음 group 들이 있음)
     let items: IPickKeys[] = [];
@@ -239,6 +243,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     termId: number,
+    prepickedStudentIds: number[],
     sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
@@ -246,7 +251,7 @@ export class OfferingPickService {
     });
     const allStudentIds = bookings.map((v) => v.studentId);
     // 정원 제한 없이 전체 학생을 모두 선택
-    const selectedStudentIds = allStudentIds;
+    const selectedStudentIds = [...allStudentIds, ...prepickedStudentIds];
 
     // 같은 묶음 group 들에는 동일한 학생을 할당 (일주일에 수업이 1번 이상있는 수업은 같은 묶음 group 들이 있음)
     let items: IPickKeys[] = [];
@@ -293,6 +298,7 @@ export class OfferingPickService {
     offeringId: number,
     capacity: number,
     termId: number,
+    prepickedStudentIds: number[],
     sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {
     const bookings = await this.bookingRepository.find({
@@ -301,7 +307,7 @@ export class OfferingPickService {
     const allStudentIds = bookings.map((v) => v.studentId);
     let selectedStudentIds: number[];
     if (capacity >= allStudentIds.length) {
-      selectedStudentIds = allStudentIds;
+      selectedStudentIds = [...allStudentIds, ...prepickedStudentIds];
 
       // 모든 bookings 의 status 를 ENROLLED 로 변경
       await this.bookingRepository.update(
@@ -309,9 +315,11 @@ export class OfferingPickService {
         { status: BookingStatus.ENROLLED },
       );
     } else {
-      selectedStudentIds = [...allStudentIds]
+      const randomStudentIds = [...allStudentIds]
         .sort(() => Math.random() - 0.5)
         .slice(0, capacity);
+
+      selectedStudentIds = [...randomStudentIds, ...prepickedStudentIds];
 
       // 모든 bookings 의 selectedStudentIds 의 status 를 ENROLLED 로 변경
       await this.bookingRepository.update(
