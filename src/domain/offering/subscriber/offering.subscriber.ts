@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 
 @Injectable()
+//! By using beforeInsert and beforeUpdate, we can avoid unwanted ghost updates.
 export class OfferingSubscriber implements EntitySubscriberInterface<Offering> {
   private readonly logger = new Logger(OfferingSubscriber.name);
 
@@ -19,62 +20,49 @@ export class OfferingSubscriber implements EntitySubscriberInterface<Offering> {
     return Offering;
   }
 
-  async afterInsert(event: InsertEvent<Offering>) {
+  /**
+   * Before inserting: calculate prepicked count directly
+   */
+  beforeInsert(event: InsertEvent<Offering>) {
     const offering = event.entity;
-
-    try {
-      // prepickedStudentIds 값이 있는 경우 prepicked 값을 설정
-      if (
-        offering.prepickedStudentIds &&
-        offering.prepickedStudentIds.length > 0
-      ) {
-        offering.prepicked = offering.prepickedStudentIds.length;
-        await event.manager.save(Offering, offering);
-
-        this.logger.log(
-          `Updated offering ${offering.id} prepicked count to ${offering.prepicked}`,
-        );
-      }
-    } catch (error) {
-      this.logger.error(
-        `Error processing offering creation: ${error.message}`,
-        error.stack,
+    if (offering?.prepickedStudentIds?.length > 0) {
+      offering.prepicked = offering.prepickedStudentIds.length;
+      this.logger.log(
+        `Setting prepicked count to ${offering.prepicked} for new offering`,
       );
     }
   }
 
-  async afterUpdate(event: UpdateEvent<Offering>) {
+  /**
+   * Before updating: check if prepickedStudentIds changed, then set new count
+   */
+  beforeUpdate(event: UpdateEvent<Offering>) {
     const offering = event.entity;
     const prev = event.databaseEntity;
 
-    if (!offering) {
+    if (!offering || !prev) {
       return;
     }
 
-    try {
-      // prepickedStudentIds 변경 감지 및 prepicked 값 업데이트
-      const prevPrepickedStudentIds = prev?.prepickedStudentIds || [];
-      const currentPrepickedStudentIds = offering.prepickedStudentIds || [];
+    const prevIds = Array.isArray(prev.prepickedStudentIds)
+      ? prev.prepickedStudentIds
+      : [];
+    const currIds = Array.isArray(offering.prepickedStudentIds)
+      ? offering.prepickedStudentIds
+      : [];
 
-      // 배열 내용이 변경되었는지 확인
-      const isPrepickedStudentIdsChanged =
-        prevPrepickedStudentIds.length !== currentPrepickedStudentIds.length ||
-        !prevPrepickedStudentIds.every(
-          (id, index) => id === currentPrepickedStudentIds[index],
-        );
+    // Compare sets ignoring order
+    const isChanged =
+      prevIds.length !== currIds.length ||
+      prevIds
+        .slice()
+        .sort()
+        .some((id, idx) => id !== currIds.slice().sort()[idx]);
 
-      if (isPrepickedStudentIdsChanged) {
-        offering.prepicked = currentPrepickedStudentIds.length;
-        await event.manager.save(Offering, offering);
-
-        this.logger.log(
-          `Updated offering ${offering.id} prepicked count to ${offering.prepicked}`,
-        );
-      }
-    } catch (error) {
-      this.logger.error(
-        `Error processing offering update: ${error.message}`,
-        error.stack,
+    if (isChanged) {
+      offering.prepicked = currIds.length;
+      this.logger.log(
+        `Updating prepicked count to ${offering.prepicked} for offering ${offering.id}`,
       );
     }
   }

@@ -125,3 +125,7 @@ pm2 reload api
 1. OfferingSubscriber
 
 - `offering.prepickedStudentIds` 가 변경되는 경우, 항상 picked 수를 update 한다.
+
+1. SchooldaySubscriber
+
+- `schoolday.startsAt` 이 변경되는 경우, original (변경전 시작일) 과 today (변경후 시작일) 을 저장하고, 또한, 아직 수업 전 이라면 관련 다이나모 출석부에 그날 선통보 결석 내용이 있는 경우, 필요없어지므로 삭제.
