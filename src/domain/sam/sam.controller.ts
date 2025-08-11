@@ -67,8 +67,9 @@ export class SamController {
   async getGroupsById(
     @Param('id', ParseIntPipe) id: number,
     @Query('termId') termId?: number,
+    @Query('sortBy') sortBy?: string,
   ): Promise<Group[]> {
-    return await this.samService.getGroupsById(id, termId);
+    return await this.samService.getGroupsById(id, termId, sortBy);
   }
 
   @GetSamSchooldaysDocs()

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { WeekdayOrder } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { BulkUpdateSamsDto } from 'src/domain/sam/dto/bulk-update-sams.dto';
@@ -213,7 +214,11 @@ export class SamService {
 
   //? Sam > Groups 은 term 필터링이 불가능하므로,
   //? Sam > Contracts > Groups 으로 조회하는 방법을 사용한다.
-  async getGroupsById(id: number, termId?: number): Promise<Group[]> {
+  async getGroupsById(
+    id: number,
+    termId?: number,
+    sortBy?: string,
+  ): Promise<Group[]> {
     const sam = await this.samRepository.findOneOrFail({
       where: { id },
       relations: ['contracts', 'contracts.group', 'contracts.group.lesson'],
@@ -225,7 +230,14 @@ export class SamService {
       );
     }
 
-    return sam?.contracts.map((contract) => contract.group) ?? [];
+    let groups = sam?.contracts.map((contract) => contract.group) ?? [];
+
+    // 정렬 로직 추가
+    if (sortBy) {
+      groups = this._sortGroups(groups, sortBy);
+    }
+
+    return groups;
   }
 
   //? Sam > Groups 은 term 필터링이 불가능하므로,
@@ -428,6 +440,38 @@ export class SamService {
     } else {
       const sam = await this.findById(id);
       await this.samRepository.softRemove(sam);
+    }
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Private Methods
+  //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * 그룹 목록을 정렬하는 private 메서드
+   * @param groups 정렬할 그룹 배열
+   * @param sortBy 정렬 기준 ('weekday' | 'name')
+   * @returns 정렬된 그룹 배열
+   */
+  private _sortGroups(groups: Group[], sortBy: string): Group[] {
+    const sortedGroups = [...groups];
+
+    switch (sortBy.toLowerCase()) {
+      case 'weekday':
+        return sortedGroups.sort((a, b) => {
+          const orderA = WeekdayOrder[a.weekday] ?? 666;
+          const orderB = WeekdayOrder[b.weekday] ?? 666;
+          return orderA - orderB;
+        });
+
+      case 'name':
+        return sortedGroups.sort((a, b) => {
+          return a.groupName.localeCompare(b.groupName, 'ko');
+        });
+
+      default:
+        this.logger.warn(`Unknown sortBy parameter: ${sortBy}`);
+        return sortedGroups;
     }
   }
 }

@@ -138,11 +138,11 @@ export class GroupAttendanceController {
 
   @GetReportDocs()
   @Get(':groupId/attendances/:date/report')
-  async getReport(
+  async getMonthlyReport(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('date') date: string,
   ): Promise<AttendanceReport[]> {
     const groupKey = generateGroupKey(groupId);
-    return await this.groupAttendancesService.getReport(groupKey, date);
+    return await this.groupAttendancesService.getMonthlyReport(groupKey, date);
   }
 }

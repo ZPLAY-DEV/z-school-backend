@@ -840,7 +840,10 @@ export class GroupAttendanceService {
   //? Report
   //? ---------------------------------------------------------------------- ?//
 
-  async getReport(groupKey: string, date: string): Promise<AttendanceReport[]> {
+  async getMonthlyReport(
+    groupKey: string,
+    date: string,
+  ): Promise<AttendanceReport[]> {
     const items = await this.findByDate(groupKey, date);
     return processAttendanceReport(items);
   }

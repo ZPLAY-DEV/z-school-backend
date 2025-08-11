@@ -1,13 +1,13 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiExtraModels,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiResponse,
-  getSchemaPath,
+    ApiBody,
+    ApiExtraModels,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiQuery,
+    ApiResponse,
+    getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -316,10 +316,13 @@ export const GetSamGroupsDocs = () =>
 - **기본**: 담임쌤이 담당하는 모든 반 조회
 - **학기 필터**: termId 전달 시 해당 학기의 반만 필터링
 - **활성 반**: 현재 강의중인 반만 조회
+- **정렬**: sortBy 파라미터로 요일별 또는 이름별 정렬 가능
 
 ### 📌 비즈니스 규칙
 - 담임쌤이 담당하는 반만 조회됩니다
 - 학기별로 필터링 가능합니다
+- 요일별 정렬 시 월요일부터 토요일까지 순서로 정렬됩니다
+- 이름별 정렬 시 한글 가나다순으로 정렬됩니다
 - 반 정보와 함께 수업 정보도 포함됩니다
 
 ### 💡 사용 시점
@@ -338,6 +341,13 @@ export const GetSamGroupsDocs = () =>
       type: Number,
       description: '학기 ID (선택사항, 전달 시 해당 학기의 반만 필터링)',
       required: false,
+    }),
+    ApiQuery({
+      name: 'sortBy',
+      type: String,
+      description: '정렬 기준 (선택사항, "weekday": 요일별 정렬, "name": 이름별 정렬)',
+      required: false,
+      enum: ['weekday', 'name'],
     }),
     ApiExtraModels(Group, Lesson),
     ApiOkResponse({
