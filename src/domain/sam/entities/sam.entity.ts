@@ -134,3 +134,8 @@ export class Sam {
     Object.assign(this, partial);
   }
 }
+
+// Group with picks count interface
+export interface GroupWithPicksCount extends Omit<Group, 'picks'> {
+  picksCount: number;
+}

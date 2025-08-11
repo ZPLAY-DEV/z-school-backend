@@ -121,6 +121,16 @@ export class GroupAttendanceController {
     );
   }
 
+  @GetReportDocs()
+  @Get(':groupId/attendances/:month/students/report')
+  async getMonthlyReport(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('month') month: string,
+  ): Promise<AttendanceReport[]> {
+    const groupKey = generateGroupKey(groupId);
+    return await this.groupAttendancesService.getMonthlyReport(groupKey, month);
+  }
+
   @GetStudentMonthlyReportDocs()
   @Get(':groupId/attendances/:month/students/:studentId')
   async getStudentMonthlyReport(
@@ -134,15 +144,5 @@ export class GroupAttendanceController {
       month,
       studentId,
     );
-  }
-
-  @GetReportDocs()
-  @Get(':groupId/attendances/:date/report')
-  async getMonthlyReport(
-    @Param('groupId', ParseIntPipe) groupId: number,
-    @Param('date') date: string,
-  ): Promise<AttendanceReport[]> {
-    const groupKey = generateGroupKey(groupId);
-    return await this.groupAttendancesService.getMonthlyReport(groupKey, date);
   }
 }

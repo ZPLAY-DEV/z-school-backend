@@ -481,7 +481,7 @@ export class GroupAttendanceService {
         return [];
       }
 
-      // 2. 해당 월의 모든 attendance 데이터 조회 (DynamoDB)
+      // 2. schooldays 에 연관된 모든 attendance 데이터 조회 (DynamoDB)
       const allAttendanceItems: IAttendance[] = [];
 
       for (const schoolday of schooldays) {
@@ -553,7 +553,7 @@ export class GroupAttendanceService {
         }
       }
 
-      console.log(`🎯 Final result: ${attendances.length} attendances created`);
+      console.log(`🎯 Final result: ${attendances.length} attendances`);
 
       return attendances;
     } catch (error) {
@@ -844,7 +844,7 @@ export class GroupAttendanceService {
     groupKey: string,
     date: string,
   ): Promise<AttendanceReport[]> {
-    const items = await this.findByDate(groupKey, date);
+    const items = await this.findAttendancesByDate(groupKey, date);
     return processAttendanceReport(items);
   }
 
@@ -1059,16 +1059,6 @@ export class GroupAttendanceService {
       default:
         return '-';
     }
-  }
-
-  /**
-   * Find attendance records by date
-   */
-  private async findByDate(
-    groupKey: string,
-    date: string,
-  ): Promise<IAttendance[]> {
-    return this.findAttendancesByDate(groupKey, date);
   }
 
   /**

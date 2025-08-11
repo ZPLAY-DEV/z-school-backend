@@ -15,11 +15,10 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { Group } from 'src/domain/group/entities/group.entity';
 import { BulkUpdateSamsDto } from 'src/domain/sam/dto/bulk-update-sams.dto';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
-import { Sam } from 'src/domain/sam/entities/sam.entity';
+import { GroupWithPicksCount, Sam } from 'src/domain/sam/entities/sam.entity';
 import { SamService } from 'src/domain/sam/sam.service';
 import {
   BulkUpdateSamsDocs,
@@ -68,7 +67,7 @@ export class SamController {
     @Param('id', ParseIntPipe) id: number,
     @Query('termId') termId?: number,
     @Query('sortBy') sortBy?: string,
-  ): Promise<Group[]> {
+  ): Promise<GroupWithPicksCount[]> {
     return await this.samService.getGroupsById(id, termId, sortBy);
   }
 

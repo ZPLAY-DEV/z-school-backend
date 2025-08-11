@@ -11,10 +11,11 @@ import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { BulkUpdateSamsDto } from 'src/domain/sam/dto/bulk-update-sams.dto';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
-import { Sam } from 'src/domain/sam/entities/sam.entity';
+import { GroupWithPicksCount, Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
+
 @Injectable()
 export class SamService {
   private readonly logger = new Logger(SamService.name);
@@ -218,7 +219,7 @@ export class SamService {
     id: number,
     termId?: number,
     sortBy?: string,
-  ): Promise<Group[]> {
+  ): Promise<GroupWithPicksCount[]> {
     const sam = await this.samRepository.findOneOrFail({
       where: { id },
       relations: ['contracts', 'contracts.group', 'contracts.group.lesson'],
@@ -230,14 +231,44 @@ export class SamService {
       );
     }
 
-    let groups = sam?.contracts.map((contract) => contract.group) ?? [];
+    let groups: GroupWithPicksCount[] = (sam?.contracts.map(
+      (contract) => contract.group,
+    ) ?? []) as unknown as GroupWithPicksCount[];
+
+    // 각 그룹의 picks 수를 효율적으로 계산
+    if (groups.length > 0) {
+      const groupIds = groups.map((group) => group.id);
+
+      // 한 번의 쿼리로 모든 그룹의 picks 수를 가져옴
+      const picksCounts = await this.groupRepository
+        .createQueryBuilder('group')
+        .leftJoin('group.picks', 'pick')
+        .select('group.id', 'groupId')
+        .addSelect('COUNT(pick.id)', 'picksCount')
+        .where('group.id IN (:...groupIds)', { groupIds })
+        .groupBy('group.id')
+        .getRawMany();
+
+      // picks 수를 그룹에 추가
+      const picksCountMap = new Map(
+        picksCounts.map((item) => [
+          item.groupId,
+          parseInt(String(item.picksCount)),
+        ]),
+      );
+
+      groups = groups.map((group) => ({
+        ...group,
+        picksCount: picksCountMap.get(group.id) || 0,
+      })) as unknown as GroupWithPicksCount[];
+    }
 
     // 정렬 로직 추가
     if (sortBy) {
       groups = this._sortGroups(groups, sortBy);
     }
 
-    return groups;
+    return groups as unknown as GroupWithPicksCount[];
   }
 
   //? Sam > Groups 은 term 필터링이 불가능하므로,
@@ -453,7 +484,10 @@ export class SamService {
    * @param sortBy 정렬 기준 ('weekday' | 'name')
    * @returns 정렬된 그룹 배열
    */
-  private _sortGroups(groups: Group[], sortBy: string): Group[] {
+  private _sortGroups(
+    groups: GroupWithPicksCount[],
+    sortBy: string,
+  ): GroupWithPicksCount[] {
     const sortedGroups = [...groups];
 
     switch (sortBy.toLowerCase()) {
