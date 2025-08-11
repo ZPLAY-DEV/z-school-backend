@@ -136,6 +136,6 @@ export class Sam {
 }
 
 // Group with picks count interface
-export interface GroupWithPicksCount extends Omit<Group, 'picks'> {
+export interface GroupWithPicksCount extends Group {
   picksCount: number;
 }
