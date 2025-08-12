@@ -154,7 +154,7 @@ export class SchoolTermOfferingService {
       .leftJoinAndSelect('offering.bookings', 'bookings')
       .where('offering.schoolId = :schoolId', { schoolId })
       .andWhere('offering.termId = :termId', { termId })
-      .orderBy('offering.id', 'DESC')
+      .orderBy('offering.id', 'ASC')
       .getMany();
 
     if (grade) {

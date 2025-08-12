@@ -87,31 +87,19 @@ export class OfferingPickService {
 
     if (offering.pickRule === PickRule.FIRST) {
       selectedStudentIds = await this.pickFirstComeFirstServed(
-        offeringId,
-        offering.capacity - offering.prepicked,
-        offering.termId,
-        offering.prepickedStudentIds,
+        offering,
         sameGradeGroups,
       );
     } else if (offering.pickRule === PickRule.RANDOM) {
       selectedStudentIds = await this.pickRandomStudents(
-        offeringId,
-        offering.capacity - offering.prepicked,
-        offering.termId,
-        offering.prepickedStudentIds,
+        offering,
         sameGradeGroups,
       );
     } else {
-      selectedStudentIds = await this.pickAnyone(
-        offeringId,
-        offering.capacity - offering.prepicked,
-        offering.termId,
-        offering.prepickedStudentIds,
-        sameGradeGroups,
-      );
+      selectedStudentIds = await this.pickAnyone(offering, sameGradeGroups);
     }
 
-    const filled = selectedStudentIds.length + offering.prepicked;
+    const filled = selectedStudentIds.length;
 
     return new ResponseCreateOfferingPickDto({
       pickRule: offering.pickRule,
@@ -179,12 +167,14 @@ export class OfferingPickService {
   // ------------------------------------------------------------------------ //
 
   async pickFirstComeFirstServed(
-    offeringId: number,
-    capacity: number,
-    termId: number,
-    prepickedStudentIds: number[],
+    offering: Offering,
     sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {
+    const offeringId = offering.id;
+    const capacity = offering.capacity - offering.prepicked;
+    const termId = offering.termId;
+    const prepickedStudentIds = offering.prepickedStudentIds;
+
     const bookings = await this.bookingRepository.find({
       where: {
         offeringId,
@@ -240,12 +230,13 @@ export class OfferingPickService {
   }
 
   async pickAnyone(
-    offeringId: number,
-    capacity: number,
-    termId: number,
-    prepickedStudentIds: number[],
+    offering: Offering,
     sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {
+    const offeringId = offering.id;
+    const termId = offering.termId;
+    const prepickedStudentIds = offering.prepickedStudentIds;
+
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
     });
@@ -295,12 +286,14 @@ export class OfferingPickService {
   }
 
   async pickRandomStudents(
-    offeringId: number,
-    capacity: number,
-    termId: number,
-    prepickedStudentIds: number[],
+    offering: Offering,
     sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {
+    const offeringId = offering.id;
+    const capacity = offering.capacity - offering.prepicked;
+    const termId = offering.termId;
+    const prepickedStudentIds = offering.prepickedStudentIds;
+
     const bookings = await this.bookingRepository.find({
       where: { offeringId },
     });

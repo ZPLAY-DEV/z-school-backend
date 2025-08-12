@@ -71,13 +71,26 @@ export class SchoolStudentController {
     // 1-6학년, 각 학년당 4개 반, 각 반당 25명씩 생성
     const dtos: CreateStudentDto[] = [];
 
+    const whitelist = [
+      '010-8907-2911',
+      '010-9486-7415',
+      '010-2044-0571',
+      '010-9392-4027',
+    ];
     for (let grade = 1; grade <= 6; grade++) {
-      for (let classNum = 1; classNum <= 4; classNum++) {
-        for (let studentCode = 1; studentCode <= 25; studentCode++) {
+      for (let classNum = 1; classNum <= 2; classNum++) {
+        const classDtos: CreateStudentDto[] = [];
+
+        for (let studentCode = 1; studentCode <= 20; studentCode++) {
           const firstName = koreanFaker.person.firstName();
           const lastName = koreanFaker.person.lastName();
           const koreanName = lastName + firstName;
-          const parentPhone = `010${koreanFaker.string.numeric(8)}`;
+          const parentPhone = this._parentPhone(
+            grade,
+            classNum,
+            studentCode,
+            koreanFaker.string.numeric(8),
+          );
 
           const dto = new CreateStudentDto();
           dto.schoolId = schoolId;
@@ -91,12 +104,43 @@ export class SchoolStudentController {
             phone: parentPhone,
           };
 
-          dtos.push(dto);
+          classDtos.push(dto);
         }
+
+        // 각 반의 20명 학생들을 name 기준으로 오름차순 정렬
+        classDtos.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+        // 정렬 후 studentCode를 1부터 20까지 순차적으로 재할당
+        classDtos.forEach((dto, index) => {
+          dto.studentCode = index + 1;
+        });
+
+        dtos.push(...classDtos);
       }
     }
 
     return await this.schoolStudentService.createBulk(schoolId, dtos);
+  }
+
+  private _parentPhone(
+    grade: number,
+    classNum: number,
+    studentCode: number,
+    random: string,
+  ) {
+    if (grade === 1 && classNum === 1 && studentCode === 1) {
+      return '01089072911';
+    }
+    if (grade === 1 && classNum === 1 && studentCode === 2) {
+      return '01094867415';
+    }
+    if (grade === 1 && classNum === 1 && studentCode === 3) {
+      return '01020440571';
+    }
+    if (grade === 1 && classNum === 1 && studentCode === 4) {
+      return '01093924027';
+    }
+    return `010${random}`;
   }
 
   //? ---------------------------------------------------------------------- ?//

@@ -520,7 +520,7 @@ export class SchoolSamService {
       },
       sortableColumns: ['alias'],
       searchableColumns: ['alias', 'instructor.phone'],
-      defaultSortBy: [['id', 'ASC']],
+      defaultSortBy: [['alias', 'ASC']],
       filterableColumns: {
         alias: [FilterOperator.EQ, FilterOperator.ILIKE],
         'instructor.name': [FilterOperator.EQ, FilterOperator.ILIKE],
