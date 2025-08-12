@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { formatInTimeZone } from 'date-fns-tz';
 import { WeekdayOrder } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
@@ -238,6 +239,7 @@ export class SamService {
     // 각 그룹의 picks 수를 효율적으로 계산
     if (groups.length > 0) {
       const groupIds = groups.map((group) => group.id);
+      const today = formatInTimeZone(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
 
       // 한 번의 쿼리로 모든 그룹의 picks 수를 가져옴
       const picksCounts = await this.groupRepository
@@ -246,6 +248,12 @@ export class SamService {
         .select('group.id', 'groupId')
         .addSelect('COUNT(pick.id)', 'picksCount')
         .where('group.id IN (:...groupIds)', { groupIds })
+        .andWhere(
+          '(pick.startedBy IS NULL AND pick.endedBy IS NULL) OR ' +
+            '(pick.startedBy IS NOT NULL AND pick.endedBy IS NOT NULL AND ' +
+            ':today BETWEEN pick.start AND pick.end)',
+          { today },
+        )
         .groupBy('group.id')
         .getRawMany();
 
