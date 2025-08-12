@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { addDays, isBefore } from 'date-fns';
+import { addDays } from 'date-fns';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
 import { NotificationType } from 'src/common/enums/notification-type';
@@ -102,11 +102,9 @@ export class GroupAttendanceService {
 
     const studentMessageMap = new Map<number, string>();
     dtos.forEach((dto) => {
-      const date = getDateFromDailyStudentKey(dto.dailyStudentKey);
-      const endTime = new Date(`${date} ${group.end}`);
       studentMessageMap.set(
         getStudentIdFromDailyStudentKey(dto.dailyStudentKey),
-        this.translateStatusByTimeContext(dto.status, endTime),
+        this.translateStatusStartContext(dto.status),
       );
     });
     const studentIds = Array.from(studentMessageMap.keys());
@@ -190,7 +188,7 @@ export class GroupAttendanceService {
     dtos.forEach((dto) => {
       studentMessageMap.set(
         getStudentIdFromDailyStudentKey(dto.dailyStudentKey),
-        this.translateStatus(dto.status),
+        this.translateStatusEndContext(dto.status),
       );
     });
     const studentIds = Array.from(studentMessageMap.keys());
@@ -278,7 +276,7 @@ export class GroupAttendanceService {
     const schoolNoteMap = new Map<number, string>();
     dtos.forEach((dto) => {
       const studentId = getStudentIdFromDailyStudentKey(dto.dailyStudentKey);
-      const translatedStatus = this.translateStatus(dto.status);
+      const translatedStatus = this.translateStatusEndContext(dto.status);
       const schoolNote = dto.schoolNote || '-';
       studentMessageMap.set(studentId, translatedStatus);
       schoolNoteMap.set(studentId, schoolNote);
@@ -1014,33 +1012,7 @@ export class GroupAttendanceService {
     return stops[weekNumber - 1];
   }
 
-  private translateStatusByTimeContext(
-    status: AttendanceStatus,
-    classEndTime: Date,
-  ): string {
-    const isBeforeEnd = isBefore(classEndTime, new Date());
-
-    switch (status) {
-      case AttendanceStatus.PRESENT:
-        return '출석';
-      case AttendanceStatus.ABSENT:
-        return '결석';
-      case AttendanceStatus.LATE:
-        return isBeforeEnd ? '미출석' : '지각';
-      case AttendanceStatus.LEFT:
-        return '조퇴';
-      case AttendanceStatus.EXCUSED_ABSENT:
-        return '선통보 결석';
-      case AttendanceStatus.EXCUSED_LATE:
-        return '선통보 지각';
-      case AttendanceStatus.EXCUSED_LEFT:
-        return isBeforeEnd ? '출석' : '선통보 조퇴';
-      default:
-        return '-';
-    }
-  }
-
-  private translateStatus(status: AttendanceStatus): string {
+  private translateStatusStartContext(status: AttendanceStatus): string {
     switch (status) {
       case AttendanceStatus.PRESENT:
         return '출석';
@@ -1048,6 +1020,31 @@ export class GroupAttendanceService {
         return '결석';
       case AttendanceStatus.LATE:
         return '지각';
+      case AttendanceStatus.UNDETERMINED:
+        return '미출석';
+      case AttendanceStatus.LEFT:
+        return '조퇴';
+      case AttendanceStatus.EXCUSED_ABSENT:
+        return '선통보 결석';
+      case AttendanceStatus.EXCUSED_LATE:
+        return '선통보 지각';
+      case AttendanceStatus.EXCUSED_LEFT:
+        return '출석';
+      default:
+        return '-';
+    }
+  }
+
+  private translateStatusEndContext(status: AttendanceStatus): string {
+    switch (status) {
+      case AttendanceStatus.PRESENT:
+        return '출석';
+      case AttendanceStatus.ABSENT:
+        return '결석';
+      case AttendanceStatus.LATE:
+        return '지각';
+      case AttendanceStatus.UNDETERMINED:
+        return '미출석';
       case AttendanceStatus.LEFT:
         return '조퇴';
       case AttendanceStatus.EXCUSED_ABSENT:

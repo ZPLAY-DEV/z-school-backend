@@ -108,11 +108,8 @@ export class NewsletterService {
         body: '',
         images,
         type: NewsletterType.REGISTRATION,
-        // todo. ☠️☠️☠️☠️☠️☠️☠️☠️☠️☠️ NEED TO BE CHANGED !!
-        // target: NewsletterTarget.GRADE,
-        // targetItems: [1, 2, 3, 4, 5, 6],
-        target: NewsletterTarget.STUDENT,
-        targetItems: [901, 902, 903, 904],
+        target: NewsletterTarget.GRADE,
+        targetItems: [1, 2, 3, 4, 5, 6],
         targetLabel: `${school.name} 전교생`,
         scheduledAt,
       });
@@ -665,7 +662,9 @@ export class NewsletterService {
     if (newsletters && newsletters.length > 0) {
       if (
         type === NewsletterType.REGISTRATION &&
-        newsletters.some((newsletter) => newsletter.status === SendStatus.SENT)
+        newsletters.some(
+          (newsletter) => newsletter.type === NewsletterType.REGISTRATION,
+        )
       ) {
         throw new BadRequestException(
           '❌ Registration newsletter already sent or scheduled.',

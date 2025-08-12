@@ -255,7 +255,7 @@ export class StudentService {
   //? ---------------------------------------------------------------------- ?//
 
   //? 학생 상세 정보 조회
-  async findById(id: number): Promise<Student> {
+  async findById(id: number, termId?: number): Promise<Student> {
     const student = await this.studentRepository.findOne({
       where: { id },
       relations: [
@@ -270,6 +270,11 @@ export class StudentService {
     if (!student) {
       throw new NotFoundException('Student not found');
     }
+
+    if (termId) {
+      student.picks = student.picks?.filter((pick) => pick.termId === termId);
+    }
+
     return student;
   }
 

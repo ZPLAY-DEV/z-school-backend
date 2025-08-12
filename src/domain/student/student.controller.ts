@@ -89,8 +89,11 @@ export class StudentController {
 
   @FindStudentByIdDocs()
   @Get(':id')
-  async findById(@Param('id') id: number): Promise<Student> {
-    return await this.studentService.findById(id);
+  async findById(
+    @Param('id') id: number,
+    @Query('termId') termId?: number,
+  ): Promise<Student> {
+    return await this.studentService.findById(id, termId);
   }
 
   @FindStudentSchooldaysDocs()
