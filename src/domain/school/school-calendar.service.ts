@@ -8,6 +8,7 @@ import {
 } from 'nestjs-paginate';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { School } from 'src/domain/school/entities/school.entity';
+import { getKoreanWeekday } from 'src/helpers/date';
 import { NeisService } from 'src/services/neis/neis.service';
 import { DataSource, Repository } from 'typeorm';
 
@@ -64,20 +65,22 @@ export class SchoolCalendarService {
     await queryRunner.startTransaction();
     try {
       // MySQL 8.0+ 새로운 alias 문법 사용 (bulk insert)
-      const placeholders = dtos.map(() => '(?, ?, ?, ?, ?)').join(', ');
+      const placeholders = dtos.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
       const values = dtos.flatMap((dto) => [
         dto.schoolId,
         dto.date || null,
         dto.name || null,
+        getKoreanWeekday(dto.date),
         dto.status || null,
         dto.note || null,
       ]);
 
       const insertQuery = `
-        INSERT INTO calendars (schoolId, date, name, status, note)
-        VALUES ${placeholders} AS new_calendar(schoolId, date, name, status, note)
+        INSERT INTO calendars (schoolId, date, name, weekday, status, note)
+        VALUES ${placeholders} AS new_calendar(schoolId, date, name, weekday, status, note)
         ON DUPLICATE KEY UPDATE 
           name = new_calendar.name,
+          weekday = new_calendar.weekday,
           status = new_calendar.status,
           note = new_calendar.note
       `;

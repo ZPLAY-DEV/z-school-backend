@@ -4,7 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { addDays } from 'date-fns';
+import { addDays, lastDayOfMonth } from 'date-fns';
+import * as ExcelJS from 'exceljs';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
 import { NotificationType } from 'src/common/enums/notification-type';
@@ -35,6 +36,7 @@ import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { areTheyEqual } from 'src/helpers/array';
 import { getWeekNumberFromKoreanWeekday } from 'src/helpers/date';
+import { translateActor } from 'src/helpers/translate';
 import { NotificationService } from 'src/services/notification/notification.service';
 import { Between, In, Repository } from 'typeorm';
 
@@ -440,48 +442,29 @@ export class GroupAttendanceService {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  async findAttendancesByDate(
+  async findAttendancesByMonth(
     groupKey: string,
-    date: string, // `2025-07-22` 또는 `2025-08` (월 단위)
+    month: string, // `2025-08` (월 단위)
   ): Promise<IAttendance[]> {
     try {
       const groupId = getGroupIdFromGroupKey(groupKey);
-      console.log(`🔍 Searching for groupId: ${groupId}, date: ${date}`);
+      console.log(`🔍 Searching for groupId: ${groupId}, date: ${month}`);
 
-      // 1. 해당 월의 모든 수업일(schooldays) 조회
-      let schooldays: Schoolday[];
+      // yyyy-MM 형식인 경우 (월 단위) - DB 레벨에서 필터링
+      const [yearVal, monthVal] = month.split('-');
 
-      if (date.includes('-') && date.split('-').length === 3) {
-        // yyyy-MM-dd 형식인 경우 (특정 날짜)
-        schooldays = await this.schooldayRepository.find({
-          where: {
-            groupId: groupId,
-            today: date,
-          },
-        });
-      } else {
-        // yyyy-MM 형식인 경우 (월 단위) - DB 레벨에서 필터링
-        const year = parseInt(date.split('-')[0]);
-        const month = parseInt(date.split('-')[1]);
+      // 해당 월의 시작일과 종료일 계산
+      const startOfMonth = new Date(+yearVal, +monthVal - 1, 1); // 월은 0-based
+      const endOfMonth = new Date(+yearVal, +monthVal, 0); // 다음 달의 0일 = 이번 달의 마지막 날
 
-        // 해당 월의 시작일과 종료일 계산
-        const startOfMonth = new Date(year, month - 1, 1); // 월은 0-based
-        const endOfMonth = new Date(year, month, 0); // 다음 달의 0일 = 이번 달의 마지막 날
+      const schooldays = await this.schooldayRepository.find({
+        where: {
+          groupId: groupId,
+          startsAt: Between(startOfMonth, endOfMonth),
+        },
+      });
 
-        schooldays = await this.schooldayRepository.find({
-          where: {
-            groupId: groupId,
-            startsAt: Between(startOfMonth, endOfMonth),
-          },
-        });
-      }
-
-      console.log(
-        `💚 Found ${schooldays.length} schooldays`,
-        JSON.stringify(schooldays, null, 2),
-      );
-
-      if (schooldays.length === 0) {
+      if (!schooldays || schooldays.length === 0) {
         return [];
       }
 
@@ -501,28 +484,16 @@ export class GroupAttendanceService {
         allAttendanceItems.push(...items);
       }
 
-      console.log(
-        `💚 Found ${allAttendanceItems.length} attendance items from DynamoDB`,
-      );
-
       const itemMap = new Map<string, IAttendance>(
         allAttendanceItems.map((v) => [v.dailyStudentKey, v]),
       );
 
       // 3. 해당 그룹의 모든 학생 정보 조회
       const picks = await this.pickRepository.find({
-        where: [
-          {
-            groupId: groupId,
-          },
-        ],
+        where: [{ groupId }],
         relations: ['group', 'group.lesson', 'student'],
       });
-
-      console.log(`📋 Found ${picks.length} picks`);
-
       const studentIdsFromPicks = picks.map((v) => v.studentId);
-
       const studentIdsFromDynamoDb = [
         ...new Set(
           Array.from(itemMap.keys()).map((v) => {
@@ -642,9 +613,7 @@ export class GroupAttendanceService {
       // 4. 모든 등록된 학생들(picks) 조회
       const picks =
         (await this.pickRepository.find({
-          where: {
-            groupId: groupId,
-          },
+          where: { groupId },
           relations: ['student', 'group', 'group.lesson'],
         })) || [];
 
@@ -860,11 +829,285 @@ export class GroupAttendanceService {
   //? Report
   //? ---------------------------------------------------------------------- ?//
 
+  async generateExcel(
+    groupKey: string,
+    date: string, // `2025-08`
+  ): Promise<ExcelJS.Workbook> {
+    let rowIndex;
+    const year = Number(date.split('-')[0]);
+    const month = Number(date.split('-')[1]);
+    const firstDay = `${month}월 1일`;
+    const lastDay = `${month}월 ${lastDayOfMonth(new Date(year, month - 1, 1)).getDate()}일`;
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('월별출석보고서');
+
+    // 1. 그룹 정보 조회 (schooldays, picks.student 관계 포함)
+    const groupId = getGroupIdFromGroupKey(groupKey);
+    const group = await this.groupRepository.findOneOrFail({
+      where: { id: groupId },
+      relations: ['schooldays', 'picks', 'picks.student', 'sam'],
+    });
+
+    // 2. 해당 월의 수업일 필터링
+    const monthSchooldays = group.schooldays
+      .filter((schoolday) => schoolday.today.startsWith(date))
+      .sort((a, b) => a.today.localeCompare(b.today));
+
+    // 3. 해당 월의 출석 데이터 조회
+    const attendances = await this.findAttendancesByMonth(groupKey, date);
+
+    // 4. 출석 데이터를 Map으로 변환 (빠른 lookup을 위해)
+    const attendanceMap = new Map<string, IAttendance>();
+    attendances.forEach((attendance) => {
+      const date = getDateFromDailyStudentKey(attendance.dailyStudentKey);
+      const studentId = getStudentIdFromDailyStudentKey(
+        attendance.dailyStudentKey,
+      );
+      const key = `${date}_${studentId}`;
+      attendanceMap.set(key, attendance);
+    });
+
+    // 5. 타이틀 행 추가
+    const titleRow = sheet.addRow([`${year}년 ${month}월 ${group.groupName}`]);
+    titleRow.font = { bold: true, size: 16 };
+    titleRow.alignment = { horizontal: 'center' };
+
+    const lastCol = String.fromCharCode(65 + monthSchooldays.length + 2);
+    sheet.mergeCells(`A1:${lastCol}1`);
+
+    // breathing room
+    const row2 = sheet.addRow(['']); // 빈 row 추가
+    rowIndex = row2.number;
+    sheet.mergeCells(`A${rowIndex}:${lastCol}${rowIndex}`);
+
+    // 7. 수업기간 정보 행 추가 (titleRow 바로 아래로 이동)
+    const periodRow = sheet.addRow([]);
+    periodRow.height = 20;
+    periodRow.font = { size: 10 };
+    const periodCell = periodRow.getCell(1);
+    periodCell.value = `📆 수업기간: ${firstDay} ~ ${lastDay}`;
+    periodCell.alignment = { horizontal: 'left' };
+
+    const mergeStart = monthSchooldays.length + 1;
+    const mergeEnd = monthSchooldays.length + 2;
+    sheet.mergeCells(
+      `${String.fromCharCode(65 + mergeStart)}3:${String.fromCharCode(65 + mergeEnd)}3`,
+    );
+
+    const instructorCell = periodRow.getCell(mergeEnd); // 오른쪽 끝 셀에 값 지정
+    instructorCell.value = `👤 강사: ${group.samName || '미지정'}`;
+    instructorCell.alignment = { horizontal: 'right' };
+
+    // breathing room
+    const row4 = sheet.addRow(['']); // 빈 row 추가
+    rowIndex = row4.number;
+    sheet.mergeCells(`A${rowIndex}:${lastCol}${rowIndex}`);
+
+    // 8. 서명 칸 추가 (오른쪽 정렬)
+    const col1 = monthSchooldays.length + 1;
+    const col2 = monthSchooldays.length + 2;
+    const col3 = monthSchooldays.length + 3;
+
+    const row5 = sheet.addRow([]);
+    const signCell1 = row5.getCell(col1);
+    signCell1.value = '강사';
+    signCell1.alignment = { horizontal: 'center' };
+    signCell1.font = { bold: true };
+
+    const signCell2 = row5.getCell(col2);
+    signCell2.value = '담당자';
+    signCell2.alignment = { horizontal: 'center' };
+    signCell2.font = { bold: true };
+
+    const signCell3 = row5.getCell(col3);
+    signCell3.value = '실장';
+    signCell3.alignment = { horizontal: 'center' };
+    signCell3.font = { bold: true };
+
+    // 8. 서명 공간 (아래 2줄)
+    const row6 = sheet.addRow([]);
+    const row7 = sheet.addRow([]);
+
+    // merge (강사/담당자/실장 각각 아래 2행 병합)
+    sheet.mergeCells(
+      `${String.fromCharCode(65 + col1 - 1)}${row6.number}:${String.fromCharCode(65 + col1 - 1)}${row7.number}`,
+    );
+    sheet.mergeCells(
+      `${String.fromCharCode(65 + col2 - 1)}${row6.number}:${String.fromCharCode(65 + col2 - 1)}${row7.number}`,
+    );
+    sheet.mergeCells(
+      `${String.fromCharCode(65 + col3 - 1)}${row6.number}:${String.fromCharCode(65 + col3 - 1)}${row7.number}`,
+    );
+
+    // border 처리
+    [row5, row6, row7].forEach((r) => {
+      [col1, col2, col3].forEach((c) => {
+        const cell = r.getCell(c);
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+    });
+
+    // breathing room
+    const row8 = sheet.addRow(['']); // 빈 row 추가
+    rowIndex = row8.number;
+    sheet.mergeCells(`A${rowIndex}:${lastCol}${rowIndex}`);
+
+    // 10. 헤더 행 추가
+    const headerRow = ['순번', '학년·반·번호', '이름'];
+    monthSchooldays.forEach((schoolday) => {
+      const date = new Date(schoolday.today);
+      const day = date.getDate().toString();
+      headerRow.push(`${month}월 ${day}일(${schoolday.weekday})`);
+    });
+    sheet.addRow(headerRow);
+
+    // 11. 헤더 스타일링
+    const headerRowObj = sheet.getRow(sheet.rowCount);
+    headerRowObj.font = { bold: true };
+    headerRowObj.alignment = { horizontal: 'center' };
+    headerRowObj.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    });
+
+    const comments: string[] = ['특이사항:'];
+
+    // 12. 학생별 출석 데이터 추가
+    group.picks.forEach((pick, index) => {
+      const student = pick.student;
+      const rowData = [
+        index + 1, // 순번
+        `${student.grade}학년 ${student.class}반 ${student.studentCode}번`, // 학년,반,번호
+        student.name, // 이름
+      ];
+      if (pick.startedBy && pick.start.toString().startsWith(date)) {
+        comments.push(
+          `${pick.student.name} 학생 ${pick.start} 등록 (${translateActor(pick.startedBy)})`,
+        );
+      }
+      if (pick.endedBy && pick.end.toString().startsWith(date)) {
+        comments.push(
+          `${pick.student.name} 학생 ${pick.end} 취소 (${translateActor(pick.endedBy)})`,
+        );
+      }
+
+      // 각 수업일별 출석 상태 추가
+      monthSchooldays.forEach((schoolday) => {
+        const key = `${schoolday.today}_${student.id}`;
+        const attendance = attendanceMap.get(key);
+
+        if (attendance) {
+          // 출석 상태에 따른 표시
+          let statusText = '';
+          switch (attendance.status) {
+            case AttendanceStatus.PRESENT:
+              statusText = '출석';
+              break;
+            case AttendanceStatus.ABSENT:
+            case AttendanceStatus.EXCUSED_ABSENT:
+              statusText = '결석';
+              break;
+            case AttendanceStatus.LATE:
+            case AttendanceStatus.EXCUSED_LATE:
+              statusText = '지각';
+              break;
+            case AttendanceStatus.LEFT:
+            case AttendanceStatus.EXCUSED_LEFT:
+              statusText = '조퇴';
+              break;
+            case AttendanceStatus.INIT:
+              statusText = '수업전';
+              break;
+            default:
+              statusText = '';
+          }
+          rowData.push(statusText);
+        } else {
+          rowData.push(''); // 출석 데이터가 없는 경우 빈 칸
+        }
+      });
+
+      const dataRow = sheet.addRow(rowData);
+
+      // 데이터 행 스타일링
+      dataRow.eachCell((cell, colNumber) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+
+        // 출석 상태에 따른 배경색 설정
+        if (colNumber > 3) {
+          // 헤더 3개 이후부터
+          const statusText = cell.value as string;
+          if (statusText === '출석') {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FF90EE90' }, // 연한 초록색
+            };
+          } else if (statusText === '결석') {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFFFB6C1' }, // 연한 빨간색
+            };
+          } else if (statusText === '지각') {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFFFD700' }, // 연한 노란색
+            };
+          } else if (statusText === '조퇴') {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FF87CEEB' }, // 연한 파란색
+            };
+          }
+        }
+      });
+    });
+
+    // 13. 열 너비 자동 조정
+    sheet.columns.forEach((column) => {
+      column.width = 15;
+    });
+
+    // 학생 데이터까지 다 추가된 후
+    // const lastRowIndex = sheet.rowCount;
+
+    // breathing space row 추가
+    const breathingRow = sheet.addRow(['']);
+    const breathingRowIndex = breathingRow.number;
+
+    // 전체 가로로 merge
+    sheet.mergeCells(`A${breathingRowIndex}:${lastCol}${breathingRowIndex}`);
+
+    // 코멘트 추가
+    comments.forEach((comment) => {
+      sheet.addRow([comment]);
+    });
+
+    return workbook;
+  }
+
   async getMonthlyReport(
     groupKey: string,
     date: string,
   ): Promise<AttendanceReport[]> {
-    const items = await this.findAttendancesByDate(groupKey, date);
+    const items = await this.findAttendancesByMonth(groupKey, date);
 
     return processAttendanceReport(items);
   }

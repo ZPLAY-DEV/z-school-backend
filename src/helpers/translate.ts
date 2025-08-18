@@ -1,3 +1,4 @@
+import { Actor } from 'src/common/enums';
 import {
   NewsletterTarget,
   NewsletterType,
@@ -32,5 +33,16 @@ export const translateNewsletterTarget = (
       return '학생';
     default:
       return '미지정';
+  }
+};
+
+export const translateActor = (type: Actor | null): string => {
+  switch (type) {
+    case Actor.INSTRUCTOR:
+      return '강사';
+    case Actor.MANAGER:
+      return '매니저';
+    default:
+      return '기타';
   }
 };

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CalendarType } from 'src/common/enums';
+import { CalendarType, Weekday } from 'src/common/enums';
 import { School } from 'src/domain/school/entities/school.entity';
 import {
   Column,
@@ -31,6 +31,14 @@ export class Calendar {
   @ApiProperty({ description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)' })
   @Column({ type: 'date' })
   date: string; // "2025-08-14" 형식으로 저장
+
+  @ApiProperty({
+    description: '수업 요일',
+    enum: Weekday,
+    example: Weekday.MONDAY,
+  })
+  @Column({ type: 'enum', enum: Weekday, default: Weekday.MONDAY })
+  weekday: Weekday;
 
   @ApiProperty({ description: '' })
   @Column({

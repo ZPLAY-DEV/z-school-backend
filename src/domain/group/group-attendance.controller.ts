@@ -7,9 +7,11 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Res,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 import {
   CreateAttendanceWithGroupStudentDto,
   CreateAttendanceWithKeyDto,
@@ -24,7 +26,6 @@ import { GroupAttendanceService } from 'src/domain/group/group-attendance.servic
 import {
   CustomAttendanceDocs,
   EndAttendanceDocs,
-  FindAttendanceByDateDocs,
   FindAttendanceByDateWithExtendedDataDocs,
   GetReportDocs,
   GetStudentMonthlyReportDocs,
@@ -95,19 +96,6 @@ export class GroupAttendanceController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @FindAttendanceByDateDocs()
-  @Get(':groupId/attendances/:date')
-  async findByDate(
-    @Param('groupId', ParseIntPipe) groupId: number,
-    @Param('date') date: string,
-  ): Promise<IAttendance[]> {
-    const groupKey = generateGroupKey(groupId);
-    return await this.groupAttendancesService.findAttendancesByDate(
-      groupKey,
-      date,
-    );
-  }
-
   @FindAttendanceByDateWithExtendedDataDocs()
   @Get(':groupId/attendances/:date/extended')
   async findByDateWithExtendedData(
@@ -122,13 +110,43 @@ export class GroupAttendanceController {
   }
 
   @GetReportDocs()
-  @Get(':groupId/attendances/:month/students/report')
+  @Get(':groupId/attendances/:month/report')
   async getMonthlyReport(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('month') month: string,
   ): Promise<AttendanceReport[]> {
     const groupKey = generateGroupKey(groupId);
     return await this.groupAttendancesService.getMonthlyReport(groupKey, month);
+  }
+
+  // schooldays 는 그날 수 없이 있냐 없냐.
+  // 학생별 출석자료 source of truth 는 dynamodb.
+  @GetReportDocs()
+  @Get(':groupId/attendances/:month/report/excel')
+  async getMonthlyReportExcel(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('month') month: string,
+    @Res() res: Response,
+  ) {
+    const groupKey = generateGroupKey(groupId);
+    const workbook = await this.groupAttendancesService.generateExcel(
+      groupKey,
+      month,
+    );
+
+    // 헤더 설정
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${month}-attendance-report.xlsx"`,
+    );
+
+    // 엑셀 파일을 response stream으로 작성
+    await workbook.xlsx.write(res);
+    res.end();
   }
 
   @GetStudentMonthlyReportDocs()

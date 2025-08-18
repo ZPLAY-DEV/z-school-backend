@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { format, isAfter } from 'date-fns';
-import { Weekday } from 'src/common/enums';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
 import { getKoreanWeekday } from 'src/helpers/date';
@@ -37,7 +36,7 @@ export class SchooldaySubscriber
 
     if (original === today) return;
 
-    const weekday = getKoreanWeekday(today) as Weekday;
+    const weekday = getKoreanWeekday(today);
 
     this.logger.log(
       `Schoolday update - prev.today: ${prev?.today}, new today: ${today}, original: ${original}`,

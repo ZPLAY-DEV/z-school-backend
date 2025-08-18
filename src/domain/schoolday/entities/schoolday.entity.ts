@@ -115,8 +115,13 @@ export class Schoolday {
   })
   updatedBy: Actor | null;
 
-  @ApiProperty({ description: '🈳 학부모 선알림 record 의 rangeKey' })
-  @Column('simple-array', { nullable: true })
+  @ApiProperty({
+    description: '🈳 학부모가 전달하는 알림 메시지가 있는 경우 그 rangeKeys',
+  })
+  @Column('simple-array', {
+    nullable: true,
+    comment: '학부모가 전달하는 알림 메시지가 있는 경우 그 rangeKeys',
+  })
   dailyStudentKeys: string[] | null;
 
   @Column({ type: 'timestamp', nullable: true, comment: '시작 알림 시각' })

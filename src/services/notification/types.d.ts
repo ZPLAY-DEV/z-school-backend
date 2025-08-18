@@ -30,7 +30,7 @@ export type FcmData = {
   role: string; // `PARENT` 또는 `INSTRUCTOR`
   page?: string; // for Client Routing
   args?: string; // for Client Routing
-  uri: string; // for Client Routing
+  uri?: string; // for Client Routing
 };
 
 // -------------------------------------------------------------------------- //

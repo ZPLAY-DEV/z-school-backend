@@ -28,8 +28,16 @@ export const getWeekNumberFromKoreanWeekday = (weekday: string): number => {
   return weekdays.indexOf(weekday);
 };
 
-export const getKoreanWeekday = (date: string): string => {
-  const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+export const getKoreanWeekday = (date: string): Weekday => {
+  const weekdays = [
+    Weekday.SUNDAY,
+    Weekday.MONDAY,
+    Weekday.TUESDAY,
+    Weekday.WEDNESDAY,
+    Weekday.THURSDAY,
+    Weekday.FRIDAY,
+    Weekday.SATURDAY,
+  ];
   const dateObj = new Date(date);
   return weekdays[dateObj.getDay()];
 };
