@@ -319,6 +319,7 @@ export type MessageBody = {
 
 export type FcmData = {
   role: string;        // PARENT 또는 INSTRUCTOR
+  uri: string;
   page?: string;       // 클라이언트 라우팅용 페이지
   args?: string;       // 클라이언트 라우팅용 파라미터
 };

@@ -44,11 +44,15 @@ export class Shortlink {
   nanoid: string;
 
   @ApiProperty({ description: '🈵 routing 정보' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  uri: string;
+
+  @ApiProperty({ description: '🈵 routing 정보' })
   @Column({ type: 'varchar', length: 32, nullable: true })
   page: string;
 
   @ApiProperty({ description: '🈵 routing 부가 args 정보' })
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 128, nullable: true })
   args: string;
 
   @ApiProperty({ description: '🈳 비고', example: '비고' })

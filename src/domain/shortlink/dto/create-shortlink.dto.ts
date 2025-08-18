@@ -19,6 +19,14 @@ export class CreateShortlinkDto {
   nanoid: string;
 
   @ApiProperty({
+    description: '🈵 uri',
+    example: '/parent/offerings/1?studentId=1&parentId=1',
+    type: String,
+  })
+  @IsString()
+  uri: string;
+
+  @ApiProperty({
     description: '🈵 routing 정보',
     example: 'newsletters',
     type: String,

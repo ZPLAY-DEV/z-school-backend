@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CalendarModule } from 'src/domain/calendar/calendar.module';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayAttendanceController } from 'src/domain/schoolday/schoolday-attendance.controller';
@@ -13,7 +14,7 @@ import { DynamoModule } from 'src/services/aws/dynamo.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([School, Term, Schoolday]),
+    TypeOrmModule.forFeature([School, Term, Schoolday, Group]),
     CalendarModule,
     DynamoModule, // to call dynamoDB directly
   ],

@@ -33,6 +33,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { areTheyEqual } from 'src/helpers/array';
 import { getWeekNumberFromKoreanWeekday } from 'src/helpers/date';
 import { NotificationService } from 'src/services/notification/notification.service';
 import { Between, In, Repository } from 'typeorm';
@@ -475,6 +476,11 @@ export class GroupAttendanceService {
         });
       }
 
+      console.log(
+        `💚 Found ${schooldays.length} schooldays`,
+        JSON.stringify(schooldays, null, 2),
+      );
+
       if (schooldays.length === 0) {
         return [];
       }
@@ -514,6 +520,20 @@ export class GroupAttendanceService {
       });
 
       console.log(`📋 Found ${picks.length} picks`);
+
+      const studentIdsFromPicks = picks.map((v) => v.studentId);
+
+      const studentIdsFromDynamoDb = [
+        ...new Set(
+          Array.from(itemMap.keys()).map((v) => {
+            return getStudentIdFromDailyStudentKey(v);
+          }),
+        ),
+      ];
+
+      if (!areTheyEqual(studentIdsFromPicks, studentIdsFromDynamoDb)) {
+        throw new Error('dynamo entries not matched');
+      }
 
       // 4. 각 수업일별로 attendance 생성
       const attendances: IAttendance[] = [];
@@ -556,7 +576,9 @@ export class GroupAttendanceService {
       return attendances;
     } catch (error) {
       console.error(`[dynamodb] error`, error);
-      throw new BadRequestException('출석 정보 조회에 실패했습니다.');
+      throw new BadRequestException(
+        error.message || '출석 정보 조회에 실패했습니다.',
+      );
     }
   }
 
@@ -843,6 +865,7 @@ export class GroupAttendanceService {
     date: string,
   ): Promise<AttendanceReport[]> {
     const items = await this.findAttendancesByDate(groupKey, date);
+
     return processAttendanceReport(items);
   }
 

@@ -31,6 +31,7 @@ import {
   translateNewsletterTarget,
   translateNewsletterType,
 } from 'src/helpers/translate';
+import { getMobileRoute } from 'src/helpers/uri';
 import { SlackService } from 'src/services/slack/slack.service';
 import { DataSource, EntityManager, In, LessThan } from 'typeorm';
 
@@ -552,6 +553,7 @@ export class NewsletterService {
         parentId: student.parent.id,
         newsletterId: newsletter.id,
         nanoid: nanoid(),
+        uri: getMobileRoute(newsletter),
         page: 'newsletters',
         args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
       };
@@ -701,7 +703,7 @@ export class NewsletterService {
             ? `${newsletter.title}`
             : `${newsletter.title} ${this.domain}/${shortlink?.nanoid}`,
           role: 'PARENT',
-          page: 'newsletters',
+          uri: getMobileRoute(newsletter),
           args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
         };
       }),
@@ -732,6 +734,7 @@ export class NewsletterService {
             ? `${newsletter.title}`
             : `[재발송] ${newsletter.title} ${this.domain}/${shortlink?.nanoid}`,
           role: 'PARENT',
+          uri: shortlink.uri,
           page: shortlink.page,
           args: shortlink.args,
         };

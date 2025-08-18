@@ -3,6 +3,7 @@ import {
   ClassSerializerInterceptor,
   Controller,
   Delete,
+  Param,
   Post,
   UseInterceptors,
 } from '@nestjs/common';
@@ -72,8 +73,36 @@ export class SchooldayAttendanceController {
   @Delete('attendances/all')
   async deleteAttendancesBySchoolAndTerm(
     @Body() dto: DeleteAttendanceBySchoolTermDto,
-  ): Promise<ResponseAttendanceDto> {
+  ): Promise<void> {
     return await this.schooldayAttendanceService.deleteAttendancesBySchoolAndTerm(
+      dto,
+    );
+  }
+
+  /**
+   * 특정 그룹의 모든 출석 데이터를 완전히 삭제합니다.
+   * DynamoDB에서 해당 partition key의 모든 레코드를 스캔하여 삭제합니다.
+   */
+  @Public()
+  @Delete('attendances/group/:groupKey')
+  async deleteAllAttendancesByGroupKey(
+    @Param('groupKey') groupKey: string,
+  ): Promise<ResponseAttendanceDto> {
+    return await this.schooldayAttendanceService.deleteAllAttendancesByGroupKey(
+      groupKey,
+    );
+  }
+
+  /**
+   * 특정 학교/학기의 모든 그룹에 대해 완전한 출석 데이터 삭제를 수행합니다.
+   * 기존 메서드의 개선된 버전으로, 쓰레기 데이터까지 완전히 제거합니다.
+   */
+  @Public()
+  @Delete('attendances/all-complete')
+  async deleteAllAttendancesBySchoolAndTerm(
+    @Body() dto: DeleteAttendanceBySchoolTermDto,
+  ): Promise<ResponseAttendanceDto> {
+    return await this.schooldayAttendanceService.deleteAllAttendancesBySchoolAndTerm(
       dto,
     );
   }

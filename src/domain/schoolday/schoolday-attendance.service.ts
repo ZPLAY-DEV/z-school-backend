@@ -2,6 +2,7 @@ import {
   DeleteCommand,
   PutCommand,
   ScanCommand,
+  ScanCommandInput,
   TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { Injectable, Logger } from '@nestjs/common';
@@ -24,6 +25,7 @@ import {
   generateDailyStudentKey,
   generateGroupKey,
 } from 'src/domain/attendance/utils/attendance.utils';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import {
   BuildAttendanceBodyDto,
@@ -51,6 +53,8 @@ export class SchooldayAttendanceService {
     private readonly schooldayRepository: Repository<Schoolday>,
     @InjectRepository(Term)
     private readonly termRepository: Repository<Term>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
     private readonly dynamoService: DynamoService,
     private readonly configService: ConfigService,
   ) {
@@ -129,20 +133,179 @@ export class SchooldayAttendanceService {
 
   async deleteAttendancesBySchoolAndTerm(
     dto: DeleteAttendanceBySchoolTermDto,
-  ): Promise<ResponseAttendanceDto> {
+  ): Promise<void> {
     // 해당 학교/학기의 모든 수업일 찾기 (날짜 범위 제한 없음)
-    const schooldays = await this.fetchAllSchooldaysBySchoolAndTerm(
-      dto.schoolId,
-      dto.termId,
+    const schooldays =
+      (await this.fetchAllSchooldaysBySchoolAndTerm(
+        dto.schoolId,
+        dto.termId,
+      )) || [];
+
+    await Promise.all(
+      schooldays.map(async (schoolday) => {
+        const groupKey = generateGroupKey(schoolday.groupId);
+        const attendances = await this.deleteAllAttendancesByGroupKey(groupKey);
+        return attendances;
+      }),
     );
 
-    // 유효한 수업일들만 필터링
-    const validSchooldays = schooldays.filter((schoolday) =>
-      this.isValidSchooldayForAttendance(schoolday),
-    );
+    // // 유효한 수업일들만 필터링
+    // const validSchooldays = schooldays.filter((schoolday) =>
+    //   this.isValidSchooldayForAttendance(schoolday),
+    // );
 
-    const deleteRequests = this.buildDeleteRequests(validSchooldays);
-    return this.executeBatchOperations(deleteRequests);
+    // const deleteRequests = this.buildDeleteRequests(validSchooldays);
+    // return this.executeBatchOperations(deleteRequests);
+  }
+
+  /**
+   * 특정 그룹의 모든 출석 데이터를 완전히 삭제합니다.
+   * DynamoDB에서 해당 partition key의 모든 레코드를 스캔하여 삭제합니다.
+   *
+   * @param groupKey DynamoDB partition key (e.g., "GROUP#25")
+   * @returns 삭제된 레코드 수와 결과 정보
+   */
+  async deleteAllAttendancesByGroupKey(
+    groupKey: string,
+  ): Promise<ResponseAttendanceDto> {
+    try {
+      this.logger.log(`🗑️ Deleting all attendances for groupKey: ${groupKey}`);
+
+      // 1. DynamoDB에서 해당 partition key의 모든 레코드 스캔
+      const allItems: IAttendance[] = [];
+      let lastEvaluatedKey: any = undefined;
+
+      do {
+        const scanParams: ScanCommandInput = {
+          TableName: this.attendanceTableName,
+          FilterExpression: 'groupKey = :groupKey',
+          ExpressionAttributeValues: {
+            ':groupKey': groupKey,
+          },
+        };
+
+        if (lastEvaluatedKey) {
+          scanParams.ExclusiveStartKey = lastEvaluatedKey;
+        }
+
+        const result = await this.dynamoService.send(
+          new ScanCommand(scanParams),
+        );
+
+        if (result.Items && result.Items.length > 0) {
+          allItems.push(...(result.Items as IAttendance[]));
+        }
+
+        lastEvaluatedKey = result.LastEvaluatedKey;
+      } while (lastEvaluatedKey);
+
+      if (allItems.length === 0) {
+        this.logger.log(
+          `📭 No attendance records found for groupKey: ${groupKey}`,
+        );
+        return { schooldays: 0, failedBatches: 0, alreadyExists: 0 };
+      }
+
+      // 2. 삭제 요청 생성
+      const deleteRequests: DeleteRequest[] = allItems.map((item) => ({
+        DeleteRequest: {
+          Key: {
+            groupKey: item.groupKey,
+            dailyStudentKey: item.dailyStudentKey,
+          },
+        },
+      }));
+
+      this.logger.log(
+        `🗑️ Deleting ${allItems.length} attendance records for groupKey: ${groupKey}`,
+      );
+
+      // 3. 배치 삭제 실행
+      const result = await this.executeBatchOperations(deleteRequests);
+
+      this.logger.log(
+        `✅ Successfully deleted attendances for groupKey: ${groupKey}`,
+        result,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to delete attendances for groupKey: ${groupKey}`,
+        error,
+      );
+      return { schooldays: 0, failedBatches: 1, alreadyExists: 0 };
+    }
+  }
+
+  /**
+   * 특정 학교/학기의 모든 그룹에 대해 완전한 출석 데이터 삭제를 수행합니다.
+   * 기존 메서드의 개선된 버전으로, 쓰레기 데이터까지 완전히 제거합니다.
+   *
+   * @param dto 학교/학기 정보
+   * @returns 삭제된 레코드 수와 결과 정보
+   */
+  async deleteAllAttendancesBySchoolAndTerm(
+    dto: DeleteAttendanceBySchoolTermDto,
+  ): Promise<ResponseAttendanceDto> {
+    try {
+      this.logger.log(
+        `🗑️ Starting complete deletion for schoolId: ${dto.schoolId}, termId: ${dto.termId}`,
+      );
+
+      // 1. 해당 학교/학기의 모든 그룹 조회
+      const groups = await this.groupRepository.find({
+        where: {
+          lesson: {
+            schoolId: dto.schoolId,
+            termId: dto.termId,
+          },
+        },
+        relations: ['lesson'],
+      });
+
+      if (groups.length === 0) {
+        this.logger.log(
+          `📭 No groups found for schoolId: ${dto.schoolId}, termId: ${dto.termId}`,
+        );
+        return { schooldays: 0, failedBatches: 0, alreadyExists: 0 };
+      }
+
+      // 2. 각 그룹별로 모든 출석 데이터 삭제
+      let totalDeleted = 0;
+      let totalFailedBatches = 0;
+      let totalAlreadyExists = 0;
+
+      for (const group of groups) {
+        const groupKey = generateGroupKey(group.id);
+        this.logger.log(
+          `🗑️ Deleting attendances for group: ${group.groupName} (${groupKey})`,
+        );
+
+        const result = await this.deleteAllAttendancesByGroupKey(groupKey);
+
+        totalDeleted += result.schooldays;
+        totalFailedBatches += result.failedBatches;
+        totalAlreadyExists += result.alreadyExists || 0;
+      }
+
+      const finalResult = {
+        schooldays: totalDeleted,
+        failedBatches: totalFailedBatches,
+        alreadyExists: totalAlreadyExists,
+      };
+
+      this.logger.log(
+        `✅ Complete deletion finished for schoolId: ${dto.schoolId}, termId: ${dto.termId}`,
+        finalResult,
+      );
+      return finalResult;
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to delete all attendances for schoolId: ${dto.schoolId}, termId: ${dto.termId}`,
+        error,
+      );
+      return { schooldays: 0, failedBatches: 1, alreadyExists: 0 };
+    }
   }
 
   async deleteGroupAttendanceWithDate(
@@ -288,7 +451,7 @@ export class SchooldayAttendanceService {
     for (const schoolday of schooldays) {
       // getValidatedSchooldays에서 이미 검증되었으므로 안전함
 
-      const { group, startsAt, duration, lessonId, groupId } = schoolday;
+      const { group, startsAt, lessonId, groupId } = schoolday;
       const localDate = formatDateInKST(startsAt);
       const expires = Math.floor(addDays(new Date(), 400).getTime() / 1000);
 
