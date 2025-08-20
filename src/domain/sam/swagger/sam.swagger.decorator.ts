@@ -376,33 +376,32 @@ export const GetSamGroupsDocs = () =>
   );
 
 //? ---------------------------------------------------------------------- ?//
-//? Get Sam Schooldays
+//? Get Sam All Schooldays
 //? ---------------------------------------------------------------------- ?//
 
-export const GetSamSchooldaysDocs = () =>
+export const GetAllSchooldaysDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '📅 모든 수업 또는 특정일의 수업 조회',
+      summary: '📅 담임쌤의 모든 수업일 조회',
       description: `
 ### 📋 기능 설명
-담임쌤의 모든 수업 또는 특정일의 수업 일정을 조회합니다.
+담임쌤이 담당하는 모든 수업일을 조회합니다.
 
 ### 🏷️ 조회 조건
 - **기본**: 모든 수업일 조회
-- **특정일**: date 파라미터로 특정 날짜의 수업 조회
 - **학기 필터**: termId 전달 시 해당 학기의 수업만 필터링
 
 ### 📌 비즈니스 규칙
-- 담임쌤이 담당하는 수업만 조회됩니다
-- 날짜별로 필터링 가능합니다
+- 담임쌤이 직접 담당하는 그룹의 수업만 조회됩니다
 - 학기별로 필터링 가능합니다
 - 수업 정보와 함께 반 정보도 포함됩니다
+- SQL 레벨에서 최적화된 조회로 성능 향상
 
 ### 💡 사용 시점
 - 담임쌤 대시보드에서 전체 수업 일정 확인
-- 특정 날짜의 수업 일정 확인
 - 학기별 수업 관리
 - 수업 준비 및 계획
+- 전체 수업 일정 분석
       `,
     }),
     ApiParam({
@@ -416,16 +415,63 @@ export const GetSamSchooldaysDocs = () =>
       description: '학기 ID (선택사항, 전달 시 해당 학기의 수업만 필터링)',
       required: false,
     }),
-    ApiQuery({
+    ApiExtraModels(Schoolday),
+    ApiOkResponse({
+      description: '✅ 모든 수업일 조회 성공',
+      schema: {
+        type: 'array',
+        items: { $ref: getSchemaPath(Schoolday) },
+      },
+    }),
+    ApiResponse({
+      status: StatusCodes.NOT_FOUND,
+      description: '🔍 리소스 없음 - 존재하지 않는 담임쌤 ID',
+    }),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? Get Sam Schooldays By Date
+//? ---------------------------------------------------------------------- ?//
+
+export const GetSchooldaysByDateDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '📅 특정 날짜의 수업일 조회',
+      description: `
+### 📋 기능 설명
+담임쌤이 담당하는 특정 날짜의 수업일을 조회합니다.
+
+### 🏷️ 조회 조건
+- **필수**: date 파라미터로 특정 날짜 지정
+- **정확한 날짜**: YYYY-MM-DD 형식으로 정확한 날짜 입력
+
+### 📌 비즈니스 규칙
+- 담임쌤이 직접 담당하는 그룹의 수업만 조회됩니다
+- 지정된 날짜의 수업만 정확히 조회됩니다
+- 수업 정보와 함께 반 정보도 포함됩니다
+- SQL 레벨에서 최적화된 조회로 성능 향상
+
+### 💡 사용 시점
+- 특정 날짜의 수업 일정 확인
+- 일일 수업 준비
+- 출석 관리
+- 수업 일정 검증
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '담임쌤 ID',
+    }),
+    ApiParam({
       name: 'date',
       type: String,
-      description:
-        '조회할 날짜 (YYYY-MM-DD 형식, 선택사항, 미전달 시 모든 수업일 조회)',
-      required: false,
+      description: '조회할 날짜 (YYYY-MM-DD 형식)',
+      example: '2025-01-15',
     }),
     ApiExtraModels(Schoolday),
     ApiOkResponse({
-      description: '✅ 수업 일정 조회 성공',
+      description: '✅ 특정 날짜 수업일 조회 성공',
       schema: {
         type: 'array',
         items: { $ref: getSchemaPath(Schoolday) },

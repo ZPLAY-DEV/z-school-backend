@@ -279,76 +279,40 @@ export class SamService {
     return groups as unknown as GroupWithPicksCount[];
   }
 
-  //? SAM과 직접 관련된 그룹들의 schooldays만 조회
-  async getSchooldaysByDate(
-    id: number,
-    termId?: number,
-    date?: string,
-  ): Promise<Schoolday[]> {
-    const sam = await this.samRepository.findOneOrFail({
-      where: { id },
-      relations: [
-        'groups', // SAM이 직접 담당하는 그룹들
-        'groups.schooldays',
-        'groups.schooldays.departures',
-        'contracts', // SAM이 계약한 그룹들 (term 필터링용)
-        'contracts.group',
-        'contracts.group.schooldays',
-        'contracts.group.schooldays.departures',
-      ],
+  //? SAM과 직접 관련된 그룹들의 schooldays만 조회 (SQL 레벨 최적화)
+  async getAllSchooldays(id: number, termId?: number): Promise<Schoolday[]> {
+    const queryBuilder = this.dataSource
+      .createQueryBuilder(Schoolday, 'schoolday')
+      .leftJoin('schoolday.group', 'group')
+      .where('group.samId = :samId', { samId: id });
+
+    if (termId) {
+      queryBuilder.andWhere('schoolday.termId = :termId', { termId });
+    }
+
+    return await queryBuilder.getMany();
+  }
+
+  //? SAM과 직접 관련된 그룹들의 schooldays만 조회 (SQL 레벨 최적화)
+  async getSchooldaysByDate(id: number, date: string): Promise<Schoolday[]> {
+    // SQL 레벨에서 필터링하여 필요한 데이터만 조회
+    const schooldays = await this.dataSource
+      .createQueryBuilder(Schoolday, 'schoolday')
+      .leftJoinAndSelect('schoolday.group', 'group')
+      .leftJoinAndSelect('schoolday.departures', 'departures')
+      .where('group.samId = :samId', { samId: id })
+      .andWhere('schoolday.today = :date', { date })
+      .getMany();
+
+    // 순환 참조 방지
+    return schooldays.map((schoolday) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { schooldays: _, ...groupWithoutSchooldays } = schoolday.group;
+      return {
+        ...schoolday,
+        group: groupWithoutSchooldays as any, // 타입 단언으로 순환 참조 방지
+      };
     });
-
-    const allSchooldays: Schoolday[] = [];
-
-    // 1. SAM이 직접 담당하는 그룹들의 schooldays
-    for (const group of sam.groups) {
-      if (group.schooldays) {
-        const schooldaysWithGroup = group.schooldays
-          .filter((schoolday) => {
-            if (!date) {
-              return true;
-            }
-            return schoolday.today === date;
-          })
-          .map((schoolday) => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { schooldays: _, ...groupWithoutSchooldays } = group;
-            return {
-              ...schoolday,
-              group: groupWithoutSchooldays as any, // 타입 단언으로 순환 참조 방지
-            };
-          });
-        allSchooldays.push(...schooldaysWithGroup);
-      }
-    }
-
-    // 2. SAM이 계약한 그룹들의 schooldays (term 필터링 적용)
-    for (const contract of sam.contracts) {
-      if (termId && contract.termId !== Number(termId)) {
-        continue;
-      }
-
-      if (contract.group && contract.group?.schooldays) {
-        const schooldaysWithGroup = contract.group.schooldays
-          .filter((schoolday) => {
-            if (!date) {
-              return true;
-            }
-            return schoolday.today === date;
-          })
-          .map((schoolday) => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { schooldays: _, ...groupWithoutSchooldays } = contract.group;
-            return {
-              ...schoolday,
-              group: groupWithoutSchooldays as any, // 타입 단언으로 순환 참조 방지
-            };
-          });
-        allSchooldays.push(...schooldaysWithGroup);
-      }
-    }
-
-    return allSchooldays;
   }
 
   //? ---------------------------------------------------------------------- ?//

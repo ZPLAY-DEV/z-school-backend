@@ -23,9 +23,10 @@ import { SamService } from 'src/domain/sam/sam.service';
 import {
   BulkUpdateSamsDocs,
   CreateSamDocs,
+  GetAllSchooldaysDocs,
   GetSamByIdDocs,
   GetSamGroupsDocs,
-  GetSamSchooldaysDocs,
+  GetSchooldaysByDateDocs,
   SamDryRunDocs,
   SoftDeleteSamDocs,
   UpdateSamDocs,
@@ -71,14 +72,22 @@ export class SamController {
     return await this.samService.getGroupsById(id, termId, sortBy);
   }
 
-  @GetSamSchooldaysDocs()
+  @GetAllSchooldaysDocs()
+  @Get(':id/all-schooldays')
+  async getSchooldays(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('termId') termId?: number,
+  ): Promise<Schoolday[]> {
+    return await this.samService.getAllSchooldays(id, termId);
+  }
+
+  @GetSchooldaysByDateDocs()
   @Get(':id/schooldays')
   async getSchooldaysByDate(
     @Param('id', ParseIntPipe) id: number,
-    @Query('termId') termId?: number,
-    @Query('date') date?: string,
+    @Query('date') date: string,
   ): Promise<Schoolday[]> {
-    return await this.samService.getSchooldaysByDate(id, termId, date);
+    return await this.samService.getSchooldaysByDate(id, date);
   }
 
   @GetSamByIdDocs()
