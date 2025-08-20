@@ -4,6 +4,7 @@ import { DynamooseModule } from 'nestjs-dynamoose';
 import { AttendanceSchema } from 'src/domain/attendance/entities/attendance.schema';
 import { CalendarModule } from 'src/domain/calendar/calendar.module';
 import { Category } from 'src/domain/category/entities/category.entity';
+import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { LessonAttendanceController } from 'src/domain/lesson/lesson-attendance.controller';
@@ -21,6 +22,7 @@ import { Term } from 'src/domain/term/entities/term.entity';
   imports: [
     TypeOrmModule.forFeature([
       Category,
+      Departure,
       Group,
       Lesson,
       Pick,

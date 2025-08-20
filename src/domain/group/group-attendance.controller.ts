@@ -21,7 +21,6 @@ import {
   IAttendanceWithNextStop,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
-import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 import { GroupAttendanceService } from 'src/domain/group/group-attendance.service';
 import {
   CustomAttendanceDocs,
@@ -98,13 +97,12 @@ export class GroupAttendanceController {
 
   @FindAttendanceByDateWithExtendedDataDocs()
   @Get(':groupId/attendances/:date/extended')
-  async findByDateWithExtendedData(
+  async findExtendedAttendancesByDate(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Param('date') date: string,
+    @Param('date') date: string, //! "2025-06-06"
   ): Promise<IAttendanceWithNextStop[]> {
-    const groupKey = generateGroupKey(groupId);
-    return await this.groupAttendancesService.findAttendancesByDateWithExtendedData(
-      groupKey,
+    return await this.groupAttendancesService.findExtendedAttendancesByDate(
+      groupId,
       date,
     );
   }
@@ -115,11 +113,10 @@ export class GroupAttendanceController {
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('month') month: string,
   ): Promise<AttendanceReport[]> {
-    const groupKey = generateGroupKey(groupId);
-    return await this.groupAttendancesService.getMonthlyReport(groupKey, month);
+    return await this.groupAttendancesService.getMonthlyReport(groupId, month);
   }
 
-  // schooldays 는 그날 수 없이 있냐 없냐.
+  // schooldays 는 그날 수업이 있나 없나 판단 근거.
   // 학생별 출석자료 source of truth 는 dynamodb.
   @GetReportDocs()
   @Get(':groupId/attendances/:month/report/excel')
@@ -128,9 +125,8 @@ export class GroupAttendanceController {
     @Param('month') month: string,
     @Res() res: Response,
   ) {
-    const groupKey = generateGroupKey(groupId);
     const workbook = await this.groupAttendancesService.generateExcel(
-      groupKey,
+      groupId,
       month,
     );
 
@@ -141,7 +137,7 @@ export class GroupAttendanceController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${month}-attendance-report.xlsx"`,
+      `attachment; filename="${month}-group-report.xlsx"`,
     );
 
     // 엑셀 파일을 response stream으로 작성
@@ -156,9 +152,8 @@ export class GroupAttendanceController {
     @Param('month') month: string,
     @Param('studentId', ParseIntPipe) studentId: number,
   ): Promise<IAttendance[]> {
-    const groupKey = generateGroupKey(groupId);
     return await this.groupAttendancesService.getStudentMonthlyReport(
-      groupKey,
+      groupId,
       month,
       studentId,
     );

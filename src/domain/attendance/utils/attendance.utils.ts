@@ -1,6 +1,7 @@
 import {
   IAttendance,
   IAttendanceCore,
+  IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 
@@ -124,4 +125,33 @@ export function processAttendanceReport(
   }
 
   return reports.sort((a, b) => a.studentKey.localeCompare(b.studentKey));
+}
+
+export async function fetchAllAttendanceItems(
+  model,
+  groupId: number,
+  date: string,
+) {
+  let allItems: IAttendance[] = [];
+  let lastKey: IAttendanceKey | undefined = undefined;
+
+  do {
+    const query = model
+      .query('groupKey')
+      .eq(generateGroupKey(groupId))
+      .where('dailyStudentKey')
+      .beginsWith(`DATE#${date}`);
+
+    // lastKey가 존재할 때만 startAt 호출
+    if (lastKey) {
+      query.startAt(lastKey);
+    }
+
+    const result = await query.exec();
+
+    allItems = allItems.concat(result as IAttendance[]);
+    lastKey = result.lastKey as IAttendanceKey | undefined;
+  } while (lastKey);
+
+  return allItems;
 }

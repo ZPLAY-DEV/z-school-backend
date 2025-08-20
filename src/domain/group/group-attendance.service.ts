@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { addDays, lastDayOfMonth } from 'date-fns';
+import { addDays, getDay, lastDayOfMonth, parse } from 'date-fns';
 import * as ExcelJS from 'exceljs';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
@@ -21,6 +21,7 @@ import {
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
+  fetchAllAttendanceItems,
   filterNoSql,
   generateDailyStudentKey,
   generateGroupKey,
@@ -35,7 +36,6 @@ import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { areTheyEqual } from 'src/helpers/array';
-import { getWeekNumberFromKoreanWeekday } from 'src/helpers/date';
 import { translateActor } from 'src/helpers/translate';
 import { NotificationService } from 'src/services/notification/notification.service';
 import { Between, In, Repository } from 'typeorm';
@@ -442,149 +442,13 @@ export class GroupAttendanceService {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  async findAttendancesByMonth(
-    groupKey: string,
-    month: string, // `2025-08` (월 단위)
-  ): Promise<IAttendance[]> {
-    try {
-      const groupId = getGroupIdFromGroupKey(groupKey);
-      console.log(`🔍 Searching for groupId: ${groupId}, date: ${month}`);
-
-      // yyyy-MM 형식인 경우 (월 단위) - DB 레벨에서 필터링
-      const [yearVal, monthVal] = month.split('-');
-
-      // 해당 월의 시작일과 종료일 계산
-      const startOfMonth = new Date(+yearVal, +monthVal - 1, 1); // 월은 0-based
-      const endOfMonth = new Date(+yearVal, +monthVal, 0); // 다음 달의 0일 = 이번 달의 마지막 날
-
-      const schooldays = await this.schooldayRepository.find({
-        where: {
-          groupId: groupId,
-          startsAt: Between(startOfMonth, endOfMonth),
-        },
-      });
-
-      if (!schooldays || schooldays.length === 0) {
-        return [];
-      }
-
-      // 2. schooldays 에 연관된 모든 attendance 데이터 조회 (DynamoDB)
-      const allAttendanceItems: IAttendance[] = [];
-
-      for (const schoolday of schooldays) {
-        const prefix = `DATE#${schoolday.today}`;
-        const result = await this.model
-          .query('groupKey')
-          .eq(groupKey)
-          .where('dailyStudentKey')
-          .beginsWith(prefix)
-          .exec();
-
-        const items = result as IAttendance[];
-        allAttendanceItems.push(...items);
-      }
-
-      const itemMap = new Map<string, IAttendance>(
-        allAttendanceItems.map((v) => [v.dailyStudentKey, v]),
-      );
-
-      // 3. 해당 그룹의 모든 학생 정보 조회
-      const picks = await this.pickRepository.find({
-        where: [{ groupId }],
-        relations: ['group', 'group.lesson', 'student'],
-      });
-      const studentIdsFromPicks = picks.map((v) => v.studentId);
-      const studentIdsFromDynamoDb = [
-        ...new Set(
-          Array.from(itemMap.keys()).map((v) => {
-            return getStudentIdFromDailyStudentKey(v);
-          }),
-        ),
-      ];
-
-      if (!areTheyEqual(studentIdsFromPicks, studentIdsFromDynamoDb)) {
-        throw new Error('dynamo entries not matched');
-      }
-
-      // 4. 각 수업일별로 attendance 생성
-      const attendances: IAttendance[] = [];
-
-      for (const schoolday of schooldays) {
-        console.log(`🔄 Processing schoolday: ${schoolday.today}`);
-
-        for (const pick of picks) {
-          const dailyStudentKey = generateDailyStudentKey(
-            schoolday.today, // schoolday.today를 사용
-            pick.studentId,
-            pick.student.grade,
-            pick.student.class,
-            pick.student.studentCode,
-          );
-
-          const attendance =
-            itemMap.get(dailyStudentKey) ||
-            ({
-              groupKey: groupKey,
-              dailyStudentKey: dailyStudentKey,
-              lessonId: pick.group.lessonId,
-              lessonName: pick.group.lesson.lessonName,
-              groupId: pick.group.id,
-              groupName: pick.group.groupName,
-              studentId: pick.student.id,
-              studentName: pick.student.name,
-              start: pick.group.start,
-              end: pick.group.end,
-              weekday: pick.group.weekday,
-              status: AttendanceStatus.INIT,
-            } as IAttendance);
-
-          attendances.push(attendance);
-        }
-      }
-
-      console.log(`🎯 Final result: ${attendances.length} attendances`);
-
-      return attendances;
-    } catch (error) {
-      console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(
-        error.message || '출석 정보 조회에 실패했습니다.',
-      );
-    }
-  }
-
-  /**
-   * 지정된 날짜의 출석 정보를 확장된 데이터와 함께 조회합니다.
-   *
-   * @description
-   * 기본 출석 정보에 추가로 다음 정보들을 포함합니다:
-   * - student: Student entity (부모 정보 포함)
-   * - isLast: 마지막 수업인지 여부
-   * - next: 다음 수업명 또는 student.nextStop
-   * - departure: 해당 학생의 당일 하교 정보 (있는 경우)
-   *
-   * @param groupKey DynamoDB 그룹 키 (e.g., "GROUP#48")
-   * @param date 조회할 날짜 (e.g., "2025-06-08")
-   *
-   * @returns IAttendanceWithNextStop[]
-   * - 기본 출석 정보 + student entity + next 필드 + departure 정보
-   * - student: { id, name, grade, class, studentCode, parent }
-   * - next: string (다음 수업명 또는 student.nextStop)
-   * - departure: Departure entity (해당 학생의 당일 하교 정보, 없으면 null)
-   *
-   * @performance
-   * - MySQL 쿼리 최적화: IN 조건으로 모든 학생 및 departure 정보를 한 번에 조회
-   * - 메모리 최적화: Map을 사용한 O(1) lookup
-   * - N+1 쿼리 방지
-   * - 복합 인덱스 활용: departure 테이블의 (date, studentId) 인덱스 사용
-   */
-  async findAttendancesByDateWithExtendedData(
-    groupKey: string,
-    date: string,
+  // 그날의 extended 출석부 정보
+  async findExtendedAttendancesByDate(
+    groupId: number,
+    date: string, //! "2025-06-06"
   ): Promise<IAttendanceWithNextStop[]> {
     try {
       // 1. 해당 날짜에 수업이 있는지 확인
-      const groupId = getGroupIdFromGroupKey(groupKey);
       const schooldays = await this.schooldayRepository.find({
         where: {
           groupId: groupId,
@@ -594,23 +458,20 @@ export class GroupAttendanceService {
       if (!schooldays || schooldays.length === 0) {
         return [];
       }
-      const weekNumber = getWeekNumberFromKoreanWeekday(schooldays[0].weekday);
 
-      // 2. DynamoDB에서 기존 출석 데이터 조회
-      const prefix = `DATE#${date}`;
-      const items: IAttendance[] = await this.model
-        .query('groupKey')
-        .eq(groupKey)
-        .where('dailyStudentKey')
-        .beginsWith(prefix)
-        .exec();
-
-      // 3. 기존 레코드를 dailyStudentKey로 맵핑
-      const itemMap = new Map<string, IAttendance>(
-        items.map((v) => [v.dailyStudentKey, v]),
+      // 2. DynamoDB에서 출석 데이터 조회
+      const allItems: IAttendance[] = await fetchAllAttendanceItems(
+        this.model,
+        groupId,
+        date,
       );
 
-      // 4. 모든 등록된 학생들(picks) 조회
+      // 3. 출석 레코드를 dailyStudentKey로 맵핑
+      const itemMap = new Map<string, IAttendance>(
+        allItems.map((v) => [v.dailyStudentKey, v]),
+      );
+
+      // 4. 등록된 학생들(picks) 조회
       const picks =
         (await this.pickRepository.find({
           where: { groupId },
@@ -654,7 +515,7 @@ export class GroupAttendanceService {
               groupId: pick.group.id,
               start: pick.group.start,
               end: pick.group.end,
-              groupKey: groupKey,
+              groupKey: generateGroupKey(pick.group.id),
               lessonId: pick.group.lessonId,
               lessonName: pick.group.lesson.lessonName,
               groupName: pick.group.groupName,
@@ -686,13 +547,12 @@ export class GroupAttendanceService {
         ],
       });
 
-      // 학생 ID를 key로 하는 student Map 생성 (빠른 lookup을 위해)
-      // 각 student entity는 response에서 student 필드로 반환됨
+      // 8. 학생 ID를 key로 하는 student Map 생성 (빠른 lookup을 위해)
       const studentMap = new Map(
         students.map((student) => [student.id, student]),
       );
 
-      // 4. 한 번의 최적화된 쿼리로 해당 날짜의 모든 학생 departure 정보 조회
+      // 9. 한 번의 최적화된 쿼리로 해당 날짜의 모든 학생 departure 정보 조회
       const departures = await this.departureRepository.find({
         where: {
           date: date,
@@ -708,12 +568,12 @@ export class GroupAttendanceService {
         ],
       });
 
-      // 학생 ID를 key로 하는 departure Map 생성 (빠른 lookup을 위해)
+      // 10. 학생 ID를 key로 하는 departure Map 생성 (빠른 lookup을 위해)
       const departureMap = new Map<number, Departure>(
         departures.map((departure) => [departure.studentId, departure]),
       );
 
-      // 5. 한 번의 최적화된 쿼리로 각 학생의 해당일 모든 그룹 스케줄 조회
+      // 11. 한 번의 최적화된 쿼리로 각 학생의 해당일 모든 그룹 스케줄 조회
       const studentScheduleData: {
         studentId: number;
         groupId: number;
@@ -735,11 +595,11 @@ export class GroupAttendanceService {
         .addOrderBy('schoolday.endsAt', 'ASC')
         .getRawMany();
 
-      // 6. 메모리에서 학생별 다음 수업 정보 계산
+      // 12. 메모리에서 학생별 다음 수업 정보 계산
       const studentNextMap = new Map<number, string>();
       const studentIsLastMap = new Map<number, boolean>();
 
-      // 학생별로 그룹핑하여 각 학생의 다음 수업 찾기
+      // 13. 학생별로 그룹핑하여 각 학생의 다음 수업 찾기
       const studentGroups = studentScheduleData.reduce(
         (acc, row) => {
           const studentId = row.studentId;
@@ -757,56 +617,30 @@ export class GroupAttendanceService {
         >,
       );
 
-      // 각 학생의 현재 그룹 다음 수업 찾기
+      // 14. 오늘 수업하는 반중에서, 각 학생의 현재반 이후 다음반 찾기
       studentIds.forEach((studentId) => {
-        const schedule = studentGroups[studentId] || [];
-        const currentIndex = schedule.findIndex(
-          (group) => group.groupId === groupId,
+        const todayGroups = studentGroups[studentId] || [];
+        const currentIndex = todayGroups.findIndex(
+          (v) => v.groupId === groupId,
         );
 
-        console.log(
-          `🔍 [DEBUG] Student ${studentId}: schedule=${JSON.stringify(schedule)}, currentIndex=${currentIndex}, groupId=${groupId}`,
-        );
-
-        if (currentIndex === -1) {
-          // 현재 그룹을 찾을 수 없는 경우
+        if (currentIndex === -1 || currentIndex === todayGroups.length - 1) {
+          // 마지막 그룹이거나 못찾겠다면
           const student = studentMap.get(studentId);
-          const nextStop = this.getStudentEscort(
-            weekNumber,
-            student?.nextStops,
-          );
+          const nextStop = this.getStudentEscort(date, student?.nextStops);
           const finalNext = nextStop?.place || '미지정';
-          console.log(
-            `❌ [DEBUG] Student ${studentId}: Group not found, student=${JSON.stringify(student)}, nextStop="${nextStop?.name}", finalNext="${finalNext}"`,
-          );
           studentNextMap.set(studentId, finalNext);
-          studentIsLastMap.set(studentId, true); // 그룹을 찾을 수 없는 경우는 마지막으로 간주
-        } else if (currentIndex === schedule.length - 1) {
-          // 마지막 그룹인 경우
-          const student = studentMap.get(studentId);
-          const nextStop = this.getStudentEscort(
-            weekNumber,
-            student?.nextStops,
-          );
-          const finalNext = nextStop?.place || '미지정';
-          console.log(
-            `🏁 [DEBUG] Student ${studentId}: Last group, student=${JSON.stringify(student)}, nextStop="${nextStop?.name}", finalNext="${finalNext}"`,
-          );
-          studentNextMap.set(studentId, finalNext);
-          studentIsLastMap.set(studentId, true); // 마지막 그룹
+          studentIsLastMap.set(studentId, true); // 마지막 그룹임
         } else {
           // 다음 그룹이 있는 경우
-          const nextGroup = schedule[currentIndex + 1];
+          const nextGroup = todayGroups[currentIndex + 1];
           const finalNext = nextGroup.groupName || '반이름 미지정';
-          console.log(
-            `➡️ [DEBUG] Student ${studentId}: Next group, nextGroup=${JSON.stringify(nextGroup)}, finalNext="${finalNext}"`,
-          );
           studentNextMap.set(studentId, finalNext);
           studentIsLastMap.set(studentId, false); // 마지막 그룹이 아님
         }
       });
 
-      // 11. 출석 데이터와 확장 정보 결합 (No conversion needed!)
+      // 15. 출석 데이터와 확장 정보 결합 (No conversion needed!)
       const attendancesWithNextInfo: IAttendanceWithNextStop[] =
         completeAttendanceItems.map((item) => {
           return {
@@ -830,8 +664,8 @@ export class GroupAttendanceService {
   //? ---------------------------------------------------------------------- ?//
 
   async generateExcel(
-    groupKey: string,
-    date: string, // `2025-08`
+    groupId: number,
+    date: string, //? `2025-08`
   ): Promise<ExcelJS.Workbook> {
     let rowIndex;
     const year = Number(date.split('-')[0]);
@@ -842,7 +676,6 @@ export class GroupAttendanceService {
     const sheet = workbook.addWorksheet('월별출석보고서');
 
     // 1. 그룹 정보 조회 (schooldays, picks.student 관계 포함)
-    const groupId = getGroupIdFromGroupKey(groupKey);
     const group = await this.groupRepository.findOneOrFail({
       where: { id: groupId },
       relations: ['schooldays', 'picks', 'picks.student', 'sam'],
@@ -854,7 +687,7 @@ export class GroupAttendanceService {
       .sort((a, b) => a.today.localeCompare(b.today));
 
     // 3. 해당 월의 출석 데이터 조회
-    const attendances = await this.findAttendancesByMonth(groupKey, date);
+    const attendances = await this.findAttendancesByMonth(groupId, date);
 
     // 4. 출석 데이터를 Map으로 변환 (빠른 lookup을 위해)
     const attendanceMap = new Map<string, IAttendance>();
@@ -1104,44 +937,28 @@ export class GroupAttendanceService {
   }
 
   async getMonthlyReport(
-    groupKey: string,
-    date: string,
+    groupId: number,
+    date: string, //? "2025-08"
   ): Promise<AttendanceReport[]> {
-    const items = await this.findAttendancesByMonth(groupKey, date);
+    const items = await this.findAttendancesByMonth(groupId, date);
 
     return processAttendanceReport(items);
   }
 
-  /**
-   * 특정 학생의 월별 출석 데이터를 조회합니다.
-   *
-   * @param groupKey DynamoDB 그룹 키 (e.g., "GROUP#48")
-   * @param month 조회할 월 (e.g., "2025-08")
-   * @param studentId 학생 ID
-   *
-   * @returns 해당 월의 특정 학생 출석 데이터 배열
-   */
   async getStudentMonthlyReport(
-    groupKey: string,
-    month: string,
+    groupId: number,
+    date: string, //? "2025-08"
     studentId: number,
   ): Promise<IAttendance[]> {
     try {
-      // 월별 prefix 생성 (e.g., "DATE#2025-08")
-      const monthPrefix = `DATE#${month}`;
-
-      // 해당 월의 모든 출석 데이터 조회
-      const result = await this.model
-        .query('groupKey')
-        .eq(groupKey)
-        .where('dailyStudentKey')
-        .beginsWith(monthPrefix)
-        .exec();
-
-      const items = result as IAttendance[];
-
+      // 월별 모든 데이터 조회
+      const allItems: IAttendance[] = await fetchAllAttendanceItems(
+        this.model,
+        groupId,
+        date,
+      );
       // 특정 학생의 데이터만 필터링
-      const filteredItems = items.filter(
+      const filteredItems = allItems.filter(
         (item) =>
           getStudentIdFromDailyStudentKey(item.dailyStudentKey) === studentId,
       );
@@ -1156,6 +973,105 @@ export class GroupAttendanceService {
   //? ---------------------------------------------------------------------- ?//
   //? Private Utility Methods
   //? ---------------------------------------------------------------------- ?//
+
+  private async findAttendancesByMonth(
+    groupId: number,
+    date: string, //? `2025-08` (월 단위)
+  ): Promise<IAttendance[]> {
+    const [year, month] = date.split('-');
+    const startOfMonth = new Date(+year, +month - 1, 1); // 월은 0-based
+    const endOfMonth = new Date(+year, +month, 0); // 다음 달의 0일 = 이번 달의 마지막 날
+
+    try {
+      // 1. 해당 반 수업이 있는 날짜 및 수업시간 조회
+      const schooldays = await this.schooldayRepository.find({
+        where: {
+          groupId: groupId,
+          startsAt: Between(startOfMonth, endOfMonth),
+        },
+      });
+
+      if (!schooldays || schooldays.length === 0) {
+        return [];
+      }
+
+      // 2. schooldays 에 연관된 모든 attendance 데이터 조회 (DynamoDB)
+      const allItems: IAttendance[] = await fetchAllAttendanceItems(
+        this.model,
+        groupId,
+        date,
+      );
+
+      // 3. 출석부 레코드를 dailyStudentKey로 맵핑
+      const itemMap = new Map<string, IAttendance>(
+        allItems.map((v) => [v.dailyStudentKey, v]),
+      );
+
+      // 4. 반의 학생 아이디 추출 (picks 와 dynamo 둘 다)
+      const picks = await this.pickRepository.find({
+        where: [{ groupId }],
+        relations: ['group', 'group.lesson', 'student'],
+      });
+      const studentIdsFromPicks = picks.map((pick) => pick.studentId);
+      const studentIdsFromDynamoDb = [
+        ...new Set(
+          Array.from(itemMap.keys()).map((v) => {
+            return getStudentIdFromDailyStudentKey(v);
+          }),
+        ),
+      ];
+
+      if (!areTheyEqual(studentIdsFromPicks, studentIdsFromDynamoDb)) {
+        throw new Error('dynamo entries not matched');
+      }
+
+      // 5. 각 수업일별로 attendance 생성
+      const attendances: IAttendance[] = [];
+
+      for (const schoolday of schooldays) {
+        console.log(`🔄 Processing schoolday: ${schoolday.today}`);
+
+        for (const pick of picks) {
+          const groupKey = generateGroupKey(pick.group.id);
+          const dailyStudentKey = generateDailyStudentKey(
+            schoolday.today, // schoolday.today를 사용
+            pick.studentId,
+            pick.student.grade,
+            pick.student.class,
+            pick.student.studentCode,
+          );
+
+          const attendance =
+            itemMap.get(dailyStudentKey) ||
+            ({
+              groupKey: groupKey,
+              dailyStudentKey: dailyStudentKey,
+              lessonId: pick.group.lessonId,
+              lessonName: pick.group.lesson.lessonName,
+              groupId: pick.group.id,
+              groupName: pick.group.groupName,
+              studentId: pick.student.id,
+              studentName: pick.student.name,
+              start: pick.group.start,
+              end: pick.group.end,
+              weekday: pick.group.weekday,
+              status: AttendanceStatus.INIT,
+            } as IAttendance);
+
+          attendances.push(attendance);
+        }
+      }
+
+      console.log(`🎯 Final result: ${attendances.length} attendances`);
+
+      return attendances;
+    } catch (error) {
+      console.error(`[dynamodb] error`, error);
+      throw new BadRequestException(
+        error.message || '출석 정보 조회에 실패했습니다.',
+      );
+    }
+  }
 
   /**
    * 기본 벌크 업데이트 - 모든 레코드를 무조건 업데이트
@@ -1260,10 +1176,9 @@ export class GroupAttendanceService {
     }
   }
 
-  private getStudentEscort(
-    weekNumber: number,
-    stops?: IDailyEscort[],
-  ): IDailyEscort {
+  private getStudentEscort(date: string, stops?: IDailyEscort[]): IDailyEscort {
+    const dateObj = parse(date, 'yyyy-MM-dd', new Date());
+    const weekday = getDay(dateObj);
     if (!stops) {
       return {
         place: '',
@@ -1272,10 +1187,7 @@ export class GroupAttendanceService {
       };
     }
 
-    if (stops.length < 6) {
-      return stops[0];
-    }
-    return stops[weekNumber - 1];
+    return stops.length < 6 ? stops[0] : stops[weekday - 1];
   }
 
   private translateStatusStartContext(status: AttendanceStatus): string {
