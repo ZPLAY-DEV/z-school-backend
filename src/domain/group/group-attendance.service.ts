@@ -479,10 +479,10 @@ export class GroupAttendanceService {
         })) || [];
 
       const filteredPicks = picks.filter((v) => {
-        if (v.startedBy !== null && v.start > date) {
+        if (v.startedBy !== null && v.start >= date) {
           return false;
         }
-        if (v.endedBy !== null && v.end < date) {
+        if (v.endedBy !== null && v.end <= date) {
           return false;
         }
         return true;
@@ -790,16 +790,16 @@ export class GroupAttendanceService {
     rowIndex = row8.number;
     sheet.mergeCells(`A${rowIndex}:${lastCol}${rowIndex}`);
 
-    // 10. 헤더 행 추가
+    // 9. 헤더 행 추가
     const headerRow = ['순번', '학년·반·번호', '이름'];
     monthSchooldays.forEach((schoolday) => {
       const date = new Date(schoolday.today);
       const day = date.getDate().toString();
-      headerRow.push(`${month}월 ${day}일(${schoolday.weekday})`);
+      headerRow.push(`${month}월 ${day}일 (${schoolday.weekday})`);
     });
     sheet.addRow(headerRow);
 
-    // 11. 헤더 스타일링
+    // 10. 헤더 스타일링
     const headerRowObj = sheet.getRow(sheet.rowCount);
     headerRowObj.font = { bold: true };
     headerRowObj.alignment = { horizontal: 'center' };
@@ -814,7 +814,7 @@ export class GroupAttendanceService {
 
     const comments: string[] = ['특이사항:'];
 
-    // 12. 학생별 출석 데이터 추가
+    // 11. 학생별 출석 데이터 추가
     group.picks.forEach((pick, index) => {
       const student = pick.student;
       const rowData = [
@@ -913,13 +913,10 @@ export class GroupAttendanceService {
       });
     });
 
-    // 13. 열 너비 자동 조정
+    // 12. 열 너비 자동 조정
     sheet.columns.forEach((column) => {
       column.width = 15;
     });
-
-    // 학생 데이터까지 다 추가된 후
-    // const lastRowIndex = sheet.rowCount;
 
     // breathing space row 추가
     const breathingRow = sheet.addRow(['']);
@@ -928,7 +925,7 @@ export class GroupAttendanceService {
     // 전체 가로로 merge
     sheet.mergeCells(`A${breathingRowIndex}:${lastCol}${breathingRowIndex}`);
 
-    // 코멘트 추가
+    // 13. 코멘트 추가
     comments.forEach((comment) => {
       sheet.addRow([comment]);
     });
@@ -978,9 +975,10 @@ export class GroupAttendanceService {
     groupId: number,
     date: string, //? `2025-08` (월 단위)
   ): Promise<IAttendance[]> {
-    const [year, month] = date.split('-');
-    const startOfMonth = new Date(+year, +month - 1, 1); // 월은 0-based
-    const endOfMonth = new Date(+year, +month, 0); // 다음 달의 0일 = 이번 달의 마지막 날
+    const year = Number(date.split('-')[0]);
+    const month = Number(date.split('-')[1]);
+    const startOfMonth = new Date(year, month - 1, 1); // 월은 0-based
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // 다음 달의 0일 = 이번 달의 마지막 날 (23:59:59.999까지 포함)
 
     try {
       // 1. 해당 반 수업이 있는 날짜 및 수업시간 조회

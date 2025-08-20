@@ -152,7 +152,7 @@ export class UserController {
   @Patch(':userId')
   async update(
     @Param('userId') userId: number,
-    @Body(ValidateUsernamePipe) dto: UpdateUserDto,
+    @Body() dto: UpdateUserDto,
   ): Promise<User> {
     return await this.userService.update(userId, dto);
   }
