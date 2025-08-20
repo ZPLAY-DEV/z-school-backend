@@ -62,13 +62,6 @@ export function generateSchooldays(
   group: Group,
   offdays: string[] = [],
 ): Schoolday[] {
-  console.log(`🔍 [DEBUG] generateSchooldays called with:`, {
-    lessonId: lesson.id,
-    lessonName: lesson.lessonName,
-    groupId: group.id,
-    groupName: group.groupName,
-  });
-
   const calendarDays: ICalendarDay[] = calculateLessonDays(
     lesson,
     group,
@@ -85,8 +78,12 @@ export function generateSchooldays(
       const [endDateStr, endTimeStr] = day.end.split(' ');
       const today = startDateStr;
 
+      // local 시간을 UTC로 변환
       const startsAt = new Date(`${startDateStr}T${startTimeStr}:00+09:00`);
       const endsAt = new Date(`${endDateStr}T${endTimeStr}:00+09:00`);
+      const startsAtInUtc = toZonedTime(startsAt, 'UTC');
+      const endsAtInUtc = toZonedTime(endsAt, 'UTC');
+
       const duration = differenceInMinutes(endsAt, startsAt);
       const schoolday = {
         schoolId: lesson.schoolId,
@@ -98,19 +95,10 @@ export function generateSchooldays(
         today: today,
         weekday: group.weekday,
         weekNumber: weekNumber++,
-        startsAt: startsAt,
-        endsAt: endsAt,
+        startsAt: startsAtInUtc,
+        endsAt: endsAtInUtc,
         note: null,
       } as unknown as Schoolday;
-
-      console.log(`🔍 [DEBUG] Generated schoolday:`, {
-        schoolId: schoolday.schoolId,
-        termId: schoolday.termId,
-        lessonId: schoolday.lessonId,
-        groupId: schoolday.groupId,
-        name: schoolday.name,
-        today: schoolday.today,
-      });
 
       return schoolday;
     });

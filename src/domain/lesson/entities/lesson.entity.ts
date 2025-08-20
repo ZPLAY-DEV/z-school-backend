@@ -198,7 +198,7 @@ export class Lesson {
   }
 
   get endDate(): Date {
-    return new Date(`${this.end}T09:00:00+09:00`); // UTC +9 시간대로 변환
+    return new Date(`${this.end}T18:00:00+09:00`); // UTC +9 시간대로 변환
   }
 
   //? Constructor ---------------------------------------------------------- ?//

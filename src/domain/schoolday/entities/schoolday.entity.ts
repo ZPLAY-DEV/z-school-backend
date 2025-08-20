@@ -89,14 +89,14 @@ export class Schoolday {
 
   @ApiProperty({
     description: '시작시각 DateTime',
-    example: '2025-05-27T08:00:00+09:00',
+    example: '2025-05-27 08:00:00',
   })
   @Column({ type: 'datetime', nullable: true })
   startsAt: Date;
 
   @ApiProperty({
     description: '종료시각 DateTime',
-    example: '2025-05-27T09:00:00+09:00',
+    example: '2025-05-27 09:00:00',
   })
   @Column({ type: 'datetime', nullable: true })
   endsAt: Date;
