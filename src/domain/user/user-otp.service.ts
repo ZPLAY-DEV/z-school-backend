@@ -52,7 +52,7 @@ export class UserOtpService {
     let otp = '';
     if (phone) {
       // 미리
-      if (phone.startsWith('01094867')) {
+      if (phone.startsWith('0109999')) {
         otp = await this._upsertOtpUsingDb(phone, role, '0000');
       } else {
         otp = await this._upsertOtpUsingDb(phone, role);
@@ -91,7 +91,7 @@ export class UserOtpService {
     }
 
     let otp = '';
-    if (phone.startsWith('01094867')) {
+    if (phone.startsWith('0109999')) {
       otp = await this._upsertOtpUsingDb(phone, role, '0000');
     } else {
       otp = await this._upsertOtpUsingDb(phone, role);
