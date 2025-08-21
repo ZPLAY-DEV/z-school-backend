@@ -196,10 +196,6 @@ export class LessonAttendanceService {
     lessonId: number,
     date: string, // "2025-08"
   ): Promise<ExcelJS.Workbook> {
-    const year = Number(date.split('-')[0]);
-    const month = Number(date.split('-')[1]);
-    const firstDay = `${month}월 1일`;
-    const lastDay = `${month}월 ${lastDayOfMonth(new Date(year, month - 1, 1)).getDate()}일`;
     const workbook = new ExcelJS.Workbook();
 
     // 1. 그룹 정보 조회
@@ -231,7 +227,7 @@ export class LessonAttendanceService {
     const overallComments: string[] = ['특이사항:'];
     let maxColumns = 3; // 기본 컬럼 3개 (순번, 학년·반·번호, 이름)
 
-    // 5. 그룹별 sheet 생성 + 전체 sheet 이어붙이기
+    // 5. 반별 sheet 생성 + 전체 sheet 이어붙이기
     for (const [groupIndex, group] of lesson.groups.entries()) {
       // 월별 수업일 필터링
       const monthSchooldays = group.schooldays
@@ -251,10 +247,7 @@ export class LessonAttendanceService {
         workbook,
         lesson,
         group,
-        year,
-        month,
-        firstDay,
-        lastDay,
+        date,
         monthSchooldays,
         attendanceMap,
       );
@@ -264,46 +257,33 @@ export class LessonAttendanceService {
         overallSheet,
         lesson,
         group,
-        year,
-        month,
         date,
-        firstDay,
-        lastDay,
         monthSchooldays,
         attendanceMap,
-        overallComments,
-        groupIndex,
       );
     }
-
-    // 6. 전체 sheet 마지막에 코멘트 추가
-    const br = overallSheet.addRow(['']);
-    const maxLastCol = String.fromCharCode(65 + maxColumns - 2);
-    overallSheet.mergeCells(`A${br.number}:${maxLastCol}${br.number}`);
-    this.addComments(overallSheet, overallComments);
-
-    // 7. 전체 sheet 컬럼 너비 설정
-    overallSheet.columns.forEach((c) => (c.width = 15));
 
     return workbook;
   }
 
   /**
-   * 개별 그룹 sheet 생성
+   * 각각의 반별 출석부 sheet 생성
    */
   private createGroupSheet(
     workbook: ExcelJS.Workbook,
     lesson: Lesson,
     group: Group,
-    year: number,
-    month: number,
-    firstDay: string,
-    lastDay: string,
+    date: string,
     monthSchooldays: Schoolday[],
     attendanceMap: Map<string, IAttendance>,
   ) {
+    const year = Number(date.split('-')[0]);
+    const month = Number(date.split('-')[1]);
+    const firstDay = `${month}월 1일`;
+    const lastDay = `${month}월 ${lastDayOfMonth(new Date(year, month - 1, 1)).getDate()}일`;
     const sheet = workbook.addWorksheet(group.groupName);
     const lastCol = String.fromCharCode(65 + monthSchooldays.length + 2);
+    const comments: string[] = ['특이사항:'];
 
     // 서명칸
     const col1 = monthSchooldays.length + 1;
@@ -337,19 +317,21 @@ export class LessonAttendanceService {
       });
     });
 
-    const spacerRow = sheet.addRow(['']);
-    sheet.mergeCells(`A${spacerRow.number}:${lastCol}${spacerRow.number}`);
+    // breathing row #1
+    const br1 = sheet.addRow(['']);
+    sheet.mergeCells(`A${br1.number}:${lastCol}${br1.number}`);
 
     // 타이틀
     const titleRow = sheet.addRow([
-      `ㅋㅋㅋ${year}년 ${month}월 ${lesson.lessonName} - ${group.groupName}`,
+      `${year}년 ${month}월 ${lesson.lessonName} - ${group.groupName}`,
     ]);
     titleRow.font = { bold: true, size: 16 };
     titleRow.alignment = { horizontal: 'center' };
-
     sheet.mergeCells(`A${titleRow.number}:${lastCol}${titleRow.number}`);
-    const emptyRow1 = sheet.addRow(['']);
-    sheet.mergeCells(`A${emptyRow1.number}:${lastCol}${emptyRow1.number}`);
+
+    // breathing row #2
+    const br2 = sheet.addRow(['']);
+    sheet.mergeCells(`A${br2.number}:${lastCol}${br2.number}`);
 
     // 수업기간 정보
     const infoRow = sheet.addRow([]);
@@ -359,8 +341,10 @@ export class LessonAttendanceService {
     infoRow.getCell(2).value =
       `⏰ ${group.weekday} ${group.start} ~ ${group.end}`;
     infoRow.getCell(3).value = `📆 ${firstDay} ~ ${lastDay}`;
-    const emptyRow2 = sheet.addRow(['']);
-    sheet.mergeCells(`A${emptyRow2.number}:${lastCol}${emptyRow2.number}`);
+
+    // breathing row #3
+    const br3 = sheet.addRow(['']);
+    sheet.mergeCells(`A${br3.number}:${lastCol}${br3.number}`);
 
     // 헤더
     const headerRow = ['순번', '학년·반·번호', '이름'];
@@ -388,6 +372,18 @@ export class LessonAttendanceService {
         `${student.grade}학년 ${student.class}반 ${student.studentCode}번`,
         student.name,
       ];
+
+      if (pick.startedBy && pick.start.toString().startsWith(date)) {
+        comments.push(
+          `${pick.student.name} 학생 ${pick.start} 등록 (${translateActor(pick.startedBy)})`,
+        );
+      }
+      if (pick.endedBy && pick.end.toString().startsWith(date)) {
+        comments.push(
+          `${pick.student.name} 학생 ${pick.end} 취소 (${translateActor(pick.endedBy)})`,
+        );
+      }
+
       monthSchooldays.forEach((schoolday) => {
         const key = `${schoolday.today}_${student.id}`;
         const attendance = attendanceMap.get(key);
@@ -424,33 +420,68 @@ export class LessonAttendanceService {
 
     // 열 너비 고정
     sheet.columns.forEach((c) => (c.width = 15));
-    sheet.addRow(['']);
-    sheet.mergeCells(`A${sheet.rowCount}:${lastCol}${sheet.rowCount}`);
+
+    // breathing row #4
+    const br4 = sheet.addRow(['']);
+    sheet.mergeCells(`A${br4.number}:${lastCol}${br4.number}`);
+
+    // 코멘트
+    this.addComments(sheet, comments);
   }
 
   /**
-   * 전체 sheet 에 그룹별 출석부 이어붙이기
+   * 전체 출석부 sheet 생성
    */
   private appendGroupToOverallSheet(
     sheet: ExcelJS.Worksheet,
     lesson: Lesson,
     group: Group,
-    year: number,
-    month: number,
     date: string,
-    firstDay: string,
-    lastDay: string,
-    monthSchooldays: any[],
+    monthSchooldays: Schoolday[],
     attendanceMap: Map<string, IAttendance>,
-    overallComments: string[],
-    groupIndex: number,
   ) {
+    const year = Number(date.split('-')[0]);
+    const month = Number(date.split('-')[1]);
+    const firstDay = `${month}월 1일`;
+    const lastDay = `${month}월 ${lastDayOfMonth(new Date(year, month - 1, 1)).getDate()}일`;
     const lastCol = String.fromCharCode(65 + monthSchooldays.length + 2);
+    const comments: string[] = ['특이사항:'];
 
-    if (groupIndex > 0) {
-      const br = sheet.addRow(['']);
-      sheet.mergeCells(`A${br.number}:${lastCol}${br.number}`);
-    }
+    // 서명칸
+    const col1 = monthSchooldays.length + 1;
+    const col2 = monthSchooldays.length + 2;
+    const col3 = monthSchooldays.length + 3;
+    const row5 = sheet.addRow([]);
+    [col1, col2, col3].forEach((c, i) => {
+      const names = ['강사', '담당', '실장'];
+      const cell = row5.getCell(c);
+      cell.value = names[i];
+      cell.alignment = { horizontal: 'center' };
+      cell.font = { bold: true };
+    });
+    const row6 = sheet.addRow([]);
+    const row7 = sheet.addRow([]);
+    [col1, col2, col3].forEach((c) => {
+      sheet.mergeCells(
+        `${String.fromCharCode(65 + c - 1)}${row6.number}:${String.fromCharCode(
+          65 + c - 1,
+        )}${row7.number}`,
+      );
+    });
+    [row5, row6, row7].forEach((r) => {
+      [col1, col2, col3].forEach((c) => {
+        r.getCell(c).border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+    });
+
+    // breathing row #1
+    const br1 = sheet.addRow(['']);
+    sheet.mergeCells(`A${br1.number}:${lastCol}${br1.number}`);
 
     // 타이틀
     const titleRow = sheet.addRow([
@@ -460,9 +491,9 @@ export class LessonAttendanceService {
     titleRow.alignment = { horizontal: 'center' };
     sheet.mergeCells(`A${titleRow.number}:${lastCol}${titleRow.number}`);
 
-    // 빈 줄 추가
-    const emptyRow = sheet.addRow(['']);
-    sheet.mergeCells(`A${emptyRow.number}:${lastCol}${emptyRow.number}`);
+    // breathing row #2
+    const br2 = sheet.addRow(['']);
+    sheet.mergeCells(`A${br2.number}:${lastCol}${br2.number}`);
 
     // 수업기간 정보
     const infoRow = sheet.addRow([]);
@@ -473,14 +504,14 @@ export class LessonAttendanceService {
       `⏰ ${group.weekday} ${group.start} ~ ${group.end}`;
     infoRow.getCell(3).value = `📆 ${firstDay} ~ ${lastDay}`;
 
-    // 빈 줄 추가
-    const br2 = sheet.addRow(['']);
-    sheet.mergeCells(`A${br2.number}:${lastCol}${br2.number}`);
+    // breathing row #3
+    const br3 = sheet.addRow(['']);
+    sheet.mergeCells(`A${br3.number}:${lastCol}${br3.number}`);
 
     // 헤더
     const headerRow = ['순번', '학년·반·번호', '이름'];
     monthSchooldays.forEach((schoolday) => {
-      const d = new Date(schoolday.today as string);
+      const d = new Date(schoolday.today);
       headerRow.push(`${month}월 ${d.getDate()}일 (${schoolday.weekday})`);
     });
     const headerRowObj = sheet.addRow(headerRow);
@@ -495,7 +526,7 @@ export class LessonAttendanceService {
       };
     });
 
-    // 학생별
+    // 학생별 출석
     group.picks.forEach((pick: Pick, index: number) => {
       const student = pick.student;
       const rowData = [
@@ -503,16 +534,18 @@ export class LessonAttendanceService {
         `${student.grade}학년 ${student.class}반 ${student.studentCode}번`,
         student.name,
       ];
+
       if (pick.startedBy && pick.start.toString().startsWith(date)) {
-        overallComments.push(
+        comments.push(
           `${pick.student.name} 학생 ${pick.start} 등록 (${translateActor(pick.startedBy)})`,
         );
       }
       if (pick.endedBy && pick.end.toString().startsWith(date)) {
-        overallComments.push(
+        comments.push(
           `${pick.student.name} 학생 ${pick.end} 취소 (${translateActor(pick.endedBy)})`,
         );
       }
+
       monthSchooldays.forEach((schoolday) => {
         const key = `${schoolday.today}_${student.id}`;
         const attendance = attendanceMap.get(key);
@@ -546,6 +579,15 @@ export class LessonAttendanceService {
         this.styleAttendanceCell(cell, colNumber),
       );
     });
+
+    // 열 너비 고정
+    sheet.columns.forEach((c) => (c.width = 15));
+    // breathing row #4
+    const br4 = sheet.addRow(['']);
+    sheet.mergeCells(`A${br4.number}:${lastCol}${br4.number}`);
+
+    // 코멘트
+    this.addComments(sheet, comments);
   }
 
   /**
