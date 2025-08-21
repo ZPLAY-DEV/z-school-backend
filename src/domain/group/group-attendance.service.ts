@@ -344,6 +344,7 @@ export class GroupAttendanceService {
     date: string, //! e.g. "2025-06-08" <- 하이픈 반드시 포함
     dto: CreateAttendanceWithGroupStudentDto,
   ): Promise<IAttendance> {
+    // 1) 관계 데이터 로드
     const group = await this.groupRepository.findOneOrFail({
       where: { id: dto.groupId },
       relations: ['lesson', 'schooldays'],
@@ -371,17 +372,8 @@ export class GroupAttendanceService {
       dailyStudentKey,
     };
 
-    // 기존 항목 조회
-    let existing: IAttendance | null = null;
-    try {
-      existing = await this.model.get(itemKey);
-    } catch (err) {
-      console.warn(`[dynamoose] get 실패:`, err);
-      existing = null;
-    }
-
-    const newData: Partial<IAttendance> = {
-      ...existing,
+    // ✅ upsert용 데이터 준비 (기존 조회 불필요)
+    const upsertData: Partial<IAttendance> = {
       ...filterNoSql(dto), // status, parentNote, schoolNote
       lessonId: group.lessonId,
       lessonName: group.lesson.lessonName,
@@ -393,48 +385,58 @@ export class GroupAttendanceService {
       end: group.end,
       weekday: group.weekday,
       expires,
-      ...(typeof dto.parentNote === 'string' &&
-        dto.parentNote !== existing?.parentNote && {
-          parentNotedAt: new Date(),
-        }),
-
-      // ...(typeof dto.schoolNote === 'string' &&
-      //   dto.schoolNote !== existing?.schoolNote && {
-      //     schoolNotedAt: new Date(),
-      //   }),
     };
 
+    // parentNote가 업데이트되는 경우에만 parentNotedAt 설정
+    if (typeof dto.parentNote === 'string') {
+      upsertData.parentNotedAt = new Date();
+    }
+
+    // schoolNote가 업데이트되는 경우에만 schoolNotedAt 설정 (주석 해제시)
+    // if (typeof dto.schoolNote === 'string') {
+    //   upsertData.schoolNotedAt = new Date();
+    // }
+
     try {
+      // ✅ 개선된 upsert: update 먼저 시도, 실패하면 create
       let result: IAttendance;
 
-      if (existing) {
-        const {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          groupKey,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          dailyStudentKey,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          updatedAt,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          createdAt,
-          ...updateFields
-        } = newData;
-        result = await this.model.update(itemKey, updateFields);
-      } else {
-        // ✅ 없으면 create (완전 생성)
-        result = await this.model.create({
-          ...itemKey,
-          ...newData,
-        });
+      try {
+        // 1차 시도: update (기존 아이템 업데이트)
+        result = await this.model.update(itemKey, upsertData);
+      } catch (updateError: any) {
+        // update 실패시 (아이템이 없거나 다른 이유) create 시도
+        if (
+          updateError.message?.includes('no item found') ||
+          updateError.name === 'ValidationException'
+        ) {
+          result = await this.model.create({
+            ...itemKey,
+            ...upsertData,
+          });
+        } else {
+          throw updateError;
+        }
       }
 
       // forgot to update schoolday.dailyStudentKeys
       await this.updateSchooldayDailyStudentKeys(schoolday, dailyStudentKey);
 
       return result;
-    } catch (err) {
+    } catch (err: any) {
       console.error(`[dynamoose v4] upsert error`, err);
-      throw new BadRequestException(err.message);
+
+      // DynamoDB 특화 에러 처리
+      if (err.name === 'ConditionalCheckFailedException') {
+        throw new BadRequestException(
+          '출석 데이터 업데이트 조건이 맞지 않습니다.',
+        );
+      }
+      if (err.name === 'ValidationException') {
+        throw new BadRequestException(`데이터 검증 실패: ${err.message}`);
+      }
+
+      throw new BadRequestException(`출석 데이터 upsert 실패: ${err.message}`);
     }
   }
 

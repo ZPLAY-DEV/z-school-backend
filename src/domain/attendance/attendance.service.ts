@@ -290,16 +290,8 @@ export class AttendanceService {
       addDays(schoolday.startsAt, 400).getTime() / 1000,
     );
 
-    // 기존 항목 조회
-    let existing: IAttendance | null = null;
-    try {
-      existing = await this.model.get(itemKey);
-    } catch (err) {
-      console.warn(`[dynamoose] get 실패:`, err);
-      existing = null;
-    }
-
-    const newData = {
+    // ✅ upsert용 데이터 준비 (기존 조회 불필요)
+    const upsertData = {
       ...rest,
       lessonId: group.lesson.id,
       lessonName: group.lesson.lessonName,
@@ -313,38 +305,51 @@ export class AttendanceService {
       expires,
     };
 
-    if (
-      rest.parentNote !== undefined &&
-      rest.parentNote !== existing?.parentNote
-    ) {
-      newData.parentNotedAt = new Date();
+    // parentNote가 업데이트되는 경우에만 parentNotedAt 설정
+    if (rest.parentNote !== undefined) {
+      upsertData.parentNotedAt = new Date();
     }
 
-    if (
-      rest.schoolNote !== undefined &&
-      rest.schoolNote !== existing?.schoolNote
-    ) {
-      newData.schoolNotedAt = new Date();
+    // schoolNote가 업데이트되는 경우에만 schoolNotedAt 설정
+    if (rest.schoolNote !== undefined) {
+      upsertData.schoolNotedAt = new Date();
     }
 
     try {
+      // ✅ 개선된 upsert: update 먼저 시도, 실패하면 create
       let result: IAttendance;
-
-      if (existing) {
-        // ✅ 존재하면 update (부분 갱신)
-        result = await this.model.update(itemKey, newData);
-      } else {
-        // ✅ 없으면 create (완전 생성)
-        result = await this.model.create({
-          ...itemKey,
-          ...newData,
-        });
+      
+      try {
+        // 1차 시도: update (기존 아이템 업데이트)
+        result = await this.model.update(itemKey, upsertData);
+      } catch (updateError: any) {
+        // update 실패시 (아이템이 없거나 다른 이유) create 시도
+        if (
+          updateError.message?.includes('no item found') ||
+          updateError.name === 'ValidationException'
+        ) {
+          result = await this.model.create({
+            ...itemKey,
+            ...upsertData,
+          });
+        } else {
+          throw updateError;
+        }
       }
 
       return result;
-    } catch (err) {
+    } catch (err: any) {
       console.error(`[dynamoose v4] upsert error`, err);
-      throw new BadRequestException(err.message);
+      
+      // DynamoDB 특화 에러 처리
+      if (err.name === 'ConditionalCheckFailedException') {
+        throw new BadRequestException('출석 데이터 업데이트 조건이 맞지 않습니다.');
+      }
+      if (err.name === 'ValidationException') {
+        throw new BadRequestException(`데이터 검증 실패: ${err.message}`);
+      }
+      
+      throw new BadRequestException(`출석 데이터 upsert 실패: ${err.message}`);
     }
   }
 
