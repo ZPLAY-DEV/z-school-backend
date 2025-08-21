@@ -19,6 +19,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { StudentService } from 'src/domain/student/student.service';
@@ -100,10 +101,18 @@ export class StudentController {
   @Get(':id/schooldays')
   async getSchooldaysByDate(
     @Param('id') id: number,
-    @Query('termId') termId?: number,
-    @Query('date') date?: string,
+    @Query('date') date: string,
+  ): Promise<SchooldayWithAttendanceDto[]> {
+    return await this.studentService.getSchooldaysByDate(id, date);
+  }
+
+  @FindStudentSchooldaysDocs()
+  @Get(':id/all-schooldays')
+  async getAllSchooldaysByTermId(
+    @Param('id') id: number,
+    @Query('termId') termId: number,
   ): Promise<Schoolday[]> {
-    return await this.studentService.getSchooldaysByDate(id, termId, date);
+    return await this.studentService.getAllSchooldaysByTermId(id, termId);
   }
 
   //! @deprecated

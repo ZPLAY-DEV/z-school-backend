@@ -1,35 +1,36 @@
 import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-  UseInterceptors,
+    Body,
+    ClassSerializerInterceptor,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
+    Query,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { BulkUpdateSamsDto } from 'src/domain/sam/dto/bulk-update-sams.dto';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
+import { SchooldayWithAttendanceDto } from 'src/domain/sam/dto/schoolday-with-attendance.dto';
 import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { GroupWithPicksCount, Sam } from 'src/domain/sam/entities/sam.entity';
 import { SamService } from 'src/domain/sam/sam.service';
 import {
-  BulkUpdateSamsDocs,
-  CreateSamDocs,
-  GetAllSchooldaysDocs,
-  GetSamByIdDocs,
-  GetSamGroupsDocs,
-  GetSchooldaysByDateDocs,
-  SamDryRunDocs,
-  SoftDeleteSamDocs,
-  UpdateSamDocs,
+    BulkUpdateSamsDocs,
+    CreateSamDocs,
+    GetAllSchooldaysDocs,
+    GetSamByIdDocs,
+    GetSamGroupsDocs,
+    GetSchooldaysByDateDocs,
+    SamDryRunDocs,
+    SoftDeleteSamDocs,
+    UpdateSamDocs,
 } from 'src/domain/sam/swagger/sam.swagger.decorator';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 
@@ -86,7 +87,7 @@ export class SamController {
   async getSchooldaysByDate(
     @Param('id', ParseIntPipe) id: number,
     @Query('date') date: string,
-  ): Promise<Schoolday[]> {
+  ): Promise<SchooldayWithAttendanceDto[]> {
     return await this.samService.getSchooldaysByDate(id, date);
   }
 

@@ -4,7 +4,7 @@ import { Student } from 'src/domain/student/entities/student.entity';
 
 export interface IAttendanceKey {
   groupKey: string; // partition key, e.g. "GROUP#1"
-  dailyStudentKey: string; // sort key, e.g. "DATE#2025-05-01#STUDENT#1학년1반-10"
+  dailyStudentKey: string; // sort key, e.g. "DATE#2025-05-01#STUDENT#1-1-1"
 }
 
 export interface IAttendanceCore extends IAttendanceKey {

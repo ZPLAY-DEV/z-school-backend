@@ -230,6 +230,35 @@ export class AttendanceService {
     }
   }
 
+  /**
+   * Fetch attendance records by IAttendanceKey array (most optimized for <25 items)
+   * @param keys - Array of IAttendanceKey objects
+   * @returns Array of attendance records
+   */
+  async fetchByAttendanceKeys(keys: IAttendanceKey[]): Promise<IAttendance[]> {
+    try {
+      if (keys.length === 0) {
+        return [];
+      }
+
+      // 25개 미만이므로 한 번의 batchGet으로 충분
+      const batchResults = await this.model.batchGet(keys);
+
+      // 결과 필터링 및 반환
+      const results: IAttendance[] = [];
+      for (const item of batchResults) {
+        if (item) {
+          results.push(item as IAttendance);
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.error(`[dynamodb] fetchByAttendanceKeys error:`, error);
+      throw new BadRequestException(error.message);
+    }
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//

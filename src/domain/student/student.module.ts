@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DynamooseModule } from 'nestjs-dynamoose';
+import { AttendanceSchema } from 'src/domain/attendance/entities/attendance.schema';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -14,6 +16,15 @@ import { StudentService } from './student.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Parent, Student, Pick, Booking, Group, Term]),
+    DynamooseModule.forFeature([
+      {
+        name: 'Attendance',
+        schema: AttendanceSchema,
+        options: {
+          tableName: 'attendance', // e.g. dev_attendance_table
+        },
+      },
+    ]),
     UploadModule,
     S3Module,
   ],

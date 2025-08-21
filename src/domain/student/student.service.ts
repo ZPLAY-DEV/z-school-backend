@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   Logger,
@@ -14,10 +15,21 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import {
+  generateDailyStudentKey,
+  generateGroupKey,
+} from 'src/domain/attendance/utils/attendance.utils';
+import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import { S3Service } from 'src/services/aws/s3.service';
 
+import { InjectModel, Model } from 'nestjs-dynamoose';
+import { AttendanceStatus } from 'src/common/enums';
+import {
+  IAttendance,
+  IAttendanceKey,
+} from 'src/domain/attendance/entities/attendance.interface';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
@@ -44,6 +56,8 @@ export class StudentService {
     private readonly bookingRepository: Repository<Booking>,
     @InjectRepository(Term)
     private readonly termRepository: Repository<Term>,
+    @InjectModel('Attendance')
+    private readonly model: Model<IAttendance, IAttendanceKey>,
     private readonly s3Service: S3Service,
     private readonly dataSource: DataSource,
   ) {}
@@ -278,55 +292,110 @@ export class StudentService {
     return student;
   }
 
-  //? 학생의 수업일 조회
+  //? 학생의 수업일 조회 (SQL 레벨 최적화)
   async getSchooldaysByDate(
     id: number,
-    termId?: number,
-    date?: string,
-  ): Promise<Schoolday[]> {
+    date: string,
+  ): Promise<SchooldayWithAttendanceDto[]> {
     const student = await this.studentRepository.findOneOrFail({
       where: { id },
-      relations: [
-        'picks',
-        'picks.group',
-        'picks.group.schooldays',
-        'picks.group.schooldays.departures',
-      ],
     });
 
-    // Student 의 모든 picks의 groups에서 schooldays를 수집
-    const allSchooldays: Schoolday[] = [];
+    // QueryBuilder를 사용해서 SQL 레벨에서 필터링
+    const queryBuilder = this.dataSource
+      .createQueryBuilder(Schoolday, 'schoolday')
+      .leftJoinAndSelect('schoolday.group', 'group')
+      .leftJoinAndSelect('schoolday.departures', 'departures')
+      .leftJoin('group.picks', 'pick')
+      .where('pick.studentId = :studentId', { studentId: id })
+      .andWhere('pick.endedBy IS NULL')
+      .andWhere('(schoolday.today = :date OR schoolday.original = :date)', {
+        date,
+      });
 
-    if (!student.picks) {
-      return [];
-    }
+    const schooldays = await queryBuilder.getMany();
+    const attendanceKeys: IAttendanceKey[] = schooldays.map((v) => {
+      const groupKey = generateGroupKey(v.groupId);
+      const dailyStudentKey = generateDailyStudentKey(
+        v.today,
+        student.id,
+        student.grade,
+        student.class,
+        student.studentCode,
+      );
+      return {
+        groupKey,
+        dailyStudentKey,
+      };
+    });
+    const attendances = await this.fetchByAttendanceKeys(attendanceKeys);
 
-    for (const pick of student.picks) {
-      if (termId && pick.termId !== Number(termId)) {
-        continue;
+    // attendances를 dailyStudentKey로 매핑
+    const attendanceMap = new Map<string, IAttendance>();
+    attendances.forEach((attendance) => {
+      attendanceMap.set(attendance.dailyStudentKey, attendance);
+    });
+
+    return schooldays.map((schoolday): SchooldayWithAttendanceDto => {
+      const dailyStudentKey = generateDailyStudentKey(
+        schoolday.today,
+        student.id,
+        student.grade,
+        student.class,
+        student.studentCode,
+      );
+      const attendance = attendanceMap.get(dailyStudentKey);
+
+      return {
+        id: schoolday.id,
+        startsAt: schoolday.startsAt,
+        endsAt: schoolday.endsAt,
+        today: schoolday.today,
+        original: schoolday.original,
+        groupId: schoolday.groupId,
+        schoolId: schoolday.schoolId,
+        termId: schoolday.termId,
+        createdAt: schoolday.createdAt,
+        updatedAt: schoolday.updatedAt,
+        group: schoolday.group,
+        departures: schoolday.departures,
+        status: attendance?.status || AttendanceStatus.INIT,
+        parentNote: attendance?.parentNote || null,
+      };
+    });
+  }
+
+  //? 학생의 수업일 조회 (SQL 레벨 최적화)
+  async getAllSchooldaysByTermId(
+    id: number,
+    termId: number,
+  ): Promise<Schoolday[]> {
+    // QueryBuilder를 사용해서 SQL 레벨에서 필터링
+    const queryBuilder = this.dataSource
+      .createQueryBuilder(Schoolday, 'schoolday')
+      .leftJoinAndSelect('schoolday.group', 'group')
+      .leftJoinAndSelect('schoolday.departures', 'departures')
+      .leftJoin('group.picks', 'pick')
+      .where('pick.studentId = :studentId', { studentId: id })
+      .andWhere('pick.endedBy IS NULL')
+      .andWhere('pick.termId = :termId', {
+        termId: Number(termId),
+      });
+
+    const schooldays = await queryBuilder.getMany();
+
+    // 순환 참조 방지를 위해 group에서 schooldays 제거
+    return schooldays.map((schoolday) => {
+      if (schoolday.group) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { schooldays: _, ...groupWithoutSchooldays } = schoolday.group;
+        return {
+          ...schoolday,
+          group: groupWithoutSchooldays as any, // 타입 단언으로 순환 참조 방지
+        };
       }
-
-      if (pick.group && pick.group.schooldays) {
-        const schooldaysWithGroup = pick.group.schooldays
-          .filter((schoolday) => {
-            if (!date) {
-              return true;
-            }
-            return schoolday.today === date || schoolday.original === date;
-          })
-          .map((schoolday) => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { schooldays: _, ...groupWithoutSchooldays } = pick.group;
-            return {
-              ...schoolday,
-              group: groupWithoutSchooldays as any, // 타입 단언으로 순환 참조 방지
-            };
-          });
-        allSchooldays.push(...schooldaysWithGroup);
-      }
-    }
-
-    return allSchooldays;
+      return schoolday;
+    });
   }
 
   //? 학생의 수강 신청 내역 조회
@@ -629,6 +698,32 @@ export class StudentService {
             `${dto.place}|${dto.name || ''}|${normalizePhone(dto.phone || '') || ''}`,
         )
         .join(',');
+    }
+  }
+
+  private async fetchByAttendanceKeys(
+    keys: IAttendanceKey[],
+  ): Promise<IAttendance[]> {
+    try {
+      if (keys.length === 0) {
+        return [];
+      }
+
+      // 25개 미만이므로 한 번의 batchGet으로 충분
+      const batchResults = await this.model.batchGet(keys);
+
+      // 결과 필터링 및 반환
+      const results: IAttendance[] = [];
+      for (const item of batchResults) {
+        if (item) {
+          results.push(item as IAttendance);
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.error(`[dynamodb] fetchByAttendanceKeys error:`, error);
+      throw new BadRequestException(error.message);
     }
   }
 }
