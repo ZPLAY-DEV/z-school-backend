@@ -241,7 +241,7 @@ export class SamService {
       const groupIds = groups.map((group) => group.id);
       const today = formatInTimeZone(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
 
-      // 한 번의 쿼리로 모든 그룹의 picks 수를 가져옴
+      // 한 번의 쿼리로 모든 그룹의 picks 수를 가져옴. today 는 로컬타임이므로 이를 UTC로 변환하여 비교
       const picksCounts = await this.groupRepository
         .createQueryBuilder('group')
         .leftJoin('group.picks', 'pick')
@@ -251,7 +251,7 @@ export class SamService {
         .andWhere(
           '(pick.startedBy IS NULL AND pick.endedBy IS NULL) OR ' +
             '(pick.startedBy IS NOT NULL AND pick.endedBy IS NOT NULL AND ' +
-            ':today BETWEEN pick.start AND pick.end)',
+            'CONVERT_TZ(:today, "Asia/Seoul", "UTC") BETWEEN pick.start AND pick.end)',
           { today },
         )
         .groupBy('group.id')

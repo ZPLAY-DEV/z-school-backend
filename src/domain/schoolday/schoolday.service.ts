@@ -126,8 +126,8 @@ export class SchooldayService {
   }
 
   async getToday(schoolId: number, termId: number): Promise<Schoolday[]> {
-    const kstDate = toZonedTime(new Date(), 'Asia/Seoul').toISOString();
-    const today = kstDate.split('T')[0];
+    const localDate = toZonedTime(new Date(), 'Asia/Seoul');
+    const today = localDate.toISOString().split('T')[0];
 
     return await this.schooldayRepository
       .createQueryBuilder('schoolday')

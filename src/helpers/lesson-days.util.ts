@@ -18,7 +18,6 @@ export function calculateLessonDays(
   group: Group,
   offdays: string[] = [],
 ): ICalendarDay[] {
-  const timeZone = 'Asia/Seoul';
   const calendarDays: ICalendarDay[] = [];
 
   // lesson.start와 lesson.end가 없으면 term.start와 term.end를 사용
@@ -43,12 +42,15 @@ export function calculateLessonDays(
       const startTime = new Date(date);
       startTime.setHours(startHour, startMinute, 0, 0);
       const start = format(
-        toZonedTime(startTime, timeZone),
+        toZonedTime(startTime, 'Asia/Seoul'),
         'yyyy-MM-dd HH:mm',
       );
       const endTime = new Date(date);
       endTime.setHours(endHour, endMinute, 0, 0);
-      const end = format(toZonedTime(endTime, timeZone), 'yyyy-MM-dd HH:mm');
+      const end = format(
+        toZonedTime(endTime, 'Asia/Seoul'),
+        'yyyy-MM-dd HH:mm',
+      );
       const isClassDay = offdays.includes(start.split(' ')[0]) ? false : true;
       calendarDays.push({ start, end, isClassDay });
     }
