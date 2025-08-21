@@ -296,6 +296,7 @@ export class StudentService {
   async getSchooldaysByDate(
     id: number,
     date: string,
+    termId?: number,
   ): Promise<SchooldayWithAttendanceDto[]> {
     const student = await this.studentRepository.findOneOrFail({
       where: { id },
@@ -312,6 +313,10 @@ export class StudentService {
       .andWhere('(schoolday.today = :date OR schoolday.original = :date)', {
         date,
       });
+
+    if (termId) {
+      queryBuilder.andWhere('schoolday.termId = :termId', { termId });
+    }
 
     const schooldays = await queryBuilder.getMany();
     const attendanceKeys: IAttendanceKey[] = schooldays.map((v) => {

@@ -294,25 +294,24 @@ export class SamService {
   }
 
   //? SAM과 직접 관련된 그룹들의 schooldays만 조회 (SQL 레벨 최적화)
-  async getSchooldaysByDate(id: number, date: string): Promise<Schoolday[]> {
+  async getSchooldaysByDate(
+    id: number,
+    date: string,
+    termId?: number,
+  ): Promise<Schoolday[]> {
     // SQL 레벨에서 필터링하여 필요한 데이터만 조회
-    const schooldays = await this.dataSource
+    const queryBuilder = this.dataSource
       .createQueryBuilder(Schoolday, 'schoolday')
       .leftJoinAndSelect('schoolday.group', 'group')
       .leftJoinAndSelect('schoolday.departures', 'departures')
       .where('group.samId = :samId', { samId: id })
-      .andWhere('schoolday.today = :date', { date })
-      .getMany();
+      .andWhere('schoolday.today = :date', { date });
 
-    // 순환 참조 방지
-    return schooldays.map((schoolday) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { schooldays: _, ...groupWithoutSchooldays } = schoolday.group;
-      return {
-        ...schoolday,
-        group: groupWithoutSchooldays as any, // 타입 단언으로 순환 참조 방지
-      };
-    });
+    if (termId) {
+      queryBuilder.andWhere('schoolday.termId = :termId', { termId });
+    }
+
+    return await queryBuilder.getMany();
   }
 
   //? ---------------------------------------------------------------------- ?//

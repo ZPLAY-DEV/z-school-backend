@@ -102,8 +102,9 @@ export class StudentController {
   async getSchooldaysByDate(
     @Param('id') id: number,
     @Query('date') date: string,
+    @Query('termId') termId?: number,
   ): Promise<SchooldayWithAttendanceDto[]> {
-    return await this.studentService.getSchooldaysByDate(id, date);
+    return await this.studentService.getSchooldaysByDate(id, date, termId);
   }
 
   @FindStudentSchooldaysDocs()
