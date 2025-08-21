@@ -26,6 +26,12 @@ export function getDateFromDailyStudentKey(dailyStudentKey: string): string {
   return dailyStudentKey.split('#')[1];
 }
 
+export function getDatePrefixFromDailyStudentKey(
+  dailyStudentKey: string,
+): string {
+  return `DATE#${dailyStudentKey.split('#')[1]}`;
+}
+
 export function getStudentIdFromDailyStudentKey(
   dailyStudentKey: string,
 ): number {

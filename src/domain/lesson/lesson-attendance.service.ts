@@ -224,11 +224,10 @@ export class LessonAttendanceService {
 
     // 4. 전체 sheet 준비
     const overallSheet = workbook.addWorksheet('전체');
-    const overallComments: string[] = ['특이사항:'];
     let maxColumns = 3; // 기본 컬럼 3개 (순번, 학년·반·번호, 이름)
 
     // 5. 반별 sheet 생성 + 전체 sheet 이어붙이기
-    for (const [groupIndex, group] of lesson.groups.entries()) {
+    for (const group of lesson.groups) {
       // 월별 수업일 필터링
       const monthSchooldays = group.schooldays
         .filter((s) => s.today.startsWith(date))

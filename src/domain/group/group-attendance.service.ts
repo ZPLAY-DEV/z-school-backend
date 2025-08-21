@@ -4,7 +4,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { addDays, getDay, lastDayOfMonth, parse } from 'date-fns';
+import {
+  addDays,
+  endOfMonth,
+  getDay,
+  lastDayOfMonth,
+  parse,
+  startOfMonth,
+} from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import * as ExcelJS from 'exceljs';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
@@ -17,7 +25,7 @@ import {
 import {
   IAttendance,
   IAttendanceKey,
-  IAttendanceWithNextStop,
+  IAttendanceWithNextStop
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
@@ -26,6 +34,7 @@ import {
   generateDailyStudentKey,
   generateGroupKey,
   getDateFromDailyStudentKey,
+  getDatePrefixFromDailyStudentKey,
   getGroupIdFromGroupKey,
   getStudentIdFromDailyStudentKey,
   processAttendanceReport,
@@ -949,6 +958,22 @@ export class GroupAttendanceService {
     date: string, //? "2025-08"
     studentId: number,
   ): Promise<IAttendance[]> {
+    const localStart = new Date(`${date}-01T00:00:00+09:00`);
+    const beginningInUtc = toZonedTime(startOfMonth(localStart), 'Asia/Seoul');
+    const endingInUtc = toZonedTime(endOfMonth(localStart), 'Asia/Seoul');
+
+    const queryBuilder = this.schooldayRepository
+      .createQueryBuilder('schoolday')
+      .where('schoolday.groupId = :groupId', { groupId })
+      .andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
+        beginning: beginningInUtc,
+        ending: endingInUtc,
+      });
+    const schooldays = await queryBuilder.getMany();
+    const dateMap = new Map<string, number>(
+      schooldays.map((v) => [`DATE#${v.today}`, v.weekNumber]),
+    );
+
     try {
       // 월별 모든 데이터 조회
       const allItems: IAttendance[] = await fetchAllAttendanceItems(
@@ -957,10 +982,21 @@ export class GroupAttendanceService {
         date,
       );
       // 특정 학생의 데이터만 필터링
-      const filteredItems = allItems.filter(
-        (item) =>
-          getStudentIdFromDailyStudentKey(item.dailyStudentKey) === studentId,
-      );
+      const filteredItems = allItems
+        .filter(
+          (item) =>
+            getStudentIdFromDailyStudentKey(item.dailyStudentKey) === studentId,
+        )
+        .map((v: IAttendance) => {
+          return {
+            ...v,
+            weekNumber: dateMap.get(
+              getDatePrefixFromDailyStudentKey(v.dailyStudentKey),
+            ),
+            dateStr: getDateFromDailyStudentKey(v.dailyStudentKey),
+            // groupKey: generateGroupKey(v.groupKey),
+          };
+        });
 
       return filteredItems;
     } catch (error) {
