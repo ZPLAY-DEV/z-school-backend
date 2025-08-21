@@ -359,6 +359,7 @@ export class StudentService {
         updatedAt: schoolday.updatedAt,
         group: schoolday.group,
         departures: schoolday.departures,
+        // attendance: attendance,
         status: attendance?.status || AttendanceStatus.INIT,
         parentNote: attendance?.parentNote || null,
       };
