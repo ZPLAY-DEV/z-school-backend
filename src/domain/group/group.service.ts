@@ -246,7 +246,7 @@ export class GroupService {
     const queryBuilder = this.pickRepository
       .createQueryBuilder('pick')
       .where('pick.groupId = :groupId', { groupId: id })
-      .andWhere('pick.endedBy IS NULL');
+      .andWhere('pick.isActive = :isActive', { isActive: true });
 
     return await paginate(query, queryBuilder, {
       relations: {
@@ -271,7 +271,7 @@ export class GroupService {
     const queryBuilder = this.pickRepository
       .createQueryBuilder('pick')
       .where('pick.groupId = :groupId', { groupId: id })
-      .andWhere('pick.endedBy IS NOT NULL');
+      .andWhere('pick.isActive = :isActive', { isActive: false });
 
     return await paginate(query, queryBuilder, {
       relations: {
@@ -350,8 +350,8 @@ export class GroupService {
       })
       .andWhere('student.grade IN (:...allowedGrades)', { allowedGrades })
       .andWhere(
-        'student.id NOT IN (SELECT DISTINCT pick.studentId FROM picks pick INNER JOIN `groups` g ON pick.groupId = g.id WHERE g.lessonId = :lessonId AND pick.studentId IS NOT NULL AND pick.endedBy IS NULL)',
-        { lessonId: group.lessonId },
+        'student.id NOT IN (SELECT DISTINCT p.studentId FROM `picks` AS p INNER JOIN `groups` AS g ON p.groupId = g.id WHERE g.lessonId = :lessonId AND p.isActive = :isActive)',
+        { lessonId: group.lessonId, isActive: true },
       );
 
     // 4. nestjs-paginate로 페이지네이션 적용

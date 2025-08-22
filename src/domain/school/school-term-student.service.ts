@@ -172,7 +172,7 @@ export class SchoolTermStudentService {
       .where('student.id = :studentId', { studentId })
       .andWhere('student.schoolId = :schoolId', { schoolId })
       .andWhere('pick.termId = :termId', { termId })
-      .andWhere('pick.endedBy IS NULL');
+      .andWhere('pick.isActive = :isActive', { isActive: true });
 
     const student = await queryBuilder.getOne();
 
@@ -230,7 +230,7 @@ export class SchoolTermStudentService {
         .where('student.id = :studentId', { studentId })
         .andWhere('student.schoolId = :schoolId', { schoolId })
         .andWhere('pick.termId = :termId', { termId })
-        .andWhere('pick.endedBy IS NULL')
+        .andWhere('pick.isActive = :isActive', { isActive: true })
         .getOne();
 
       if (!student) {
@@ -300,7 +300,7 @@ export class SchoolTermStudentService {
       .where('pick.studentId = :studentId', { studentId })
       .andWhere('student.schoolId = :schoolId', { schoolId })
       .andWhere('pick.termId = :termId', { termId })
-      .andWhere('pick.endedBy IS NULL');
+      .andWhere('pick.isActive = :isActive', { isActive: true });
 
     return await queryBuilder.getMany();
   }
@@ -319,7 +319,7 @@ export class SchoolTermStudentService {
       .where('pick.studentId = :studentId', { studentId })
       .andWhere('student.schoolId = :schoolId', { schoolId })
       .andWhere('pick.termId = :termId', { termId })
-      .andWhere('pick.endedBy IS NULL')
+      .andWhere('pick.isActive = :isActive', { isActive: true })
       .getMany();
 
     // 오늘 날짜 기준으로 해당 주의 일요일부터 토요일까지 날짜 계산
@@ -411,7 +411,7 @@ export class SchoolTermStudentService {
       .where('pick.studentId = :studentId', { studentId })
       .andWhere('student.schoolId = :schoolId', { schoolId })
       .andWhere('pick.termId = :termId', { termId })
-      .andWhere('pick.endedBy IS NULL');
+      .andWhere('pick.isActive = :isActive', { isActive: true });
 
     const config: PaginateConfig<Group> = {
       sortableColumns: ['id', 'groupName'],
@@ -436,7 +436,7 @@ export class SchoolTermStudentService {
       .where('pick.studentId = :studentId', { studentId })
       .andWhere('student.schoolId = :schoolId', { schoolId })
       .andWhere('pick.termId = :termId', { termId })
-      .andWhere('pick.endedBy IS NOT NULL');
+      .andWhere('pick.isActive = :isActive', { isActive: false });
 
     return await queryBuilder.getMany();
   }
@@ -455,7 +455,7 @@ export class SchoolTermStudentService {
       .where('pick.studentId = :studentId', { studentId })
       .andWhere('student.schoolId = :schoolId', { schoolId })
       .andWhere('pick.termId = :termId', { termId })
-      .andWhere('pick.endedBy IS NOT NULL');
+      .andWhere('pick.isActive = :isActive', { isActive: false });
 
     const config: PaginateConfig<Group> = {
       sortableColumns: ['id', 'groupName'],

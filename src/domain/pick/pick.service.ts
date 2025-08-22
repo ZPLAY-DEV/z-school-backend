@@ -47,7 +47,7 @@ export class PickService {
   //? ---------------------------------------------------------------------- ?//
 
   // 필수항목) groupId, studentId, start, note (수동으로 등록시)
-  async createPick(
+  async startPick(
     dtos: StartPickDto[],
     role: Actor,
     userId: number,
@@ -116,12 +116,13 @@ export class PickService {
         // 기존 Pick 업데이트
         await this.pickRepository.update(existingPick.id, {
           ...dto,
+          isActive: true,
           termId: termId,
           startedBy: role,
           end: end,
         });
       } else {
-        // 새로운 Pick 생성
+        // 새로운 Pick 생성 (default isActive is true)
         const newPick = this.pickRepository.create({
           ...dto,
           termId: termId,
@@ -206,15 +207,32 @@ export class PickService {
     if (!pick) {
       throw new NotFoundException('pick entity not found');
     }
-    await this.pickRepository.update(pick.id, {
-      note,
-      endedBy,
-      end,
-    });
 
-    pick.note = note ?? null;
+    await this.pickRepository
+      .createQueryBuilder()
+      .update(Pick)
+      .set({
+        isActive: false,
+        endedBy: endedBy ?? Actor.OTHER,
+        end,
+        note: note ?? null,
+        history: () => `JSON_ARRAY_APPEND(
+          COALESCE(history, JSON_ARRAY()),
+          '$',
+          JSON_OBJECT(
+            'event', 'CANCEL',
+            'by', '${endedBy}',
+            'date', '${new Date().toISOString().slice(0, 10)}'
+          )
+        )`,
+      })
+      .where('id = :id', { id: pick.id })
+      .execute();
+
+    pick.isActive = false;
     pick.endedBy = endedBy ?? Actor.OTHER;
     pick.end = end;
+    pick.note = note ?? null;
 
     return pick;
   }

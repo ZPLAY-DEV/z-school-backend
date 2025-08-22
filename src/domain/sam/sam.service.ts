@@ -5,7 +5,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { formatInTimeZone } from 'date-fns-tz';
 import { WeekdayOrder } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
@@ -239,30 +238,21 @@ export class SamService {
     // 각 그룹의 picks 수를 효율적으로 계산
     if (groups.length > 0) {
       const groupIds = groups.map((group) => group.id);
-      const today = formatInTimeZone(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
 
-      // 한 번의 쿼리로 모든 그룹의 picks 수를 가져옴. today 는 로컬타임이므로 이를 UTC로 변환하여 비교
+      // 한 번의 쿼리로 모든 그룹의 active picks 수를 가져옴.
       const picksCounts = await this.groupRepository
         .createQueryBuilder('group')
         .leftJoin('group.picks', 'pick')
         .select('group.id', 'groupId')
         .addSelect('COUNT(pick.id)', 'picksCount')
         .where('group.id IN (:...groupIds)', { groupIds })
-        .andWhere(
-          '(pick.startedBy IS NULL AND pick.endedBy IS NULL) OR ' +
-            '(pick.startedBy IS NOT NULL AND pick.endedBy IS NOT NULL AND ' +
-            'CONVERT_TZ(:today, "Asia/Seoul", "UTC") BETWEEN pick.start AND pick.end)',
-          { today },
-        )
+        .andWhere('pick.isActive = :isActive', { isActive: true })
         .groupBy('group.id')
         .getRawMany();
 
       // picks 수를 그룹에 추가
       const picksCountMap = new Map(
-        picksCounts.map((item) => [
-          item.groupId,
-          parseInt(String(item.picksCount)),
-        ]),
+        picksCounts.map((item) => [item.groupId, Number(item.picksCount)]),
       );
 
       groups = groups.map((group) => ({

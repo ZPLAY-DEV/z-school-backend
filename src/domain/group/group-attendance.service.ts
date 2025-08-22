@@ -85,19 +85,9 @@ export class GroupAttendanceService {
       ],
     });
 
-    // startedBy가 null이 아니라면, start가 date보다 같거나 이전인지 확인
-    // endedBy가 null이 아니라면, end가 date보다 같거나 이후인지 확인
     const allStudents = group.picks
-      .filter((v) => {
-        if (v.startedBy !== null && v.start > date) {
-          return false;
-        }
-        if (v.endedBy !== null && v.end < date) {
-          return false;
-        }
-        return true;
-      })
-      .map((v) => v.student);
+      .filter((v: Pick) => v.isActive)
+      .map((v: Pick) => v.student);
     if (allStudents.length !== dtos.length) {
       throw new BadRequestException(
         'the number of dtos must match with total number of students',
@@ -172,16 +162,8 @@ export class GroupAttendanceService {
     // startedBy가 null이 아니라면, start가 date보다 같거나 이전인지 확인
     // endedBy가 null이 아니라면, end가 date보다 같거나 이후인지 확인
     const allStudents = group.picks
-      .filter((v) => {
-        if (v.startedBy !== null && v.start > date) {
-          return false;
-        }
-        if (v.endedBy !== null && v.end < date) {
-          return false;
-        }
-        return true;
-      })
-      .map((v) => v.student);
+      .filter((v: Pick) => v.isActive)
+      .map((v: Pick) => v.student);
     if (allStudents.length !== dtos.length) {
       throw new BadRequestException(
         'the number of dtos must match with total number of students',
@@ -239,8 +221,6 @@ export class GroupAttendanceService {
       throw new BadRequestException('dtos is empty');
     }
 
-    const date = getDateFromDailyStudentKey(dtos[0].dailyStudentKey);
-
     // 모든 dto의 groupId가 파라미터로 받은 groupId와 일치하는지 validation
     const groupIds = dtos.map((v) => getGroupIdFromGroupKey(v.groupKey));
     const invalidGroupIds = groupIds.filter((id) => id !== groupId);
@@ -265,16 +245,8 @@ export class GroupAttendanceService {
     // startedBy가 null이 아니라면, start가 date보다 같거나 이전인지 확인
     // endedBy가 null이 아니라면, end가 date보다 같거나 이후인지 확인
     const allStudents = group.picks
-      .filter((v) => {
-        if (v.startedBy !== null && v.start > date) {
-          return false;
-        }
-        if (v.endedBy !== null && v.end < date) {
-          return false;
-        }
-        return true;
-      })
-      .map((v) => v.student);
+      .filter((v: Pick) => v.isActive)
+      .map((v: Pick) => v.student);
 
     const studentMessageMap = new Map<number, string>();
     const schoolNoteMap = new Map<number, string>();
@@ -481,24 +453,16 @@ export class GroupAttendanceService {
           relations: ['student', 'group', 'group.lesson'],
         })) || [];
 
-      const filteredPicks = picks.filter((v) => {
-        if (v.startedBy !== null && v.start >= date) {
-          return false;
-        }
-        if (v.endedBy !== null && v.end <= date) {
-          return false;
-        }
-        return true;
-      });
+      const activePicks = picks.filter((v: Pick) => v.isActive);
 
-      if (filteredPicks.length < 1) {
+      if (activePicks.length < 1) {
         return [];
       }
       //const weekday = filteredPicks[0].group.weekday; // 오늘 수업으로부터 요일 추출
 
       // 5. 완전한 출석 목록 생성 (기존 레코드 + 기본 레코드)
-      const completeAttendanceItems: IAttendance[] = filteredPicks.map(
-        (pick) => {
+      const completeAttendanceItems: IAttendance[] = activePicks.map(
+        (pick: Pick) => {
           if (!pick.student) {
             throw new BadRequestException(
               `no student associated with group ${pick.group.id}`,
@@ -533,7 +497,7 @@ export class GroupAttendanceService {
       );
 
       // 6. 학생 ID 추출
-      const studentIds = filteredPicks.map((v) => v.studentId);
+      const studentIds = activePicks.map((v: Pick) => v.studentId);
 
       // 7. 한 번의 쿼리로 모든 학생 정보 조회 (부모 정보 포함)
       const students = await this.studentRepository.find({
@@ -825,12 +789,20 @@ export class GroupAttendanceService {
         `${student.grade}학년 ${student.class}반 ${student.studentCode}번`, // 학년,반,번호
         student.name, // 이름
       ];
-      if (pick.startedBy && pick.start.toString().startsWith(date)) {
+      if (
+        pick.isActive &&
+        pick.startedBy &&
+        pick.start.toString().startsWith(date)
+      ) {
         comments.push(
           `${pick.student.name} 학생 ${pick.start} 등록 (${translateActor(pick.startedBy)})`,
         );
       }
-      if (pick.endedBy && pick.end.toString().startsWith(date)) {
+      if (
+        !pick.isActive &&
+        pick.endedBy &&
+        pick.end.toString().startsWith(date)
+      ) {
         comments.push(
           `${pick.student.name} 학생 ${pick.end} 취소 (${translateActor(pick.endedBy)})`,
         );

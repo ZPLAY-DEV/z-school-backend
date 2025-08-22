@@ -43,7 +43,7 @@ export class PickController {
   @StartPickDocs()
   @HttpCode(200)
   @Post('start')
-  async createPick(
+  async startPick(
     @Body() dtos: StartPickDto[],
     @CurrentUserIdAndRole() user: { id: number; role: string },
   ): Promise<number> {
@@ -53,7 +53,7 @@ export class PickController {
         : user.role === 'INSTRUCTOR'
           ? Actor.INSTRUCTOR
           : Actor.OTHER;
-    return await this.pickService.createPick(dtos, role, user.id);
+    return await this.pickService.startPick(dtos, role, user.id);
   }
 
   @EndPickDocs()

@@ -1,17 +1,17 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiExtraModels,
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    getSchemaPath,
+  ApiBody,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-    ApiOkPaginatedResponse,
-    ApiPaginationQuery,
-    FilterOperator,
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { RemovalStatus } from 'src/common/enums';
@@ -545,7 +545,7 @@ export const ListAvailableStudentsPaginatedDocs = () => {
   - allowedGrades는 쉼표로 구분된 문자열 (예: "1,2,3")
   - 각 학생의 grade 필드와 비교하여 일치하는 학생만 선택
 - **중복 배정 방지**: 해당 수업(lesson)의 모든 반에 이미 소속된 학생 제외
-  - 현재 수강중인 학생(pick.endedBy IS NULL)만 제외
+  - 현재 수강중인 학생(pick.isActive = true)만 제외
   - 과거에 수강했지만 현재는 수강하지 않는 학생은 포함
 - **동일 학교 소속**: 해당 수업의 school에 속한 학생만 대상
 

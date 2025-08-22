@@ -18,6 +18,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+// todo. isActive might be a better option than endedBy as is picks.
+// as long as sam's contract is not changing multiple times, current implementation is fine.
 @Entity('contracts')
 @Unique(['groupId', 'lessonId', 'samId'])
 export class Contract {

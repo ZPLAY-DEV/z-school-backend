@@ -101,58 +101,48 @@ export class LessonAttendanceService {
           relations: ['student', 'group', 'group.lesson'],
         })) || [];
 
-      const filteredPicks = picks.filter((v) => {
-        if (v.startedBy !== null && v.start > date) {
-          return false;
-        }
-        if (v.endedBy !== null && v.end < date) {
-          return false;
-        }
-        return true;
-      });
+      const activePicks = picks.filter((v: Pick) => v.isActive);
 
-      if (filteredPicks.length < 1) {
+      if (activePicks.length < 1) {
         return [];
       }
 
       // 5. 완전한 출석 목록 생성 (기존 레코드 + 기본 레코드)
-      const completeAttendanceItems: IAttendance[] = filteredPicks.map(
-        (pick) => {
-          if (!pick.student) {
-            throw new BadRequestException(
-              `no student associated with group ${pick.group.id}`,
-            );
-          }
-          const dailyStudentKey = generateDailyStudentKey(
-            date,
-            pick.studentId,
-            pick.student.grade,
-            pick.student.class,
-            pick.student.studentCode,
+      const completeAttendanceItems: IAttendance[] = activePicks.map((pick) => {
+        if (!pick.student) {
+          throw new BadRequestException(
+            `no student associated with group ${pick.group.id}`,
           );
+        }
+        const dailyStudentKey = generateDailyStudentKey(
+          date,
+          pick.studentId,
+          pick.student.grade,
+          pick.student.class,
+          pick.student.studentCode,
+        );
 
-          return (
-            itemMap.get(dailyStudentKey) ||
-            ({
-              groupId: pick.group.id,
-              start: pick.group.start,
-              end: pick.group.end,
-              groupKey: generateGroupKey(pick.group.id),
-              lessonId: pick.group.lessonId,
-              lessonName: pick.group.lesson.lessonName,
-              groupName: pick.group.groupName,
-              weekday: pick.group.weekday,
-              studentId: pick.student.id,
-              studentName: pick.student.name,
-              dailyStudentKey: dailyStudentKey,
-              status: AttendanceStatus.NONE,
-            } as IAttendance)
-          );
-        },
-      );
+        return (
+          itemMap.get(dailyStudentKey) ||
+          ({
+            groupId: pick.group.id,
+            start: pick.group.start,
+            end: pick.group.end,
+            groupKey: generateGroupKey(pick.group.id),
+            lessonId: pick.group.lessonId,
+            lessonName: pick.group.lesson.lessonName,
+            groupName: pick.group.groupName,
+            weekday: pick.group.weekday,
+            studentId: pick.student.id,
+            studentName: pick.student.name,
+            dailyStudentKey: dailyStudentKey,
+            status: AttendanceStatus.NONE,
+          } as IAttendance)
+        );
+      });
 
       // 6. 학생 ID 추출
-      const studentIds = filteredPicks.map((v) => v.studentId);
+      const studentIds = activePicks.map((v: Pick) => v.studentId);
 
       // 7. 한 번의 쿼리로 모든 학생 정보 조회 (부모 정보 포함)
       const students = await this.studentRepository.find({
@@ -372,12 +362,20 @@ export class LessonAttendanceService {
         student.name,
       ];
 
-      if (pick.startedBy && pick.start.toString().startsWith(date)) {
+      if (
+        pick.isActive &&
+        pick.startedBy &&
+        pick.start.toString().startsWith(date)
+      ) {
         comments.push(
           `${pick.student.name} 학생 ${pick.start} 등록 (${translateActor(pick.startedBy)})`,
         );
       }
-      if (pick.endedBy && pick.end.toString().startsWith(date)) {
+      if (
+        !pick.isActive &&
+        pick.endedBy &&
+        pick.end.toString().startsWith(date)
+      ) {
         comments.push(
           `${pick.student.name} 학생 ${pick.end} 취소 (${translateActor(pick.endedBy)})`,
         );

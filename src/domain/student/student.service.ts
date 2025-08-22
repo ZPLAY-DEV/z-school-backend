@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { format } from 'date-fns-tz';
+import { InjectModel, Model } from 'nestjs-dynamoose';
 import {
   FilterOperator,
   FilterSuffix,
@@ -15,31 +16,29 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import {
-  generateDailyStudentKey,
-  generateGroupKey,
-} from 'src/domain/attendance/utils/attendance.utils';
-import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
-import { DataSource, EntityManager, Repository } from 'typeorm';
-
-import { S3Service } from 'src/services/aws/s3.service';
-
-import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
 import {
   IAttendance,
   IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
+import {
+  generateDailyStudentKey,
+  generateGroupKey,
+} from 'src/domain/attendance/utils/attendance.utils';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
+import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
 import { DailyNextStopDto } from 'src/domain/student/dto/update-student-next-stop.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { normalizePhone } from 'src/helpers/phone';
+import { S3Service } from 'src/services/aws/s3.service';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 
 @Injectable()
 export class StudentService {
@@ -309,7 +308,7 @@ export class StudentService {
       .leftJoinAndSelect('schoolday.departures', 'departures')
       .leftJoin('group.picks', 'pick')
       .where('pick.studentId = :studentId', { studentId: id })
-      .andWhere('pick.endedBy IS NULL')
+      .andWhere('pick.isActive = :isActive', { isActive: true })
       .andWhere('(schoolday.today = :date OR schoolday.original = :date)', {
         date,
       });
@@ -383,7 +382,7 @@ export class StudentService {
       .leftJoinAndSelect('schoolday.departures', 'departures')
       .leftJoin('group.picks', 'pick')
       .where('pick.studentId = :studentId', { studentId: id })
-      .andWhere('pick.endedBy IS NULL')
+      .andWhere('pick.isActive = :isActive', { isActive: true })
       .andWhere('pick.termId = :termId', {
         termId: Number(termId),
       });
@@ -424,11 +423,10 @@ export class StudentService {
   //? 학생의 수강중인 반 조회
   async listGroups(id: number, termId?: number): Promise<Group[]> {
     const queryBuilder = this.groupRepository
-      .createQueryBuilder('student')
-      .leftJoinAndSelect('student.picks', 'pick')
-      .leftJoinAndSelect('pick.group', 'group')
-      .where('student.id = :id', { id })
-      .andWhere('pick.endedBy IS NULL');
+      .createQueryBuilder('group')
+      .leftJoinAndSelect('group.picks', 'pick')
+      .where('pick.studentId = :id', { id })
+      .andWhere('pick.isActive = :isActive', { isActive: true });
 
     if (termId) {
       queryBuilder.andWhere('pick.termId = :termId', {
@@ -449,7 +447,7 @@ export class StudentService {
       .createQueryBuilder('group')
       .leftJoinAndSelect('group.picks', 'pick')
       .where('pick.studentId = :id', { id })
-      .andWhere('pick.endedBy IS NULL');
+      .andWhere('pick.isActive = :isActive', { isActive: true });
 
     if (termId) {
       queryBuilder.andWhere('pick.termId = :termId', {
@@ -473,7 +471,7 @@ export class StudentService {
       .createQueryBuilder('group')
       .leftJoinAndSelect('group.picks', 'pick')
       .where('pick.studentId = :id', { id })
-      .andWhere('pick.endedBy IS NOT NULL');
+      .andWhere('pick.isActive = :isActive', { isActive: false });
 
     if (termId) {
       queryBuilder.andWhere('pick.termId = :termId', {
@@ -494,7 +492,7 @@ export class StudentService {
       .createQueryBuilder('group')
       .leftJoinAndSelect('group.picks', 'pick')
       .where('pick.studentId = :id', { id })
-      .andWhere('pick.endedBy IS NOT NULL');
+      .andWhere('pick.isActive = :isActive', { isActive: false });
 
     if (termId) {
       queryBuilder.andWhere('pick.termId = :termId', {
@@ -665,7 +663,7 @@ export class StudentService {
     }
 
     // 수강 중인 picks가 있는지 확인
-    const activePicks = student.picks?.filter((pick) => !pick.endedBy);
+    const activePicks = student.picks?.filter((v: Pick) => v.isActive);
     if (activePicks && activePicks.length > 0) {
       throw new Error('Cannot delete student with active picks');
     }

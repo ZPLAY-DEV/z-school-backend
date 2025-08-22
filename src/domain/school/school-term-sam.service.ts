@@ -59,11 +59,7 @@ export class SchoolTermSamService {
       .andWhere('contract.endedBy IS NULL');
 
     const sam = await queryBuilder.getOne();
-    return (
-      sam?.contracts.map((contract) => {
-        return contract.group;
-      }) || []
-    );
+    return sam?.contracts.map((contract) => contract.group) || [];
   }
 
   async listOfferings(
