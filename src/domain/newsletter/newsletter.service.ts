@@ -139,10 +139,14 @@ export class NewsletterService {
 
   async find(
     schoolId: number,
-    termId: number,
+    termId?: number,
     type?: NewsletterType,
   ): Promise<Newsletter[]> {
-    const whereCondition: any = { schoolId, termId };
+    const whereCondition: any = { schoolId: schoolId };
+
+    if (termId) {
+      whereCondition.termId = +termId;
+    }
 
     if (type) {
       whereCondition.type = type;

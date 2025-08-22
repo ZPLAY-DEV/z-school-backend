@@ -46,7 +46,7 @@ export class Pick {
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({
-    description: '🈵 누가 수업시작일 등록했나?',
+    description: '🈳 메타정보: 가장 최근 JOIN 등록자',
     default: null,
     example: null,
   })
@@ -55,12 +55,12 @@ export class Pick {
     enum: Actor,
     default: null,
     nullable: true,
-    comment: '누가 수업시작일(첫수업일) 등록했나?',
+    comment: '메타정보: 가장 최근 JOIN 등록자',
   })
   startedBy: Actor | null;
 
   @ApiProperty({
-    description: '🈳 start; 수업시작일(첫수업일)',
+    description: '🈳 메타정보: 가장 최근 JOIN 일자',
     example: '2025-05-27',
   })
   @Column({
@@ -70,7 +70,7 @@ export class Pick {
   start: string;
 
   @ApiProperty({
-    description: '🈳 누가 수업종료일(마지막수업일) 등록했나?',
+    description: '🈳 메타정보: 가장 최근 CANCEL 등록자',
     default: null,
     example: null,
   })
@@ -79,23 +79,38 @@ export class Pick {
     enum: Actor,
     default: null,
     nullable: true,
-    comment: '누가 수업종료일(마지막수업일) 등록했나?',
+    comment: '메타정보: 가장 최근 CANCEL 등록자',
   })
   endedBy: Actor | null;
 
   @ApiProperty({
-    description: '🈳 end; 수업종료일(마지막수업일)',
+    description: '🈳 메타정보: 가장 최근 CANCEL 일자',
     example: '2025-08-27',
   })
   @Column({
     type: 'date',
-    comment: '수업종료일(마지막수업일)',
+    comment: '메타정보: 가장 최근 CANCEL 일자',
   })
   end: string;
+
+  @ApiProperty({ description: '🈵 수강여부' })
+  @Column({
+    type: 'boolean',
+    default: true,
+  })
+  isActive: boolean;
 
   @ApiProperty({ description: '🈳 비고', example: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
+
+  // 합류/취소 이벤트 히스토리 누적
+  @Column({ type: 'json', nullable: true })
+  history: {
+    date: string;
+    event: 'JOIN' | 'CANCEL';
+    by: 'MANAGER' | 'INSTRUCTOR' | 'OTHER';
+  }[];
 
   // ------------------------------------------------------------------------ //
 

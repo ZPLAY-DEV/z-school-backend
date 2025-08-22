@@ -72,7 +72,7 @@ export class NewsletterController {
   @Get()
   async find(
     @Query('schoolId', ParseIntPipe) schoolId: number,
-    @Query('termId', ParseIntPipe) termId: number,
+    @Query('termId') termId?: number,
     @Query('type') type?: NewsletterType,
   ): Promise<Newsletter[]> {
     return await this.newsletterService.find(schoolId, termId, type);
