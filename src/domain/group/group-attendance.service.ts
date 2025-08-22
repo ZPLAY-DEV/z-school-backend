@@ -4,15 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  addDays,
-  endOfMonth,
-  getDay,
-  lastDayOfMonth,
-  parse,
-  startOfMonth,
-} from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { addDays, getDay, lastDayOfMonth, parse } from 'date-fns';
 import * as ExcelJS from 'exceljs';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
@@ -958,9 +950,10 @@ export class GroupAttendanceService {
     date: string, //? "2025-08"
     studentId: number,
   ): Promise<IAttendance[]> {
-    const localStart = new Date(`${date}-01T00:00:00+09:00`);
-    const beginningInUtc = toZonedTime(startOfMonth(localStart), 'Asia/Seoul');
-    const endingInUtc = toZonedTime(endOfMonth(localStart), 'Asia/Seoul');
+    const year = Number(date.split('-')[0]);
+    const month = Number(date.split('-')[1]);
+    const startOfMonth = new Date(year, month - 1, 1); // 월은 0-based
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // 다음 달의 0일 = 이번 달의 마지막 날 (23:59:59.999까지 포함)
 
     const student = await this.studentRepository.findOne({
       where: { id: studentId },
@@ -971,8 +964,8 @@ export class GroupAttendanceService {
       .leftJoinAndSelect('schoolday.group', 'group')
       .where('schoolday.groupId = :groupId', { groupId })
       .andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
-        beginning: beginningInUtc,
-        ending: endingInUtc,
+        beginning: startOfMonth,
+        ending: endOfMonth,
       });
     const schooldays = await queryBuilder.getMany();
     const dateMap = new Map<
