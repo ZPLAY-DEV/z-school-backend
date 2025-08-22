@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { endOfWeek, startOfWeek } from 'date-fns';
+import { addDays, endOfWeek, format, startOfWeek } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import {
   FilterOperator,
@@ -310,7 +310,7 @@ export class SchoolTermStudentService {
     schoolId: number,
     termId: number,
     studentId: number,
-  ): Promise<Record<string, Group[]>> {
+  ): Promise<Record<string, (Group & { dateStr: string })[]>> {
     const groups = await this.groupRepository
       .createQueryBuilder('group')
       .leftJoinAndSelect('group.picks', 'pick')
@@ -322,8 +322,24 @@ export class SchoolTermStudentService {
       .andWhere('pick.endedBy IS NULL')
       .getMany();
 
+    // 오늘 날짜 기준으로 해당 주의 일요일부터 토요일까지 날짜 계산
+    const today = new Date();
+    const kstToday = toZonedTime(today, 'Asia/Seoul');
+    const weekStart = startOfWeek(kstToday, { weekStartsOn: 0 }); // 일요일부터 시작
+
+    // 각 요일별 날짜 문자열 생성
+    const weekDates = {
+      SUN: format(addDays(weekStart, 0), 'yyyy-MM-dd'),
+      MON: format(addDays(weekStart, 1), 'yyyy-MM-dd'),
+      TUE: format(addDays(weekStart, 2), 'yyyy-MM-dd'),
+      WED: format(addDays(weekStart, 3), 'yyyy-MM-dd'),
+      THU: format(addDays(weekStart, 4), 'yyyy-MM-dd'),
+      FRI: format(addDays(weekStart, 5), 'yyyy-MM-dd'),
+      SAT: format(addDays(weekStart, 6), 'yyyy-MM-dd'),
+    };
+
     // 요일별 결과 객체 초기화
-    const result: Record<string, Group[]> = {
+    const result: Record<string, (Group & { dateStr: string })[]> = {
       SUN: [],
       MON: [],
       TUE: [],
@@ -347,7 +363,14 @@ export class SchoolTermStudentService {
           dayOfWeek
         ];
 
-        result[weekdayKey].push(group);
+        // group에 해당 요일의 dateStr 추가
+        const groupWithDate = {
+          ...group,
+          // schooldays: [],
+          dateStr: weekDates[weekdayKey],
+        };
+
+        result[weekdayKey].push(groupWithDate);
       }
     }
 
