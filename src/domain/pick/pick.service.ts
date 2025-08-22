@@ -113,14 +113,28 @@ export class PickService {
       });
 
       if (existingPick) {
-        // 기존 Pick 업데이트
-        await this.pickRepository.update(existingPick.id, {
-          ...dto,
-          isActive: true,
-          termId: termId,
-          startedBy: role,
-          end: end,
-        });
+        // 기존 Pick 업데이트 - joinPick 패턴 적용
+        await this.pickRepository
+          .createQueryBuilder()
+          .update(Pick)
+          .set({
+            ...dto,
+            isActive: true,
+            termId: termId,
+            startedBy: role,
+            end: end,
+            history: () => `JSON_ARRAY_APPEND(
+              COALESCE(history, JSON_ARRAY()),
+              '$',
+              JSON_OBJECT(
+                'event', 'JOIN',
+                'by', '${role}',
+                'date', '${new Date().toISOString().slice(0, 10)}'
+              )
+            )`,
+          })
+          .where('id = :id', { id: existingPick.id })
+          .execute();
       } else {
         // 새로운 Pick 생성 (default isActive is true)
         const newPick = this.pickRepository.create({
@@ -128,6 +142,13 @@ export class PickService {
           termId: termId,
           startedBy: role,
           end: end,
+          history: [
+            {
+              event: 'JOIN' as const,
+              by: role,
+              date: new Date().toISOString().slice(0, 10),
+            },
+          ],
         });
         await this.pickRepository.save(newPick);
       }
@@ -406,45 +427,5 @@ export class PickService {
     });
     await this.pickRepository.softRemove(pick);
     return pick;
-  }
-
-  async joinPick(pickId: number, by: 'MANAGER' | 'INSTRUCTOR' | 'OTHER') {
-    return await this.pickRepository
-      .createQueryBuilder()
-      .update(Pick)
-      .set({
-        isActive: true,
-        history: () => `JSON_ARRAY_APPEND(
-          COALESCE(history, JSON_ARRAY()),
-          '$',
-          JSON_OBJECT(
-            'event', 'JOIN',
-            'by', '${by}',
-            'date', '${new Date().toISOString().slice(0, 10)}'
-          )
-        )`,
-      })
-      .where('id = :id', { id: pickId })
-      .execute();
-  }
-
-  async cancelPick(pickId: number, by: 'MANAGER' | 'INSTRUCTOR' | 'OTHER') {
-    return await this.pickRepository
-      .createQueryBuilder()
-      .update(Pick)
-      .set({
-        isActive: false,
-        history: () => `JSON_ARRAY_APPEND(
-          COALESCE(history, JSON_ARRAY()),
-          '$',
-          JSON_OBJECT(
-            'event', 'CANCEL',
-            'by', '${by}',
-            'date', '${new Date().toISOString().slice(0, 10)}'
-          )
-        )`,
-      })
-      .where('id = :id', { id: pickId })
-      .execute();
   }
 }
