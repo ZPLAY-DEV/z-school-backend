@@ -25,7 +25,7 @@ import {
 import {
   IAttendance,
   IAttendanceKey,
-  IAttendanceWithNextStop
+  IAttendanceWithNextStop,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
@@ -534,7 +534,7 @@ export class GroupAttendanceService {
               studentId: pick.student.id,
               studentName: pick.student.name,
               dailyStudentKey: dailyStudentKey,
-              status: AttendanceStatus.INIT,
+              status: AttendanceStatus.NONE,
             } as IAttendance)
           );
         },
@@ -962,47 +962,65 @@ export class GroupAttendanceService {
     const beginningInUtc = toZonedTime(startOfMonth(localStart), 'Asia/Seoul');
     const endingInUtc = toZonedTime(endOfMonth(localStart), 'Asia/Seoul');
 
+    const student = await this.studentRepository.findOne({
+      where: { id: studentId },
+    });
+
     const queryBuilder = this.schooldayRepository
       .createQueryBuilder('schoolday')
+      .leftJoinAndSelect('schoolday.group', 'group')
       .where('schoolday.groupId = :groupId', { groupId })
       .andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
         beginning: beginningInUtc,
         ending: endingInUtc,
       });
     const schooldays = await queryBuilder.getMany();
-    const dateMap = new Map<string, number>(
-      schooldays.map((v) => [`DATE#${v.today}`, v.weekNumber]),
+    const dateMap = new Map<
+      string,
+      Schoolday & { group: Group; weekNumber: number }
+    >(
+      schooldays.map((v) => [
+        `DATE#${v.today}`,
+        { ...v, group: v.group, weekNumber: v.weekNumber },
+      ]),
+    );
+    const allItems: IAttendance[] = await fetchAllAttendanceItems(
+      this.model,
+      groupId,
+      date,
     );
 
-    try {
-      // 월별 모든 데이터 조회
-      const allItems: IAttendance[] = await fetchAllAttendanceItems(
-        this.model,
-        groupId,
-        date,
-      );
-      // 특정 학생의 데이터만 필터링
-      const filteredItems = allItems
-        .filter(
-          (item) =>
-            getStudentIdFromDailyStudentKey(item.dailyStudentKey) === studentId,
-        )
-        .map((v: IAttendance) => {
-          return {
-            ...v,
-            weekNumber: dateMap.get(
-              getDatePrefixFromDailyStudentKey(v.dailyStudentKey),
+    return Array.from(dateMap.keys()).map((v) => {
+      return {
+        ...(allItems.find(
+          (i) =>
+            getStudentIdFromDailyStudentKey(i.dailyStudentKey) === studentId &&
+            getDatePrefixFromDailyStudentKey(i.dailyStudentKey) === v,
+        ) ||
+          ({
+            groupId: dateMap.get(v)?.group.id,
+            start: dateMap.get(v)?.group.start,
+            end: dateMap.get(v)?.group.end,
+            groupKey: generateGroupKey(groupId),
+            lessonId: dateMap.get(v)?.lessonId,
+            lessonName: dateMap.get(v)?.name,
+            groupName: dateMap.get(v)?.group.groupName,
+            weekday: dateMap.get(v)?.group.weekday,
+            studentId: studentId,
+            studentName: student?.name || '학생명',
+            dailyStudentKey: generateDailyStudentKey(
+              v.slice(5),
+              studentId,
+              student?.grade || 1,
+              student?.class || '1',
+              student?.studentCode || 1,
             ),
-            dateStr: getDateFromDailyStudentKey(v.dailyStudentKey),
-            // groupKey: generateGroupKey(v.groupKey),
-          };
-        });
-
-      return filteredItems;
-    } catch (error) {
-      console.error(`[dynamodb] getStudentMonthlyReport error`, error);
-      throw new BadRequestException('학생 월별 출석 정보 조회에 실패했습니다.');
-    }
+            status: AttendanceStatus.NONE,
+          } as IAttendance)),
+        weekNumber: dateMap.get(v)?.weekNumber,
+        dateStr: v.slice(5),
+      };
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -1091,7 +1109,7 @@ export class GroupAttendanceService {
               start: pick.group.start,
               end: pick.group.end,
               weekday: pick.group.weekday,
-              status: AttendanceStatus.INIT,
+              status: AttendanceStatus.NONE,
             } as IAttendance);
 
           attendances.push(attendance);

@@ -365,7 +365,7 @@ export class StudentService {
         group: schoolday.group,
         departures: schoolday.departures,
         // attendance: attendance,
-        status: attendance?.status || AttendanceStatus.INIT,
+        status: attendance?.status || AttendanceStatus.NONE,
         parentNote: attendance?.parentNote || null,
       };
     });

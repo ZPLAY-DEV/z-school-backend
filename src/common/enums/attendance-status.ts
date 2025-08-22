@@ -1,4 +1,5 @@
 export enum AttendanceStatus {
+  NONE = 'NONE', // 다이나모 레코드 없음
   INIT = 'INIT', // 시작전
   PRESENT = 'PRESENT', // 출석
   ABSENT = 'ABSENT', // 결석

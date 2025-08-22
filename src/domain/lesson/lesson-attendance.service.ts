@@ -145,7 +145,7 @@ export class LessonAttendanceService {
               studentId: pick.student.id,
               studentName: pick.student.name,
               dailyStudentKey: dailyStudentKey,
-              status: AttendanceStatus.INIT,
+              status: AttendanceStatus.NONE,
             } as IAttendance)
           );
         },
@@ -760,7 +760,7 @@ export class LessonAttendanceService {
               start: pick.group.start,
               end: pick.group.end,
               weekday: pick.group.weekday,
-              status: AttendanceStatus.INIT,
+              status: AttendanceStatus.NONE,
             } as IAttendance);
 
           attendances.push(attendance);
