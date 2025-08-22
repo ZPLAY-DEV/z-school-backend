@@ -1252,7 +1252,7 @@ export class GroupAttendanceService {
         return '결석';
       case AttendanceStatus.LATE:
         return '지각';
-      case AttendanceStatus.UNDETERMINED:
+      case AttendanceStatus.PENDING:
         return '미출석';
       case AttendanceStatus.LEFT:
         return '조퇴';
@@ -1275,7 +1275,7 @@ export class GroupAttendanceService {
         return '결석';
       case AttendanceStatus.LATE:
         return '지각';
-      case AttendanceStatus.UNDETERMINED:
+      case AttendanceStatus.PENDING:
         return '미출석';
       case AttendanceStatus.LEFT:
         return '조퇴';
