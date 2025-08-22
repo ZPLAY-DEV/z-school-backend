@@ -945,29 +945,34 @@ export class GroupAttendanceService {
     return processAttendanceReport(items);
   }
 
+  //? note that this code will 100% works in AWS
+  //? but, in local environment, 9 hour difference will be applied.
+  //? but, performance wise, it's better to use this code in production.
+  //? just keep in mind that responses will be different in edge cases.
   async getStudentMonthlyReport(
     groupId: number,
-    date: string, //? "2025-08"
+    date: string, //? ex. "2025-08"
     studentId: number,
   ): Promise<IAttendance[]> {
     const year = Number(date.split('-')[0]);
     const month = Number(date.split('-')[1]);
-    const startOfMonth = new Date(year, month - 1, 1); // 월은 0-based
+    const startOfMonth = new Date(year, month - 1, 1); // 월은 0-base
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // 다음 달의 0일 = 이번 달의 마지막 날 (23:59:59.999까지 포함)
 
-    const student = await this.studentRepository.findOne({
-      where: { id: studentId },
-    });
-
-    const queryBuilder = this.schooldayRepository
-      .createQueryBuilder('schoolday')
-      .leftJoinAndSelect('schoolday.group', 'group')
-      .where('schoolday.groupId = :groupId', { groupId })
-      .andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
-        beginning: startOfMonth,
-        ending: endOfMonth,
-      });
-    const schooldays = await queryBuilder.getMany();
+    // 병렬로 실행하여 성능 최적화
+    const [allItems, student, schooldays] = await Promise.all([
+      fetchAllAttendanceItems(this.model, groupId, date),
+      this.studentRepository.findOne({ where: { id: studentId } }),
+      this.schooldayRepository
+        .createQueryBuilder('schoolday')
+        .leftJoinAndSelect('schoolday.group', 'group')
+        .where('schoolday.groupId = :groupId', { groupId })
+        .andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
+          beginning: startOfMonth,
+          ending: endOfMonth,
+        })
+        .getMany(),
+    ]);
     const dateMap = new Map<
       string,
       Schoolday & { group: Group; weekNumber: number }
@@ -976,11 +981,6 @@ export class GroupAttendanceService {
         `DATE#${v.today}`,
         { ...v, group: v.group, weekNumber: v.weekNumber },
       ]),
-    );
-    const allItems: IAttendance[] = await fetchAllAttendanceItems(
-      this.model,
-      groupId,
-      date,
     );
 
     return Array.from(dateMap.keys()).map((v) => {
