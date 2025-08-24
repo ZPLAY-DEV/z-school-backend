@@ -12,6 +12,15 @@ import {
   UpdateEvent,
 } from 'typeorm';
 
+//? 1. term 의 bookingStart 가 처음 설정될 때 해야할 일
+//?  - 모든 Term > Lesson > Group 에 대해서 Offering 생성
+//?  - set isOfferingReady to true
+//?  - Slack 알림 발송
+//! 2. term 의 start 또는 end 가 변경될 때 아래 작업이 필요하지만, 미구현
+//!  - 모든 Term > Lesson 에 대해서 start, end 변경
+//!  - 모든 Term > Pick 에 대해서 start, end 변경
+//!  - 모든 Term > Contract 에 대해서 start, end 변경
+//!  - 모든 Term > Schoolday 에 대해서 start, end 변경
 @Injectable()
 export class TermSubscriber implements EntitySubscriberInterface<Term> {
   private readonly logger = new Logger(TermSubscriber.name);

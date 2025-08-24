@@ -65,6 +65,8 @@ export class Pick {
   })
   @Column({
     type: 'date',
+    default: null,
+    nullable: true,
     comment: '수업시작일(첫수업일)',
   })
   start: string;
@@ -89,6 +91,8 @@ export class Pick {
   })
   @Column({
     type: 'date',
+    default: null,
+    nullable: true,
     comment: '메타정보: 가장 최근 CANCEL 일자',
   })
   end: string;

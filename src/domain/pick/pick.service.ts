@@ -46,7 +46,8 @@ export class PickService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  // 필수항목) groupId, studentId, start, note (수동으로 등록시)
+  // 수동등록 (중간전입)
+  // 필수항목) groupId, studentId, offeringId, termId, start
   async startPick(
     dtos: StartPickDto[],
     role: Actor,
@@ -220,10 +221,11 @@ export class PickService {
     }
   }
 
+  // 수동등록 (중간전입)
+  // 필수항목) groupId, studentId, offeringId, termId, start
   async endPick(dto: EndPickDto): Promise<Pick> {
-    const { groupId, studentId, termId, end, endedBy, note } = dto;
     const pick = await this.pickRepository.findOneOrFail({
-      where: { groupId, studentId, termId },
+      where: { groupId: dto.groupId, studentId: dto.studentId },
     });
     if (!pick) {
       throw new NotFoundException('pick entity not found');
@@ -234,15 +236,15 @@ export class PickService {
       .update(Pick)
       .set({
         isActive: false,
-        endedBy: endedBy ?? Actor.OTHER,
-        end,
-        note: note ?? null,
+        endedBy: dto.endedBy ?? Actor.OTHER,
+        end: dto.end,
+        note: dto.note ?? null,
         history: () => `JSON_ARRAY_APPEND(
           COALESCE(history, JSON_ARRAY()),
           '$',
           JSON_OBJECT(
             'event', 'CANCEL',
-            'by', '${endedBy}',
+            'by', '${dto.endedBy}',
             'date', '${new Date().toISOString().slice(0, 10)}'
           )
         )`,
@@ -251,30 +253,52 @@ export class PickService {
       .execute();
 
     pick.isActive = false;
-    pick.endedBy = endedBy ?? Actor.OTHER;
-    pick.end = end;
-    pick.note = note ?? null;
+    pick.endedBy = dto.endedBy ?? Actor.OTHER;
+    pick.end = dto.end;
+    pick.note = dto.note ?? null;
 
     return pick;
   }
 
-  async endPickRollback(dto: {
-    groupId: number;
-    studentId: number;
-    termId: number;
-  }): Promise<Pick> {
-    const { groupId, studentId, termId } = dto;
+  // groupId, studentId, offeringId, termId, start
+  async restartPick(dto: StartPickDto): Promise<Pick> {
     const pick = await this.pickRepository.findOneOrFail({
-      where: { groupId, studentId, termId },
+      where: { groupId: dto.groupId, studentId: dto.studentId },
       relations: ['group', 'group.lesson', 'group.lesson.term'],
     });
     if (!pick) {
       throw new NotFoundException('pick entity not found');
     }
-    await this.pickRepository.update(pick.id, {
-      endedBy: null,
-      end: pick.group.lesson.end || pick.group.lesson.term.end,
-    });
+
+    await this.pickRepository
+      .createQueryBuilder()
+      .update(Pick)
+      .set({
+        isActive: true,
+        startedBy: dto.startedBy,
+        start: dto.start,
+        endedBy: null,
+        end: pick.group.lesson.end || pick.group.lesson.term.end,
+        note: dto.note ?? null,
+        history: () => `JSON_ARRAY_APPEND(
+          COALESCE(history, JSON_ARRAY()),
+          '$',
+          JSON_OBJECT(
+            'event', 'JOIN',
+            'by', '${dto.startedBy}',
+            'date', '${new Date().toISOString().slice(0, 10)}'
+          )
+        )`,
+      })
+      .where('id = :id', { id: pick.id })
+      .execute();
+
+    pick.isActive = true;
+    pick.startedBy = dto.startedBy;
+    pick.start = dto.start;
+    pick.endedBy = null;
+    pick.end = pick.group.lesson.end || pick.group.lesson.term.end;
+    pick.note = dto.note ?? null;
 
     return pick;
   }

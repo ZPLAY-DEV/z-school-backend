@@ -7,8 +7,9 @@ import {
   UpdateEvent,
 } from 'typeorm';
 
-@Injectable()
 //! By using beforeInsert and beforeUpdate, we can avoid unwanted ghost updates.
+//? offering.prepicked 자동 계산. no more afterward events. no more side effects.
+@Injectable()
 export class OfferingSubscriber implements EntitySubscriberInterface<Offering> {
   private readonly logger = new Logger(OfferingSubscriber.name);
 

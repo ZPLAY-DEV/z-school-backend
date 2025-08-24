@@ -779,7 +779,7 @@ export const UpdateLessonDocs = () => {
 export const UpdateLessonDaysDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '📅 수업일 자동 생성',
+      summary: '📅 수업일 자동 생성 @deprecated',
       description: `
 ### 📅 과목 수업일 자동 재생성
 

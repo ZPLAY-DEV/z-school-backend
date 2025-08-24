@@ -26,6 +26,7 @@ import {
   ListStudentsDocs,
   PaginatedListGroupsDocs,
   PaginatedListStudentsDocs,
+  RestartPickDocs,
   StartPickDocs,
   UpdatePickDocs,
 } from 'src/domain/pick/swagger/pick-swagger.decorator';
@@ -75,13 +76,11 @@ export class PickController {
     });
   }
 
-  @EndPickDocs()
+  @RestartPickDocs()
   @HttpCode(200)
-  @Patch('end/rollback')
-  async endPickRollback(
-    @Body() dto: { groupId: number; studentId: number; termId: number },
-  ): Promise<Pick> {
-    return await this.pickService.endPickRollback(dto);
+  @Post('restart')
+  async restartPick(@Body() dto: StartPickDto): Promise<Pick> {
+    return await this.pickService.restartPick(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//

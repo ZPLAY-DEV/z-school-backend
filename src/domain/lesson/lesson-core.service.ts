@@ -13,6 +13,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -184,6 +185,52 @@ export class LessonCoreService {
       throw new NotFoundException('Lesson not found');
     }
 
+    //? 0-1단계) start/end 변경 여부 확인 (schooldays 재계산 조건)
+    const isStartChanged =
+      dto.start !== undefined && dto.start !== existingLesson.start;
+    const isEndChanged =
+      dto.end !== undefined && dto.end !== existingLesson.end;
+    let needsSchooldaysUpdate = isStartChanged || isEndChanged;
+
+    // Group 변경 사항도 확인 (요일, 시간 변경 시 schooldays 재계산 필요)
+    let hasGroupScheduleChanges = false;
+    if (dto.groups?.length) {
+      hasGroupScheduleChanges = dto.groups.some((groupDto) => {
+        const existingGroup = existingLesson.groups.find(
+          (g) => g.groupName === groupDto.groupName || g.id === groupDto.id,
+        );
+
+        if (!existingGroup) return true; // 새로운 그룹 추가
+
+        // 요일이나 시간 변경 여부 확인
+        const weekdayChanged =
+          groupDto.weekday !== undefined &&
+          groupDto.weekday !== existingGroup.weekday;
+        const startTimeChanged =
+          groupDto.start !== undefined &&
+          parseTimeFormat(parseTime(groupDto.start)) !== existingGroup.start;
+        const endTimeChanged =
+          groupDto.end !== undefined &&
+          parseTimeFormat(parseTime(groupDto.end)) !== existingGroup.end;
+
+        return weekdayChanged || startTimeChanged || endTimeChanged;
+      });
+    }
+
+    needsSchooldaysUpdate = needsSchooldaysUpdate || hasGroupScheduleChanges;
+
+    if (needsSchooldaysUpdate) {
+      const reasons: string[] = [];
+      if (isStartChanged)
+        reasons.push(`start: ${existingLesson.start} → ${dto.start}`);
+      if (isEndChanged) reasons.push(`end: ${existingLesson.end} → ${dto.end}`);
+      if (hasGroupScheduleChanges) reasons.push('group schedule changes');
+
+      this.logger.log(
+        `📅 [update] Lesson ${id} schooldays recalculation needed - ${reasons.join(', ')}`,
+      );
+    }
+
     //? 1단계) 학교 정보 확인
     const school = await manager.findOne(School, {
       where: { id: dto.schoolId || existingLesson.schoolId },
@@ -315,7 +362,57 @@ export class LessonCoreService {
     });
 
     //? 6단계) 학업요일 days 정보 및 schooldays 처리
-    await this.syncSchooldaysForLesson(finalLesson, manager, 'update');
+    if (needsSchooldaysUpdate) {
+      this.logger.log(
+        `🔄 [update] Recalculating schooldays for lesson ${id} due to schedule changes`,
+      );
+      try {
+        await this.syncSchooldaysForLesson(finalLesson, manager, 'update');
+        this.logger.log(
+          `✅ [update] Successfully recalculated schooldays for lesson ${id}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `❌ [update] Failed to recalculate schooldays for lesson ${id}:`,
+          error,
+        );
+        throw new BadRequestException(
+          `Failed to update lesson schedule: ${error.message}`,
+        );
+      }
+
+      //? 7단계) picks와 contracts 날짜 업데이트
+      this.logger.log(
+        `🔄 [update] Updating related picks and contracts for lesson ${id}`,
+      );
+      try {
+        // picks의 end 날짜만 업데이트 (학생들의 수업 종료일)
+        if (isEndChanged) {
+          await this.updatePicksEndDate(finalLesson, manager, 'update');
+        }
+
+        // contracts의 start/end 날짜 업데이트 (강사들의 계약 기간)
+        if (isStartChanged || isEndChanged) {
+          await this.updateContractsDate(finalLesson, manager, 'update');
+        }
+
+        this.logger.log(
+          `✅ [update] Successfully updated related picks and contracts for lesson ${id}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `❌ [update] Failed to update picks/contracts for lesson ${id}:`,
+          error,
+        );
+        throw new BadRequestException(
+          `Failed to update related picks/contracts: ${error.message}`,
+        );
+      }
+    } else {
+      this.logger.log(
+        `⏭️ [update] Skipping schooldays recalculation for lesson ${id} - no schedule changes detected`,
+      );
+    }
 
     return finalLesson;
   }
@@ -342,6 +439,94 @@ export class LessonCoreService {
   //? ---------------------------------------------------------------------- ?//
   //? HELPER METHODS
   //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * lesson의 그룹들과 연결된 picks의 end 날짜를 업데이트합니다.
+   */
+  private async updatePicksEndDate(
+    lesson: Lesson,
+    manager: EntityManager,
+    context: string = 'lesson-update',
+  ): Promise<void> {
+    const groupIds = lesson.groups.map((group) => group.id);
+
+    if (groupIds.length === 0) {
+      this.logger.log(
+        `⏭️ [${context}] No groups found for lesson ${lesson.id}, skipping picks update`,
+      );
+      return;
+    }
+
+    this.logger.log(
+      `🔄 [${context}] Updating picks end date for lesson ${lesson.id} groups: [${groupIds.join(', ')}]`,
+    );
+
+    try {
+      const result = await manager
+        .createQueryBuilder()
+        .update(Pick)
+        .set({
+          end: lesson.end,
+        })
+        .where('groupId IN (:...groupIds)', { groupIds })
+        .andWhere('isActive = :isActive', { isActive: true })
+        .execute();
+
+      this.logger.log(
+        `✅ [${context}] Updated ${result.affected} active picks with new end date: ${lesson.end}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `❌ [${context}] Failed to update picks end date for lesson ${lesson.id}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * lesson의 그룹들과 연결된 contracts의 start/end 날짜를 업데이트합니다.
+   */
+  private async updateContractsDate(
+    lesson: Lesson,
+    manager: EntityManager,
+    context: string = 'lesson-update',
+  ): Promise<void> {
+    const groupIds = lesson.groups.map((group) => group.id);
+
+    if (groupIds.length === 0) {
+      this.logger.log(
+        `⏭️ [${context}] No groups found for lesson ${lesson.id}, skipping contracts update`,
+      );
+      return;
+    }
+
+    this.logger.log(
+      `🔄 [${context}] Updating contracts dates for lesson ${lesson.id} groups: [${groupIds.join(', ')}]`,
+    );
+
+    try {
+      const result = await manager
+        .createQueryBuilder()
+        .update(Contract)
+        .set({
+          start: lesson.start,
+          end: lesson.end,
+        })
+        .where('groupId IN (:...groupIds)', { groupIds })
+        .execute();
+
+      this.logger.log(
+        `✅ [${context}] Updated ${result.affected} contracts with new dates: ${lesson.start} ~ ${lesson.end}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `❌ [${context}] Failed to update contracts dates for lesson ${lesson.id}:`,
+        error,
+      );
+      throw error;
+    }
+  }
 
   /**
    * 강좌의 그룹들에 대해 schooldays를 동기화합니다.

@@ -23,6 +23,8 @@ export class SchooldaySubscriber
     return Schoolday;
   }
 
+  //? [목적1] schoolday 변경전 날짜 와 변경후 날짜에 따른 후작업이 필요할 수 있다.
+  //? - 변경후 날짜가 아직 수업전이고, 다이나오 출석부에 변경전 날짜에 선통보결석내용이 있다면, 그것을 찾아 삭제할 것.
   async afterUpdate(event: UpdateEvent<Schoolday>) {
     const schoolday = event.entity as Schoolday;
     const prev = event.databaseEntity;
@@ -39,7 +41,7 @@ export class SchooldaySubscriber
     const weekday = getKoreanWeekday(today);
 
     this.logger.log(
-      `Schoolday update - prev.today: ${prev?.today}, new today: ${today}, original: ${original}`,
+      `Schoolday subscriber - prev.today: ${prev?.today}, new today: ${today}, original: ${original}`,
     );
 
     await event.manager.transaction(async (trx) => {
@@ -50,7 +52,6 @@ export class SchooldaySubscriber
         weekday,
       });
 
-      //? 아직 수업 전이라면, 관련 다이나모 출석부에 그날 선통보 결석 내용이 있는 경우, 필요없어지므로 삭제.
       const currentDate = formatDateInKST(new Date());
       const isBeforeClass =
         isAfter(original, currentDate) && isAfter(today, currentDate);
