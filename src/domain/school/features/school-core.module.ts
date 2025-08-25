@@ -9,14 +9,12 @@ import { SchoolService } from 'src/domain/school/school.service';
 import { S3Module } from 'src/services/aws/s3.module';
 import { NeisModule } from 'src/services/neis/neis.module';
 import { RedisModule } from 'src/services/redis/redis.module';
-import { SlackModule } from 'src/services/slack/slack.module';
 import { UploadModule } from 'src/services/upload/upload.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([School, Calendar]),
     UploadModule,
-    SlackModule,
     S3Module,
     NeisModule,
     RedisModule,

@@ -17,7 +17,6 @@ import { UserService } from 'src/domain/user/user.service';
 import { S3Module } from 'src/services/aws/s3.module';
 import { SqsModule } from 'src/services/aws/sqs.module';
 import { NotificationModule } from 'src/services/notification/notification.module';
-import { SlackModule } from 'src/services/slack/slack.module';
 import { UploadModule } from 'src/services/upload/upload.module';
 
 @Module({
@@ -42,7 +41,6 @@ import { UploadModule } from 'src/services/upload/upload.module';
     UploadModule,
     S3Module,
     SqsModule,
-    SlackModule,
     NotificationModule,
   ],
   providers: [

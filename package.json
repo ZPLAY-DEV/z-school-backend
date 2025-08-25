@@ -35,6 +35,7 @@
     "@aws-sdk/lib-dynamodb": "^3.826.0",
     "@aws-sdk/s3-request-presigner": "^3.826.0",
     "@faker-js/faker": "^9.8.0",
+    "@ingestkorea/client-sens": "^1.7.0",
     "@keyv/redis": "^4.4.0",
     "@nestjs/axios": "^4.0.0",
     "@nestjs/cache-manager": "^3.0.1",

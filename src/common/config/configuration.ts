@@ -76,6 +76,13 @@ export const configuration = () => ({
     key: process.env.ALIGO_KEY || '',
     uid: process.env.ALIGO_UID || '',
   },
+  ncloud: {
+    accessKey: process.env.NCP_ACCESS_KEY || '',
+    secretKey: process.env.NCP_SECRET_KEY || '',
+    smsServiceId: process.env.NCP_SMS_SERVICE_ID || '',
+    kakaoServiceId: process.env.NCP_KAKAO_SERVICE_ID || '',
+    kakaoChannelId: process.env.NCP_KAKAO_CHANNEL_ID || '',
+  },
   neis: {
     apiKey: process.env.NEIS_API_KEY || '',
   },
