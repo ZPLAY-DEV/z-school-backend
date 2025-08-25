@@ -97,7 +97,7 @@ export class PickService {
     );
     if (conflictingStudentNames.length > 0) {
       throw new UnprocessableEntityException(
-        conflictingStudentNames.join(', '),
+        `이 학생들은 타 수업과 충돌로 수강불가: ${conflictingStudentNames.join(', ')}`,
       );
     }
 

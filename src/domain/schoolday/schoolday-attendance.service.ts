@@ -79,6 +79,108 @@ export class SchooldayAttendanceService {
     return this.createAttendances(dto.schoolId, dto.termId, dto.from, dto.to);
   }
 
+  /**
+   * 🔍 데이터량 분석 메서드 - 실제 처리 없이 데이터량만 확인
+   */
+  async analyzeDataVolume(dto: CreateDynamoRecordWithRangeDto): Promise<{
+    schooldays: number;
+    totalGroups: number;
+    totalStudents: number;
+    estimatedAttendanceRecords: number;
+    processingTimeEstimate: string;
+    recommendations: string[];
+  }> {
+    const startTime = Date.now();
+    
+    this.logger.log(`🔍 데이터량 분석 시작: ${JSON.stringify(dto)}`);
+
+    const schooldays = await this.getValidatedSchooldays(
+      dto.schoolId,
+      dto.termId,
+      dto.from,
+      dto.to,
+    );
+
+    const analysisTime = Date.now() - startTime;
+    this.logger.log(`📊 수업일 조회 완료: ${schooldays.length}개, 소요시간: ${analysisTime}ms`);
+
+    let totalGroups = 0;
+    let totalStudents = 0;
+    let estimatedRecords = 0;
+
+    const groupStats: Record<number, { students: number; days: number }> = {};
+
+    for (const schoolday of schooldays) {
+      if (schoolday.group) {
+        const groupId = schoolday.group.id;
+        
+        if (!groupStats[groupId]) {
+          totalGroups++;
+          groupStats[groupId] = { 
+            students: schoolday.group.picks?.filter(pick => 
+              pick.student && this.isStudentActiveOnDate(pick, schoolday.startsAt)
+            ).length || 0,
+            days: 0 
+          };
+          totalStudents += groupStats[groupId].students;
+        }
+        
+        groupStats[groupId].days++;
+        estimatedRecords += groupStats[groupId].students;
+      }
+    }
+
+    const recommendations: string[] = [];
+    
+    if (estimatedRecords > 10000) {
+      recommendations.push('🚨 대량 데이터 감지! 주 단위 분할 처리 권장');
+    }
+    
+    if (estimatedRecords > 5000) {
+      recommendations.push('⚠️ 백그라운드 작업 큐 사용 권장');
+    }
+    
+    if (totalGroups > 50) {
+      recommendations.push('📈 그룹 수 많음: 병렬 처리 고려');
+    }
+
+    const estimatedProcessingTime = this._estimateProcessingTime(estimatedRecords);
+
+    const result = {
+      schooldays: schooldays.length,
+      totalGroups,
+      totalStudents,
+      estimatedAttendanceRecords: estimatedRecords,
+      processingTimeEstimate: estimatedProcessingTime,
+      recommendations,
+      queryTime: `${analysisTime}ms`,
+      dateRange: `${dto.from} ~ ${dto.to}`,
+      groupBreakdown: Object.entries(groupStats).map(([groupId, stats]) => ({
+        groupId: Number(groupId),
+        studentsCount: stats.students,
+        schooldaysCount: stats.days,
+        recordsCount: stats.students * stats.days
+      }))
+    };
+
+    this.logger.log(`🎯 분석 완료:`, result);
+    return result;
+  }
+
+  private _estimateProcessingTime(recordCount: number): string {
+    // DynamoDB BatchWrite 성능 기준 (100개씩 처리)
+    const batchCount = Math.ceil(recordCount / 100);
+    const estimatedSeconds = batchCount * 0.5; // 배치당 약 0.5초 가정
+    
+    if (estimatedSeconds < 60) {
+      return `약 ${Math.ceil(estimatedSeconds)}초`;
+    } else if (estimatedSeconds < 3600) {
+      return `약 ${Math.ceil(estimatedSeconds / 60)}분`;
+    } else {
+      return `약 ${Math.ceil(estimatedSeconds / 3600)}시간`;
+    }
+  }
+
   async createAttendanceForAllValidTerms(
     date?: string,
   ): Promise<ResponseAttendanceDto> {

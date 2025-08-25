@@ -64,6 +64,18 @@ export class SchooldayAttendanceController {
     return await this.schooldayAttendanceService.createWithPeriod(dto);
   }
 
+  /**
+   * 🔍 데이터량 분석을 위한 디버그 엔드포인트
+   * 실제 출석부 생성 없이 데이터량만 확인
+   */
+  @Public()
+  @Post('attendances/period/dryrun')
+  async analyzeDataVolume(
+    @Body() dto: CreateDynamoRecordWithRangeDto,
+  ): Promise<any> {
+    return await this.schooldayAttendanceService.analyzeDataVolume(dto);
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Delete
   //? ---------------------------------------------------------------------- ?//
