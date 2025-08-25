@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { addDays, getDay, lastDayOfMonth, parse } from 'date-fns';
+import * as dynamoose from 'dynamoose';
 import * as ExcelJS from 'exceljs';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
@@ -1093,35 +1094,102 @@ export class GroupAttendanceService {
   }
 
   /**
-   * 기본 벌크 업데이트 - 모든 레코드를 무조건 업데이트
+   * 기본 벌크 upsert - 모든 레코드를 무조건 upsert
    *
    * 사용 시나리오:
    * - 대부분의 레코드가 변경될 것으로 예상되는 경우
+   * - 레코드가 존재하지 않을 수도 있는 경우
    */
   private async updateAttendanceStatusInBulk(
     dtos: CreateAttendanceWithKeyDto[],
   ): Promise<IAttendance[]> {
     try {
-      const updatePromises = dtos.map((dto) =>
-        this.model.update(
-          {
-            groupKey: dto.groupKey,
-            dailyStudentKey: dto.dailyStudentKey,
-          },
-          {
-            status: dto.status,
-            ...(dto.schoolNote !== undefined && { schoolNote: dto.schoolNote }),
-            ...(dto.schoolNotedAt !== undefined && {
-              schoolNotedAt: dto.schoolNotedAt,
-            }),
-          },
-        ),
-      );
-      const results = await Promise.all(updatePromises);
+      const upsertPromises = dtos.map(async (dto) => {
+        const itemKey = {
+          groupKey: dto.groupKey,
+          dailyStudentKey: dto.dailyStudentKey,
+        };
+        const upsertData = {
+          status: dto.status,
+          ...(dto.schoolNote !== undefined && { schoolNote: dto.schoolNote }),
+          ...(dto.schoolNotedAt !== undefined && {
+            schoolNotedAt: dto.schoolNotedAt,
+          }),
+        };
+
+        try {
+          // 1차 시도: update (레코드가 존재할 때만 업데이트, 없으면 에러)
+          console.log(`🔄 Attempting UPDATE for ${dto.dailyStudentKey}`);
+          console.log(`📝 UpsertData:`, JSON.stringify(upsertData, null, 2));
+
+          const updateResult = await this.model.update(itemKey, upsertData, {
+            condition: new dynamoose.Condition().where('groupKey').exists(),
+            return: 'item',
+          });
+
+          console.log(
+            `✅ UPDATE SUCCESS:`,
+            JSON.stringify(updateResult, null, 2),
+          );
+          return updateResult;
+        } catch (updateError: any) {
+          console.error(`☠️ Update failed, attempting create:`, updateError);
+          // update 실패시 (아이템이 없거나 다른 이유) create 시도
+          if (
+            updateError.message?.includes('no item found') ||
+            updateError.name === 'ValidationException' ||
+            updateError.name === 'ConditionalCheckFailedException'
+          ) {
+            const studentId = getStudentIdFromDailyStudentKey(
+              dto.dailyStudentKey,
+            );
+
+            // Group과 Student 정보를 병렬로 조회
+            const [group, student] = await Promise.all([
+              this.groupRepository.findOneOrFail({
+                where: { id: getGroupIdFromGroupKey(dto.groupKey) },
+                relations: ['lesson'],
+              }),
+              this.studentRepository.findOneOrFail({
+                where: { id: studentId },
+              }),
+            ]);
+
+            const expires = Math.floor(
+              addDays(new Date(), 400).getTime() / 1000,
+            );
+
+            const createData = {
+              ...itemKey,
+              lessonId: group.lessonId,
+              lessonName: group.lesson.lessonName,
+              groupId: group.id,
+              groupName: group.groupName,
+              studentId: student.id,
+              studentName: student.name,
+              start: group.start,
+              end: group.end,
+              weekday: group.weekday,
+              expires,
+              ...upsertData,
+            };
+
+            console.log(
+              `☠️ Creating new attendance record for ${dto.dailyStudentKey}`,
+              JSON.stringify(createData, null, 2),
+            );
+
+            return await this.model.create(createData);
+          }
+          throw updateError;
+        }
+      });
+
+      const results = await Promise.all(upsertPromises);
       return results;
     } catch (error) {
-      console.error(`[dynamodb] bulk update error`, error);
-      throw new BadRequestException('출석 정보 일괄 업데이트에 실패했습니다.');
+      console.error(`[dynamodb] bulk upsert error`, error);
+      throw new BadRequestException('출석 정보 일괄 upsert에 실패했습니다.');
     }
   }
 
