@@ -394,7 +394,11 @@ export class GroupAttendanceService {
       }
 
       // forgot to update schoolday.dailyStudentKeys
-      await this.updateSchooldayDailyStudentKeys(schoolday, dailyStudentKey);
+      await this.updateSchooldayDailyStudentKeys(
+        schoolday,
+        dailyStudentKey,
+        dto.status,
+      );
 
       return result;
     } catch (err: any) {
@@ -1325,23 +1329,44 @@ export class GroupAttendanceService {
 
   /**
    * 학부모가 parentNote 를 남길때마다 그 학생의 키를 schoolday 에 추가
+   * status에 따라 해당 카운트도 증가
    */
   private async updateSchooldayDailyStudentKeys(
     schoolday: Schoolday,
     dailyStudentKey: string,
+    status: AttendanceStatus,
   ): Promise<void> {
     const updatedKeys = Array.from(
       new Set([...(schoolday.dailyStudentKeys ?? []), dailyStudentKey]),
     );
 
-    await this.schooldayRepository
+    let queryBuilder = this.schooldayRepository
       .createQueryBuilder()
       .update(Schoolday)
       .set({
         dailyStudentKeys: updatedKeys,
       })
-      .where('id = :id', { id: schoolday.id })
-      .execute();
+      .where('id = :id', { id: schoolday.id });
+
+    // status에 따른 카운트 증가
+    if (status.endsWith('ABSENT')) {
+      queryBuilder = queryBuilder.set({
+        dailyStudentKeys: updatedKeys,
+        absentCount: () => 'absentCount + 1',
+      });
+    } else if (status.endsWith('LATE')) {
+      queryBuilder = queryBuilder.set({
+        dailyStudentKeys: updatedKeys,
+        lateCount: () => 'lateCount + 1',
+      });
+    } else if (status.endsWith('LEFT')) {
+      queryBuilder = queryBuilder.set({
+        dailyStudentKeys: updatedKeys,
+        leftCount: () => 'leftCount + 1',
+      });
+    }
+
+    await queryBuilder.execute();
   }
 
   /**
