@@ -1,3 +1,5 @@
+import './instrument'; // import this first!
+
 import {
   BadRequestException,
   ValidationPipe,
@@ -11,8 +13,6 @@ import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import helmet from 'helmet';
 import { AppModule } from 'src/app.module';
 import { initSwagger } from './common/swagger/swagger-config';
-import './instrument'; // import this first!
-// import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -40,7 +40,7 @@ async function bootstrap() {
       validateCustomDecorators: true, // 커스텀 데코레이터 유효성 검사
       exceptionFactory: (e) => {
         console.log('❌ error', e);
-        // ValidationCatchAllFilter에서 구체적인 오류 메시지 처리
+        // MyCatchAllFilter에서 구체적인 오류 메시지 처리
         return new BadRequestException(e);
       },
     }),

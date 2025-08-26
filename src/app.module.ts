@@ -12,7 +12,7 @@ import { join } from 'path';
 import { AppController } from 'src/app.controller';
 import { AppService } from 'src/app.service';
 import { configuration } from 'src/common/config/configuration';
-import { ValidationCatchAllFilter } from 'src/common/filters/validation-catch-all.filter';
+import { MyCatchAllFilter } from 'src/common/filters/my-catch-all.filter';
 import { DuplicateEntryErrorInterceptor } from 'src/common/interceptors/duplicate-entry-error.interceptor';
 import { AttendanceModule } from 'src/domain/attendance/attendance.module';
 import { AuthModule } from 'src/domain/auth/auth.module';
@@ -50,12 +50,12 @@ import { UploadModule } from './services/upload/upload.module';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
     }),
-    SentryModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'static'), // for index.html
     }),
@@ -156,7 +156,7 @@ import { UploadModule } from './services/upload/upload.module';
     // },
     {
       provide: APP_FILTER,
-      useClass: ValidationCatchAllFilter, // 모든 오류 처리 (validation 오류 상세 메시지 + Sentry/Slack 보고)
+      useClass: MyCatchAllFilter, // 모든 오류 처리 (validation 오류 상세 메시지 + Sentry/Slack 보고)
     },
     AppService,
   ],

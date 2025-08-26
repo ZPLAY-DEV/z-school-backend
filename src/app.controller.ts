@@ -9,6 +9,11 @@ import { AppService } from './app.service';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
+  @Get('/debug-sentry')
+  getError() {
+    throw new Error('My first Sentry error!');
+  }
+
   @ApiOperation({ summary: '⚙️ 버전 조회' })
   @Public()
   @Get('/version')

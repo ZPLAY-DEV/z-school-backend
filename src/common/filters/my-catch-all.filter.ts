@@ -15,7 +15,7 @@ import { SlackService } from 'src/services/slack/slack.service';
 import { EntityNotFoundError } from 'typeorm';
 
 @Catch()
-export class ValidationCatchAllFilter extends BaseExceptionFilter {
+export class MyCatchAllFilter extends BaseExceptionFilter {
   private readonly environment: string;
 
   constructor(
@@ -162,8 +162,8 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
     }
 
     // Add context to Sentry for 500+ errors and send Slack notification
-    if (httpStatus >= 500 && this.environment !== 'dev') {
-      Sentry.captureException(exception, (scope) => {
+    if (httpStatus >= 500 && this.environment !== 'local') {
+      Sentry.withScope((scope) => {
         scope.setTag('apiVersion', 'v1');
         scope.setTag('env', this.environment);
 
@@ -184,7 +184,7 @@ export class ValidationCatchAllFilter extends BaseExceptionFilter {
         scope.setExtra('headers', req.headers);
         scope.setExtra('errorResponse', errorResponse);
 
-        return scope;
+        Sentry.captureException(exception);
       });
 
       // Send Slack notification
