@@ -22,13 +22,13 @@ export class SensService {
   }
 
   async sendAlimtalk(dto: {
-    templateCode: string;
+    template: string;
     messages: { to: string; content: any; buttons?: any }[];
   }) {
     try {
       const command = new SendAlimtalkCommand({
         plusFriendId: this.channelId,
-        templateCode: dto.templateCode,
+        templateCode: dto.template,
         messages: dto.messages,
       });
       await this.sensClient.send(command);

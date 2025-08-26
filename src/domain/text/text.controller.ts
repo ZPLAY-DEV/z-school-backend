@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { NotificationType } from 'src/common/enums/notification-type';
 import { TextService } from 'src/domain/text/text.service';
+import { getTemplateOfClassStart } from 'src/helpers/get-message-body';
+import { SensService } from 'src/services/ncloud/sens.service';
 import {
   FcmData,
   MessageBody,
@@ -18,7 +20,32 @@ import {
 
 @Controller('texts')
 export class TextController {
-  constructor(private readonly textService: TextService) {}
+  constructor(
+    private readonly textService: TextService,
+    private readonly sensService: SensService,
+  ) {}
+
+  @Post('alimtalk/class-start')
+  @HttpCode(200)
+  async sendClassStart(
+    @Body()
+    dto: {
+      phone: string;
+      school: string;
+      lesson: string;
+      samName: string;
+      location: string;
+      period: string;
+      name: string;
+      status: string;
+    },
+  ): Promise<any> {
+    const data = getTemplateOfClassStart(dto);
+    return await this.sensService.sendAlimtalk({
+      template: 'ClassStart1',
+      messages: [data],
+    });
+  }
 
   @Post()
   @HttpCode(200)
