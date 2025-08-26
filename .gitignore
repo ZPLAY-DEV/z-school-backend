@@ -54,3 +54,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # firebase service account key for FCM
 *.fb-admin-key.json
+
+# Sentry Config File
+.sentryclirc

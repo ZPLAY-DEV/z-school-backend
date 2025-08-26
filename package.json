@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && pnpm sentry:sourcemaps",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -22,7 +22,8 @@
     "migration:generate": "NODE_OPTIONS='--require ts-node/register' typeorm -d src/database/data-source.ts migration:generate src/database/migrations/InitSchema",
     "migration:run": "NODE_OPTIONS='--require ts-node/register' typeorm -d src/database/data-source.ts migration:run",
     "migration:revert": "NODE_OPTIONS='--require ts-node/register' typeorm -d src/database/data-source.ts migration:revert",
-    "migration:show": "NODE_OPTIONS='--require ts-node/register' typeorm -d src/database/data-source.ts migration:show"
+    "migration:show": "NODE_OPTIONS='--require ts-node/register' typeorm -d src/database/data-source.ts migration:show",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org d8e242bc9db4 --project schoolhub ./dist && sentry-cli sourcemaps upload --org d8e242bc9db4 --project schoolhub ./dist"
   },
   "dependencies": {
     "@aws-sdk/client-athena": "^3.826.0",
@@ -56,6 +57,7 @@
     "@nestjs/throttler": "^6.4.0",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.3",
+    "@sentry/cli": "^2.52.0",
     "@sentry/nestjs": "^9.27.0",
     "@sentry/node": "^9.22.0",
     "@sentry/profiling-node": "^9.27.0",

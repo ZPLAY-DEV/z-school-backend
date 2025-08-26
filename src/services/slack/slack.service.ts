@@ -18,14 +18,9 @@ export class SlackService {
   ) {
     try {
       const channelId = this.getChannelId(options.channel ?? 'activity');
-      console.log('😀 Slack 전송 시도', {
-        channel: channelId,
-        text: options.text,
-        blocks: options.blocks,
-      });
       await this.slack.chat.postMessage({
         channel: channelId,
-        text: options.text,
+        text: options.text || options.channel || 'text',
         blocks: options.blocks,
       });
     } catch (error) {

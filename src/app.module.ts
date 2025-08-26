@@ -12,7 +12,7 @@ import { join } from 'path';
 import { AppController } from 'src/app.controller';
 import { AppService } from 'src/app.service';
 import { configuration } from 'src/common/config/configuration';
-import { MyCatchAllFilter } from 'src/common/filters/my-catch-all.filter';
+import { CustomCatchAllFilter } from 'src/common/filters/custom-catch-all.filter';
 import { DuplicateEntryErrorInterceptor } from 'src/common/interceptors/duplicate-entry-error.interceptor';
 import { AttendanceModule } from 'src/domain/attendance/attendance.module';
 import { AuthModule } from 'src/domain/auth/auth.module';
@@ -156,7 +156,7 @@ import { UploadModule } from './services/upload/upload.module';
     // },
     {
       provide: APP_FILTER,
-      useClass: MyCatchAllFilter, // 모든 오류 처리 (validation 오류 상세 메시지 + Sentry/Slack 보고)
+      useClass: CustomCatchAllFilter, // 모든 오류 처리 (validation 오류 상세 메시지 + Sentry/Slack 보고)
     },
     AppService,
   ],
