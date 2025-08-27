@@ -1,5 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBody, ApiOperation } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
@@ -96,9 +96,9 @@ MySQL에서 Schoolday 데이터를 조회하고, 해당 수업에 참여하는 �
 - **Partition Key**: \`GROUP#{groupId}\`
 - **Sort Key**: \`DATE#{YYYY-MM-DD}#STUDENT#{digitStudentId}\`
 
-### 📋 필터링 옵션
-- \`schoolId\`: 특정 학교로 제한 (선택사항)
-- \`termId\`: 특정 학기로 제한 (선택사항)
+### 📋 필수 매개변수
+- \`schoolId\`: 학교 ID (필수)
+- \`termId\`: 학기 ID (필수)
 - \`date\`: 대상 날짜 (필수)
 
 ### ⚡ 성능 특징
@@ -120,12 +120,12 @@ MySQL에서 Schoolday 데이터를 조회하고, 해당 수업에 참여하는 �
           value: { schoolId: 1, termId: 1, date: '2025-01-15' },
         },
         allSchools: {
-          summary: '전체 학교 대상',
-          value: { date: '2025-01-15' },
+          summary: '특정 학교/학기 대상',
+          value: { schoolId: 2, termId: 1, date: '2025-01-15' },
         },
         specificTerm: {
-          summary: '특정 학기만',
-          value: { termId: 2, date: '2025-01-15' },
+          summary: '다른 학기 대상',
+          value: { schoolId: 1, termId: 2, date: '2025-01-15' },
         },
       },
     }),
@@ -160,9 +160,9 @@ export const CreateAttendanceOfSchooldayWithPeriodDocs = () => {
 3. **배치 처리**: DynamoDB BatchWrite를 통한 대량 데이터 삽입
 4. **재시도 로직**: 실패한 요청에 대한 지수 백오프 재시도
 
-### 📋 매개변수
-- \`schoolId\`: 학교 ID (선택사항)
-- \`termId\`: 학기 ID (선택사항)
+### 📋 필수 매개변수
+- \`schoolId\`: 학교 ID (필수)
+- \`termId\`: 학기 ID (필수)
 - \`from\`: 시작 날짜 (필수)
 - \`to\`: 종료 날짜 (필수)
 
@@ -198,8 +198,9 @@ export const CreateAttendanceOfSchooldayWithPeriodDocs = () => {
           },
         },
         allSchools: {
-          summary: '전체 학교 대상',
+          summary: '특정 학교/학기 대상',
           value: {
+            schoolId: 1,
             termId: 1,
             from: '2025-01-01',
             to: '2025-01-07',
@@ -309,9 +310,9 @@ export const DeleteAttendanceByDateDocs = () => {
 - 수업 취소로 인한 해당 날짜 정리
 - 중복 생성된 출석 데이터 정리
 
-### 🔍 삭제 조건 옵션
-- \`schoolId\`: 특정 학교만 삭제 (선택사항)
-- \`termId\`: 특정 학기만 삭제 (선택사항)
+### 🔍 필수 매개변수
+- \`schoolId\`: 학교 ID (필수)
+- \`termId\`: 학기 ID (필수)
 - \`date\`: 대상 날짜 (필수)
 
 ### ⚠️ 주의사항
@@ -329,11 +330,11 @@ export const DeleteAttendanceByDateDocs = () => {
         },
         wrongDate: {
           summary: '잘못 생성된 날짜 삭제',
-          value: { date: '2025-12-31' },
+          value: { schoolId: 1, termId: 1, date: '2025-12-31' },
         },
         holidayCorrection: {
           summary: '휴일 출석부 삭제',
-          value: { schoolId: 1, date: '2025-01-01' },
+          value: { schoolId: 1, termId: 1, date: '2025-01-01' },
         },
       },
     }),
@@ -379,9 +380,9 @@ export const DeleteAttendanceByPeriodDocs = () => {
 - 잘못된 기간에 생성된 출석부 제거
 - 오래된 데이터 정리로 성능 최적화
 
-### 📊 삭제 범위 제어
-- \`schoolId\`: 특정 학교로 제한 (선택사항)
-- \`termId\`: 특정 학기로 제한 (선택사항)
+### 📊 필수 매개변수
+- \`schoolId\`: 학교 ID (필수)
+- \`termId\`: 학기 ID (필수)
 - \`from\`: 시작 날짜 (필수)
 - \`to\`: 종료 날짜 (필수)
 
@@ -408,6 +409,7 @@ export const DeleteAttendanceByPeriodDocs = () => {
           summary: '월별 정리',
           value: {
             schoolId: 1,
+            termId: 1,
             from: '2025-01-01',
             to: '2025-01-31',
           },
@@ -415,6 +417,8 @@ export const DeleteAttendanceByPeriodDocs = () => {
         testDataCleanup: {
           summary: '테스트 데이터 정리',
           value: {
+            schoolId: 1,
+            termId: 1,
             from: '2024-12-01',
             to: '2024-12-31',
           },
@@ -430,6 +434,221 @@ export const DeleteAttendanceByPeriodDocs = () => {
       StatusCodes.NOT_FOUND,
       StatusCodes.UNPROCESSABLE_ENTITY,
       StatusCodes.REQUEST_TIMEOUT,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    ),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Analyze Data Volume (Public)
+//? ---------------------------------------------------------------------- ?//
+export const AnalyzeDataVolumeDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '🔍 출석 데이터량 분석 (Public)',
+      description: `
+### 🎯 기능 개요
+실제 출석부 생성 없이 데이터량과 처리 시간을 미리 분석합니다.
+대량 데이터 처리 전 사전 검토 및 계획 수립에 사용됩니다.
+
+### 📊 분석 결과
+- **수업일 수**: 기간 내 총 수업일 개수
+- **그룹 수**: 출석부 생성 대상 그룹 수
+- **학생 수**: 출석 기록 생성 대상 학생 수  
+- **예상 레코드 수**: 생성될 출석 레코드 수
+- **예상 처리 시간**: DynamoDB 배치 처리 기준 예상 시간
+- **권장사항**: 데이터량에 따른 최적화 제안
+
+### 💡 활용 사례
+- 학기 초 대량 출석부 생성 전 사전 검토
+- 시스템 성능 계획 수립
+- 배치 작업 분할 계획
+- DynamoDB 용량 계획
+
+### 🔍 분석 기준
+- DynamoDB BatchWrite 성능: 배치당 100개 처리
+- 예상 처리 시간: 배치당 0.5초 기준
+- 메모리 사용량: 레코드당 약 1KB 기준
+
+### ⚠️ 주의사항
+- 실제 처리와 다를 수 있음 (네트워크, 부하 등)
+- 대략적인 추정치로 참고용으로만 사용
+- 실시간 시스템 상태는 반영되지 않음
+      `,
+    }),
+    ApiBody({
+      type: CreateDynamoRecordWithRangeDto,
+      examples: {
+        termAnalysis: {
+          summary: '학기 전체 분석',
+          value: {
+            schoolId: 1,
+            termId: 1,
+            from: '2025-03-01',
+            to: '2025-08-31',
+          },
+        },
+        monthlyAnalysis: {
+          summary: '월별 분석',
+          value: {
+            schoolId: 1,
+            termId: 1,
+            from: '2025-03-01',
+            to: '2025-03-31',
+          },
+        },
+        allSchoolsAnalysis: {
+          summary: '전체 학교 분석',
+          value: {
+            from: '2025-03-01',
+            to: '2025-03-07',
+          },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 200,
+      description: '데이터량 분석 결과',
+      schema: {
+        type: 'object',
+        properties: {
+          schooldays: { type: 'number', description: '총 수업일 수' },
+          totalGroups: { type: 'number', description: '총 그룹 수' },
+          totalStudents: { type: 'number', description: '총 학생 수' },
+          estimatedAttendanceRecords: {
+            type: 'number',
+            description: '예상 출석 레코드 수',
+          },
+          processingTimeEstimate: {
+            type: 'string',
+            description: '예상 처리 시간',
+          },
+          recommendations: {
+            type: 'array',
+            items: { type: 'string' },
+            description: '최적화 권장사항',
+          },
+        },
+      },
+    }),
+    ApiStatuses(
+      StatusCodes.BAD_REQUEST,
+      StatusCodes.NOT_FOUND,
+      StatusCodes.UNPROCESSABLE_ENTITY,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    ),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Purge Table (Public)
+//? ---------------------------------------------------------------------- ?//
+export const PurgeTableDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '💥 출석 테이블 완전 초기화 (Public)',
+      description: `
+### 🎯 기능 개요
+DynamoDB attendance 테이블을 완전히 삭제하고 다시 생성합니다.
+모든 출석 데이터가 즉시 삭제되므로 **극도로 위험한** 작업입니다.
+
+### 🔄 처리 과정
+1. **테이블 삭제**: DynamoDB 테이블 완전 삭제
+2. **삭제 대기**: 테이블 삭제 완료까지 대기 (최대 5분)
+3. **테이블 생성**: 동일한 스키마로 테이블 재생성
+4. **생성 대기**: 테이블 ACTIVE 상태까지 대기 (최대 5분)
+
+### ⚡ 성능 특징
+- **즉시 삭제**: 모든 데이터가 즉시 제거됨
+- **빠른 처리**: 개별 레코드 삭제보다 월등히 빠름
+- **전체 초기화**: 테이블 구조부터 완전 재설정
+
+### 💡 사용 시나리오
+- 전체 시스템 재설정
+- 개발/테스트 환경 초기화
+- 대량 데이터 오염 시 긴급 처리
+- 성능 문제 해결을 위한 전체 재구축
+
+### ⚠️ 극도의 위험성
+- **복구 불가능**: 모든 출석 데이터가 영구 삭제됨
+- **시스템 중단**: 테이블 삭제 중 모든 출석 기능 정지
+- **연관 영향**: 출석 관련 모든 기능에 치명적 영향
+- **운영 금지**: 실제 운영 환경에서 절대 사용 금지
+
+### 🚨 사전 필수 조건
+- **백업 완료**: 모든 중요 데이터 백업 완료 확인
+- **시스템 점검**: 모든 연관 시스템 중단 및 점검
+- **권한 확인**: 시스템 관리자 승인 및 확인
+- **복구 계획**: 데이터 복구 계획 수립 완료
+      `,
+    }),
+    ApiResponse({
+      status: 200,
+      description: '테이블 초기화 완료',
+      schema: {
+        type: 'object',
+        properties: {
+          message: { type: 'string', description: '완료 메시지' },
+        },
+      },
+    }),
+    ApiStatuses(
+      StatusCodes.BAD_REQUEST,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      StatusCodes.REQUEST_TIMEOUT,
+    ),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Delete Group Attendance (Public)
+//? ---------------------------------------------------------------------- ?//
+export const DeleteGroupAttendanceDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '🗑️ 그룹별 출석부 전체 삭제 (Public)',
+      description: `
+### 🎯 기능 개요
+특정 그룹의 모든 출석 데이터를 DynamoDB에서 완전히 삭제합니다.
+DynamoDB partition key 기준으로 모든 레코드를 스캔하여 삭제합니다.
+
+### 🔑 그룹 키 형식
+- **형식**: \`GROUP#{groupId}\`
+- **예시**: \`GROUP#25\`, \`GROUP#156\`
+- **대소문자**: 정확히 일치해야 함
+
+### 📝 처리 과정
+1. **스캔 작업**: 해당 partition key의 모든 레코드 조회
+2. **배치 수집**: 삭제 대상 레코드 목록 수집
+3. **배치 삭제**: DynamoDB BatchWrite로 일괄 삭제
+4. **완료 확인**: 모든 레코드 삭제 완료 검증
+
+### 💡 주요 활용
+- 특정 수업 그룹 종료 시 데이터 정리
+- 그룹 설정 오류로 인한 데이터 초기화
+- 테스트 그룹 데이터 삭제
+- 그룹 통합/분할 시 기존 데이터 정리
+
+### 📊 삭제 범위
+- 해당 그룹의 **모든 기간** 출석 데이터
+- 해당 그룹의 **모든 학생** 출석 기록
+- 출석 상태, 메모, 타임스탬프 포함 모든 정보
+
+### ⚠️ 주의사항
+- **복구 불가능**: 삭제된 데이터는 복구할 수 없음
+- **전체 기간**: 해당 그룹의 모든 기간 데이터가 삭제됨
+- **즉시 처리**: 실행 즉시 삭제 시작
+- 그룹 키 확인 필수
+      `,
+    }),
+    ApiOkResponseTemplate({
+      description: '그룹 출석 데이터 삭제 완료',
+      type: ResponseAttendanceDto,
+    }),
+    ApiStatuses(
+      StatusCodes.BAD_REQUEST,
+      StatusCodes.NOT_FOUND,
+      StatusCodes.UNPROCESSABLE_ENTITY,
       StatusCodes.INTERNAL_SERVER_ERROR,
     ),
   );

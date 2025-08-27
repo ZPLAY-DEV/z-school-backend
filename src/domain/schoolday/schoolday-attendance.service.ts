@@ -1,4 +1,9 @@
 import {
+  CreateTableCommand,
+  DeleteTableCommand,
+  DescribeTableCommand,
+} from '@aws-sdk/client-dynamodb';
+import {
   DeleteCommand,
   PutCommand,
   ScanCommand,
@@ -91,7 +96,7 @@ export class SchooldayAttendanceService {
     recommendations: string[];
   }> {
     const startTime = Date.now();
-    
+
     this.logger.log(`🔍 데이터량 분석 시작: ${JSON.stringify(dto)}`);
 
     const schooldays = await this.getValidatedSchooldays(
@@ -102,7 +107,9 @@ export class SchooldayAttendanceService {
     );
 
     const analysisTime = Date.now() - startTime;
-    this.logger.log(`📊 수업일 조회 완료: ${schooldays.length}개, 소요시간: ${analysisTime}ms`);
+    this.logger.log(
+      `📊 수업일 조회 완료: ${schooldays.length}개, 소요시간: ${analysisTime}ms`,
+    );
 
     let totalGroups = 0;
     let totalStudents = 0;
@@ -113,38 +120,42 @@ export class SchooldayAttendanceService {
     for (const schoolday of schooldays) {
       if (schoolday.group) {
         const groupId = schoolday.group.id;
-        
+
         if (!groupStats[groupId]) {
           totalGroups++;
-          groupStats[groupId] = { 
-            students: schoolday.group.picks?.filter(pick => 
-              pick.student && this.isStudentActiveOnDate(pick, schoolday.startsAt)
-            ).length || 0,
-            days: 0 
+          groupStats[groupId] = {
+            students:
+              schoolday.group.picks?.filter(
+                (pick) =>
+                  pick.student &&
+                  this.isStudentActiveOnDate(pick, schoolday.startsAt),
+              ).length || 0,
+            days: 0,
           };
           totalStudents += groupStats[groupId].students;
         }
-        
+
         groupStats[groupId].days++;
         estimatedRecords += groupStats[groupId].students;
       }
     }
 
     const recommendations: string[] = [];
-    
+
     if (estimatedRecords > 10000) {
       recommendations.push('🚨 대량 데이터 감지! 주 단위 분할 처리 권장');
     }
-    
+
     if (estimatedRecords > 5000) {
       recommendations.push('⚠️ 백그라운드 작업 큐 사용 권장');
     }
-    
+
     if (totalGroups > 50) {
       recommendations.push('📈 그룹 수 많음: 병렬 처리 고려');
     }
 
-    const estimatedProcessingTime = this._estimateProcessingTime(estimatedRecords);
+    const estimatedProcessingTime =
+      this._estimateProcessingTime(estimatedRecords);
 
     const result = {
       schooldays: schooldays.length,
@@ -159,8 +170,8 @@ export class SchooldayAttendanceService {
         groupId: Number(groupId),
         studentsCount: stats.students,
         schooldaysCount: stats.days,
-        recordsCount: stats.students * stats.days
-      }))
+        recordsCount: stats.students * stats.days,
+      })),
     };
 
     this.logger.log(`🎯 분석 완료:`, result);
@@ -171,7 +182,7 @@ export class SchooldayAttendanceService {
     // DynamoDB BatchWrite 성능 기준 (100개씩 처리)
     const batchCount = Math.ceil(recordCount / 100);
     const estimatedSeconds = batchCount * 0.5; // 배치당 약 0.5초 가정
-    
+
     if (estimatedSeconds < 60) {
       return `약 ${Math.ceil(estimatedSeconds)}초`;
     } else if (estimatedSeconds < 3600) {
@@ -233,31 +244,122 @@ export class SchooldayAttendanceService {
     return this.deleteAttendances(dto.schoolId, dto.termId, dto.from, dto.to);
   }
 
-  async deleteAttendancesBySchoolAndTerm(
-    dto: DeleteAttendanceBySchoolTermDto,
-  ): Promise<void> {
-    // 해당 학교/학기의 모든 수업일 찾기 (날짜 범위 제한 없음)
-    const schooldays =
-      (await this.fetchAllSchooldaysBySchoolAndTerm(
-        dto.schoolId,
-        dto.termId,
-      )) || [];
+  /**
+   * DynamoDB attendance 테이블을 완전히 삭제하고 다시 생성합니다.
+   * 모든 데이터가 즉시 삭제되므로 주의해서 사용해야 합니다.
+   */
+  async purge(): Promise<void> {
+    this.logger.log('🗑️ Starting table purge process...');
 
-    await Promise.all(
-      schooldays.map(async (schoolday) => {
-        const groupKey = generateGroupKey(schoolday.groupId);
-        const attendances = await this.deleteAllAttendancesByGroupKey(groupKey);
-        return attendances;
-      }),
-    );
+    try {
+      // DynamoDB 테이블 삭제
+      this.logger.log('🗑️ Deleting attendance table...');
+      await this.dynamoService.send(
+        new DeleteTableCommand({
+          TableName: this.attendanceTableName,
+        }),
+      );
 
-    // // 유효한 수업일들만 필터링
-    // const validSchooldays = schooldays.filter((schoolday) =>
-    //   this.isValidSchooldayForAttendance(schoolday),
-    // );
+      this.logger.log('⏳ Waiting for table deletion to complete...');
+      await this._waitForTableDeletion();
 
-    // const deleteRequests = this.buildDeleteRequests(validSchooldays);
-    // return this.executeBatchOperations(deleteRequests);
+      // DynamoDB 테이블 재생성
+      this.logger.log('🔄 Creating attendance table...');
+      await this.dynamoService.send(
+        new CreateTableCommand({
+          TableName: this.attendanceTableName,
+          BillingMode: 'PAY_PER_REQUEST',
+          AttributeDefinitions: [
+            {
+              AttributeName: 'groupKey',
+              AttributeType: 'S',
+            },
+            {
+              AttributeName: 'dailyStudentKey',
+              AttributeType: 'S',
+            },
+          ],
+          KeySchema: [
+            {
+              AttributeName: 'groupKey',
+              KeyType: 'HASH',
+            },
+            {
+              AttributeName: 'dailyStudentKey',
+              KeyType: 'RANGE',
+            },
+          ],
+        }),
+      );
+
+      this.logger.log('⏳ Waiting for table creation to complete...');
+      await this._waitForTableCreation();
+
+      this.logger.log('✅ Table purge completed successfully');
+    } catch (error) {
+      this.logger.error('❌ Failed to purge table', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 테이블 삭제가 완료될 때까지 대기
+   */
+  private async _waitForTableDeletion(): Promise<void> {
+    const maxAttempts = 30; // 최대 30회 시도 (약 5분)
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      try {
+        await this.dynamoService.send(
+          new DescribeTableCommand({
+            TableName: this.attendanceTableName,
+          }),
+        );
+        // 테이블이 아직 존재하면 계속 대기
+        await new Promise((resolve) => setTimeout(resolve, 10000)); // 10초 대기
+        attempts++;
+      } catch (error) {
+        if (error.name === 'ResourceNotFoundException') {
+          // 테이블이 삭제됨
+          return;
+        }
+        throw error;
+      }
+    }
+
+    throw new Error('Table deletion timeout');
+  }
+
+  /**
+   * 테이블 생성이 완료될 때까지 대기
+   */
+  private async _waitForTableCreation(): Promise<void> {
+    const maxAttempts = 30; // 최대 30회 시도 (약 5분)
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      try {
+        const result = await this.dynamoService.send(
+          new DescribeTableCommand({
+            TableName: this.attendanceTableName,
+          }),
+        );
+        if (result.Table?.TableStatus === 'ACTIVE') {
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10000)); // 10초 대기
+        attempts++;
+      } catch (error) {
+        if (error.name !== 'ResourceNotFoundException') {
+          throw error;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10000)); // 10초 대기
+        attempts++;
+      }
+    }
+
+    throw new Error('Table creation timeout');
   }
 
   /**

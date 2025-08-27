@@ -8,7 +8,7 @@ const data = [
   {
     uri: `schools`,
     payload: {
-      name: '대한초등학교',
+      name: '신동초등학교',
       authorityCode: 'K10',
       phone: '0332434302', // 신동초등학교
       region: 'GANGWON', // 신동초등학교
@@ -21,10 +21,10 @@ const data = [
     payload: {
       schoolId: 1,
       schoolYear: 2025,
-      schoolName: '대한초등학교',
+      schoolName: '신동초등학교',
       termName: '1학기',
-      start: '2025-02-01',
-      end: '2025-08-18',
+      start: '2025-03-01',
+      end: '2025-07-30',
     },
   },
   {
@@ -35,10 +35,10 @@ const data = [
     uri: `categories/seed`,
     payload: {},
   },
-  // {
-  //   uri: `schools/1/calendars`,
-  //   payload: {},
-  // },
+  {
+    uri: `schools/1/calendars`,
+    payload: {},
+  },
   // {
   //   uri: `schools/1/students/bulk`,
   //   payload: [

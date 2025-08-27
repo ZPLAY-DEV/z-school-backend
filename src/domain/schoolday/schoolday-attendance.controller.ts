@@ -17,12 +17,15 @@ import {
 } from 'src/domain/schoolday/dto/response-attendance.dto';
 import { SchooldayAttendanceService } from 'src/domain/schoolday/schoolday-attendance.service';
 import {
+  AnalyzeDataVolumeDocs,
   CreateAttendanceForAllValidTermsDocs,
   CreateAttendanceOfSchooldayWithDateDocs,
   CreateAttendanceOfSchooldayWithPeriodDocs,
   DeleteAttendanceByDateDocs,
   DeleteAttendanceByPeriodDocs,
   DeleteAttendancesBySchoolAndTermDocs,
+  DeleteGroupAttendanceDocs,
+  PurgeTableDocs,
 } from 'src/domain/schoolday/swagger/schoolday-attendance-swagger.decorator';
 
 @ApiTags('✳️ Schooldays > Attendance ( 수업일 > 출석부 생성 )')
@@ -68,6 +71,7 @@ export class SchooldayAttendanceController {
    * 🔍 데이터량 분석을 위한 디버그 엔드포인트
    * 실제 출석부 생성 없이 데이터량만 확인
    */
+  @AnalyzeDataVolumeDocs()
   @Public()
   @Post('attendances/period/dryrun')
   async analyzeDataVolume(
@@ -80,13 +84,24 @@ export class SchooldayAttendanceController {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
+  /**
+   * 특정 학교/학기의 모든 그룹에 대해 완전한 출석 데이터 삭제를 수행합니다.
+   * 기존 메서드의 개선된 버전으로, 쓰레기 데이터까지 완전히 제거합니다.
+   */
+  @PurgeTableDocs()
+  @Public()
+  @Delete('attendances/complete')
+  async deleteAllAttendancesBySchoolAndTerm(): Promise<void> {
+    await this.schooldayAttendanceService.purge();
+  }
+
   @DeleteAttendancesBySchoolAndTermDocs()
   @Public()
   @Delete('attendances/all')
   async deleteAttendancesBySchoolAndTerm(
     @Body() dto: DeleteAttendanceBySchoolTermDto,
   ): Promise<void> {
-    return await this.schooldayAttendanceService.deleteAttendancesBySchoolAndTerm(
+    await this.schooldayAttendanceService.deleteAllAttendancesBySchoolAndTerm(
       dto,
     );
   }
@@ -95,6 +110,7 @@ export class SchooldayAttendanceController {
    * 특정 그룹의 모든 출석 데이터를 완전히 삭제합니다.
    * DynamoDB에서 해당 partition key의 모든 레코드를 스캔하여 삭제합니다.
    */
+  @DeleteGroupAttendanceDocs()
   @Public()
   @Delete('attendances/group/:groupKey')
   async deleteAllAttendancesByGroupKey(
@@ -102,20 +118,6 @@ export class SchooldayAttendanceController {
   ): Promise<ResponseAttendanceDto> {
     return await this.schooldayAttendanceService.deleteAllAttendancesByGroupKey(
       groupKey,
-    );
-  }
-
-  /**
-   * 특정 학교/학기의 모든 그룹에 대해 완전한 출석 데이터 삭제를 수행합니다.
-   * 기존 메서드의 개선된 버전으로, 쓰레기 데이터까지 완전히 제거합니다.
-   */
-  @Public()
-  @Delete('attendances/all-complete')
-  async deleteAllAttendancesBySchoolAndTerm(
-    @Body() dto: DeleteAttendanceBySchoolTermDto,
-  ): Promise<ResponseAttendanceDto> {
-    return await this.schooldayAttendanceService.deleteAllAttendancesBySchoolAndTerm(
-      dto,
     );
   }
 
