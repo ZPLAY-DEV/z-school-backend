@@ -220,20 +220,11 @@ export class SchoolStudentService {
     const students: CreateStudentDto[] = [];
 
     // 3) 실제 데이터 추출 (헤더 아래 행부터 시작)
-    worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber < 4) return;
+    worksheet.eachRow((row, index) => {
+      if (index < 2) return;
 
-      const [
-        _x,
-        _y,
-        name,
-        grade,
-        className,
-        studentCode,
-        parentPhone,
-        phone,
-        note,
-      ] = row.values as any[]; // row.values[0] 은 항상 undefined
+      const [_, name, grade, className, studentCode, parentPhone, phone, note] =
+        row.values as any[]; // row.values[0] 은 항상 undefined
 
       if (!name || !grade || !className || !studentCode || !parentPhone) return;
 
@@ -264,14 +255,14 @@ export class SchoolStudentService {
 
   async generateExcel(schoolId: number): Promise<ExcelJS.Workbook> {
     const workbook = new ExcelJS.Workbook();
-    const templateUrl = 'https://cdn.xn--ov3b17fd5n5vf.kr/excels/students.xlsx';
+    const templateUrl =
+      'https://cdn.xn--ov3b17fd5n5vf.kr/excels/students-v1.xlsx';
     const response = await fetch(templateUrl);
     if (!response.ok) {
       throw new Error(`Failed to fetch template: ${response.statusText}`);
     }
     const buffer = await response.arrayBuffer();
 
-    const lastCol = String.fromCharCode(65 + 7);
     // 템플릿 파일 읽기
     await workbook.xlsx.load(Buffer.from(buffer));
     const sheet = workbook.getWorksheet(1);
@@ -285,27 +276,19 @@ export class SchoolStudentService {
       relations: ['parent', 'parent.user'],
     });
     students.forEach((student, index) => {
-      const rowData = [
-        null,
-        student.name, // 이름
-        student.grade, // 학년
-        `${student.class}`, // 반
-        student.studentCode, // 번호
-        formatPhone(student.parent.phone), // 보호자 연락처
-        formatPhone(student.phone), // 학생 연락처
-        student.note, // 비고
-      ];
-
-      const dataRow = sheet.insertRow(4 + index, rowData);
-
-      // dataRow.eachCell((cell) => {
-      //   cell.border = {
-      //     top: { style: 'thin' },
-      //     left: { style: 'thin' },
-      //     bottom: { style: 'thin' },
-      //     right: { style: 'thin' },
-      //   };
-      // });
+      const row = sheet.insertRow(2 + index, []);
+      if (student.status === StudentStatus.ATTENDING) {
+        row.getCell(1).value = student.name;
+        row.getCell(2).value = student.grade; // 학년
+        row.getCell(2).alignment = { horizontal: 'center' };
+        row.getCell(3).value = student.class; // 반
+        row.getCell(3).alignment = { horizontal: 'center' };
+        row.getCell(4).value = student.studentCode; // 번호
+        row.getCell(4).alignment = { horizontal: 'center' };
+        row.getCell(5).value = formatPhone(student.parent.phone); // 보호자 연락처
+        row.getCell(6).value = formatPhone(student.phone); // 학생 연락처
+        row.getCell(7).value = student.note;
+      }
     });
 
     // sheet.columns.forEach((column, index) => {
@@ -355,8 +338,6 @@ export class SchoolStudentService {
     schoolId: number,
     query: PaginateQuery,
   ): Promise<Paginated<Student>> {
-    console.log(`🔥🔥🔥🔥 `, query);
-
     const queryBuilder = this.studentRepository
       .createQueryBuilder('student')
       .where('student.schoolId = :schoolId', { schoolId });

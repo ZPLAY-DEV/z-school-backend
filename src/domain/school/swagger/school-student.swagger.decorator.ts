@@ -836,3 +836,92 @@ export const GetSchoolStudentGroupsForDateDocs = () => {
     ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
+
+//? ---------------------------------------------------------------------- ?//
+//? 학생 Excel 다운로드
+//? ---------------------------------------------------------------------- ?//
+
+export const DownloadSchoolStudentExcelDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '📥 학생 목록 Excel 파일 다운로드',
+      description: `
+**📝 기능 설명**
+- 학교의 전체 학생 목록을 Excel 파일(.xlsx)로 다운로드합니다
+- 학생 정보와 학부모 정보가 포함된 완전한 명단을 제공합니다
+- 파일명은 'students-YYYY-MM-DD.xlsx' 형식으로 자동 생성됩니다
+
+**📋 Excel 파일 구성**
+- **A열**: 빈 열 (인덱스)
+- **B열**: 학생 이름
+- **C열**: 학년 (1-6)
+- **D열**: 반 (문자열)
+- **E열**: 학번 (1-50)
+- **F열**: 학부모 전화번호 (010으로 시작하는 11자리)
+- **G열**: 학생 전화번호 (선택사항)
+- **H열**: 비고 (선택사항)
+
+**🔄 비즈니스 로직**
+1. 학교 ID로 해당 학교의 모든 학생 조회
+2. 학년 → 반 → 학번 순으로 정렬
+3. Excel 워크북 생성 및 데이터 입력
+4. 파일 스트림으로 응답 전송
+
+**📚 예시 시나리오**
+- 신학기 학생 명단 백업
+- 학부모 상담용 학생 명단 제공
+- 학생 정보 수정을 위한 템플릿 생성
+- 학교 행정 업무용 학생 명단
+
+**⚠️ 중요 사항**
+- 파일은 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet 형식
+- Content-Disposition 헤더로 파일명 지정
+- 대용량 데이터의 경우 스트리밍 방식으로 처리
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID - 학생 목록을 다운로드할 학교의 고유 식별자',
+      example: 1,
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Excel 파일 다운로드 성공',
+      schema: {
+        type: 'string',
+        format: 'binary',
+        description: '학생 목록이 포함된 Excel 파일 (.xlsx)',
+      },
+      headers: {
+        'Content-Type': {
+          description: 'Excel 파일 MIME 타입',
+          schema: {
+            type: 'string',
+            example: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          },
+        },
+        'Content-Disposition': {
+          description: '파일 다운로드 헤더',
+          schema: {
+            type: 'string',
+            example: 'attachment; filename="students-2025-03-15.xlsx"',
+          },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 404,
+      description: '존재하지 않는 학교',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 404 },
+          message: { type: 'string', example: 'School not found' },
+          error: { type: 'string', example: 'Not Found' },
+        },
+      },
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+};

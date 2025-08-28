@@ -27,6 +27,7 @@ import {
   CreateSchoolStudentBulkDocs,
   CreateSchoolStudentExcelUploadDocs,
   CreateSchoolStudentsBulkDryRunDocs,
+  DownloadSchoolStudentExcelDocs,
   SchoolStudentGradesDocs,
   SchoolStudentListDocs,
   SchoolStudentListPaginatedDocs,
@@ -159,12 +160,14 @@ export class SchoolStudentController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @DownloadSchoolStudentExcelDocs()
   @Get(':schoolId/students/download')
   async downloadStudents(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Res() res: Response,
   ) {
     const workbook = await this.schoolStudentService.generateExcel(schoolId);
+    const date = new Date().toISOString().split('T')[0];
 
     // 헤더 설정
     res.setHeader(
@@ -173,7 +176,7 @@ export class SchoolStudentController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="school-${schoolId}-students.xlsx"`,
+      `attachment; filename="students-${date}.xlsx"`,
     );
 
     // 엑셀 파일을 response stream으로 작성
