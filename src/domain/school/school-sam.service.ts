@@ -83,7 +83,7 @@ export class SchoolSamService {
       );
 
       // 6. 기존 Sam 레코드 조회 (삭제 대상 식별용) - 현재는 사용하지 않지만 향후 확장성을 위해 유지
-      await this.getExistingSams(queryRunner, schoolId, instructorMap);
+      // await this.getExistingSams(queryRunner, schoolId, instructorMap);
 
       // 7. Sam 일괄 Upsert
       await this.upsertSams(
@@ -107,26 +107,17 @@ export class SchoolSamService {
       // 9. 트랜잭션 커밋
       await queryRunner.commitTransaction();
 
-      // 10. 생성된 Sam 조회 및 반환 (요청된 것만 효율적으로 조회)
-      const requestedInstructorIds = normalizedDtos
-        .map((dto) => this.getInstructorId(dto, instructorMap))
-        .filter((id) => id !== null);
+      // const createdSams = await this.samRepository
+      //   .createQueryBuilder('sam')
+      //   .leftJoinAndSelect('sam.instructor', 'instructor')
+      //   .where('sam.schoolId = :schoolId', { schoolId })
+      //   .andWhere('sam.instructorId IN (:...instructorIds)', {
+      //     instructorIds: requestedInstructorIds,
+      //   })
+      //   .orderBy('sam.alias', 'ASC')
+      //   .getMany();
 
-      if (requestedInstructorIds.length === 0) {
-        return 0;
-      }
-
-      const createdSams = await this.samRepository
-        .createQueryBuilder('sam')
-        .leftJoinAndSelect('sam.instructor', 'instructor')
-        .where('sam.schoolId = :schoolId', { schoolId })
-        .andWhere('sam.instructorId IN (:...instructorIds)', {
-          instructorIds: requestedInstructorIds,
-        })
-        .orderBy('sam.alias', 'ASC')
-        .getMany();
-
-      return createdSams.length;
+      return normalizedDtos.length;
     } catch (error) {
       // 트랜잭션이 활성 상태인 경우에만 롤백
       if (queryRunner.isTransactionActive) {

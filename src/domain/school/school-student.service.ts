@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as ExcelJS from 'exceljs';
 import {
@@ -12,7 +17,7 @@ import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-g
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { formatPhone, normalizePhone } from 'src/helpers/phone';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { School } from './entities/school.entity';
 
 @Injectable()
@@ -45,132 +50,68 @@ export class SchoolStudentService {
     if (!dtos.length) {
       return 0;
     }
+
+    // 1. DTO 정규화 (전화번호 정규화)
+    const normalizedDtos = dtos.map((dto) => ({
+      ...dto,
+      parent: {
+        ...dto.parent,
+        phone: dto.parent.phone ? normalizePhone(dto.parent.phone) : undefined,
+      },
+    }));
+
+    // 2. 학교 존재 여부 확인
+    const school = await this.schoolRepository.findOne({
+      where: { id: schoolId },
+    });
+    if (!school) {
+      throw new NotFoundException(`School not found: ${schoolId}`);
+    }
+
+    // 3. 트랜잭션 시작
     const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+
     try {
-      // Step 1:  Find school
-      const school = await queryRunner.manager.findOne(School, {
-        where: { id: schoolId },
-      });
-      if (!school) {
-        throw new NotFoundException(`School not found`);
-      }
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
 
-      // Step 2: Upsert Parents (MySQL 8.0+ alias 문법 사용)
-      const parents = dtos.map((v) => ({
-        ...v.parent,
-        phone: normalizePhone(v.parent.phone),
-      }));
+      this.logger.log(`Transaction started for school ${schoolId}`);
 
-      if (parents.length > 0) {
-        const parentPlaceholders = parents.map(() => '(?, ?, ?, ?)').join(', ');
-        const parentValues: (string | number | null)[] = parents.flatMap(
-          (parent) => [
-            parent.userId || null,
-            parent.name || null,
-            parent.phone || null,
-            parent.note || null,
-          ],
-        );
-
-        await queryRunner.query(
-          `
-          INSERT INTO parents (userId, name, phone, note)
-          VALUES ${parentPlaceholders} AS new_parent(userId, name, phone, note)
-          ON DUPLICATE KEY UPDATE 
-            userId = new_parent.userId,
-            name = new_parent.name,
-            note = new_parent.note
-        `,
-          parentValues,
-        );
-      }
-
-      // Step 3: Fetch Parent Ids (SQL injection 방지)
-      const parentPhoneNumbers = parents.map((p) => `'${p.phone}'`).join(',');
-
-      const parentRecords = (await queryRunner.query(`
-        SELECT phone, id FROM parents WHERE phone IN (${parentPhoneNumbers})
-      `)) as Array<{ phone: string; id: number }>;
-
-      const parentMap = Object.fromEntries(
-        parentRecords.map((v) => [v.phone, v.id] as [string, number]),
+      // 4. 부모 처리 및 매핑
+      const parentMap = await this.processParents(queryRunner, normalizedDtos);
+      this.logger.log(
+        `Processed ${parentMap.size} parents for school ${schoolId}`,
       );
 
-      // Step 4: Bulk Upsert Students (MySQL 8.0+ alias 문법 사용)
-      if (dtos.length > 0) {
-        const studentPlaceholders = dtos
-          .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-          .join(', ');
-        const studentValues: (string | number | null)[] = dtos.flatMap(
-          (dto) => [
-            dto.name || null,
-            dto.parent.phone
-              ? parentMap[normalizePhone(dto.parent.phone) as string] || null
-              : null,
-            schoolId,
-            dto.grade || null,
-            dto.class || null,
-            dto.studentCode || null,
-            dto.phone || null,
-            dto.nextStop || null,
-            dto.note || null,
-            dto.status || 'ATTENDING',
-          ],
-        );
+      // 5. 학생 일괄 Upsert
+      await this.upsertStudents(
+        queryRunner,
+        normalizedDtos,
+        schoolId,
+        parentMap,
+      );
+      this.logger.log(
+        `Upserted ${normalizedDtos.length} students for school ${schoolId}`,
+      );
 
-        await queryRunner.query(
-          `
-          INSERT INTO students (
-            name,
-            parentId,
-            schoolId,
-            grade,
-            class,
-            studentCode,
-            phone,
-            nextStop,
-            note,
-            status
-          )
-          VALUES ${studentPlaceholders} AS new_student(
-            name,
-            parentId,
-            schoolId,
-            grade,
-            class,
-            studentCode,
-            phone,
-            nextStop,
-            note,
-            status
-          )
-          ON DUPLICATE KEY UPDATE 
-            schoolId = new_student.schoolId,
-            grade = new_student.grade,
-            class = new_student.class,
-            name = new_student.name,
-            parentId = new_student.parentId,
-            studentCode = new_student.studentCode,
-            phone = new_student.phone,
-            nextStop = new_student.nextStop,
-            note = new_student.note,
-            status = new_student.status
-        `,
-          studentValues,
-        );
-      }
+      // 요청에 포함되지 않은 기존 Student 레코드는 business 로직상 남겨두는게 낫다.
 
+      // 6. 트랜잭션 커밋
       await queryRunner.commitTransaction();
 
-      return dtos.length;
+      return normalizedDtos.length;
     } catch (error) {
-      await queryRunner.rollbackTransaction();
-      this.logger.error(error);
+      // 트랜잭션이 활성 상태인 경우에만 롤백
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+        this.logger.log(`Transaction rolled back for school ${schoolId}`);
+      }
+      this.logger.error(
+        `Failed to create bulk students for school ${schoolId}`,
+        error.stack,
+      );
       throw error;
     } finally {
-      // queryRunner가 release 되었는지 확인
       if (!queryRunner.isReleased) {
         await queryRunner.release();
       }
@@ -208,6 +149,235 @@ export class SchoolStudentService {
     }
 
     return existingStudents;
+  }
+
+  /**
+   * 부모 정보를 처리하고 ID 매핑 (phone -> id)을 반환
+   * - parent.id 포함시: 기존 parent 찾아서 정보 수정
+   * - parent.id 미포함시: phone으로 parent 검색
+   *   - 기존 parent 발견시: 해당 parent 정보 수정
+   *   - 기존 parent 미발견시: 새로운 parent 생성
+   */
+  private async processParents(
+    queryRunner: QueryRunner,
+    dtos: CreateStudentDto[],
+  ): Promise<Map<string, number>> {
+    const parentMap = new Map<string, number>();
+    const parentsToUpsert: Array<{
+      id?: number;
+      userId?: number | null;
+      name: string | null;
+      phone: string;
+      note?: string | null;
+      termsAgreedAt?: Date | null;
+    }> = [];
+
+    // 1단계: 각 DTO의 parent 처리 로직 적용
+    for (const dto of dtos) {
+      const { parent } = dto;
+
+      if (parent.id) {
+        // parent.id가 포함된 경우: 기존 parent 찾아서 정보 수정
+        const existingParent = await queryRunner.query(
+          'SELECT id, phone FROM parents WHERE id = ?',
+          [parent.id],
+        );
+
+        if (existingParent.length === 0) {
+          throw new NotFoundException(`Parent not found with id: ${parent.id}`);
+        }
+
+        const existingPhone = existingParent[0].phone as string;
+        parentMap.set(existingPhone, parent.id);
+
+        // 기존 parent 정보 업데이트
+        parentsToUpsert.push({
+          id: parent.id,
+          userId: parent.userId || null,
+          name: parent.name || null,
+          phone: existingPhone,
+          note: parent.note || null,
+          termsAgreedAt: parent.termsAgreedAt || null,
+        });
+      } else {
+        // parent.id가 없는 경우: phone으로 처리
+        if (!parent.phone) {
+          throw new BadRequestException(
+            'Phone number is required when parent.id is not provided',
+          );
+        }
+
+        // phone으로 기존 parent 검색 (이미 정규화된 전화번호 사용)
+        const existingParent = await queryRunner.query(
+          'SELECT id, phone FROM parents WHERE phone = ?',
+          [parent.phone],
+        );
+
+        if (existingParent.length > 0) {
+          // 기존 parent 발견: 정보 수정
+          const existingId = existingParent[0].id as number;
+          parentMap.set(parent.phone, existingId);
+
+          parentsToUpsert.push({
+            id: existingId,
+            userId: parent.userId || null,
+            name: parent.name || null,
+            phone: parent.phone,
+            note: parent.note || null,
+            termsAgreedAt: parent.termsAgreedAt || null,
+          });
+        } else {
+          // 기존 parent 미발견: 새로운 parent 생성
+          parentsToUpsert.push({
+            userId: parent.userId || null,
+            name: parent.name || null,
+            phone: parent.phone,
+            note: parent.note || null,
+            termsAgreedAt: parent.termsAgreedAt || null,
+          });
+          // 새로운 parent는 3단계에서 ID를 받아서 매핑에 추가됨
+        }
+      }
+    }
+
+    // 2단계: 부모 일괄 Upsert (MySQL 8.0+ alias 문법 사용)
+    if (parentsToUpsert.length > 0) {
+      const parentPlaceholders = parentsToUpsert
+        .map(() => '(?, ?, ?, ?, ?)')
+        .join(', ');
+
+      const parentValues: (string | number | Date | null)[] =
+        parentsToUpsert.flatMap((parent) => [
+          parent.userId || null,
+          parent.name || null,
+          parent.phone,
+          parent.note || null,
+          parent.termsAgreedAt || null,
+        ]);
+
+      await queryRunner.query(
+        `
+        INSERT INTO parents (userId, name, phone, note, termsAgreedAt)
+        VALUES ${parentPlaceholders} AS new_parent(userId, name, phone, note, termsAgreedAt)
+        ON DUPLICATE KEY UPDATE 
+          userId = new_parent.userId,
+          name = new_parent.name,
+          note = new_parent.note,
+          termsAgreedAt = new_parent.termsAgreedAt
+      `,
+        parentValues,
+      );
+    }
+
+    // 3단계: 생성된 부모 ID 매핑 (phone -> id)
+    const parentPhoneNumbers = parentsToUpsert
+      .map((p) => `'${p.phone}'`)
+      .join(',');
+
+    if (parentPhoneNumbers) {
+      const parentRecords = (await queryRunner.query(`
+        SELECT phone, id FROM parents WHERE phone IN (${parentPhoneNumbers})
+      `)) as Array<{ phone: string; id: number }>;
+
+      // 새로운 parent들의 ID를 매핑에 추가
+      for (const record of parentRecords) {
+        if (!parentMap.has(record.phone)) {
+          parentMap.set(record.phone, record.id);
+        }
+      }
+    }
+
+    return parentMap;
+  }
+
+  /**
+   * 학생 일괄 Upsert 처리
+   */
+  private async upsertStudents(
+    queryRunner: QueryRunner,
+    dtos: CreateStudentDto[],
+    schoolId: number,
+    parentMap: Map<string, number>,
+  ): Promise<void> {
+    if (dtos.length === 0) {
+      return;
+    }
+
+    const studentPlaceholders = dtos
+      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .join(', ');
+
+    const studentValues: (string | number | null)[] = dtos.flatMap((dto) => [
+      dto.name || null,
+      dto.parent.phone ? parentMap.get(dto.parent.phone) || null : null,
+      schoolId,
+      dto.grade || null,
+      dto.class || null,
+      dto.studentCode || null,
+      dto.phone || null,
+      dto.nextStop || null,
+      dto.note || null,
+      dto.status || 'ATTENDING',
+    ]);
+
+    await queryRunner.query(
+      `
+      INSERT INTO students (
+        name,
+        parentId,
+        schoolId,
+        grade,
+        class,
+        studentCode,
+        phone,
+        nextStop,
+        note,
+        status
+      )
+      VALUES ${studentPlaceholders} AS new_student(
+        name,
+        parentId,
+        schoolId,
+        grade,
+        class,
+        studentCode,
+        phone,
+        nextStop,
+        note,
+        status
+      )
+      ON DUPLICATE KEY UPDATE 
+        schoolId = new_student.schoolId,
+        grade = new_student.grade,
+        class = new_student.class,
+        name = new_student.name,
+        parentId = new_student.parentId,
+        studentCode = new_student.studentCode,
+        phone = new_student.phone,
+        nextStop = new_student.nextStop,
+        note = new_student.note,
+        status = new_student.status
+    `,
+      studentValues,
+    );
+  }
+
+  /**
+   * DTO에서 부모 ID를 추출하는 헬퍼 메서드
+   */
+  private getParentId(
+    dto: CreateStudentDto,
+    parentMap: Map<string, number>,
+  ): number | null {
+    if (dto.parentId) {
+      return dto.parentId;
+    }
+
+    if (dto.parent.phone) {
+      return parentMap.get(dto.parent.phone) || null;
+    }
+
+    return null;
   }
 
   async parseExcel(
@@ -292,14 +462,6 @@ export class SchoolStudentService {
         row.getCell(7).value = student.note;
       }
     });
-
-    // sheet.columns.forEach((column, index) => {
-    //   if (index < 4) {
-    //     column.width = 10;
-    //   } else {
-    //     column.width = 15;
-    //   }
-    // });
 
     return workbook;
   }
