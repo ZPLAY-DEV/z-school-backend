@@ -6,7 +6,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { subDays } from 'date-fns';
 import { fromZonedTime } from 'date-fns-tz';
 import { nanoid } from 'nanoid';
 import {
@@ -87,10 +86,10 @@ export class NewsletterService {
   async createRegistrationNewsletter(
     dto: CreateRegistrationNewsletterDto,
   ): Promise<Newsletter> {
-    const { schoolId, termId, images } = dto;
+    const { schoolId, termId, images, date } = dto;
 
     const term = await this.checkTermValidity(termId, 'REGISTRATION');
-    const scheduledAt = subDays(term.bookingStart!, 3);
+    const scheduledAt = date ?? term.bookingStart!;
     const school = await this.checkSchoolValidity(schoolId, scheduledAt);
     await this.checkExistingNewsletterWithDto(
       schoolId,

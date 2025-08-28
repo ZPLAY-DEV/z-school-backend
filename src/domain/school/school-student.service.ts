@@ -31,15 +31,17 @@ export class SchoolStudentService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  async createBulkDryrun(
+    schoolId: number,
+    dtos: CreateStudentDto[],
+  ): Promise<Student[]> {
+    return await this.checkExistingStudents(dtos);
+  }
+
   async createBulk(
     schoolId: number,
     dtos: CreateStudentDto[],
-    dryrun: boolean = false, // 덮어쓰진 않고, 덮어쓰여질 레코드 목록만 반환
-  ): Promise<number | Student[]> {
-    if (dryrun) {
-      return await this.checkExistingStudents(dtos);
-    }
-
+  ): Promise<number> {
     if (!dtos.length) {
       return 0;
     }

@@ -15,15 +15,14 @@ import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { NewsletterType } from 'src/common/enums';
 import { IS3Urls } from 'src/common/interfaces';
+import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { CreateRegistrationNewsletterDto } from 'src/domain/newsletter/dto/create-registration-newsletter.dto';
+import { GenerateS3UrlsDto } from 'src/domain/newsletter/dto/generate-s3-urls.dto';
+import { ResendNewsletterDto } from 'src/domain/newsletter/dto/resend-newsletter.dto';
 import { NewsletterDetailResponseDto } from 'src/domain/newsletter/dto/response-extended-newsletter.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
-import { UploadService } from 'src/services/upload/upload.service';
-import { CreateNewsletterDto } from './dto/create-newsletter.dto';
-import { GenerateS3UrlsDto } from './dto/generate-s3-urls.dto';
-import { ResendNewsletterDto } from './dto/resend-newsletter.dto';
-import { NewsletterService } from './newsletter.service';
+import { NewsletterService } from 'src/domain/newsletter/newsletter.service';
 import {
   CancelNewsletterDocs,
   CreateNewsletterDocs,
@@ -36,7 +35,8 @@ import {
   MarkAsReadDocs,
   ResendNewsletterDocs,
   UpdateNewsletterDocs,
-} from './swagger/newsletter-swagger.decorator';
+} from 'src/domain/newsletter/swagger/newsletter-swagger.decorator';
+import { UploadService } from 'src/services/upload/upload.service';
 
 @ApiTags('✳️ Newsletters ( 뉴스레터 )')
 @Controller('newsletters')

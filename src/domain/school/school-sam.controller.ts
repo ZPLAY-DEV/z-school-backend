@@ -37,13 +37,12 @@ export class SchoolSamController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  // todo. see if it works
   @CreateSchoolSamBulkDocs()
   @Post(':schoolId/sams/bulk')
   async createBulk(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Body() dtos: CreateSamDto[],
-  ): Promise<Sam[]> {
+  ): Promise<number> {
     return await this.schoolSamService.createBulk(schoolId, dtos);
   }
 
@@ -54,7 +53,7 @@ export class SchoolSamController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Body() dtos: CreateSamDto[],
   ): Promise<Sam[]> {
-    return await this.schoolSamService.createBulk(schoolId, dtos, true);
+    return await this.schoolSamService.createBulkDryrun(schoolId, dtos);
   }
 
   //? ---------------------------------------------------------------------- ?//

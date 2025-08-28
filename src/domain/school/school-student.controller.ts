@@ -51,7 +51,7 @@ export class SchoolStudentController {
   async createBulk(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Body() dtos: CreateStudentDto[],
-  ): Promise<number | Student[]> {
+  ): Promise<number> {
     return await this.schoolStudentService.createBulk(schoolId, dtos);
   }
 
@@ -60,8 +60,8 @@ export class SchoolStudentController {
   async bulkDryRun(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Body() dtos: CreateStudentDto[],
-  ): Promise<number | Student[]> {
-    return await this.schoolStudentService.createBulk(schoolId, dtos, true);
+  ): Promise<Student[]> {
+    return await this.schoolStudentService.createBulkDryrun(schoolId, dtos);
   }
 
   @CreateSchoolStudentExcelUploadDocs()

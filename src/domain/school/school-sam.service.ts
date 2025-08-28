@@ -33,42 +33,28 @@ export class SchoolSamService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  async createBulk(
+  async createBulkDryrun(
     schoolId: number,
     dtos: CreateSamDto[],
-    dryrun: boolean = false, // 덮어쓰진 않고, 덮어쓰여질 레코드 목록만 반환
   ): Promise<Sam[]> {
-    // 1. 입력 검증 및 전화번호 정규화
-    if (!dtos || dtos.length === 0) {
-      return [];
+    return await this.checkExistingSams(schoolId, dtos);
+  }
+
+  async createBulk(schoolId: number, dtos: CreateSamDto[]): Promise<number> {
+    if (!dtos.length) {
+      return 0;
     }
 
     // DTO 레벨에서 전화번호 정규화 (한 번만 처리)
     const normalizedDtos = dtos.map((dto) => {
-      const normalizedPhone = dto.instructor.phone
-        ? normalizePhone(dto.instructor.phone)
-        : undefined;
-
-      // 전화번호 정규화 실패 시 에러 처리
-      if (dto.instructor.phone && !normalizedPhone) {
-        throw new BadRequestException(
-          `Invalid phone number format: ${dto.instructor.phone}`,
-        );
-      }
-
       return {
         ...dto,
         instructor: {
           ...dto.instructor,
-          phone: normalizedPhone,
+          phone: normalizePhone(dto.instructor.phone),
         },
       };
     });
-
-    // 2. Dry run 모드 처리
-    if (dryrun) {
-      return await this.checkExistingSams(normalizedDtos, schoolId);
-    }
 
     // 3. 학교 존재 여부 확인
     const school = await this.schoolRepository.findOne({
@@ -80,12 +66,10 @@ export class SchoolSamService {
 
     // 4. 트랜잭션 시작
     const queryRunner = this.dataSource.createQueryRunner();
-    let transactionStarted = false;
 
     try {
       await queryRunner.connect();
       await queryRunner.startTransaction();
-      transactionStarted = true;
 
       this.logger.log(`Transaction started for school ${schoolId}`);
 
@@ -122,7 +106,6 @@ export class SchoolSamService {
 
       // 9. 트랜잭션 커밋
       await queryRunner.commitTransaction();
-      this.logger.log(`Transaction committed for school ${schoolId}`);
 
       // 10. 생성된 Sam 조회 및 반환 (요청된 것만 효율적으로 조회)
       const requestedInstructorIds = normalizedDtos
@@ -130,7 +113,7 @@ export class SchoolSamService {
         .filter((id) => id !== null);
 
       if (requestedInstructorIds.length === 0) {
-        return [];
+        return 0;
       }
 
       const createdSams = await this.samRepository
@@ -143,13 +126,10 @@ export class SchoolSamService {
         .orderBy('sam.alias', 'ASC')
         .getMany();
 
-      this.logger.log(
-        `Returning ${createdSams.length} sams for school ${schoolId}`,
-      );
-      return createdSams;
+      return createdSams.length;
     } catch (error) {
-      // 트랜잭션이 시작된 경우에만 롤백
-      if (transactionStarted && queryRunner.isTransactionActive) {
+      // 트랜잭션이 활성 상태인 경우에만 롤백
+      if (queryRunner.isTransactionActive) {
         await queryRunner.rollbackTransaction();
         this.logger.log(`Transaction rolled back for school ${schoolId}`);
       }
@@ -166,8 +146,8 @@ export class SchoolSamService {
   }
 
   private async checkExistingSams(
-    dtos: CreateSamDto[],
     schoolId: number,
+    dtos: CreateSamDto[],
   ): Promise<Sam[]> {
     const phoneNumbers = dtos
       .map((dto) => dto.instructor?.phone)
@@ -189,7 +169,7 @@ export class SchoolSamService {
   }
 
   /**
-   * 강사 정보를 처리하고 ID 매핑을 반환
+   * 강사 정보를 처리하고 ID 매핑 (phone -> id)을 반환
    * - instructor.id 포함시: 기존 instructor 찾아서 정보 수정
    * - instructor.id 미포함시: phone으로 instructor 검색
    *   - 기존 instructor 발견시: 해당 instructor 정보 수정
