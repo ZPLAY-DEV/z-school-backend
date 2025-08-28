@@ -286,9 +286,9 @@ export class SamService {
 
     if (date) {
       // "2025-08" 형태의 문자열을 파싱하여 해당 월의 시작일과 마지막일 계산
-      const [year, monthNum] = date.split('-').map(Number);
-      const startDate = new Date(year, monthNum - 1, 1); // 월은 0부터 시작하므로 -1
-      const endDate = new Date(year, monthNum, 0); // 다음 달의 0일 = 이번 달의 마지막일
+      const [year, month] = date.split('-').map(Number);
+      const startDate = new Date(year, month - 1, 1); // 월은 0부터 시작하므로 -1
+      const endDate = new Date(year, month, 0); // 다음 달의 0일 = 이번 달의 마지막일
 
       queryBuilder.andWhere('schoolday.startsAt >= :startDate', {
         startDate,

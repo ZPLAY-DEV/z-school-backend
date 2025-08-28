@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -24,8 +25,9 @@ export class GroupSchooldayController {
   @Get(':groupId/schooldays')
   async list(
     @Param('groupId', ParseIntPipe) groupId: number,
+    @Query('date') date?: string, //! YYYY-MM,
   ): Promise<Schoolday[]> {
-    return await this.groupSchooldaysService.list(groupId);
+    return await this.groupSchooldaysService.list(groupId, date);
   }
 
   @Get(':groupId/schooldays/paginated')
