@@ -119,8 +119,8 @@ export class GroupAttendanceController {
   // schooldays 는 그날 수업이 있나 없나 판단 근거.
   // 학생별 출석자료 source of truth 는 dynamodb.
   @GetReportDocs()
-  @Get(':groupId/attendances/:month/report/excel')
-  async getMonthlyReportExcel(
+  @Get(':groupId/attendances/:month/report/download')
+  async downloadMonthlyReportExcel(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('month') month: string,
     @Res() res: Response,

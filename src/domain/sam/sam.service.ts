@@ -270,7 +270,11 @@ export class SamService {
   }
 
   //? SAM과 직접 관련된 그룹들의 schooldays만 조회 (SQL 레벨 최적화)
-  async getAllSchooldays(id: number, termId?: number): Promise<Schoolday[]> {
+  async getAllSchooldays(
+    id: number,
+    termId?: number,
+    date?: string, //! must be in YYYY-MM format
+  ): Promise<Schoolday[]> {
     const queryBuilder = this.dataSource
       .createQueryBuilder(Schoolday, 'schoolday')
       .leftJoin('schoolday.group', 'group')
@@ -278,6 +282,20 @@ export class SamService {
 
     if (termId) {
       queryBuilder.andWhere('schoolday.termId = :termId', { termId });
+    }
+
+    if (date) {
+      // "2025-08" 형태의 문자열을 파싱하여 해당 월의 시작일과 마지막일 계산
+      const [year, monthNum] = date.split('-').map(Number);
+      const startDate = new Date(year, monthNum - 1, 1); // 월은 0부터 시작하므로 -1
+      const endDate = new Date(year, monthNum, 0); // 다음 달의 0일 = 이번 달의 마지막일
+
+      queryBuilder.andWhere('schoolday.startsAt >= :startDate', {
+        startDate,
+      });
+      queryBuilder.andWhere('schoolday.startsAt <= :endDate', {
+        endDate,
+      });
     }
 
     return await queryBuilder.getMany();

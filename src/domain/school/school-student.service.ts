@@ -8,11 +8,10 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { StudentStatus } from 'src/common/enums';
-import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-grades.dto';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { normalizePhone } from 'src/helpers/phone';
+import { formatPhone, normalizePhone } from 'src/helpers/phone';
 import { DataSource, Repository } from 'typeorm';
 import { School } from './entities/school.entity';
 
@@ -32,8 +31,8 @@ export class SchoolStudentService {
   constructor(
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
-    @InjectRepository(Pick)
-    private readonly pickRepository: Repository<Pick>,
+    @InjectRepository(School)
+    private readonly schoolRepository: Repository<School>,
     private dataSource: DataSource, // for transaction
   ) {}
 
@@ -271,6 +270,92 @@ export class SchoolStudentService {
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
+
+  async generateExcel(schoolId: number): Promise<ExcelJS.Workbook> {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('월별출석보고서');
+
+    const [school, students] = await Promise.all([
+      this.schoolRepository.findOneOrFail({
+        where: { id: schoolId },
+      }),
+      this.studentRepository.find({
+        where: { schoolId: schoolId },
+        relations: ['parent', 'parent.user'],
+      }),
+    ]);
+
+    const titleRow = sheet.addRow([`${school.name} 학생 목록`]);
+    titleRow.font = { bold: true, size: 16 };
+    titleRow.alignment = { horizontal: 'center' };
+
+    const lastCol = String.fromCharCode(65 + 7);
+    sheet.mergeCells(`A1:${lastCol}1`);
+
+    // breathing room
+    const row2 = sheet.addRow(['']); // 빈 row 추가
+    const rowIndex = row2.number;
+    sheet.mergeCells(`A${rowIndex}:${lastCol}${rowIndex}`);
+
+    const headerRow = [
+      '순번',
+      '학년',
+      '반',
+      '번호',
+      '이름',
+      '보호자 연락처',
+      '학생 연락처',
+      '비고',
+    ];
+    sheet.addRow(headerRow);
+
+    const headerRowObj = sheet.getRow(sheet.rowCount);
+    headerRowObj.font = { bold: true };
+    headerRowObj.alignment = { horizontal: 'center' };
+    headerRowObj.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    });
+
+    students.forEach((student, index) => {
+      const rowData = [
+        index + 1, // 순번
+        `${student.grade}`, // 학년
+        `${student.class}`, // 반
+        `${student.studentCode}`, // 번호
+        student.name, // 이름
+        formatPhone(student.parent.phone), // 보호자 연락처
+        formatPhone(student.phone), // 학생 연락처
+        student.note, // 비고
+        student.status, // 상태
+      ];
+
+      const dataRow = sheet.addRow(rowData);
+
+      dataRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+    });
+
+    sheet.columns.forEach((column, index) => {
+      if (index < 4) {
+        column.width = 10;
+      } else {
+        column.width = 15;
+      }
+    });
+
+    return workbook;
+  }
 
   async list(
     schoolId: number,

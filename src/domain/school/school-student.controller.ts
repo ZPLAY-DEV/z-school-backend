@@ -8,15 +8,16 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-import { StudentStatus } from 'src/common/enums';
-
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
+import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
+import { StudentStatus } from 'src/common/enums';
 import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-grades.dto';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -158,6 +159,36 @@ export class SchoolStudentController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @Get(':schoolId/students/download')
+  async downloadStudents(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Res() res: Response,
+  ) {
+    const workbook = await this.schoolStudentService.generateExcel(schoolId);
+
+    // 헤더 설정
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="school-${schoolId}-students.xlsx"`,
+    );
+
+    // 엑셀 파일을 response stream으로 작성
+    await workbook.xlsx.write(res);
+    res.end();
+  }
+
+  @SchoolStudentGradesDocs()
+  @Get(':schoolId/students/grades')
+  async getGradeClasses(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+  ): Promise<ResponseSchoolGradesDto[]> {
+    return await this.schoolStudentService.getGradeClasses(schoolId);
+  }
+
   @SchoolStudentListDocs()
   @Get(':schoolId/students')
   async list(
@@ -182,13 +213,5 @@ export class SchoolStudentController {
     @Paginate() query: PaginateQuery,
   ): Promise<Paginated<Student>> {
     return await this.schoolStudentService.infiniteList(schoolId, query);
-  }
-
-  @SchoolStudentGradesDocs()
-  @Get(':schoolId/students/grades')
-  async getGradeClasses(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-  ): Promise<ResponseSchoolGradesDto[]> {
-    return await this.schoolStudentService.getGradeClasses(schoolId);
   }
 }

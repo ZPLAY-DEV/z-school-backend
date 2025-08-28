@@ -390,16 +390,19 @@ export const GetAllSchooldaysDocs = () =>
 ### 🏷️ 조회 조건
 - **기본**: 모든 수업일 조회
 - **학기 필터**: termId 전달 시 해당 학기의 수업만 필터링
+- **월별 필터**: date 파라미터로 특정 월의 수업만 필터링 (YYYY-MM 형식)
 
 ### 📌 비즈니스 규칙
 - 담임쌤이 직접 담당하는 그룹의 수업만 조회됩니다
 - 학기별로 필터링 가능합니다
+- 월별로 필터링 가능합니다 (해당 월의 시작일부터 마지막일까지)
 - 수업 정보와 함께 반 정보도 포함됩니다
 - SQL 레벨에서 최적화된 조회로 성능 향상
 
 ### 💡 사용 시점
 - 담임쌤 대시보드에서 전체 수업 일정 확인
 - 학기별 수업 관리
+- 월별 수업 일정 확인
 - 수업 준비 및 계획
 - 전체 수업 일정 분석
       `,
@@ -414,6 +417,13 @@ export const GetAllSchooldaysDocs = () =>
       type: Number,
       description: '학기 ID (선택사항, 전달 시 해당 학기의 수업만 필터링)',
       required: false,
+    }),
+    ApiQuery({
+      name: 'date',
+      type: String,
+      description: '조회할 월 (YYYY-MM 형식, 선택사항, 전달 시 해당 월의 수업만 필터링)',
+      required: false,
+      example: '2025-08',
     }),
     ApiExtraModels(Schoolday),
     ApiOkResponse({
