@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as ExcelJS from 'exceljs';
 import {
   FilterOperator,
   paginate,
@@ -15,6 +16,15 @@ import { normalizePhone } from 'src/helpers/phone';
 import { DataSource, Repository } from 'typeorm';
 import { School } from './entities/school.entity';
 
+interface IExcelStudentRow {
+  name: string;
+  grade: number;
+  class: string;
+  studentCode: number;
+  parentPhone: string;
+  phone: string | null;
+  note: string | null;
+}
 @Injectable()
 export class SchoolStudentService {
   private readonly logger = new Logger(SchoolStudentService.name);
@@ -206,6 +216,56 @@ export class SchoolStudentService {
     }
 
     return existingStudents;
+  }
+
+  async parseExcel(
+    schoolId: number,
+    file: Express.Multer.File,
+  ): Promise<CreateStudentDto[]> {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(file.buffer);
+
+    // 첫번째 sheet
+    const worksheet = workbook.worksheets[0];
+    const students: CreateStudentDto[] = [];
+
+    // 3) 실제 데이터 추출 (헤더 아래 행부터 시작)
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber < 4) return;
+
+      const [
+        _x,
+        _y,
+        name,
+        grade,
+        className,
+        studentCode,
+        parentPhone,
+        phone,
+        note,
+      ] = row.values as any[]; // row.values[0] 은 항상 undefined
+
+      if (!name || !grade || !className || !studentCode || !parentPhone) return;
+
+      const student: CreateStudentDto = {
+        name: name.toString().trim(),
+        grade: Number(grade),
+        class: className?.toString().trim(),
+        studentCode: Number(studentCode),
+        parent: {
+          name: `${name?.toString().trim()} 보호자`,
+          phone: parentPhone?.toString().trim(),
+        },
+        phone: phone ? phone.toString().trim() : null,
+        note: note ? note.toString().trim() : null,
+        status: StudentStatus.ATTENDING,
+        schoolId,
+      };
+
+      students.push(student);
+    });
+
+    return students;
   }
 
   //? ---------------------------------------------------------------------- ?//

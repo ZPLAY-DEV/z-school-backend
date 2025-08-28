@@ -8,12 +8,14 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { StudentStatus } from 'src/common/enums';
 
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-grades.dto';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
@@ -22,6 +24,7 @@ import { UploadService } from 'src/services/upload/upload.service';
 import { SchoolStudentService } from './school-student.service';
 import {
   CreateSchoolStudentBulkDocs,
+  CreateSchoolStudentExcelUploadDocs,
   CreateSchoolStudentsBulkDryRunDocs,
   SchoolStudentGradesDocs,
   SchoolStudentListDocs,
@@ -59,6 +62,20 @@ export class SchoolStudentController {
     return await this.schoolStudentService.createBulk(schoolId, dtos, true);
   }
 
+  @CreateSchoolStudentExcelUploadDocs()
+  @Post(':schoolId/students/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadStudents(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<number | Student[]> {
+    if (!file) {
+      throw new Error('파일이 업로드되지 않았습니다.');
+    }
+    const dtos = await this.schoolStudentService.parseExcel(schoolId, file);
+    return await this.schoolStudentService.createBulk(schoolId, dtos);
+  }
+
   // ------------------------------------------------------------------------ //
 
   @ApiOperation({ summary: '⚙️ to initialize table' })
@@ -71,12 +88,6 @@ export class SchoolStudentController {
     // 1-6학년, 각 학년당 4개 반, 각 반당 25명씩 생성
     const dtos: CreateStudentDto[] = [];
 
-    const whitelist = [
-      '010-8907-2911',
-      '010-9486-7415',
-      '010-2044-0571',
-      '010-9392-4027',
-    ];
     for (let grade = 1; grade <= 6; grade++) {
       for (let classNum = 1; classNum <= 2; classNum++) {
         const classDtos: CreateStudentDto[] = [];

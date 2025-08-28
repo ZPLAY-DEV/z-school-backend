@@ -1,16 +1,16 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-  ApiOkPaginatedResponse,
-  ApiPaginationQuery,
-  FilterOperator,
-  PaginateConfig,
+    ApiOkPaginatedResponse,
+    ApiPaginationQuery,
+    FilterOperator,
+    PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
@@ -329,6 +329,159 @@ Query Parameters:
     }),
     ApiOkResponseTemplate({
       description: '수강신청과목 전체 목록 조회 완료',
+      type: ResponseSchoolOfferingListDto,
+      isArray: true,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Get School > Term > Offerings Personal List
+//? ---------------------------------------------------------------------- ?//
+
+export const GetPersonalListDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '👤 학생별 개인화된 수강신청과목 목록',
+      description: `
+**📝 기능 설명**
+특정 학생을 위한 개인화된 수강신청과목 목록을 조회합니다. 해당 학생이 수강 가능한 과목들과 이미 신청한 과목들의 정보를 포함합니다.
+
+**🔄 비즈니스 로직**
+- 학생의 학년에 맞는 수강 가능한 과목들만 필터링
+- 해당 학생의 기존 수강신청(booking) 정보를 포함
+- 시간표 충돌 여부를 확인하여 선택 가능 여부(selectable) 계산
+- 지난 학기 prepicked 학생 정보를 포함
+- 카테고리별 필터링 지원
+- 수강신청 여부와 요일별 필터링 옵션 제공
+
+**⚠️ 중요 제약사항**
+- 학교 ID, 학기 ID, 학생 ID, 학년은 필수 파라미터
+- 학생의 학년에 맞지 않는 과목은 목록에서 제외
+- 시간표가 겹치는 과목은 selectable이 false로 설정
+
+**📚 예시 시나리오**
+1. **수강신청 화면**: 학생이 수강신청 페이지에서 자신이 신청 가능한 과목 목록 조회
+2. **카테고리별 조회**: 체육, 예술 등 특정 카테고리의 과목만 조회
+3. **신청 완료 과목 확인**: booking=true로 이미 신청한 과목들만 조회
+4. **요일별 필터링**: weekday=true로 특정 요일 수업만 조회
+
+**API 호출 예시**
+\`\`\`
+GET /v1/schools/123/terms/456/offerings/personal?studentId=789&grade=1&categoryId=10&booking=false&weekday=true
+\`\`\`
+
+**Request Parameters:**
+\`\`\`
+Path Parameters:
+- schoolId: 123 (학교 ID)
+- termId: 456 (학기 ID)
+
+Query Parameters:
+- studentId: 789 (필수 - 학생 ID)
+- grade: 1 (필수 - 학년, 1-6)
+- categoryId: 10 (선택 - 카테고리 ID)
+- booking: false (선택 - true: 신청한 과목만, false: 신청 안한 과목만)
+- weekday: true (선택 - 요일 정보 포함 여부)
+\`\`\`
+
+**Response Example:**
+\`\`\`json
+[
+  {
+    "id": 1001,
+    "schoolId": 123,
+    "termId": 456,
+    "lessonId": 789,
+    "lessonName": "수학",
+    "groupName": "1-1",
+    "samName": "김선생님",
+    "capacity": 25,
+    "bookingCount": 18,
+    "prepicked": 2,
+    "allowedGrades": [1, 2],
+    "pickRule": "FIRST_COME_FIRST_SERVED",
+    "times": [
+      {
+        "start": "09:00",
+        "end": "09:50",
+        "dayOfWeek": 1
+      }
+    ],
+    "prepickedStudentIds": [567, 890],
+    "status": "ACTIVE",
+    "totals": [50000, 45000],
+    "booking": {
+      "id": 2001,
+      "studentId": 789,
+      "lessonName": "수학",
+      "offeringId": 1001,
+      "status": "ENROLLED",
+      "waitingPosition": 0,
+      "createdAt": "2024-01-15T09:00:00.000Z"
+    },
+    "selectable": true,
+    "weekday": "MONDAY"
+  }
+]
+\`\`\`
+
+**📊 Response Fields**
+- \`totals\`: 각 반별 총 비용 배열 (수강료 + 교재비 + 재료비)
+- \`booking\`: 해당 학생의 수강신청 정보 (있는 경우)
+- \`selectable\`: 수강신청 가능 여부 (시간표 충돌 등을 고려)
+- \`weekday\`: 수업 요일 (weekday=true일 때만 포함)
+- \`prepickedStudentIds\`: 지난 학기에 해당 과목을 수강한 학생들의 ID 목록
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      description: '학교 ID',
+      example: 123,
+    }),
+    ApiParam({
+      name: 'termId',
+      description: '학기 ID',
+      example: 456,
+    }),
+    ApiQuery({
+      name: 'studentId',
+      description: '학생 ID (필수)',
+      required: true,
+      example: 789,
+      type: 'number',
+    }),
+    ApiQuery({
+      name: 'grade',
+      description: '학년 (1-6, 필수)',
+      required: true,
+      example: 1,
+      type: 'number',
+    }),
+    ApiQuery({
+      name: 'categoryId',
+      description: '카테고리 ID (선택적)',
+      required: false,
+      example: 10,
+      type: 'number',
+    }),
+    ApiQuery({
+      name: 'booking',
+      description: '수강신청 여부 필터 (선택적) - true: 신청한 과목만, false: 신청 안한 과목만',
+      required: false,
+      example: false,
+      type: 'boolean',
+    }),
+    ApiQuery({
+      name: 'weekday',
+      description: '요일 정보 포함 여부 (선택적)',
+      required: false,
+      example: true,
+      type: 'boolean',
+    }),
+    ApiOkResponseTemplate({
+      description: '학생별 개인화된 수강신청과목 목록 조회 완료',
       type: ResponseSchoolOfferingListDto,
       isArray: true,
     }),

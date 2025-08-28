@@ -1,17 +1,18 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiCreatedResponse,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
+    ApiBody,
+    ApiConsumes,
+    ApiCreatedResponse,
+    ApiOperation,
+    ApiParam,
+    ApiResponse,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-  ApiOkPaginatedResponse,
-  ApiPaginationQuery,
-  FilterOperator,
-  PaginateConfig,
+    ApiOkPaginatedResponse,
+    ApiPaginationQuery,
+    FilterOperator,
+    PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
@@ -177,6 +178,111 @@ export const CreateSchoolStudentBulkDocs = () => {
               '학생 이름은 2자 이상 10자 이하여야 합니다',
               '전화번호 형식이 올바르지 않습니다',
             ],
+          },
+          error: { type: 'string', example: 'Bad Request' },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 404,
+      description: '존재하지 않는 학교',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 404 },
+          message: { type: 'string', example: 'School not found' },
+          error: { type: 'string', example: 'Not Found' },
+        },
+      },
+    }),
+    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? 학생 Excel 업로드
+//? ---------------------------------------------------------------------- ?//
+
+export const CreateSchoolStudentExcelUploadDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '📊 Excel 파일로 학생 일괄 등록',
+      description: `
+**📝 기능 설명**
+- Excel 파일을 업로드하여 학생 정보를 일괄 등록/수정합니다
+- 파일의 첫 번째 시트에서 학생 데이터를 읽어옵니다
+- 3번째 행부터 실제 데이터로 인식합니다 (1-2행은 헤더)
+
+**📋 Excel 파일 형식**
+- **A열**: 빈 열 (인덱스)
+- **B열**: 학생 이름 (필수)
+- **C열**: 학년 (1-6)
+- **D열**: 반 (문자열)
+- **E열**: 학번 (1-50)
+- **F열**: 학부모 전화번호 (010으로 시작하는 11자리)
+- **G열**: 학생 전화번호 (선택사항)
+- **H열**: 비고 (선택사항)
+
+**🔄 비즈니스 로직**
+1. Excel 파일 파싱 및 데이터 검증
+2. schoolId + grade + class + studentCode 조합으로 중복 체크
+3. 기존 학생은 정보 업데이트, 새로운 학생은 생성
+4. 학부모 정보도 함께 생성/업데이트
+5. 처리된 학생 수 반환
+
+**⚠️ 중요 제약사항**
+- 파일은 반드시 .xlsx 형식이어야 함
+- 학생 이름은 필수 입력 (빈 행은 무시)
+- 학년은 1-6 범위 내 숫자
+- 반은 문자열 형태 (예: "1", "2", "A", "B")
+- 학번은 1-50 범위 내 숫자
+- 전화번호는 010으로 시작하는 11자리
+
+**📚 예시 시나리오**
+- 신학기 전체 학생 명단 일괄 등록
+- 중간 전학생 추가 등록
+- 기존 학생 정보 대량 수정
+- 학급별 학생 명단 업데이트
+      `,
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID - 학생을 등록할 학교의 고유 식별자',
+      example: 1,
+    }),
+    ApiConsumes('multipart/form-data'),
+    ApiBody({
+      schema: {
+        type: 'object',
+        properties: {
+          file: {
+            type: 'string',
+            format: 'binary',
+            description: 'Excel 파일 (.xlsx) - 학생 정보가 포함된 파일',
+          },
+        },
+        required: ['file'],
+      },
+    }),
+    ApiCreatedResponse({
+      description: 'Excel 파일 업로드 및 학생 일괄 등록 완료',
+      schema: {
+        type: 'number',
+        example: 25,
+        description: '성공적으로 처리된 학생 수',
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: '파일 업로드 실패 또는 데이터 검증 실패',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 400 },
+          message: {
+            type: 'string',
+            example: '파일이 업로드되지 않았습니다.',
           },
           error: { type: 'string', example: 'Bad Request' },
         },

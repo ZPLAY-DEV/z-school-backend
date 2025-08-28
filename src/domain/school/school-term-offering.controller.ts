@@ -18,6 +18,7 @@ import { SchoolTermOfferingService } from 'src/domain/school/school-term-offerin
 import {
   CreateSchoolTermOfferingsDocs,
   DeleteAllSchoolTermOfferingsDocs,
+  GetPersonalListDocs,
   SchoolTermOfferingListDocs,
   SchoolTermOfferingPaginatedListDocs,
 } from 'src/domain/school/swagger/school-term-offering-swagger.decorator';
@@ -75,6 +76,7 @@ export class SchoolTermOfferingController {
     return await this.schoolTermOfferingService.list(schoolId, termId, grade);
   }
 
+  @GetPersonalListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/offerings/personal')
   async getPersonalList(

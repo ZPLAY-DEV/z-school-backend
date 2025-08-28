@@ -9332,7 +9332,7 @@ const data = [
   {
     uri: `users`,
     payload: {
-      username: '010-2044-0571',
+      username: '01020440571',
       password: 'password',
     },
   },
