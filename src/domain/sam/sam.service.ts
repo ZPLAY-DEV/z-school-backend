@@ -304,7 +304,7 @@ export class SamService {
   //? SAM과 직접 관련된 그룹들의 schooldays만 조회 (SQL 레벨 최적화)
   async getSchooldaysByDate(
     id: number,
-    date: string,
+    date: string, //! YYYY-MM-DD
     termId?: number,
   ): Promise<Schoolday[]> {
     // SQL 레벨에서 필터링하여 필요한 데이터만 조회
@@ -313,7 +313,7 @@ export class SamService {
       .leftJoinAndSelect('schoolday.group', 'group')
       .leftJoinAndSelect('schoolday.departures', 'departures')
       .where('group.samId = :samId', { samId: id })
-      .andWhere('schoolday.today = :date OR schoolday.original = :date', {
+      .andWhere('(schoolday.today = :date OR schoolday.original = :date)', {
         date,
       });
 
