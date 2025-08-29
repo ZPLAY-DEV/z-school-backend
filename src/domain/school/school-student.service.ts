@@ -40,7 +40,7 @@ export class SchoolStudentService {
     schoolId: number,
     dtos: CreateStudentDto[],
   ): Promise<Student[]> {
-    return await this.checkExistingStudents(dtos);
+    return await this.checkExistingStudents(schoolId, dtos);
   }
 
   async createBulk(
@@ -51,7 +51,7 @@ export class SchoolStudentService {
       return 0;
     }
 
-    // 1. DTO 정규화 (전화번호 정규화)
+    // 전화번호 정규화 at the DTO level
     const normalizedDtos = dtos.map((dto) => ({
       ...dto,
       parent: {
@@ -60,7 +60,7 @@ export class SchoolStudentService {
       },
     }));
 
-    // 2. 학교 존재 여부 확인
+    // 학교 존재 여부 확인
     const school = await this.schoolRepository.findOne({
       where: { id: schoolId },
     });
@@ -68,7 +68,7 @@ export class SchoolStudentService {
       throw new NotFoundException(`School not found: ${schoolId}`);
     }
 
-    // 3. 트랜잭션 시작
+    // 트랜잭션 시작
     const queryRunner = this.dataSource.createQueryRunner();
 
     try {
@@ -77,13 +77,13 @@ export class SchoolStudentService {
 
       this.logger.log(`Transaction started for school ${schoolId}`);
 
-      // 4. 부모 처리 및 매핑
+      // 1. 부모 처리 및 매핑
       const parentMap = await this.processParents(queryRunner, normalizedDtos);
       this.logger.log(
         `Processed ${parentMap.size} parents for school ${schoolId}`,
       );
 
-      // 5. 학생 일괄 Upsert
+      // 2. Student 일괄 Upsert
       await this.upsertStudents(
         queryRunner,
         normalizedDtos,
@@ -96,7 +96,7 @@ export class SchoolStudentService {
 
       // 요청에 포함되지 않은 기존 Student 레코드는 business 로직상 남겨두는게 낫다.
 
-      // 6. 트랜잭션 커밋
+      // 트랜잭션 커밋
       await queryRunner.commitTransaction();
 
       return normalizedDtos.length;
@@ -123,11 +123,12 @@ export class SchoolStudentService {
    * (schoolId, grade, class, studentCode)
    */
   private async checkExistingStudents(
+    schoolId: number,
     dtos: CreateStudentDto[],
   ): Promise<Student[]> {
     // Extract unique key combinations from DTOs
     const uniqueKeyCombinations = dtos.map((dto) => ({
-      schoolId: dto.schoolId,
+      schoolId: dto.schoolId ?? schoolId,
       grade: dto.grade,
       class: dto.class,
       studentCode: dto.studentCode,
@@ -373,7 +374,7 @@ export class SchoolStudentService {
     const worksheet = workbook.worksheets[0];
     const students: CreateStudentDto[] = [];
 
-    // 3) 실제 데이터 추출 (헤더 아래 행부터 시작)
+    // 실제 데이터 추출 (헤더 아래 행부터 시작)
     worksheet.eachRow((row, index) => {
       if (index < 2) return;
 

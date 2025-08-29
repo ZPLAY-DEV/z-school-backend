@@ -48,7 +48,7 @@ export class SchoolSamService {
       return 0;
     }
 
-    // DTO 레벨에서 전화번호 정규화 (한 번만 처리)
+    // 전화번호 정규화 at the DTO level
     const normalizedDtos = dtos.map((dto) => {
       return {
         ...dto,
@@ -59,7 +59,7 @@ export class SchoolSamService {
       };
     });
 
-    // 3. 학교 존재 여부 확인
+    // 학교 존재 여부 확인
     const school = await this.schoolRepository.findOne({
       where: { id: schoolId },
     });
@@ -67,7 +67,7 @@ export class SchoolSamService {
       throw new NotFoundException(`School not found: ${schoolId}`);
     }
 
-    // 4. 트랜잭션 시작
+    // 트랜잭션 시작
     const queryRunner = this.dataSource.createQueryRunner();
 
     try {
@@ -76,7 +76,7 @@ export class SchoolSamService {
 
       this.logger.log(`Transaction started for school ${schoolId}`);
 
-      // 5. 강사 처리 및 매핑
+      // 1. 강사 처리 및 매핑
       const instructorMap = await this.processInstructors(
         queryRunner,
         normalizedDtos,
@@ -85,10 +85,10 @@ export class SchoolSamService {
         `Processed ${instructorMap.size} instructors for school ${schoolId}`,
       );
 
-      // 6. 기존 Sam 레코드 조회 (삭제 대상 식별용) - 현재는 사용하지 않지만 향후 확장성을 위해 유지
+      // 기존 Sam 레코드 조회 (삭제 대상 식별용) - 현재는 사용하지 않지만 향후 확장성을 위해 유지
       // await this.getExistingSams(queryRunner, schoolId, instructorMap);
 
-      // 7. Sam 일괄 Upsert
+      // 2. Sam 일괄 Upsert
       await this.upsertSams(
         queryRunner,
         normalizedDtos,
@@ -99,26 +99,16 @@ export class SchoolSamService {
         `Upserted ${normalizedDtos.length} sams for school ${schoolId}`,
       );
 
-      // 8. 요청에 포함되지 않은 기존 Sam 레코드 삭제 (죽은 데이터 정리)
-      await this.cleanupOrphanedSams(
-        queryRunner,
-        schoolId,
-        normalizedDtos,
-        instructorMap,
-      );
+      // 요청에 포함되지 않은 기존 Sam 레코드 삭제 (죽은 데이터 정리)
+      // await this.cleanupOrphanedSams(
+      //   queryRunner,
+      //   schoolId,
+      //   normalizedDtos,
+      //   instructorMap,
+      // );
 
-      // 9. 트랜잭션 커밋
+      // 트랜잭션 커밋
       await queryRunner.commitTransaction();
-
-      // const createdSams = await this.samRepository
-      //   .createQueryBuilder('sam')
-      //   .leftJoinAndSelect('sam.instructor', 'instructor')
-      //   .where('sam.schoolId = :schoolId', { schoolId })
-      //   .andWhere('sam.instructorId IN (:...instructorIds)', {
-      //     instructorIds: requestedInstructorIds,
-      //   })
-      //   .orderBy('sam.alias', 'ASC')
-      //   .getMany();
 
       return normalizedDtos.length;
     } catch (error) {
@@ -519,9 +509,9 @@ export class SchoolSamService {
     const worksheet = workbook.worksheets[0];
     const sams: CreateSamDto[] = [];
 
-    // 3) 실제 데이터 추출 (헤더 아래 행부터 시작)
+    // 실제 데이터 추출 (헤더 아래 행부터 시작)
     worksheet.eachRow((row, index) => {
-      if (index < 2) return;
+      if (index < 3) return;
 
       const [_, name, phone, note] = row.values as any[]; // row.values[0] 은 항상 undefined
 
