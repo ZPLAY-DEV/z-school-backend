@@ -435,6 +435,55 @@ export class GroupService {
     return bookedStudents;
   }
 
+  // todo. optimized way
+  async listBookedStudents(id: number): Promise<any[]> {
+    // 1. Group을 찾고 lesson 관계를 포함하여 가져오기
+    const group = await this.groupRepository.findOne({
+      where: { id },
+      relations: ['lesson'],
+    });
+
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+
+    // 2. Group의 allowedGrades 파싱 (쉼표로 구분된 문자열을 숫자 배열로 변환)
+    const groupAllowedGrades = group.allowedGrades
+      .split(',')
+      .map((grade) => parseInt(grade.trim()));
+    const sortedGroupAllowedGrades = groupAllowedGrades.sort();
+    const sortedGroupAllowedGradesString = sortedGroupAllowedGrades.join(',');
+
+    // 3. 해당 lesson에 속하면서 allowedGrades가 동일한 모든 offerings 찾기
+    const offerings = await this.offeringRepository
+      .createQueryBuilder('offering')
+      .where('offering.lessonId = :lessonId', { lessonId: group.lessonId })
+      .getMany();
+
+    // 4. allowedGrades가 정확히 같은 offerings만 필터링
+    const matchingOfferings = offerings.filter((offering) => {
+      const sortedOfferingGrades = offering.allowedGrades.sort();
+      const sortedOfferingGradesString = sortedOfferingGrades.join(',');
+      return sortedOfferingGradesString === sortedGroupAllowedGradesString;
+    });
+
+    if (matchingOfferings.length < 1) {
+      return [];
+    }
+
+    const [offeringId] = matchingOfferings.map((offering) => offering.id);
+
+    // 5. 해당 offering에 대한 bookings 조회
+    const bookings = await this.bookingRepository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.student', 'student')
+      .where('booking.offeringId = :offeringId', { offeringId })
+      .orderBy('booking.waitingPosition', 'ASC')
+      .getMany();
+
+    return bookings;
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//

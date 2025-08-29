@@ -130,6 +130,13 @@ export class GroupController {
     return await this.groupService.listBookedPendingStudents(id);
   }
 
+  @Get(':id/booked-students')
+  async listBookedStudents(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Student[]> {
+    return await this.groupService.listBookedStudents(id);
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
