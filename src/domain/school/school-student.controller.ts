@@ -70,7 +70,7 @@ export class SchoolStudentController {
   async uploadStudents(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @UploadedFile() file: Express.Multer.File,
-  ): Promise<number | Student[]> {
+  ): Promise<number> {
     if (!file) {
       throw new Error('파일이 업로드되지 않았습니다.');
     }

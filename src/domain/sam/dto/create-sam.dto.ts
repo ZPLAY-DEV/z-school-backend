@@ -90,7 +90,7 @@ export class CreateSamDto {
   @IsOptional()
   @IsString({ message: '비고는 문자열이어야 합니다' })
   @MaxLength(255, { message: '비고는 255자 이하여야 합니다' })
-  note?: string;
+  note?: string | null;
 
   @ApiPropertyOptional({
     description: `강사 ID - 기존 등록된 강사와 직접 연결할 때 사용 (선택)

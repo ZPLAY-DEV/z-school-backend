@@ -17,6 +17,7 @@ import { Actor } from 'src/common/enums';
 
 import { UpdateSchooldayTimeDto } from 'src/domain/schoolday/dto/update-schoolday.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { formatDateInKST } from 'src/helpers/time';
 import { SchooldayService } from './schoolday.service';
 import {
   GetSchooldayByIdDocs,
@@ -88,6 +89,9 @@ export class SchooldayController {
     @CurrentUserIdAndRole() user: { id: number; role: string },
   ): Promise<Schoolday> {
     const { startsAt, endsAt } = await this.schooldayService.findById(id);
+
+    // DTO에 startsAt 키가 포함되어 있는지 확인
+
     if (
       startsAt &&
       endsAt &&
@@ -106,6 +110,16 @@ export class SchooldayController {
         : user.role === 'INSTRUCTOR'
           ? Actor.INSTRUCTOR
           : Actor.OTHER;
-    return await this.schooldayService.update(id, { ...dto, updatedBy: role });
+    const schoolday = await this.schooldayService.update(id, {
+      ...dto,
+      updatedBy: role,
+    });
+
+    if ('startsAt' in dto) {
+      schoolday.original = schoolday.today;
+      schoolday.today = formatDateInKST(schoolday.startsAt);
+    }
+
+    return schoolday;
   }
 }

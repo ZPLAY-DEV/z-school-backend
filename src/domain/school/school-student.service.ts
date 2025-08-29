@@ -362,24 +362,6 @@ export class SchoolStudentService {
     );
   }
 
-  /**
-   * DTO에서 부모 ID를 추출하는 헬퍼 메서드
-   */
-  private getParentId(
-    dto: CreateStudentDto,
-    parentMap: Map<string, number>,
-  ): number | null {
-    if (dto.parentId) {
-      return dto.parentId;
-    }
-
-    if (dto.parent.phone) {
-      return parentMap.get(dto.parent.phone) || null;
-    }
-
-    return null;
-  }
-
   async parseExcel(
     schoolId: number,
     file: Express.Multer.File,

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as ExcelJS from 'exceljs';
 import {
   FilterOperator,
   paginate,
@@ -15,8 +16,10 @@ import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
-import { normalizePhone } from 'src/helpers/phone';
+import { truncate } from 'src/helpers/formatter';
+import { formatPhone, normalizePhone } from 'src/helpers/phone';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
+
 @Injectable()
 export class SchoolSamService {
   private readonly logger = new Logger(SchoolSamService.name);
@@ -499,5 +502,77 @@ export class SchoolSamService {
         'contracts.termId': [FilterOperator.EQ],
       },
     });
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Excel
+  //? ---------------------------------------------------------------------- ?//
+
+  async parseExcel(
+    schoolId: number,
+    file: Express.Multer.File,
+  ): Promise<CreateSamDto[]> {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(file.buffer);
+
+    // 첫번째 sheet
+    const worksheet = workbook.worksheets[0];
+    const sams: CreateSamDto[] = [];
+
+    // 3) 실제 데이터 추출 (헤더 아래 행부터 시작)
+    worksheet.eachRow((row, index) => {
+      if (index < 2) return;
+
+      const [_, name, phone, note] = row.values as any[]; // row.values[0] 은 항상 undefined
+
+      if (!name || !phone) return;
+
+      const sam: CreateSamDto = {
+        alias: name.toString().trim(),
+        instructor: {
+          name: name.toString().trim(),
+          phone: phone.toString().trim(),
+        },
+        note: note ? truncate(note.toString().trim() as string) : null,
+        schoolId,
+      };
+
+      sams.push(sam);
+    });
+
+    return sams;
+  }
+
+  async generateExcel(schoolId: number): Promise<ExcelJS.Workbook> {
+    const workbook = new ExcelJS.Workbook();
+    const templateUrl = 'https://cdn.xn--ov3b17fd5n5vf.kr/excels/sams-v2.xlsx';
+    const response = await fetch(templateUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch template: ${response.statusText}`);
+    }
+    const buffer = await response.arrayBuffer();
+
+    // 템플릿 파일 읽기
+    await workbook.xlsx.load(Buffer.from(buffer));
+    const sheet = workbook.getWorksheet(1);
+
+    if (!sheet) {
+      throw new Error('Sheet not found');
+    }
+
+    const sams = await this.samRepository.find({
+      where: { schoolId: schoolId },
+      relations: ['instructor', 'groups'],
+    });
+    sams.forEach((sam, index) => {
+      const row = sheet.insertRow(3 + index, []);
+      row.getCell(1).value = sam.alias;
+      row.getCell(2).value = formatPhone(sam.instructor.phone);
+      row.getCell(3).value = sam.groups
+        ? sam.groups.map((v) => v.groupName).join(', ')
+        : '';
+    });
+
+    return workbook;
   }
 }

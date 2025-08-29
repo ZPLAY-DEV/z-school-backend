@@ -7,12 +7,15 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Res,
+  UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
-
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { SchoolSamService } from 'src/domain/school/school-sam.service';
@@ -56,9 +59,45 @@ export class SchoolSamController {
     return await this.schoolSamService.createBulkDryrun(schoolId, dtos);
   }
 
+  @Post(':schoolId/sams/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadStudents(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<number> {
+    if (!file) {
+      throw new Error('파일이 업로드되지 않았습니다.');
+    }
+    const dtos = await this.schoolSamService.parseExcel(schoolId, file);
+    return await this.schoolSamService.createBulk(schoolId, dtos);
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
+
+  @Get(':schoolId/sams/download')
+  async downloadSams(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Res() res: Response,
+  ) {
+    const workbook = await this.schoolSamService.generateExcel(schoolId);
+    const date = new Date().toISOString().split('T')[0];
+
+    // 헤더 설정
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="sams-${date}.xlsx"`,
+    );
+
+    // 엑셀 파일을 response stream으로 작성
+    await workbook.xlsx.write(res);
+    res.end();
+  }
 
   @SchoolSamListDocs()
   @Get(':schoolId/sams')
