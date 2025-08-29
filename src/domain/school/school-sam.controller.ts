@@ -40,6 +40,16 @@ export class SchoolSamController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateSchoolSamBulkDryRunDocs()
+  @HttpCode(StatusCodes.OK)
+  @Post(':schoolId/sams/bulk/dryrun')
+  async createBulkDryrun(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Body() dtos: CreateSamDto[],
+  ): Promise<Sam[]> {
+    return await this.schoolSamService.createBulkDryrun(schoolId, dtos);
+  }
+
   @CreateSchoolSamBulkDocs()
   @Post(':schoolId/sams/bulk')
   async createBulk(
@@ -47,16 +57,6 @@ export class SchoolSamController {
     @Body() dtos: CreateSamDto[],
   ): Promise<number> {
     return await this.schoolSamService.createBulk(schoolId, dtos);
-  }
-
-  @CreateSchoolSamBulkDryRunDocs()
-  @HttpCode(StatusCodes.OK)
-  @Post(':schoolId/sams/bulk/dryrun')
-  async bulkDryRun(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Body() dtos: CreateSamDto[],
-  ): Promise<Sam[]> {
-    return await this.schoolSamService.createBulkDryrun(schoolId, dtos);
   }
 
   @Post(':schoolId/sams/upload')

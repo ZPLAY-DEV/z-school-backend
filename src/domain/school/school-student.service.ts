@@ -453,16 +453,25 @@ export class SchoolStudentService {
     schoolId: number,
     grade?: number,
     grades?: number[],
+    relations?: string[],
     attendingOnly?: boolean,
   ): Promise<Student[]> {
     const queryBuilder = this.studentRepository
       .createQueryBuilder('student')
-      .leftJoinAndSelect('student.parent', 'parent')
-      .leftJoinAndSelect('student.picks', 'picks')
       .where('student.schoolId = :schoolId', { schoolId })
       .orderBy('student.grade', 'ASC')
       .addOrderBy('student.class', 'ASC')
       .addOrderBy('student.studentCode', 'ASC');
+
+    // relations 파라미터에 따라 동적으로 조인 추가
+    if (relations && relations.length > 0) {
+      if (relations.includes('parent')) {
+        queryBuilder.leftJoinAndSelect('student.parent', 'parent');
+      }
+      if (relations.includes('picks')) {
+        queryBuilder.leftJoinAndSelect('student.picks', 'picks');
+      }
+    }
 
     if (grade) {
       queryBuilder.andWhere('student.grade = :grade', { grade });

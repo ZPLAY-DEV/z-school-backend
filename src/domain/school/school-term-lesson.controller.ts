@@ -36,26 +36,8 @@ export class SchoolTermLessonController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @CreateSchoolTermLessonsBulkDocs()
-  @Post(':schoolId/terms/:termId/lessons/bulk')
-  @HttpCode(200)
-  async createBulk(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Param('termId', ParseIntPipe) termId: number,
-    @Body() dtos: CreateLessonRequestDto[],
-  ): Promise<Lesson[]> {
-    const createLessonDtos = dtos.map((dto) => ({
-      ...dto,
-      schoolId,
-      termId,
-    }));
-
-    return await this.schoolTermLessonService.createBulk(createLessonDtos);
-  }
-
   //! create() 의 모든 로직이 무사히 실행되는지 persist 하지 않고, 실험해보기 위한 것이
   //! dryrun() 인데, 그냥 중복 강좌 레코드가 있는지만 확인하고 말았다. ㅠ.ㅠ
-
   @CreateSchoolTermLessonsBulkDryRunDocs()
   @Post(':schoolId/terms/:termId/lessons/bulk/dryrun')
   @HttpCode(200)
@@ -70,9 +52,29 @@ export class SchoolTermLessonController {
       termId,
     }));
 
-    return await this.schoolTermLessonService.createBulk(
+    return await this.schoolTermLessonService.createBulkDryrun(
       createLessonDtos,
-      true,
+    );
+  }
+
+  @CreateSchoolTermLessonsBulkDocs()
+  @Post(':schoolId/terms/:termId/lessons/bulk')
+  @HttpCode(200)
+  async createBulk(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+    @Body() dtos: CreateLessonRequestDto[],
+  ): Promise<Lesson[]> {
+    const createLessonDtos = dtos.map((dto) => ({
+      ...dto,
+      schoolId,
+      termId,
+    }));
+
+    return await this.schoolTermLessonService.createBulk(
+      schoolId,
+      termId,
+      createLessonDtos,
     );
   }
 

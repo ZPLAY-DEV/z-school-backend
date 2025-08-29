@@ -46,6 +46,15 @@ export class SchoolStudentController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateSchoolStudentsBulkDryRunDocs()
+  @Post(':schoolId/students/bulk/dryrun')
+  async createBulkDryrun(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Body() dtos: CreateStudentDto[],
+  ): Promise<Student[]> {
+    return await this.schoolStudentService.createBulkDryrun(schoolId, dtos);
+  }
+
   @CreateSchoolStudentBulkDocs()
   @Post(':schoolId/students/bulk')
   async createBulk(
@@ -53,15 +62,6 @@ export class SchoolStudentController {
     @Body() dtos: CreateStudentDto[],
   ): Promise<number> {
     return await this.schoolStudentService.createBulk(schoolId, dtos);
-  }
-
-  @CreateSchoolStudentsBulkDryRunDocs()
-  @Post(':schoolId/students/bulk/dryrun')
-  async bulkDryRun(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Body() dtos: CreateStudentDto[],
-  ): Promise<Student[]> {
-    return await this.schoolStudentService.createBulkDryrun(schoolId, dtos);
   }
 
   @CreateSchoolStudentExcelUploadDocs()
@@ -198,12 +198,14 @@ export class SchoolStudentController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Query('grade') grade?: number,
     @Query('grades') grades?: string,
+    @Query('relations') relations?: string,
     @Query('attendingOnly') attendingOnly?: string,
   ): Promise<Student[]> {
     return await this.schoolStudentService.list(
       schoolId,
       grade ? Number(grade) : undefined,
       grades ? grades.split(',').map(Number) : undefined,
+      relations ? relations.split(',') : undefined,
       attendingOnly ? attendingOnly === 'true' : undefined,
     );
   }

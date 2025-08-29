@@ -115,6 +115,7 @@ export class SchooldayController {
       updatedBy: role,
     });
 
+    // manipulate the response payload to reflect the changes
     if ('startsAt' in dto) {
       schoolday.original = schoolday.today;
       schoolday.today = formatDateInKST(schoolday.startsAt);

@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -10,6 +15,8 @@ import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { LessonCoreService } from 'src/domain/lesson/lesson-core.service';
+import { School } from 'src/domain/school/entities/school.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -19,6 +26,10 @@ export class SchoolTermLessonService {
   constructor(
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
+    @InjectRepository(School)
+    private readonly schoolRepository: Repository<School>,
+    @InjectRepository(Term)
+    private readonly termRepository: Repository<Term>,
     private readonly lessonCoreService: LessonCoreService,
   ) {}
 
@@ -28,17 +39,36 @@ export class SchoolTermLessonService {
 
   //! create() 의 모든 로직이 무사히 실행되는지 persist 하지 않고, 실험해보기 위한 것이
   //! dryrun() 인데, 그냥 중복 강좌 레코드가 있는지만 확인하고 말았다. ㅠ.ㅠ
+  async createBulkDryrun(dtos: CreateLessonDto[]): Promise<Lesson[]> {
+    return await this.checkExistingLessons(dtos);
+  }
+
   async createBulk(
+    schoolId: number,
+    termId: number,
     dtos: CreateLessonDto[],
-    dryrun: boolean = false, // 덮어쓰진 않고, 덮어쓰여질 레코드 목록만 반환
   ): Promise<Lesson[]> {
-    if (dryrun) {
-      return await this.checkExistingLessons(dtos);
+    const lessons: Lesson[] = [];
+
+    // performs validations only here and let the core service handle the rest
+    //? 1단계) 학교 정보 확인
+    const school = await this.schoolRepository.findOne({
+      where: { id: schoolId },
+    });
+    if (!school) {
+      throw new NotFoundException('School not found');
     }
 
-    const lessons: Lesson[] = [];
+    //? 2단계) 학기 정보 확인
+    const term = await this.termRepository.findOne({
+      where: { id: termId },
+    });
+    if (!term) {
+      throw new NotFoundException('Term not found');
+    }
+
     for (const dto of dtos) {
-      const lesson = await this.lessonCoreService.create(dto);
+      const lesson = await this.lessonCoreService.create(school, term, dto);
       lessons.push(lesson);
     }
     return lessons;

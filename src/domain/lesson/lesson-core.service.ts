@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -55,36 +56,26 @@ export class LessonCoreService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  async create(dto: CreateLessonDto): Promise<Lesson> {
+  async create(
+    school: School,
+    term: Term,
+    dto: CreateLessonDto,
+  ): Promise<Lesson> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      //? 1단계) 학교 정보 확인
-      const school = await manager.findOne(School, {
-        where: { id: dto.schoolId },
-      });
-      if (!school) {
-        throw new NotFoundException('School not found');
-      }
-
-      //? 2단계) 학기 정보 확인
-      const term = await manager.findOne(Term, {
-        where: { id: dto.termId },
-      });
-      if (!term) {
-        throw new NotFoundException('Term not found');
-      }
-
+      //? 1. start/end 가 학기 기간 내에 있는지 확인
       const termStartDate = term.start.toString().split('T')[0];
       const termEndDate = term.end.toString().split('T')[0];
       if (
         (dto.start && dto.start < termStartDate) ||
         (dto.end && dto.end > termEndDate)
       ) {
+        console.log(`🥵`, termStartDate, termEndDate, dto.start, dto.end);
         throw new BadRequestException(
           `Lesson period is outside the term's range`,
         );
       }
 
-      //? 3단계) 같은 이름의 기존 강좌가 있는지 확인
+      //? 2. 같은 이름의 기존 강좌가 있는지 확인
       const existingLesson = await manager.findOne(Lesson, {
         where: {
           termId: dto.termId,
@@ -97,7 +88,7 @@ export class LessonCoreService {
         return this.update(existingLesson.id, dto, manager);
       }
 
-      //? 4단계) 새로운 강좌 생성
+      //? 3. 새로운 강좌 생성
       const createData = {
         ...dto,
         start: dto.start ?? term.start,
@@ -124,29 +115,27 @@ export class LessonCoreService {
             const parts = duplicateValue.split('-');
             if (parts.length === 3) {
               const [schoolId, termId, lessonName] = parts;
-              throw new UnprocessableEntityException(
+              throw new ConflictException(
                 `Duplicate lesson name exits. (schoolId: ${schoolId}, termId: ${termId}, lessonName: ${lessonName})`,
               );
             }
           }
-          throw new UnprocessableEntityException('Duplicate entry exists.');
+          throw new ConflictException('Duplicate entry exists.');
         }
 
         throw new UnprocessableEntityException('Invalid constraint');
       });
 
-      //? 5단계) 반(Group)과 쌤(Sam) 정보 처리
+      //? 4. 반(Group)과 쌤(Sam) 정보 처리
       if (dto.groups?.length) {
         await this.processGroups(lesson, dto, manager);
       }
 
-      // 최종 데이터를 다시 로드하여 변환된 값을 반환
+      //? 5. 최신 데이터로 schooldays(weekNumber포함) 처리
       const savedLesson = await manager.findOneOrFail(Lesson, {
         where: { id: lesson.id },
         relations: { groups: true, category: true },
       });
-
-      //? 6단계) 학업요일 days 정보 및 schooldays 처리 (weekNumber 포함)
       await this.syncSchooldaysForLesson(savedLesson, manager, 'create');
 
       return savedLesson;
@@ -160,13 +149,11 @@ export class LessonCoreService {
   //! 1) 반 이름을 변경한 경우, 기존 반 삭제후 무조건 새로운 반 생성하지 않고, 요일 및 시간을
   //!    추가로 비교하여 그 값들이 같다면, 반 이름만 변경하는 시도로 판단하여 업데이트 진행.
   //! 2) 반 이름과 요일 및 시간을 동시에 변경한 경우, 기존 반 삭제 후 새로운 반 생성.
-
   async update(
     id: number,
     dto: UpdateLessonDto,
     manager?: EntityManager,
   ): Promise<Lesson> {
-    console.log(`🥵 dto`, dto);
     // manager가 제공되지 않은 경우(직접 호출) 새로운 트랜잭션 시작
     if (!manager) {
       return this.dataSource.transaction(
@@ -176,7 +163,7 @@ export class LessonCoreService {
       );
     }
 
-    //? 0단계) 업데이트할 강좌 찾기
+    //? 1. 업데이트할 강좌 찾기
     const existingLesson = await manager.findOne(Lesson, {
       where: { id },
       relations: { groups: true, term: true },
@@ -185,23 +172,21 @@ export class LessonCoreService {
       throw new NotFoundException('Lesson not found');
     }
 
-    //? 0-1단계) start/end 변경 여부 확인 (schooldays 재계산 조건)
+    //? 2. start/end 변경 여부 확인 (schooldays 재계산 조건)
     const isStartChanged =
       dto.start !== undefined && dto.start !== existingLesson.start;
     const isEndChanged =
       dto.end !== undefined && dto.end !== existingLesson.end;
     let needsSchooldaysUpdate = isStartChanged || isEndChanged;
 
-    // Group 변경 사항도 확인 (요일, 시간 변경 시 schooldays 재계산 필요)
+    //? 3. Group 변경 사항도 확인 (요일, 시간 변경 시 schooldays 재계산 필요)
     let hasGroupScheduleChanges = false;
     if (dto.groups?.length) {
       hasGroupScheduleChanges = dto.groups.some((groupDto) => {
         const existingGroup = existingLesson.groups.find(
           (g) => g.groupName === groupDto.groupName || g.id === groupDto.id,
         );
-
         if (!existingGroup) return true; // 새로운 그룹 추가
-
         // 요일이나 시간 변경 여부 확인
         const weekdayChanged =
           groupDto.weekday !== undefined &&
@@ -227,7 +212,7 @@ export class LessonCoreService {
       if (hasGroupScheduleChanges) reasons.push('group schedule changes');
 
       this.logger.log(
-        `📅 [update] Lesson ${id} schooldays recalculation needed - ${reasons.join(', ')}`,
+        `😱 [update] Lesson #${id} schooldays recalculation needed - ${reasons.join(', ')}`,
       );
     }
 
@@ -339,12 +324,12 @@ export class LessonCoreService {
             const parts = duplicateValue.split('-');
             if (parts.length === 3) {
               const [schoolId, termId, lessonName] = parts;
-              throw new UnprocessableEntityException(
+              throw new ConflictException(
                 `duplicate lesson name exits. (schoolId: ${schoolId}, termId: ${termId}, lessonName: ${lessonName})`,
               );
             }
           }
-          throw new UnprocessableEntityException('Duplicate entry exists.');
+          throw new ConflictException('Duplicate entry exists.');
         }
 
         throw new UnprocessableEntityException('Invalid constraint');
@@ -363,9 +348,6 @@ export class LessonCoreService {
 
     //? 6단계) 학업요일 days 정보 및 schooldays 처리
     if (needsSchooldaysUpdate) {
-      this.logger.log(
-        `🔄 [update] Recalculating schooldays for lesson ${id} due to schedule changes`,
-      );
       try {
         await this.syncSchooldaysForLesson(finalLesson, manager, 'update');
         this.logger.log(
@@ -382,9 +364,6 @@ export class LessonCoreService {
       }
 
       //? 7단계) picks와 contracts 날짜 업데이트
-      this.logger.log(
-        `🔄 [update] Updating related picks and contracts for lesson ${id}`,
-      );
       try {
         // picks의 end 날짜만 업데이트 (학생들의 수업 종료일)
         if (isEndChanged) {
@@ -408,10 +387,6 @@ export class LessonCoreService {
           `Failed to update related picks/contracts: ${error.message}`,
         );
       }
-    } else {
-      this.logger.log(
-        `⏭️ [update] Skipping schooldays recalculation for lesson ${id} - no schedule changes detected`,
-      );
     }
 
     return finalLesson;

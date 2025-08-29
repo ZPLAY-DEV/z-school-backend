@@ -7,11 +7,12 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { ClassStatus } from 'src/common/enums';
-import { Group } from 'src/domain/group/entities/group.entity';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { ExtendedStudentDto } from 'src/domain/lesson/dto/extended-student.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { School } from 'src/domain/school/entities/school.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
 import { Repository } from 'typeorm';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { LessonCoreService } from './lesson-core.service';
@@ -23,8 +24,10 @@ export class LessonService {
   constructor(
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
-    @InjectRepository(Group)
-    private readonly groupRepository: Repository<Group>,
+    @InjectRepository(School)
+    private readonly schoolRepository: Repository<School>,
+    @InjectRepository(Term)
+    private readonly termRepository: Repository<Term>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
     private readonly lessonCoreService: LessonCoreService,
@@ -35,7 +38,21 @@ export class LessonService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateLessonDto): Promise<Lesson> {
-    return await this.lessonCoreService.create(dto);
+    const school = await this.schoolRepository.findOne({
+      where: { id: dto.schoolId },
+    });
+    if (!school) {
+      throw new NotFoundException('School not found');
+    }
+
+    const term = await this.termRepository.findOne({
+      where: { id: dto.termId },
+    });
+    if (!term) {
+      throw new NotFoundException('Term not found');
+    }
+
+    return await this.lessonCoreService.create(school, term, dto);
   }
 
   //! create() 의 모든 로직이 무사히 실행되는지 persist 하지 않고, 실험해보기 위한 것이

@@ -313,7 +313,9 @@ export class SamService {
       .leftJoinAndSelect('schoolday.group', 'group')
       .leftJoinAndSelect('schoolday.departures', 'departures')
       .where('group.samId = :samId', { samId: id })
-      .andWhere('schoolday.today = :date', { date });
+      .andWhere('schoolday.today = :date OR schoolday.original = :date', {
+        date,
+      });
 
     if (termId) {
       queryBuilder.andWhere('schoolday.termId = :termId', { termId });
