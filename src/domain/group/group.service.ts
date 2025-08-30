@@ -19,6 +19,7 @@ import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { BookedStudentDto } from 'src/domain/group/dto/booked-student.dto';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
+import { PickedStudentDto } from 'src/domain/group/dto/picked-student.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
@@ -32,7 +33,7 @@ import {
   parseTime,
   parseTimeFormat,
 } from 'src/helpers/parse';
-import { DataSource, IsNull, Not, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 @Injectable()
 export class GroupService {
@@ -217,80 +218,91 @@ export class GroupService {
     }
   }
 
-  async listCurrentStudents(id: number): Promise<Student[]> {
-    const picks = await this.pickRepository.find({
-      where: {
-        groupId: id,
-        endedBy: IsNull(),
-      },
-      relations: ['student'],
-    });
-    return picks.map((pick) => pick.student);
-  }
-
-  async listCanceledStudents(id: number): Promise<Student[]> {
-    const picks = await this.pickRepository.find({
-      where: {
-        groupId: id,
-        endedBy: Not(IsNull()),
-      },
-      relations: ['student'],
-    });
-    return picks.map((pick) => pick.student);
-  }
-
-  async listCurrentStudentsPaginated(
+  async listStudents(
     id: number,
-    query: PaginateQuery,
-  ): Promise<Paginated<Pick>> {
+    isActive?: string,
+  ): Promise<PickedStudentDto[]> {
     const queryBuilder = this.pickRepository
       .createQueryBuilder('pick')
-      .where('pick.groupId = :groupId', { groupId: id })
-      .andWhere('pick.isActive = :isActive', { isActive: true });
+      .leftJoinAndSelect('pick.group', 'group')
+      .leftJoinAndSelect('pick.student', 'student')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .where('pick.groupId = :groupId', { groupId: id });
 
-    return await paginate(query, queryBuilder, {
-      relations: {
-        student: {
-          parent: true,
-        },
-      },
-      sortableColumns: ['id', 'createdAt'],
-      searchableColumns: ['note'],
-      defaultSortBy: [['createdAt', 'ASC']],
-      filterableColumns: {
-        startedBy: [FilterOperator.EQ],
-        endedBy: [FilterOperator.EQ],
-      },
+    if (isActive !== undefined) {
+      const value = isActive === 'true' || isActive === '1' ? true : false;
+      queryBuilder.andWhere('pick.isActive = :isActive', { isActive: value });
+    }
+
+    const picks = await queryBuilder.getMany();
+    return picks.map((v) => {
+      return new PickedStudentDto({
+        id: v.studentId,
+        groupId: v.groupId,
+        groupName: v.group.groupName,
+        name: v.student.name,
+        grade: v.student.grade,
+        class: v.student.class,
+        studentCode: v.student.studentCode,
+        status: v.student.status,
+        parentPhone: v.student.parent.phone,
+        startedBy: v.startedBy,
+        endedBy: v.endedBy,
+        isActive: v.isActive,
+      });
     });
   }
 
-  async listCanceledStudentsPaginated(
+  async listStudentsPaginated(
     id: number,
     query: PaginateQuery,
-  ): Promise<Paginated<Pick>> {
+  ): Promise<Paginated<PickedStudentDto>> {
     const queryBuilder = this.pickRepository
       .createQueryBuilder('pick')
-      .where('pick.groupId = :groupId', { groupId: id })
-      .andWhere('pick.isActive = :isActive', { isActive: false });
+      .leftJoinAndSelect('pick.group', 'group')
+      .leftJoinAndSelect('pick.student', 'student')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .where('pick.groupId = :groupId', { groupId: id });
 
-    return await paginate(query, queryBuilder, {
-      relations: {
-        student: {
-          parent: true,
-        },
-      },
-      sortableColumns: ['id', 'createdAt', 'end'],
+    const result = await paginate(query, queryBuilder, {
+      sortableColumns: ['id'],
       searchableColumns: ['note'],
-      defaultSortBy: [['end', 'DESC']],
+      defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
+        isActive: [FilterOperator.EQ],
         startedBy: [FilterOperator.EQ],
         endedBy: [FilterOperator.EQ],
+        note: [FilterOperator.EQ, FilterOperator.ILIKE],
       },
     });
+
+    // Pick 데이터를 PickedStudentDto로 변환
+    const transformedData = result.data.map(
+      (pick) =>
+        new PickedStudentDto({
+          id: pick.studentId,
+          groupId: pick.groupId,
+          groupName: pick.group.groupName,
+          name: pick.student.name,
+          grade: pick.student.grade,
+          class: pick.student.class,
+          studentCode: pick.student.studentCode,
+          status: pick.student.status,
+          parentPhone: pick.student.parent.phone,
+          startedBy: pick.startedBy,
+          endedBy: pick.endedBy,
+          isActive: pick.isActive,
+        }),
+    );
+
+    return {
+      data: transformedData,
+      meta: result.meta,
+    } as Paginated<PickedStudentDto>;
   }
 
   async listAvailableStudents(id: number): Promise<Student[]> {
-    // 1. Group 정보만 가져오기 (필요한 정보만)
+    // 1. Group 정보만 가져오기
     const group = await this.groupRepository.findOne({
       where: { id },
       relations: ['lesson'],
@@ -305,7 +317,7 @@ export class GroupService {
       .split(',')
       .map((grade) => parseInt(grade.trim()));
 
-    // 3. 데이터베이스 레벨에서 직접 쿼리하여 성능 최적화
+    // 3. database 레벨에서 직접 쿼리 (수업 안듣는 모든 학생)
     const availableStudents = await this.dataSource
       .createQueryBuilder(Student, 'student')
       .leftJoinAndSelect('student.parent', 'parent')
@@ -314,8 +326,8 @@ export class GroupService {
       })
       .andWhere('student.grade IN (:...allowedGrades)', { allowedGrades })
       .andWhere(
-        'student.id NOT IN (SELECT DISTINCT pick.studentId FROM picks pick INNER JOIN `groups` g ON pick.groupId = g.id WHERE g.lessonId = :lessonId AND pick.studentId IS NOT NULL)',
-        { lessonId: group.lessonId },
+        'student.id NOT IN (SELECT DISTINCT p.studentId FROM `picks` p INNER JOIN `groups` g ON p.groupId = g.id WHERE g.lessonId = :lessonId AND p.isActive = :isActive)',
+        { lessonId: group.lessonId, isActive: true },
       )
       .getMany();
 
@@ -426,7 +438,12 @@ export class GroupService {
     // 5. BookedStudentDto 생성하여 반환
     const bookedStudents: BookedStudentDto[] = bookings.map((booking) => {
       return new BookedStudentDto({
-        ...booking.student,
+        id: booking.student.id,
+        name: booking.student.name,
+        grade: booking.student.grade,
+        class: booking.student.class,
+        studentCode: booking.student.studentCode,
+        status: booking.student.status,
         waitingPosition: booking.waitingPosition,
         bookingStatus: booking.status,
       });
@@ -436,7 +453,7 @@ export class GroupService {
   }
 
   // todo. optimized way
-  async listBookedStudents(id: number): Promise<any[]> {
+  async listBookedStudents(id: number): Promise<BookedStudentDto[]> {
     // 1. Group을 찾고 lesson 관계를 포함하여 가져오기
     const group = await this.groupRepository.findOne({
       where: { id },
@@ -478,10 +495,22 @@ export class GroupService {
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.student', 'student')
       .where('booking.offeringId = :offeringId', { offeringId })
-      .orderBy('booking.waitingPosition', 'ASC')
+      .orderBy('booking.status', 'ASC')
+      .addOrderBy('booking.waitingPosition', 'ASC')
       .getMany();
 
-    return bookings;
+    return bookings.map((v) => ({
+      id: v.student.id,
+      groupId: group.id,
+      groupName: group.groupName,
+      name: v.student.name,
+      grade: v.student.grade,
+      class: v.student.class,
+      studentCode: v.student.studentCode,
+      status: v.student.status,
+      waitingPosition: v.waitingPosition,
+      bookingStatus: v.status,
+    }));
   }
 
   //? ---------------------------------------------------------------------- ?//

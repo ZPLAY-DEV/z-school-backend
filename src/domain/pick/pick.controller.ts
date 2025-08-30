@@ -23,9 +23,7 @@ import {
   DeletePickDocs,
   EndPickDocs,
   ListGroupsDocs,
-  ListStudentsDocs,
   PaginatedListGroupsDocs,
-  PaginatedListStudentsDocs,
   RestartPickDocs,
   StartPickDocs,
   UpdatePickDocs,
@@ -79,8 +77,18 @@ export class PickController {
   @RestartPickDocs()
   @HttpCode(200)
   @Post('restart')
-  async restartPick(@Body() dto: StartPickDto): Promise<Pick> {
-    return await this.pickService.restartPick(dto);
+  async restartPick(
+    @Body() dto: StartPickDto,
+    @CurrentUserIdAndRole() user: { id: number; role: string },
+  ): Promise<Pick> {
+    const role =
+      user.role === 'MANAGER'
+        ? Actor.MANAGER
+        : user.role === 'INSTRUCTOR'
+          ? Actor.INSTRUCTOR
+          : Actor.OTHER;
+
+    return await this.pickService.restartPick({ ...dto, startedBy: role });
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -102,23 +110,6 @@ export class PickController {
     @Paginate() query: PaginateQuery,
   ): Promise<Paginated<Pick>> {
     return await this.pickService.groupInfiniteList(studentId, query);
-  }
-
-  @ListStudentsDocs()
-  @Get('groups/:groupId')
-  async getStudentList(
-    @Param('groupId', ParseIntPipe) groupId: number,
-  ): Promise<Pick[]> {
-    return await this.pickService.listStudents(groupId);
-  }
-
-  @PaginatedListStudentsDocs()
-  @Get('groups/:groupId/paginated')
-  async getStudentInfiniteList(
-    @Param('groupId', ParseIntPipe) groupId: number,
-    @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<Pick>> {
-    return await this.pickService.studentInfiniteList(groupId, query);
   }
 
   //? termId로 학생 목록 조회 (studentId 중복 제거)

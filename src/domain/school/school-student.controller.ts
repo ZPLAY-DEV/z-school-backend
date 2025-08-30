@@ -196,17 +196,17 @@ export class SchoolStudentController {
   @Get(':schoolId/students')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Query('grade') grade?: number,
     @Query('grades') grades?: string,
     @Query('relations') relations?: string,
     @Query('attendingOnly') attendingOnly?: string,
   ): Promise<Student[]> {
     return await this.schoolStudentService.list(
       schoolId,
-      grade ? Number(grade) : undefined,
       grades ? grades.split(',').map(Number) : undefined,
       relations ? relations.split(',') : undefined,
-      attendingOnly ? attendingOnly === 'true' : undefined,
+      attendingOnly
+        ? attendingOnly === 'true' || attendingOnly === '1'
+        : undefined,
     );
   }
 

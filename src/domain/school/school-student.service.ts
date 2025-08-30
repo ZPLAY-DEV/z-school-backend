@@ -451,7 +451,6 @@ export class SchoolStudentService {
 
   async list(
     schoolId: number,
-    grade?: number,
     grades?: number[],
     relations?: string[],
     attendingOnly?: boolean,
@@ -471,10 +470,6 @@ export class SchoolStudentService {
       if (relations.includes('picks')) {
         queryBuilder.leftJoinAndSelect('student.picks', 'picks');
       }
-    }
-
-    if (grade) {
-      queryBuilder.andWhere('student.grade = :grade', { grade });
     }
 
     if (grades) {

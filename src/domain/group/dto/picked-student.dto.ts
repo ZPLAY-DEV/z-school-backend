@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { BookingStatus, StudentStatus } from 'src/common/enums';
+import { Actor, StudentStatus } from 'src/common/enums';
 
-export class BookedStudentDto {
+export class PickedStudentDto {
   @ApiProperty({
     description: '학생 ID',
     example: 1,
@@ -52,21 +52,32 @@ export class BookedStudentDto {
   status: StudentStatus;
 
   @ApiProperty({
-    description: '대기 순번',
-    example: 1,
-    minimum: 1,
-    maximum: 50,
+    description: '부모 전화번호',
+    example: '01012345678',
   })
-  waitingPosition: number;
+  parentPhone: string;
 
   @ApiProperty({
-    description: '예약 상태',
-    example: BookingStatus.PENDING,
-    enum: BookingStatus,
+    description: '등록자',
+    example: Actor.MANAGER,
+    enum: Actor,
   })
-  bookingStatus: BookingStatus;
+  startedBy: Actor | null;
 
-  constructor(partial: Partial<BookedStudentDto>) {
+  @ApiProperty({
+    description: '등록자',
+    example: Actor.MANAGER,
+    enum: Actor,
+  })
+  endedBy: Actor | null;
+
+  @ApiProperty({
+    description: '수업 여부',
+    example: true,
+  })
+  isActive: boolean;
+
+  constructor(partial: Partial<PickedStudentDto>) {
     Object.assign(this, partial);
   }
 }

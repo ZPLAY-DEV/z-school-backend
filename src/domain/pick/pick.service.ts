@@ -141,7 +141,7 @@ export class PickService {
         const newPick = this.pickRepository.create({
           ...dto,
           termId: termId,
-          startedBy: role,
+          startedBy: role ?? Actor.OTHER,
           end: end,
           history: [
             {
@@ -275,7 +275,7 @@ export class PickService {
       .update(Pick)
       .set({
         isActive: true,
-        startedBy: dto.startedBy,
+        startedBy: dto.startedBy ?? Actor.OTHER,
         start: dto.start,
         endedBy: null,
         end: pick.group.lesson.end || pick.group.lesson.term.end,
@@ -306,40 +306,6 @@ export class PickService {
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
-
-  async listStudents(groupId: number): Promise<Pick[]> {
-    return await this.pickRepository.find({
-      where: { groupId },
-      relations: ['student', 'student.parent'],
-    });
-  }
-
-  async studentInfiniteList(
-    groupId: number,
-    query: PaginateQuery,
-  ): Promise<Paginated<Pick>> {
-    const queryBuilder = this.pickRepository
-      .createQueryBuilder('pick')
-      .where('pick.groupId = :groupId', { groupId });
-
-    return await paginate(query, queryBuilder, {
-      relations: {
-        student: {
-          parent: true,
-        },
-      },
-      sortableColumns: ['id'],
-      searchableColumns: ['note'],
-      defaultSortBy: [['id', 'DESC']],
-      filterableColumns: {
-        enrolledBy: [FilterOperator.EQ],
-        deletedBy: [FilterOperator.EQ],
-        startedBy: true,
-        endedBy: true,
-        note: true,
-      },
-    });
-  }
 
   async listGroups(studentId: number): Promise<Pick[]> {
     return await this.pickRepository.find({

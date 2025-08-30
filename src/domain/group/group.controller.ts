@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -18,6 +19,7 @@ import { Actor, RemovalStatus } from 'src/common/enums';
 import { BookedStudentDto } from 'src/domain/group/dto/booked-student.dto';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
+import { PickedStudentDto } from 'src/domain/group/dto/picked-student.dto';
 import { UpdateGroupDto } from 'src/domain/group/dto/update-group.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { GroupService } from 'src/domain/group/group.service';
@@ -28,14 +30,11 @@ import {
   ListAvailableStudentsDocs,
   ListAvailableStudentsPaginatedDocs,
   ListBookedPendingStudentsDocs,
-  ListCanceledStudentsDocs,
-  ListCanceledStudentsPaginatedDocs,
   ListCurrentStudentsDocs,
   ListCurrentStudentsPaginatedDocs,
   RestoreGroupDocs,
   UpdateGroupDocs,
 } from 'src/domain/group/swagger/group-swagger.decorator';
-import { Pick as PickEntity } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 
 @ApiTags('✳️ Groups ( 반 )')
@@ -72,37 +71,21 @@ export class GroupController {
   }
 
   @ListCurrentStudentsDocs()
-  @Get(':id/current-students')
+  @Get(':id/students')
   async listCurrentStudents(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<Student[]> {
-    return await this.groupService.listCurrentStudents(id);
-  }
-
-  @ListCanceledStudentsDocs()
-  @Get(':id/canceled-students')
-  async listCanceledStudents(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<Student[]> {
-    return await this.groupService.listCanceledStudents(id);
+    @Query('isActive') isActive?: string,
+  ): Promise<PickedStudentDto[]> {
+    return await this.groupService.listStudents(id, isActive);
   }
 
   @ListCurrentStudentsPaginatedDocs()
-  @Get(':id/current-students/paginated')
+  @Get(':id/students/paginated')
   async listCurrentStudentsPaginated(
     @Param('id', ParseIntPipe) id: number,
     @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<PickEntity>> {
-    return await this.groupService.listCurrentStudentsPaginated(id, query);
-  }
-
-  @ListCanceledStudentsPaginatedDocs()
-  @Get(':id/canceled-students/paginated')
-  async listCanceledStudentsPaginated(
-    @Param('id', ParseIntPipe) id: number,
-    @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<PickEntity>> {
-    return await this.groupService.listCanceledStudentsPaginated(id, query);
+  ): Promise<Paginated<PickedStudentDto>> {
+    return await this.groupService.listStudentsPaginated(id, query);
   }
 
   @ListAvailableStudentsDocs()
@@ -133,7 +116,7 @@ export class GroupController {
   @Get(':id/booked-students')
   async listBookedStudents(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<Student[]> {
+  ): Promise<any[]> {
     return await this.groupService.listBookedStudents(id);
   }
 
