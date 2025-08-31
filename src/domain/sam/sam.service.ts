@@ -328,9 +328,28 @@ export class SamService {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  async bulkUpdate(dto: BulkUpdateSamsDto): Promise<Sam[]> {
+  async bulkUpdate(dto: BulkUpdateSamsDto, termId?: number): Promise<Sam[]> {
+    let samIds: number[] = [];
+    if (termId) {
+      // termId에 해당하는 모든 samId를 쿼리 빌더로 조회
+      const rows =
+        (await this.dataSource
+          .createQueryBuilder(Sam, 'sam')
+          .distinct()
+          .select('sam.id')
+          .innerJoin('sam.contracts', 'contract')
+          .where('contract.termId = :termId', { termId })
+          .getMany()) || [];
+
+      samIds = rows.map((row) => row.id);
+    } else {
+      samIds = dto.samIds || [];
+    }
+    if (samIds.length === 0) {
+      throw new NotFoundException(`No Sams found.`);
+    }
+
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      const { samIds, ...updateData } = dto;
       const updatedSams: Sam[] = [];
 
       // 1. 모든 Sam 존재 여부 확인
@@ -347,11 +366,11 @@ export class SamService {
 
       // 2. 각 Sam에 대해 업데이트 수행
       for (const existingSam of existingSams) {
-        // 3. Sam 정보 업데이트 (강사 정보는 변경하지 않음)
-        const updatedSam = manager.merge(Sam, existingSam, updateData);
+        // Sam 정보 업데이트 (강사 정보는 변경하지 않음)
+        const updatedSam = manager.merge(Sam, existingSam, dto);
         const savedSam = await manager.save(Sam, updatedSam);
 
-        // 4. 업데이트된 Sam 조회 및 배열에 추가
+        // 업데이트된 Sam 조회 및 배열에 추가
         const finalSam = await manager.findOneOrFail(Sam, {
           where: { id: savedSam.id },
           relations: ['instructor'],

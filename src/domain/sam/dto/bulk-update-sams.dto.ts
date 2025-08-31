@@ -1,13 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  ArrayMinSize,
-  IsArray,
-  IsBoolean,
-  IsInt,
-  IsNumber,
-  IsOptional,
-  Min,
-} from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class BulkUpdateSamsDto {
   @ApiProperty({
@@ -16,10 +9,10 @@ export class BulkUpdateSamsDto {
     example: [1, 2, 3, 4],
     required: true,
   })
+  @IsOptional()
   @IsArray({ message: 'SAM ID 목록은 배열이어야 합니다' })
-  @ArrayMinSize(1, { message: '최소 1개 이상의 SAM ID가 필요합니다' })
-  @IsInt({ each: true, message: '각 SAM ID는 정수여야 합니다' })
-  samIds: number[];
+  @Type(() => Number)
+  samIds?: number[];
 
   @ApiPropertyOptional({
     description: '평점 - 담임쌤의 평가 점수 (0~100점)',

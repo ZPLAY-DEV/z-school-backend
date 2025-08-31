@@ -110,7 +110,14 @@ export class SamController {
 
   @BulkUpdateSamsDocs()
   @Patch('bulk')
-  async updateBulk(@Body() dto: BulkUpdateSamsDto): Promise<Sam[]> {
+  async updateBulk(
+    @Body() dto: BulkUpdateSamsDto,
+    @Query('termId') termId?: number,
+  ): Promise<Sam[]> {
+    if (termId) {
+      return await this.samService.bulkUpdate(dto, termId);
+    }
+
     return await this.samService.bulkUpdate(dto);
   }
 
