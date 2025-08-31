@@ -326,8 +326,8 @@ export class GroupService {
       })
       .andWhere('student.grade IN (:...allowedGrades)', { allowedGrades })
       .andWhere(
-        'student.id NOT IN (SELECT DISTINCT p.studentId FROM `picks` p INNER JOIN `groups` g ON p.groupId = g.id WHERE g.lessonId = :lessonId AND p.isActive = :isActive)',
-        { lessonId: group.lessonId, isActive: true },
+        'student.id NOT IN (SELECT DISTINCT p.studentId FROM `picks` p LEFT JOIN `groups` g ON p.groupId = g.id WHERE g.id = :groupId AND p.isActive = :isActive)',
+        { groupId: id, isActive: true },
       )
       .getMany();
 
@@ -362,8 +362,8 @@ export class GroupService {
       })
       .andWhere('student.grade IN (:...allowedGrades)', { allowedGrades })
       .andWhere(
-        'student.id NOT IN (SELECT DISTINCT p.studentId FROM `picks` AS p INNER JOIN `groups` AS g ON p.groupId = g.id WHERE g.lessonId = :lessonId AND p.isActive = :isActive)',
-        { lessonId: group.lessonId, isActive: true },
+        'student.id NOT IN (SELECT DISTINCT p.studentId FROM `picks` p LEFT JOIN `groups` g ON p.groupId = g.id WHERE g.id = :groupId AND p.isActive = :isActive)',
+        { groupId: id, isActive: true },
       );
 
     // 4. nestjs-paginate로 페이지네이션 적용
@@ -454,55 +454,21 @@ export class GroupService {
 
   // todo. optimized way
   async listBookedStudents(id: number): Promise<BookedStudentDto[]> {
-    // 1. Group을 찾고 lesson 관계를 포함하여 가져오기
-    const group = await this.groupRepository.findOne({
-      where: { id },
-      relations: ['lesson'],
-    });
-
-    if (!group) {
-      throw new NotFoundException('Group not found');
-    }
-
-    // 2. Group의 allowedGrades 파싱 (쉼표로 구분된 문자열을 숫자 배열로 변환)
-    const groupAllowedGrades = group.allowedGrades
-      .split(',')
-      .map((grade) => parseInt(grade.trim()));
-    const sortedGroupAllowedGrades = groupAllowedGrades.sort();
-    const sortedGroupAllowedGradesString = sortedGroupAllowedGrades.join(',');
-
-    // 3. 해당 lesson에 속하면서 allowedGrades가 동일한 모든 offerings 찾기
-    const offerings = await this.offeringRepository
-      .createQueryBuilder('offering')
-      .where('offering.lessonId = :lessonId', { lessonId: group.lessonId })
-      .getMany();
-
-    // 4. allowedGrades가 정확히 같은 offerings만 필터링
-    const matchingOfferings = offerings.filter((offering) => {
-      const sortedOfferingGrades = offering.allowedGrades.sort();
-      const sortedOfferingGradesString = sortedOfferingGrades.join(',');
-      return sortedOfferingGradesString === sortedGroupAllowedGradesString;
-    });
-
-    if (matchingOfferings.length < 1) {
-      return [];
-    }
-
-    const [offeringId] = matchingOfferings.map((offering) => offering.id);
-
-    // 5. 해당 offering에 대한 bookings 조회
-    const bookings = await this.bookingRepository
-      .createQueryBuilder('booking')
+    const bookings = await this.dataSource
+      .createQueryBuilder(Booking, 'booking')
       .leftJoinAndSelect('booking.student', 'student')
-      .where('booking.offeringId = :offeringId', { offeringId })
-      .orderBy('booking.status', 'ASC')
-      .addOrderBy('booking.waitingPosition', 'ASC')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .leftJoinAndSelect('booking.offering', 'offering')
+      .where(
+        'offering.id = (SELECT DISTINCT p.offeringId FROM `picks` p INNER JOIN `groups` g ON p.groupId = :groupId)',
+        { groupId: id },
+      )
       .getMany();
 
     return bookings.map((v) => ({
       id: v.student.id,
-      groupId: group.id,
-      groupName: group.groupName,
+      groupId: id,
+      groupName: v.offering.groupName,
       name: v.student.name,
       grade: v.student.grade,
       class: v.student.class,

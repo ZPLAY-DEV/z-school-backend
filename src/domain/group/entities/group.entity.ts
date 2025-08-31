@@ -3,6 +3,7 @@ import { Exclude } from 'class-transformer';
 import { Actor, ClassStatus, Weekday } from 'src/common/enums';
 import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
@@ -34,6 +35,10 @@ export class Group {
   @ApiProperty({ description: '🈵 lessonId', example: 1 })
   @Column({ type: 'int', unsigned: true })
   lessonId: number;
+
+  @ApiProperty({ description: '🈵 lessonId', example: 1 })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  offeringId: number | null;
 
   //* ---------------------------------------------------------------------- *//
 
@@ -143,6 +148,10 @@ export class Group {
   @ManyToOne(() => Lesson, (lesson) => lesson.groups)
   @JoinColumn({ name: 'lessonId' })
   lesson: Lesson;
+
+  @ManyToOne(() => Offering, (offering) => offering.groups)
+  @JoinColumn({ name: 'offeringId' })
+  offering: Offering;
 
   @ManyToOne(() => Sam, (sam) => sam.groups, { nullable: true })
   @JoinColumn({ name: 'samId' })

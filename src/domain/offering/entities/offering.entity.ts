@@ -3,6 +3,7 @@ import { Exclude } from 'class-transformer';
 import { ClassStatus, PickRule } from 'src/common/enums';
 import { ITimeRange } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { School } from 'src/domain/school/entities/school.entity';
@@ -179,6 +180,9 @@ export class Offering {
   lesson: Lesson;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @OneToMany(() => Group, (group) => group.offering)
+  groups: Group[];
 
   @OneToMany(() => Booking, (booking) => booking.offering)
   bookings: Booking[];
