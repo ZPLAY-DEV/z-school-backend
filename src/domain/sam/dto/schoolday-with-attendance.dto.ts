@@ -40,18 +40,18 @@ export class SchooldayWithAttendanceDto {
   @ApiProperty({ description: '하교 정보', type: () => [Departure] })
   departures: Departure[];
 
-  @ApiProperty({ 
-    description: '출석 상태', 
+  @ApiProperty({
+    description: '출석 상태',
     enum: AttendanceStatus,
     example: AttendanceStatus.PRESENT,
-    nullable: true 
+    nullable: true,
   })
   status: AttendanceStatus | null;
 
-  @ApiProperty({ 
-    description: '학부모 메모', 
+  @ApiProperty({
+    description: '학부모 메모',
     nullable: true,
-    example: '조퇴 예정입니다' 
+    example: '조퇴 예정입니다',
   })
   parentNote: string | null;
 }

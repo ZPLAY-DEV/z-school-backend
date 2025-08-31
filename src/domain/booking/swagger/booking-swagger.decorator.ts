@@ -6,8 +6,9 @@ import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-crea
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CancelBookingDto } from 'src/domain/booking/dto/cancel-booking.dto';
 import { CreateBookingDto } from 'src/domain/booking/dto/create-booking.dto';
-import { CreateLateBookingDto } from 'src/domain/booking/dto/create-late-booking.dto';
+import { CreateManualBookingDto } from 'src/domain/booking/dto/create-manual-booking.dto';
 import { ResponseBookingDto } from 'src/domain/booking/dto/response-booking.dto';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create Booking
@@ -91,46 +92,70 @@ export const CreateBookingSwagger = () => {
 //? Create Late Booking
 //? ---------------------------------------------------------------------- ?//
 
-export const CreateLateBookingDocs = () => {
+export const CreateManualBookingDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '⏰ Late Course Registration',
+      summary: '⏰ 기간외 수강신청 (관리자 수동 등록)',
       description: `
-**📝 Feature Description**
-- Allows administrators to manually process course registrations after the registration period has ended
-- Used for special cases where late registration needs to be permitted
-- Enables forced registration without capacity checks
+**📝 기능 설명**
+- 수강신청 기간이 종료된 후 관리자가 수동으로 수강신청을 처리하는 API
+- 특별한 상황에서 기간외 수강신청을 허용해야 할 때 사용
+- 수용인원 제한 없이 강제 등록 가능
 
-**🔄 Business Logic**
-1. Bypasses registration period restrictions
-2. Processes registration regardless of capacity limits
-3. Administrative override for forced registration
-4. Records reason for late registration
-5. Creates registration in pending status immediately
+**🔄 비즈니스 로직**
+1. 수강신청 기간 제한을 우회하여 등록 처리
+2. 수용인원 제한과 관계없이 등록 진행
+3. 관리자 권한으로 강제 등록 실행
+4. 기간외 수강신청 사유를 기록 (note: "기간외 수강신청")
+5. 즉시 PENDING 상태로 수강신청 생성
+6. 대기순번을 기존 신청자 다음 순서로 자동 할당
 
-**⚠️ Important Constraints**
-- Requires administrator privileges
-- Cannot register students who are already enrolled
-- Cannot register for deleted courses or students
-- Should only be used for special circumstances
+**⚠️ 중요 제약사항**
+- 관리자 권한이 필요함
+- 이미 수강신청한 학생은 중복 등록 불가
+- 삭제된 과목이나 학생은 등록 불가
+- 특별한 상황에서만 사용해야 함
+- groupId와 studentId는 필수 파라미터
 
-**📚 Example Scenarios**
-- Helping students who missed the registration period
-- Processing special cases like transfer students
-- Compensating for system errors that prevented successful registration
+**📚 사용 예시**
+- 수강신청 기간을 놓친 학생을 위한 특별 처리
+- 전학생 등 특별한 경우의 수강신청
+- 시스템 오류로 인한 수강신청 실패 보상
+- 관리자 판단 하에 필요한 기간외 등록
+
+**🔍 응답 데이터**
+- 수강신청 ID, 과목 ID, 학생 ID
+- 수강신청 과목명, 대기순번, 상태
+- 기간외 수강신청 비고 메모
+- 생성/수정 일시
       `,
     }),
     ApiBody({
-      type: CreateLateBookingDto,
+      type: CreateManualBookingDto,
+      examples: {
+        '기간외 수강신청 예시': {
+          value: {
+            groupId: 15,
+            studentId: 123,
+          },
+        },
+        '전학생 특별 등록': {
+          value: {
+            groupId: 8,
+            studentId: 456,
+          },
+        },
+      },
     }),
     ApiCreatedResponseTemplate({
-      description: 'Late course registration successful',
-      type: ResponseBookingDto,
+      description: '기간외 수강신청 성공',
+      type: Booking,
     }),
     ApiStatuses(
       StatusCodes.BAD_REQUEST,
       StatusCodes.NOT_FOUND,
       StatusCodes.UNPROCESSABLE_ENTITY,
+      StatusCodes.INTERNAL_SERVER_ERROR,
     ),
   );
 };

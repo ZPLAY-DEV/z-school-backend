@@ -8,10 +8,7 @@ import { InstructorController } from './instructor.controller';
 import { InstructorService } from './instructor.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Instructor, Group, Sam]),
-    UploadModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Instructor, Group, Sam]), UploadModule],
   controllers: [InstructorController],
   providers: [InstructorService],
 })

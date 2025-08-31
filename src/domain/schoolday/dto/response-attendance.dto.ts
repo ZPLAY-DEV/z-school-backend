@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-    IsDateString,
-    IsInt,
-    IsNumber,
-    IsObject,
-    IsString
+  IsDateString,
+  IsInt,
+  IsNumber,
+  IsObject,
+  IsString,
 } from 'class-validator';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 

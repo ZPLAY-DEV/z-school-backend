@@ -4,12 +4,13 @@ import { PickRule } from 'src/common/enums';
 import { BookingService } from 'src/domain/booking/booking.service';
 import { CancelBookingDto } from 'src/domain/booking/dto/cancel-booking.dto';
 import { CreateBookingDto } from 'src/domain/booking/dto/create-booking.dto';
-import { CreateLateBookingDto } from 'src/domain/booking/dto/create-late-booking.dto';
+import { CreateManualBookingDto } from 'src/domain/booking/dto/create-manual-booking.dto';
 import { ResponseBookingDto } from 'src/domain/booking/dto/response-booking.dto';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
 import {
   CancelBookingSwagger,
   CreateBookingSwagger,
-  CreateLateBookingDocs,
+  CreateManualBookingDocs,
 } from 'src/domain/booking/swagger/booking-swagger.decorator';
 
 @ApiTags('✳️ Bookings ( 수강신청 )')
@@ -35,12 +36,12 @@ export class BookingController {
   //? Create 기간이 지난 후 Booking (수강신청) 기록 추가
   //? ---------------------------------------------------------------------- ?//
 
-  @CreateLateBookingDocs()
-  @Post('late')
-  async createLateBooking(
-    @Body() dto: CreateLateBookingDto,
-  ): Promise<ResponseBookingDto> {
-    return await this.bookingService.createLateBooking(dto);
+  @CreateManualBookingDocs()
+  @Post('manual')
+  async createManualBooking(
+    @Body() dto: CreateManualBookingDto,
+  ): Promise<Booking> {
+    return await this.bookingService.createManualBooking(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//

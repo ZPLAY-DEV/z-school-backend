@@ -13,7 +13,8 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { Actor } from 'src/common/enums';
+import { Actor, BookingStatus } from 'src/common/enums';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import {
   CreatePickDto,
@@ -40,6 +41,8 @@ export class PickService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Booking)
+    private readonly bookingRepository: Repository<Booking>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -153,6 +156,16 @@ export class PickService {
         });
         await this.pickRepository.save(newPick);
       }
+
+      // booking 상태를 ENROLLED로 업데이트
+      if (groupWithLesson.offeringId) {
+        await this._updateBookingStatus(
+          groupWithLesson.offeringId,
+          dto.studentId,
+          BookingStatus.ENROLLED,
+        );
+      }
+
       affectedRows++;
     }
 
@@ -221,6 +234,26 @@ export class PickService {
     }
   }
 
+  /**
+   * booking 상태를 업데이트하는 private 메서드
+   * @param offeringId offering ID
+   * @param studentId student ID
+   * @param status 업데이트할 상태
+   */
+  private async _updateBookingStatus(
+    offeringId: number,
+    studentId: number,
+    status: BookingStatus,
+  ): Promise<void> {
+    await this.bookingRepository
+      .createQueryBuilder()
+      .update(Booking)
+      .set({ waitingPosition: 0, status })
+      .where('offeringId = :offeringId', { offeringId })
+      .andWhere('studentId = :studentId', { studentId })
+      .execute();
+  }
+
   // 수동등록 (중간전입)
   // 필수항목) groupId, studentId, offeringId, termId, start
   async endPick(dto: EndPickDto): Promise<Pick> {
@@ -251,6 +284,15 @@ export class PickService {
       })
       .where('id = :id', { id: pick.id })
       .execute();
+
+    // booking 상태를 CANCELED로 업데이트
+    if (pick.offeringId) {
+      await this._updateBookingStatus(
+        pick.offeringId,
+        pick.studentId,
+        BookingStatus.CANCELED,
+      );
+    }
 
     pick.isActive = false;
     pick.endedBy = dto.endedBy ?? Actor.OTHER;
@@ -292,6 +334,15 @@ export class PickService {
       })
       .where('id = :id', { id: pick.id })
       .execute();
+
+    // booking 상태를 ENROLLED로 업데이트
+    if (pick.offeringId) {
+      await this._updateBookingStatus(
+        pick.offeringId,
+        pick.studentId,
+        BookingStatus.ENROLLED,
+      );
+    }
 
     pick.isActive = true;
     pick.startedBy = dto.startedBy;

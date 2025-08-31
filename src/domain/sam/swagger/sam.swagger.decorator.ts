@@ -1,13 +1,13 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiExtraModels,
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    ApiQuery,
-    ApiResponse,
-    getSchemaPath,
+  ApiBody,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -345,7 +345,8 @@ export const GetSamGroupsDocs = () =>
     ApiQuery({
       name: 'sortBy',
       type: String,
-      description: '정렬 기준 (선택사항, "weekday": 요일별 정렬, "name": 이름별 정렬)',
+      description:
+        '정렬 기준 (선택사항, "weekday": 요일별 정렬, "name": 이름별 정렬)',
       required: false,
       enum: ['weekday', 'name'],
     }),
@@ -421,7 +422,8 @@ export const GetAllSchooldaysDocs = () =>
     ApiQuery({
       name: 'date',
       type: String,
-      description: '조회할 월 (YYYY-MM 형식, 선택사항, 전달 시 해당 월의 수업만 필터링)',
+      description:
+        '조회할 월 (YYYY-MM 형식, 선택사항, 전달 시 해당 월의 수업만 필터링)',
       required: false,
       example: '2025-08',
     }),

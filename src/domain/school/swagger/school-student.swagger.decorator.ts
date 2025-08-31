@@ -1,18 +1,18 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiConsumes,
-    ApiCreatedResponse,
-    ApiOperation,
-    ApiParam,
-    ApiResponse,
+  ApiBody,
+  ApiConsumes,
+  ApiCreatedResponse,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-    ApiOkPaginatedResponse,
-    ApiPaginationQuery,
-    FilterOperator,
-    PaginateConfig,
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
+  PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
@@ -898,7 +898,8 @@ export const DownloadSchoolStudentExcelDocs = () => {
           description: 'Excel 파일 MIME 타입',
           schema: {
             type: 'string',
-            example: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            example:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           },
         },
         'Content-Disposition': {

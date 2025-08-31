@@ -10,7 +10,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { AWS_SQS_CLIENT, REDIS_BOOKING_CLIENT } from 'src/common/constants';
 import { BookingStatus, ClassStatus, PickRule } from 'src/common/enums';
 import { IBookingSnapshotItem } from 'src/common/interfaces';
-import { CreateLateBookingDto } from 'src/domain/booking/dto/create-late-booking.dto';
+import { CreateManualBookingDto } from 'src/domain/booking/dto/create-manual-booking.dto';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisBookingService } from 'src/services/redis/redis-booking.service';
@@ -27,6 +28,8 @@ export class BookingService {
   constructor(
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
     @InjectRepository(Offering)
     private readonly offeringRepository: Repository<Offering>,
     @Inject(AWS_SQS_CLIENT)
@@ -37,35 +40,30 @@ export class BookingService {
 
   //? ---------------------------------------------------------------------- ?//
 
-  async createLateBooking(
-    dto: CreateLateBookingDto,
-  ): Promise<ResponseBookingDto> {
-    await this.validateOfferingStatus(dto.offeringId);
+  async createManualBooking(dto: CreateManualBookingDto): Promise<Booking> {
+    const group = await this.groupRepository.findOneOrFail({
+      where: { id: dto.groupId },
+      relations: ['offering', 'lesson'],
+    });
 
-    // 가장 마지막 waitingPostition 조회
-    const lastWaitingPosition = await this.bookingRepository.findOne({
-      where: { offeringId: dto.offeringId },
+    const lastBooking = await this.bookingRepository.findOneOrFail({
+      where: { offeringId: group.offeringId ?? 0 },
       order: { waitingPosition: 'DESC' },
     });
 
-    const note = '기간외 수강신청';
-    const waitingPosition = (lastWaitingPosition?.waitingPosition || 0) + 1;
+    const waitingPosition = (lastBooking?.waitingPosition || 0) + 1;
     const status = BookingStatus.PENDING;
-    const message = `🟡 수강신청결과 ${dto.lessonName} 수강이 대기상태입니다. (대기 ${waitingPosition}번)`;
-
+    const note = '기간외 수강신청';
     const booking = this.bookingRepository.create({
-      ...dto,
-      status,
+      offeringId: group.offeringId ?? 0,
+      studentId: dto.studentId,
+      lessonName: group.lesson.lessonName,
       waitingPosition,
+      status,
       note,
     });
-    await this.bookingRepository.save(booking);
 
-    return new ResponseBookingDto({
-      status,
-      waitingPosition,
-      message,
-    });
+    return await this.bookingRepository.save(booking);
   }
 
   //? ---------------------------------------------------------------------- ?//

@@ -1,16 +1,16 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    ApiQuery,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-    ApiOkPaginatedResponse,
-    ApiPaginationQuery,
-    FilterOperator,
-    PaginateConfig,
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
+  PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
@@ -468,7 +468,8 @@ Query Parameters:
     }),
     ApiQuery({
       name: 'booking',
-      description: '수강신청 여부 필터 (선택적) - true: 신청한 과목만, false: 신청 안한 과목만',
+      description:
+        '수강신청 여부 필터 (선택적) - true: 신청한 과목만, false: 신청 안한 과목만',
       required: false,
       example: false,
       type: 'boolean',

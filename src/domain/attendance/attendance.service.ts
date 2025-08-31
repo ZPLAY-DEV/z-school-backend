@@ -318,7 +318,7 @@ export class AttendanceService {
     try {
       // ✅ 개선된 upsert: update 먼저 시도, 실패하면 create
       let result: IAttendance;
-      
+
       try {
         // 1차 시도: update (기존 아이템 업데이트)
         result = await this.model.update(itemKey, upsertData);
@@ -340,15 +340,17 @@ export class AttendanceService {
       return result;
     } catch (err: any) {
       console.error(`[dynamoose v4] upsert error`, err);
-      
+
       // DynamoDB 특화 에러 처리
       if (err.name === 'ConditionalCheckFailedException') {
-        throw new BadRequestException('출석 데이터 업데이트 조건이 맞지 않습니다.');
+        throw new BadRequestException(
+          '출석 데이터 업데이트 조건이 맞지 않습니다.',
+        );
       }
       if (err.name === 'ValidationException') {
         throw new BadRequestException(`데이터 검증 실패: ${err.message}`);
       }
-      
+
       throw new BadRequestException(`출석 데이터 upsert 실패: ${err.message}`);
     }
   }

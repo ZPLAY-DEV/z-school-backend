@@ -8,6 +8,7 @@ import {
 } from 'nestjs-paginate';
 import { Weekday } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { ResponseSchoolOfferingListDto } from 'src/domain/school/dto/response-school-offering-list.dto';
@@ -28,6 +29,8 @@ export class SchoolTermOfferingService {
     private readonly lessonRepository: Repository<Lesson>,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -85,11 +88,63 @@ export class SchoolTermOfferingService {
       'groupName',
     ]);
 
-    // 실제 저장된 offerings를 다시 조회해서 반환
-    return await this.offeringRepository.find({
+    // 실제 저장된 offerings를 다시 조회
+    const savedOfferings = await this.offeringRepository.find({
       where: { schoolId, termId },
       order: { id: 'ASC' },
     });
+
+    // Group의 offeringId 갱신
+    await this._updateGroupOfferingIds(offerings, savedOfferings);
+
+    return savedOfferings;
+  }
+
+  /**
+   * Group의 offeringId를 갱신하는 private 메서드
+   * @param originalOfferings makeOfferingsFromLessons에서 생성된 원본 offerings
+   * @param savedOfferings DB에 저장된 offerings (ID 포함)
+   */
+  private async _updateGroupOfferingIds(
+    originalOfferings: Offering[],
+    savedOfferings: Offering[],
+  ): Promise<void> {
+    // groupId -> offeringId 매핑 생성
+    const groupIdToOfferingIdMap = new Map<number, number>();
+
+    for (const originalOffering of originalOfferings) {
+      // 저장된 offering에서 해당하는 것을 찾기
+      const savedOffering = savedOfferings.find(
+        (saved) =>
+          saved.schoolId === originalOffering.schoolId &&
+          saved.termId === originalOffering.termId &&
+          saved.lessonId === originalOffering.lessonId &&
+          saved.groupName === originalOffering.groupName,
+      );
+
+      if (savedOffering) {
+        // 해당 offering에 포함된 모든 groupId에 대해 offeringId 매핑
+        for (const groupId of originalOffering.groupIds) {
+          groupIdToOfferingIdMap.set(groupId, savedOffering.id);
+        }
+      }
+    }
+
+    // Group 엔티티들의 offeringId를 일괄 업데이트
+    if (groupIdToOfferingIdMap.size > 0) {
+      // 가장 효율적인 방법: 직접 SQL 업데이트
+      const updatePromises = Array.from(groupIdToOfferingIdMap.entries()).map(
+        ([groupId, offeringId]) =>
+          this.groupRepository
+            .createQueryBuilder()
+            .update(Group)
+            .set({ offeringId })
+            .where('id = :groupId', { groupId })
+            .execute(),
+      );
+
+      await Promise.all(updatePromises);
+    }
   }
 
   //? ---------------------------------------------------------------------- ?//

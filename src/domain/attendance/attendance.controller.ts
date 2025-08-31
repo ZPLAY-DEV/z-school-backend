@@ -1,32 +1,32 @@
 import {
-    BadRequestException,
-    Body,
-    ClassSerializerInterceptor,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    Logger,
-    Post,
-    Put,
-    Query,
-    UseInterceptors,
+  BadRequestException,
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Logger,
+  Post,
+  Put,
+  Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { AttendanceService } from 'src/domain/attendance/attendance.service';
 import {
-    AttendanceKeyDto,
-    UpsertAttendanceDto,
+  AttendanceKeyDto,
+  UpsertAttendanceDto,
 } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
-    IAttendance,
-    IAttendanceKey,
+  IAttendance,
+  IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
 import {
-    DeleteAttendanceDocs,
-    FetchAttendanceDocs,
-    UpsertAttendanceDocs,
+  DeleteAttendanceDocs,
+  FetchAttendanceDocs,
+  UpsertAttendanceDocs,
 } from 'src/domain/attendance/swagger/attendance-swagger.decorator';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
 
@@ -157,7 +157,10 @@ export class AttendanceController {
       );
       return result;
     } catch (error) {
-      this.logger.error('Failed to fetch attendance records by attendance keys', error);
+      this.logger.error(
+        'Failed to fetch attendance records by attendance keys',
+        error,
+      );
       throw new BadRequestException(
         `출석 목록 조회에 실패했습니다: ${error.message}`,
       );

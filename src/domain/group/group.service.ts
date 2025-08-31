@@ -386,57 +386,42 @@ export class GroupService {
     });
   }
 
-  async listBookedPendingStudents(id: number): Promise<BookedStudentDto[]> {
-    // 1. Group을 찾고 lesson 관계를 포함하여 가져오기
-    const group = await this.groupRepository.findOne({
-      where: { id },
-      relations: ['lesson'],
-    });
-
-    if (!group) {
-      throw new NotFoundException('Group not found');
-    }
-
-    // 2. Group의 allowedGrades 파싱 (쉼표로 구분된 문자열을 숫자 배열로 변환)
-    const groupAllowedGrades = group.allowedGrades
-      .split(',')
-      .map((grade) => parseInt(grade.trim()));
-
-    // 3. 해당 lesson에 속하면서 allowedGrades가 동일한 모든 offerings 찾기
-    const offerings = await this.offeringRepository
-      .createQueryBuilder('offering')
-      .where('offering.lessonId = :lessonId', { lessonId: group.lessonId })
-      .getMany();
-
-    // allowedGrades가 정확히 같은 offerings만 필터링
-    const matchingOfferings = offerings.filter((offering) => {
-      const offeringGrades = offering.allowedGrades.sort();
-      const groupGrades = groupAllowedGrades.sort();
-
-      return (
-        offeringGrades.length === groupGrades.length &&
-        offeringGrades.every((grade, index) => grade === groupGrades[index])
-      );
-    });
-
-    if (matchingOfferings.length === 0) {
-      return [];
-    }
-
-    const offeringIds = matchingOfferings.map((offering) => offering.id);
-
-    // 4. 해당 offerings에 대한 PENDING 상태의 bookings를 waitingPosition 순으로 조회
+  async listBookedStudents(
+    id: number,
+    isPending?: string,
+  ): Promise<BookedStudentDto[]> {
     const bookings = await this.bookingRepository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.student', 'student')
       .leftJoinAndSelect('booking.offering', 'offering')
-      .where('booking.offeringId IN (:...offeringIds)', { offeringIds })
-      .andWhere('booking.status = :status', { status: BookingStatus.PENDING })
-      .orderBy('booking.waitingPosition', 'ASC')
+      .leftJoinAndSelect('offering.groups', 'groups')
+      .where('groups.id IN (:...ids)', { ids: [id] })
+      .orderBy('booking.status', 'ASC')
+      .addOrderBy('booking.waitingPosition', 'ASC')
       .getMany();
 
-    // 5. BookedStudentDto 생성하여 반환
-    const bookedStudents: BookedStudentDto[] = bookings.map((booking) => {
+    if (
+      isPending !== undefined &&
+      (isPending === 'true' || isPending === '1')
+    ) {
+      return bookings
+        .filter((booking) => booking.status === BookingStatus.PENDING)
+        .map((booking) => {
+          return new BookedStudentDto({
+            id: booking.student.id,
+            name: booking.student.name,
+            grade: booking.student.grade,
+            class: booking.student.class,
+            studentCode: booking.student.studentCode,
+            status: booking.student.status,
+            waitingPosition: booking.waitingPosition,
+            bookingStatus: booking.status,
+          });
+        });
+    }
+
+    // BookedStudentDto 로 변환
+    return bookings.map((booking) => {
       return new BookedStudentDto({
         id: booking.student.id,
         name: booking.student.name,
@@ -448,35 +433,6 @@ export class GroupService {
         bookingStatus: booking.status,
       });
     });
-
-    return bookedStudents;
-  }
-
-  // todo. optimized way
-  async listBookedStudents(id: number): Promise<BookedStudentDto[]> {
-    const bookings = await this.dataSource
-      .createQueryBuilder(Booking, 'booking')
-      .leftJoinAndSelect('booking.student', 'student')
-      .leftJoinAndSelect('student.parent', 'parent')
-      .leftJoinAndSelect('booking.offering', 'offering')
-      .where(
-        'offering.id = (SELECT DISTINCT p.offeringId FROM `picks` p INNER JOIN `groups` g ON p.groupId = :groupId)',
-        { groupId: id },
-      )
-      .getMany();
-
-    return bookings.map((v) => ({
-      id: v.student.id,
-      groupId: id,
-      groupName: v.offering.groupName,
-      name: v.student.name,
-      grade: v.student.grade,
-      class: v.student.class,
-      studentCode: v.student.studentCode,
-      status: v.student.status,
-      waitingPosition: v.waitingPosition,
-      bookingStatus: v.status,
-    }));
   }
 
   //? ---------------------------------------------------------------------- ?//

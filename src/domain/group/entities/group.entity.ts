@@ -28,7 +28,7 @@ export class Group {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈳 samId', example: 1 })
+  @ApiProperty({ description: '🈵 samId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   samId: number;
 
@@ -36,7 +36,7 @@ export class Group {
   @Column({ type: 'int', unsigned: true })
   lessonId: number;
 
-  @ApiProperty({ description: '🈵 lessonId', example: 1 })
+  @ApiProperty({ description: '🈳 lessonId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   offeringId: number | null;
 
