@@ -1,16 +1,16 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-  ApiOkPaginatedResponse,
-  ApiPaginationQuery,
-  FilterOperator,
-  PaginateConfig,
+    ApiOkPaginatedResponse,
+    ApiPaginationQuery,
+    FilterOperator,
+    PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
@@ -349,23 +349,27 @@ export const GetPersonalListDocs = () => {
 특정 학생을 위한 개인화된 수강신청과목 목록을 조회합니다. 해당 학생이 수강 가능한 과목들과 이미 신청한 과목들의 정보를 포함합니다.
 
 **🔄 비즈니스 로직**
-- 학생의 학년에 맞는 수강 가능한 과목들만 필터링
+- 학생의 학년에 맞는 수강 가능한 과목들만 필터링 (\`allowedGrades\` 배열 확인)
 - 해당 학생의 기존 수강신청(booking) 정보를 포함
-- 시간표 충돌 여부를 확인하여 선택 가능 여부(selectable) 계산
+- 시간표 충돌 여부를 확인하여 선택 가능 여부(\`selectable\`) 계산
+  - 이미 신청한 과목이면 \`selectable: false\`
+  - 신청한 과목들과 시간이 겹치면 \`selectable: false\`
 - 지난 학기 prepicked 학생 정보를 포함
-- 카테고리별 필터링 지원
+- 카테고리별 필터링 지원 (\`categoryId\` 파라미터)
 - 수강신청 여부와 요일별 필터링 옵션 제공
 
 **⚠️ 중요 제약사항**
 - 학교 ID, 학기 ID, 학생 ID, 학년은 필수 파라미터
 - 학생의 학년에 맞지 않는 과목은 목록에서 제외
-- 시간표가 겹치는 과목은 selectable이 false로 설정
+- 시간표가 겹치는 과목은 \`selectable\`이 false로 설정
+- \`booking=true\`일 때는 이미 신청한 과목들만 반환
+- \`weekday=true\`일 때는 요일별로 분리된 결과 반환 (월~토 순서로 정렬)
 
 **📚 예시 시나리오**
 1. **수강신청 화면**: 학생이 수강신청 페이지에서 자신이 신청 가능한 과목 목록 조회
 2. **카테고리별 조회**: 체육, 예술 등 특정 카테고리의 과목만 조회
-3. **신청 완료 과목 확인**: booking=true로 이미 신청한 과목들만 조회
-4. **요일별 필터링**: weekday=true로 특정 요일 수업만 조회
+3. **신청 완료 과목 확인**: \`booking=true\`로 이미 신청한 과목들만 조회
+4. **요일별 필터링**: \`weekday=true\`로 특정 요일 수업만 조회
 
 **API 호출 예시**
 \`\`\`
@@ -409,6 +413,7 @@ Query Parameters:
         "dayOfWeek": 1
       }
     ],
+    "bitmasks": [1, 2, 4],
     "prepickedStudentIds": [567, 890],
     "status": "ACTIVE",
     "totals": [50000, 45000],
@@ -431,8 +436,10 @@ Query Parameters:
 - \`totals\`: 각 반별 총 비용 배열 (수강료 + 교재비 + 재료비)
 - \`booking\`: 해당 학생의 수강신청 정보 (있는 경우)
 - \`selectable\`: 수강신청 가능 여부 (시간표 충돌 등을 고려)
-- \`weekday\`: 수업 요일 (weekday=true일 때만 포함)
+- \`weekday\`: 수업 요일 (\`weekday=true\`일 때만 포함, 월~토 순서로 정렬)
 - \`prepickedStudentIds\`: 지난 학기에 해당 과목을 수강한 학생들의 ID 목록
+- \`bitmasks\`: 수업시간 겹치는지 판단하기 위한 비트마스크 배열
+- \`times\`: 수업 시간 정보 배열 (시작시간, 종료시간, 요일 포함)
       `,
     }),
     ApiParam({

@@ -1,6 +1,18 @@
 import { Weekday, WeekdayOrder } from 'src/common/enums';
 import { ITimeRange } from 'src/common/interfaces';
 
+export function getMin(val: number[]): number {
+  return Math.min(...val);
+}
+
+export function getMax(val: number[]): number {
+  return Math.max(...val);
+}
+
+export function getRange(start: number, end: number): number[] {
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
+
 export function parseRangeFormat(input?: string): number[] {
   if (!input) {
     return [1, 2, 3, 4, 5, 6];

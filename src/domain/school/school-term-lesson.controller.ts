@@ -8,9 +8,11 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Res,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CreateLessonRequestDto } from 'src/domain/lesson/dto/create-lesson.dto';
@@ -82,10 +84,36 @@ export class SchoolTermLessonController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @Public()
+  @Get(':schoolId/terms/:termId/lessons/download')
+  async downloadExcel(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+    @Res() res: Response,
+  ) {
+    const workbook = await this.schoolTermLessonService.generateExcel(
+      schoolId,
+      termId,
+    );
+    const date = new Date().toISOString().split('T')[0];
+    // 헤더 설정
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="lessons-${date}.xlsx"`,
+    );
+
+    // 엑셀 파일을 response stream으로 작성
+    await workbook.xlsx.write(res);
+    res.end();
+  }
+
   @SchoolTermLessonPaginatedListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/lessons/paginated')
-  @UseInterceptors(ClassSerializerInterceptor)
   async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
@@ -101,7 +129,6 @@ export class SchoolTermLessonController {
   @SchoolTermLessonListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/lessons')
-  @UseInterceptors(ClassSerializerInterceptor)
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,

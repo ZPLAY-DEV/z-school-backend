@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as ExcelJS from 'exceljs';
 import {
   FilterOperator,
   paginate,
@@ -17,6 +18,8 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { LessonCoreService } from 'src/domain/lesson/lesson-core.service';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
+import { getMax, getMin } from 'src/helpers/parse';
+import { formatPhone } from 'src/helpers/phone';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -116,6 +119,80 @@ export class SchoolTermLessonService {
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
+
+  async generateExcel(
+    schoolId: number,
+    termId: number,
+  ): Promise<ExcelJS.Workbook> {
+    const workbook = new ExcelJS.Workbook();
+    const templateUrl =
+      'https://cdn.xn--ov3b17fd5n5vf.kr/excels/lessons-v3.xlsx';
+    const response = await fetch(templateUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch template: ${response.statusText}`);
+    }
+    const buffer = await response.arrayBuffer();
+
+    // 템플릿 파일 읽기
+    await workbook.xlsx.load(Buffer.from(buffer));
+    const sheet = workbook.getWorksheet(1);
+
+    if (!sheet) {
+      throw new Error('Sheet not found');
+    }
+
+    const categoryMap = new Map<number, string>();
+    ['맞춤형', '돌봄', '선택형(무료)', '선택형(유료)'].forEach(
+      (category, index) => {
+        categoryMap.set(index + 1, category);
+      },
+    );
+    const lessons = await this.lessonRepository.find({
+      where: { schoolId: schoolId, termId: termId },
+      relations: ['term', 'groups', 'groups.sam', 'groups.sam.instructor'],
+      order: {
+        lessonName: 'ASC',
+      },
+    });
+
+    lessons.forEach((lesson, index) => {
+      lesson.groups.forEach((group) => {
+        const row = sheet.insertRow(3 + index, []);
+
+        console.log(
+          `${lesson.lessonName} - ${group.groupName} ${group.weekday}`,
+        );
+
+        row.getCell(1).value = lesson.term.termName;
+        row.getCell(2).value = lesson.lessonName;
+        row.getCell(3).value = categoryMap.get(lesson.categoryId);
+        row.getCell(4).value = lesson.frequency;
+        row.getCell(4).alignment = { horizontal: 'center' };
+        row.getCell(5).value = group.groupName;
+        row.getCell(6).value = group.weekday;
+        row.getCell(7).value = group.start;
+        row.getCell(8).value = group.end;
+        row.getCell(9).value = getMin(
+          group.allowedGrades.split(',').map(Number),
+        );
+        row.getCell(9).alignment = { horizontal: 'center' };
+        row.getCell(10).value = getMax(
+          group.allowedGrades.split(',').map(Number),
+        );
+        row.getCell(10).alignment = { horizontal: 'center' };
+        row.getCell(11).value = group.samName;
+        row.getCell(12).value = formatPhone(group.sam.instructor.phone);
+        row.getCell(13).value = group.location;
+        row.getCell(14).value = group.capacity;
+        row.getCell(15).value = group.tuition;
+        row.getCell(16).value = group.bookFee;
+        row.getCell(17).value = group.materialFee;
+        row.getCell(18).value = group.note;
+      });
+    });
+
+    return workbook;
+  }
 
   async infiniteList(
     schoolId: number,
