@@ -278,6 +278,7 @@ export class SchoolTermOfferingService {
         allowedGrades: offering.allowedGrades,
         pickRule: offering.pickRule,
         times: offering.times,
+        bitmasks: offering.bitmasks,
         prepickedStudentIds: offering.prepickedStudentIds,
         status: offering.status,
         totals,
