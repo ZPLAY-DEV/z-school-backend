@@ -80,3 +80,34 @@ ${dto.school} ${dto.lesson} 수업(담당: ${dto.samName} 선생님) 종료했�
     ],
   };
 };
+
+//? ------------------------------------------------------------------------ ?//
+//? 수강신청안내
+//? ------------------------------------------------------------------------ ?//
+
+export const getTemplateOfRegistration = (dto: {
+  phone: string;
+  school: string;
+  term: string; // `2025학년도 2학기`
+  period: string; // `9월1일 09:00 ~ 9월9일 17:00`
+  shortlink: string;
+}) => {
+  return {
+    to: dto.phone,
+    content: `[스쿨허브] 수강신청 바로가기
+
+${dto.school} ${dto.term} 수강신청을 위한 링크 안내입니다.
+
+◼ 수강신청기간 : ${dto.period}
+◼ 수강신청링크 : ${dto.shortlink}
+`,
+    buttons: [
+      {
+        type: 'WL',
+        name: '스쿨허브',
+        linkMobile: `https://app.schoolhub.co.kr`,
+        linkPc: `https://app.schoolhub.co.kr`,
+      },
+    ],
+  };
+};

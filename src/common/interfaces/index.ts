@@ -302,7 +302,7 @@ export interface HttpErrorFormat {
   message: string;
 }
 
-export type StudentReadInfo = {
+export type ReadStat = {
   id: number;
   name: string;
   grade: number;
