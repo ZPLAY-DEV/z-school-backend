@@ -9,8 +9,10 @@ import {
   ParseIntPipe,
   Post,
   Res,
+  UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -66,7 +68,7 @@ export class SchoolTermLessonController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
     @Body() dtos: CreateLessonRequestDto[],
-  ): Promise<Lesson[]> {
+  ): Promise<number> {
     const createLessonDtos = dtos.map((dto) => ({
       ...dto,
       schoolId,
@@ -78,6 +80,31 @@ export class SchoolTermLessonController {
       termId,
       createLessonDtos,
     );
+  }
+
+  @Post(':schoolId/terms/:termId/lessons/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadStudents(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<number> {
+    if (!file) {
+      throw new Error('파일이 업로드되지 않았습니다.');
+    }
+    const createLessonDtos = await this.schoolTermLessonService.parseExcel(
+      schoolId,
+      termId,
+      file,
+    );
+
+    await this.schoolTermLessonService.createBulk(
+      schoolId,
+      termId,
+      createLessonDtos,
+    );
+
+    return createLessonDtos.length;
   }
 
   //? ---------------------------------------------------------------------- ?//

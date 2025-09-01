@@ -21,6 +21,7 @@ import { Term } from 'src/domain/term/entities/term.entity';
 import { getMax, getMin } from 'src/helpers/parse';
 import { formatPhone } from 'src/helpers/phone';
 import { Repository } from 'typeorm';
+const categories = ['맞춤형', '돌봄', '선택형(무료)', '선택형(유료)'];
 
 @Injectable()
 export class SchoolTermLessonService {
@@ -50,7 +51,7 @@ export class SchoolTermLessonService {
     schoolId: number,
     termId: number,
     dtos: CreateLessonDto[],
-  ): Promise<Lesson[]> {
+  ): Promise<number> {
     const lessons: Lesson[] = [];
 
     // performs validations only here and let the core service handle the rest
@@ -74,7 +75,7 @@ export class SchoolTermLessonService {
       const lesson = await this.lessonCoreService.create(school, term, dto);
       lessons.push(lesson);
     }
-    return lessons;
+    return lessons.length;
   }
 
   /**
@@ -116,6 +117,164 @@ export class SchoolTermLessonService {
     return existingLessons;
   }
 
+  private _getCategoryIdFromCategoryName(categoryName: string): number {
+    const index = categories.indexOf(categoryName);
+    return index + 1;
+  }
+
+  private _getCategoryNameFromCategoryId(categoryId: number): string {
+    const index = categoryId - 1;
+    return categories[index];
+  }
+
+  async parseExcel(
+    schoolId: number,
+    termId: number,
+    file: Express.Multer.File,
+  ): Promise<CreateLessonDto[]> {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(file.buffer);
+    const term = await this.termRepository.findOne({
+      where: { id: termId },
+      relations: {
+        school: true,
+      },
+    });
+    if (!term) {
+      throw new NotFoundException('Term not found');
+    }
+
+    // 첫번째 sheet
+    const worksheet = workbook.worksheets[0];
+    const items: any[] = [];
+
+    // 실제 데이터 추출 (헤더 아래 행부터 시작)
+    worksheet.eachRow((row, index) => {
+      if (index < 3) return;
+
+      const [, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r] =
+        row.values as any[]; // row.values[0] 은 항상 undefined
+
+      if (
+        !a ||
+        !b ||
+        !c ||
+        !d ||
+        !e ||
+        !f ||
+        !g ||
+        !h ||
+        !i ||
+        !j ||
+        !k ||
+        !l ||
+        !m ||
+        !n
+      )
+        return;
+
+      const termName = a ? a.toString().trim() : null;
+      const lessonName = b ? b.toString().trim() : null;
+      const categoryName = c as string;
+      const categoryId = this._getCategoryIdFromCategoryName(categoryName);
+      const frequency = d ? Number(d) : 0;
+      const groupName = e.toString().trim();
+      const weekday = f.toString().trim();
+      const start = g.toString().trim();
+      const end = h.toString().trim();
+      const allowedGrades = `${i}~${j}`;
+      const instructorName = k.toString().trim();
+      const instructorPhone = l.toString().trim();
+      const location = m.toString().trim();
+      const capacity = n ? Number(n) : 0;
+      const tuition = o ? Number(o) : 0;
+      const bookFee = p ? Number(p) : 0;
+      const materialFee = q ? Number(q) : 0;
+      const note = r ? r.toString().trim() : null;
+
+      items.push({
+        schoolId,
+        termId,
+        termName,
+        lessonName,
+        categoryId,
+        categoryName,
+        frequency,
+        groupName,
+        weekday,
+        start,
+        end,
+        allowedGrades,
+        instructorName,
+        instructorPhone,
+        location,
+        capacity,
+        tuition,
+        bookFee,
+        materialFee,
+        note,
+      });
+    });
+
+    // groupName으로 오름차순 정렬
+    const sortedData = items.sort((a: any, b: any) =>
+      (a.groupName as string).localeCompare(b.groupName as string),
+    );
+
+    // 같은 lessonName끼리 그룹화
+    const lessonGroups = new Map<string, any[]>();
+
+    sortedData.forEach((item) => {
+      const lessonName = item.lessonName as string;
+      if (!lessonGroups.has(lessonName)) {
+        lessonGroups.set(lessonName, []);
+      }
+      lessonGroups.get(lessonName)!.push(item);
+    });
+
+    // CreateLessonDto[]로 변환
+    const dtos: CreateLessonDto[] = [];
+
+    lessonGroups.forEach((groupItems, lessonName) => {
+      // 첫 번째 아이템에서 공통 정보 추출
+      const firstItem = groupItems[0];
+
+      const dto: CreateLessonDto = {
+        schoolId: firstItem.schoolId,
+        termId: firstItem.termId,
+        categoryId: firstItem.categoryId,
+        lessonName: lessonName,
+        description: firstItem.categoryName,
+        start: term.start,
+        end: term.end,
+        frequency: firstItem.frequency,
+        bookFees: [],
+        materialFees: [],
+        groups: groupItems.map((item) => ({
+          instructorName: item.instructorName,
+          instructorPhone: item.instructorPhone,
+          groupName: item.groupName,
+          weekday: item.weekday,
+          start: item.start,
+          end: item.end,
+          allowedGrades: item.allowedGrades,
+          location: item.location,
+          capacity: item.capacity,
+          tuition: item.tuition,
+          bookFee: item.bookFee,
+          materialFee: item.materialFee,
+          note: item.note,
+        })),
+      };
+
+      dtos.push(dto);
+    });
+
+    console.log(`🟢🟢🟢🟢🟢🟢🟢🟢`, JSON.stringify(dtos, null, 2));
+
+    return dtos;
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
@@ -141,12 +300,6 @@ export class SchoolTermLessonService {
       throw new Error('Sheet not found');
     }
 
-    const categoryMap = new Map<number, string>();
-    ['맞춤형', '돌봄', '선택형(무료)', '선택형(유료)'].forEach(
-      (category, index) => {
-        categoryMap.set(index + 1, category);
-      },
-    );
     const lessons = await this.lessonRepository.find({
       where: { schoolId: schoolId, termId: termId },
       relations: ['term', 'groups', 'groups.sam', 'groups.sam.instructor'],
@@ -165,7 +318,9 @@ export class SchoolTermLessonService {
 
         row.getCell(1).value = lesson.term.termName;
         row.getCell(2).value = lesson.lessonName;
-        row.getCell(3).value = categoryMap.get(lesson.categoryId);
+        row.getCell(3).value = this._getCategoryNameFromCategoryId(
+          lesson.categoryId,
+        );
         row.getCell(4).value = lesson.frequency;
         row.getCell(4).alignment = { horizontal: 'center' };
         row.getCell(5).value = group.groupName;
