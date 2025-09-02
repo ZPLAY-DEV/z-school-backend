@@ -36,6 +36,10 @@ export class Shortlink {
   @Column({ type: 'int', unsigned: true })
   newsletterId: number;
 
+  @ApiProperty({ description: '🈵 Unique identifier for dispatch' })
+  @Column({ type: 'varchar', length: 36, unique: true })
+  uuid: string;
+
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈵 21자리 나노아이디 값' })

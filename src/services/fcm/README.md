@@ -1,147 +1,219 @@
-# FCM Service - 메시지 발송 최적화 전략
+# FCM Service - 간단하고 효율적인 푸시 알림 서비스
 
-## 🎯 개요
+## 개요
 
-FCM Service는 Firebase Cloud Messaging을 통해 푸시 알림을 발송하는 서비스입니다. 
-메시지 발송 비용과 성능을 최적화하기 위해 **스마트한 그룹화 전략**을 사용합니다.
+FCM(Firebase Cloud Messaging) 서비스는 푸시 알림을 발송하고, invalid token을 자동으로 수집하는 간단한 서비스입니다.
 
-## 📊 메시지 그룹화 전략
+## 주요 기능
 
-### 그룹화 기준
-
-메시지들이 다음 5가지 속성이 **완전히 동일한지**를 기준으로 그룹화합니다:
-
-- `title` (제목)
-- `body` (내용) 
-- `role` (역할)
-- `page` (페이지)
-- `args` (추가 인자)
-
+### 1. 단일 메시지 발송 (`sendOne`)
 ```typescript
-private createContentKey(message: SingleFcmInput): string {
-  return [
-    message.title || '',
-    message.body,
-    message.role,
-    message.page || '',
-    message.args || '',
-  ].join('|');
+const { result, invalidToken } = await fcmService.sendOne({
+  token: 'device_token_here',
+  notification: {
+    title: '알림 제목',
+    body: '알림 내용',
+  },
+  data: {
+    role: 'PARENT',
+    url: '/home',
+    routes: JSON.stringify({ page: 'home' })
+  },
+  android: {
+    priority: 'high',
+    ttl: 86400,
+    notification: {
+      priority: 'high',
+      defaultSound: true,
+    },
+  },
+  apns: {
+    payload: {
+      aps: {
+        badge: 1,
+        sound: 'default',
+      },
+    },
+  },
+});
+
+if (result.success) {
+  console.log(`발송 성공: ${result.messageId}`);
+} else {
+  console.log(`발송 실패: ${result.error?.message}`);
+}
+
+// Invalid token이 있다면 정리
+if (invalidToken) {
+  fcmService.cleanupInvalidTokens([invalidToken]);
 }
 ```
 
-### 발송 방식 결정
-
-그룹화 결과에 따라 2가지 발송 방식을 선택합니다:
-
-#### 1. 개별 발송 (그룹 크기 = 1)
-```typescript
-if (messages.length === 1) {
-  // sendSingleMessageToSingleDestination() 사용
-  // Firebase send() 메서드
-}
-```
-- 내용이 고유한 메시지
-- 단일 사용자 대상
-- Firebase의 `send()` 메서드 사용
-
-#### 2. 배치 발송 (그룹 크기 > 1)
-```typescript
-else {
-  // sendSingleMessageToMultipleDestinations() 사용
-  // Firebase sendEachForMulticast() 메서드
-}
-```
-- 동일한 내용을 여러 사용자에게 발송
-- Firebase의 `sendEachForMulticast()` 메서드 사용
-- **500개씩 청크로 나누어** 발송 (Firebase 제한)
-
-## 💰 최적화 효과
-
-### 1. API 호출 횟수 감소
-- **개별 발송**: N번의 API 호출
-- **배치 발송**: N/500번의 API 호출
-
-### 2. 네트워크 오버헤드 감소
-- 동일한 페이로드를 한 번만 구성
-- 여러 토큰에 대해 재사용
-
-### 3. 비용 절약
-- Firebase FCM API 호출 비용 절약
-- 네트워크 대역폭 절약
-
-## 📈 성능 최적화
-
-### 1. Rate Limiting 방지
-```typescript
-if (index < tokenBatches.length - 1) {
-  await delay(100); // 배치 간 100ms 지연
-}
-```
-
-### 2. 재시도 로직
-```typescript
-for (let attempt = 1; attempt <= 3; attempt++) {
-  // 최대 3번 재시도
-}
-```
-
-### 3. 무효 토큰 처리
-- 발송 실패 시 무효한 토큰들을 수집
-- 향후 정리 작업에 활용
-
-## 🎯 실제 사용 예시
-
-### 입력 메시지
+### 2. 다중 메시지 발송 (`sendMany`)
 ```typescript
 const messages = [
-  { id: 1, token: 'tokenA', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '123' },
-  { id: 2, token: 'tokenB', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '123' },
-  { id: 3, token: 'tokenC', title: 'Alert', body: 'Another message', role: 'INSTRUCTOR' },
-  { id: 4, token: 'tokenD', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '456' },
+  {
+    token: 'token1',
+    notification: {
+      title: '공지사항',
+      body: '새로운 공지가 있습니다',
+    },
+    data: {
+      role: 'PARENT',
+      url: '/notice'
+    },
+    android: { /* ... */ },
+    apns: { /* ... */ }
+  },
+  {
+    token: 'token2',
+    notification: {
+      title: '다른 제목',
+      body: '다른 내용',
+    },
+    data: {
+      role: 'INSTRUCTOR',
+      url: '/dashboard'
+    },
+    android: { /* ... */ },
+    apns: { /* ... */ }
+  }
 ];
+
+const { results, invalidTokens } = await fcmService.sendMany(messages);
+
+// 결과 확인
+results.forEach(result => {
+  if (result.success) {
+    console.log(`발송 성공: ${result.messageId}`);
+  } else {
+    console.log(`발송 실패: ${result.error?.message}`);
+  }
+});
+
+// Invalid token 정리
+if (invalidTokens.length > 0) {
+  fcmService.cleanupInvalidTokens(invalidTokens);
+}
 ```
 
-### 그룹화 결과
+## 타입 정의
+
+FCM 서비스는 `src/services/notification/types.d.ts`에 정의된 타입을 사용합니다:
+
+- `SingleFcmData`: FCM 메시지 데이터 구조
+- `NotificationResult`: 발송 결과 구조
+
+### FcmSendResult (sendOne 반환값)
 ```typescript
-[
-  [ // 그룹 1: 배치 발송 (2개 메시지)
-    { id: 1, token: 'tokenA', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '123' },
-    { id: 2, token: 'tokenB', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '123' },
-  ],
-  [ // 그룹 2: 개별 발송 (1개 메시지)
-    { id: 3, token: 'tokenC', title: 'Alert', body: 'Another message', role: 'INSTRUCTOR' },
-  ],
-  [ // 그룹 3: 개별 발송 (1개 메시지)
-    { id: 4, token: 'tokenD', title: 'Hello', body: 'This is a message', role: 'PARENT', page: 'home', args: '456' },
-  ]
-]
+interface FcmSendResult {
+  result: NotificationResult;  // 발송 결과
+  invalidToken?: string;       // 유효하지 않은 토큰 (있는 경우에만)
+}
 ```
 
-### 발송 방식
-- **그룹 1**: `sendEachForMulticast()` - 2개 토큰에 동일한 메시지 배치 발송
-- **그룹 2**: `send()` - 개별 발송
-- **그룹 3**: `send()` - 개별 발송
+## Invalid Token 처리
 
-## 🔧 주요 메서드
+### 자동 수집
+- `messaging/invalid-registration-token`
+- `messaging/registration-token-not-registered`
+- `messaging/invalid-argument`
+- 기타 유효하지 않은 토큰 에러
 
-### `sendMultipleMessagesToMultipleDestinations()`
-- 메인 진입점
-- 메시지 그룹화 및 최적화된 발송 방식 선택
+### 정리 작업
+```typescript
+// 단일 메시지 발송 후 invalid token 정리
+const { invalidToken } = await fcmService.sendOne(messageData);
+if (invalidToken) {
+  fcmService.cleanupInvalidTokens([invalidToken]);
+}
 
-### `groupMessagesByContent()`
-- 메시지 내용 기반 그룹화
-- 동일한 내용의 메시지들을 하나의 그룹으로 묶음
+// 다중 메시지 발송 후 invalid token 정리
+const { invalidTokens } = await fcmService.sendMany(messages);
+if (invalidTokens.length > 0) {
+  fcmService.cleanupInvalidTokens(invalidTokens);
+  
+  // 데이터베이스에서도 제거
+  await userService.removeInvalidTokens(invalidTokens);
+}
+```
 
-### `sendSingleMessageToMultipleDestinations()`
-- 배치 발송 처리
-- 500개씩 청크로 나누어 발송
+## 사용 예시
 
-### `sendSingleMessageToSingleDestination()`
-- 개별 발송 처리
-- 단일 메시지 발송
+### 기본 사용법
+```typescript
+@Injectable()
+export class NotificationService {
+  constructor(private readonly fcmService: FcmService) {}
 
-## 📝 주의사항
+  async sendNotification(messages: SingleFcmData[]) {
+    try {
+      const { results, invalidTokens } = await this.fcmService.sendMany(messages);
+      
+      // Invalid token 정리
+      if (invalidTokens.length > 0) {
+        this.fcmService.cleanupInvalidTokens(invalidTokens);
+      }
+      
+      return { results, invalidTokens };
+    } catch (error) {
+      this.logger.error('FCM 발송 실패:', error);
+      throw error;
+    }
+  }
 
-1. **그룹화 기준의 엄격성**: 5가지 속성이 완전히 동일해야만 같은 그룹으로 분류됩니다.
-2. **Firebase 제한**: 배치 발송 시 최대 500개 토큰까지만 한 번에 처리 가능합니다.
-3. **무효 토큰**: 발송 실패한 토큰들은 `invalidTokens` 배열에 수집되므로 정기적으로 정리해야 합니다. 
+  async sendSingleNotification(messageData: SingleFcmData) {
+    try {
+      const { result, invalidToken } = await this.fcmService.sendOne(messageData);
+      
+      // Invalid token 정리
+      if (invalidToken) {
+        this.fcmService.cleanupInvalidTokens([invalidToken]);
+      }
+      
+      return { result, invalidToken };
+    } catch (error) {
+      this.logger.error('FCM 발송 실패:', error);
+      throw error;
+    }
+  }
+}
+```
+
+### 에러 처리
+```typescript
+const { results, invalidTokens } = await fcmService.sendMany(messages);
+
+// 실패한 메시지들 확인
+const failedMessages = results.filter(r => !r.success);
+failedMessages.forEach(failed => {
+  this.logger.error(`발송 실패:`, failed.error);
+});
+
+// 성공한 메시지들 확인
+const successCount = results.filter(r => r.success).length;
+this.logger.log(`${successCount}/${results.length} 메시지 발송 성공`);
+
+// Invalid token 처리
+if (invalidTokens.length > 0) {
+  this.logger.warn(`${invalidTokens.length}개의 invalid token 발견`);
+  await userService.removeInvalidTokens(invalidTokens);
+}
+```
+
+## 특징
+
+1. **단순함**: 복잡한 배치 처리나 그룹화 없이 직관적인 API
+2. **효율성**: 각 메시지를 개별적으로 처리하여 커스터마이징 가능
+3. **안정성**: Invalid token 자동 감지 및 수집 (단일/다중 메시지 모두)
+4. **유연성**: 다양한 메시지 내용과 구조 지원
+5. **타입 안전성**: 이미 정의된 타입 시스템 활용
+6. **일관성**: sendOne과 sendMany 모두 동일한 방식으로 invalid token 관리
+
+## 주의사항
+
+1. **토큰 유효성**: 정기적으로 invalid token을 정리하여 발송 효율성 유지
+2. **에러 처리**: 발송 실패 시 적절한 fallback 처리 구현
+3. **로깅**: 발송 실패 시 상세한 로그 기록으로 디버깅 지원
+4. **타입 준수**: `SingleFcmData` 타입에 맞는 데이터 구조 사용
+5. **Invalid token 관리**: sendOne과 sendMany 모두에서 invalid token을 적절히 처리 

@@ -26,11 +26,14 @@ import { NewsletterService } from 'src/domain/newsletter/newsletter.service';
 import {
   CreateNewsletterDocs,
   DeleteNewsletterDocs,
-  DispatchRegistrationLinkDocs,
   FindNewsletterByIdDocs,
+  FindPendingDispatchesDocs,
   FindRegistrationNewsletterDocs,
   GenerateNewsletterS3UrlsDocs,
+  ListNewslettersDocs,
   MarkAsReadDocs,
+  ResendNewsletterDocs,
+  SendNewsletterDocs,
   UpdateNewsletterDocs,
 } from 'src/domain/newsletter/swagger/newsletter-swagger.decorator';
 import { UploadService } from 'src/services/upload/upload.service';
@@ -56,7 +59,7 @@ export class NewsletterController {
     return this.newsletterService.createNewsletter(dto);
   }
 
-  @DispatchRegistrationLinkDocs()
+  @SendNewsletterDocs()
   @Post(':id/send')
   sendNewsletter(
     @Param('id', ParseIntPipe) id: number,
@@ -65,16 +68,20 @@ export class NewsletterController {
     return this.newsletterService.sendNewsletter(id, dto);
   }
 
-  @DispatchRegistrationLinkDocs()
-  @Post(':id/resend')
-  resendNewsletter(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.newsletterService.resendNewsletter(id);
+  @ResendNewsletterDocs()
+  @Post(':id/resend/:uuid')
+  resendNewsletter(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid') uuid: string,
+  ): Promise<void> {
+    return this.newsletterService.resendNewsletter(id, uuid);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
+  @ListNewslettersDocs()
   @Get()
   async list(
     @Query('schoolId', ParseIntPipe) schoolId: number,
@@ -96,6 +103,7 @@ export class NewsletterController {
     );
   }
 
+  @FindPendingDispatchesDocs()
   @Get('pending-dispatches')
   async findPendingDispatches(): Promise<Dispatch[]> {
     return await this.newsletterService.findPendingDispatches();

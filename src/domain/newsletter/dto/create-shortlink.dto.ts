@@ -11,6 +11,15 @@ export class CreateShortlinkDto {
   newsletterId: number;
 
   @ApiProperty({
+    description: '🈵 Unique identifier for dispatch',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  uuid?: string;
+
+  @ApiProperty({
     description: '🈵 21자리 나노아이디 값',
     example: '1234567890',
     type: String,

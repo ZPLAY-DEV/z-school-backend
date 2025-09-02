@@ -1,62 +1,14 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { format } from 'date-fns';
-import { AWS_SQS_CLIENT } from 'src/common/constants';
-import { NotificationType } from 'src/common/enums/notification-type';
 import { classifyMessage } from 'src/helpers/classify';
 import { AligoService } from 'src/services/aligo/aligo.service';
 import { AligoListResult } from 'src/services/aligo/types';
-import { SqsService } from 'src/services/aws/sqs.service';
-import { NotificationService } from 'src/services/notification/notification.service';
-import {
-  FcmData,
-  MessageBody,
-  MixedPair,
-} from 'src/services/notification/types';
 
 @Injectable()
 export class TextService {
   private readonly logger = new Logger(TextService.name);
 
-  constructor(
-    private readonly notificationService: NotificationService,
-    private readonly aligoService: AligoService,
-    @Inject(AWS_SQS_CLIENT)
-    private readonly sqsClient: SqsService,
-  ) {}
-
-  async send(data: {
-    messages: (MixedPair & MessageBody & FcmData)[];
-    type: NotificationType;
-    schoolId: number;
-    role: string;
-  }): Promise<any> {
-    this.logger.log(`messages`, data.messages);
-    return await this.notificationService.send(data);
-  }
-
-  async sendViaQueue(data: {
-    messages: (MixedPair & MessageBody & FcmData)[];
-    type: NotificationType;
-    schoolId: number;
-    role: string;
-  }): Promise<any> {
-    this.logger.log(`✋ data`, JSON.stringify(data, null, 2));
-    const payload = {
-      type: 'SEND_MESSAGES',
-      data: data,
-    };
-    try {
-      return await this.sqsClient.sendMessage(payload);
-    } catch (e) {
-      console.log(e);
-      throw new BadRequestException(e.message);
-    }
-  }
+  constructor(private readonly aligoService: AligoService) {}
 
   async list(
     page: number,

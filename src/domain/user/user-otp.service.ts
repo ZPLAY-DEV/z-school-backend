@@ -8,10 +8,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { addMinutes, isAfter } from 'date-fns';
 import * as random from 'randomstring';
+import { NotificationType } from 'src/common/enums';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Secret } from 'src/domain/user/entities/secret.entity';
 import { User } from 'src/domain/user/entities/user.entity';
+import { getTemplateOfOtp } from 'src/helpers/get-message-body';
 import { normalizePhone } from 'src/helpers/phone';
 import { NotificationService } from 'src/services/notification/notification.service';
 import { Repository } from 'typeorm/repository/Repository';
@@ -56,7 +58,7 @@ export class UserOtpService {
         otp = await this._upsertOtpUsingDb(phone, role, '0000');
       } else {
         otp = await this._upsertOtpUsingDb(phone, role);
-        await this._sendSmsTo(phone, otp);
+        await this._sendKakaoAlimtalk(phone, otp);
       }
     } else {
       if (!email) throw new Error('Email is required');
@@ -96,7 +98,7 @@ export class UserOtpService {
     } else {
       otp = await this._upsertOtpUsingDb(phone, role);
     }
-    await this._sendSmsTo(phone, otp);
+    await this._sendKakaoAlimtalk(phone, otp);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -155,16 +157,27 @@ export class UserOtpService {
     return pass as string;
   }
 
-  async _sendSmsTo(phone: string, otp: string): Promise<any> {
+  async _sendKakaoAlimtalk(phone: string, otp: string): Promise<any> {
     try {
-      //! use SQS where the NAT Gateway is whitelisted.
-      await this.notificationService.text({
-        body: `[스쿨허브] 인증코드 ${otp}`,
-        phone: phone,
+      const body = getTemplateOfOtp({ otp });
+
+      await this.notificationService.send({
+        type: NotificationType.OTHER,
+        schoolId: 0,
+        role: 'PARENT',
+        messages: [
+          {
+            token: null,
+            phone: phone,
+            template: 'Otp1',
+            body: body,
+            role: 'PARENT',
+          },
+        ],
       });
     } catch (e) {
       console.log(e);
-      throw new BadRequestException('aligo smsClient error');
+      throw new BadRequestException('kakao alimtalk error');
     }
   }
 

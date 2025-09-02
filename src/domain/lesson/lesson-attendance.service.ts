@@ -395,11 +395,9 @@ export class LessonAttendanceService {
               statusText = '결석';
               break;
             case AttendanceStatus.LATE:
-            case AttendanceStatus.EXCUSED_LATE:
               statusText = '지각';
               break;
             case AttendanceStatus.LEFT:
-            case AttendanceStatus.EXCUSED_LEFT:
               statusText = '조퇴';
               break;
             case AttendanceStatus.INIT:
@@ -557,11 +555,9 @@ export class LessonAttendanceService {
               statusText = '결석';
               break;
             case AttendanceStatus.LATE:
-            case AttendanceStatus.EXCUSED_LATE:
               statusText = '지각';
               break;
             case AttendanceStatus.LEFT:
-            case AttendanceStatus.EXCUSED_LEFT:
               statusText = '조퇴';
               break;
             case AttendanceStatus.INIT:

@@ -1,4 +1,11 @@
-import { Body, Controller, Delete, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Param,
+  ParseIntPipe,
+  Post,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PickRule } from 'src/common/enums';
 import { BookingService } from 'src/domain/booking/booking.service';
@@ -41,12 +48,18 @@ export class BookingController {
   async createManualBooking(
     @Body() dto: CreateManualBookingDto,
   ): Promise<Booking[]> {
-    return await this.bookingService.createManualBooking(dto);
+    return await this.bookingService.createManual(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? Cancel Booking (수강신청 취소)
   //? ---------------------------------------------------------------------- ?//
+
+  @CancelBookingSwagger()
+  @Delete(':id/manual')
+  async delete(@Param('id', ParseIntPipe) id: number): Promise<Booking> {
+    return await this.bookingService.deleteManual(id);
+  }
 
   @CancelBookingSwagger()
   @Delete()

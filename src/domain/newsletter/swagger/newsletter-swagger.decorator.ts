@@ -11,7 +11,6 @@ import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-dispatch.dto';
-import { CreateRegistrationDispatchDto } from 'src/domain/newsletter/dto/create-registration-dispatch.dto';
 import { NewsletterWithReadStatsDto } from 'src/domain/newsletter/dto/newsletter-with-read-stats.dto';
 import { Dispatch } from 'src/domain/newsletter/entities/dispatch.entity';
 import { CreateNewsletterDto } from '../dto/create-newsletter.dto';
@@ -106,75 +105,7 @@ export const CreateNewsletterDocs = () => {
   );
 };
 
-export const DispatchRegistrationLinkDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '📤 수강신청 링크 발송',
-      description: `
-**📝 기능 설명**
-- 수강신청 관련 뉴스레터를 생성하고 즉시 발송합니다
-- 수강신청 링크와 안내 정보를 포함한 뉴스레터를 대상자들에게 발송
-- 발송 스케줄링과 즉시 발송을 모두 지원합니다
-
-**🔄 비즈니스 로직**
-1. 수강신청 뉴스레터 자동 생성
-2. 발송 대상 설정 및 유효성 검증
-3. scheduledAt 설정에 따른 발송 스케줄링
-4. 발송 상태 초기화 및 큐 등록
-5. 발송 결과 반환
-
-**⚠️ 중요 제약사항**
-- schoolId와 termId는 필수 입력
-- 이미지 배열은 필수 (최소 1개)
-- scheduledAt은 현재 시간 이후여야 함
-- 수강신청 뉴스레터는 학기당 1개만 생성 가능
-
-**📚 예시 시나리오**
-- 수강신청 시작 시 안내 발송
-- 수강신청 마감 임박 시 리마인더 발송
-- 수강신청 방법 변경 시 공지 발송
-      `,
-    }),
-    ApiBody({
-      type: CreateRegistrationDispatchDto,
-      examples: {
-        'immediate-dispatch': {
-          summary: '즉시 발송',
-          description: '수강신청 안내를 즉시 발송',
-          value: {
-            schoolId: 1,
-            termId: 1,
-            title: '2025년 1학기 수강신청 안내',
-            body: '2025년 1학기 수강신청을 시작합니다.\n\n신청 기간: 2025년 2월 1일 ~ 2월 15일\n신청 방법: 앱을 통한 온라인 신청\n\n자세한 내용은 첨부된 안내문을 확인해주세요.',
-            images: [
-              'https://s3.amazonaws.com/bucket/registration-guide.jpg',
-              'https://s3.amazonaws.com/bucket/schedule-info.jpg',
-            ],
-          },
-        },
-        'scheduled-dispatch': {
-          summary: '예약 발송',
-          description: '수강신청 안내를 특정 시간에 발송',
-          value: {
-            schoolId: 1,
-            termId: 1,
-            title: '수강신청 마감 임박 안내',
-            body: '수강신청이 3일 후 마감됩니다.\n\n아직 신청하지 않은 과목이 있다면 서두르세요.\n\n마감일: 2025년 2월 15일 오후 6시',
-            images: ['https://s3.amazonaws.com/bucket/reminder-notice.jpg'],
-            scheduledAt: '2025-02-12T09:00:00Z',
-          },
-        },
-      },
-    }),
-    ApiCreatedResponseTemplate({
-      description: '수강신청 링크 발송 완료',
-      type: Dispatch,
-    }),
-    ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.CONFLICT),
-  );
-};
-
-export const DispatchNewsletterDocs = () => {
+export const SendNewsletterDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '📤 뉴스레터 발송',
@@ -266,9 +197,113 @@ export const DispatchNewsletterDocs = () => {
   );
 };
 
+export const ResendNewsletterDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '🔄 뉴스레터 재발송',
+      description: `
+**📝 기능 설명**
+- 이미 발송된 뉴스레터를 즉시 재발송합니다
+- 동일한 대상자들에게 동일한 내용으로 재발송됩니다
+- 발송 상태를 업데이트하고 발송 큐에 등록합니다
+
+**🔄 비즈니스 로직**
+1. ID로 재발송할 뉴스레터 확인
+2. 발송 상태를 재발송 대기로 변경
+3. 기존 발송 기록은 유지
+4. 동일한 발송 대상 및 내용으로 처리
+5. 발송 큐에 재발송 작업 등록
+
+**⚠️ 중요 제약사항**
+- 이미 발송된 뉴스레터만 재발송 가능
+- 발송 상태가 SENT인 뉴스레터만 재발송 가능
+- 동일한 대상자들에게만 재발송
+
+**📚 예시 시나리오**
+- 중요 공지사항의 리마인더 발송
+- 읽지 않은 학부모들을 위한 재발송
+- 시스템 오류로 누락된 발송 보완
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '재발송할 뉴스레터의 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'uuid',
+      type: String,
+      description: '재발송을 위한 고유 식별자',
+      example: '550e8400-e29b-41d4-a716-446655440000',
+    }),
+    ApiOkResponse({
+      description: '뉴스레터 재발송 완료 (응답 본문 없음)',
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+};
+
 //? ---------------------------------------------------------------------- ?//
 //? Newsletter Controller - READ
 //? ---------------------------------------------------------------------- ?//
+
+export const ListNewslettersDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '📋 뉴스레터 목록 조회',
+      description: `
+**📝 기능 설명**
+- 특정 학교와 학기의 뉴스레터 목록을 조회합니다
+- 뉴스레터 타입별 필터링과 학기별 그룹핑을 지원합니다
+- 삭제되지 않은 뉴스레터만 조회됩니다
+
+**🔄 비즈니스 로직**
+1. schoolId로 학교별 뉴스레터 필터링
+2. termId로 학기별 뉴스레터 필터링 (선택사항)
+3. type으로 뉴스레터 타입별 필터링 (선택사항)
+4. 생성일 기준 내림차순 정렬
+5. 삭제된 뉴스레터 제외
+
+**⚠️ 중요 제약사항**
+- schoolId는 필수 입력
+- termId와 type은 선택사항
+- 삭제된 뉴스레터는 목록에서 제외
+
+**📚 예시 시나리오**
+- 학교별 뉴스레터 목록 표시
+- 특정 학기 뉴스레터만 조회
+- 뉴스레터 타입별 분류 조회
+      `,
+    }),
+    ApiQuery({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID (필수)',
+      example: 1,
+    }),
+    ApiQuery({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID (선택사항)',
+      example: 1,
+      required: false,
+    }),
+    ApiQuery({
+      name: 'type',
+      enum: ['REGISTRATION', 'NEWS', 'SURVEY'],
+      description: '뉴스레터 타입 (선택사항)',
+      example: 'NEWS',
+      required: false,
+    }),
+    ApiOkResponseTemplate({
+      description: '뉴스레터 목록 조회 완료',
+      type: Newsletter,
+      isArray: true,
+    }),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
+  );
+};
 
 export const FindRegistrationNewsletterDocs = () => {
   return applyDecorators(
@@ -314,6 +349,43 @@ export const FindRegistrationNewsletterDocs = () => {
       type: NewsletterWithReadStatsDto,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+};
+
+export const FindPendingDispatchesDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '⏳ 대기 중인 발송 조회',
+      description: `
+**📝 기능 설명**
+- 발송 대기 상태인 뉴스레터 발송 목록을 조회합니다
+- 즉시 발송 대기와 예약 발송 대기 상태를 모두 포함합니다
+- 발송 관리자들이 발송 상태를 모니터링할 때 사용합니다
+
+**🔄 비즈니스 로직**
+1. 발송 상태가 INIT인 뉴스레터 발송 조회
+2. 발송 상태가 SCHEDULED인 예약 발송 조회
+3. 발송 예정 시간 순으로 정렬
+4. 발송 대상과 스케줄 정보 포함
+5. 발송 실패한 항목도 포함
+
+**⚠️ 중요 제약사항**
+- 발송 상태가 INIT, SCHEDULED, FAILED인 항목만 조회
+- 이미 완료된 발송은 제외
+- 발송 실패한 항목은 재시도 가능
+
+**📚 예시 시나리오**
+- 발송 대기 상태 모니터링
+- 예약 발송 스케줄 확인
+- 발송 실패 항목 재처리
+      `,
+    }),
+    ApiOkResponseTemplate({
+      description: '대기 중인 발송 목록 조회 완료',
+      type: Dispatch,
+      isArray: true,
+    }),
+    ApiStatuses(StatusCodes.INTERNAL_SERVER_ERROR),
   );
 };
 
@@ -478,47 +550,6 @@ export const MarkAsReadDocs = () => {
     }),
     ApiOkResponse({
       description: '읽음 표시 완료 (응답 본문 없음)',
-    }),
-    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
-  );
-};
-
-export const ResendNewsletterDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '🔄 뉴스레터 재발송',
-      description: `
-**📝 기능 설명**
-- 이미 발송된 뉴스레터를 즉시 재발송합니다
-- 동일한 대상자들에게 동일한 내용으로 재발송됩니다
-- 발송 상태를 업데이트하고 발송 큐에 등록합니다
-
-**🔄 비즈니스 로직**
-1. ID로 재발송할 뉴스레터 확인
-2. 발송 상태를 재발송 대기로 변경
-3. 기존 발송 기록은 유지
-4. 동일한 발송 대상 및 내용으로 처리
-5. 발송 큐에 재발송 작업 등록
-
-**⚠️ 중요 제약사항**
-- 이미 발송된 뉴스레터만 재발송 가능
-- 발송 상태가 SENT인 뉴스레터만 재발송 가능
-- 동일한 대상자들에게만 재발송
-
-**📚 예시 시나리오**
-- 중요 공지사항의 리마인더 발송
-- 읽지 않은 학부모들을 위한 재발송
-- 시스템 오류로 누락된 발송 보완
-      `,
-    }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: '재발송할 뉴스레터의 ID',
-      example: 1,
-    }),
-    ApiOkResponse({
-      description: '뉴스레터 재발송 완료 (응답 본문 없음)',
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );

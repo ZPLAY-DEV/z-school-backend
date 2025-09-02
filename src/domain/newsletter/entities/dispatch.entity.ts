@@ -26,6 +26,10 @@ export class Dispatch {
   @Column({ type: 'int', unsigned: true })
   newsletterId: number;
 
+  @ApiProperty({ description: '🈵 Unique identifier for dispatch' })
+  @Column({ type: 'varchar', length: 36, unique: true })
+  uuid: string;
+
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({

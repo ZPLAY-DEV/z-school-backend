@@ -1,7 +1,7 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
-  InternalServerErrorException,
   Logger,
   NotFoundException,
   UnprocessableEntityException,
@@ -40,7 +40,7 @@ export class BookingService {
 
   //? ---------------------------------------------------------------------- ?//
 
-  async createManualBooking(dto: CreateManualBookingDto): Promise<Booking[]> {
+  async createManual(dto: CreateManualBookingDto): Promise<Booking[]> {
     const group = await this.groupRepository.findOneOrFail({
       where: { id: dto.groupId },
       relations: ['offering', 'lesson'],
@@ -149,7 +149,7 @@ export class BookingService {
         );
       }
       this.logger.error(`❌ Booking 실패`, error.stack);
-      throw new InternalServerErrorException(error.message);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -167,7 +167,7 @@ export class BookingService {
       return affected as number; // Assuming 1 row is affected
     } catch (error) {
       this.logger.error(`❌ Booking 취소 실패`, error.stack);
-      throw new InternalServerErrorException(error.message);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -257,10 +257,10 @@ export class BookingService {
 
       if (error instanceof Error && error.message.includes('SQS')) {
         this.logger.error(`❌ SQS 메시지 전송 실패`, error.stack);
-        throw new InternalServerErrorException(error.message);
+        throw new BadRequestException(error.message);
       }
 
-      throw new InternalServerErrorException(error.message);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -307,7 +307,19 @@ export class BookingService {
           `Booking not found for offering ${offeringId} and student ${studentId}`,
         );
       }
-      throw new InternalServerErrorException(error.message);
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async deleteManual(id: number): Promise<Booking> {
+    const booking = await this.bookingRepository.findOneOrFail({
+      where: { id },
+    });
+    try {
+      return await this.bookingRepository.remove(booking);
+    } catch (error) {
+      this.logger.error(`❌ Booking 취소 실패`, error.stack);
+      throw new BadRequestException(error.message);
     }
   }
 
