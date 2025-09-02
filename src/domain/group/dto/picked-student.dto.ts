@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Expose } from 'class-transformer';
 import { Actor, StudentStatus } from 'src/common/enums';
 
 export class PickedStudentDto {
@@ -6,30 +7,35 @@ export class PickedStudentDto {
     description: '학생 ID',
     example: 1,
   })
+  @Expose()
   id: number;
 
   @ApiProperty({
     description: '그룹 ID',
     example: 1,
   })
+  @Expose()
   groupId: number;
 
   @ApiProperty({
     description: '그룹 이름',
     example: '배드민턴A',
   })
+  @Expose()
   groupName: string;
 
   @ApiProperty({
     description: '학생 이름',
     example: '홍길동',
   })
+  @Expose()
   name: string;
 
   @ApiProperty({
     description: '학년',
     example: 2,
   })
+  @Expose()
   grade: number;
 
   @ApiProperty({
@@ -76,6 +82,7 @@ export class PickedStudentDto {
     example: '2023-01-01',
     nullable: true,
   })
+  @Expose()
   start: string | null;
 
   @ApiProperty({
@@ -83,6 +90,7 @@ export class PickedStudentDto {
     example: '2023-01-01',
     nullable: true,
   })
+  @Expose()
   end: string | null;
 
   @ApiProperty({

@@ -238,7 +238,7 @@ export class GroupService {
 
     return picks.map(
       (v: Pick) =>
-        ({
+        new PickedStudentDto({
           id: v.studentId,
           groupId: v.groupId,
           groupName: v.group.groupName,
@@ -253,7 +253,7 @@ export class GroupService {
           start: v.start || null,
           end: v.end || null,
           isActive: v.isActive,
-        }) as PickedStudentDto,
+        }),
     );
   }
 
