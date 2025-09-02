@@ -235,20 +235,22 @@ export class GroupService {
     }
 
     const picks = await queryBuilder.getMany();
-    return picks.map((v) => {
+    return picks.map((pick: Pick) => {
       return new PickedStudentDto({
-        id: v.studentId,
-        groupId: v.groupId,
-        groupName: v.group.groupName,
-        name: v.student.name,
-        grade: v.student.grade,
-        class: v.student.class,
-        studentCode: v.student.studentCode,
-        status: v.student.status,
-        parentPhone: v.student.parent.phone,
-        startedBy: v.startedBy,
-        endedBy: v.endedBy,
-        isActive: v.isActive,
+        id: pick.studentId,
+        groupId: pick.groupId,
+        groupName: pick.group.groupName,
+        name: pick.student.name,
+        grade: pick.student.grade,
+        class: pick.student.class,
+        studentCode: pick.student.studentCode,
+        status: pick.student.status,
+        parentPhone: pick.student.parent.phone,
+        startedBy: pick.startedBy,
+        endedBy: pick.endedBy,
+        start: pick.start,
+        end: pick.end,
+        isActive: pick.isActive,
       });
     });
   }
@@ -278,7 +280,7 @@ export class GroupService {
 
     // Pick 데이터를 PickedStudentDto로 변환
     const transformedData = result.data.map(
-      (pick) =>
+      (pick: Pick) =>
         new PickedStudentDto({
           id: pick.studentId,
           groupId: pick.groupId,
@@ -291,6 +293,8 @@ export class GroupService {
           parentPhone: pick.student.parent.phone,
           startedBy: pick.startedBy,
           endedBy: pick.endedBy,
+          start: pick.start,
+          end: pick.end,
           isActive: pick.isActive,
         }),
     );

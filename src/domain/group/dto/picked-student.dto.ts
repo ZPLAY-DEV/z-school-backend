@@ -72,6 +72,20 @@ export class PickedStudentDto {
   endedBy: Actor | null;
 
   @ApiProperty({
+    description: '수업 시작일',
+    example: '2023-01-01',
+    nullable: true,
+  })
+  start: string | null;
+
+  @ApiProperty({
+    description: '수업 취소일',
+    example: '2023-01-01',
+    nullable: true,
+  })
+  end: string | null;
+
+  @ApiProperty({
     description: '수업 여부',
     example: true,
   })
