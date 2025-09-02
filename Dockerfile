@@ -1,11 +1,19 @@
 # Multi-stage build for NestJS with pnpm and Node 20
-FROM --platform=linux/amd64 node:20-alpine AS base
+FROM node:20-alpine AS base
 
-# Install pnpm globally
-RUN npm install -g pnpm
+# Install pnpm and sentry-cli globally
+RUN npm install -g pnpm @sentry/cli
 
 # Build stage
 FROM base AS builder
+
+# Set Sentry environment variables
+ARG SENTRY_ORG
+ENV SENTRY_ORG=${SENTRY_ORG}
+ARG SENTRY_PROJECT
+ENV SENTRY_PROJECT=${SENTRY_PROJECT}
+ARG SENTRY_AUTH_TOKEN
+ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
 
 WORKDIR /usr/src/app
 
@@ -35,16 +43,19 @@ WORKDIR /usr/src/app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S chuck -u 1001 -G nodejs
 
-# Copy package files and install production dependencies only
-COPY package.json pnpm-lock.yaml* ./
-COPY *.account-key.json ./
-RUN pnpm install --prod --frozen-lockfile && \
-    pnpm prune --prod && \
-    pnpm store prune
-
 # Copy built application and static files from builder stage
 COPY --from=builder --chown=chuck:nodejs /usr/src/app/dist ./dist
 COPY --from=builder --chown=chuck:nodejs /usr/src/app/static ./static
+
+# Copy package files for production dependencies
+COPY --from=builder --chown=chuck:nodejs /usr/src/app/package.json ./
+COPY --from=builder --chown=chuck:nodejs /usr/src/app/pnpm-lock.yaml ./
+COPY --from=builder --chown=chuck:nodejs /usr/src/app/*.account-key.json ./
+
+# Install production dependencies only
+RUN pnpm install --prod --frozen-lockfile && \
+    pnpm prune --prod && \
+    pnpm store prune
 
 # Change ownership of the app directory
 RUN chown -R chuck:nodejs /usr/src/app
