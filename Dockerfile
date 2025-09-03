@@ -14,6 +14,9 @@ ARG SENTRY_PROJECT
 ENV SENTRY_PROJECT=${SENTRY_PROJECT}
 ARG SENTRY_AUTH_TOKEN
 ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
+# IPv4만 사용하도록 설정 (fetch 가 cdn 주소못찾고 오류발생)
+ENV NODE_OPTIONS="--dns-result-order=ipv4first"
+ENV NODE_OPTIONS="${NODE_OPTIONS} --max-old-space-size=4096"
 
 WORKDIR /usr/src/app
 
