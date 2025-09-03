@@ -40,30 +40,53 @@ export class BookingService {
 
   //? ---------------------------------------------------------------------- ?//
 
-  async createManualBooking(dto: CreateManualBookingDto): Promise<Booking> {
+  async createManualBooking(dto: CreateManualBookingDto): Promise<Booking[]> {
     const group = await this.groupRepository.findOneOrFail({
       where: { id: dto.groupId },
       relations: ['offering', 'lesson'],
     });
 
-    const lastBooking = await this.bookingRepository.findOneOrFail({
+    // 중복 예약 체크
+    const existingBookings = await this.bookingRepository.find({
+      where: {
+        offeringId: group.offeringId ?? 0,
+        studentId: { $in: dto.studentIds } as any,
+      },
+    });
+
+    if (existingBookings.length > 0) {
+      const duplicateStudentIds = existingBookings.map((b) => b.studentId);
+      throw new UnprocessableEntityException(
+        `이미 수강신청한 학생이 있습니다: ${duplicateStudentIds.join(', ')}`,
+      );
+    }
+
+    const lastBooking = await this.bookingRepository.findOne({
       where: { offeringId: group.offeringId ?? 0 },
       order: { waitingPosition: 'DESC' },
     });
 
-    const waitingPosition = (lastBooking?.waitingPosition || 0) + 1;
+    const baseWaitingPosition = lastBooking?.waitingPosition || 0;
     const status = BookingStatus.PENDING;
     const note = '기간외 수강신청';
-    const booking = this.bookingRepository.create({
-      offeringId: group.offeringId ?? 0,
-      studentId: dto.studentId,
-      lessonName: group.lesson.lessonName,
-      waitingPosition,
-      status,
-      note,
-    });
 
-    return await this.bookingRepository.save(booking);
+    const bookings: Booking[] = [];
+
+    for (let i = 0; i < dto.studentIds.length; i++) {
+      const waitingPosition = baseWaitingPosition + i + 1;
+      const booking = this.bookingRepository.create({
+        offeringId: group.offeringId ?? 0,
+        studentId: dto.studentIds[i],
+        lessonName: group.lesson.lessonName,
+        waitingPosition,
+        status,
+        note,
+      });
+
+      bookings.push(booking);
+    }
+
+    return await this.bookingRepository.save(bookings);
   }
 
   //? ---------------------------------------------------------------------- ?//

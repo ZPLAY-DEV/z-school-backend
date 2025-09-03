@@ -101,6 +101,7 @@ export const CreateManualBookingDocs = () => {
 - 수강신청 기간이 종료된 후 관리자가 수동으로 수강신청을 처리하는 API
 - 특별한 상황에서 기간외 수강신청을 허용해야 할 때 사용
 - 수용인원 제한 없이 강제 등록 가능
+- 여러 학생을 한 번에 등록 가능
 
 **🔄 비즈니스 로직**
 1. 수강신청 기간 제한을 우회하여 등록 처리
@@ -108,23 +109,26 @@ export const CreateManualBookingDocs = () => {
 3. 관리자 권한으로 강제 등록 실행
 4. 기간외 수강신청 사유를 기록 (note: "기간외 수강신청")
 5. 즉시 PENDING 상태로 수강신청 생성
-6. 대기순번을 기존 신청자 다음 순서로 자동 할당
+6. 대기순번을 기존 신청자 다음 순서로 순차적으로 자동 할당
+7. 중복 예약 체크 후 등록 진행
 
 **⚠️ 중요 제약사항**
 - 관리자 권한이 필요함
-- 이미 수강신청한 학생은 중복 등록 불가
+- 이미 수강신청한 학생은 중복 등록 불가 (자동 검증)
 - 삭제된 과목이나 학생은 등록 불가
 - 특별한 상황에서만 사용해야 함
-- groupId와 studentId는 필수 파라미터
+- groupId와 studentIds는 필수 파라미터
 
 **📚 사용 예시**
-- 수강신청 기간을 놓친 학생을 위한 특별 처리
+- 수강신청 기간을 놓친 학생들을 위한 특별 처리
 - 전학생 등 특별한 경우의 수강신청
 - 시스템 오류로 인한 수강신청 실패 보상
 - 관리자 판단 하에 필요한 기간외 등록
+- 여러 학생을 동시에 등록해야 하는 경우
 
 **🔍 응답 데이터**
-- 수강신청 ID, 과목 ID, 학생 ID
+- 수강신청 배열 (여러 학생의 예약 정보)
+- 각 예약별: 수강신청 ID, 과목 ID, 학생 ID
 - 수강신청 과목명, 대기순번, 상태
 - 기간외 수강신청 비고 메모
 - 생성/수정 일시
@@ -136,20 +140,26 @@ export const CreateManualBookingDocs = () => {
         '기간외 수강신청 예시': {
           value: {
             groupId: 15,
-            studentId: 123,
+            studentIds: [123, 124, 125],
           },
         },
         '전학생 특별 등록': {
           value: {
             groupId: 8,
-            studentId: 456,
+            studentIds: [456, 457],
+          },
+        },
+        '단일 학생 등록': {
+          value: {
+            groupId: 12,
+            studentIds: [789],
           },
         },
       },
     }),
     ApiCreatedResponseTemplate({
       description: '기간외 수강신청 성공',
-      type: Booking,
+      type: Array<Booking>,
     }),
     ApiStatuses(
       StatusCodes.BAD_REQUEST,

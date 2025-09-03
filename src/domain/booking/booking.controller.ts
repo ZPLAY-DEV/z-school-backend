@@ -40,7 +40,7 @@ export class BookingController {
   @Post('manual')
   async createManualBooking(
     @Body() dto: CreateManualBookingDto,
-  ): Promise<Booking> {
+  ): Promise<Booking[]> {
     return await this.bookingService.createManualBooking(dto);
   }
 
