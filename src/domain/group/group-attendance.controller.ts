@@ -24,6 +24,7 @@ import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import { GroupAttendanceService } from 'src/domain/group/group-attendance.service';
 import {
   CustomAttendanceDocs,
+  DownloadMonthlyReportExcelDocs,
   EndAttendanceDocs,
   FindAttendanceByDateWithExtendedDataDocs,
   GetReportDocs,
@@ -118,7 +119,7 @@ export class GroupAttendanceController {
 
   // schooldays 는 그날 수업이 있나 없나 판단 근거.
   // 학생별 출석자료 source of truth 는 dynamodb.
-  @GetReportDocs()
+  @DownloadMonthlyReportExcelDocs()
   @Get(':groupId/attendances/:month/report/download')
   async downloadMonthlyReportExcel(
     @Param('groupId', ParseIntPipe) groupId: number,

@@ -4,6 +4,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiResponse,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -823,5 +824,101 @@ Returns an array of attendance records for the specified student in the given mo
       },
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
+  );
+};
+
+//? ---------------------------------------------------------------------- ?//
+//? Download Monthly Report Excel
+//? ---------------------------------------------------------------------- ?//
+
+export const DownloadMonthlyReportExcelDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '📥 월별 출석 보고서 Excel 다운로드',
+      description: `
+**📝 기능 설명**
+- 특정 반의 월별 출석 보고서를 Excel 파일(.xlsx)로 다운로드합니다
+- 해당 월의 모든 학생 출석 정보를 체계적으로 정리하여 제공합니다
+- 파일명은 '{month}-group-report.xlsx' 형식으로 자동 생성됩니다
+
+**📋 Excel 파일 구성**
+- **A열**: 날짜 (YYYY-MM-DD)
+- **B열**: 학생명
+- **C열**: 수업명
+- **D열**: 출석 상태
+- **E열**: 학부모 메모
+- **F열**: 학교 메모
+- **G열**: 학부모 메모 작성 시간
+- **H열**: 학교 메모 작성 시간
+
+**🔄 비즈니스 로직**
+1. 그룹 ID와 월 정보로 해당 기간 출석 데이터 조회
+2. DynamoDB에서 월별 출석 정보 수집
+3. Excel 워크북 생성 및 데이터 입력
+4. 파일 스트림으로 응답 전송
+
+**📚 예시 시나리오**
+- 월말 출석 현황 보고서 작성
+- 학부모 상담용 출석 자료 제공
+- 학교 행정 업무용 출석 통계
+- 학생별 출석 패턴 분석
+
+**⚠️ 중요 사항**
+- 파일은 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet 형식
+- Content-Disposition 헤더로 파일명 지정
+- 대용량 데이터의 경우 스트리밍 방식으로 처리
+      `,
+    }),
+    ApiParam({
+      name: 'groupId',
+      type: Number,
+      description: '반 ID - 출석 보고서를 다운로드할 반의 고유 식별자',
+      example: 123,
+    }),
+    ApiParam({
+      name: 'month',
+      type: String,
+      description: '대상 월 (YYYY-MM 형식) - 출석 보고서를 생성할 월',
+      example: '2025-08',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Excel 파일 다운로드 성공',
+      schema: {
+        type: 'string',
+        format: 'binary',
+        description: '월별 출석 보고서가 포함된 Excel 파일 (.xlsx)',
+      },
+      headers: {
+        'Content-Type': {
+          description: 'Excel 파일 MIME 타입',
+          schema: {
+            type: 'string',
+            example:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          },
+        },
+        'Content-Disposition': {
+          description: '파일 다운로드 헤더',
+          schema: {
+            type: 'string',
+            example: 'attachment; filename="2025-08-group-report.xlsx"',
+          },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 404,
+      description: '존재하지 않는 반 또는 데이터 없음',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 404 },
+          message: { type: 'string', example: 'Group not found' },
+          error: { type: 'string', example: 'Not Found' },
+        },
+      },
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
