@@ -13,6 +13,7 @@ import { IAttendance } from 'src/domain/attendance/entities/attendance.interface
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import { LessonAttendanceService } from 'src/domain/lesson/lesson-attendance.service';
 import {
+  DownloadMonthlyReportExcelDocs,
   FindAttendanceByDateDocs,
   GetReportDocs,
 } from 'src/domain/lesson/swagger/lesson-attendance-swagger.decorator';
@@ -55,7 +56,7 @@ export class LessonAttendanceController {
 
   // schooldays 는 그날 수업이 있나 없나 판단 근거.
   // 학생별 출석자료 source of truth 는 dynamodb.
-  @GetReportDocs()
+  @DownloadMonthlyReportExcelDocs()
   @Get(':lessonId/attendances/:month/report/download')
   async downloadMonthlyReportExcel(
     @Param('lessonId', ParseIntPipe) lessonId: number,

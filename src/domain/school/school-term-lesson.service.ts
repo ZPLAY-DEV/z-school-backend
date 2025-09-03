@@ -270,8 +270,6 @@ export class SchoolTermLessonService {
       dtos.push(dto);
     });
 
-    console.log(`🟢🟢🟢🟢🟢🟢🟢🟢`, JSON.stringify(dtos, null, 2));
-
     return dtos;
   }
 
@@ -284,22 +282,61 @@ export class SchoolTermLessonService {
     termId: number,
   ): Promise<ExcelJS.Workbook> {
     const workbook = new ExcelJS.Workbook();
-    const templateUrl =
-      'https://cdn.xn--ov3b17fd5n5vf.kr/excels/lessons-v3.xlsx';
-    const response = await fetch(templateUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch template: ${response.statusText}`);
-    }
-    const buffer = await response.arrayBuffer();
+    const worksheet = workbook.addWorksheet('강좌 리스트');
 
-    // 템플릿 파일 읽기
-    await workbook.xlsx.load(Buffer.from(buffer));
-    const sheet = workbook.getWorksheet(1);
+    // 제목 행 추가 (셀 병합)
+    const titleRow = worksheet.addRow(['강좌 리스트']);
+    worksheet.mergeCells('A1:R1');
+    titleRow.getCell(1).alignment = {
+      horizontal: 'center',
+      vertical: 'middle',
+    };
+    titleRow.getCell(1).font = { bold: true, size: 16 };
 
-    if (!sheet) {
-      throw new Error('Sheet not found');
-    }
+    // 컬럼 헤더 추가
+    const headerRow = worksheet.addRow([
+      '학기명',
+      '강좌명',
+      '강좌분류',
+      '주당횟수',
+      '분반명',
+      '요일',
+      '시작시간',
+      '종료시간',
+      '수강학년MIN',
+      '수강학년MAX',
+      '강사이름',
+      '연락처',
+      '수업장소',
+      '정원',
+      '학기수강료',
+      '교재비',
+      '재료비',
+      '비고',
+    ]);
 
+    // 헤더 스타일링
+    headerRow.eachCell((cell, colNumber) => {
+      cell.font = { bold: true };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' },
+      };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // 마지막 4개 칼럼은 선택입력사항임을 흐리게 표시
+      if (colNumber >= 15) {
+        cell.font = { bold: true, color: { argb: 'FF808080' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF0F0F0' },
+        };
+      }
+    });
+
+    // 강좌 데이터 조회
     const lessons = await this.lessonRepository.find({
       where: { schoolId: schoolId, termId: termId },
       relations: ['term', 'groups', 'groups.sam', 'groups.sam.instructor'],
@@ -308,42 +345,115 @@ export class SchoolTermLessonService {
       },
     });
 
-    lessons.forEach((lesson, index) => {
+    let rowIndex = 3;
+    lessons.forEach((lesson) => {
       lesson.groups.forEach((group) => {
-        const row = sheet.insertRow(3 + index, []);
+        const row = worksheet.addRow([
+          lesson.term.termName,
+          lesson.lessonName,
+          this._getCategoryNameFromCategoryId(lesson.categoryId),
+          lesson.frequency,
+          group.groupName,
+          group.weekday,
+          group.start,
+          group.end,
+          getMin(group.allowedGrades.split(',').map(Number)),
+          getMax(group.allowedGrades.split(',').map(Number)),
+          group.samName,
+          formatPhone(group.sam.instructor.phone),
+          group.location,
+          group.capacity,
+          group.tuition,
+          group.bookFee,
+          group.materialFee,
+          group.note || '',
+        ]);
 
-        console.log(
-          `${lesson.lessonName} - ${group.groupName} ${group.weekday}`,
-        );
-
-        row.getCell(1).value = lesson.term.termName;
-        row.getCell(2).value = lesson.lessonName;
-        row.getCell(3).value = this._getCategoryNameFromCategoryId(
-          lesson.categoryId,
-        );
-        row.getCell(4).value = lesson.frequency;
+        // 주당횟수, 수강가능학년은 가운데 정렬
         row.getCell(4).alignment = { horizontal: 'center' };
-        row.getCell(5).value = group.groupName;
-        row.getCell(6).value = group.weekday;
-        row.getCell(7).value = group.start;
-        row.getCell(8).value = group.end;
-        row.getCell(9).value = getMin(
-          group.allowedGrades.split(',').map(Number),
-        );
         row.getCell(9).alignment = { horizontal: 'center' };
-        row.getCell(10).value = getMax(
-          group.allowedGrades.split(',').map(Number),
-        );
         row.getCell(10).alignment = { horizontal: 'center' };
-        row.getCell(11).value = group.samName;
-        row.getCell(12).value = formatPhone(group.sam.instructor.phone);
-        row.getCell(13).value = group.location;
-        row.getCell(14).value = group.capacity;
-        row.getCell(15).value = group.tuition;
-        row.getCell(16).value = group.bookFee;
-        row.getCell(17).value = group.materialFee;
-        row.getCell(18).value = group.note;
+        row.getCell(14).alignment = { horizontal: 'center' };
+
+        // 마지막 4개 칼럼은 선택입력사항임을 흐리게 표시
+        for (let i = 15; i <= 18; i++) {
+          const cell = row.getCell(i);
+          cell.font = { color: { argb: 'FF808080' } };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF8F8F8' },
+          };
+        }
+
+        rowIndex++;
       });
+    });
+
+    // 강좌분류 칼럼에 드롭다운 메뉴 설정
+    const categoryValidation = {
+      type: 'list',
+      allowBlank: true,
+      formulae: ['"맞춤형,돌봄,선택형(유료),선택형(무료)"'],
+    };
+    (worksheet as any).dataValidations.add(
+      'C3:C' + (rowIndex - 1),
+      categoryValidation,
+    );
+
+    // 컬럼 너비 자동 조정
+    worksheet.columns.forEach((column, index) => {
+      switch (index) {
+        case 0: // 학기명
+          column.width = 10;
+          break;
+        case 1: // 강좌명
+          column.width = 15;
+          break;
+        case 2: // 강좌분류
+          column.width = 15;
+          break;
+        case 3: // 주당횟수
+          column.width = 10;
+          break;
+        case 4: // 분반명
+          column.width = 20;
+          break;
+        case 5: // 요일
+          column.width = 8;
+          break;
+        case 6: // 시작시간
+        case 7: // 종료시간
+          column.width = 10;
+          break;
+        case 8: // 수강학년MIN
+        case 9: // 수강학년MAX
+          column.width = 10;
+          break;
+        case 10: // 강사이름
+          column.width = 12;
+          break;
+        case 11: // 연락처
+          column.width = 15;
+          break;
+        case 12: // 수업장소
+          column.width = 15;
+          break;
+        case 13: // 정원
+          column.width = 8;
+          break;
+        case 14: // 학기수강료
+        case 15: // 교재비
+        case 16: // 재료비
+          column.width = 10;
+          break;
+        case 17: // 비고
+          column.width = 20;
+          break;
+        default:
+          column.width = 15;
+          break;
+      }
     });
 
     return workbook;

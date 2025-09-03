@@ -593,3 +593,67 @@ export const GetReportDocs = () => {
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 };
+
+//? ============================================================================ ?//
+//? Download Monthly Report Excel
+//? ============================================================================ ?//
+
+export const DownloadMonthlyReportExcelDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '📥 월간 출석 리포트 엑셀 다운로드',
+      description: `
+### 📥 과목별 월간 출석 리포트 엑셀 파일 다운로드
+
+**기능 개요:**
+- 특정 과목의 특정 월 출석 데이터를 엑셀 파일로 다운로드합니다
+- 학생별 출석 현황과 통계를 포함한 상세 리포트를 제공합니다
+
+**엑셀 파일 구성:**
+- 📊 **제목**: 월간 출석 리포트 (해당 월 표시)
+- 📋 **학생 정보**: 이름, 학년, 반, 번호
+- 📈 **출석 통계**: 전체 수업, 출석, 결석, 지각, 공결 횟수
+- 📊 **출석률**: 백분율로 표시된 출석률
+- 📝 **상세 기록**: 날짜별 출석 상태 및 메모
+- 📊 **학부모 참여도**: 메모 작성 수, 확인률
+
+**파일 형식:**
+- **확장자**: .xlsx (Excel 2007+)
+- **인코딩**: UTF-8
+- **다운로드**: 브라우저에서 자동 다운로드
+
+**사용 시나리오:**
+- 📊 **출석 관리**: 월간 출석 현황 정리
+- 📋 **상담 자료**: 학부모 상담 시 자료 제시
+- 📈 **통계 분석**: 출석 패턴 분석 및 개선 방안 도출
+- 📁 **보관**: 출석 기록 보관 및 이력 관리
+
+**주의사항:**
+- 대용량 데이터의 경우 생성 시간이 소요될 수 있습니다
+- 개인정보가 포함되어 보안에 유의해야 합니다
+- 파일명은 "{YYYY-MM}-lesson-report.xlsx" 형식으로 생성됩니다
+      `,
+    }),
+    ApiParam({
+      name: 'lessonId',
+      type: Number,
+      description: '엑셀을 다운로드할 과목의 고유 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'month',
+      type: String,
+      description: '다운로드할 월 (YYYY-MM 형식)',
+      example: '2024-12',
+    }),
+    ApiOkResponse({
+      description: '월간 출석 리포트 엑셀 다운로드 성공',
+      schema: {
+        type: 'string',
+        format: 'binary',
+        description: 'Excel 파일 (.xlsx)',
+      },
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+};

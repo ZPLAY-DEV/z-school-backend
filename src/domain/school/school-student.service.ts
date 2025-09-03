@@ -376,9 +376,9 @@ export class SchoolStudentService {
 
     // 실제 데이터 추출 (헤더 아래 행부터 시작)
     worksheet.eachRow((row, index) => {
-      if (index < 2) return;
+      if (index < 3) return;
 
-      const [_, name, grade, className, studentCode, parentPhone, phone, note] =
+      const [, name, grade, className, studentCode, parentPhone, phone, note] =
         row.values as any[]; // row.values[0] 은 항상 undefined
 
       if (!name || !grade || !className || !studentCode || !parentPhone) return;
@@ -410,39 +410,78 @@ export class SchoolStudentService {
 
   async generateExcel(schoolId: number): Promise<ExcelJS.Workbook> {
     const workbook = new ExcelJS.Workbook();
-    const templateUrl =
-      'https://cdn.xn--ov3b17fd5n5vf.kr/excels/students-v2.xlsx';
-    const response = await fetch(templateUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch template: ${response.statusText}`);
-    }
-    const buffer = await response.arrayBuffer();
+    const worksheet = workbook.addWorksheet('전교생 리스트');
 
-    // 템플릿 파일 읽기
-    await workbook.xlsx.load(Buffer.from(buffer));
-    const sheet = workbook.getWorksheet(1);
+    // 제목 행 추가 (셀 병합)
+    const titleRow = worksheet.addRow(['전교생 리스트']);
+    worksheet.mergeCells('A1:G1');
+    titleRow.getCell(1).alignment = {
+      horizontal: 'center',
+      vertical: 'middle',
+    };
+    titleRow.getCell(1).font = { bold: true, size: 16 };
 
-    if (!sheet) {
-      throw new Error('Sheet not found');
-    }
+    // 컬럼 헤더 추가
+    const headerRow = worksheet.addRow([
+      '이름',
+      '학년',
+      '반',
+      '번호',
+      '학부모연락처',
+      '학생연락처',
+      '비고',
+    ]);
 
+    // 헤더 스타일링
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' },
+      };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+
+    // 학생 데이터 추가
     const students = await this.studentRepository.find({
       where: { schoolId: schoolId },
       relations: ['parent', 'parent.user'],
     });
-    students.forEach((student, index) => {
-      const row = sheet.insertRow(2 + index, []);
+
+    students.forEach((student) => {
       if (student.status === StudentStatus.ATTENDING) {
-        row.getCell(1).value = student.name;
-        row.getCell(2).value = student.grade; // 학년
+        const row = worksheet.addRow([
+          student.name,
+          student.grade,
+          student.class,
+          student.studentCode,
+          formatPhone(student.parent.phone),
+          formatPhone(student.phone),
+          student.note || '',
+        ]);
+
+        // 학년, 반, 번호는 가운데 정렬
         row.getCell(2).alignment = { horizontal: 'center' };
-        row.getCell(3).value = student.class; // 반
         row.getCell(3).alignment = { horizontal: 'center' };
-        row.getCell(4).value = student.studentCode; // 번호
         row.getCell(4).alignment = { horizontal: 'center' };
-        row.getCell(5).value = formatPhone(student.parent.phone); // 보호자 연락처
-        row.getCell(6).value = formatPhone(student.phone); // 학생 연락처
-        row.getCell(7).value = student.note;
+      }
+    });
+
+    // 컬럼 너비 자동 조정
+    worksheet.columns.forEach((column, index) => {
+      switch (index) {
+        case 1:
+        case 2:
+        case 3:
+          column.width = 10;
+          break;
+        case 6:
+          column.width = 25;
+          break;
+        default:
+          column.width = 15;
+          break;
       }
     });
 

@@ -513,7 +513,7 @@ export class SchoolSamService {
     worksheet.eachRow((row, index) => {
       if (index < 3) return;
 
-      const [_, name, phone, note] = row.values as any[]; // row.values[0] 은 항상 undefined
+      const [, name, phone, note] = row.values as any[]; // row.values[0] 은 항상 undefined
 
       if (!name || !phone) return;
 
@@ -535,27 +535,40 @@ export class SchoolSamService {
 
   async generateExcel(schoolId: number): Promise<ExcelJS.Workbook> {
     const workbook = new ExcelJS.Workbook();
-    const templateUrl = 'https://cdn.xn--ov3b17fd5n5vf.kr/excels/sams-v2.xlsx';
-    const response = await fetch(templateUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch template: ${response.statusText}`);
-    }
-    const buffer = await response.arrayBuffer();
+    const worksheet = workbook.addWorksheet('강사 리스트');
 
-    // 템플릿 파일 읽기
-    await workbook.xlsx.load(Buffer.from(buffer));
-    const sheet = workbook.getWorksheet(1);
+    // 컬럼 너비 설정
+    worksheet.getColumn('A').width = 15;
+    worksheet.getColumn('B').width = 15;
+    worksheet.getColumn('C').width = 100;
 
-    if (!sheet) {
-      throw new Error('Sheet not found');
-    }
+    // 제목 행 추가
+    const titleRow = worksheet.addRow(['강사 리스트']);
+    worksheet.mergeCells('A1:C1');
+    titleRow.getCell(1).alignment = {
+      horizontal: 'center',
+      vertical: 'middle',
+    };
+    titleRow.getCell(1).font = { bold: true, size: 16 };
+
+    // 컬럼 헤더 추가
+    const headerRow = worksheet.addRow(['이름', '연락처', '비고']);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' },
+      };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
 
     const sams = await this.samRepository.find({
       where: { schoolId: schoolId },
       relations: ['instructor', 'groups'],
     });
     sams.forEach((sam, index) => {
-      const row = sheet.insertRow(3 + index, []);
+      const row = worksheet.insertRow(3 + index, []);
       row.getCell(1).value = sam.alias;
       row.getCell(2).value = formatPhone(sam.instructor.phone);
       row.getCell(3).value = sam.groups
