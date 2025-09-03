@@ -411,7 +411,7 @@ export class SchoolStudentService {
   async generateExcel(schoolId: number): Promise<ExcelJS.Workbook> {
     const workbook = new ExcelJS.Workbook();
     const templateUrl =
-      'https://cdn.xn--ov3b17fd5n5vf.kr/excels/students-v1.xlsx';
+      'https://cdn.xn--ov3b17fd5n5vf.kr/excels/students-v2.xlsx';
     const response = await fetch(templateUrl);
     if (!response.ok) {
       throw new Error(`Failed to fetch template: ${response.statusText}`);
