@@ -15,7 +15,7 @@ import { Group } from 'src/domain/group/entities/group.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisBookingService } from 'src/services/redis/redis-booking.service';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { ResponseBookingDto } from './dto/response-booking.dto';
@@ -50,7 +50,7 @@ export class BookingService {
     const existingBookings = await this.bookingRepository.find({
       where: {
         offeringId: group.offeringId ?? 0,
-        studentId: { $in: dto.studentIds } as any,
+        studentId: In(dto.studentIds),
       },
     });
 
