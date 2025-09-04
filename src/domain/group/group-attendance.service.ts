@@ -4,7 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { addDays, format, getDay, lastDayOfMonth, parse } from 'date-fns';
+import { addDays, getDay, lastDayOfMonth, parse } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import * as dynamoose from 'dynamoose';
 import * as ExcelJS from 'exceljs';
 import { InjectModel, Model } from 'nestjs-dynamoose';
@@ -295,7 +296,7 @@ export class GroupAttendanceService {
       const body = getTemplateOfEarlyLeave({
         name: student.name,
         school: group.lesson.schoolName ?? '학교명',
-        timestamp: `${format(new Date(), 'M월d일 H시m분')}`,
+        timestamp: `${formatInTimeZone(new Date(), 'Asia/Seoul', 'M월d일 H시m분')}`,
         reason: dto.schoolNote ?? '미작성',
       });
       // Dynamo 상태 업데이트
@@ -383,10 +384,10 @@ export class GroupAttendanceService {
       upsertData.parentNotedAt = new Date();
     }
 
-    // schoolNote가 업데이트되는 경우에만 schoolNotedAt 설정 (주석 해제시)
-    // if (typeof dto.schoolNote === 'string') {
-    //   upsertData.schoolNotedAt = new Date();
-    // }
+    // schoolNote가 업데이트되는 경우에만 schoolNotedAt 설정
+    if (typeof dto.schoolNote === 'string') {
+      upsertData.schoolNotedAt = new Date();
+    }
 
     try {
       // ✅ 개선된 upsert: update 먼저 시도, 실패하면 create
