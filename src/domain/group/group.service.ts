@@ -266,14 +266,17 @@ export class GroupService {
   ): Promise<Paginated<PickedStudentDto>> {
     const queryBuilder = this.pickRepository
       .createQueryBuilder('pick')
-      .leftJoinAndSelect('pick.group', 'group')
-      .leftJoinAndSelect('pick.student', 'student')
-      .leftJoinAndSelect('student.parent', 'parent')
       .where('pick.groupId = :groupId', { groupId: id });
 
     const result = await paginate(query, queryBuilder, {
+      relations: {
+        student: {
+          parent: true,
+        },
+        group: true,
+      },
       sortableColumns: ['id'],
-      searchableColumns: ['note'],
+      searchableColumns: ['note', 'student.name'],
       defaultSortBy: [['id', 'DESC']],
       filterableColumns: {
         isActive: [FilterOperator.EQ],
