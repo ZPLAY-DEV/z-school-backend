@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { format } from 'date-fns/format';
+import { formatInTimeZone } from 'date-fns-tz';
 import { NotificationType } from 'src/common/enums/notification-type';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -55,7 +55,7 @@ export class DepartureService {
       const body = getTemplateOfDeparture({
         name: student?.name,
         school: student.school?.name,
-        timestamp: `${format(new Date(), 'M월d일 H시m분')}`,
+        timestamp: `${formatInTimeZone(new Date(), 'Asia/Seoul', 'M월d일 H시m분')}`,
       });
 
       await this.notificationService.send({
@@ -149,7 +149,7 @@ export class DepartureService {
       const body = getTemplateOfDeparture({
         name: student.name,
         school: student.school.name,
-        timestamp: `${format(new Date(), 'M월d일 H시m분')}`,
+        timestamp: `${formatInTimeZone(new Date(), 'Asia/Seoul', 'M월d일 H시m분')}`,
       });
       return {
         token: student.parent.user?.pushToken ?? null,
