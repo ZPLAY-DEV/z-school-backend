@@ -81,10 +81,8 @@ export function generateSchooldays(
       const today = startDateStr;
 
       // local 시간을 UTC로 변환
-      const startsAt = new Date(`${startDateStr}T${startTimeStr}:00+09:00`);
-      const endsAt = new Date(`${endDateStr}T${endTimeStr}:00+09:00`);
-      const startsAtInUtc = toZonedTime(startsAt, 'UTC');
-      const endsAtInUtc = toZonedTime(endsAt, 'UTC');
+      const startsAt = new Date(`${startDateStr} ${startTimeStr}:00`);
+      const endsAt = new Date(`${endDateStr} ${endTimeStr}:00`);
 
       const duration = differenceInMinutes(endsAt, startsAt);
       const schoolday = {
@@ -97,8 +95,8 @@ export function generateSchooldays(
         today: today,
         weekday: group.weekday,
         weekNumber: weekNumber++,
-        startsAt: startsAtInUtc,
-        endsAt: endsAtInUtc,
+        startsAt: startsAt,
+        endsAt: endsAt,
         note: null,
       } as unknown as Schoolday;
 

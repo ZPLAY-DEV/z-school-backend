@@ -4,8 +4,11 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { format } from 'date-fns';
 import { fromZonedTime } from 'date-fns-tz';
 import { nanoid } from 'nanoid';
 import {
@@ -14,39 +17,49 @@ import {
   StudentStatus,
 } from 'src/common/enums';
 import { SendStatus } from 'src/common/enums/send-status';
-import { StudentReadInfo } from 'src/common/interfaces';
+import { Group } from 'src/domain/group/entities/group.entity';
+import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
+import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-dispatch.dto';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
-import { CreateRegistrationNewsletterDto } from 'src/domain/newsletter/dto/create-registration-newsletter.dto';
-import { NewsletterDetailResponseDto } from 'src/domain/newsletter/dto/response-extended-newsletter.dto';
+import { CreateShortlinkDto } from 'src/domain/newsletter/dto/create-shortlink.dto';
+import { NewsletterWithReadStatsDto } from 'src/domain/newsletter/dto/newsletter-with-read-stats.dto';
+import { ReadStatDto } from 'src/domain/newsletter/dto/read-stat.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
+import { Dispatch } from 'src/domain/newsletter/entities/dispatch.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
 import { School } from 'src/domain/school/entities/school.entity';
-import { CreateShortlinkDto } from 'src/domain/shortlink/dto/create-shortlink.dto';
-import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
 import {
-  translateNewsletterTarget,
-  translateNewsletterType,
-} from 'src/helpers/translate';
+  getTemplateOfNews,
+  getTemplateOfRegistration,
+} from 'src/helpers/get-message-body';
 import { getMobileRoute } from 'src/helpers/uri';
 import { SlackService } from 'src/services/slack/slack.service';
-import { DataSource, EntityManager, In, LessThan } from 'typeorm';
+import { DataSource, EntityManager, In, LessThan, Repository } from 'typeorm';
+import * as uuid from 'uuid';
 
 @Injectable()
 export class NewsletterService {
-  private readonly newsletterRepository;
   private readonly logger = new Logger(NewsletterService.name);
   private readonly domain;
   constructor(
+    @InjectRepository(Newsletter)
+    private readonly newsletterRepository: Repository<Newsletter>,
+    @InjectRepository(Dispatch)
+    private readonly dispatchRepository: Repository<Dispatch>,
+    @InjectRepository(Term)
+    private readonly termRepository: Repository<Term>,
+    @InjectRepository(School)
+    private readonly schoolRepository: Repository<School>,
     private readonly dataSource: DataSource,
     private readonly slack: SlackService,
     private readonly configService: ConfigService,
     // @Inject(REDIS_TRACKING_CLIENT)
     // private readonly redisTrackingService: RedisTrackingService,
   ) {
-    this.newsletterRepository = this.dataSource.getRepository(Newsletter);
     this.domain =
       this.configService.get('nodeEnv') === 'prod'
         ? 'https://스쿨허브.kr'
@@ -57,109 +70,175 @@ export class NewsletterService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  //? 학생 대상 발송
-  async create(dto: CreateNewsletterDto): Promise<Newsletter> {
-    const { schoolId, termId, scheduledAt, type } = dto;
-    // 모든 validation을 transaction 밖에서 처리 (Auto-increment ID 낭비 방지)
-    const school = await this.checkSchoolValidity(schoolId, scheduledAt);
-    const term = await this.checkTermValidity(termId, dto.type);
+  async createNewsletter(
+    dto: CreateNewsletterDto & CreateDispatchDto,
+  ): Promise<Newsletter> {
+    // transaction 밖에서 validation 처리 (Auto-increment ID 낭비 방지)
+    const school = await this._checkSchoolValidity(dto.schoolId);
+    const term = await this._checkTermValidity(dto.termId);
+    await this._checkNewsletterValidity(dto);
+    let title: string;
+
     if (dto.type === NewsletterType.REGISTRATION) {
-      await this.checkExistingNewsletterWithDto(schoolId, termId, type);
+      title = `${school.name} ${term.termName} 수강신청 바로가기`;
+    } else {
+      title = dto.title || `${school.name} ${term.termName} 공지사항`;
     }
 
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      // 뉴스레터 생성
-      const newsletter = await this.createNewsletter(manager, {
-        ...dto,
-        schoolName: school.name,
-        termName: term.termName,
-      });
-      // scheduledAt이 설정된 경우 이벤트 처리
-      if (newsletter.scheduledAt) {
-        await this.handleSendingNewsletter(newsletter, manager);
+      const newsletter = await manager.save(
+        manager.create(Newsletter, {
+          schoolId: dto.schoolId,
+          termId: dto.termId,
+          schoolName: school.name,
+          termName: term.termName,
+          title: title,
+          body: dto.body || null,
+          images: dto.images || null,
+        }),
+      );
+
+      if (dto.target && dto.targetItems) {
+        const uuidv4 = uuid.v4();
+        const dispatch = manager.create(Dispatch, { ...dto, uuid: uuidv4 });
+        const { students, label } = await this._getTargetStudents(
+          manager,
+          newsletter.schoolId,
+          dto.target,
+          dto.targetItems,
+        );
+        const dedupedStudents = this._dedupeStudents(students);
+        const studentIds = dedupedStudents.map((student) => student.id);
+        dispatch.studentIds = studentIds;
+        dispatch.targetLabel = label;
+        // 숏링크 생성
+        const shortlinks = await this._createShortlinks(
+          manager,
+          newsletter,
+          dedupedStudents,
+          uuidv4,
+        );
+        const payload = this._buildNotificationFullData(
+          term,
+          newsletter,
+          shortlinks,
+          dedupedStudents,
+        );
+        dispatch.payload = payload;
+        await manager.save(dispatch);
       }
 
       return newsletter;
     });
   }
 
-  async createRegistrationNewsletter(
-    dto: CreateRegistrationNewsletterDto,
-  ): Promise<Newsletter> {
-    const { schoolId, termId, images, date } = dto;
-
-    const term = await this.checkTermValidity(termId, 'REGISTRATION');
-    const scheduledAt = date ?? term.bookingStart!;
-    const school = await this.checkSchoolValidity(schoolId, scheduledAt);
-    await this.checkExistingNewsletterWithDto(
-      schoolId,
-      termId,
-      NewsletterType.REGISTRATION,
+  async sendNewsletter(id: number, dto: CreateDispatchDto): Promise<Dispatch> {
+    // transaction 밖에서 validation 처리 (Auto-increment ID 낭비 방지)
+    const newsletter = await this.findById(id, ['dispatches', 'shortlinks']);
+    if (!newsletter.term.bookingStart) {
+      throw new BadRequestException('❌ Missing bookingStart info in term');
+    }
+    if (!dto.target || !dto.targetItems) {
+      throw new BadRequestException('❌ Missing target or targetItems');
+    }
+    await this._isRegistrationNewsletterAlreadySentOrScheduled(
+      newsletter.schoolId,
+      newsletter.termId,
     );
 
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      // 뉴스레터 생성
-      const newsletter = await this.createNewsletter(manager, {
-        schoolId,
-        termId,
-        schoolName: school.name,
-        termName: term.termName,
-        title: `${school.name} ${term.termName} 수강신청 바로가기`,
-        body: '',
-        images,
-        type: NewsletterType.REGISTRATION,
-        target: NewsletterTarget.GRADE,
-        targetItems: [1, 2, 3, 4, 5, 6],
-        targetLabel: `${school.name} 전교생`,
-        scheduledAt,
-      });
-      // scheduledAt이 설정된 경우 이벤트 처리
-      await this.handleSendingNewsletter(newsletter, manager);
-      return newsletter;
+      const uuidv4 = uuid.v4();
+      const dispatch = manager.create(Dispatch, { ...dto, uuid: uuidv4 });
+      const term = newsletter.term;
+      const { students, label } = await this._getTargetStudents(
+        manager,
+        newsletter.schoolId,
+        dto.target!,
+        dto.targetItems!,
+      );
+      const dedupedStudents = this._dedupeStudents(students);
+      const studentIds = dedupedStudents.map((student) => student.id);
+      dispatch.studentIds = studentIds;
+      dispatch.targetLabel = label;
+      // 숏링크 생성
+      const shortlinks = await this._createShortlinks(
+        manager,
+        newsletter,
+        dedupedStudents,
+        uuidv4,
+      );
+      const payload = this._buildNotificationFullData(
+        term,
+        newsletter,
+        shortlinks,
+        dedupedStudents,
+      );
+      dispatch.payload = payload;
+      return await manager.save(dispatch);
     });
+  }
+
+  async resendNewsletter(id: number, uuid: string): Promise<void> {
+    const newsletter = await this.findById(id, [
+      'term',
+      'dispatches',
+      'shortlinks',
+      'shortlinks.parent',
+      'shortlinks.parent.user',
+    ]);
+    if (!newsletter.dispatches || newsletter.dispatches.length < 1) {
+      throw new UnprocessableEntityException('never sent out');
+    }
+    const dispatch = newsletter.dispatches.find(
+      (dispatch) => dispatch.uuid === uuid,
+    );
+    if (!dispatch) {
+      throw new NotFoundException('Dispatch not found');
+    }
+    if (dispatch.status === SendStatus.SCHEDULED) {
+      throw new UnprocessableEntityException('already scheduled');
+    }
+    const unreadShortlinks = newsletter.shortlinks.filter(
+      (shortlink) => !shortlink.isRead,
+    );
+    if (unreadShortlinks.length === 0) {
+      throw new UnprocessableEntityException('everyone has read');
+    }
+
+    // payload 재구성
+    const payload = this._buildNotificationFullDataWithUnreadShortlinks(
+      newsletter,
+      unreadShortlinks,
+    );
+
+    // todo. 바로 queue 발송 처리
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  async findById(id: number, relations?: string[]): Promise<Newsletter> {
-    const newsletter = await this.newsletterRepository.findOne({
-      where: { id },
-      relations: relations ? relations : undefined,
-    });
-
-    if (!newsletter) {
-      throw new NotFoundException('Newsletter not found');
-    }
-
-    return newsletter as Newsletter;
-  }
-
-  async find(
+  async list(
     schoolId: number,
     termId?: number,
     type?: NewsletterType,
   ): Promise<Newsletter[]> {
-    const whereCondition: any = { schoolId: schoolId };
+    const queryBuilder = this.newsletterRepository
+      .createQueryBuilder('newsletter')
+      .where('newsletter.schoolId = :schoolId', { schoolId });
 
     if (termId) {
-      whereCondition.termId = +termId;
+      queryBuilder.andWhere('newsletter.termId = :termId', { termId: +termId });
     }
 
     if (type) {
-      whereCondition.type = type;
+      queryBuilder.andWhere('newsletter.type = :type', { type });
     }
 
-    const newsletters = await this.newsletterRepository.find({
-      where: whereCondition,
-      order: { id: 'DESC' },
-    });
-
-    return newsletters as Newsletter[];
+    return await queryBuilder.orderBy('newsletter.id', 'DESC').getMany();
   }
 
-  async findOnlyRegistration(
+  async findRegistrationNewsletter(
     schoolId: number,
     termId: number,
   ): Promise<Newsletter> {
@@ -172,54 +251,57 @@ export class NewsletterService {
       throw new NotFoundException('Newsletter not found');
     }
 
-    return newsletter as Newsletter;
+    return newsletter;
   }
 
-  async findOnlyNewslettersToBeSent(): Promise<Newsletter[]> {
-    // 현재 서울 시간을 UTC로 변환
-    const nowInSeoul = new Date();
-    const nowInUTC = fromZonedTime(nowInSeoul, 'Asia/Seoul');
-
-    const newsletters = await this.newsletterRepository.find({
-      where: {
-        status: SendStatus.SCHEDULED,
-        scheduledAt: LessThan(nowInUTC),
-      },
-      order: { scheduledAt: 'DESC' },
-    });
-
-    return newsletters as Newsletter[];
-  }
-
-  async findDetail(id: number): Promise<NewsletterDetailResponseDto> {
-    const newsletter: Newsletter = await this.newsletterRepository.findOne({
+  async findById(id: number, relations?: string[]): Promise<Newsletter> {
+    const newsletter = await this.newsletterRepository.findOne({
       where: { id },
-      relations: ['shortlinks'],
+      relations: relations,
     });
 
     if (!newsletter) {
       throw new NotFoundException('Newsletter not found');
     }
 
+    return newsletter;
+  }
+
+  async findDetailById(
+    newsletterId: number,
+  ): Promise<NewsletterWithReadStatsDto> {
+    const newsletter: Newsletter =
+      await this.newsletterRepository.findOneOrFail({
+        where: { id: newsletterId },
+        relations: ['dispatches', 'shortlinks'],
+      });
+
+    if (!newsletter) {
+      throw new NotFoundException('Newsletter not found');
+    }
+
+    const dispatchedStudentIds = Array.from(
+      new Set(newsletter.dispatches.flatMap((v) => v.studentIds)),
+    );
     const readParentIds: number[] =
       newsletter.shortlinks?.filter((v) => v.isRead).map((v) => v.parentId) ??
       [];
 
     (newsletter as any).shortlinks = undefined;
 
-    if (newsletter.studentIds && newsletter.studentIds.length > 0) {
+    if (dispatchedStudentIds && dispatchedStudentIds.length > 0) {
       const students = await this.dataSource
         .getRepository(Student)
         .createQueryBuilder('student')
         .leftJoinAndSelect('student.parent', 'parent')
         .leftJoinAndSelect('parent.shortlinks', 'shortlinks')
         .where('student.id IN (:...studentIds)', {
-          studentIds: newsletter.studentIds,
+          studentIds: dispatchedStudentIds,
         })
         .getMany();
 
-      const studentReadInfos: StudentReadInfo[] = students.map((student) => {
-        const link = student.parent.shortlinks?.find(
+      const readStats: ReadStatDto[] = students.map((student) => {
+        const shortlink = student.parent.shortlinks?.find(
           (v) => v.newsletterId === newsletter.id,
         );
         return {
@@ -228,21 +310,39 @@ export class NewsletterService {
           grade: student.grade,
           class: student.class,
           studentCode: student.studentCode,
-          link: link
-            ? `https://app.schoolhub.co.kr/parent/nanoid/${link.nanoid}`
+          link: shortlink
+            ? `https://app.schoolhub.co.kr/parent/nanoid/${shortlink.nanoid}`
             : null,
           read: readParentIds.includes(student.parent.id),
+          createdAt: shortlink?.createdAt ?? new Date(),
         };
       });
 
-      return new NewsletterDetailResponseDto(
-        newsletter,
-        studentReadInfos,
-        students.length,
-      );
+      return new NewsletterWithReadStatsDto({
+        ...newsletter,
+        readStats,
+        total: readStats.length,
+      });
     }
 
-    return new NewsletterDetailResponseDto(newsletter);
+    return new NewsletterWithReadStatsDto(newsletter);
+  }
+
+  async findPendingDispatches(): Promise<Dispatch[]> {
+    // 현재 서울 시간을 UTC로 변환
+    const nowInSeoul = new Date();
+    const nowInUTC = fromZonedTime(nowInSeoul, 'Asia/Seoul');
+
+    const dispatches = await this.dispatchRepository.find({
+      where: {
+        scheduledAt: LessThan(nowInUTC),
+        status: SendStatus.SCHEDULED,
+      },
+      relations: ['newsletter'],
+      order: { scheduledAt: 'DESC' },
+    });
+
+    return dispatches;
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -251,69 +351,16 @@ export class NewsletterService {
 
   async update(id: number, dto: UpdateNewsletterDto): Promise<Newsletter> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      // 기존 뉴스레터 조회
-      const existingNewsletter = await manager.findOne(Newsletter, {
-        where: { id },
-        relations: { school: true },
-      });
-
-      if (!existingNewsletter) {
-        throw new NotFoundException('Newsletter not found');
-      }
-
-      if (dto.scheduledAt && !existingNewsletter?.school?.phone) {
-        throw new BadRequestException('Missing phone info in school');
-      }
-
       // 업데이트할 데이터로 preload
       const newsletter = await this.newsletterRepository.preload({
         id,
         ...dto,
       });
-      // 저장
-      const updatedNewsletter = (await manager.save(newsletter)) as Newsletter;
-
-      // scheduledAt이 새로 설정된 경우에만 이벤트 처리
-      const wasScheduledAtNull = !existingNewsletter.scheduledAt;
-      const isScheduledAtSet = !!updatedNewsletter.scheduledAt;
-      if (wasScheduledAtNull && isScheduledAtSet) {
-        await this.handleSendingNewsletter(updatedNewsletter, manager);
-      }
-
-      // scheduledAt이 새로 설정된 경우에만 이벤트 처리
-      const wasRescheduledAtNull = !existingNewsletter.rescheduledAt;
-      const isRescheduledAtSet = !!updatedNewsletter.rescheduledAt;
-      if (wasRescheduledAtNull && isRescheduledAtSet) {
-        await this.handleResendingNewsletter(updatedNewsletter, manager);
-      }
-
-      return updatedNewsletter;
-    });
-  }
-
-  async cancelNewsletter(id: number): Promise<Newsletter> {
-    const newsletter: Newsletter = await this.newsletterRepository.preload({
-      id,
-      status: SendStatus.CANCELED,
-    });
-    // 재발송 때문에 shortlinks 삭제 안함.
-
-    return (await this.newsletterRepository.save(newsletter)) as Newsletter;
-  }
-
-  async resendNewsletter(id: number, rescheduledAt: Date): Promise<Newsletter> {
-    return await this.dataSource.transaction(async (manager: EntityManager) => {
-      const newsletter = await manager.preload(Newsletter, {
-        id,
-        status: SendStatus.RESCHEDULED,
-        rescheduledAt,
-      });
       if (!newsletter) {
         throw new NotFoundException('Newsletter not found');
       }
-      const updatedNewsletter = await manager.save(newsletter);
-
-      return updatedNewsletter;
+      // 저장
+      return await manager.save(newsletter);
     });
   }
 
@@ -341,148 +388,108 @@ export class NewsletterService {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
-  async deleteNewsletter(id: number): Promise<Newsletter> {
+  async delete(id: number): Promise<Newsletter> {
     const newsletter = await this.findById(id);
-    await this.deleteShortlinks(newsletter);
-    return (await this.newsletterRepository.softRemove(
-      newsletter,
-    )) as Newsletter;
+    await this._deleteShortlinks(newsletter);
+    await this._deleteDispatches(newsletter);
+    return await this.newsletterRepository.softRemove(newsletter);
   }
 
-  // ------------------------------------------------------------------------ //
-  // private methods for newsletters
-  // ------------------------------------------------------------------------ //
+  //? ---------------------------------------------------------------------- ?//
+  //? Private Methods
+  //? ---------------------------------------------------------------------- ?//
 
-  //? 뉴스레터 생성 (upsert for REGISTRATION type only)
-  private async createNewsletter(
-    manager: EntityManager,
-    dto: CreateNewsletterDto,
-  ): Promise<Newsletter> {
-    // REGISTRATION 타입인 경우에만 기존 뉴스레터 확인
-    if (dto.type === NewsletterType.REGISTRATION) {
-      const existingNewsletter = await manager.findOne(Newsletter, {
-        where: {
-          schoolId: dto.schoolId,
-          termId: dto.termId,
-          type: dto.type,
-        },
-      });
-
-      if (existingNewsletter) {
-        const updatedNewsletter = manager.merge(
-          Newsletter,
-          existingNewsletter,
-          dto,
-        );
-        return await manager.save(updatedNewsletter);
-      }
+  private async _checkSchoolValidity(schoolId: number): Promise<School> {
+    const school = await this.schoolRepository.findOne({
+      where: { id: schoolId },
+    });
+    if (!school) {
+      throw new NotFoundException('⚠️ School not found');
     }
-
-    // REGISTRATION이 아니거나 기존 뉴스레터가 없는 경우 새로 생성
-    const newsletter = manager.create(Newsletter, dto);
-    return await manager.save(newsletter);
+    return school;
   }
 
-  //? 예약된 뉴스레터 처리
-  private async handleSendingNewsletter(
-    newsletter: Newsletter,
-    manager: EntityManager,
+  private async _checkTermValidity(termId: number): Promise<Term> {
+    const term = await this.termRepository.findOne({ where: { id: termId } });
+    if (!term) {
+      throw new NotFoundException('⚠️ Term not found');
+    }
+    return term;
+  }
+
+  private async _checkNewsletterValidity(dto: CreateNewsletterDto) {
+    const newsletter = await this.newsletterRepository.findOne({
+      where: {
+        schoolId: dto.schoolId,
+        termId: dto.termId,
+        type: NewsletterType.REGISTRATION,
+      },
+    });
+    if (dto.type === NewsletterType.REGISTRATION && newsletter) {
+      throw new BadRequestException(
+        '❌ Registration newsletter already exists',
+      );
+    }
+    return newsletter;
+  }
+
+  private async _isRegistrationNewsletterAlreadySentOrScheduled(
+    schoolId: number,
+    termId: number,
   ): Promise<void> {
-    console.log(`✳️ handleSendingNewsletter`, newsletter);
+    // 직접 dispatch 테이블에서 조회하여 불필요한 relation 로딩 방지
+    const dispatchCount = await this.dataSource
+      .getRepository(Dispatch)
+      .createQueryBuilder('dispatch')
+      .innerJoin('dispatch.newsletter', 'newsletter')
+      .where('newsletter.schoolId = :schoolId', { schoolId })
+      .andWhere('newsletter.termId = :termId', { termId })
+      .andWhere('newsletter.type = :type', {
+        type: NewsletterType.REGISTRATION,
+      })
+      .andWhere('dispatch.status IN (:...statuses)', {
+        statuses: [SendStatus.SCHEDULED, SendStatus.SENT],
+      })
+      .getCount();
 
-    try {
-      const students = await this.getStudents(manager, newsletter);
-      const studentIds = students.map((student) => student.id);
-      const dedupedStudents = this.dedupeStudents(students);
-      // 숏링크 생성
-      const shortlinks = await this.createShortlinks(
-        manager,
-        newsletter,
-        dedupedStudents,
-      );
-
-      console.log(`✳️ shortlinks`, JSON.stringify(shortlinks, null, 2));
-
-      // newsletter 업데이트
-      const payload = this.buildNotificationPayload(
-        newsletter,
-        shortlinks,
-        dedupedStudents,
-      );
-
-      console.log(`✳️ payload`, JSON.stringify(payload, null, 2));
-
-      newsletter.payload = payload;
-      newsletter.status = SendStatus.SCHEDULED;
-      newsletter.studentIds = studentIds;
-      await manager.save(newsletter);
-
-      await this.slack.sendMessage({
-        channel: 'activity',
-        text: `[API] 🟢 ${newsletter.schoolName}에서 뉴스레터 발송 중\n- 이름:${newsletter.title}\n- 분류:${translateNewsletterType(newsletter.type)}\n- 대상:${translateNewsletterTarget(newsletter.target)} ${shortlinks.length}명`,
-      });
-    } catch (err) {
-      this.logger.error(
-        `❌ Failed to handle scheduled newsletter: ${err.message}`,
-        err,
+    if (dispatchCount > 0) {
+      throw new BadRequestException(
+        '⚠️ Registration newsletter already sent or scheduled.',
       );
     }
   }
 
-  //? 예약된 뉴스레터 처리
-  private async handleResendingNewsletter(
-    newsletter: Newsletter,
+  //? with target/targetItems combo, get the target students and label
+  private async _getTargetStudents(
     manager: EntityManager,
-  ): Promise<void> {
-    console.log(`✳️ handleSendingNewsletter`, newsletter);
+    schoolId: number,
+    target: NewsletterTarget,
+    targetItems: number[],
+  ): Promise<{ students: Student[]; label: string }> {
+    let students: Student[] = []; //! student must have parent key exists
+    let label: string = '';
 
-    try {
-      // 안읽은 숏링크
-      const shortlinks = await this.fetchUnreadShortlinks(manager, newsletter);
-      // newsletter 업데이트
-      newsletter.payload = this.rebuildNotificationPayload(
-        newsletter,
-        shortlinks,
-      );
-      await manager.save(newsletter);
-
-      await this.slack.sendMessage({
-        channel: 'activity',
-        text: `[API] 🟢 ${newsletter.schoolName}에서 뉴스레터 재발송 중\n- 이름:${newsletter.title}\n- 분류:${translateNewsletterType(newsletter.type)}\n- 대상:${translateNewsletterTarget(newsletter.target)} ${shortlinks.length}명`,
-      });
-    } catch (err) {
-      this.logger.error(
-        `❌ Failed to handle scheduled newsletter: ${err.message}`,
-        err,
-      );
-    }
-  }
-
-  // ------------------------------------------------------------------------ //
-  // private methods for students
-  // ------------------------------------------------------------------------ //
-
-  private async getStudents(
-    manager: EntityManager,
-    newsletter: Newsletter,
-  ): Promise<Student[]> {
-    let students: Student[] = [];
-
-    if (newsletter.target === NewsletterTarget.SCHOOL) {
+    if (target === NewsletterTarget.SCHOOL) {
       students = await manager.find(Student, {
-        where: { schoolId: newsletter.schoolId },
+        where: { schoolId },
         relations: { parent: { user: true } },
       });
-    } else if (newsletter.target === NewsletterTarget.GRADE) {
-      if (!newsletter.targetItems) {
+      label = '전교생';
+    } else if (target === NewsletterTarget.GRADE) {
+      if (!targetItems) {
         throw new BadRequestException('발송 대상 학년 정보가 없습니다.');
       }
       students = await manager.find(Student, {
-        where: { grade: In(newsletter.targetItems) },
+        where: {
+          schoolId,
+          grade: In(targetItems),
+        },
         relations: { parent: { user: true } },
       });
-    } else if (newsletter.target === NewsletterTarget.LESSON) {
-      if (!newsletter.targetItems) {
+      label = `${targetItems.map((item) => `${item}`).join('·')}학년 학생`;
+    } else if (target === NewsletterTarget.LESSON) {
+      // 강좌
+      if (!targetItems) {
         throw new BadRequestException('발송 대상 강좌 정보가 없습니다.');
       }
       // lesson → groups → picks → students 관계를 QueryBuilder로 조회
@@ -494,11 +501,19 @@ export class NewsletterService {
         .leftJoin('pick.group', 'group')
         .leftJoin('group.lesson', 'lesson')
         .where('lesson.id IN (:...lessonIds)', {
-          lessonIds: newsletter.targetItems,
+          lessonIds: targetItems,
         })
         .getMany();
-    } else if (newsletter.target === NewsletterTarget.GROUP) {
-      if (!newsletter.targetItems) {
+      const lessons = await manager
+        .createQueryBuilder(Lesson, 'lesson')
+        .where('lesson.id IN (:...lessonIds)', {
+          lessonIds: targetItems,
+        })
+        .getMany();
+      label = `${lessons.map((lesson) => lesson.lessonName).join('·')} 수강생`;
+    } else if (target === NewsletterTarget.GROUP) {
+      // 반
+      if (!targetItems) {
         throw new BadRequestException('발송 대상 반 정보가 없습니다.');
       }
       // group → picks → students 관계를 QueryBuilder로 조회
@@ -509,28 +524,38 @@ export class NewsletterService {
         .leftJoin('student.picks', 'pick')
         .leftJoin('pick.group', 'group')
         .where('group.id IN (:...groupIds)', {
-          groupIds: newsletter.targetItems,
+          groupIds: targetItems,
         })
         .getMany();
+      const groups = await manager
+        .createQueryBuilder(Group, 'group')
+        .where('group.id IN (:...groupIds)', {
+          groupIds: targetItems,
+        })
+        .getMany();
+      label = `${groups.map((group) => group.groupName).join('·')} 수강생`;
     } else {
-      if (!newsletter.targetItems) {
+      // 학생
+      if (!targetItems) {
         throw new BadRequestException('발송 대상 학생 정보가 없습니다.');
       }
       students = await manager.find(Student, {
-        where: { id: In(newsletter.targetItems) },
+        where: { id: In(targetItems) },
         relations: { parent: { user: true } },
       });
+      label = `${targetItems.length}명 학생`;
     }
 
-    // 전학생 제외 필터링
+    // TRANSFERRED 제외 필터링
     students = students.filter(
       (student) => student.status === StudentStatus.ATTENDING,
     );
 
-    return students;
+    return { students, label };
   }
 
-  private dedupeStudents(students: Student[]): Student[] {
+  //? student must have parent key exists
+  private _dedupeStudents(students: Student[]): Student[] {
     const parentIdMap = new Map<number, Student>();
     students.forEach((student) => {
       if (!parentIdMap.has(student.parent.id)) {
@@ -540,14 +565,12 @@ export class NewsletterService {
     return Array.from(parentIdMap.values());
   }
 
-  // ------------------------------------------------------------------------ //
-  // private methods for shortlinks
-  // ------------------------------------------------------------------------ //
-
-  private async createShortlinks(
+  //? 각 학생별 newsletter 로의 숏링크 생성
+  private async _createShortlinks(
     manager: EntityManager,
     newsletter: Newsletter,
     students: Student[],
+    uuid: string,
   ): Promise<Shortlink[]> {
     const dtos: CreateShortlinkDto[] = [];
 
@@ -555,8 +578,9 @@ export class NewsletterService {
       const dto: CreateShortlinkDto = {
         parentId: student.parent.id,
         newsletterId: newsletter.id,
+        uuid: uuid,
         nanoid: nanoid(),
-        uri: getMobileRoute(newsletter),
+        uri: `https://app.schoolhub.co.kr/${getMobileRoute(newsletter)}`,
         page: 'newsletters',
         args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
       };
@@ -574,7 +598,7 @@ export class NewsletterService {
           .into(Shortlink)
           .values(batch)
           .orUpdate(
-            ['nanoid', 'page', 'args', 'note'],
+            ['nanoid', 'uri', 'page', 'args'],
             ['parentId', 'newsletterId'],
           )
           .execute();
@@ -585,100 +609,15 @@ export class NewsletterService {
     }
 
     // 생성된 shortlinks 조회하여 반환
-    const shortlinks = await this.fetchShortlinks(manager, newsletter);
-    return shortlinks;
-  }
-
-  private async fetchShortlinks(
-    manager: EntityManager,
-    newsletter: Newsletter,
-  ): Promise<Shortlink[]> {
     return await manager.find(Shortlink, {
       where: { newsletterId: newsletter.id },
       relations: { parent: true, newsletter: true },
     });
   }
 
-  private async fetchUnreadShortlinks(
-    manager: EntityManager,
-    newsletter: Newsletter,
-  ): Promise<Shortlink[]> {
-    return await manager.find(Shortlink, {
-      where: { newsletterId: newsletter.id, isRead: false },
-      relations: { parent: { user: true } },
-    });
-  }
-
-  private async deleteShortlinks(newsletter: Newsletter): Promise<void> {
-    try {
-      await this.dataSource
-        .getRepository(Shortlink)
-        .delete({ newsletterId: newsletter.id });
-    } catch (err) {
-      this.logger.error(
-        `❌ Failed to delete shortlinks for newsletter ${newsletter.id}: ${err.message}`,
-        err,
-      );
-    }
-  }
-
-  // ------------------------------------------------------------------------ //
-  // validations
-  // ------------------------------------------------------------------------ //
-
-  private async checkSchoolValidity(schoolId, scheduledAt): Promise<School> {
-    const school = await this.dataSource.getRepository(School).findOne({
-      where: { id: schoolId },
-    });
-    if (!school) {
-      throw new NotFoundException('School not found');
-    }
-    if (scheduledAt && !school.phone) {
-      throw new BadRequestException('Missing phone info in school');
-    }
-    return school;
-  }
-
-  private async checkTermValidity(termId, type: string): Promise<Term> {
-    const term = await this.dataSource
-      .getRepository(Term)
-      .findOne({ where: { id: termId } });
-    if (!term) {
-      throw new NotFoundException('Term not found');
-    }
-    if (type === 'REGISTRATION' && !term.bookingStart) {
-      throw new BadRequestException('Term bookingStart is not set');
-    }
-    return term;
-  }
-
-  private async checkExistingNewsletterWithDto(
-    schoolId: number,
-    termId: number,
-    type: NewsletterType,
-  ): Promise<void> {
-    const newsletters = await this.dataSource.getRepository(Newsletter).find({
-      where: {
-        schoolId,
-        termId,
-      },
-    });
-
-    if (newsletters && newsletters.length > 0) {
-      if (
-        type === NewsletterType.REGISTRATION &&
-        newsletters.some(
-          (newsletter) => newsletter.type === NewsletterType.REGISTRATION,
-        )
-      ) {
-        throw new BadRequestException(
-          '❌ Registration newsletter already sent or scheduled.',
-        );
-      }
-    }
-  }
-
-  private buildNotificationPayload(
+  //? 숏링크를 포함하는 notification payload 생성
+  private _buildNotificationFullData(
+    term: Term,
     newsletter: Newsletter,
     shortlinks: Shortlink[],
     students: Student[],
@@ -696,26 +635,41 @@ export class NewsletterService {
         const shortlink = shortlinks.find(
           (shortlink) => shortlink.parentId === student.parent.id,
         );
-        const isFcm = !!student.parent?.user?.pushToken;
+        const kakaoMessage =
+          newsletter.type === NewsletterType.REGISTRATION
+            ? getTemplateOfRegistration({
+                school: newsletter.schoolName,
+                term: newsletter.termName,
+                period: term.bookingPeriod,
+                shortlink: `${this.domain}/${shortlink?.nanoid}`,
+              })
+            : getTemplateOfNews({
+                school: newsletter.schoolName,
+                term: newsletter.termName,
+                title:
+                  newsletter.title ||
+                  `${format(newsletter.createdAt, 'M월d일자')} 공지사항`,
+                shortlink: `${this.domain}/${shortlink?.nanoid}`,
+              });
         return {
-          id: student.parent.id,
           phone: student.parent.phone,
           token: student.parent?.user?.pushToken,
-          title: translateNewsletterType(newsletter.type),
-          body: isFcm
-            ? `${newsletter.title}`
-            : `${newsletter.title} ${this.domain}/${shortlink?.nanoid}`,
-          role: 'PARENT',
-          uri: getMobileRoute(newsletter),
-          args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
+          template:
+            newsletter.type === NewsletterType.REGISTRATION
+              ? 'Registration1'
+              : 'News1',
+          kakaoMessage: kakaoMessage,
+          uri: shortlink?.uri || getMobileRoute(newsletter),
+          // args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
         };
       }),
     };
   }
 
-  private rebuildNotificationPayload(
+  //? 숏링크를 포함하는 notification payload 생성
+  private _buildNotificationFullDataWithUnreadShortlinks(
     newsletter: Newsletter,
-    shortlinks: Shortlink[], // unread shortlinks
+    shortlinks: Shortlink[],
   ): {
     type: string;
     schoolId: number;
@@ -727,21 +681,60 @@ export class NewsletterService {
       schoolId: newsletter.schoolId,
       role: 'PARENT',
       messages: shortlinks.map((shortlink) => {
-        const isFcm = !!shortlink.parent?.user?.pushToken;
+        const kakaoMessage =
+          newsletter.type === NewsletterType.REGISTRATION
+            ? getTemplateOfRegistration({
+                school: newsletter.schoolName,
+                term: newsletter.termName,
+                period: newsletter.term.bookingPeriod,
+                shortlink: `${this.domain}/${shortlink?.nanoid}`,
+              })
+            : getTemplateOfNews({
+                school: newsletter.schoolName,
+                term: newsletter.termName,
+                title:
+                  newsletter.title ||
+                  `${format(newsletter.createdAt, 'M월d일자')} 공지사항`,
+                shortlink: `${this.domain}/${shortlink?.nanoid}`,
+              });
         return {
-          id: shortlink.parent.id, // 학부모 아이디
           phone: shortlink.parent.phone,
           token: shortlink.parent?.user?.pushToken,
-          title: `[재발송] ${translateNewsletterType(newsletter.type)}`,
-          body: isFcm
-            ? `${newsletter.title}`
-            : `[재발송] ${newsletter.title} ${this.domain}/${shortlink?.nanoid}`,
-          role: 'PARENT',
-          uri: shortlink.uri,
-          page: shortlink.page,
-          args: shortlink.args,
+          template:
+            newsletter.type === NewsletterType.REGISTRATION
+              ? 'Registration1'
+              : 'News1',
+          kakaoMessage: kakaoMessage,
+          uri: shortlink?.uri || getMobileRoute(newsletter),
+          // args: shortlink?.args || null,
         };
       }),
     };
+  }
+
+  private async _deleteShortlinks(newsletter: Newsletter): Promise<void> {
+    try {
+      await this.dataSource
+        .getRepository(Shortlink)
+        .delete({ newsletterId: newsletter.id });
+    } catch (err) {
+      this.logger.error(
+        `❌ Failed to delete shortlinks for newsletter ${newsletter.id}: ${err.message}`,
+        err,
+      );
+    }
+  }
+
+  private async _deleteDispatches(newsletter: Newsletter): Promise<void> {
+    try {
+      await this.dataSource
+        .getRepository(Dispatch)
+        .delete({ newsletterId: newsletter.id });
+    } catch (err) {
+      this.logger.error(
+        `❌ Failed to delete dispatches for newsletter ${newsletter.id}: ${err.message}`,
+        err,
+      );
+    }
   }
 }

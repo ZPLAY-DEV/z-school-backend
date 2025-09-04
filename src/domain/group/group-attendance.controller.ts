@@ -70,9 +70,9 @@ export class GroupAttendanceController {
   @Post(':groupId/attendances/custom')
   async custom(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Body() dtos: CreateAttendanceWithKeyDto[],
+    @Body() dto: CreateAttendanceWithKeyDto,
   ): Promise<number> {
-    return await this.groupAttendancesService.notifyCustom(groupId, dtos);
+    return await this.groupAttendancesService.notifyCustom(groupId, dto);
   }
 
   //! assumed each day has only one class by the groupId

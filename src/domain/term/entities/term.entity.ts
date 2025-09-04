@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose } from 'class-transformer';
-import { format } from 'date-fns-tz';
+import { format } from 'date-fns';
 import {
   NewsletterType,
   PickRule,
@@ -124,7 +124,7 @@ export class Term {
   })
   @Expose()
   get status(): TermStatus {
-    const today = format(new Date(), 'yyyy-MM-dd', { timeZone: 'Asia/Seoul' });
+    const today = format(new Date(), 'yyyy-MM-dd');
 
     if (today < this.start) {
       return TermStatus.UPCOMING;
@@ -181,6 +181,37 @@ export class Term {
       this.newsletters.find((n) => n.type === NewsletterType.REGISTRATION) ||
       null
     );
+  }
+
+  @ApiProperty({
+    description: '학기 기간 (예: 2월1일~3월1일)',
+    example: '2월1일~3월1일',
+  })
+  @Expose()
+  get period(): string {
+    const startDate = new Date(this.start);
+    const endDate = new Date(this.end);
+    const startFormatted = format(startDate, 'M월d일');
+    const endFormatted = format(endDate, 'M월d일');
+
+    return `${startFormatted}~${endFormatted}`;
+  }
+
+  @ApiProperty({
+    description:
+      '수강신청 기간 (예: 2월1일 09:00~3월1일 18:00, null인 경우 "미설정")',
+    example: '2월1일 09:00~3월1일 18:00',
+  })
+  @Expose()
+  get bookingPeriod(): string {
+    if (!this.bookingStart || !this.bookingEnd) {
+      return '미설정';
+    }
+
+    const startFormatted = format(this.bookingStart, 'M월d일 HH:mm');
+    const endFormatted = format(this.bookingEnd, 'M월d일 HH:mm');
+
+    return `${startFormatted}~${endFormatted}`;
   }
 
   //? Constructor ---------------------------------------------------------- ?//

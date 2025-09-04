@@ -15,25 +15,25 @@ import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { NewsletterType } from 'src/common/enums';
 import { IS3Urls } from 'src/common/interfaces';
+import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-dispatch.dto';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
-import { CreateRegistrationNewsletterDto } from 'src/domain/newsletter/dto/create-registration-newsletter.dto';
 import { GenerateS3UrlsDto } from 'src/domain/newsletter/dto/generate-s3-urls.dto';
-import { ResendNewsletterDto } from 'src/domain/newsletter/dto/resend-newsletter.dto';
-import { NewsletterDetailResponseDto } from 'src/domain/newsletter/dto/response-extended-newsletter.dto';
+import { NewsletterWithReadStatsDto } from 'src/domain/newsletter/dto/newsletter-with-read-stats.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
+import { Dispatch } from 'src/domain/newsletter/entities/dispatch.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { NewsletterService } from 'src/domain/newsletter/newsletter.service';
 import {
-  CancelNewsletterDocs,
   CreateNewsletterDocs,
   DeleteNewsletterDocs,
   FindNewsletterByIdDocs,
-  FindNewslettersDocs,
-  FindNewslettersToBeSentDocs,
+  FindPendingDispatchesDocs,
   FindRegistrationNewsletterDocs,
   GenerateNewsletterS3UrlsDocs,
+  ListNewslettersDocs,
   MarkAsReadDocs,
   ResendNewsletterDocs,
+  SendNewsletterDocs,
   UpdateNewsletterDocs,
 } from 'src/domain/newsletter/swagger/newsletter-swagger.decorator';
 import { UploadService } from 'src/services/upload/upload.service';
@@ -53,52 +53,68 @@ export class NewsletterController {
 
   @CreateNewsletterDocs()
   @Post()
-  create(@Body() dto: CreateNewsletterDto): Promise<Newsletter> {
-    return this.newsletterService.create(dto);
+  createNewsletter(
+    @Body() dto: CreateNewsletterDto & CreateDispatchDto,
+  ): Promise<Newsletter> {
+    return this.newsletterService.createNewsletter(dto);
   }
 
-  @Post('registration')
-  createRegistrationNewsletter(
-    @Body() dto: CreateRegistrationNewsletterDto,
-  ): Promise<Newsletter> {
-    return this.newsletterService.createRegistrationNewsletter(dto);
+  @SendNewsletterDocs()
+  @Post(':id/send')
+  sendNewsletter(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateDispatchDto,
+  ): Promise<Dispatch> {
+    return this.newsletterService.sendNewsletter(id, dto);
+  }
+
+  @ResendNewsletterDocs()
+  @Post(':id/resend/:uuid')
+  resendNewsletter(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid') uuid: string,
+  ): Promise<void> {
+    return this.newsletterService.resendNewsletter(id, uuid);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  @FindNewslettersDocs()
+  @ListNewslettersDocs()
   @Get()
-  async find(
+  async list(
     @Query('schoolId', ParseIntPipe) schoolId: number,
     @Query('termId') termId?: number,
     @Query('type') type?: NewsletterType,
   ): Promise<Newsletter[]> {
-    return await this.newsletterService.find(schoolId, termId, type);
+    return await this.newsletterService.list(schoolId, termId, type);
   }
 
   @FindRegistrationNewsletterDocs()
-  @Get('registration')
-  async findOnlyRegistration(
+  @Get('registration-links')
+  async findRegistrationNewsletter(
     @Query('schoolId', ParseIntPipe) schoolId: number,
     @Query('termId', ParseIntPipe) termId: number,
   ): Promise<Newsletter> {
-    return await this.newsletterService.findOnlyRegistration(schoolId, termId);
+    return await this.newsletterService.findRegistrationNewsletter(
+      schoolId,
+      termId,
+    );
   }
 
-  @FindNewslettersToBeSentDocs()
-  @Get('to-be-sent')
-  async findOnlyNewslettersToBeSent(): Promise<Newsletter[]> {
-    return await this.newsletterService.findOnlyNewslettersToBeSent();
+  @FindPendingDispatchesDocs()
+  @Get('pending-dispatches')
+  async findPendingDispatches(): Promise<Dispatch[]> {
+    return await this.newsletterService.findPendingDispatches();
   }
 
   @FindNewsletterByIdDocs()
   @Get(':id')
-  async findById(
+  async findDetailById(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<NewsletterDetailResponseDto> {
-    return await this.newsletterService.findDetail(id);
+  ): Promise<NewsletterWithReadStatsDto> {
+    return await this.newsletterService.findDetailById(id);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -112,23 +128,6 @@ export class NewsletterController {
     @Body() dto: UpdateNewsletterDto,
   ): Promise<Newsletter> {
     return await this.newsletterService.update(id, dto);
-  }
-
-  @CancelNewsletterDocs()
-  @Patch(':id/cancel')
-  async cancelNewsletter(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<Newsletter> {
-    return await this.newsletterService.cancelNewsletter(id);
-  }
-
-  @ResendNewsletterDocs()
-  @Patch(':id/resend')
-  async resendNewsletter(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: ResendNewsletterDto,
-  ): Promise<Newsletter> {
-    return await this.newsletterService.resendNewsletter(id, dto.scheduledAt);
   }
 
   @MarkAsReadDocs()
@@ -150,7 +149,7 @@ export class NewsletterController {
   async deleteNewsletter(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Newsletter> {
-    return await this.newsletterService.deleteNewsletter(id);
+    return await this.newsletterService.delete(id);
   }
 
   //? ---------------------------------------------------------------------- ?//

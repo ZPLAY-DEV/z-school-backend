@@ -4,9 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { format } from 'date-fns/format';
 import { NotificationType } from 'src/common/enums/notification-type';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { getTemplateOfDeparture } from 'src/helpers/get-message-body';
 import { NotificationService } from 'src/services/notification/notification.service';
 import { In, Repository } from 'typeorm';
 import { CreateDepartureBulkDto } from './dto/create-departure-bulk.dto';
@@ -33,7 +35,7 @@ export class DepartureService {
       // 학생을 조회
       const student = await this.studentRepository.findOne({
         where: { id: dto.studentId },
-        relations: ['parent', 'parent.user'],
+        relations: ['parent', 'parent.user', 'school'],
       });
       if (!student) {
         throw new NotFoundException('Student not found.');
@@ -49,23 +51,29 @@ export class DepartureService {
 
       // departure 생성
       const departure = this.departureRepository.create(dto);
+      await this.departureRepository.save(departure);
+      const body = getTemplateOfDeparture({
+        name: student?.name,
+        school: student.school?.name,
+        timestamp: `${format(new Date(), 'M월d일 H시m분')}`,
+      });
+
       await this.notificationService.send({
         type: NotificationType.SCHOOL,
         schoolId: student.schoolId,
-        // schoolName: student.school.name,
         role: 'PARENT',
         messages: [
           {
-            id: student.parent.id,
-            phone: student.parent.phone,
             token: student.parent.user?.pushToken ?? null,
-            title: '하교 알림',
-            body: `${student.name} 학생이 하교했습니다.`,
-            role: 'PARENT' as const,
+            phone: student.parent.phone,
+            template: 'Departure1',
+            body: body,
+            role: 'PARENT',
           },
         ],
       });
-      return await this.departureRepository.save(departure);
+
+      return departure;
     } catch (error) {
       if (error.code === 'ER_DUP_ENTRY') {
         throw new BadRequestException('A record already exists.');
@@ -82,6 +90,7 @@ export class DepartureService {
       .createQueryBuilder('student')
       .leftJoinAndSelect('student.parent', 'parent')
       .leftJoinAndSelect('parent.user', 'user')
+      .leftJoinAndSelect('student.school', 'school')
       .where('student.id IN (:...studentIds)', { studentIds: dto.studentIds })
       .getMany();
     if (students.length !== dto.studentIds.length) {
@@ -136,14 +145,20 @@ export class DepartureService {
     const newStudents = students.filter((student) =>
       newStudentIds.includes(student.id),
     );
-    const messages = newStudents.map((student) => ({
-      id: student.parent.id,
-      phone: student.parent.phone,
-      token: student.parent.user?.pushToken ?? null,
-      title: '하교 알림',
-      body: `${student.name} 학생이 하교했습니다.`,
-      role: 'PARENT' as const,
-    }));
+    const messages = newStudents.map((student) => {
+      const body = getTemplateOfDeparture({
+        name: student.name,
+        school: student.school.name,
+        timestamp: `${format(new Date(), 'M월d일 H시m분')}`,
+      });
+      return {
+        token: student.parent.user?.pushToken ?? null,
+        phone: student.parent.phone,
+        template: 'Departure1',
+        body: body,
+        role: 'PARENT',
+      };
+    });
 
     // 알림 발송 (새로 생성된 학생들만)
     if (newStudents.length > 0) {

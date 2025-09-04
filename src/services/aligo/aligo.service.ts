@@ -3,12 +3,37 @@ import { ConfigService } from '@nestjs/config';
 import { ZPLAY_SEOUL_NUMBER } from 'src/common/constants';
 import { chunk } from 'src/helpers/array';
 import { delay } from 'src/helpers/time';
-import {
-  BroadcastSmsMessage,
-  MultiSmsMessages,
-  NotificationResult,
-  SingleSmsMessage,
-} from 'src/services/notification/types';
+import { NotificationResult } from 'src/services/notification/types';
+
+// SMS 관련 타입 정의 (deprecated - aligo.service.ts에서만 사용)
+export type PhonePair = {
+  phone: string;
+  id: number;
+};
+
+export type SingleSmsMessage = PhonePair &
+  MessageBody &
+  PartitioningMeta & {
+    id: number;
+  };
+export type BroadcastSmsMessage = {
+  phonePairs: PhonePair[];
+} & MessageBody &
+  PartitioningMeta;
+export type MultiSmsMessages = {
+  messages: (PhonePair & MessageBody)[];
+} & PartitioningMeta;
+
+export type MessageBody = {
+  title?: string;
+  body: string;
+};
+
+export type PartitioningMeta = {
+  type: string; // NotificationType
+  schoolId: number;
+  role: string;
+};
 
 export interface SmsBatchResult {
   results: NotificationResult[];
