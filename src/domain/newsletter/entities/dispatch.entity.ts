@@ -72,7 +72,6 @@ export class Dispatch {
   payload: {
     type: string;
     schoolId: number;
-    role: string;
     messages: any[];
   } | null;
 

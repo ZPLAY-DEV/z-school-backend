@@ -36,28 +36,28 @@ export class Shortlink {
   @Column({ type: 'int', unsigned: true })
   newsletterId: number;
 
+  // ------------------------------------------------------------------------ //
+
   @ApiProperty({ description: '🈵 Unique identifier for dispatch' })
   @Column({ type: 'varchar', length: 36, unique: true })
   uuid: string;
-
-  // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈵 21자리 나노아이디 값' })
   @Index()
   @Column({ type: 'varchar', length: 32 })
   nanoid: string;
 
-  @ApiProperty({ description: '🈵 routing 정보' })
+  @ApiProperty({ description: '🈵 routing 정보 role' })
+  @Column({ type: 'varchar', length: 16, default: 'PARENT' })
+  role: string;
+
+  @ApiProperty({ description: '🈵 routing 정보 url' })
   @Column({ type: 'varchar', length: 255, nullable: true })
-  uri: string;
+  url: string;
 
-  @ApiProperty({ description: '🈵 routing 정보' })
-  @Column({ type: 'varchar', length: 32, nullable: true })
-  page: string;
-
-  @ApiProperty({ description: '🈵 routing 부가 args 정보' })
-  @Column({ type: 'varchar', length: 128, nullable: true })
-  args: string;
+  @ApiProperty({ description: '🈵 routing 정보 routes' })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  routes: string;
 
   @ApiProperty({ description: '🈳 비고', example: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })

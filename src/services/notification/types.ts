@@ -3,7 +3,6 @@ import { NotificationType } from 'src/common/enums/notification-type';
 export type PartitioningMeta = {
   type: NotificationType; // REGISTRATION, NEWS, SURVERY, SCHOOL, CLASS, OTHER
   schoolId: number; // 학교아이디
-  role: string; // `PARENT` 또는 `INSTRUCTOR`
 };
 
 export type FcmData = {

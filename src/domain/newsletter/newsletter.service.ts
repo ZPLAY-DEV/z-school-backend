@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { format } from 'date-fns';
 import { fromZonedTime } from 'date-fns-tz';
 import { nanoid } from 'nanoid';
 import {
@@ -33,7 +32,9 @@ import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
 import {
-  getTemplateOfNews,
+  getTemplateOfNewsChanges,
+  getTemplateOfNewsSchedules,
+  getTemplateOfNewsSupplies,
   getTemplateOfRegistration,
 } from 'src/helpers/get-message-body';
 import { getMobileRoute } from 'src/helpers/uri';
@@ -80,9 +81,9 @@ export class NewsletterService {
     let title: string;
 
     if (dto.type === NewsletterType.REGISTRATION) {
-      title = `${school.name} ${term.termName} 수강신청 바로가기`;
+      title = `[${school.name}] ${term.termName} 수강신청 바로가기`;
     } else {
-      title = dto.title || `${school.name} ${term.termName} 공지사항`;
+      title = dto.title || `[${school.name}] ${term.termName} 공지사항`;
     }
 
     return await this.dataSource.transaction(async (manager: EntityManager) => {
@@ -178,7 +179,7 @@ export class NewsletterService {
     });
   }
 
-  async resendNewsletter(id: number, uuid: string): Promise<void> {
+  async resendNewsletter(id: number, uuid?: string): Promise<void> {
     const newsletter = await this.findById(id, [
       'term',
       'dispatches',
@@ -189,18 +190,31 @@ export class NewsletterService {
     if (!newsletter.dispatches || newsletter.dispatches.length < 1) {
       throw new UnprocessableEntityException('never sent out');
     }
-    const dispatch = newsletter.dispatches.find(
-      (dispatch) => dispatch.uuid === uuid,
-    );
-    if (!dispatch) {
-      throw new NotFoundException('Dispatch not found');
+
+    let dispatch: Dispatch;
+    if (uuid) {
+      dispatch = newsletter.dispatches.find(
+        (dispatch) => dispatch?.uuid === uuid,
+      )!;
+      if (!dispatch) {
+        throw new NotFoundException('Dispatch not found');
+      }
+    } else {
+      dispatch = newsletter.dispatches[0];
     }
+
     if (dispatch.status === SendStatus.SCHEDULED) {
       throw new UnprocessableEntityException('already scheduled');
     }
-    const unreadShortlinks = newsletter.shortlinks.filter(
+    let unreadShortlinks = newsletter.shortlinks.filter(
       (shortlink) => !shortlink.isRead,
     );
+    if (uuid) {
+      unreadShortlinks = unreadShortlinks.filter(
+        (shortlink) => shortlink.uuid === uuid,
+      );
+    }
+
     if (unreadShortlinks.length === 0) {
       throw new UnprocessableEntityException('everyone has read');
     }
@@ -312,7 +326,7 @@ export class NewsletterService {
           studentCode: student.studentCode,
           link: shortlink
             ? `https://app.schoolhub.co.kr/parent/nanoid/${shortlink.nanoid}`
-            : null,
+            : `https://app.schoolhub.co.kr`,
           read: readParentIds.includes(student.parent.id),
           createdAt: shortlink?.createdAt ?? new Date(),
         };
@@ -580,9 +594,9 @@ export class NewsletterService {
         newsletterId: newsletter.id,
         uuid: uuid,
         nanoid: nanoid(),
-        uri: `https://app.schoolhub.co.kr/${getMobileRoute(newsletter)}`,
-        page: 'newsletters',
-        args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
+        role: 'PARENT',
+        url: `https://app.schoolhub.co.kr/${getMobileRoute(newsletter)}`,
+        routes: JSON.stringify({}), // todo. fix this.
       };
       dtos.push(dto);
     }
@@ -621,48 +635,65 @@ export class NewsletterService {
     newsletter: Newsletter,
     shortlinks: Shortlink[],
     students: Student[],
-  ): {
-    type: string;
-    schoolId: number;
-    role: string;
-    messages: any[];
-  } {
+  ) {
+    let body: string;
+    const messages = students.map((v: Student) => {
+      const shortlink = shortlinks.find(
+        (shortlink) => shortlink.parentId === v.parent.id,
+      );
+
+      switch (newsletter.type) {
+        case NewsletterType.REGISTRATION:
+          body = getTemplateOfRegistration({
+            school: newsletter.schoolName,
+            term: newsletter.termName,
+            period: term.bookingPeriod,
+            shortlink: `${this.domain}/${shortlink?.nanoid}`,
+          });
+          break;
+        case NewsletterType.CHANGES:
+          body = getTemplateOfNewsChanges({
+            school: newsletter.schoolName,
+            term: newsletter.termName,
+            title: newsletter.title || '수업 변동사항',
+            shortlink: `${this.domain}/${shortlink?.nanoid}`,
+          });
+          break;
+        case NewsletterType.SCHEDULES:
+          body = getTemplateOfNewsSchedules({
+            school: newsletter.schoolName,
+            term: newsletter.termName,
+            title: newsletter.title || '수업 준비물',
+            shortlink: `${this.domain}/${shortlink?.nanoid}`,
+          });
+          break;
+        case NewsletterType.SUPPLIES:
+          body = getTemplateOfNewsSupplies({
+            school: newsletter.schoolName,
+            term: newsletter.termName,
+            title: newsletter.title || '수업 일정변경',
+            shortlink: `${this.domain}/${shortlink?.nanoid}`,
+          });
+          break;
+        default:
+          body = '';
+          break;
+      }
+      return {
+        token: v.parent?.user?.pushToken ?? null,
+        phone: v.parent.phone,
+        template: this._getTemplateName(newsletter.type),
+        body: body,
+        role: 'PARENT',
+        url: getMobileRoute(newsletter),
+        routes: JSON.stringify({}),
+      };
+    });
+
     return {
       type: newsletter.type as string,
       schoolId: newsletter.schoolId,
-      role: 'PARENT',
-      messages: students.map((student) => {
-        const shortlink = shortlinks.find(
-          (shortlink) => shortlink.parentId === student.parent.id,
-        );
-        const kakaoMessage =
-          newsletter.type === NewsletterType.REGISTRATION
-            ? getTemplateOfRegistration({
-                school: newsletter.schoolName,
-                term: newsletter.termName,
-                period: term.bookingPeriod,
-                shortlink: `${this.domain}/${shortlink?.nanoid}`,
-              })
-            : getTemplateOfNews({
-                school: newsletter.schoolName,
-                term: newsletter.termName,
-                title:
-                  newsletter.title ||
-                  `${format(newsletter.createdAt, 'M월d일자')} 공지사항`,
-                shortlink: `${this.domain}/${shortlink?.nanoid}`,
-              });
-        return {
-          phone: student.parent.phone,
-          token: student.parent?.user?.pushToken,
-          template:
-            newsletter.type === NewsletterType.REGISTRATION
-              ? 'Registration1'
-              : 'News1',
-          kakaoMessage: kakaoMessage,
-          uri: shortlink?.uri || getMobileRoute(newsletter),
-          // args: `id=${newsletter.id}&studentId=${student.id}&parentId=${student.parent.id}`,
-        };
-      }),
+      messages: messages,
     };
   }
 
@@ -673,42 +704,62 @@ export class NewsletterService {
   ): {
     type: string;
     schoolId: number;
-    role: string;
     messages: any[];
   } {
+    let body: string;
+    const messages = shortlinks.map((v: Shortlink) => {
+      switch (newsletter.type) {
+        case NewsletterType.REGISTRATION:
+          body = getTemplateOfRegistration({
+            school: newsletter.schoolName,
+            term: newsletter.termName,
+            period: newsletter.term.bookingPeriod,
+            shortlink: `${this.domain}/${v?.nanoid}`,
+          });
+          break;
+        case NewsletterType.CHANGES:
+          body = getTemplateOfNewsChanges({
+            school: newsletter.schoolName,
+            term: newsletter.termName,
+            title: newsletter.title || '수업 변동사항',
+            shortlink: `${this.domain}/${v?.nanoid}`,
+          });
+          break;
+        case NewsletterType.SCHEDULES:
+          body = getTemplateOfNewsSchedules({
+            school: newsletter.schoolName,
+            term: newsletter.termName,
+            title: newsletter.title || '수업 준비물',
+            shortlink: `${this.domain}/${v?.nanoid}`,
+          });
+          break;
+        case NewsletterType.SUPPLIES:
+          body = getTemplateOfNewsSupplies({
+            school: newsletter.schoolName,
+            term: newsletter.termName,
+            title: newsletter.title || '수업 일정변경',
+            shortlink: `${this.domain}/${v?.nanoid}`,
+          });
+          break;
+        default:
+          body = '';
+          break;
+      }
+      return {
+        token: v.parent?.user?.pushToken,
+        phone: v.parent.phone,
+        template: this._getTemplateName(newsletter.type),
+        body: body,
+        role: v.role,
+        url: getMobileRoute(newsletter),
+        routes: JSON.stringify({}),
+      };
+    });
+
     return {
       type: newsletter.type as string,
       schoolId: newsletter.schoolId,
-      role: 'PARENT',
-      messages: shortlinks.map((shortlink) => {
-        const kakaoMessage =
-          newsletter.type === NewsletterType.REGISTRATION
-            ? getTemplateOfRegistration({
-                school: newsletter.schoolName,
-                term: newsletter.termName,
-                period: newsletter.term.bookingPeriod,
-                shortlink: `${this.domain}/${shortlink?.nanoid}`,
-              })
-            : getTemplateOfNews({
-                school: newsletter.schoolName,
-                term: newsletter.termName,
-                title:
-                  newsletter.title ||
-                  `${format(newsletter.createdAt, 'M월d일자')} 공지사항`,
-                shortlink: `${this.domain}/${shortlink?.nanoid}`,
-              });
-        return {
-          phone: shortlink.parent.phone,
-          token: shortlink.parent?.user?.pushToken,
-          template:
-            newsletter.type === NewsletterType.REGISTRATION
-              ? 'Registration1'
-              : 'News1',
-          kakaoMessage: kakaoMessage,
-          uri: shortlink?.uri || getMobileRoute(newsletter),
-          // args: shortlink?.args || null,
-        };
-      }),
+      messages: messages,
     };
   }
 
@@ -735,6 +786,21 @@ export class NewsletterService {
         `❌ Failed to delete dispatches for newsletter ${newsletter.id}: ${err.message}`,
         err,
       );
+    }
+  }
+
+  private _getTemplateName(type: NewsletterType) {
+    switch (type) {
+      case NewsletterType.REGISTRATION:
+        return 'Registration1';
+      case NewsletterType.CHANGES:
+        return 'NewsChange1';
+      case NewsletterType.SCHEDULES:
+        return 'NewsSchedule1';
+      case NewsletterType.SUPPLIES:
+        return 'NewsSupplies1';
+      default:
+        return 'Unknown';
     }
   }
 }

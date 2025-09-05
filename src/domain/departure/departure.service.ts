@@ -61,7 +61,6 @@ export class DepartureService {
       await this.notificationService.send({
         type: NotificationType.SCHOOL,
         schoolId: student.schoolId,
-        role: 'PARENT',
         messages: [
           {
             token: student.parent.user?.pushToken ?? null,
@@ -165,7 +164,6 @@ export class DepartureService {
       await this.notificationService.send({
         type: NotificationType.SCHOOL,
         schoolId: newStudents[0].schoolId,
-        role: 'PARENT',
         messages,
       });
     }

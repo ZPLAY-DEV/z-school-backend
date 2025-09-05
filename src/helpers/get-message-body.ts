@@ -85,29 +85,65 @@ export const getTemplateOfRegistration = (dto: {
   term: string; // `2025학년도 2학기`
   period: string; // `9월1일 09:00 ~ 9월9일 17:00`
   shortlink: string;
-}) => `[스쿨허브] 수강신청 바로가기
+}) => `[${dto.school}] 수강신청 바로가기
 
-${dto.school} ${dto.term} 수강신청을 위한 링크 안내입니다.
+${dto.school} 에 자녀를 등록한 학부모님께 ${dto.term} 늘봄학교 수강신청을 위한 안내입니다.
 
-◼ 수강신청기간 : ${dto.period}
-◼ 수강신청링크 : ${dto.shortlink}
+◼ 수강신청 기간 : ${dto.period}
+◼ 신청 바로가기 : ${dto.shortlink}
+
+※ 이 메시지는 ${dto.school} 늘봄학교 수강신청 안내를 위한 목적으로 발송되었습니다.
 `;
 
 //? ------------------------------------------------------------------------ ?//
-//? 공지사항안내
+//? 공지사항안내 (NewsClassChange1)
 //? ------------------------------------------------------------------------ ?//
 
-export const getTemplateOfNews = (dto: {
+export const getTemplateOfNewsChanges = (dto: {
   school: string;
   term: string; // `2025학년도 2학기`
   title: string; // `제목`
   shortlink: string;
-}) => `[스쿨허브] 공지사항 바로가기
+}) => `[${dto.school}] 수업 변동사항 안내
 
-${dto.school} ${dto.term} 공지사항을 위한 링크 안내입니다.
+${dto.school} ${dto.term} 늘봄학교 신청하신 학부모님께 수업 변동사항 안내를 위해 전달드립니다.
 
 ◼ 제목 : ${dto.title}
-◼ 링크 : ${dto.shortlink}
+◼ 학인하기 : ${dto.shortlink}
+`;
+
+//? ------------------------------------------------------------------------ ?//
+//? 공지사항안내 (NewsScheduleChange1)
+//? ------------------------------------------------------------------------ ?//
+
+export const getTemplateOfNewsSchedules = (dto: {
+  school: string;
+  term: string; // `2025학년도 2학기`
+  title: string; // `제목`
+  shortlink: string;
+}) => `[${dto.school}] 수업 일정변경 안내
+
+${dto.school} ${dto.term} 늘봄학교 신청하신 학부모님께 수업 일정변경 안내를 위해 전달드립니다.
+
+◼ 제목 : ${dto.title}
+◼ 학인하기 : ${dto.shortlink}
+`;
+
+//? ------------------------------------------------------------------------ ?//
+//? 공지사항안내 (NewsClassSupplies1)
+//? ------------------------------------------------------------------------ ?//
+
+export const getTemplateOfNewsSupplies = (dto: {
+  school: string;
+  term: string; // `2025학년도 2학기`
+  title: string; // `제목`
+  shortlink: string;
+}) => `[${dto.school}] 수업 준비물 안내
+
+${dto.school} ${dto.term} 늘봄학교 신청하신 학부모님께 수업 준비물 안내를 위해 전달드립니다.
+
+◼ 제목 : ${dto.title}
+◼ 학인하기 : ${dto.shortlink}
 `;
 
 //? ------------------------------------------------------------------------ ?//

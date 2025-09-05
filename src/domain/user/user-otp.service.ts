@@ -164,7 +164,6 @@ export class UserOtpService {
       await this.notificationService.send({
         type: NotificationType.OTHER,
         schoolId: 0,
-        role: 'PARENT',
         messages: [
           {
             token: null,

@@ -153,7 +153,6 @@ export class GroupAttendanceService {
     await this.notificationService.send({
       type: NotificationType.CLASS,
       schoolId: group.lesson.schoolId,
-      role: 'PARENT',
       messages: messages,
     });
 
@@ -243,11 +242,10 @@ export class GroupAttendanceService {
         };
       });
 
-    //! 수업종료알림 SMS/Notification 발송
+    //? 수업종료알림 SMS/Notification 발송
     await this.notificationService.send({
       type: NotificationType.CLASS,
       schoolId: group.lesson.schoolId,
-      role: 'PARENT',
       messages: messages,
     });
 
@@ -313,11 +311,10 @@ export class GroupAttendanceService {
         },
       ];
 
-      //! 커스텀 알림 SMS/Notification 발송
+      //? 커스텀 알림 SMS/Notification 발송
       const result = await this.notificationService.send({
         type: NotificationType.CLASS,
         schoolId: group.lesson.schoolId,
-        role: 'PARENT',
         messages: messages,
       });
 
@@ -380,14 +377,13 @@ export class GroupAttendanceService {
     };
 
     // parentNote가 업데이트되는 경우에만 parentNotedAt 설정
-    if (typeof dto.parentNote === 'string') {
-      upsertData.parentNotedAt = new Date();
-    }
-
+    // if (typeof dto.parentNote === 'string') {
+    //   upsertData.parentNotedAt = new Date();
+    // }
     // schoolNote가 업데이트되는 경우에만 schoolNotedAt 설정
-    if (typeof dto.schoolNote === 'string') {
-      upsertData.schoolNotedAt = new Date();
-    }
+    // if (typeof dto.schoolNote === 'string') {
+    //   upsertData.schoolNotedAt = new Date();
+    // }
 
     try {
       // ✅ 개선된 upsert: update 먼저 시도, 실패하면 create

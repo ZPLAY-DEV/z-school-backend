@@ -7,14 +7,8 @@ export enum NewsletterTarget {
 }
 
 export enum NewsletterType {
-  NEWS = 'NEWS',
-  SURVEY = 'SURVEY',
+  CHANGES = 'CHANGES',
+  SCHEDULES = 'SCHEDULES',
+  SUPPLIES = 'SUPPLIES',
   REGISTRATION = 'REGISTRATION',
 }
-
-// ex) NewsletterTypeLabels[NewsletterType.RESUME] returns "이력서"
-// export const NewsletterTypeLabels: Record<NewsletterType, string> = {
-//   [NewsletterType.REGISTRATION]: '수강신청',
-//   [NewsletterType.NEWS]: '공지사항',
-//   [NewsletterType.SURVEY]: '설문조사',
-// };

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { Shortlink } from 'src/domain/shortlink/entities/shortlink.entity';
+import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {

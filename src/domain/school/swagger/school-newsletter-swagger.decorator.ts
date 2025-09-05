@@ -80,7 +80,7 @@ export const ListSchoolTermNewslettersDocs = () => {
       description:
         '뉴스레터 유형 (선택사항) - REGISTRATION(수강신청), NEWS(공지사항), SURVEY(설문지)',
       required: false,
-      example: NewsletterType.NEWS,
+      example: NewsletterType.REGISTRATION,
     }),
     ApiExtraModels(Newsletter),
     ApiOkResponse({
@@ -147,7 +147,7 @@ export const InfiniteListSchoolTermNewslettersDocs = () => {
       description:
         '뉴스레터 유형 (선택사항) - REGISTRATION(수강신청), NEWS(공지사항), SURVEY(설문지)',
       required: false,
-      example: NewsletterType.NEWS,
+      example: NewsletterType.REGISTRATION,
     }),
     ApiPaginationQuery(SCHOOL_NEWSLETTER_CONFIG),
     ApiOkPaginatedResponse(Newsletter, SCHOOL_NEWSLETTER_CONFIG),

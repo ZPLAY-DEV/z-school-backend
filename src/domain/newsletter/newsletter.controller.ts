@@ -69,10 +69,10 @@ export class NewsletterController {
   }
 
   @ResendNewsletterDocs()
-  @Post(':id/resend/:uuid')
+  @Post(':id/resend')
   resendNewsletter(
     @Param('id', ParseIntPipe) id: number,
-    @Param('uuid') uuid: string,
+    @Query('uuid') uuid?: string,
   ): Promise<void> {
     return this.newsletterService.resendNewsletter(id, uuid);
   }
