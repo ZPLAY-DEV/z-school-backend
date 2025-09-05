@@ -92,7 +92,6 @@ export class NotificationService {
 
     // Invalid token 정리
     if (invalidTokens.length > 0) {
-      this.fcmService.cleanupInvalidTokens(invalidTokens);
       this.logger.warn(`Found ${invalidTokens.length} invalid FCM tokens`);
     }
 
@@ -161,22 +160,6 @@ export class NotificationService {
       return { success: true };
     } catch (error) {
       this.logger.error('Failed to send message to SQS', error);
-      return { success: false };
-    }
-  }
-
-  async text(data: { body: string; phone: string }): Promise<{
-    success: boolean;
-  }> {
-    try {
-      await this.sqsClient.sendMessage({
-        type: 'SEND_TEXT',
-        data,
-      });
-
-      return { success: true };
-    } catch (error) {
-      this.logger.error('Failed to send message via SQS', error);
       return { success: false };
     }
   }

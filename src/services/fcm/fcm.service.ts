@@ -101,20 +101,4 @@ export class FcmService {
         ),
     );
   }
-
-  /**
-   * Invalid token 정리
-   */
-  cleanupInvalidTokens(invalidTokens: string[]): void {
-    if (invalidTokens.length === 0) return;
-
-    this.logger.log(`Cleaning up ${invalidTokens.length} invalid tokens`);
-
-    // TODO: 데이터베이스에서 invalid token 제거 로직 구현
-    // 예: await this.userService.removeInvalidTokens(invalidTokens);
-
-    this.logger.log(
-      `Successfully cleaned up ${invalidTokens.length} invalid tokens`,
-    );
-  }
 }

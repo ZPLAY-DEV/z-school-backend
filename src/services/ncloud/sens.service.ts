@@ -41,7 +41,7 @@ export class SensService {
   ): Promise<SensAlimtalkResult> {
     if (whitelistOnly) {
       const whitelistedMessages = dto.messages.filter((message) =>
-        this.whitelist.includes(normalizePhone(message.to as string)!),
+        this.whitelist.includes(normalizePhone(message.to)!),
       );
 
       if (whitelistedMessages.length === 0) {
