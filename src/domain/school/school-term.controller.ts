@@ -29,4 +29,13 @@ export class SchoolTermController {
   ): Promise<Term[]> {
     return await this.schoolTermService.list(schoolId);
   }
+
+  @ListSchoolTermDocs()
+  @Get(':schoolId/previous-terms/:termId')
+  async listPrevious(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+  ): Promise<Term[]> {
+    return await this.schoolTermService.listPrevious(schoolId, termId);
+  }
 }
