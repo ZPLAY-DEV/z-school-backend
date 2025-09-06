@@ -1,19 +1,22 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { BookingStatus, ClassStatus, PickRule } from 'src/common/enums';
+import {
+  AlarmType,
+  BookingStatus,
+  ClassStatus,
+  PickRule,
+} from 'src/common/enums';
 import { IPickKeys } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { ResponseCreateOfferingPickDto } from 'src/domain/group/dto/response-create-offering-pick.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
-import { CreateAutoPickDto } from 'src/domain/offering/dto/create-auto-pick.dto';
+import { SchoolTermDto } from 'src/domain/offering/dto/school-term.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
+import { getTemplateOfRegistrationEnd } from 'src/helpers/get-message-body';
+import { NotificationService } from 'src/services/notification/notification.service';
 import { In, Repository } from 'typeorm';
 
 @Injectable()
@@ -31,6 +34,7 @@ export class OfferingPickService {
     private readonly pickRepository: Repository<Pick>,
     @InjectRepository(Term)
     private readonly termRepository: Repository<Term>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   // a note on pretty confusing syntax for MySQL 8.0+
@@ -109,7 +113,7 @@ export class OfferingPickService {
     });
   }
 
-  async createAutoPicks(dto: CreateAutoPickDto): Promise<number[]> {
+  async createAutoPicks(dto: SchoolTermDto): Promise<number[]> {
     const term = await this.termRepository.findOneOrFail({
       where: { id: dto.termId },
     });
@@ -142,23 +146,33 @@ export class OfferingPickService {
     return selectedOfferingIds;
   }
 
-  //? ---------------------------------------------------------------------- ?//
-  //? READ
-  //? ---------------------------------------------------------------------- ?//
+  async notify(dto: SchoolTermDto): Promise<void> {
+    const { schoolId, termId } = dto;
+    const offerings = await this.offeringRepository.find({
+      where: { schoolId, termId, status: ClassStatus.PENDING },
+      relations: ['bookings', 'term'],
+    });
+    if (offerings.length > 0) {
+      throw new BadRequestException('수강신청 종료 전 입니다.');
+    } else {
+      const term = await this.termRepository.findOneOrFail({
+        where: { id: termId },
+        relations: ['school'],
+      });
+      const body = getTemplateOfRegistrationEnd({
+        school: term.school.name,
+        term: term.termName,
+      });
 
-  async findById(id: number, relations: string[] = []): Promise<Offering> {
-    try {
-      return relations.length > 0
-        ? await this.offeringRepository.findOneOrFail({
-            where: { id },
-            relations,
-          })
-        : await this.offeringRepository.findOneOrFail({
-            where: { id },
-          });
-    } catch (error) {
-      console.error(error);
-      throw new NotFoundException(`Offering not found`);
+      //
+
+      const messages = [];
+
+      await this.notificationService.send({
+        type: AlarmType.SCHOOL,
+        schoolId: schoolId,
+        messages: messages,
+      });
     }
   }
 
@@ -166,7 +180,7 @@ export class OfferingPickService {
   // private methods
   // ------------------------------------------------------------------------ //
 
-  async pickFirstComeFirstServed(
+  private async pickFirstComeFirstServed(
     offering: Offering,
     sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {
@@ -229,7 +243,7 @@ export class OfferingPickService {
     return selectedStudentIds;
   }
 
-  async pickAnyone(
+  private async pickAnyone(
     offering: Offering,
     sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {
@@ -285,7 +299,7 @@ export class OfferingPickService {
     return selectedStudentIds;
   }
 
-  async pickRandomStudents(
+  private async pickRandomStudents(
     offering: Offering,
     sameGradeGroups: { groupId: number; start: string; end: string }[],
   ): Promise<number[]> {

@@ -4,7 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { ResponseCreateOfferingPickDto } from 'src/domain/group/dto/response-create-offering-pick.dto';
-import { CreateAutoPickDto } from 'src/domain/offering/dto/create-auto-pick.dto';
+import { SchoolTermDto } from 'src/domain/offering/dto/school-term.dto';
 
 //? ---------------------------------------------------------------------- ?//
 //? Create Offering Pick
@@ -126,7 +126,7 @@ export const CreateAutoPickDocs = () => {
       `,
     }),
     ApiBody({
-      type: CreateAutoPickDto,
+      type: SchoolTermDto,
       description: `자동 수강생 확정 요청 데이터
 
 **요청 데이터 상세:**

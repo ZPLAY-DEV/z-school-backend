@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ResponseCreateOfferingPickDto } from 'src/domain/group/dto/response-create-offering-pick.dto';
-import { CreateAutoPickDto } from 'src/domain/offering/dto/create-auto-pick.dto';
+import { SchoolTermDto } from 'src/domain/offering/dto/school-term.dto';
 import { OfferingPickService } from 'src/domain/offering/offering-pick.service';
 import {
   CreateAutoPickDocs,
@@ -28,11 +28,18 @@ export class OfferingPickController {
   //? ---------------------------------------------------------------------- ?//
 
   @CreateAutoPickDocs()
-  @Post('all/picks')
+  @Post('picks/auto')
   @HttpCode(200)
-  async createAutoPicks(@Body() dto: CreateAutoPickDto): Promise<number[]> {
+  async createAutoPicks(@Body() dto: SchoolTermDto): Promise<number[]> {
     console.log('🚀 dto', dto);
     return this.offeringPickService.createAutoPicks(dto);
+  }
+
+  @Post('picks/notification')
+  @HttpCode(200)
+  async notify(@Body() dto: SchoolTermDto) {
+    console.log('🚀 dto', dto);
+    return this.offeringPickService.notify(dto);
   }
 
   @CreateOfferingPickDocs()

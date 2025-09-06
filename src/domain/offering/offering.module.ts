@@ -12,6 +12,7 @@ import { OfferingSubscriber } from 'src/domain/offering/subscriber/offering.subs
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
+import { NotificationModule } from 'src/services/notification/notification.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { Term } from 'src/domain/term/entities/term.entity';
       Student,
       Term,
     ]),
+    NotificationModule,
   ],
   providers: [OfferingService, OfferingPickService, OfferingSubscriber],
   controllers: [OfferingController, OfferingPickController],

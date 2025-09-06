@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsInt } from 'class-validator';
 
-export class CreateAutoPickDto {
+export class SchoolTermDto {
   @ApiProperty({ description: '🈳 DB의 학교ID' })
   @IsInt()
   schoolId: number;
