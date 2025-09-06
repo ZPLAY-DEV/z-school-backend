@@ -220,7 +220,7 @@ export class NotificationService {
     return chunks;
   }
 
-  async sendViaQueue(data: NotificationCoreData[]): Promise<{
+  async sendViaQueue(data: NotificationFullData): Promise<{
     success: boolean;
   }> {
     try {

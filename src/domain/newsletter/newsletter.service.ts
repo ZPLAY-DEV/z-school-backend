@@ -38,9 +38,10 @@ import {
   getTemplateOfRegistration,
 } from 'src/helpers/get-message-body';
 import { getMobileRoute } from 'src/helpers/uri';
+import { NotificationService } from 'src/services/notification/notification.service';
+import { NotificationCoreData } from 'src/services/notification/types';
 import { SlackService } from 'src/services/slack/slack.service';
 import { DataSource, EntityManager, In, LessThan, Repository } from 'typeorm';
-import * as uuid from 'uuid';
 
 @Injectable()
 export class NewsletterService {
@@ -57,6 +58,7 @@ export class NewsletterService {
     private readonly schoolRepository: Repository<School>,
     private readonly dataSource: DataSource,
     private readonly slack: SlackService,
+    private readonly notificationService: NotificationService,
     private readonly configService: ConfigService,
     // @Inject(REDIS_TRACKING_CLIENT)
     // private readonly redisTrackingService: RedisTrackingService,
@@ -74,11 +76,10 @@ export class NewsletterService {
   async createNewsletter(
     dto: CreateNewsletterDto & CreateDispatchDto,
   ): Promise<Newsletter> {
-    // transaction 밖에서 validation 처리 (Auto-increment ID 낭비 방지)
     const school = await this._checkSchoolValidity(dto.schoolId);
     const term = await this._checkTermValidity(dto.termId);
     // upsert를 사용하므로 중복 체크 제거
-    // await this._checkNewsletterValidity(dto);
+    await this._checkNewsletterValidity(dto);
     let title: string;
 
     if (dto.type === NewsletterType.REGISTRATION) {
@@ -86,8 +87,8 @@ export class NewsletterService {
     } else {
       title = dto.title || `[${school.name}] ${term.termName} 공지사항`;
     }
-    await this.newsletterRepository.upsert(
-      {
+    await this.newsletterRepository.save(
+      this.newsletterRepository.create({
         schoolId: dto.schoolId,
         termId: dto.termId,
         schoolName: school.name,
@@ -95,50 +96,55 @@ export class NewsletterService {
         title: title,
         body: dto.body || null,
         images: dto.images || null,
-      },
-      ['schoolId', 'termId'],
+      }),
     );
     const newsletter = await this.newsletterRepository.findOneOrFail({
       where: { schoolId: dto.schoolId, termId: dto.termId },
     });
 
-    return await this.dataSource.transaction(async (manager: EntityManager) => {
-      if (dto.target && dto.targetItems) {
-        const dispatch = manager.create(Dispatch, {
-          ...dto,
-          scheduledAt:
-            dto.scheduledAt ?? fromZonedTime(new Date(), 'Asia/Seoul'),
-          newsletterId: newsletter.id,
-        });
-        const { students, label } = await this._getTargetStudents(
-          manager,
-          newsletter.schoolId,
-          dto.target,
-          dto.targetItems,
-        );
-        const dedupedStudents = this._dedupeStudents(students);
-        const studentIds = dedupedStudents.map((student) => student.id);
-        dispatch.studentIds = studentIds;
-        dispatch.targetLabel = label;
-        // 숏링크 생성
-        const shortlinks = await this._createShortlinks(
-          manager,
-          newsletter,
-          dedupedStudents,
-          dispatch.id,
-        );
-        const payload = this._buildNotificationFullData(
-          term,
-          newsletter,
-          shortlinks,
-          dedupedStudents,
-        );
-        dispatch.payload = payload;
-        await manager.save(dispatch);
-      }
+    if (dto.target && dto.targetItems) {
+      // 1. Dispatch 먼저 생성 및 저장 (ID 확보)
+      const dispatch = this.dispatchRepository.create({
+        ...dto,
+        status: SendStatus.SCHEDULED,
+        scheduledAt: dto.scheduledAt ?? fromZonedTime(new Date(), 'Asia/Seoul'),
+        newsletterId: newsletter.id,
+      });
 
-      return newsletter;
-    });
+      const { students, label } = await this._getTargetStudents(
+        this.dataSource.manager,
+        newsletter.schoolId,
+        dto.target,
+        dto.targetItems,
+      );
+      const dedupedStudents = this._dedupeStudents(students);
+      const studentIds = dedupedStudents.map((student) => student.id);
+      dispatch.studentIds = studentIds;
+      dispatch.targetLabel = label;
+
+      // Dispatch 저장하여 ID 확보
+      const savedDispatch = await this.dispatchRepository.save(dispatch);
+
+      // 2. 확보된 dispatch ID로 shortlink 생성
+      const shortlinks = await this._createShortlinks(
+        this.dataSource.manager,
+        newsletter,
+        dedupedStudents,
+        savedDispatch.id,
+      );
+
+      // 3. payload 업데이트
+      const payload = this._buildNotificationFullData(
+        term,
+        newsletter,
+        shortlinks,
+        dedupedStudents,
+      );
+      savedDispatch.payload = payload;
+      await this.dispatchRepository.save(savedDispatch);
+    }
+
+    return newsletter;
   }
 
   async sendNewsletter(id: number, dto: CreateDispatchDto): Promise<Dispatch> {
@@ -156,8 +162,7 @@ export class NewsletterService {
     );
 
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      const uuidv4 = uuid.v4();
-      const dispatch = manager.create(Dispatch, { ...dto, uuid: uuidv4 });
+      const dispatch = manager.create(Dispatch, { ...dto });
       const term = newsletter.term;
       const { students, label } = await this._getTargetStudents(
         manager,
@@ -234,7 +239,9 @@ export class NewsletterService {
       unreadShortlinks,
     );
 
-    // todo. 바로 queue 발송 처리
+    console.log(`😳😳😳`, JSON.stringify(payload, null, 2));
+
+    await this.notificationService.sendViaQueue(payload);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -635,7 +642,7 @@ export class NewsletterService {
               routes: dto.routes || '{}',
             })
             .orUpdate(
-              ['uuid', 'nanoid', 'role', 'url', 'routes'],
+              ['dispatchId', 'nanoid', 'role', 'url', 'routes'],
               ['parentId', 'newsletterId'],
             )
             .execute();
@@ -730,7 +737,7 @@ export class NewsletterService {
   ): {
     type: string;
     schoolId: number;
-    messages: any[];
+    messages: NotificationCoreData[];
   } {
     let body: string;
     const messages = shortlinks.map((v: Shortlink) => {
@@ -772,14 +779,14 @@ export class NewsletterService {
           break;
       }
       return {
-        token: v.parent?.user?.pushToken,
-        phone: v.parent.phone,
+        token: v.parent?.user?.pushToken ?? null,
+        phone: v.parent.phone ?? null,
         template: this._getTemplateName(newsletter.type),
         body: body,
         role: v.role,
         url: getMobileRoute(newsletter),
         routes: JSON.stringify({}),
-      };
+      } as unknown as NotificationCoreData;
     });
 
     return {

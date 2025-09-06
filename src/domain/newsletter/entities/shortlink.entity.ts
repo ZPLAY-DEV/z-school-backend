@@ -38,8 +38,8 @@ export class Shortlink {
   newsletterId: number;
 
   @ApiProperty({ description: '🈵 dispatch Id' })
-  @Column({ type: 'int', unsigned: true })
-  dispatchId: number;
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  dispatchId: number | null;
 
   // ------------------------------------------------------------------------ //
 
