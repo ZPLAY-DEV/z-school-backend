@@ -119,10 +119,12 @@ export class AuthService {
     const user: User =
       shortlink.parent?.user ||
       ({
+        id: 0, // 임시 ID
         username: 'unknown',
         phone: shortlink.parent?.phone,
         email: null,
         avatar: 'https://placehold.co/100x100',
+        createdAt: new Date(),
       } as User);
 
     return { ...user, parent: shortlink.parent };

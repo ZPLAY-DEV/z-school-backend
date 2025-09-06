@@ -88,39 +88,51 @@ export class SchooldayController {
     @Body() dto: UpdateSchooldayTimeDto,
     @CurrentUserIdAndRole() user: { id: number; role: string },
   ): Promise<Schoolday> {
-    const { startsAt, endsAt } = await this.schooldayService.findById(id);
+    const schoolday = await this.schooldayService.findById(id, ['term']);
 
     // DTO에 startsAt 키가 포함되어 있는지 확인
-
-    if (
-      startsAt &&
-      endsAt &&
-      dto.startsAt &&
-      dto.endsAt &&
-      startsAt === dto.startsAt &&
-      endsAt === dto.endsAt
-    ) {
-      throw new BadRequestException(
-        '입력값이 유효하지 않습니다. 다시 확인해주세요.',
-      );
+    if ('startsAt' in dto) {
+      const startsAtDate = formatDateInKST(dto.startsAt);
+      if (
+        startsAtDate < schoolday.term.start ||
+        startsAtDate > schoolday.term.end
+      ) {
+        throw new BadRequestException(
+          '학기를 벗어난 날짜입니다. 다시 확인해주세요.',
+        );
+      }
     }
+
+    // DTO에 endsAt 키가 포함되어 있는지 확인
+    if ('endsAt' in dto) {
+      const endsAtDate = formatDateInKST(dto.endsAt);
+      if (
+        endsAtDate < schoolday.term.start ||
+        endsAtDate > schoolday.term.end
+      ) {
+        throw new BadRequestException(
+          '학기를 벗어난 날짜입니다. 다시 확인해주세요.',
+        );
+      }
+    }
+
     const role =
       user.role === 'MANAGER'
         ? Actor.MANAGER
         : user.role === 'INSTRUCTOR'
           ? Actor.INSTRUCTOR
           : Actor.OTHER;
-    const schoolday = await this.schooldayService.update(id, {
+    const newSchoolday = await this.schooldayService.update(id, {
       ...dto,
       updatedBy: role,
     });
 
     // manipulate the response payload to reflect the changes
     if ('startsAt' in dto) {
-      schoolday.original = schoolday.today;
-      schoolday.today = formatDateInKST(schoolday.startsAt);
+      newSchoolday.original = newSchoolday.today;
+      newSchoolday.today = formatDateInKST(newSchoolday.startsAt);
     }
 
-    return schoolday;
+    return newSchoolday;
   }
 }

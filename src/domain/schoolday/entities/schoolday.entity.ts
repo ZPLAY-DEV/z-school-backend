@@ -3,6 +3,7 @@ import { Exclude } from 'class-transformer';
 import { Actor, Weekday } from 'src/common/enums';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
   CreateDateColumn,
@@ -163,6 +164,12 @@ export class Schoolday {
   updatedAt: Date;
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
+
+  @ManyToOne(() => Term, (term) => term.schooldays, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'termId' })
+  term: Term;
 
   @ManyToOne(() => Group, (group) => group.schooldays, {
     onDelete: 'CASCADE',

@@ -11,6 +11,7 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { School } from 'src/domain/school/entities/school.entity';
+import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import {
   Column,
   CreateDateColumn,
@@ -159,6 +160,9 @@ export class Term {
 
   @OneToMany(() => Lesson, (lesson: Lesson) => lesson.term)
   lessons: Lesson[];
+
+  @OneToMany(() => Schoolday, (schoolday: Schoolday) => schoolday.term)
+  schooldays: Schoolday[];
 
   @OneToMany(() => Offering, (offering: Offering) => offering.term, {
     cascade: ['insert', 'update'],
