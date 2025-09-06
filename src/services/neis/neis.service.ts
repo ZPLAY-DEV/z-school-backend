@@ -79,9 +79,9 @@ export class NeisService {
     try {
       // Convert options to query string using qs
       const queryString = qs.stringify(options);
-      const uri = `https://open.neis.go.kr/hub/SchoolSchedule?${queryString}`;
-      const response = await fetch(uri);
-      console.log(`🚀`, uri);
+      const url = `https://open.neis.go.kr/hub/SchoolSchedule?${queryString}`;
+      const response = await fetch(url);
+      console.log(`🚀`, url);
 
       // Parse the response
       const data = (await response.json()) as NeisApiResponse;

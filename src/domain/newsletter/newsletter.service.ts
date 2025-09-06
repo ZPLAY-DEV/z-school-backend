@@ -77,7 +77,8 @@ export class NewsletterService {
     // transaction 밖에서 validation 처리 (Auto-increment ID 낭비 방지)
     const school = await this._checkSchoolValidity(dto.schoolId);
     const term = await this._checkTermValidity(dto.termId);
-    await this._checkNewsletterValidity(dto);
+    // upsert를 사용하므로 중복 체크 제거
+    // await this._checkNewsletterValidity(dto);
     let title: string;
 
     if (dto.type === NewsletterType.REGISTRATION) {
@@ -85,23 +86,30 @@ export class NewsletterService {
     } else {
       title = dto.title || `[${school.name}] ${term.termName} 공지사항`;
     }
+    await this.newsletterRepository.upsert(
+      {
+        schoolId: dto.schoolId,
+        termId: dto.termId,
+        schoolName: school.name,
+        termName: term.termName,
+        title: title,
+        body: dto.body || null,
+        images: dto.images || null,
+      },
+      ['schoolId', 'termId'],
+    );
+    const newsletter = await this.newsletterRepository.findOneOrFail({
+      where: { schoolId: dto.schoolId, termId: dto.termId },
+    });
 
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      const newsletter = await manager.save(
-        manager.create(Newsletter, {
-          schoolId: dto.schoolId,
-          termId: dto.termId,
-          schoolName: school.name,
-          termName: term.termName,
-          title: title,
-          body: dto.body || null,
-          images: dto.images || null,
-        }),
-      );
-
       if (dto.target && dto.targetItems) {
         const uuidv4 = uuid.v4();
-        const dispatch = manager.create(Dispatch, { ...dto, uuid: uuidv4 });
+        const dispatch = manager.create(Dispatch, {
+          ...dto,
+          uuid: uuidv4,
+          newsletterId: newsletter.id,
+        });
         const { students, label } = await this._getTargetStudents(
           manager,
           newsletter.schoolId,
@@ -592,30 +600,51 @@ export class NewsletterService {
       const dto: CreateShortlinkDto = {
         parentId: student.parent.id,
         newsletterId: newsletter.id,
-        uuid: uuid,
+        uuid: `${uuid}`,
         nanoid: nanoid(),
         role: 'PARENT',
-        url: `https://app.schoolhub.co.kr/${getMobileRoute(newsletter)}`,
+        url: getMobileRoute(newsletter), // 이미 전체 URL을 반환하므로 중복 제거
         routes: JSON.stringify({}), // todo. fix this.
       };
+      this.logger.debug(`Creating shortlink DTO: ${JSON.stringify(dto)}`);
       dtos.push(dto);
     }
 
     const batches = chunk(dtos, 500);
+    this.logger.debug(`Total DTOs: ${dtos.length}, Batches: ${batches.length}`);
 
     // a compound unique key constraint with parentId and newsletterId
     for (const batch of batches) {
       try {
-        await manager
-          .createQueryBuilder()
-          .insert()
-          .into(Shortlink)
-          .values(batch)
-          .orUpdate(
-            ['nanoid', 'uri', 'page', 'args'],
-            ['parentId', 'newsletterId'],
-          )
-          .execute();
+        this.logger.debug(`Processing batch with ${batch.length} items`);
+
+        // TypeORM createQueryBuilder를 사용한 안전한 upsert
+        for (const dto of batch) {
+          this.logger.debug(
+            `Processing DTO: parentId=${dto.parentId}, newsletterId=${dto.newsletterId}, uuid=${dto.uuid}, nanoid=${dto.nanoid}, role=${dto.role}, url=${dto.url}, routes=${dto.routes}`,
+          );
+
+          const result = await manager
+            .createQueryBuilder()
+            .insert()
+            .into(Shortlink)
+            .values({
+              parentId: dto.parentId,
+              newsletterId: dto.newsletterId,
+              uuid: dto.uuid,
+              nanoid: dto.nanoid,
+              role: dto.role,
+              url: dto.url,
+              routes: dto.routes || '{}',
+            })
+            .orUpdate(
+              ['uuid', 'nanoid', 'role', 'url', 'routes'],
+              ['parentId', 'newsletterId'],
+            )
+            .execute();
+
+          this.logger.debug(`Upsert result: ${JSON.stringify(result)}`);
+        }
       } catch (error) {
         this.logger.error(`Failed to upsert Shortlinks: ${error.message}`);
         throw new InternalServerErrorException('숏링크 생성에 실패했습니다.');

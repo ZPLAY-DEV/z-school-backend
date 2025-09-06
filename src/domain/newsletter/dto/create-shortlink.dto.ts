@@ -36,7 +36,7 @@ export class CreateShortlinkDto {
   role: string;
 
   @ApiProperty({
-    description: '🈵 uri',
+    description: '🈵 url',
     example: '/parent/offerings/1?studentId=1&parentId=1',
     type: String,
   })

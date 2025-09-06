@@ -110,42 +110,114 @@ export class NotificationService {
   private async _processKakaoMessages(
     kakaoMessages: NotificationCoreData[],
   ): Promise<KakaoChannelResult> {
-    const { template, messages } = KakaoAdapter.toPayload(kakaoMessages);
-    const kakaoResult = await this.sensService.sendAlimtalk(
-      {
-        template,
-        messages,
-      },
-      true,
+    const BATCH_SIZE = 100;
+    const batches = this._chunkArray(kakaoMessages, BATCH_SIZE);
+
+    let totalSent = 0;
+    let totalFailed = 0;
+    let totalSmsFailoverCount = 0;
+    let overallSuccess = true;
+    const allMessages: any[] = [];
+    const allErrors: Error[] = [];
+    const requestIds: string[] = [];
+    const statusCodes: string[] = [];
+    const statusNames: string[] = [];
+
+    this.logger.log(
+      `📱 Processing ${kakaoMessages.length} kakao messages in ${batches.length} batches`,
     );
 
-    // SMS 대체 발송 여부 확인
-    let smsFailoverCount = 0;
-    if (kakaoResult.messages) {
-      smsFailoverCount = kakaoResult.messages.filter(
-        (msg) => msg.useSmsFailover === true,
-      ).length;
-      if (smsFailoverCount > 0) {
-        this.logger.warn(
-          `카카오 알림톡 중 ${smsFailoverCount}개가 SMS로 대체 발송되었습니다.`,
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      this.logger.log(
+        `📱 Processing batch ${i + 1}/${batches.length} (${batch.length} messages)`,
+      );
+      try {
+        const { template, messages } = KakaoAdapter.toPayload(batch);
+        const kakaoResult = await this.sensService.sendAlimtalk(
+          {
+            template,
+            messages,
+          },
+          true,
+        );
+
+        // 배치 결과 처리
+        if (kakaoResult.success) {
+          totalSent += batch.length;
+        } else {
+          totalFailed += batch.length;
+          overallSuccess = false;
+        }
+
+        // SMS 대체 발송 여부 확인
+        let smsFailoverCount = 0;
+        if (kakaoResult.messages) {
+          smsFailoverCount = kakaoResult.messages.filter(
+            (msg) => msg.useSmsFailover === true,
+          ).length;
+          totalSmsFailoverCount += smsFailoverCount;
+        }
+
+        // 결과 수집
+        allMessages.push(...(kakaoResult.messages || []));
+        if (kakaoResult.requestId) {
+          requestIds.push(kakaoResult.requestId);
+        }
+        if (kakaoResult.statusCode) {
+          statusCodes.push(kakaoResult.statusCode);
+        }
+        if (kakaoResult.statusName) {
+          statusNames.push(kakaoResult.statusName);
+        }
+
+        if (kakaoResult.error) {
+          allErrors.push(kakaoResult.error);
+        }
+      } catch (error) {
+        this.logger.error(`❌ Batch ${i + 1} failed:`, error);
+        totalFailed += batch.length;
+        overallSuccess = false;
+        allErrors.push(
+          error instanceof Error ? error : new Error(String(error)),
         );
       }
     }
 
-    const sent = kakaoResult.success ? kakaoMessages.length : 0;
-    const failed = kakaoResult.success ? 0 : kakaoMessages.length;
+    // 전체 결과 로깅
+    if (totalSmsFailoverCount > 0) {
+      this.logger.warn(
+        `😳 카카오 알림톡 중 ${totalSmsFailoverCount}개가 SMS로 대체 발송되었습니다.`,
+      );
+    }
+
+    console.log(`🚗 카카오 전송완료: 성공(${totalSent}), 실패(${totalFailed})`);
 
     return {
-      success: kakaoResult.success,
-      sent,
-      failed,
-      smsFailoverCount,
-      requestId: kakaoResult.requestId,
-      statusCode: kakaoResult.statusCode,
-      statusName: kakaoResult.statusName,
-      messages: kakaoResult.messages,
-      error: kakaoResult.error,
+      success: overallSuccess && totalFailed === 0,
+      sent: totalSent,
+      failed: totalFailed,
+      smsFailoverCount: totalSmsFailoverCount,
+      requestId: requestIds.length > 0 ? requestIds.join(', ') : undefined,
+      statusCode: statusCodes.length > 0 ? statusCodes.join(', ') : undefined,
+      statusName: statusNames.length > 0 ? statusNames.join(', ') : undefined,
+      messages: allMessages,
+      error: allErrors.length > 0 ? allErrors[0] : undefined,
     };
+  }
+
+  /**
+   * 배열을 지정된 크기로 청크 단위로 나누기
+   * @param array - 나눌 배열
+   * @param chunkSize - 청크 크기
+   * @returns 청크 배열
+   */
+  private _chunkArray<T>(array: T[], chunkSize: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+      chunks.push(array.slice(i, i + chunkSize));
+    }
+    return chunks;
   }
 
   async sendViaQueue(data: NotificationCoreData[]): Promise<{
