@@ -1,5 +1,4 @@
 export * from './actor';
-export * from './alarm-type';
 export * from './attendance-status';
 export * from './booking-status';
 export * from './calendar-type';
@@ -25,3 +24,4 @@ export * from './term-status';
 export * from './term-type';
 export * from './time-unit';
 export * from './weekday';
+

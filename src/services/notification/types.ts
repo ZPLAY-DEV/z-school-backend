@@ -1,7 +1,7 @@
 import { NotificationType } from 'src/common/enums/notification-type';
 
 export type PartitioningMeta = {
-  type: NotificationType; // REGISTRATION, NEWS, SURVERY, SCHOOL, CLASS, OTHER
+  type: NotificationType;
   schoolId: number; // 학교아이디
 };
 

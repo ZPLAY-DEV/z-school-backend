@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { formatInTimeZone } from 'date-fns-tz';
-import { NotificationType } from 'src/common/enums/notification-type';
+import { AlarmType } from 'src/common/enums/notification-type';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { getTemplateOfDeparture } from 'src/helpers/get-message-body';
@@ -59,7 +59,7 @@ export class DepartureService {
       });
 
       await this.notificationService.send({
-        type: NotificationType.SCHOOL,
+        type: AlarmType.SCHOOL,
         schoolId: student.schoolId,
         messages: [
           {
@@ -162,7 +162,7 @@ export class DepartureService {
     // 알림 발송 (새로 생성된 학생들만)
     if (newStudents.length > 0) {
       await this.notificationService.send({
-        type: NotificationType.SCHOOL,
+        type: AlarmType.SCHOOL,
         schoolId: newStudents[0].schoolId,
         messages,
       });

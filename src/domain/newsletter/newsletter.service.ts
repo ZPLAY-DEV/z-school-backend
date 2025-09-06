@@ -13,7 +13,7 @@ import { nanoid } from 'nanoid';
 import {
   NewsletterTarget,
   NewsletterType,
-  StudentStatus,
+  StudentStatus
 } from 'src/common/enums';
 import { SendStatus } from 'src/common/enums/send-status';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -39,7 +39,10 @@ import {
 } from 'src/helpers/get-message-body';
 import { getMobileRoute } from 'src/helpers/uri';
 import { NotificationService } from 'src/services/notification/notification.service';
-import { NotificationCoreData } from 'src/services/notification/types';
+import {
+  NotificationCoreData,
+  NotificationFullData,
+} from 'src/services/notification/types';
 import { SlackService } from 'src/services/slack/slack.service';
 import { DataSource, EntityManager, In, LessThan, Repository } from 'typeorm';
 
@@ -234,10 +237,11 @@ export class NewsletterService {
     }
 
     // payload 재구성
-    const payload = this._buildNotificationFullDataWithUnreadShortlinks(
-      newsletter,
-      unreadShortlinks,
-    );
+    const payload: NotificationFullData =
+      this._buildNotificationFullDataWithUnreadShortlinks(
+        newsletter,
+        unreadShortlinks,
+      );
 
     console.log(`😳😳😳`, JSON.stringify(payload, null, 2));
 
@@ -734,11 +738,7 @@ export class NewsletterService {
   private _buildNotificationFullDataWithUnreadShortlinks(
     newsletter: Newsletter,
     shortlinks: Shortlink[],
-  ): {
-    type: string;
-    schoolId: number;
-    messages: NotificationCoreData[];
-  } {
+  ): NotificationFullData {
     let body: string;
     const messages = shortlinks.map((v: Shortlink) => {
       switch (newsletter.type) {
@@ -790,7 +790,7 @@ export class NewsletterService {
     });
 
     return {
-      type: newsletter.type as string,
+      type: newsletter.type,
       schoolId: newsletter.schoolId,
       messages: messages,
     };

@@ -120,7 +120,7 @@ async sendNotifications() {
 ```json
 {
   "role": "PARENT",
-  "url": "https://app.schoolhub.co.kr/newsletters",  // 이동할 페이지
+  "url": "/parent/newsletters",  // 이동할 페이지
   "routes": ""             // JSON stringified object
 }
 ```

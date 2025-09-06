@@ -55,7 +55,6 @@ export class NotificationService {
         }
       }
 
-      // todo. messages 는 최대 100 개까지만 가능하기 때문에 이에 대응해야 함.
       if (kakaoMessages.length > 0) {
         const kakaoResult = await this._processKakaoMessages(kakaoMessages);
         result.channels.kakao = kakaoResult;
