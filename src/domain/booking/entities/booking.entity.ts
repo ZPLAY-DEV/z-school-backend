@@ -3,6 +3,7 @@ import { Exclude } from 'class-transformer';
 import { BookingStatus } from 'src/common/enums';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
   CreateDateColumn,
@@ -21,6 +22,10 @@ export class Booking {
   @ApiProperty({ description: 'bookingId', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
+
+  @ApiProperty({ description: '🈵 termId', example: 1 })
+  @Column({ type: 'int', unsigned: true })
+  termId: number;
 
   @ApiProperty({ description: '과목 ID', example: 1 })
   @Column({ type: 'int', unsigned: true })
@@ -69,6 +74,10 @@ export class Booking {
   @ManyToOne(() => Offering, (offering) => offering.bookings)
   @JoinColumn({ name: 'offeringId' })
   offering: Offering;
+
+  @ManyToOne(() => Term, (term) => term.bookings)
+  @JoinColumn({ name: 'termId' })
+  term: Term;
 
   //? Constructor ---------------------------------------------------------- ?//
 

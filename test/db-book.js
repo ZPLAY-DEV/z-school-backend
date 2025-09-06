@@ -54,6 +54,7 @@ async function postBookings(offering, students, token) {
 
   for (const student of randomStudents) {
     const dto = {
+      termId: offering.termId,
       offeringId: offering.id,
       studentId: student.id,
       capacity: offering.capacity,

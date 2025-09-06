@@ -3,6 +3,10 @@ import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import { BookingStatus, PickRule } from 'src/common/enums';
 
 export class CreateBookingDto {
+  @ApiProperty({ description: 'ID of the term', example: 1 })
+  @IsInt()
+  termId: number;
+
   @ApiProperty({ description: 'ID of the offering', example: 1 })
   @IsInt()
   offeringId: number;

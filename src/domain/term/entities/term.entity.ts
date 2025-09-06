@@ -7,6 +7,8 @@ import {
   TermStatus,
   TermType,
 } from 'src/common/enums';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -167,11 +169,17 @@ export class Term {
   @OneToMany(() => Offering, (offering: Offering) => offering.term, {
     cascade: ['insert', 'update'],
   })
-  public offerings: Offering[];
+  offerings: Offering[];
 
   @OneToMany(() => Newsletter, (newsletter: Newsletter) => newsletter.term)
   @Exclude()
-  public newsletters: Newsletter[];
+  newsletters: Newsletter[];
+
+  @OneToMany(() => Group, (group: Group) => group.term)
+  groups: Group[];
+
+  @OneToMany(() => Booking, (booking: Booking) => booking.term)
+  bookings: Booking[];
 
   @ApiProperty({
     description: '수강신청 뉴스레터 (type이 REGISTRATION인 newsletter)',
