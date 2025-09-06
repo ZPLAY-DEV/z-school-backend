@@ -72,9 +72,9 @@ export class NewsletterController {
   @Post(':id/resend')
   resendNewsletter(
     @Param('id', ParseIntPipe) id: number,
-    @Query('uuid') uuid?: string,
+    @Query('dispatchId') dispatchId?: number,
   ): Promise<void> {
-    return this.newsletterService.resendNewsletter(id, uuid);
+    return this.newsletterService.resendNewsletter(id, dispatchId);
   }
 
   //? ---------------------------------------------------------------------- ?//

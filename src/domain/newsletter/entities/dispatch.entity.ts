@@ -3,6 +3,7 @@ import { Exclude } from 'class-transformer';
 import { NewsletterTarget } from 'src/common/enums';
 import { SendStatus } from 'src/common/enums/send-status';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
 import {
   Column,
   CreateDateColumn,
@@ -10,6 +11,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -25,10 +27,6 @@ export class Dispatch {
   @ApiProperty({ description: '🈵 SchoolId' })
   @Column({ type: 'int', unsigned: true })
   newsletterId: number;
-
-  @ApiProperty({ description: '🈵 Unique identifier for dispatch' })
-  @Column({ type: 'varchar', length: 36, unique: true })
-  uuid: string;
 
   // ------------------------------------------------------------------------ //
 
@@ -113,6 +111,13 @@ export class Dispatch {
   )
   @JoinColumn({ name: 'newsletterId' })
   newsletter: Newsletter;
+
+  //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @OneToMany(() => Shortlink, (shortlink) => shortlink.dispatch, {
+    cascade: ['insert', 'update'],
+  })
+  shortlinks: Shortlink[];
 
   //? Constructor ---------------------------------------------------------- ?//
   constructor(partial: Partial<Dispatch>) {

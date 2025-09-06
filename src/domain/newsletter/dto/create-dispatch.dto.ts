@@ -23,15 +23,6 @@ export class CreateDispatchDto {
   newsletterId?: number;
 
   @ApiProperty({
-    description: '🈵 Unique identifier for dispatch',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  uuid?: string;
-
-  @ApiProperty({
     description: '🈵 발송 대상 유형 (SCHOOL, GRADE, LESSON, GROUP, STUDENT)',
     enum: NewsletterTarget,
     example: NewsletterTarget.SCHOOL,

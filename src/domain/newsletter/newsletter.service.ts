@@ -104,12 +104,10 @@ export class NewsletterService {
 
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       if (dto.target && dto.targetItems) {
-        const uuidv4 = uuid.v4();
         const dispatch = manager.create(Dispatch, {
           ...dto,
           scheduledAt:
             dto.scheduledAt ?? fromZonedTime(new Date(), 'Asia/Seoul'),
-          uuid: uuidv4,
           newsletterId: newsletter.id,
         });
         const { students, label } = await this._getTargetStudents(
@@ -127,7 +125,7 @@ export class NewsletterService {
           manager,
           newsletter,
           dedupedStudents,
-          uuidv4,
+          dispatch.id,
         );
         const payload = this._buildNotificationFullData(
           term,
@@ -176,7 +174,7 @@ export class NewsletterService {
         manager,
         newsletter,
         dedupedStudents,
-        uuidv4,
+        dispatch.id,
       );
       const payload = this._buildNotificationFullData(
         term,
@@ -189,7 +187,7 @@ export class NewsletterService {
     });
   }
 
-  async resendNewsletter(id: number, uuid?: string): Promise<void> {
+  async resendNewsletter(id: number, dispatchId?: number): Promise<void> {
     const newsletter = await this.findById(id, [
       'term',
       'dispatches',
@@ -202,29 +200,30 @@ export class NewsletterService {
     }
 
     let dispatch: Dispatch;
-    if (uuid) {
+    let shortlinks: Shortlink[];
+    if (dispatchId) {
       dispatch = newsletter.dispatches.find(
-        (dispatch) => dispatch?.uuid === uuid,
+        (dispatch) => dispatch?.id === dispatchId,
       )!;
       if (!dispatch) {
         throw new NotFoundException('Dispatch not found');
       }
+      if (dispatch.status === SendStatus.SCHEDULED) {
+        throw new UnprocessableEntityException(`wait until it's sent out`);
+      }
+      shortlinks = dispatch.shortlinks;
     } else {
-      dispatch = newsletter.dispatches[0];
+      if (
+        newsletter.dispatches.some(
+          (dispatch) => dispatch.status === SendStatus.SCHEDULED,
+        )
+      ) {
+        throw new UnprocessableEntityException(`wait until it's sent out`);
+      }
+      shortlinks = newsletter.shortlinks;
     }
 
-    if (dispatch.status === SendStatus.SCHEDULED) {
-      throw new UnprocessableEntityException('already scheduled');
-    }
-    let unreadShortlinks = newsletter.shortlinks.filter(
-      (shortlink) => !shortlink.isRead,
-    );
-    if (uuid) {
-      unreadShortlinks = unreadShortlinks.filter(
-        (shortlink) => shortlink.uuid === uuid,
-      );
-    }
-
+    const unreadShortlinks = shortlinks.filter((v) => !v.isRead);
     if (unreadShortlinks.length === 0) {
       throw new UnprocessableEntityException('everyone has read');
     }
@@ -594,7 +593,7 @@ export class NewsletterService {
     manager: EntityManager,
     newsletter: Newsletter,
     students: Student[],
-    uuid: string,
+    dispatchId: number,
   ): Promise<Shortlink[]> {
     const dtos: CreateShortlinkDto[] = [];
 
@@ -602,7 +601,7 @@ export class NewsletterService {
       const dto: CreateShortlinkDto = {
         parentId: student.parent.id,
         newsletterId: newsletter.id,
-        uuid: `${uuid}`,
+        dispatchId: dispatchId,
         nanoid: nanoid(),
         role: 'PARENT',
         url: getMobileRoute(newsletter), // 이미 전체 URL을 반환하므로 중복 제거
@@ -622,10 +621,6 @@ export class NewsletterService {
 
         // TypeORM createQueryBuilder를 사용한 안전한 upsert
         for (const dto of batch) {
-          this.logger.debug(
-            `Processing DTO: parentId=${dto.parentId}, newsletterId=${dto.newsletterId}, uuid=${dto.uuid}, nanoid=${dto.nanoid}, role=${dto.role}, url=${dto.url}, routes=${dto.routes}`,
-          );
-
           const result = await manager
             .createQueryBuilder()
             .insert()
@@ -633,7 +628,7 @@ export class NewsletterService {
             .values({
               parentId: dto.parentId,
               newsletterId: dto.newsletterId,
-              uuid: dto.uuid,
+              dispatchId: dto.dispatchId,
               nanoid: dto.nanoid,
               role: dto.role,
               url: dto.url,
