@@ -107,6 +107,8 @@ export class NewsletterService {
         const uuidv4 = uuid.v4();
         const dispatch = manager.create(Dispatch, {
           ...dto,
+          scheduledAt:
+            dto.scheduledAt ?? fromZonedTime(new Date(), 'Asia/Seoul'),
           uuid: uuidv4,
           newsletterId: newsletter.id,
         });
