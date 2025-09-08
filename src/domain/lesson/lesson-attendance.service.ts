@@ -740,22 +740,33 @@ export class LessonAttendanceService {
             pick.student.studentCode,
           );
 
-          const attendance =
-            itemMap.get(dailyStudentKey) ||
-            ({
-              groupKey: generateGroupKey(pick.group.id),
-              dailyStudentKey: dailyStudentKey,
-              lessonId: pick.group.lessonId,
-              lessonName: pick.group.lesson.lessonName,
-              groupId: pick.group.id,
-              groupName: pick.group.groupName,
-              studentId: pick.student.id,
-              studentName: pick.student.name,
-              start: pick.group.start,
-              end: pick.group.end,
-              weekday: pick.group.weekday,
-              status: AttendanceStatus.NONE,
-            } as IAttendance);
+          const existingAttendance = itemMap.get(dailyStudentKey);
+          const attendance = existingAttendance
+            ? {
+                ...existingAttendance,
+                parentNote: existingAttendance.parentNote ?? null,
+                parentNotedAt: existingAttendance.parentNotedAt ?? null,
+                schoolNote: existingAttendance.schoolNote ?? null,
+                schoolNotedAt: existingAttendance.schoolNotedAt ?? null,
+              }
+            : ({
+                groupKey: generateGroupKey(pick.group.id),
+                dailyStudentKey: dailyStudentKey,
+                lessonId: pick.group.lessonId,
+                lessonName: pick.group.lesson.lessonName,
+                groupId: pick.group.id,
+                groupName: pick.group.groupName,
+                studentId: pick.student.id,
+                studentName: pick.student.name,
+                start: pick.group.start,
+                end: pick.group.end,
+                weekday: pick.group.weekday,
+                status: AttendanceStatus.NONE,
+                parentNote: null,
+                parentNotedAt: null,
+                schoolNote: null,
+                schoolNotedAt: null,
+              } as IAttendance);
 
           attendances.push(attendance);
         }
@@ -795,6 +806,13 @@ export class LessonAttendanceService {
       lastKey = result.lastKey as IAttendanceKey | undefined;
     } while (lastKey);
 
-    return allItems;
+    // 클라이언트 개발자 요청: 누락된 필드들을 null로 정규화
+    return allItems.map((item) => ({
+      ...item,
+      parentNote: item.parentNote ?? null,
+      parentNotedAt: item.parentNotedAt ?? null,
+      schoolNote: item.schoolNote ?? null,
+      schoolNotedAt: item.schoolNotedAt ?? null,
+    }));
   }
 }

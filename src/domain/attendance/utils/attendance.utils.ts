@@ -159,5 +159,12 @@ export async function fetchAllAttendanceItems(
     lastKey = result.lastKey as IAttendanceKey | undefined;
   } while (lastKey);
 
-  return allItems;
+  // 클라이언트 개발자 요청: 누락된 필드들을 null로 정규화
+  return allItems.map((item) => ({
+    ...item,
+    parentNote: item.parentNote ?? null,
+    parentNotedAt: item.parentNotedAt ?? null,
+    schoolNote: item.schoolNote ?? null,
+    schoolNotedAt: item.schoolNotedAt ?? null,
+  }));
 }
