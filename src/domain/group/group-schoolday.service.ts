@@ -35,13 +35,20 @@ export class GroupSchooldayService {
       const startDate = new Date(year, month - 1, 1); // 월은 0부터 시작하므로 -1
       const endDate = new Date(year, month, 0); // 다음 달의 0일 = 이번 달의 마지막일
 
-      queryBuilder.andWhere('schoolday.startsAt >= :startDate', {
-        startDate,
-      });
-      queryBuilder.andWhere('schoolday.startsAt <= :endDate', {
-        endDate,
-      });
+      const startDateStr = startDate.toISOString().split('T')[0]; // 'YYYY-MM-DD' 형태
+      const endDateStr = endDate.toISOString().split('T')[0]; // 'YYYY-MM-DD' 형태
+
+      // today가 기간 안에 있거나, original이 기간 안에 있는 경우를 UNION으로 처리
+      queryBuilder.andWhere(
+        '(schoolday.today >= :startDateStr AND schoolday.today <= :endDateStr) OR (schoolday.original IS NOT NULL AND schoolday.original >= :startDateStr AND schoolday.original <= :endDateStr)',
+        {
+          startDateStr,
+          endDateStr,
+        },
+      );
     }
+
+    queryBuilder.orderBy('schoolday.today', 'ASC');
 
     return await queryBuilder.getMany();
   }

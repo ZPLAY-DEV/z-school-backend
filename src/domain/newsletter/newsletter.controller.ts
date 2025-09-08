@@ -96,7 +96,7 @@ export class NewsletterController {
   async findRegistrationNewsletter(
     @Query('schoolId', ParseIntPipe) schoolId: number,
     @Query('termId', ParseIntPipe) termId: number,
-  ): Promise<Newsletter> {
+  ): Promise<any> {
     return await this.newsletterService.findRegistrationNewsletter(
       schoolId,
       termId,

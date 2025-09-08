@@ -695,7 +695,7 @@ export class NewsletterService {
             school: newsletter.schoolName,
             term: newsletter.termName,
             period: term.bookingPeriod,
-            shortlink: `${this.domain}/${shortlink?.nanoid}`,
+            shortlink: `${this.domain}/${shortlink?.nanoid}?termId=${newsletter.termId}`,
           });
           break;
         case NewsletterType.CHANGES:
@@ -703,7 +703,7 @@ export class NewsletterService {
             school: newsletter.schoolName,
             term: newsletter.termName,
             title: newsletter.title || '수업 변동사항',
-            shortlink: `${this.domain}/${shortlink?.nanoid}`,
+            shortlink: `${this.domain}/${shortlink?.nanoid}?termId=${newsletter.termId}`,
           });
           break;
         case NewsletterType.SCHEDULES:
@@ -711,7 +711,7 @@ export class NewsletterService {
             school: newsletter.schoolName,
             term: newsletter.termName,
             title: newsletter.title || '수업 준비물',
-            shortlink: `${this.domain}/${shortlink?.nanoid}`,
+            shortlink: `${this.domain}/${shortlink?.nanoid}?termId=${newsletter.termId}`,
           });
           break;
         case NewsletterType.SUPPLIES:
@@ -719,7 +719,7 @@ export class NewsletterService {
             school: newsletter.schoolName,
             term: newsletter.termName,
             title: newsletter.title || '수업 일정변경',
-            shortlink: `${this.domain}/${shortlink?.nanoid}`,
+            shortlink: `${this.domain}/${shortlink?.nanoid}?termId=${newsletter.termId}`,
           });
           break;
         default:
