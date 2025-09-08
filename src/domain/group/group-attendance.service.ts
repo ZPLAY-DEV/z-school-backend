@@ -404,13 +404,15 @@ export class GroupAttendanceService {
           throw updateError;
         }
       }
-
-      // forgot to update schoolday.dailyStudentKeys
-      await this.updateSchooldayDailyStudentKeys(
-        schoolday,
-        dailyStudentKey,
-        dto.status,
-      );
+      if (typeof dto.parentNote === 'string') {
+        // 학부모가 글 남길때마다
+        // forgot to update schoolday.dailyStudentKeys
+        await this.updateSchooldayDailyStudentKeys(
+          schoolday,
+          dailyStudentKey,
+          dto.status,
+        );
+      }
 
       return result;
     } catch (err: any) {
