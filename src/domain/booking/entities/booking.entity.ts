@@ -23,8 +23,8 @@ export class Booking {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈵 termId', example: 1 })
-  @Column({ type: 'int', unsigned: true })
+  @ApiProperty({ description: '🈵 termId' })
+  @Column({ type: 'int', unsigned: true, nullable: true })
   termId: number;
 
   @ApiProperty({ description: '과목 ID', example: 1 })

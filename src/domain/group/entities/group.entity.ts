@@ -30,7 +30,7 @@ export class Group {
   id: number;
 
   @ApiProperty({ description: '🈵 termId', example: 1 })
-  @Column({ type: 'int', unsigned: true })
+  @Column({ type: 'int', unsigned: true, nullable: true })
   termId: number;
 
   @ApiProperty({ description: '🈵 samId', example: 1 })
