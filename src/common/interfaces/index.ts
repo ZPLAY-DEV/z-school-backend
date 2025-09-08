@@ -275,6 +275,7 @@ export type ITimeRange = {
 };
 
 export interface IBookingSnapshotItem {
+  termId: number;
   offeringId: number;
   studentId: number;
   lessonName: string;

@@ -964,6 +964,7 @@ export class LessonCoreService {
       ).join(',');
 
       const upsertData: DeepPartial<Group> = {
+        termId: lesson.termId,
         lessonId: lesson.id,
         groupName: groupData.groupName,
         samId: groupData.samId,

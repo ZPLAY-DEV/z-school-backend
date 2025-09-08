@@ -105,7 +105,6 @@ export class CreateGroupDto {
   })
   @IsOptional()
   @IsInt({ message: '수업료는 정수여야 합니다' })
-  @Min(0, { message: '수업료는 0원 이상이어야 합니다' })
   tuition?: number;
 
   @ApiPropertyOptional({
@@ -116,7 +115,6 @@ export class CreateGroupDto {
   })
   @IsOptional()
   @IsInt({ message: '도서비는 정수여야 합니다' })
-  @Min(0, { message: '도서비는 0원 이상이어야 합니다' })
   bookFee?: number;
 
   @ApiPropertyOptional({
@@ -127,7 +125,6 @@ export class CreateGroupDto {
   })
   @IsOptional()
   @IsInt({ message: '재료비는 정수여야 합니다' })
-  @Min(0, { message: '재료비는 0원 이상이어야 합니다' })
   materialFee?: number;
 
   @ApiPropertyOptional({
@@ -169,18 +166,26 @@ export class CreateGroupDto {
   })
   @IsOptional()
   @IsInt({ message: '강사 ID는 정수여야 합니다' })
-  @Min(1, { message: '강사 ID는 1 이상이어야 합니다' })
   instructorId?: number;
 
   @ApiPropertyOptional({
-    description: '수업 ID - 시스템에 등록된 수업의 고유 식별자',
+    description: '학기 ID',
+    type: Number,
+    example: 1,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt({ message: '학기 ID는 정수여야 합니다' })
+  termId?: number;
+
+  @ApiPropertyOptional({
+    description: '수업 ID',
     type: Number,
     example: 1,
     minimum: 1,
   })
   @IsOptional()
   @IsInt({ message: '수업 ID는 정수여야 합니다' })
-  @Min(1, { message: '수업 ID는 1 이상이어야 합니다' })
   lessonId?: number;
 }
 

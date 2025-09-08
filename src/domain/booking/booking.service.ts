@@ -75,6 +75,7 @@ export class BookingService {
     for (let i = 0; i < dto.studentIds.length; i++) {
       const waitingPosition = baseWaitingPosition + i + 1;
       const booking = this.bookingRepository.create({
+        termId: group.termId ?? 0,
         offeringId: group.offeringId ?? 0,
         studentId: dto.studentIds[i],
         lessonName: group.lesson.lessonName,
@@ -97,7 +98,7 @@ export class BookingService {
       let waitingPosition: number;
       let message: string;
 
-      await this.validateOfferingStatus(dto.offeringId);
+      await this.validateOffering(dto.offeringId);
 
       if (dto.pickRule === PickRule.ANYONE) {
         // 누구나
@@ -156,7 +157,7 @@ export class BookingService {
   async cancelWithDb(dto: CancelBookingDto): Promise<number> {
     const { offeringId, studentId } = dto;
 
-    await this.validateOfferingStatus(offeringId);
+    await this.validateOffering(offeringId);
 
     try {
       const { affected } = await this.bookingRepository.delete({
@@ -174,10 +175,11 @@ export class BookingService {
   //? ---------------------------------------------------------------------- ?//
 
   async createWithRedis(dto: CreateBookingDto): Promise<ResponseBookingDto> {
-    const { offeringId, studentId, lessonName, capacity, pickRule } = dto;
+    const { termId, offeringId, studentId, lessonName, capacity, pickRule } =
+      dto;
     const timestamp = Date.now();
 
-    await this.validateOfferingStatus(offeringId);
+    await this.validateOffering(offeringId);
 
     this.logger.log(
       '🚀 Redis booking payload',
@@ -227,6 +229,7 @@ export class BookingService {
         await this.sqsClient.sendMessage({
           type: 'CREATE_BOOKING',
           data: {
+            termId,
             offeringId,
             studentId,
             lessonName,
@@ -268,8 +271,7 @@ export class BookingService {
   async cancelWithRedis(dto: CancelBookingDto): Promise<number> {
     const { offeringId, studentId, lessonName } = dto;
     const timestamp = Date.now();
-
-    await this.validateOfferingStatus(offeringId);
+    const offering = await this.validateOffering(offeringId);
 
     try {
       const result = await this.redisBookingService.executeCancelScript(
@@ -280,7 +282,11 @@ export class BookingService {
       if (result.ok) {
         // snapshot 생성 (RedisBookingService에서)
         const snapshot: IBookingSnapshotItem[] =
-          await this.redisBookingService.getSnapshot(offeringId, lessonName);
+          await this.redisBookingService.getSnapshot(
+            offering.termId,
+            offeringId,
+            lessonName,
+          );
 
         // this.logger.log('🚀 snapshot', snapshot);
         // not fire and forget. need to wait for the result from sqs.
@@ -334,7 +340,7 @@ export class BookingService {
     );
   }
 
-  async validateOfferingStatus(offeringId: number): Promise<void> {
+  private async validateOffering(offeringId: number): Promise<Offering> {
     const offering = await this.offeringRepository.findOne({
       where: { id: offeringId },
     });
@@ -346,5 +352,7 @@ export class BookingService {
     if (offering.status === ClassStatus.CANCELED) {
       throw new UnprocessableEntityException('삭제된 수강신청과목 입니다.');
     }
+
+    return offering;
   }
 }

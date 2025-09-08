@@ -7,6 +7,7 @@ import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
   CreateDateColumn,
@@ -27,6 +28,10 @@ export class Group {
   @ApiProperty({ description: 'group 의 id', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
+
+  @ApiProperty({ description: '🈵 termId', example: 1 })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  termId: number;
 
   @ApiProperty({ description: '🈵 samId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
@@ -156,6 +161,10 @@ export class Group {
   @ManyToOne(() => Sam, (sam) => sam.groups, { nullable: true })
   @JoinColumn({ name: 'samId' })
   sam: Sam;
+
+  @ManyToOne(() => Term, (term) => term.groups)
+  @JoinColumn({ name: 'termId' })
+  term: Term;
 
   //* N-to-M belongsToMany with custom props using 1-to-M ------------------ *//
 

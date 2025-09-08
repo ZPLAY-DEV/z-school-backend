@@ -166,6 +166,7 @@ export class RedisBookingService implements OnModuleInit {
 
   // Cancel 시 sqs 에 전달할 snapshot 생성 로직
   async getSnapshot(
+    termId: number,
     offeringId: number,
     lessonName: string,
   ): Promise<IBookingSnapshotItem[]> {
@@ -193,6 +194,7 @@ export class RedisBookingService implements OnModuleInit {
       }
 
       return {
+        termId,
         offeringId,
         studentId: Number(id),
         lessonName,
