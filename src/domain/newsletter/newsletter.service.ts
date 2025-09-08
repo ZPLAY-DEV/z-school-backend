@@ -13,7 +13,7 @@ import { nanoid } from 'nanoid';
 import {
   NewsletterTarget,
   NewsletterType,
-  StudentStatus
+  StudentStatus,
 } from 'src/common/enums';
 import { SendStatus } from 'src/common/enums/send-status';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -275,17 +275,27 @@ export class NewsletterService {
   async findRegistrationNewsletter(
     schoolId: number,
     termId: number,
-  ): Promise<Newsletter> {
+  ): Promise<any> {
     const newsletter = await this.newsletterRepository.findOne({
       where: { schoolId, termId },
+      relations: ['dispatches'],
       order: { id: 'DESC' },
     });
 
     if (!newsletter) {
       throw new NotFoundException('Newsletter not found');
     }
+    let scheduledAt: Date | null = null;
+    let status: SendStatus | null = null;
 
-    return newsletter;
+    if (newsletter.dispatches && newsletter.dispatches.length > 0) {
+      scheduledAt = newsletter.dispatches[0].scheduledAt;
+      status = newsletter.dispatches[0].status;
+    }
+
+    delete (newsletter as any).dispatches;
+
+    return { ...newsletter, scheduledAt, status } as any;
   }
 
   async findById(id: number, relations?: string[]): Promise<Newsletter> {
