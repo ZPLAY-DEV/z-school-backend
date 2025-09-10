@@ -19,6 +19,7 @@ import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-dispatch.dto
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { GenerateS3UrlsDto } from 'src/domain/newsletter/dto/generate-s3-urls.dto';
 import { NewsletterWithReadStatsDto } from 'src/domain/newsletter/dto/newsletter-with-read-stats.dto';
+import { UpdateDispatchDto } from 'src/domain/newsletter/dto/update-dispatch.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Dispatch } from 'src/domain/newsletter/entities/dispatch.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
@@ -126,7 +127,7 @@ export class NewsletterController {
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateNewsletterDto,
+    @Body() dto: UpdateNewsletterDto & UpdateDispatchDto,
   ): Promise<Newsletter> {
     console.log(`🤮🤮🤮🤮🤮🤮🤮🤮 update ${id}`, JSON.stringify(dto, null, 2));
     return await this.newsletterService.update(id, dto);
