@@ -56,6 +56,7 @@ export class NewsletterController {
   createNewsletter(
     @Body() dto: CreateNewsletterDto & CreateDispatchDto,
   ): Promise<Newsletter> {
+    console.log('😳😳😳😳😳😳😳😳 create', JSON.stringify(dto, null, 2));
     return this.newsletterService.createNewsletter(dto);
   }
 
@@ -127,6 +128,7 @@ export class NewsletterController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateNewsletterDto,
   ): Promise<Newsletter> {
+    console.log(`🤮🤮🤮🤮🤮🤮🤮🤮 update ${id}`, JSON.stringify(dto, null, 2));
     return await this.newsletterService.update(id, dto);
   }
 

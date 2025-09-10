@@ -173,6 +173,8 @@ export class S3Service implements OnModuleInit {
         expiresIn,
       });
 
+      console.log('😳😳😳😳😳😳😳😳 signedUrl', signedUrl);
+
       // development 환경에서 localstack URL을 ngrok URL로 변환
       let finalUrl = signedUrl;
       if (this.configService.get<string>('nodeEnv') === 'dev') {
