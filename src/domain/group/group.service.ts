@@ -305,7 +305,7 @@ export class GroupService {
         phone: pick.student.phone,
         parentPhone: pick.student.parent.phone,
         nextStops: pick.student.nextStops,
-        note: pick.student.note,
+        note: pick.note,
         startedBy: pick.startedBy,
         endedBy: pick.endedBy,
         start: pick.start || null,

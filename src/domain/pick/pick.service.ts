@@ -255,7 +255,7 @@ export class PickService {
   }
 
   // 수동등록 (중간전입)
-  // 필수항목) groupId, studentId, offeringId, termId, start
+  // 필수항목) groupId, studentId, offeringId, termId, start, note(optional)
   async endPick(dto: EndPickDto): Promise<Pick> {
     const pick = await this.pickRepository.findOneOrFail({
       where: { groupId: dto.groupId, studentId: dto.studentId },
