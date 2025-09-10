@@ -78,16 +78,6 @@ export class UpdateStudentDto {
   phone?: string;
 
   @ApiPropertyOptional({
-    description: '요일별 하교장소 (문자열 형식 - 레거시 지원)',
-    type: String,
-    example: 'comma separated string',
-    maxLength: 255,
-  })
-  @IsOptional()
-  @IsString({ message: '하교후 가는 곳은 문자열이어야 합니다' })
-  nextStop?: string;
-
-  @ApiPropertyOptional({
     description: '요일별 하교장소 정보 (배열 형식 - 권장)',
     type: [DailyNextStopDto],
     example: [

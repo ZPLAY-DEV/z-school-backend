@@ -9,8 +9,11 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Group } from 'src/domain/group/entities/group.entity';
+import {
+  ResponseSchooldayItemDto,
+  ResponseWeeklySchooldayDto,
+} from 'src/domain/school/dto/response-student-schoolday.dto';
 import { SchoolTermSamService } from 'src/domain/school/school-term-sam.service';
-import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { ResponseSchoolTermSamOfferingDto } from './dto/response-school-term-sam-offering.dto';
 import {
   SchoolTermSamOfferingsDocs,
@@ -57,7 +60,7 @@ export class SchoolTermSamController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
     @Param('samId', ParseIntPipe) samId: number,
-  ): Promise<Schoolday[]> {
+  ): Promise<ResponseSchooldayItemDto[]> {
     return await this.schoolTermSamService.listSchooldays(
       schoolId,
       termId,
@@ -72,7 +75,7 @@ export class SchoolTermSamController {
     @Param('termId', ParseIntPipe) termId: number,
     @Param('samId', ParseIntPipe) samId: number,
     @Query('date') date?: string,
-  ): Promise<Record<string, Schoolday[]>> {
+  ): Promise<ResponseWeeklySchooldayDto> {
     return await this.schoolTermSamService.listWeeklySchooldays(
       schoolId,
       termId,

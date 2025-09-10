@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude } from 'class-transformer';
 import { StudentStatus } from 'src/common/enums';
-import { IDailyEscort } from 'src/common/interfaces';
+import { INextStop } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
@@ -9,7 +9,6 @@ import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
-import { normalizePhone } from 'src/helpers/phone';
 import {
   Column,
   CreateDateColumn,
@@ -22,7 +21,6 @@ import {
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
-import { DailyNextStopDto } from '../dto/update-student-next-stop.dto';
 
 @Entity('students')
 @Unique(['schoolId', 'grade', 'class', 'studentCode'])
@@ -92,12 +90,11 @@ export class Student {
 
   @ApiProperty({ description: '요일별 하교후 목적지', example: 'encrypted' })
   @Column({
-    type: 'varchar',
-    length: 255,
+    type: 'json',
     nullable: true,
     comment: 'weekNumber 별 하교후 목적지',
   })
-  nextStop: string | null;
+  nextStops: INextStop[];
 
   @ApiProperty({ description: '🈳 비고', example: '비고내용' })
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -151,59 +148,5 @@ export class Student {
 
   constructor(partial: Partial<Student>) {
     Object.assign(this, partial);
-  }
-
-  //? Getters -------------------------------------------------------------- ?//
-
-  @Expose()
-  @ApiProperty({
-    description: '요일별 하교후 목적지 정보',
-    example: [{ place: '집', name: '엄마', phone: '01012345678' }],
-  })
-  get nextStops(): IDailyEscort[] {
-    const stops = this.nextStop?.split(',') || [];
-
-    if (stops.length < 6) {
-      return stops.length > 0
-        ? [
-            {
-              place: stops[0].split('|')[0] || '',
-              name: stops[0].split('|')[1] || '',
-              phone: stops[0].split('|')[2] || '',
-            },
-          ]
-        : [{ place: '', name: '', phone: '' }];
-    } else {
-      return stops.map((stop) => ({
-        place: stop.split('|')[0] || '',
-        name: stop.split('|')[1] || '',
-        phone: stop.split('|')[2] || '',
-      }));
-    }
-  }
-
-  //? Setters -------------------------------------------------------------- ?//
-
-  /**
-   * DailyNextStopDto[] 배열을 받아서 nextStop 필드를 설정
-   * @param dtos - 요일별 하교장소 정보 배열
-   */
-  setNextStops(dtos: DailyNextStopDto[]): void {
-    if (!dtos || dtos.length === 0) {
-      this.nextStop = null;
-      return;
-    }
-
-    if (dtos.length < 6) {
-      const firstItem = dtos[0];
-      this.nextStop = `${firstItem.place}|${firstItem.name || ''}|${normalizePhone(firstItem.phone || '') || ''}`;
-    } else {
-      this.nextStop = dtos
-        .map(
-          (dto) =>
-            `${dto.place}|${dto.name || ''}|${normalizePhone(dto.phone || '') || ''}`,
-        )
-        .join(',');
-    }
   }
 }

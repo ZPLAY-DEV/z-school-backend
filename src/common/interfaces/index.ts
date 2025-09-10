@@ -180,7 +180,7 @@ export interface IRequestUser {
   role: Role;
   refreshToken?: string;
 }
-export interface IDailyEscort {
+export interface INextStop {
   place: string;
   name: string | null;
   phone: string | null;

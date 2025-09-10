@@ -10,12 +10,17 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
+// import { IWeeklySchedule } from 'src/common/interfaces';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { SchoolTermStudentService } from 'src/domain/school/school-term-student.service';
-import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+// import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { ResponseSchoolTermStudentBookingsDto } from './dto/response-school-term-student-bookings.dto';
+import {
+  ResponseSchooldayItemDto,
+  ResponseWeeklySchooldayDto,
+} from './dto/response-student-schoolday.dto';
 import {
   SchoolTermStudentBookingsDocs,
   SchoolTermStudentBookingStatsDocs,
@@ -87,7 +92,7 @@ export class SchoolTermStudentController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
     @Param('studentId', ParseIntPipe) studentId: number,
-  ): Promise<Schoolday[]> {
+  ): Promise<ResponseSchooldayItemDto[]> {
     return await this.schoolTermStudentService.listSchooldays(
       schoolId,
       termId,
@@ -102,7 +107,7 @@ export class SchoolTermStudentController {
     @Param('termId', ParseIntPipe) termId: number,
     @Param('studentId', ParseIntPipe) studentId: number,
     @Query('date') date?: string,
-  ): Promise<Record<string, Schoolday[]>> {
+  ): Promise<ResponseWeeklySchooldayDto> {
     return await this.schoolTermStudentService.listWeeklySchooldays(
       schoolId,
       termId,

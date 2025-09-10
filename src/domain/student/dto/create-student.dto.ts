@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsDefined,
   IsEnum,
   IsInt,
@@ -13,7 +14,9 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
+import { INextStop } from 'src/common/interfaces';
 import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
+import { DailyNextStopDto } from 'src/domain/student/dto/update-student-next-stop.dto';
 
 /**
  * 학생 생성 DTO
@@ -115,13 +118,14 @@ export class CreateStudentDto {
 
   @ApiPropertyOptional({
     description: '요일별 하교장소',
-    type: [String],
+    type: [DailyNextStopDto],
     example: 'comma separated string',
     maxLength: 255,
   })
   @IsOptional()
-  @IsString({ message: '하교후 가는 곳은 문자열이어야 합니다' })
-  nextStop?: string;
+  @IsArray({ message: '하교후 가는 곳은 문자열이어야 합니다' })
+  @Type(() => DailyNextStopDto)
+  nextStops?: INextStop[];
 
   @ApiPropertyOptional({
     description: '비고 - 학생에 대한 추가 정보나 특이사항 (최대 255자)',

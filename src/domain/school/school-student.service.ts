@@ -308,7 +308,7 @@ export class SchoolStudentService {
       .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .join(', ');
 
-    const studentValues: (string | number | null)[] = dtos.flatMap((dto) => [
+    const studentValues = dtos.flatMap((dto) => [
       dto.name || null,
       dto.parent.phone ? parentMap.get(dto.parent.phone) || null : null,
       schoolId,
@@ -316,7 +316,7 @@ export class SchoolStudentService {
       dto.class || null,
       dto.studentCode || null,
       dto.phone || null,
-      dto.nextStop || null,
+      dto.nextStops || null,
       dto.note || null,
       dto.status || 'ATTENDING',
     ]);
@@ -331,7 +331,7 @@ export class SchoolStudentService {
         class,
         studentCode,
         phone,
-        nextStop,
+        nextStops,
         note,
         status
       )
@@ -343,7 +343,7 @@ export class SchoolStudentService {
         class,
         studentCode,
         phone,
-        nextStop,
+        nextStops,
         note,
         status
       )
@@ -355,7 +355,7 @@ export class SchoolStudentService {
         parentId = new_student.parentId,
         studentCode = new_student.studentCode,
         phone = new_student.phone,
-        nextStop = new_student.nextStop,
+        nextStops = new_student.nextStops,
         note = new_student.note,
         status = new_student.status
     `,

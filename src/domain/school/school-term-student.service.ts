@@ -10,6 +10,7 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { Weekday } from 'src/common/enums';
+// import { IGroup, IScheduleItem, IWeeklySchedule } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
@@ -18,6 +19,11 @@ import { Student } from 'src/domain/student/entities/student.entity';
 import { getEnglishWeekday } from 'src/helpers/date';
 import { Repository } from 'typeorm';
 import { ResponseSchoolTermStudentBookingsDto } from './dto/response-school-term-student-bookings.dto';
+import {
+  ResponseGroupSlimDto,
+  ResponseSchooldayItemDto,
+  ResponseWeeklySchooldayDto,
+} from './dto/response-student-schoolday.dto';
 
 @Injectable()
 export class SchoolTermStudentService {
@@ -162,7 +168,7 @@ export class SchoolTermStudentService {
     schoolId: number,
     termId: number,
     studentId: number,
-  ): Promise<Schoolday[]> {
+  ): Promise<ResponseSchooldayItemDto[]> {
     const queryBuilder = this.studentRepository
       .createQueryBuilder('student')
       .leftJoinAndSelect('student.picks', 'pick')
@@ -193,7 +199,50 @@ export class SchoolTermStudentService {
     // 시간순 정렬
     schooldays.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 
-    return schooldays;
+    // DTO로 변환 (startsAt/endsAt 등은 ISO 문자열로 변환)
+    const items: ResponseSchooldayItemDto[] = schooldays.map((sd) => ({
+      id: sd.id,
+      schoolId: sd.schoolId,
+      termId: sd.termId,
+      lessonId: sd.lessonId,
+      groupId: sd.groupId,
+      name: sd.name,
+      startsAt: sd.startsAt?.toISOString() ?? (null as unknown as string), // ensure string
+      endsAt: sd.endsAt?.toISOString() ?? (null as unknown as string),
+      duration: sd.duration,
+      updatedBy: sd.updatedBy,
+      note: sd.note,
+      startNotifiedAt: sd.startNotifiedAt
+        ? sd.startNotifiedAt.toISOString()
+        : null,
+      endNotifiedAt: sd.endNotifiedAt ? sd.endNotifiedAt.toISOString() : null,
+      group: {
+        id: sd.group.id,
+        termId: sd.group.termId ?? null,
+        samId: sd.group.samId ?? null,
+        lessonId: sd.group.lessonId,
+        offeringId: sd.group.offeringId ?? null,
+        groupName: sd.group.groupName,
+        samName: sd.group.samName ?? null,
+        location: sd.group.location ?? null,
+        capacity: sd.group.capacity,
+        allowedGrades: sd.group.allowedGrades,
+        weekday: sd.group.weekday,
+        start: sd.group.start,
+        end: sd.group.end,
+        status: sd.group.status,
+        tuition: sd.group.tuition,
+        bookFee: sd.group.bookFee,
+        materialFee: sd.group.materialFee,
+        days: sd.group.days,
+        deletedBy: sd.group.deletedBy ?? null,
+        note: sd.group.note ?? null,
+        createdAt: sd.group.createdAt,
+        updatedAt: sd.group.updatedAt,
+      },
+    }));
+
+    return items;
   }
 
   async listWeeklySchooldays(
@@ -201,7 +250,7 @@ export class SchoolTermStudentService {
     termId: number,
     studentId: number,
     date?: string,
-  ): Promise<Record<string, Schoolday[]>> {
+  ): Promise<ResponseWeeklySchooldayDto> {
     try {
       // 1. date 파라미터 처리 (null이면 오늘 날짜)
       const targetDate = date ? new Date(date) : new Date();
@@ -212,7 +261,6 @@ export class SchoolTermStudentService {
         kstDate = toZonedTime(targetDate, 'Asia/Seoul');
       } catch (timezoneError) {
         this.logger.warn('시간대 변환 실패, 로컬 시간 사용:', timezoneError);
-        // 시간대 변환 실패시 로컬 시간 사용
         kstDate = targetDate;
       }
 
@@ -220,25 +268,71 @@ export class SchoolTermStudentService {
       const weekStart = startOfWeek(kstDate, { weekStartsOn: 0 }); // 일요일부터 시작
       const weekEnd = endOfWeek(kstDate, { weekStartsOn: 0 }); // 토요일까지
 
-      // 4. 먼저 학생 존재 여부 확인 (주별 필터링 없이)
-      const student = await this.studentRepository
+      // 4. 최적화된 쿼리로 schoolday와 group 정보를 한번에 조회
+      const schooldayResults = await this.studentRepository
         .createQueryBuilder('student')
-        .leftJoinAndSelect('student.picks', 'pick')
-        .leftJoinAndSelect('pick.group', 'group')
-        .leftJoinAndSelect('group.schooldays', 'schoolday')
-        .leftJoinAndSelect('schoolday.group', 'schooldayGroup')
+        .innerJoin('student.picks', 'pick')
+        .innerJoin('pick.group', 'group')
+        .innerJoin('group.schooldays', 'schoolday')
+        .select([
+          'schoolday.id',
+          'schoolday.schoolId',
+          'schoolday.termId',
+          'schoolday.lessonId',
+          'schoolday.groupId',
+          'schoolday.name',
+          'schoolday.startsAt',
+          'schoolday.endsAt',
+          'schoolday.duration',
+          'schoolday.updatedBy',
+          'schoolday.note',
+          'schoolday.startNotifiedAt',
+          'schoolday.endNotifiedAt',
+          'group.id',
+          'group.termId',
+          'group.samId',
+          'group.lessonId',
+          'group.offeringId',
+          'group.groupName',
+          'group.samName',
+          'group.location',
+          'group.capacity',
+          'group.allowedGrades',
+          'group.weekday',
+          'group.start',
+          'group.end',
+          'group.status',
+          'group.tuition',
+          'group.bookFee',
+          'group.materialFee',
+          'group.days',
+          'group.deletedBy',
+          'group.note',
+          'group.createdAt',
+          'group.updatedAt',
+        ])
         .where('student.id = :studentId', { studentId })
         .andWhere('student.schoolId = :schoolId', { schoolId })
         .andWhere('pick.termId = :termId', { termId })
         .andWhere('pick.isActive = :isActive', { isActive: true })
-        .getOne();
+        .andWhere('schoolday.startsAt >= :weekStart', { weekStart })
+        .andWhere('schoolday.startsAt <= :weekEnd', { weekEnd })
+        .orderBy('schoolday.startsAt', 'ASC')
+        .getRawMany();
 
-      if (!student) {
-        throw new NotFoundException('Student not found');
+      if (schooldayResults.length === 0) {
+        // 학생이 존재하지 않거나 해당 주에 수업이 없는 경우
+        const studentExists = await this.studentRepository.findOne({
+          where: { id: studentId, schoolId },
+        });
+
+        if (!studentExists) {
+          throw new NotFoundException('Student not found');
+        }
       }
 
-      // 5. 요일별로 그룹화
-      const result: Record<string, Schoolday[]> = {
+      // 5. 요일별로 그룹화하고 DTO 변환
+      const result: ResponseWeeklySchooldayDto = {
         SUN: [],
         MON: [],
         TUE: [],
@@ -248,36 +342,62 @@ export class SchoolTermStudentService {
         SAT: [],
       };
 
-      // 6. 학생의 picks에서 해당 주의 schooldays만 추출 및 그룹화
-      student.picks?.forEach((pick) => {
-        if (pick.group && pick.group.schooldays) {
-          pick.group.schooldays.forEach((schoolday) => {
-            // 해당 주에 속하는 schoolday만 필터링
-            if (
-              schoolday.startsAt >= weekStart &&
-              schoolday.startsAt <= weekEnd
-            ) {
-              // schoolday의 시작 시각으로 요일 결정
-              const dayOfWeek = schoolday.startsAt.getDay();
-              const weekdayKey = [
-                'SUN',
-                'MON',
-                'TUE',
-                'WED',
-                'THU',
-                'FRI',
-                'SAT',
-              ][dayOfWeek];
+      // 6. Raw 결과를 IScheduleItem으로 변환하고 요일별로 분류
+      schooldayResults.forEach((row) => {
+        const dayOfWeek = new Date(row.schoolday_startsAt as string).getDay();
+        const weekdayKey = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][
+          dayOfWeek
+        ] as keyof ResponseWeeklySchooldayDto;
 
-              result[weekdayKey].push(schoolday);
-            }
-          });
-        }
-      });
+        // Group 엔티티를 슬림 DTO로 변환
+        const groupData: ResponseGroupSlimDto = {
+          id: row.group_id,
+          termId: row.group_termId,
+          samId: row.group_samId,
+          lessonId: row.group_lessonId,
+          offeringId: row.group_offeringId,
+          groupName: row.group_groupName,
+          samName: row.group_samName,
+          location: row.group_location,
+          capacity: row.group_capacity,
+          allowedGrades: row.group_allowedGrades,
+          weekday: row.group_weekday,
+          start: row.group_start,
+          end: row.group_end,
+          status: row.group_status,
+          tuition: row.group_tuition,
+          bookFee: row.group_bookFee,
+          materialFee: row.group_materialFee,
+          days: row.group_days,
+          deletedBy: row.group_deletedBy,
+          note: row.group_note,
+          createdAt: row.group_createdAt,
+          updatedAt: row.group_updatedAt,
+        };
 
-      // 7. 각 요일별로 시간 순으로 정렬
-      Object.keys(result).forEach((day) => {
-        result[day].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+        // Schoolday를 DTO로 변환
+        const scheduleItem: ResponseSchooldayItemDto = {
+          id: row.schoolday_id,
+          schoolId: row.schoolday_schoolId,
+          termId: row.schoolday_termId,
+          lessonId: row.schoolday_lessonId,
+          groupId: row.schoolday_groupId,
+          name: row.schoolday_name,
+          startsAt: (row.schoolday_startsAt as Date).toISOString(),
+          endsAt: (row.schoolday_endsAt as Date).toISOString(),
+          duration: row.schoolday_duration,
+          updatedBy: row.schoolday_updatedBy,
+          note: row.schoolday_note,
+          startNotifiedAt: row.schoolday_startNotifiedAt
+            ? (row.schoolday_startNotifiedAt as Date).toISOString()
+            : null,
+          endNotifiedAt: row.schoolday_endNotifiedAt
+            ? (row.schoolday_endNotifiedAt as Date).toISOString()
+            : null,
+          group: groupData,
+        };
+
+        result[weekdayKey].push(scheduleItem);
       });
 
       return result;

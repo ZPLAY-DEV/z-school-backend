@@ -170,7 +170,6 @@ export class StudentService {
       const normalizedStudentDto = {
         ...studentDto,
         ...(studentDto.phone && { phone: normalizePhone(studentDto.phone) }),
-        ...(studentDto.nextStop && { nextStop: studentDto.nextStop }),
       };
 
       // 3. Student 생성
@@ -546,7 +545,7 @@ export class StudentService {
     }
 
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      const { parent: parentDto, parentId, nextStops, ...studentDto } = dto;
+      const { parent: parentDto, parentId, ...studentDto } = dto;
 
       // 부모 정보 처리
       let finalParentId = existingStudent.parentId;
@@ -561,12 +560,6 @@ export class StudentService {
             termsAgreedAt: parentDto.termsAgreedAt,
           }),
         });
-      }
-
-      // nextStops 처리
-      if (nextStops) {
-        const nextStop = this._convertToString(nextStops);
-        studentDto.nextStop = nextStop;
       }
 
       // 학생 데이터 정리
@@ -633,11 +626,8 @@ export class StudentService {
       throw new NotFoundException(`Student with ID ${id} not found`);
     }
 
-    // nextStop 필드를 파이프(|)로 구분된 문자열로 저장
-    const nextStop = this._convertToString(dtos);
-
     await this.studentRepository.update(id, {
-      nextStop: nextStop,
+      nextStops: dtos,
     });
 
     return await this.studentRepository.findOneOrFail({
@@ -680,29 +670,6 @@ export class StudentService {
       where: { id },
       withDeleted: true,
     });
-  }
-
-  /**
-   * 하교장소 DTO를 파이프(|)로 구분된 문자열로 변환
-   * 형식: "장소|이름|전화번호,장소|이름|전화번호,..."
-   * null 값은 빈 문자열로 처리
-   */
-  private _convertToString(dtos: DailyNextStopDto[]): string {
-    if (!dtos || dtos.length === 0) {
-      return '';
-    }
-
-    if (dtos.length < 6) {
-      const firstItem = dtos[0];
-      return `${firstItem.place}|${firstItem.name || ''}|${normalizePhone(firstItem.phone || '') || ''}`;
-    } else {
-      return dtos
-        .map(
-          (dto) =>
-            `${dto.place}|${dto.name || ''}|${normalizePhone(dto.phone || '') || ''}`,
-        )
-        .join(',');
-    }
   }
 
   private async fetchByAttendanceKeys(

@@ -154,7 +154,7 @@ export class LessonAttendanceService {
           'grade',
           'class',
           'studentCode',
-          'nextStop',
+          'nextStops',
           'parent',
         ],
       });

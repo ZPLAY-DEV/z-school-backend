@@ -10,7 +10,7 @@ import * as dynamoose from 'dynamoose';
 import * as ExcelJS from 'exceljs';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AlarmType, AttendanceStatus } from 'src/common/enums';
-import { IDailyEscort } from 'src/common/interfaces';
+import { INextStop } from 'src/common/interfaces';
 import {
   CreateAttendanceWithGroupStudentDto,
   CreateAttendanceWithKeyDto,
@@ -646,7 +646,7 @@ export class GroupAttendanceService {
           'grade',
           'class',
           'studentCode',
-          'nextStop',
+          'nextStops',
           'parent',
         ],
       });
@@ -1408,7 +1408,7 @@ export class GroupAttendanceService {
     }
   }
 
-  private getStudentEscort(date: string, stops?: IDailyEscort[]): IDailyEscort {
+  private getStudentEscort(date: string, stops?: INextStop[]): INextStop {
     const dateObj = parse(date, 'yyyy-MM-dd', new Date());
     const weekday = getDay(dateObj);
     if (!stops) {

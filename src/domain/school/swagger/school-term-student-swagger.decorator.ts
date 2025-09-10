@@ -15,9 +15,9 @@ import {
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { ResponseSchoolTermStudentBookingsDto } from '../dto/response-school-term-student-bookings.dto';
+import { ResponseSchooldayItemDto, ResponseWeeklySchooldayDto } from '../dto/response-student-schoolday.dto';
 
 // Group 페이지네이션 설정
 const GROUP_CONFIG: PaginateConfig<Group> = {
@@ -533,8 +533,8 @@ GET /schools/1/terms/1/students/123/schooldays
       example: 1,
     }),
     ApiOkResponseTemplate({
-      description: '✅ 학생 수업일 목록 (Group 정보 포함)',
-      type: Schoolday,
+      description: '✅ 학생 수업일 목록 (슬림 DTO)',
+      type: ResponseSchooldayItemDto,
       isArray: true,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
@@ -1085,48 +1085,9 @@ GET /schools/1/terms/1/students/123/weekly-schooldays?date=2024-06-03
         pattern: '^\\d{4}-\\d{2}-\\d{2}$',
       },
     }),
-    ApiOkResponse({
-      description: '✅ 학생 주간 수업일 요일별 목록 (Group 정보 포함)',
-      schema: {
-        type: 'object',
-        properties: {
-          SUN: {
-            type: 'array',
-            items: { $ref: '#/components/schemas/Schoolday' },
-            description: '일요일 수업일 목록',
-          },
-          MON: {
-            type: 'array',
-            items: { $ref: '#/components/schemas/Schoolday' },
-            description: '월요일 수업일 목록',
-          },
-          TUE: {
-            type: 'array',
-            items: { $ref: '#/components/schemas/Schoolday' },
-            description: '화요일 수업일 목록',
-          },
-          WED: {
-            type: 'array',
-            items: { $ref: '#/components/schemas/Schoolday' },
-            description: '수요일 수업일 목록',
-          },
-          THU: {
-            type: 'array',
-            items: { $ref: '#/components/schemas/Schoolday' },
-            description: '목요일 수업일 목록',
-          },
-          FRI: {
-            type: 'array',
-            items: { $ref: '#/components/schemas/Schoolday' },
-            description: '금요일 수업일 목록',
-          },
-          SAT: {
-            type: 'array',
-            items: { $ref: '#/components/schemas/Schoolday' },
-            description: '토요일 수업일 목록',
-          },
-        },
-      },
+    ApiOkResponseTemplate({
+      description: '✅ 학생 주간 수업일 요일별 목록 (슬림 DTO)',
+      type: ResponseWeeklySchooldayDto,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );

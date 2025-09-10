@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 import { Actor, StudentStatus } from 'src/common/enums';
-import { IDailyEscort } from 'src/common/interfaces';
+import { INextStop } from 'src/common/interfaces';
 
 export class PickedStudentDto {
   @ApiProperty({
@@ -74,7 +74,7 @@ export class PickedStudentDto {
     description: '요일별 하교후 목적지',
     example: [{ place: '집', name: '엄마', phone: '01012345678' }],
   })
-  nextStops: IDailyEscort[];
+  nextStops: INextStop[];
 
   @ApiProperty({
     description: '비고',
