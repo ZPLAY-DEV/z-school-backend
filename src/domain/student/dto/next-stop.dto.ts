@@ -4,7 +4,7 @@ import { IsOptional, IsString } from 'class-validator';
 /**
  * 요일별 하교장소 정보 DTO
  */
-export class DailyNextStopDto {
+export class NextStopDto {
   @ApiProperty({
     description: '하교 후 가는 장소',
     type: String,

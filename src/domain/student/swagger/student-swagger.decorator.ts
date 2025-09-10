@@ -25,7 +25,7 @@ import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
-import { DailyNextStopDto } from 'src/domain/student/dto/update-student-next-stop.dto';
+import { NextStopDto } from 'src/domain/student/dto/next-stop.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 
@@ -749,7 +749,7 @@ export const UpdateStudentNextStopDocs = () =>
       example: 1,
     }),
     ApiBody({
-      type: DailyNextStopDto,
+      type: NextStopDto,
       examples: {
         complete_update: {
           summary: '전체 하교장소 정보 수정',

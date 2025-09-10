@@ -31,8 +31,8 @@ import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
+import { NextStopDto } from 'src/domain/student/dto/next-stop.dto';
 import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
-import { DailyNextStopDto } from 'src/domain/student/dto/update-student-next-stop.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -69,7 +69,11 @@ export class StudentService {
    * 학생이 속한 학교의 term 중에서 status에 따라 term 반환
    * @param filter - 없으면 upcoming만, 'ongoing'이면 upcoming + ongoing 모두 반환
    */
-  async getStudentTerms(id: number, filter?: string): Promise<Term[]> {
+  async getStudentTerms(
+    id: number,
+    filter?: string,
+    // schoolId?: number,
+  ): Promise<Term[]> {
     const today = format(new Date(), 'yyyy-MM-dd', { timeZone: 'Asia/Seoul' });
 
     const student = await this.studentRepository.findOneOrFail({
@@ -613,10 +617,7 @@ export class StudentService {
    * 요일별 하교 후 가는 장소와 함께 가는 사람 정보를 업데이트합니다.
    * @deprecated update() 메서드의 nextStops 필드를 사용하세요.
    */
-  async updateEscortInfo(
-    id: number,
-    dtos: DailyNextStopDto[],
-  ): Promise<Student> {
+  async updateEscortInfo(id: number, dtos: NextStopDto[]): Promise<Student> {
     const student = await this.studentRepository.findOne({
       where: { id },
       relations: ['parent'],

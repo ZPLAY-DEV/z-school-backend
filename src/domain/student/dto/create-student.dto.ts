@@ -14,9 +14,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
-import { INextStop } from 'src/common/interfaces';
 import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
-import { DailyNextStopDto } from 'src/domain/student/dto/update-student-next-stop.dto';
+import { NextStopDto } from 'src/domain/student/dto/next-stop.dto';
 
 /**
  * 학생 생성 DTO
@@ -116,16 +115,20 @@ export class CreateStudentDto {
   @MaxLength(16, { message: '학생 전화번호는 16자 이하여야 합니다' })
   phone?: string;
 
+  @IsOptional()
+  @IsString({ message: '하교후 가는 곳은 문자열이어야 합니다' })
+  nextStop?: string | null;
+
   @ApiPropertyOptional({
     description: '요일별 하교장소',
-    type: [DailyNextStopDto],
+    type: [NextStopDto],
     example: 'comma separated string',
     maxLength: 255,
   })
   @IsOptional()
   @IsArray({ message: '하교후 가는 곳은 문자열이어야 합니다' })
-  @Type(() => DailyNextStopDto)
-  nextStops?: INextStop[];
+  @Type(() => NextStopDto)
+  nextStops?: NextStopDto[];
 
   @ApiPropertyOptional({
     description: '비고 - 학생에 대한 추가 정보나 특이사항 (최대 255자)',

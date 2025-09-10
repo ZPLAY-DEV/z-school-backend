@@ -76,6 +76,7 @@ export class StudentController {
   async getStudentTerms(
     @Param('id') id: number,
     @Query('filter') filter?: string,
+    // @Query('schoolId') schoolId?: number,
   ): Promise<Term[]> {
     return await this.studentService.getStudentTerms(id, filter);
   }

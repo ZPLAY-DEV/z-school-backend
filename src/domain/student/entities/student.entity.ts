@@ -88,6 +88,10 @@ export class Student {
   // @Column({ type: 'varchar', length: 16, nullable: true })
   // escortPhone: string | null;
 
+  @ApiProperty({ description: 'deprecated', example: 'deprecated' })
+  @Column({ type: 'varchar', length: 4, nullable: true })
+  nextStop: string | null;
+
   @ApiProperty({ description: '요일별 하교후 목적지', example: 'encrypted' })
   @Column({
     type: 'json',
