@@ -34,6 +34,7 @@ import {
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { GroupService } from 'src/domain/group/group.service';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -63,6 +64,7 @@ export class GroupAttendanceService {
     @InjectModel('Attendance')
     private readonly model: Model<IAttendance, IAttendanceKey>,
     private readonly notificationService: NotificationService,
+    private readonly groupService: GroupService,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -359,7 +361,9 @@ export class GroupAttendanceService {
       dailyStudentKey,
     };
 
-    // ✅ upsert용 데이터 준비 (기존 조회 불필요)
+    // 새로운 로직: 특정일의 모든 수강생 출석 레코드를 생성하고 집계하여 MySQL 업데이트
+    await this._ensureAllStudentsAttendanceRecords(date, group);
+    // upsert용 데이터 준비
     const upsertData: Partial<IAttendance> = {
       ...filterNoSql(dto), // status, parentNote, schoolNote
       lessonId: group.lessonId,
@@ -374,62 +378,162 @@ export class GroupAttendanceService {
       expires,
     };
 
-    // parentNote가 업데이트되는 경우에만 parentNotedAt 설정
-    // if (typeof dto.parentNote === 'string') {
-    //   upsertData.parentNotedAt = new Date();
-    // }
-    // schoolNote가 업데이트되는 경우에만 schoolNotedAt 설정
-    // if (typeof dto.schoolNote === 'string') {
-    //   upsertData.schoolNotedAt = new Date();
-    // }
+    const updatedDailyStudentKeys =
+      dto.status === AttendanceStatus.EXCUSED_ABSENT
+        ? Array.from(
+            new Set([...(schoolday.dailyStudentKeys ?? []), dailyStudentKey]),
+          )
+        : [...(schoolday.dailyStudentKeys ?? [])];
+    const result = await this._updateTargetStudentAttendance(
+      itemKey,
+      upsertData,
+    );
+    // DynamoDB 레코드 집계하여 MySQL count 필드 업데이트
+    await this._updateSchooldayFromDynamoDB(
+      group.id,
+      date,
+      updatedDailyStudentKeys,
+    );
 
-    try {
-      // ✅ 개선된 upsert: update 먼저 시도, 실패하면 create
-      let result: IAttendance;
+    return result;
+  }
 
-      try {
-        // 1차 시도: update (기존 아이템 업데이트)
-        result = await this.model.update(itemKey, upsertData);
-      } catch (updateError: any) {
-        // update 실패시 (아이템이 없거나 다른 이유) create 시도
-        if (
-          updateError.message?.includes('no item found') ||
-          updateError.name === 'ValidationException'
-        ) {
-          result = await this.model.create({
-            ...itemKey,
-            ...upsertData,
-          });
-        } else {
-          throw updateError;
-        }
-      }
-      if (typeof dto.parentNote === 'string') {
-        // 학부모가 글 남길때마다
-        // forgot to update schoolday.dailyStudentKeys
-        await this.updateSchooldayDailyStudentKeys(
-          schoolday,
-          dailyStudentKey,
-          dto.status,
-        );
-      }
+  /**
+   * 특정일의 모든 수강생 출석 레코드를 생성합니다.
+   * DynamoDB에 없는 학생들의 기본 출석 레코드를 생성합니다.
+   */
+  private async _ensureAllStudentsAttendanceRecords(
+    date: string,
+    group: Group,
+  ): Promise<void> {
+    // 1. 그룹의 모든 활성 수강생 목록 가져오기
+    const students = await this.groupService.listStudents(group.id, '1');
 
-      return result;
-    } catch (err: any) {
-      console.error(`[dynamoose v4] upsert error`, err);
-
-      // DynamoDB 특화 에러 처리
-      if (err.name === 'ConditionalCheckFailedException') {
-        throw new BadRequestException(
-          '출석 데이터 업데이트 조건이 맞지 않습니다.',
-        );
-      }
-      if (err.name === 'ValidationException') {
-        throw new BadRequestException(`데이터 검증 실패: ${err.message}`);
-      }
-
-      throw new BadRequestException(`출석 데이터 upsert 실패: ${err.message}`);
+    if (students.length === 0) {
+      return;
     }
+
+    // 2. 현재 DynamoDB에 있는 출석 레코드들 가져오기
+    const existingRecords = await fetchAllAttendanceItems(
+      this.model,
+      group.id,
+      date,
+    );
+    const existingStudentIds = new Set(
+      existingRecords.map((record) => record.studentId).filter(Boolean),
+    );
+
+    // 3. 출석 레코드가 없는 학생들에 대해 기본 레코드 생성
+    const recordsToCreate: IAttendance[] = [];
+    const expires = Math.floor(addDays(new Date(), 400).getTime() / 1000);
+    const groupKey = generateGroupKey(group.id);
+
+    for (const student of students) {
+      if (!existingStudentIds.has(student.id)) {
+        const dailyStudentKey = generateDailyStudentKey(
+          date,
+          student.id,
+          student.grade,
+          student.class,
+          student.studentCode,
+        );
+
+        recordsToCreate.push({
+          groupKey,
+          dailyStudentKey,
+          lessonId: group.lessonId,
+          lessonName: group.lesson.lessonName,
+          groupId: group.id,
+          groupName: group.groupName,
+          studentId: student.id,
+          studentName: student.name,
+          start: group.start,
+          end: group.end,
+          weekday: group.weekday,
+          status: AttendanceStatus.INIT, // 기본값: 수업 전
+          expires,
+        });
+      }
+    }
+
+    // 4. 배치로 레코드 생성
+    if (recordsToCreate.length > 0) {
+      await Promise.all(
+        recordsToCreate.map((record) => this.model.create(record)),
+      );
+    }
+  }
+
+  /**
+   * 대상 학생의 출석 상태를 업데이트합니다.
+   */
+  private async _updateTargetStudentAttendance(
+    itemKey: IAttendanceKey,
+    upsertData: Partial<IAttendance>,
+  ): Promise<IAttendance> {
+    try {
+      // 1차 시도: update (기존 아이템 업데이트)
+      return await this.model.update(itemKey, upsertData);
+    } catch (updateError: any) {
+      // update 실패시 (아이템이 없거나 다른 이유) create 시도
+      if (
+        updateError.message?.includes('no item found') ||
+        updateError.name === 'ValidationException'
+      ) {
+        return await this.model.create({
+          ...itemKey,
+          ...upsertData,
+        });
+      } else {
+        throw updateError;
+      }
+    }
+  }
+
+  /**
+   * DynamoDB의 출석 레코드를 집계하여 MySQL schooldays 테이블의 count 필드를 업데이트합니다.
+   */
+  private async _updateSchooldayFromDynamoDB(
+    groupId: number,
+    date: string,
+    dailyStudentKeys: string[],
+  ): Promise<void> {
+    // 1. DynamoDB에서 해당일의 모든 출석 레코드 가져오기
+    const allRecords = await fetchAllAttendanceItems(this.model, groupId, date);
+
+    // 2. 각 출석 상태별 카운트 계산
+    const presentCount = allRecords.filter(
+      (record) => record.status === AttendanceStatus.PRESENT,
+    ).length;
+
+    const absentCount = allRecords.filter(
+      (record) =>
+        record.status === AttendanceStatus.ABSENT ||
+        record.status === AttendanceStatus.EXCUSED_ABSENT,
+    ).length;
+
+    const lateCount = allRecords.filter(
+      (record) => record.status === AttendanceStatus.LATE,
+    ).length;
+
+    const leftCount = allRecords.filter(
+      (record) => record.status === AttendanceStatus.LEFT,
+    ).length;
+
+    // 3. MySQL schooldays 테이블 업데이트
+    await this.schooldayRepository
+      .createQueryBuilder()
+      .update(Schoolday)
+      .set({
+        presentCount,
+        absentCount,
+        lateCount,
+        leftCount,
+        dailyStudentKeys,
+      })
+      .where('groupId = :groupId', { groupId })
+      .andWhere('today = :date', { date })
+      .execute();
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -1359,17 +1463,20 @@ export class GroupAttendanceService {
 
     // status에 따른 카운트 증가
     // todo. 기존상태가 설정된 상태라면 마이너스해줘야 하지 않을까?
-    if (status.endsWith('ABSENT')) {
+    if (
+      status === AttendanceStatus.EXCUSED_ABSENT ||
+      status === AttendanceStatus.ABSENT
+    ) {
       queryBuilder = queryBuilder.set({
         dailyStudentKeys: updatedKeys,
         absentCount: () => 'absentCount + 1',
       });
-    } else if (status.endsWith('LATE')) {
+    } else if (status === AttendanceStatus.LATE) {
       queryBuilder = queryBuilder.set({
         dailyStudentKeys: updatedKeys,
         lateCount: () => 'lateCount + 1',
       });
-    } else if (status.endsWith('LEFT')) {
+    } else if (status === AttendanceStatus.LEFT) {
       queryBuilder = queryBuilder.set({
         dailyStudentKeys: updatedKeys,
         leftCount: () => 'leftCount + 1',

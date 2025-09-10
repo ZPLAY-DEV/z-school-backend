@@ -46,10 +46,22 @@ export class BookingService {
       relations: ['offering', 'lesson'],
     });
 
+    // termId가 null인 경우 에러 처리
+    if (!group.termId) {
+      throw new BadRequestException('해당 그룹에 연결된 학기 정보가 없습니다.');
+    }
+
+    // offeringId가 null인 경우 에러 처리
+    if (!group.offeringId) {
+      throw new BadRequestException(
+        '해당 그룹에 연결된 수강신청 정보가 없습니다.',
+      );
+    }
+
     // 중복 예약 체크
     const existingBookings = await this.bookingRepository.find({
       where: {
-        offeringId: group.offeringId ?? 0,
+        offeringId: group.offeringId,
         studentId: In(dto.studentIds),
       },
     });
@@ -62,7 +74,7 @@ export class BookingService {
     }
 
     const lastBooking = await this.bookingRepository.findOne({
-      where: { offeringId: group.offeringId ?? 0 },
+      where: { offeringId: group.offeringId },
       order: { waitingPosition: 'DESC' },
     });
 
@@ -75,8 +87,8 @@ export class BookingService {
     for (let i = 0; i < dto.studentIds.length; i++) {
       const waitingPosition = baseWaitingPosition + i + 1;
       const booking = this.bookingRepository.create({
-        termId: group.termId ?? 0,
-        offeringId: group.offeringId ?? 0,
+        termId: group.termId,
+        offeringId: group.offeringId,
         studentId: dto.studentIds[i],
         lessonName: group.lesson.lessonName,
         waitingPosition,
