@@ -18,6 +18,7 @@ import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-dispatch.dto
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { GenerateS3UrlsDto } from 'src/domain/newsletter/dto/generate-s3-urls.dto';
 import { NewsletterWithReadStatsDto } from 'src/domain/newsletter/dto/newsletter-with-read-stats.dto';
+import { ReadStatDto } from 'src/domain/newsletter/dto/read-stat.dto';
 import { UpdateDispatchDto } from 'src/domain/newsletter/dto/update-dispatch.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Dispatch } from 'src/domain/newsletter/entities/dispatch.entity';
@@ -92,6 +93,13 @@ export class NewsletterController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<NewsletterWithReadStatsDto> {
     return await this.newsletterService.findDetailById(id);
+  }
+
+  @Get(':id/read-stats')
+  async getReadStats(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ReadStatDto[]> {
+    return this.newsletterService.findReadStatsById(id);
   }
 
   //? ---------------------------------------------------------------------- ?//

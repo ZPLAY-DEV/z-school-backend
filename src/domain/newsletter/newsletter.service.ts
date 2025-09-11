@@ -111,6 +111,7 @@ export class NewsletterService {
         ...dto,
         status: SendStatus.SCHEDULED,
         scheduledAt: dto.scheduledAt ?? fromZonedTime(new Date(), 'Asia/Seoul'),
+        termId: dto.termId,
         newsletterId: newsletter.id,
       });
 
@@ -297,59 +298,80 @@ export class NewsletterService {
     const newsletter: Newsletter =
       await this.newsletterRepository.findOneOrFail({
         where: { id: newsletterId },
-        relations: ['dispatches', 'shortlinks'],
+        relations: ['dispatches'], // shortlinks 제거하여 성능 개선
       });
 
     if (!newsletter) {
       throw new NotFoundException('Newsletter not found');
     }
 
-    const dispatchedStudentIds = Array.from(
-      new Set(newsletter.dispatches.flatMap((v) => v.studentIds)),
-    );
-    const readParentIds: number[] =
-      newsletter.shortlinks?.filter((v) => v.isRead).map((v) => v.parentId) ??
-      [];
+    // readStats 조회 (최적화된 메서드 재사용)
+    const readStats = await this.findReadStatsById(newsletterId);
 
-    (newsletter as any).shortlinks = undefined;
+    return new NewsletterWithReadStatsDto({
+      ...newsletter,
+      readStats,
+      total: readStats.length,
+    });
+  }
 
-    if (dispatchedStudentIds && dispatchedStudentIds.length > 0) {
-      const students = await this.dataSource
-        .getRepository(Student)
-        .createQueryBuilder('student')
-        .leftJoinAndSelect('student.parent', 'parent')
-        .leftJoinAndSelect('parent.shortlinks', 'shortlinks')
-        .where('student.id IN (:...studentIds)', {
-          studentIds: dispatchedStudentIds,
-        })
-        .getMany();
+  async findReadStatsById(
+    newsletterId: number,
+    dispatchId?: number,
+  ): Promise<ReadStatDto[]> {
+    // 1. 발송된 학생 ID들을 조회 (MySQL 호환)
+    const dispatches = await this.dataSource.getRepository(Dispatch).find({
+      where: dispatchId ? { newsletterId, id: dispatchId } : { newsletterId },
+      select: ['studentIds'],
+    });
 
-      const readStats: ReadStatDto[] = students.map((student) => {
-        const shortlink = student.parent.shortlinks?.find(
-          (v) => v.newsletterId === newsletter.id,
-        );
-        return {
-          id: student.id,
-          name: student.name,
-          grade: student.grade,
-          class: student.class,
-          studentCode: student.studentCode,
-          link: shortlink
-            ? `https://app.schoolhub.co.kr/parent/nanoid/${shortlink.nanoid}`
-            : `https://app.schoolhub.co.kr`,
-          read: readParentIds.includes(student.parent.id),
-          createdAt: shortlink?.createdAt ?? new Date(),
-        };
-      });
-
-      return new NewsletterWithReadStatsDto({
-        ...newsletter,
-        readStats,
-        total: readStats.length,
-      });
+    if (dispatches.length === 0) {
+      return [];
     }
 
-    return new NewsletterWithReadStatsDto(newsletter);
+    const termId = dispatches[0].termId;
+    // 모든 dispatch의 studentIds를 하나의 배열로 합치고 중복 제거
+    const studentIds = Array.from(
+      new Set(dispatches.flatMap((dispatch) => dispatch.studentIds)),
+    );
+
+    // 2. 최적화된 쿼리로 학생 정보와 읽음 상태를 한번에 조회
+    const results = await this.dataSource
+      .getRepository(Student)
+      .createQueryBuilder('student')
+      .leftJoin('student.parent', 'parent')
+      .leftJoin(
+        'parent.shortlinks',
+        'shortlinks',
+        'shortlinks.newsletterId = :newsletterId',
+        { newsletterId },
+      )
+      .select([
+        'student.id',
+        'student.name',
+        'student.grade',
+        'student.class',
+        'student.studentCode',
+        'shortlinks.isRead',
+        'shortlinks.nanoid',
+        'shortlinks.createdAt',
+      ])
+      .where('student.id IN (:...studentIds)', { studentIds })
+      .getRawMany();
+
+    // 3. 결과를 ReadStatDto 형태로 변환
+    return results.map((row) => ({
+      id: row.student_id,
+      name: row.student_name,
+      grade: row.student_grade,
+      class: row.student_class,
+      studentCode: row.student_studentCode,
+      link: row.shortlinks_nanoid
+        ? `https://app.schoolhub.co.kr/parent/nanoid/${row.shortlinks_nanoid}?type=REGISTRATION&termId=${termId}&studentId=${row.student_id}`
+        : `https://app.schoolhub.co.kr`,
+      read: row.shortlinks_isRead || false,
+      createdAt: row.shortlinks_createdAt || new Date(),
+    }));
   }
 
   async findPendingDispatches(): Promise<Dispatch[]> {
@@ -599,14 +621,22 @@ export class NewsletterService {
     const dtos: CreateShortlinkDto[] = [];
 
     for (const student of students) {
+      const routes = JSON.stringify({
+        type:
+          newsletter.type === NewsletterType.REGISTRATION
+            ? 'REGISTRATION'
+            : 'NOTIFICATION',
+        termId: newsletter.termId,
+        studentId: student.id,
+      });
       const dto: CreateShortlinkDto = {
         parentId: student.parent.id,
         newsletterId: newsletter.id,
         dispatchId: dispatchId,
         nanoid: nanoid(),
         role: 'PARENT',
-        url: getMobileRoute(newsletter), // 이미 전체 URL을 반환하므로 중복 제거
-        routes: JSON.stringify({}), // todo. fix this.
+        url: getMobileRoute(newsletter, student.id), // 이미 전체 URL을 반환하므로 중복 제거
+        routes: routes,
       };
       this.logger.debug(`Creating shortlink DTO: ${JSON.stringify(dto)}`);
       dtos.push(dto);
@@ -664,9 +694,9 @@ export class NewsletterService {
     students: Student[],
   ) {
     let body: string;
-    const messages = students.map((v: Student) => {
+    const messages = students.map((student: Student) => {
       const shortlink = shortlinks.find(
-        (shortlink) => shortlink.parentId === v.parent.id,
+        (shortlink) => shortlink.parentId === student.parent.id,
       );
 
       switch (newsletter.type) {
@@ -675,7 +705,7 @@ export class NewsletterService {
             school: newsletter.schoolName,
             term: newsletter.termName,
             period: term.bookingPeriod,
-            shortlink: `${this.domain}/${shortlink?.nanoid}?type=REGISTRATION&termId=${newsletter.termId}&studentId=${v.id}`,
+            shortlink: `${this.domain}/${shortlink?.nanoid}`,
           });
           break;
         case NewsletterType.CHANGES:
@@ -683,7 +713,7 @@ export class NewsletterService {
             school: newsletter.schoolName,
             term: newsletter.termName,
             title: newsletter.title || '수업 변동사항',
-            shortlink: `${this.domain}/${shortlink?.nanoid}?type=NOTIFICATION&newsletterId=${newsletter.id}&termId=${newsletter.termId}&studentId=${v.id}`,
+            shortlink: `${this.domain}/${shortlink?.nanoid}`,
           });
           break;
         case NewsletterType.SCHEDULES:
@@ -691,7 +721,7 @@ export class NewsletterService {
             school: newsletter.schoolName,
             term: newsletter.termName,
             title: newsletter.title || '수업 준비물',
-            shortlink: `${this.domain}/${shortlink?.nanoid}?type=NOTIFICATION&newsletterId=${newsletter.id}&termId=${newsletter.termId}&studentId=${v.id}`,
+            shortlink: `${this.domain}/${shortlink?.nanoid}`,
           });
           break;
         case NewsletterType.SUPPLIES:
@@ -699,7 +729,7 @@ export class NewsletterService {
             school: newsletter.schoolName,
             term: newsletter.termName,
             title: newsletter.title || '수업 일정변경',
-            shortlink: `${this.domain}/${shortlink?.nanoid}?type=NOTIFICATION&newsletterId=${newsletter.id}&termId=${newsletter.termId}&studentId=${v.id}`,
+            shortlink: `${this.domain}/${shortlink?.nanoid}`,
           });
           break;
         default:
@@ -707,13 +737,13 @@ export class NewsletterService {
           break;
       }
       return {
-        token: v.parent?.user?.pushToken ?? null,
-        phone: v.parent.phone,
+        token: student.parent?.user?.pushToken ?? null,
+        phone: student.parent.phone,
         template: this._getTemplateName(newsletter.type),
         body: body,
         role: 'PARENT',
-        url: getMobileRoute(newsletter),
-        routes: JSON.stringify({}),
+        url: shortlink?.url,
+        routes: shortlink?.routes,
       };
     });
 
@@ -774,8 +804,8 @@ export class NewsletterService {
         template: this._getTemplateName(newsletter.type),
         body: body,
         role: v.role,
-        url: getMobileRoute(newsletter),
-        routes: JSON.stringify({}),
+        url: v.url,
+        routes: v.routes,
       } as unknown as NotificationCoreData;
     });
 

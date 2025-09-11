@@ -24,7 +24,11 @@ export class Dispatch {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈵 SchoolId' })
+  @ApiProperty({ description: '🈵 TermId' })
+  @Column({ type: 'int', unsigned: true })
+  termId: number;
+
+  @ApiProperty({ description: '🈵 NewsletterId' })
   @Column({ type: 'int', unsigned: true })
   newsletterId: number;
 

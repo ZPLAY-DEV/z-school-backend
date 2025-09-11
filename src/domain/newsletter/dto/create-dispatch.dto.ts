@@ -14,7 +14,16 @@ import { SendStatus } from 'src/common/enums/send-status';
 
 export class CreateDispatchDto {
   @ApiProperty({
-    description: '🈵 발송할 뉴스레터의 ID (뉴스레터 발송 시 필수)',
+    description: '🈵 발송할 뉴스레터의 Term ID',
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  termId?: number;
+
+  @ApiProperty({
+    description: '🈵 발송할 뉴스레터의 ID',
     example: 1,
     required: false,
   })

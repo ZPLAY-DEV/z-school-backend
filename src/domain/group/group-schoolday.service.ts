@@ -7,6 +7,7 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { getKoreanWeekday } from 'src/helpers/date';
 import { DataSource, Repository } from 'typeorm';
 
 @Injectable()
@@ -61,6 +62,7 @@ export class GroupSchooldayService {
           id: 0,
           today: schoolday.original,
           original: schoolday.today,
+          weekday: getKoreanWeekday(schoolday.original),
         };
         result.push(duplicateItem);
       }
