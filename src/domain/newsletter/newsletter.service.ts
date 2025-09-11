@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { fromZonedTime } from 'date-fns-tz';
 import { nanoid } from 'nanoid';
+import { paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import {
   NewsletterTarget,
   NewsletterType,
@@ -306,7 +307,7 @@ export class NewsletterService {
     }
 
     // readStats 조회 (최적화된 메서드 재사용)
-    const readStats = await this.findReadStatsById(newsletterId);
+    const readStats = await this.findReadStats(newsletterId);
 
     return new NewsletterWithReadStatsDto({
       ...newsletter,
@@ -315,7 +316,7 @@ export class NewsletterService {
     });
   }
 
-  async findReadStatsById(
+  async findReadStats(
     newsletterId: number,
     dispatchId?: number,
   ): Promise<ReadStatDto[]> {
@@ -354,6 +355,7 @@ export class NewsletterService {
         'student.studentCode',
         'shortlinks.isRead',
         'shortlinks.nanoid',
+        'shortlinks.url',
         'shortlinks.createdAt',
       ])
       .where('student.id IN (:...studentIds)', { studentIds })
@@ -366,12 +368,101 @@ export class NewsletterService {
       grade: row.student_grade,
       class: row.student_class,
       studentCode: row.student_studentCode,
-      link: row.shortlinks_nanoid
-        ? `https://app.schoolhub.co.kr/parent/nanoid/${row.shortlinks_nanoid}?type=REGISTRATION&termId=${termId}&studentId=${row.student_id}`
-        : `https://app.schoolhub.co.kr`,
+      link: row.shortlinks_url
+        ? `https://app.schoolhub.co.kr${row.shortlinks_url}`
+        : `https://app.schoolhub.co.kr/parent/nanoid/${row.shortlinks_nanoid}?type=REGISTRATION&termId=${termId}&studentId=${row.student_id}`,
       read: row.shortlinks_isRead || false,
       createdAt: row.shortlinks_createdAt || new Date(),
     }));
+  }
+
+  async findReadStatsPaginated(
+    newsletterId: number,
+    query: PaginateQuery,
+  ): Promise<Paginated<ReadStatDto>> {
+    // 1. 발송된 학생 ID들을 조회 (MySQL 호환)
+    const dispatches = await this.dataSource.getRepository(Dispatch).find({
+      where: { newsletterId },
+      select: ['studentIds', 'termId'],
+    });
+
+    if (dispatches.length === 0) {
+      return {
+        data: [],
+        meta: {
+          itemsPerPage: query.limit || 20,
+          totalItems: 0,
+          currentPage: query.page || 1,
+          totalPages: 0,
+          sortBy: (query.sortBy || []) as any,
+          searchBy: (query.searchBy || []) as any,
+          search: query.search || '',
+          select: query.select || [],
+          filter: query.filter || {},
+        },
+        links: {
+          first: '',
+          previous: '',
+          current: '',
+          next: '',
+          last: '',
+        },
+      };
+    }
+
+    // const termId = dispatches[0].termId;
+    const studentIds = Array.from(
+      new Set(dispatches.flatMap((dispatch) => dispatch.studentIds)),
+    );
+
+    // 2. QueryBuilder 구성 후 paginateRaw로 페이지네이션 처리
+    const qb = this.dataSource
+      .getRepository(Student)
+      .createQueryBuilder('student')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .leftJoinAndSelect(
+        'parent.shortlinks',
+        'shortlinks',
+        'shortlinks.newsletterId = :newsletterId',
+        { newsletterId },
+      )
+      .where('student.id IN (:...studentIds)', { studentIds })
+      .orderBy('student.id', 'ASC');
+
+    const paged = await paginate<any>(query, qb, {
+      defaultLimit: 20,
+      maxLimit: 100,
+      sortableColumns: [
+        'student.id',
+        'student.name',
+        'student.grade',
+        'student.class',
+        'student.studentCode',
+        'shortlinks.createdAt',
+        'shortlinks.isRead',
+      ],
+      defaultSortBy: [['student.id', 'ASC']],
+    });
+
+    const data = paged.data.map((student: any) => {
+      const sl = student.parent?.shortlinks?.[0];
+      return {
+        id: student.id,
+        name: student.name,
+        grade: student.grade,
+        class: student.class,
+        studentCode: student.studentCode,
+        link: `https://app.schoolhub.co.kr${sl?.url}`,
+        read: sl?.isRead ?? false,
+        createdAt: sl?.createdAt ?? new Date(),
+      };
+    });
+
+    return {
+      data,
+      meta: paged.meta as any,
+      links: paged.links,
+    };
   }
 
   async findPendingDispatches(): Promise<Dispatch[]> {
@@ -621,6 +712,7 @@ export class NewsletterService {
     const dtos: CreateShortlinkDto[] = [];
 
     for (const student of students) {
+      const randomId = nanoid();
       const routes = JSON.stringify({
         type:
           newsletter.type === NewsletterType.REGISTRATION
@@ -633,12 +725,16 @@ export class NewsletterService {
         parentId: student.parent.id,
         newsletterId: newsletter.id,
         dispatchId: dispatchId,
-        nanoid: nanoid(),
+        nanoid: randomId,
         role: 'PARENT',
-        url: getMobileRoute(newsletter, student.id), // 이미 전체 URL을 반환하므로 중복 제거
+        url: getMobileRoute(
+          newsletter.type,
+          newsletter.termId,
+          randomId,
+          student.id,
+        ), // 이미 전체 URL을 반환하므로 중복 제거
         routes: routes,
       };
-      this.logger.debug(`Creating shortlink DTO: ${JSON.stringify(dto)}`);
       dtos.push(dto);
     }
 

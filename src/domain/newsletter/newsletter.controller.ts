@@ -12,6 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { IS3Urls } from 'src/common/interfaces';
 import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-dispatch.dto';
@@ -95,11 +96,19 @@ export class NewsletterController {
     return await this.newsletterService.findDetailById(id);
   }
 
-  @Get(':id/read-stats')
-  async getReadStats(
+  @Get(':id/stats')
+  async findReadStats(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<ReadStatDto[]> {
-    return this.newsletterService.findReadStatsById(id);
+    return await this.newsletterService.findReadStats(id);
+  }
+
+  @Get(':id/stats/paginated')
+  async findReadStatsPaginated(
+    @Param('id', ParseIntPipe) id: number,
+    @Paginate() query: PaginateQuery,
+  ): Promise<Paginated<ReadStatDto>> {
+    return await this.newsletterService.findReadStatsPaginated(id, query);
   }
 
   //? ---------------------------------------------------------------------- ?//
