@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -553,6 +554,19 @@ export class StudentService {
       where: { id },
       relations: ['parent'],
     });
+
+    const student = await this.studentRepository.findOneOrFail({
+      where: {
+        class: dto.class,
+        grade: dto.grade,
+        studentCode: dto.studentCode,
+        schoolId: existingStudent.schoolId,
+      },
+    });
+
+    if (student && student.id !== id) {
+      throw new ConflictException('아뿔사! 학년,반,번호의 다른학생 이미 존재');
+    }
 
     if (Object.keys(dto).length === 0) {
       return existingStudent;

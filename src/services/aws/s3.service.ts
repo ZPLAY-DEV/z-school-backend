@@ -41,7 +41,7 @@ export class S3Service implements OnModuleInit {
       this.configService.get<string>('aws.cloudfrontUrl') ?? '';
 
     // S3 클라이언트 설정
-    const s3Config: any = {
+    const s3Config: Record<string, any> = {
       region: region,
     };
 
@@ -58,7 +58,9 @@ export class S3Service implements OnModuleInit {
   }
 
   onModuleInit() {
-    this.logger.log(`AWS S3 service initialized w/ bucket: ${this.bucket}`);
+    this.logger.log(
+      `AWS S3 service initialized w/ endpoint: ${this.cloudfrontUrl}`,
+    );
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -173,18 +175,17 @@ export class S3Service implements OnModuleInit {
         expiresIn,
       });
 
-      console.log('😳😳😳😳😳😳😳😳 signedUrl', signedUrl);
+      console.log('😳 signedUrl', signedUrl);
 
       // development 환경에서 localstack URL을 ngrok URL로 변환
       let finalUrl = signedUrl;
-      if (this.configService.get<string>('nodeEnv') === 'dev') {
+      if (this.configService.get<string>('nodeEnv') === 'ngrok') {
         // ngrok URL이 설정되어 있고, localhost:4566이 포함된 경우 변환
         const ngrokUrl =
           this.configService.get<string>('aws.cloudfrontUrl') ||
           this.cloudfrontUrl;
         if (signedUrl.includes('localhost:4566')) {
           finalUrl = signedUrl.replace('http://localhost:4566', ngrokUrl);
-          this.logger.log(`🔄 LocalStack URL → ngrok: ${finalUrl}`);
         }
       }
 
