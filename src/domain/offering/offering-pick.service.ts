@@ -14,6 +14,7 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { SchoolTermDto } from 'src/domain/offering/dto/school-term.dto';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { getTemplateOfRegistrationEnd } from 'src/helpers/get-message-body';
 import { NotificationService } from 'src/services/notification/notification.service';
@@ -32,6 +33,8 @@ export class OfferingPickService {
     private readonly offeringRepository: Repository<Offering>,
     @InjectRepository(Pick)
     private readonly pickRepository: Repository<Pick>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
     @InjectRepository(Term)
     private readonly termRepository: Repository<Term>,
     private readonly notificationService: NotificationService,
@@ -146,14 +149,14 @@ export class OfferingPickService {
     return selectedOfferingIds;
   }
 
-  async notify(dto: SchoolTermDto): Promise<void> {
+  async notify(dto: SchoolTermDto): Promise<number> {
     const { schoolId, termId } = dto;
     const offerings = await this.offeringRepository.find({
       where: { schoolId, termId, status: ClassStatus.PENDING },
       relations: ['bookings', 'term'],
     });
     if (offerings.length > 0) {
-      throw new BadRequestException('수강신청 종료 전 입니다.');
+      throw new BadRequestException('수강확정 완료 전 입니다.');
     } else {
       const term = await this.termRepository.findOneOrFail({
         where: { id: termId },
@@ -163,16 +166,39 @@ export class OfferingPickService {
         school: term.school.name,
         term: term.termName,
       });
-
-      //
-
-      const messages = [];
+      const bookings = await this.bookingRepository.find({
+        where: { termId },
+      });
+      const studentIds = bookings.map((v) => v.studentId);
+      const dedupedStudentIds = [...new Set(studentIds)];
+      const dedupedStudents = await this.studentRepository.find({
+        where: { id: In(dedupedStudentIds) },
+        relations: ['parent', 'parent.user'],
+      });
+      const messagesMap = new Map();
+      const messages = dedupedStudents
+        .map((v) => ({
+          token: v.parent.user?.pushToken ?? null,
+          phone: v.parent.phone,
+          template: 'RegistrationEnd1',
+          body: body,
+          role: 'PARENT',
+        }))
+        .filter((message) => {
+          if (messagesMap.has(message.phone)) {
+            return false;
+          }
+          messagesMap.set(message.phone, true);
+          return true;
+        });
 
       await this.notificationService.send({
         type: AlarmType.SCHOOL,
         schoolId: schoolId,
         messages: messages,
       });
+
+      return messages.length;
     }
   }
 

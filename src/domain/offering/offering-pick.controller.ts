@@ -27,19 +27,19 @@ export class OfferingPickController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  @CreateAutoPickDocs()
-  @Post('picks/auto')
-  @HttpCode(200)
-  async createAutoPicks(@Body() dto: SchoolTermDto): Promise<number[]> {
-    console.log('🚀 dto', dto);
-    return this.offeringPickService.createAutoPicks(dto);
-  }
-
-  @Post('picks/notification')
+  @Post('all/notify')
   @HttpCode(200)
   async notify(@Body() dto: SchoolTermDto) {
     console.log('🚀 dto', dto);
     return this.offeringPickService.notify(dto);
+  }
+
+  @CreateAutoPickDocs()
+  @Post('all/picks')
+  @HttpCode(200)
+  async createAutoPicks(@Body() dto: SchoolTermDto): Promise<number[]> {
+    console.log('🚀 dto', dto);
+    return this.offeringPickService.createAutoPicks(dto);
   }
 
   @CreateOfferingPickDocs()
