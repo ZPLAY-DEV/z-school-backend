@@ -13,7 +13,6 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
-import { NewsletterType } from 'src/common/enums';
 import { IS3Urls } from 'src/common/interfaces';
 import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-dispatch.dto';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
@@ -29,9 +28,7 @@ import {
   DeleteNewsletterDocs,
   FindNewsletterByIdDocs,
   FindPendingDispatchesDocs,
-  FindRegistrationNewsletterDocs,
   GenerateNewsletterS3UrlsDocs,
-  ListNewslettersDocs,
   MarkAsReadDocs,
   ResendNewsletterDocs,
   SendNewsletterDocs,
@@ -82,28 +79,6 @@ export class NewsletterController {
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
-
-  @ListNewslettersDocs()
-  @Get()
-  async list(
-    @Query('schoolId', ParseIntPipe) schoolId: number,
-    @Query('termId') termId?: number,
-    @Query('type') type?: NewsletterType,
-  ): Promise<Newsletter[]> {
-    return await this.newsletterService.list(schoolId, termId, type);
-  }
-
-  @FindRegistrationNewsletterDocs()
-  @Get('registration-links')
-  async findRegistrationNewsletter(
-    @Query('schoolId', ParseIntPipe) schoolId: number,
-    @Query('termId', ParseIntPipe) termId: number,
-  ): Promise<any> {
-    return await this.newsletterService.findRegistrationNewsletter(
-      schoolId,
-      termId,
-    );
-  }
 
   @FindPendingDispatchesDocs()
   @Get('pending-dispatches')

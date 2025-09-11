@@ -6,8 +6,8 @@ import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
-export class SchoolNewsletterService {
-  private readonly logger = new Logger(SchoolNewsletterService.name);
+export class SchoolTermNewsletterService {
+  private readonly logger = new Logger(SchoolTermNewsletterService.name);
 
   constructor(
     @InjectRepository(Newsletter)
@@ -21,6 +21,21 @@ export class SchoolNewsletterService {
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
+
+  async getRegistrationNewsletter(
+    schoolId: number,
+    termId: number,
+  ): Promise<Newsletter> {
+    return await this.newsletterRepository.findOneOrFail({
+      where: {
+        schoolId,
+        termId,
+        type: NewsletterType.REGISTRATION,
+      },
+      relations: ['dispatches', 'dispatches.shortlinks'],
+      order: { id: 'DESC' },
+    });
+  }
 
   async list(
     schoolId: number,

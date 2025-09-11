@@ -4,6 +4,7 @@ import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { LessonModule } from 'src/domain/lesson/lesson.module';
+import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
@@ -11,6 +12,8 @@ import { SchoolTermComboController } from 'src/domain/school/school-term-combo.c
 import { SchoolTermComboService } from 'src/domain/school/school-term-combo.service';
 import { SchoolTermLessonController } from 'src/domain/school/school-term-lesson.controller';
 import { SchoolTermLessonService } from 'src/domain/school/school-term-lesson.service';
+import { SchoolTermNewsletterController } from 'src/domain/school/school-term-newsletter.controller';
+import { SchoolTermNewsletterService } from 'src/domain/school/school-term-newsletter.service';
 import { SchoolTermOfferingController } from 'src/domain/school/school-term-offering.controller';
 import { SchoolTermOfferingService } from 'src/domain/school/school-term-offering.service';
 import { SchoolTermSamController } from 'src/domain/school/school-term-sam.controller';
@@ -32,6 +35,7 @@ import { SqsModule } from 'src/services/aws/sqs.module';
       Booking,
       Group,
       Lesson,
+      Newsletter,
       Offering,
       Sam,
       School,
@@ -49,6 +53,7 @@ import { SqsModule } from 'src/services/aws/sqs.module';
     SchoolTermStudentController,
     SchoolTermComboController,
     SchoolTermLessonController,
+    SchoolTermNewsletterController,
     SchoolTermOfferingController,
   ],
   providers: [
@@ -58,6 +63,7 @@ import { SqsModule } from 'src/services/aws/sqs.module';
     SchoolTermStudentService,
     SchoolTermComboService,
     SchoolTermLessonService,
+    SchoolTermNewsletterService,
     SchoolTermOfferingService,
   ],
   exports: [
@@ -66,6 +72,7 @@ import { SqsModule } from 'src/services/aws/sqs.module';
     SchoolTermStudentService,
     SchoolTermComboService,
     SchoolTermLessonService,
+    SchoolTermNewsletterService,
     SchoolTermOfferingService,
   ],
 })

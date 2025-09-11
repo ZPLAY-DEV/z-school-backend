@@ -252,26 +252,6 @@ export class NewsletterService {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  async list(
-    schoolId: number,
-    termId?: number,
-    type?: NewsletterType,
-  ): Promise<Newsletter[]> {
-    const queryBuilder = this.newsletterRepository
-      .createQueryBuilder('newsletter')
-      .where('newsletter.schoolId = :schoolId', { schoolId });
-
-    if (termId) {
-      queryBuilder.andWhere('newsletter.termId = :termId', { termId: +termId });
-    }
-
-    if (type) {
-      queryBuilder.andWhere('newsletter.type = :type', { type });
-    }
-
-    return await queryBuilder.orderBy('newsletter.id', 'DESC').getMany();
-  }
-
   async findRegistrationNewsletter(
     schoolId: number,
     termId: number,

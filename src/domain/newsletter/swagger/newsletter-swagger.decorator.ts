@@ -305,53 +305,6 @@ export const ListNewslettersDocs = () => {
   );
 };
 
-export const FindRegistrationNewsletterDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '🎯 수강신청 알림 메시지 조회',
-      description: `
-**📝 기능 설명**
-- 특정 학교와 학기의 수강신청 알림 메시지 조회합니다
-- 수강신청 뉴스레터는 학기당 1개만 존재할 수 있습니다
-- 수강신청 관련 정보를 앱에서 표시할 때 사용
-
-**🔄 비즈니스 로직**
-1. schoolId와 termId로 해당 학기 확인
-2. REGISTRATION 타입의 뉴스레터만 조회
-3. 삭제되지 않은 뉴스레터 중에서 검색
-4. 단일 결과 반환 (학기당 1개 제한)
-
-**⚠️ 중요 제약사항**
-- 수강신청 뉴스레터가 없으면 404 에러 반환
-- REGISTRATION 타입만 조회 가능
-- 발송 여부와 관계없이 조회 가능
-
-**📚 예시 시나리오**
-- 앱에서 수강신청 페이지 접근 시 안내문 표시
-- 수강신청 기간 정보 확인
-- 수강신청 관련 공지사항 조회
-      `,
-    }),
-    ApiQuery({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID (필수)',
-      example: 1,
-    }),
-    ApiQuery({
-      name: 'termId',
-      type: Number,
-      description: '학기 ID (필수)',
-      example: 1,
-    }),
-    ApiOkResponseTemplate({
-      description: '수강신청 뉴스레터 조회 완료',
-      type: NewsletterWithReadStatsDto,
-    }),
-    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
-  );
-};
-
 export const FindPendingDispatchesDocs = () => {
   return applyDecorators(
     ApiOperation({
