@@ -170,7 +170,7 @@ export class StudentService {
         where: whereCondition,
       });
 
-      // 2.5. Student 데이터 정리
+      // 3. Student 데이터 정리
       const normalizedStudentDto = {
         ...studentDto,
         ...(studentDto.phone && { phone: normalizePhone(studentDto.phone) }),
@@ -182,18 +182,18 @@ export class StudentService {
       let isCreated: boolean;
 
       if (existingStudent) {
-        // 3-1. 기존 학생이 있으면 업데이트
+        // 4. 기존 학생이 있으면 업데이트
         await manager.update(Student, existingStudent.id, normalizedStudentDto);
         savedStudent = existingStudent;
         isCreated = false;
       } else {
-        // 3-2. 기존 학생이 없으면 새로 생성
+        // 4. 기존 학생이 없으면 새로 생성
         const student = manager.create(Student, normalizedStudentDto);
         savedStudent = await manager.save(Student, student);
         isCreated = true;
       }
 
-      // 4. 관계 정보와 함께 반환
+      // 5. 관계 정보와 함께 반환
       const result = await manager.findOneOrFail(Student, {
         where: { id: savedStudent.id },
         relations: ['parent'],
