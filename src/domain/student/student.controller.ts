@@ -203,7 +203,11 @@ export class StudentController {
 
   @RemoveStudentDocs()
   @Delete(':id')
-  async remove(@Param('id') id: number): Promise<Student> {
-    return await this.studentService.remove(id);
+  async remove(
+    @Param('id') id: number,
+    @Query('forceDelete') forceDelete?: string,
+  ): Promise<Student> {
+    const shouldForceDelete = forceDelete === 'true';
+    return await this.studentService.remove(id, shouldForceDelete);
   }
 }

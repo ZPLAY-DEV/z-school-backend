@@ -31,7 +31,6 @@ import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
-import { NextStopDto } from 'src/domain/student/dto/next-stop.dto';
 import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -550,114 +549,105 @@ export class StudentService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateStudentDto): Promise<Student> {
-    const existingStudent = await this.studentRepository.findOneOrFail({
+    const student = await this.studentRepository.findOneOrFail({
       where: { id },
       relations: ['parent'],
     });
 
-    const student = await this.studentRepository.findOneOrFail({
+    if (Object.keys(dto).length === 0) {
+      return student;
+    }
+
+    const otherStudent = await this.studentRepository.findOneOrFail({
       where: {
         class: dto.class,
         grade: dto.grade,
         studentCode: dto.studentCode,
-        schoolId: existingStudent.schoolId,
+        schoolId: student.schoolId,
       },
     });
 
-    if (student && student.id !== id) {
+    if (otherStudent && otherStudent.id !== id) {
       throw new ConflictException('아뿔사! 학년,반,번호의 다른학생 이미 존재');
-    }
-
-    if (Object.keys(dto).length === 0) {
-      return existingStudent;
     }
 
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       const { parent: parentDto, parentId, ...studentDto } = dto;
 
-      // 부모 정보 처리
-      let finalParentId = existingStudent.parentId;
+      // 부모 정보 처리 - create 메서드와 동일한 우선순위 적용
+      let finalParentId = student.parentId; // 기본값: 기존 부모 ID
+
       if (parentId) {
-        finalParentId = parentId;
-      } else if (parentDto && existingStudent.parentId) {
-        await manager.update(Parent, existingStudent.parentId, {
-          ...(parentDto.name && { name: parentDto.name }),
-          ...(parentDto.phone && { phone: normalizePhone(parentDto.phone) }),
-          ...(parentDto.note && { note: parentDto.note }),
-          ...(parentDto.termsAgreedAt && {
-            termsAgreedAt: parentDto.termsAgreedAt,
-          }),
+        // 1️⃣ parentId 우선: 제공시 parent 객체 무시
+        const existingParent = await manager.findOne(Parent, {
+          where: { id: parentId },
         });
+        if (!existingParent) {
+          throw new NotFoundException('Parent not found');
+        }
+        finalParentId = parentId;
+      } else if (parentDto) {
+        if (parentDto.id) {
+          // 2️⃣ parent.id: 기존 부모 연결
+          const existingParent = await manager.findOne(Parent, {
+            where: { id: parentDto.id },
+          });
+          if (!existingParent) {
+            throw new NotFoundException('Parent not found');
+          }
+          finalParentId = parentDto.id;
+        } else if (parentDto.phone) {
+          // 3️⃣ parent 객체: 전화번호로 기존 부모 찾기 또는 새로 생성
+          const existingParent = await manager.findOne(Parent, {
+            where: { phone: normalizePhone(parentDto.phone) },
+          });
+
+          if (existingParent) {
+            // 기존 부모 발견 - 정보 업데이트
+            await manager.update(Parent, existingParent.id, {
+              ...(parentDto.name && { name: parentDto.name }),
+              ...(parentDto.note && { note: parentDto.note }),
+              ...(parentDto.termsAgreedAt && {
+                termsAgreedAt: parentDto.termsAgreedAt,
+              }),
+            });
+            finalParentId = existingParent.id;
+          } else {
+            // 새로운 부모 생성
+            const newParent = manager.create(Parent, {
+              name: parentDto.name,
+              phone: normalizePhone(parentDto.phone),
+              note: parentDto.note,
+              termsAgreedAt: parentDto.termsAgreedAt,
+            });
+            const savedParent = await manager.save(Parent, newParent);
+            finalParentId = savedParent.id;
+          }
+        } else if (student.parentId) {
+          // 기존 부모 정보만 업데이트 (전화번호 없이)
+          await manager.update(Parent, student.parentId, {
+            ...(parentDto.name && { name: parentDto.name }),
+            ...(parentDto.note && { note: parentDto.note }),
+            ...(parentDto.termsAgreedAt && {
+              termsAgreedAt: parentDto.termsAgreedAt,
+            }),
+          });
+        }
       }
 
       // 학생 데이터 정리
-      const normalizedData = {
+      const normalizedDto = {
         ...studentDto,
         ...(studentDto.phone && { phone: normalizePhone(studentDto.phone) }),
         parentId: finalParentId,
       };
 
-      // unique 제약 조건 체크 및 upsert
-      const hasUniqueFieldChanges = ['grade', 'class', 'studentCode'].some(
-        (field) => normalizedData[field] !== undefined,
-      );
-
-      if (hasUniqueFieldChanges) {
-        const targetCondition = {
-          schoolId: existingStudent.schoolId,
-          grade: normalizedData.grade ?? existingStudent.grade,
-          class: normalizedData.class ?? existingStudent.class,
-          studentCode:
-            normalizedData.studentCode ?? existingStudent.studentCode,
-        };
-
-        const conflictStudent = await manager.findOne(Student, {
-          where: targetCondition,
-        });
-
-        if (conflictStudent && conflictStudent.id !== id) {
-          // 기존 레코드에 병합 후 현재 레코드 삭제 (hard delete)
-          await manager.update(Student, conflictStudent.id, normalizedData);
-          await manager.delete(Student, id);
-
-          return await manager.findOneOrFail(Student, {
-            where: { id: conflictStudent.id },
-            relations: ['parent'],
-          });
-        }
-      }
-
       // 일반 업데이트
-      await manager.update(Student, id, normalizedData);
+      await manager.update(Student, id, normalizedDto);
       return await manager.findOneOrFail(Student, {
         where: { id },
         relations: ['parent'],
       });
-    });
-  }
-
-  /**
-   * 학생 하교장소 정보 수정
-   * 요일별 하교 후 가는 장소와 함께 가는 사람 정보를 업데이트합니다.
-   * @deprecated update() 메서드의 nextStops 필드를 사용하세요.
-   */
-  async updateEscortInfo(id: number, dtos: NextStopDto[]): Promise<Student> {
-    const student = await this.studentRepository.findOne({
-      where: { id },
-      relations: ['parent'],
-    });
-
-    if (!student) {
-      throw new NotFoundException(`Student with ID ${id} not found`);
-    }
-
-    await this.studentRepository.update(id, {
-      nextStops: dtos,
-    });
-
-    return await this.studentRepository.findOneOrFail({
-      where: { id },
-      relations: ['parent'],
     });
   }
 
@@ -666,34 +656,64 @@ export class StudentService {
   //? ---------------------------------------------------------------------- ?//
 
   //? 학생 삭제 (soft delete)
-  async remove(id: number): Promise<Student> {
-    // ID로 student 조회
-    const student = await this.studentRepository.findOne({
-      where: { id },
-      relations: ['picks'], // 수강 중인 picks 함께 조회
-    });
-
-    if (!student) {
-      throw new NotFoundException(`Student with ID ${id} not found`);
-    }
-
-    // 수강 중인 picks가 있는지 확인
-    const activePicks = student.picks?.filter((v: Pick) => v.isActive);
-    if (activePicks && activePicks.length > 0) {
-      throw new Error('Cannot delete student with active picks');
-    }
-
-    // 삭제일이 없으면 soft delete
-    if (!student.deletedAt) {
-      await this.studentRepository.update(id, {
-        deletedAt: new Date(),
+  async remove(id: number, forceDelete = false): Promise<Student> {
+    return await this.dataSource.transaction(async (manager) => {
+      // ID로 student 조회
+      const student = await manager.findOne(Student, {
+        where: { id },
+        relations: ['picks'], // 수강 중인 picks 함께 조회
       });
-    }
 
-    // 삭제된 학생 정보 반환
-    return await this.studentRepository.findOneOrFail({
-      where: { id },
-      withDeleted: true,
+      if (!student) {
+        throw new NotFoundException(`Student with ID ${id} not found`);
+      }
+
+      // picks가 있는 경우 처리
+      if (student.picks && student.picks.length > 0) {
+        const activePicks = student.picks.filter((v: Pick) => v.isActive);
+        const inactivePicks = student.picks.filter((v: Pick) => !v.isActive);
+
+        if (!forceDelete) {
+          let errorMessage = 'Cannot delete student with existing picks';
+          if (activePicks.length > 0) {
+            errorMessage += ` (${activePicks.length} active picks)`;
+          }
+          if (inactivePicks.length > 0) {
+            errorMessage += ` (${inactivePicks.length} inactive picks)`;
+          }
+          errorMessage += '. Use forceDelete=true to delete picks first.';
+
+          throw new BadRequestException(errorMessage);
+        }
+
+        // forceDelete가 true인 경우 picks를 먼저 삭제
+        if (activePicks.length > 0) {
+          throw new BadRequestException(
+            `Cannot force delete student with ${activePicks.length} active picks. Please deactivate picks first.`,
+          );
+        }
+
+        // 비활성화된 picks만 삭제
+        if (inactivePicks.length > 0) {
+          await manager.delete(Pick, {
+            studentId: id,
+            isActive: false,
+          });
+        }
+      }
+
+      // 삭제일이 없으면 soft delete
+      if (!student.deletedAt) {
+        await manager.update(Student, id, {
+          deletedAt: new Date(),
+        });
+      }
+
+      // 삭제된 학생 정보 반환
+      return await manager.findOneOrFail(Student, {
+        where: { id },
+        withDeleted: true,
+      });
     });
   }
 

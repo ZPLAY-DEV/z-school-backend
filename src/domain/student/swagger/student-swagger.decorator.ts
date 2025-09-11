@@ -4,19 +4,19 @@
 
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiResponse,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiQuery,
+    ApiResponse,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-  ApiOkPaginatedResponse,
-  ApiPaginationQuery,
-  FilterOperator,
-  PaginateConfig,
+    ApiOkPaginatedResponse,
+    ApiPaginationQuery,
+    FilterOperator,
+    PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
@@ -852,21 +852,22 @@ export const RemoveStudentDocs = () =>
 학생 정보를 시스템에서 삭제합니다.
 
 ### ⚠️ 삭제 조건 확인
-- **관련 데이터 체크**: 수강 이력, 출석 기록, 예약 정보
+- **관련 데이터 체크**: 수강 이력(picks), 출석 기록, 예약 정보
 - **연관 관계**: 학부모와의 연결 해제 확인
-- **완전 삭제**: 복구 불가능한 영구 삭제
+- **Soft Delete**: 논리적 삭제로 데이터 보존
 
 ### 🚫 삭제 제한 사항
-- 진행 중인 수업이 있는 경우 삭제 불가
+- **활성 picks가 있는 경우**: 삭제 불가 (진행 중인 수업)
+- **비활성 picks가 있는 경우**: forceDelete=true로 강제 삭제 가능
 - 미정산 수강료가 있는 경우 삭제 불가
-- 최근 1개월 이내 활동 이력이 있는 경우 주의 필요
 
 ### 💡 대안 방안
+- **forceDelete=true**: 비활성 picks를 먼저 삭제 후 학생 삭제
 - **상태 변경**: 삭제 대신 'TRANSFERRED' 상태로 변경
 - **비활성화**: 논리적 삭제로 데이터 보존
 
 ### ⚠️ 주의사항
-- **되돌릴 수 없는 작업**
+- **활성 picks는 반드시 비활성화 후 삭제**
 - 관련 데이터 일괄 삭제
 - 법적 보존 의무 확인 필요
       `,
@@ -877,6 +878,13 @@ export const RemoveStudentDocs = () =>
       description: '삭제할 학생 ID',
       example: 1,
     }),
+    ApiQuery({
+      name: 'forceDelete',
+      type: Boolean,
+      description: '비활성 picks를 강제로 삭제하고 학생 삭제',
+      required: false,
+      example: false,
+    }),
     ApiOkResponseTemplate({
       description: '✅ 학생 삭제 완료',
       type: Student,
@@ -886,8 +894,8 @@ export const RemoveStudentDocs = () =>
       description: '🔍 학생 없음 - 존재하지 않는 학생 ID',
     }),
     ApiResponse({
-      status: StatusCodes.CONFLICT,
-      description: '⚠️ 삭제 불가 - 진행 중인 수업 존재, 미정산 수강료 존재',
+      status: StatusCodes.BAD_REQUEST,
+      description: '⚠️ 삭제 불가 - picks가 존재하는 경우 (forceDelete=true 사용)',
     }),
     ApiResponse({
       status: StatusCodes.FORBIDDEN,

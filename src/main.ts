@@ -58,6 +58,7 @@ async function bootstrap() {
   });
 
   const corsOrigins = [
+    '*',
     'http://localhost:3000',
     'https://schoolhub.co.kr',
     'https://admin.schoolhub.co.kr',

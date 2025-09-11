@@ -1,14 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-  ValidateNested,
+    IsEnum,
+    IsInt,
+    IsOptional,
+    IsString,
+    Max,
+    MaxLength,
+    Min,
+    ValidateNested,
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
 import { UpdateParentDto } from 'src/domain/parent/dto/update-parent.dto';
@@ -120,7 +120,11 @@ export class UpdateStudentDto {
 
   @ApiPropertyOptional({
     description: `부모 ID - 기존 등록된 부모로 변경할 때 사용 (선택)
-parentId 제공시 parent 객체 무시`,
+    
+🏷️ 부모 연결 방식 우선순위:
+1️⃣ parentId 우선: 제공시 parent 객체 무시
+2️⃣ parent.id: 기존 부모 연결
+3️⃣ parent 객체: 전화번호로 기존 부모 찾기 또는 새로 생성`,
     type: Number,
     example: 1,
     required: false,
@@ -130,7 +134,13 @@ parentId 제공시 parent 객체 무시`,
   parentId?: number;
 
   @ApiPropertyOptional({
-    description: `보호자 정보 수정 ⚠️ parentId가 제공되면 이 객체는 무시됩니다`,
+    description: `보호자 정보 수정
+    
+🏷️ 두 가지 연결 방식:
+✅ 기존 부모 연결: parent.id만 제공 (다른 필드들은 무시됨)
+✅ 새로운 부모 생성: parent.id 제외, parent.phone 필수
+
+⚠️ parentId가 제공되면 이 객체는 무시됩니다`,
     type: UpdateParentDto,
   })
   @IsOptional()
