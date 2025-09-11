@@ -11,9 +11,11 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
@@ -56,8 +58,17 @@ export class StudentController {
 
   @CreateStudentDocs()
   @Post()
-  async create(@Body() dto: CreateStudentDto): Promise<Student> {
-    return await this.studentService.create(dto);
+  async create(
+    @Body() dto: CreateStudentDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { student, isCreated } = await this.studentService.create(dto);
+
+    if (isCreated) {
+      res.status(HttpStatus.CREATED).json(student);
+    } else {
+      res.status(HttpStatus.OK).json(student);
+    }
   }
 
   @CreateStudentDryRunDocs()

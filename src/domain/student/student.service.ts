@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -103,8 +102,14 @@ export class StudentService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  //! this is create not upsert. maybe we need to change this.
-  async create(dto: CreateStudentDto): Promise<Student> {
+  /**
+   * 학생 정보를 upsert합니다.
+   * 동일한 학교, 학년, 반, 학생코드를 가진 학생이 있으면 업데이트하고,
+   * 없으면 새로 생성합니다.
+   */
+  async create(
+    dto: CreateStudentDto,
+  ): Promise<{ student: Student; isCreated: boolean }> {
     return await this.dataSource.transaction(async (manager) => {
       const { parent: parentDto, parentId, ...studentDto } = dto;
 
@@ -164,32 +169,37 @@ export class StudentService {
       const existingStudent = await manager.findOne(Student, {
         where: whereCondition,
       });
-      if (existingStudent) {
-        throw new ConflictException(
-          'Student with same school, grade, class, and studentCode already exists',
-        );
-      }
 
       // 2.5. Student 데이터 정리
       const normalizedStudentDto = {
         ...studentDto,
         ...(studentDto.phone && { phone: normalizePhone(studentDto.phone) }),
-      };
-
-      // 3. Student 생성
-      const student = manager.create(Student, {
-        ...normalizedStudentDto,
         parentId: finalParentId,
         status: dto.status,
-      });
+      };
 
-      const savedStudent = await manager.save(Student, student);
+      let savedStudent: Student;
+      let isCreated: boolean;
+
+      if (existingStudent) {
+        // 3-1. 기존 학생이 있으면 업데이트
+        await manager.update(Student, existingStudent.id, normalizedStudentDto);
+        savedStudent = existingStudent;
+        isCreated = false;
+      } else {
+        // 3-2. 기존 학생이 없으면 새로 생성
+        const student = manager.create(Student, normalizedStudentDto);
+        savedStudent = await manager.save(Student, student);
+        isCreated = true;
+      }
 
       // 4. 관계 정보와 함께 반환
-      return await manager.findOneOrFail(Student, {
+      const result = await manager.findOneOrFail(Student, {
         where: { id: savedStudent.id },
         relations: ['parent'],
       });
+
+      return { student: result, isCreated };
     });
   }
 
