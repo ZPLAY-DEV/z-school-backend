@@ -18,6 +18,7 @@ export class FcmService {
    * 단일 FCM 메시지 발송
    */
   async sendOne(data: SingleFcmData): Promise<FcmSendResult> {
+    console.log('😳 data', data);
     try {
       const messageId = await firebaseAdmin.messaging().send(data);
 

@@ -307,7 +307,10 @@ export class SamService {
     date: string, //! YYYY-MM-DD
     termId?: number,
   ): Promise<Schoolday[]> {
-    // SQL 레벨에서 필터링하여 필요한 데이터만 조회
+    const sam = await this.samRepository.findOneOrFail({
+      where: { id },
+    });
+
     const queryBuilder = this.dataSource
       .createQueryBuilder(Schoolday, 'schoolday')
       .leftJoinAndSelect('schoolday.group', 'group')
@@ -321,7 +324,8 @@ export class SamService {
       queryBuilder.andWhere('schoolday.termId = :termId', { termId });
     }
 
-    return await queryBuilder.getMany();
+    const schooldays = await queryBuilder.getMany();
+    return schooldays;
   }
 
   //? ---------------------------------------------------------------------- ?//

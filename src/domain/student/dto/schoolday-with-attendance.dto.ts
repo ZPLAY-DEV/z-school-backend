@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { AttendanceStatus } from 'src/common/enums';
+import { AttendanceStatus, Weekday } from 'src/common/enums';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 
@@ -7,26 +7,32 @@ export class SchooldayWithAttendanceDto {
   @ApiProperty({ description: 'Schoolday ID' })
   id: number;
 
-  @ApiProperty({ description: '수업 시작 시간' })
-  startsAt: Date;
-
-  @ApiProperty({ description: '수업 종료 시간' })
-  endsAt: Date;
-
-  @ApiProperty({ description: '오늘 날짜 (실제 수업일)' })
-  today: string;
-
-  @ApiProperty({ description: '원래 예정된 날짜' })
-  original: string | null;
-
-  @ApiProperty({ description: '그룹 ID' })
-  groupId: number;
-
   @ApiProperty({ description: '학교 ID' })
   schoolId: number;
 
   @ApiProperty({ description: '학기 ID' })
   termId: number;
+
+  @ApiProperty({ description: '그룹 ID' })
+  groupId: number;
+
+  @ApiProperty({ description: '오늘 날짜 (실제 수업일)' })
+  today: string;
+
+  @ApiProperty({ description: '수업 요일' })
+  weekday: Weekday;
+
+  @ApiProperty({ description: '원래 예정된 날짜' })
+  original: string | null;
+
+  @ApiProperty({ description: '주차' })
+  weekNumber: number;
+
+  @ApiProperty({ description: '수업 시작 시간' })
+  startsAt: Date;
+
+  @ApiProperty({ description: '수업 종료 시간' })
+  endsAt: Date;
 
   @ApiProperty({ description: '생성일' })
   createdAt: Date;

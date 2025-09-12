@@ -56,6 +56,7 @@ export class TextService {
           template: 'NewsChanges1',
           body: body,
           role: 'PARENT',
+          url: dto.shortlink,
         },
       ],
     };
@@ -91,6 +92,7 @@ export class TextService {
           template: 'Registration1',
           body: body,
           role: 'PARENT',
+          url: dto.shortlink,
         },
       ],
     };

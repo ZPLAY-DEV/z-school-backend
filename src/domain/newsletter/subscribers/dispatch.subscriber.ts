@@ -17,7 +17,7 @@ import {
   EntityManager,
   EntitySubscriberInterface,
   In,
-  InsertEvent
+  InsertEvent,
 } from 'typeorm';
 import { Dispatch } from '../entities/dispatch.entity';
 import { Newsletter } from '../entities/newsletter.entity';
@@ -249,6 +249,9 @@ export class DispatchSubscriber implements EntitySubscriberInterface<Dispatch> {
           termId: newsletter.termId.toString(),
           studentId: student.id.toString(),
           shortlinkId: shortlink?.nanoid || '',
+          url: shortlink?.url
+            ? `${this.domain}/${shortlink?.nanoid}`
+            : undefined,
         },
       };
     });

@@ -305,14 +305,13 @@ export class StudentService {
   //? 학생의 수업일 조회 (SQL 레벨 최적화)
   async getSchooldaysByDate(
     id: number,
-    date: string,
+    date: string, //! YYYY-MM-DD
     termId?: number,
   ): Promise<SchooldayWithAttendanceDto[]> {
     const student = await this.studentRepository.findOneOrFail({
       where: { id },
     });
 
-    // QueryBuilder를 사용해서 SQL 레벨에서 필터링
     const queryBuilder = this.dataSource
       .createQueryBuilder(Schoolday, 'schoolday')
       .leftJoinAndSelect('schoolday.group', 'group')
@@ -363,13 +362,15 @@ export class StudentService {
 
       return {
         id: schoolday.id,
-        startsAt: schoolday.startsAt,
-        endsAt: schoolday.endsAt,
-        today: schoolday.today,
-        original: schoolday.original,
-        groupId: schoolday.groupId,
         schoolId: schoolday.schoolId,
         termId: schoolday.termId,
+        groupId: schoolday.groupId,
+        today: schoolday.today,
+        weekday: schoolday.weekday,
+        original: schoolday.original,
+        weekNumber: schoolday.weekNumber,
+        startsAt: schoolday.startsAt,
+        endsAt: schoolday.endsAt,
         createdAt: schoolday.createdAt,
         updatedAt: schoolday.updatedAt,
         group: schoolday.group,
