@@ -1,14 +1,65 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { format } from 'date-fns';
+import { NewsletterType } from 'src/common/enums';
+import { Student } from 'src/domain/student/entities/student.entity';
 import { classifyMessage } from 'src/helpers/classify';
+import { getTemplateOfNewsChanges } from 'src/helpers/get-message-body';
 import { AligoService } from 'src/services/aligo/aligo.service';
 import { AligoListResult } from 'src/services/aligo/types';
-
+import { NotificationService } from 'src/services/notification/notification.service';
+import { NotificationSendResult } from 'src/services/notification/types';
+import { Repository } from 'typeorm';
 @Injectable()
 export class TextService {
   private readonly logger = new Logger(TextService.name);
 
-  constructor(private readonly aligoService: AligoService) {}
+  constructor(
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
+    private readonly aligoService: AligoService,
+    private readonly notificationService: NotificationService,
+  ) {}
+
+  // ------------------------------------------------------------------------ //
+  // Notification API
+  // ------------------------------------------------------------------------ //
+
+  async send(studentId): Promise<NotificationSendResult> {
+    const student = await this.studentRepository.findOne({
+      where: { id: studentId },
+      relations: ['parent', 'parent.user'],
+    });
+    if (!student) {
+      throw new NotFoundException('Student not found.');
+    }
+
+    const body = getTemplateOfNewsChanges({
+      school: 'x학교',
+      term: 'y학기',
+      title: '제목입니다.',
+      shortlink: 'https://스쿨허브.kr/2CC_-134dNVzNLECtykb6',
+    });
+    const data = {
+      type: NewsletterType.CHANGES,
+      schoolId: 1,
+      messages: [
+        {
+          token: student.parent.user?.pushToken ?? null,
+          phone: student.parent.phone,
+          template: 'Text1',
+          body: body,
+          role: 'PARENT',
+        },
+      ],
+    };
+
+    return await this.notificationService.send(data);
+  }
+
+  // ------------------------------------------------------------------------ //
+  // Aligo API
+  // ------------------------------------------------------------------------ //
 
   async list(
     page: number,

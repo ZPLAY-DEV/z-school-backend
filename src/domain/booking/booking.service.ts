@@ -334,7 +334,8 @@ export class BookingService {
       where: { id },
     });
     try {
-      return await this.bookingRepository.remove(booking);
+      await this.bookingRepository.remove(booking);
+      return booking;
     } catch (error) {
       this.logger.error(`❌ Booking 취소 실패`, error.stack);
       throw new BadRequestException(error.message);

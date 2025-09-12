@@ -427,7 +427,8 @@ export class GroupService {
         .filter((booking) => booking.status === BookingStatus.PENDING)
         .map((booking) => {
           return new BookedStudentDto({
-            id: booking.student.id,
+            id: booking.id,
+            studentId: booking.student.id,
             name: booking.student.name,
             grade: booking.student.grade,
             class: booking.student.class,
@@ -442,7 +443,8 @@ export class GroupService {
     // BookedStudentDto 로 변환
     return bookings.map((booking) => {
       return new BookedStudentDto({
-        id: booking.student.id,
+        id: booking.id,
+        studentId: booking.student.id,
         name: booking.student.name,
         grade: booking.student.grade,
         class: booking.student.class,

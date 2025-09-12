@@ -1,9 +1,23 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { Public } from 'src/common/decorators/public.decorator';
 import { TextService } from 'src/domain/text/text.service';
 
 @Controller('texts')
 export class TextController {
   constructor(private readonly textService: TextService) {}
+
+  @Public()
+  @Post('send/:id')
+  async send(@Param('id', ParseIntPipe) id: number): Promise<any> {
+    return await this.textService.send(id);
+  }
 
   @Get()
   async list(

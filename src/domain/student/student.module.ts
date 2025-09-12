@@ -5,7 +5,6 @@ import { AttendanceSchema } from 'src/domain/attendance/entities/attendance.sche
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
-import { S3Module } from 'src/services/aws/s3.module';
 import { UploadModule } from 'src/services/upload/upload.module';
 import { Booking } from '../booking/entities/booking.entity';
 import { Group } from '../group/entities/group.entity';
@@ -26,7 +25,7 @@ import { StudentService } from './student.service';
       },
     ]),
     UploadModule,
-    S3Module,
+    // S3Module,
   ],
   providers: [StudentService],
   controllers: [StudentController],

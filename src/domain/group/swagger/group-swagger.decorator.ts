@@ -645,7 +645,8 @@ export const ListBookedPendingStudentsDocs = () => {
 \`\`\`json
 [
   {
-    "id": 123,
+    "id": 1,
+    "studentId": 123,
     "name": "홍길동",
     "grade": 2,
     "schoolId": 1,
@@ -657,7 +658,8 @@ export const ListBookedPendingStudentsDocs = () => {
     "bookingStatus": "PENDING"
   },
   {
-    "id": 124,
+    "id": 2,
+    "studentId": 124,
     "name": "김영희",
     "grade": 3,
     "schoolId": 1,
@@ -701,7 +703,8 @@ export const ListBookedPendingStudentsDocs = () => {
         items: {
           type: 'object',
           properties: {
-            id: { type: 'number', example: 123, description: '학생 ID' },
+            id: { type: 'number', example: 123, description: 'booking ID' },
+            studentId: { type: 'number', example: 123, description: '학생 ID' },
             name: {
               type: 'string',
               example: '홍길동',

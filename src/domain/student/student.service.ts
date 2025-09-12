@@ -36,7 +36,6 @@ import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { normalizePhone } from 'src/helpers/phone';
-import { S3Service } from 'src/services/aws/s3.service';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
 @Injectable()
@@ -56,7 +55,6 @@ export class StudentService {
     private readonly termRepository: Repository<Term>,
     @InjectModel('Attendance')
     private readonly model: Model<IAttendance, IAttendanceKey>,
-    private readonly s3Service: S3Service,
     private readonly dataSource: DataSource,
   ) {}
 

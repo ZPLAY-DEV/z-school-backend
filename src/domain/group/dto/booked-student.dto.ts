@@ -3,10 +3,16 @@ import { BookingStatus, StudentStatus } from 'src/common/enums';
 
 export class BookedStudentDto {
   @ApiProperty({
-    description: '학생 ID',
+    description: 'booking ID',
     example: 1,
   })
   id: number;
+
+  @ApiProperty({
+    description: '학생 ID',
+    example: 1,
+  })
+  studentId: number;
 
   @ApiProperty({
     description: '그룹 ID',
