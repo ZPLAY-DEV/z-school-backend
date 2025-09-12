@@ -45,6 +45,7 @@ import { RedisModule } from 'src/services/redis/redis.module';
 import { SlackModule } from 'src/services/slack/slack.module';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { OrmConfig } from './database/orm-config';
+import { DispatchSubscriber } from './domain/newsletter/subscribers/dispatch.subscriber';
 import { UploadModule } from './services/upload/upload.module';
 
 @Module({
@@ -157,6 +158,7 @@ import { UploadModule } from './services/upload/upload.module';
       useClass: CustomCatchAllFilter, // 모든 오류 처리 (validation 오류 상세 메시지 + Sentry/Slack 보고)
     },
     AppService,
+    DispatchSubscriber,
   ],
 })
 export class AppModule {}

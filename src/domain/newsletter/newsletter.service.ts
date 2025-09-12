@@ -107,7 +107,7 @@ export class NewsletterService {
     });
 
     if (dto.target && dto.targetItems) {
-      // 1. Dispatch 먼저 생성 및 저장 (ID 확보)
+      // 1. Dispatch 생성 및 저장 (Subscriber가 자동으로 shortlinks 처리)
       const dispatch = this.dispatchRepository.create({
         ...dto,
         status: SendStatus.SCHEDULED,
@@ -127,26 +127,8 @@ export class NewsletterService {
       dispatch.studentIds = studentIds;
       dispatch.targetLabel = label;
 
-      // Dispatch 저장하여 ID 확보
-      const savedDispatch = await this.dispatchRepository.save(dispatch);
-
-      // 2. 확보된 dispatch ID로 shortlink 생성
-      const shortlinks = await this._createShortlinks(
-        this.dataSource.manager,
-        newsletter,
-        dedupedStudents,
-        savedDispatch.id,
-      );
-
-      // 3. payload 업데이트
-      const payload = this._buildNotificationFullData(
-        term,
-        newsletter,
-        shortlinks,
-        dedupedStudents,
-      );
-      savedDispatch.payload = payload;
-      await this.dispatchRepository.save(savedDispatch);
+      // Dispatch 저장 (Subscriber가 백그라운드에서 shortlinks 생성 및 payload 업데이트)
+      await this.dispatchRepository.save(dispatch);
     }
 
     return newsletter;

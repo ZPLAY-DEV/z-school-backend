@@ -7,6 +7,7 @@ import { NewsletterDispatchController } from 'src/domain/newsletter/newsletter-d
 import { NewsletterDispatchService } from 'src/domain/newsletter/newsletter-dispatch.service';
 import { NewsletterController } from 'src/domain/newsletter/newsletter.controller';
 import { NewsletterService } from 'src/domain/newsletter/newsletter.service';
+import { DispatchSubscriber } from 'src/domain/newsletter/subscribers/dispatch.subscriber';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { SqsModule } from 'src/services/aws/sqs.module';
@@ -22,7 +23,7 @@ import { UploadModule } from 'src/services/upload/upload.module';
     RedisModule,
     NotificationModule,
   ],
+  providers: [NewsletterService, NewsletterDispatchService, DispatchSubscriber],
   controllers: [NewsletterController, NewsletterDispatchController],
-  providers: [NewsletterService, NewsletterDispatchService],
 })
 export class NewsletterModule {}

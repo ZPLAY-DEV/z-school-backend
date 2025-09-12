@@ -5,15 +5,15 @@ import { SendStatus } from 'src/common/enums/send-status';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
 import {
-  Column,
-  CreateDateColumn,
-  DeleteDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    DeleteDateColumn,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 
 //! notification target plus schedule
