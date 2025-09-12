@@ -22,7 +22,7 @@ WORKDIR /usr/src/app
 
 # Copy package files
 COPY package.json pnpm-lock.yaml* ./
-COPY *.account-key.json ./
+COPY *.fb-admin-key.json ./
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -53,7 +53,7 @@ COPY --from=builder --chown=chuck:nodejs /usr/src/app/static ./static
 # Copy package files for production dependencies
 COPY --from=builder --chown=chuck:nodejs /usr/src/app/package.json ./
 COPY --from=builder --chown=chuck:nodejs /usr/src/app/pnpm-lock.yaml ./
-COPY --from=builder --chown=chuck:nodejs /usr/src/app/*.account-key.json ./
+COPY --from=builder --chown=chuck:nodejs /usr/src/app/*.fb-admin-key.json ./
 
 # Install production dependencies only
 RUN pnpm install --prod --frozen-lockfile && \
