@@ -4,7 +4,10 @@ import { format } from 'date-fns';
 import { NewsletterType } from 'src/common/enums';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { classifyMessage } from 'src/helpers/classify';
-import { getTemplateOfNewsChanges } from 'src/helpers/get-message-body';
+import {
+  getTemplateOfNewsChanges,
+  getTemplateOfRegistration,
+} from 'src/helpers/get-message-body';
 import { AligoService } from 'src/services/aligo/aligo.service';
 import { AligoListResult } from 'src/services/aligo/types';
 import { NotificationService } from 'src/services/notification/notification.service';
@@ -25,21 +28,24 @@ export class TextService {
   // Notification API
   // ------------------------------------------------------------------------ //
 
-  async send(studentId): Promise<NotificationSendResult> {
+  async sendNotification(
+    id: number,
+    dto: {
+      school: string;
+      term: string;
+      title: string;
+      shortlink: string;
+    },
+  ): Promise<NotificationSendResult> {
     const student = await this.studentRepository.findOne({
-      where: { id: studentId },
+      where: { id },
       relations: ['parent', 'parent.user'],
     });
     if (!student) {
       throw new NotFoundException('Student not found.');
     }
 
-    const body = getTemplateOfNewsChanges({
-      school: 'x학교',
-      term: 'y학기',
-      title: '제목입니다.',
-      shortlink: 'https://스쿨허브.kr/2CC_-134dNVzNLECtykb6',
-    });
+    const body = getTemplateOfNewsChanges(dto);
     const data = {
       type: NewsletterType.CHANGES,
       schoolId: 1,
@@ -47,7 +53,42 @@ export class TextService {
         {
           token: student.parent.user?.pushToken ?? null,
           phone: student.parent.phone,
-          template: 'Text1',
+          template: 'NewsChanges1',
+          body: body,
+          role: 'PARENT',
+        },
+      ],
+    };
+
+    return await this.notificationService.send(data);
+  }
+
+  async sendRegistration(
+    id: number,
+    dto: {
+      school: string;
+      term: string;
+      period: string;
+      shortlink: string;
+    },
+  ): Promise<NotificationSendResult> {
+    const student = await this.studentRepository.findOne({
+      where: { id },
+      relations: ['parent', 'parent.user'],
+    });
+    if (!student) {
+      throw new NotFoundException('Student not found.');
+    }
+
+    const body = getTemplateOfRegistration(dto);
+    const data = {
+      type: NewsletterType.REGISTRATION,
+      schoolId: 1,
+      messages: [
+        {
+          token: student.parent.user?.pushToken ?? null,
+          phone: student.parent.phone,
+          template: 'Registration1',
           body: body,
           role: 'PARENT',
         },
