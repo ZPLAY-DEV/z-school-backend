@@ -674,6 +674,7 @@ export class SchooldayAttendanceService {
             start: group.start,
             end: group.end,
             weekday: group.weekday,
+            weekNumber: schoolday.weekNumber,
             expires,
           }),
         );
@@ -734,6 +735,7 @@ export class SchooldayAttendanceService {
       start: dto.start,
       end: dto.end,
       weekday: dto.weekday,
+      weekNumber: dto.weekNumber,
       status: AttendanceStatus.INIT,
       expires: dto.expires,
     };

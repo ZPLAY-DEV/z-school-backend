@@ -141,36 +141,6 @@ export class LessonAttendanceService {
         );
       });
 
-      // 6. 학생 ID 추출
-      const studentIds = activePicks.map((v: Pick) => v.studentId);
-
-      // 7. 한 번의 쿼리로 모든 학생 정보 조회 (부모 정보 포함)
-      const students = await this.studentRepository.find({
-        where: { id: In(studentIds) },
-        relations: ['parent'],
-        select: [
-          'id',
-          'name',
-          'grade',
-          'class',
-          'studentCode',
-          'nextStops',
-          'parent',
-        ],
-      });
-
-      // 8. 학생 ID를 key로 하는 student Map 생성 (빠른 lookup을 위해)
-      const studentMap = new Map(
-        students.map((student) => [student.id, student]),
-      );
-
-      // 9. 출석 데이터에 학생 정보 추가
-      completeAttendanceItems.forEach((item) => {
-        const student = studentMap.get(item.studentId!);
-        if (student) {
-          item.student = student;
-        }
-      });
       return completeAttendanceItems;
     } catch (error) {
       console.error(`[dynamodb] error`, error);

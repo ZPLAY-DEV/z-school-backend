@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -29,8 +30,6 @@ export class DepartureService {
   ) {}
 
   async create(dto: CreateDepartureDto): Promise<Departure> {
-    console.log(`🔥 dto`, JSON.stringify(dto, null, 2));
-
     try {
       // 학생을 조회
       const student = await this.studentRepository.findOne({
@@ -49,15 +48,20 @@ export class DepartureService {
         throw new NotFoundException('Schoolday not found.');
       }
 
+      if (schoolday.today !== dto.date) {
+        throw new BadRequestException('date does not match.');
+      }
+
       // departure 생성
       const departure = this.departureRepository.create(dto);
       await this.departureRepository.save(departure);
+
+      // 알림 발송
       const body = getTemplateOfDeparture({
         name: student?.name,
         school: student.school?.name,
         timestamp: `${formatInTimeZone(new Date(), 'Asia/Seoul', 'M월d일 H시m분')}`,
       });
-
       await this.notificationService.send({
         type: AlarmType.SCHOOL,
         schoolId: student.schoolId,
@@ -75,15 +79,13 @@ export class DepartureService {
       return departure;
     } catch (error) {
       if (error.code === 'ER_DUP_ENTRY') {
-        throw new BadRequestException('A record already exists.');
+        throw new ConflictException('A record already exists.');
       }
       throw error;
     }
   }
 
   async createBulk(dto: CreateDepartureBulkDto): Promise<Departure[]> {
-    console.log(`🔥 createBulk dto`, JSON.stringify(dto, null, 2));
-
     // 학생들을 조회
     const students = await this.studentRepository
       .createQueryBuilder('student')
@@ -106,6 +108,9 @@ export class DepartureService {
     });
     if (!schoolday) {
       throw new NotFoundException('Schoolday not found.');
+    }
+    if (schoolday.today !== dto.date) {
+      throw new BadRequestException('date does not match.');
     }
 
     // 기존 departure 기록 확인

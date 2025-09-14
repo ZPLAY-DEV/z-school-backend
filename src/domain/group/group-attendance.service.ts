@@ -22,6 +22,7 @@ import {
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
+  createFallbackAttendanceItem,
   fetchAllAttendanceItems,
   filterNoSql,
   generateDailyStudentKey,
@@ -40,7 +41,6 @@ import { GroupService } from 'src/domain/group/group.service';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { areTheyEqual } from 'src/helpers/array';
 import {
   getTemplateOfClassEnd,
   getTemplateOfClassStart,
@@ -48,7 +48,7 @@ import {
 } from 'src/helpers/get-message-body';
 import { translateActor } from 'src/helpers/translate';
 import { NotificationService } from 'src/services/notification/notification.service';
-import { Between, In, Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 @Injectable()
 export class GroupAttendanceService {
@@ -152,6 +152,7 @@ export class GroupAttendanceService {
         };
       });
 
+    //? 수업시작알림 SMS/Notification 발송
     await this.notificationService.send({
       type: AlarmType.CLASS,
       schoolId: group.lesson.schoolId,
@@ -286,6 +287,7 @@ export class GroupAttendanceService {
         'picks.student.parent.user',
       ],
     });
+
     try {
       const updateDto: CreateAttendanceWithKeyDto = {
         ...dto,
@@ -340,6 +342,8 @@ export class GroupAttendanceService {
       where: { id: dto.groupId },
       relations: ['lesson', 'schooldays'],
     });
+    if (!group) throw new NotFoundException('Group not found');
+    if (!group.lesson) throw new NotFoundException('Lesson not found');
     const student = await this.studentRepository.findOneOrFail({
       where: { id: dto.studentId },
     });
@@ -364,11 +368,11 @@ export class GroupAttendanceService {
     };
 
     // 새로운 로직: 특정일의 모든 수강생 출석 레코드를 생성하고 집계하여 MySQL 업데이트
-    await this._ensureAllStudentsAttendanceRecords(date, group);
+    await this._ensureAllStudentsAttendanceRecords(date, group, schoolday);
     // upsert용 데이터 준비
     const upsertData: Partial<IAttendance> = {
       ...filterNoSql(dto), // status, parentNote, schoolNote
-      lessonId: group.lessonId,
+      lessonId: group.lesson.id,
       lessonName: group.lesson.lessonName,
       groupId: group.id,
       groupName: group.groupName,
@@ -377,20 +381,23 @@ export class GroupAttendanceService {
       start: group.start,
       end: group.end,
       weekday: group.weekday,
+      weekNumber: schoolday.weekNumber,
       expires,
     };
 
+    const result = await this._updateTargetStudentAttendance(
+      itemKey,
+      upsertData,
+    );
+
+    // DynamoDB 레코드 집계하여 MySQL count 필드 업데이트 및 dailyStudentKeys 업데이트
+    // dailyStudentKeys 는 EXCUSED_ABSENT 일때만 중복없이 추가.
     const updatedDailyStudentKeys =
       dto.status === AttendanceStatus.EXCUSED_ABSENT
         ? Array.from(
             new Set([...(schoolday.dailyStudentKeys ?? []), dailyStudentKey]),
           )
         : [...(schoolday.dailyStudentKeys ?? [])];
-    const result = await this._updateTargetStudentAttendance(
-      itemKey,
-      upsertData,
-    );
-    // DynamoDB 레코드 집계하여 MySQL count 필드 업데이트
     await this._updateSchooldayFromDynamoDB(
       group.id,
       date,
@@ -407,10 +414,10 @@ export class GroupAttendanceService {
   private async _ensureAllStudentsAttendanceRecords(
     date: string,
     group: Group,
+    schoolday: Schoolday,
   ): Promise<void> {
     // 1. 그룹의 모든 활성 수강생 목록 가져오기
-    const students = await this.groupService.listStudents(group.id, '1');
-
+    const students = await this.groupService.listStudents(group.id, 'true');
     if (students.length === 0) {
       return;
     }
@@ -443,7 +450,7 @@ export class GroupAttendanceService {
         recordsToCreate.push({
           groupKey,
           dailyStudentKey,
-          lessonId: group.lessonId,
+          lessonId: group.lesson.id,
           lessonName: group.lesson.lessonName,
           groupId: group.id,
           groupName: group.groupName,
@@ -452,6 +459,7 @@ export class GroupAttendanceService {
           start: group.start,
           end: group.end,
           weekday: group.weekday,
+          weekNumber: schoolday.weekNumber,
           status: AttendanceStatus.INIT, // 기본값: 수업 전
           expires,
         });
@@ -486,7 +494,7 @@ export class GroupAttendanceService {
         const result = await this.model.create({
           ...itemKey,
           ...upsertData,
-        });
+        } as IAttendance);
         return normalizeAttendance(result);
       } else {
         throw updateError;
@@ -743,10 +751,9 @@ export class GroupAttendanceService {
         completeAttendanceItems.map((item) => {
           return {
             ...item, // Already converted by Dynamoose!
-            student: studentMap.get(item.studentId!),
-            isLast: studentIsLastMap.get(item.studentId!) ?? false,
-            next: studentNextMap.get(item.studentId!) ?? '이동장소 미지정',
-            departure: departureMap.get(item.studentId!) ?? null,
+            isLast: studentIsLastMap.get(item.studentId) ?? false,
+            next: studentNextMap.get(item.studentId) ?? '이동장소 미지정',
+            departure: departureMap.get(item.studentId) ?? null,
           };
         });
 
@@ -897,11 +904,30 @@ export class GroupAttendanceService {
     });
     sheet.addRow(headerRow);
 
+    // 주차 정보 행 추가
+    const weekRow = ['', '', ''];
+    monthSchooldays.forEach((schoolday) => {
+      weekRow.push(`${schoolday.weekNumber}주차`);
+    });
+    sheet.addRow(weekRow);
+
     // 10. 헤더 스타일링
-    const headerRowObj = sheet.getRow(sheet.rowCount);
+    const headerRowObj = sheet.getRow(sheet.rowCount - 1); // 헤더 행
     headerRowObj.font = { bold: true };
     headerRowObj.alignment = { horizontal: 'center' };
     headerRowObj.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    });
+
+    // 주차 행 스타일링
+    const weekRowObj = sheet.getRow(sheet.rowCount);
+    weekRowObj.alignment = { horizontal: 'center' };
+    weekRowObj.eachCell((cell) => {
       cell.border = {
         top: { style: 'thin' },
         left: { style: 'thin' },
@@ -965,7 +991,7 @@ export class GroupAttendanceService {
               statusText = '수업전';
               break;
             default:
-              statusText = '';
+              statusText = '?';
           }
           rowData.push(statusText);
         } else {
@@ -1046,75 +1072,107 @@ export class GroupAttendanceService {
     return processAttendanceReport(items);
   }
 
-  //? note that this code will 100% works in AWS
-  //? but, in local environment, 9 hour difference will be applied.
-  //? but, performance wise, it's better to use this code in production.
-  //? just keep in mind that responses will be different in edge cases.
-  async getStudentMonthlyReport(
+  //? Optimized version using schoolday query + batchGet pattern
+  //? This approach is much more efficient than fetching all attendance items
+  async getStudentAttendances(
     groupId: number,
-    date: string, //? ex. "2025-08"
     studentId: number,
+    monthStr: string, //? ex. "2025-08"
   ): Promise<IAttendance[]> {
-    const year = Number(date.split('-')[0]);
-    const month = Number(date.split('-')[1]);
+    const year = Number(monthStr.split('-')[0]);
+    const month = Number(monthStr.split('-')[1]);
     const startOfMonth = new Date(year, month - 1, 1); // 월은 0-base
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // 다음 달의 0일 = 이번 달의 마지막 날 (23:59:59.999까지 포함)
 
-    // 병렬로 실행하여 성능 최적화
-    const [allItems, student, schooldays] = await Promise.all([
-      fetchAllAttendanceItems(this.model, groupId, date),
-      this.studentRepository.findOne({ where: { id: studentId } }),
-      this.schooldayRepository
+    try {
+      // 1. 한 번의 쿼리로 schooldays와 picks, student를 조인해서 해당 학생의 수업일 조회
+      const schooldays = await this.schooldayRepository
         .createQueryBuilder('schoolday')
         .leftJoinAndSelect('schoolday.group', 'group')
+        .leftJoinAndSelect('group.picks', 'pick')
+        .leftJoinAndSelect('pick.student', 'student')
         .where('schoolday.groupId = :groupId', { groupId })
+        .andWhere('pick.studentId = :studentId', { studentId })
         .andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
           beginning: startOfMonth,
           ending: endOfMonth,
         })
-        .getMany(),
-    ]);
-    const dateMap = new Map<
-      string,
-      Schoolday & { group: Group; weekNumber: number }
-    >(
-      schooldays.map((v) => [
-        `DATE#${v.today}`,
-        { ...v, group: v.group, weekNumber: v.weekNumber },
-      ]),
-    );
+        .orderBy('schoolday.startsAt', 'ASC')
+        .getMany();
 
-    return Array.from(dateMap.keys()).map((v) => {
-      return {
-        ...(allItems.find(
-          (i) =>
-            getStudentIdFromDailyStudentKey(i.dailyStudentKey) === studentId &&
-            getDatePrefixFromDailyStudentKey(i.dailyStudentKey) === v,
-        ) ||
-          ({
-            groupId: dateMap.get(v)?.group.id,
-            start: dateMap.get(v)?.group.start,
-            end: dateMap.get(v)?.group.end,
-            groupKey: generateGroupKey(groupId),
-            lessonId: dateMap.get(v)?.lessonId,
-            lessonName: dateMap.get(v)?.name,
-            groupName: dateMap.get(v)?.group.groupName,
-            weekday: dateMap.get(v)?.group.weekday,
-            studentId: studentId,
-            studentName: student?.name || '학생명',
-            dailyStudentKey: generateDailyStudentKey(
-              v.slice(5),
-              studentId,
-              student?.grade || 1,
-              student?.class || '1',
-              student?.studentCode || 1,
-            ),
-            status: AttendanceStatus.NONE,
-          } as IAttendance)),
-        weekNumber: dateMap.get(v)?.weekNumber,
-        dateStr: v.slice(5),
-      };
-    });
+      if (schooldays.length === 0) {
+        throw new BadRequestException(`수업일이 없거나 수강생이 아닙니다.`);
+      }
+
+      // 2. schooldays를 기반으로 attendance 키 생성
+      const groupKey = generateGroupKey(groupId);
+      const keys = schooldays.map((schoolday) => {
+        // schoolday.group.picks에서 해당 student 찾기
+        if (!schoolday.group || !schoolday.group.picks) {
+          throw new BadRequestException('Group or picks information not found');
+        }
+        const pick = schoolday.group.picks.find(
+          (p) => p.studentId === studentId,
+        );
+        if (!pick || !pick.student) {
+          throw new BadRequestException('Student information not found');
+        }
+        const dailyStudentKey = generateDailyStudentKey(
+          schoolday.today,
+          pick.student.id,
+          pick.student.grade,
+          pick.student.class,
+          pick.student.studentCode,
+        );
+        return {
+          groupKey,
+          dailyStudentKey,
+        };
+      });
+
+      // 3. DynamoDB에서 attendance 레코드들 조회 (batchGetByIdWithUserId와 동일)
+      const results: IAttendance[] = [];
+      if (keys.length > 0) {
+        const batchResults = await this.model.batchGet(keys);
+        for (const item of batchResults) {
+          if (item) {
+            results.push(item as IAttendance);
+          }
+        }
+      }
+
+      // 4. DynamoDB에 없는 레코드에 대해 fallback item 생성
+      const attendanceMap = new Map<string, IAttendance>(
+        results.map((attendance) => [
+          getDatePrefixFromDailyStudentKey(attendance.dailyStudentKey),
+          attendance,
+        ]),
+      );
+
+      const finalResults: IAttendance[] = [];
+      for (const schoolday of schooldays) {
+        const dateKey = `DATE#${schoolday.today}`;
+        const existingAttendance = attendanceMap.get(dateKey);
+
+        if (existingAttendance) {
+          // DynamoDB에 레코드가 있는 경우
+          finalResults.push(existingAttendance);
+        } else {
+          // DynamoDB에 레코드가 없는 경우 fallback item 생성
+          const fallbackItem = createFallbackAttendanceItem(
+            schoolday,
+            studentId,
+            groupKey,
+          );
+          finalResults.push(fallbackItem);
+        }
+      }
+
+      return normalizeAttendances(finalResults);
+    } catch (error) {
+      console.error(`[dynamodb] getStudentAttendances error:`, error);
+      throw new BadRequestException(error.message);
+    }
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -1123,99 +1181,133 @@ export class GroupAttendanceService {
 
   private async findAttendancesByMonth(
     groupId: number,
-    date: string, //? `2025-08` (월 단위)
+    monthStr: string, //? `2025-08` (월 단위)
   ): Promise<IAttendance[]> {
-    const year = Number(date.split('-')[0]);
-    const month = Number(date.split('-')[1]);
+    const year = Number(monthStr.split('-')[0]);
+    const month = Number(monthStr.split('-')[1]);
     const startOfMonth = new Date(year, month - 1, 1); // 월은 0-based
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // 다음 달의 0일 = 이번 달의 마지막 날 (23:59:59.999까지 포함)
 
     try {
-      // 1. 해당 반 수업이 있는 날짜 및 수업시간 조회
-      const schooldays = await this.schooldayRepository.find({
-        where: {
-          groupId: groupId,
-          startsAt: Between(startOfMonth, endOfMonth),
-        },
-      });
+      // 1. 한 번의 쿼리로 schooldays와 picks, student를 조인해서 해당 반의 모든 수업일과 학생 정보 조회
+      const schooldays = await this.schooldayRepository
+        .createQueryBuilder('schoolday')
+        .leftJoinAndSelect('schoolday.group', 'group')
+        .leftJoinAndSelect('group.picks', 'pick')
+        .leftJoinAndSelect('pick.student', 'student')
+        .leftJoinAndSelect('group.lesson', 'lesson')
+        .where('schoolday.groupId = :groupId', { groupId })
+        .andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
+          beginning: startOfMonth,
+          ending: endOfMonth,
+        })
+        .orderBy('schoolday.startsAt', 'ASC')
+        .getMany();
 
       if (!schooldays || schooldays.length === 0) {
+        console.log(
+          `📅 No schooldays found for group ${groupId} in ${monthStr}`,
+        );
         return [];
       }
 
-      // 2. schooldays 에 연관된 모든 attendance 데이터 조회 (DynamoDB)
-      const allItems: IAttendance[] = await fetchAllAttendanceItems(
-        this.model,
-        groupId,
-        date,
-      );
-
-      // 3. 출석부 레코드를 dailyStudentKey로 맵핑
-      const itemMap = new Map<string, IAttendance>(
-        allItems.map((v) => [v.dailyStudentKey, v]),
-      );
-
-      // 4. 반의 학생 아이디 추출 (picks 와 dynamo 둘 다)
-      const picks = await this.pickRepository.find({
-        where: [{ groupId }],
-        relations: ['group', 'group.lesson', 'student'],
-      });
-      const studentIdsFromPicks = picks.map((pick) => pick.studentId);
-      const studentIdsFromDynamoDb = [
-        ...new Set(
-          Array.from(itemMap.keys()).map((v) => {
-            return getStudentIdFromDailyStudentKey(v);
-          }),
-        ),
-      ];
-
-      if (!areTheyEqual(studentIdsFromPicks, studentIdsFromDynamoDb)) {
-        throw new Error('dynamo entries not matched');
-      }
-
-      // 5. 각 수업일별로 attendance 생성
-      const attendances: IAttendance[] = [];
+      // 2. schooldays를 기반으로 attendance 키 생성
+      const groupKey = generateGroupKey(groupId);
+      const keys: Array<{ groupKey: string; dailyStudentKey: string }> = [];
 
       for (const schoolday of schooldays) {
-        console.log(`🔄 Processing schoolday: ${schoolday.today}`);
+        if (!schoolday.group || !schoolday.group.picks) {
+          console.warn(
+            `⚠️ Group or picks information not found for schoolday ${schoolday.today}`,
+          );
+          continue;
+        }
 
-        for (const pick of picks) {
-          const groupKey = generateGroupKey(pick.group.id);
+        for (const pick of schoolday.group.picks) {
+          if (!pick.student) {
+            console.warn(
+              `⚠️ Student information not found for pick ${pick.id}`,
+            );
+            continue;
+          }
+
           const dailyStudentKey = generateDailyStudentKey(
-            schoolday.today, // schoolday.today를 사용
-            pick.studentId,
+            schoolday.today,
+            pick.student.id,
             pick.student.grade,
             pick.student.class,
             pick.student.studentCode,
           );
 
-          const existingAttendance = itemMap.get(dailyStudentKey);
-          const attendance = existingAttendance
-            ? existingAttendance
-            : ({
-                groupKey: groupKey,
-                dailyStudentKey: dailyStudentKey,
-                lessonId: pick.group.lessonId,
-                lessonName: pick.group.lesson.lessonName,
-                groupId: pick.group.id,
-                groupName: pick.group.groupName,
-                studentId: pick.student.id,
-                studentName: pick.student.name,
-                start: pick.group.start,
-                end: pick.group.end,
-                weekday: pick.group.weekday,
-                status: AttendanceStatus.NONE,
-              } as IAttendance);
-
-          attendances.push(normalizeAttendance(attendance));
+          keys.push({
+            groupKey,
+            dailyStudentKey,
+          });
         }
       }
 
-      console.log(`🎯 Final result: ${attendances.length} attendances`);
+      // 3. DynamoDB에서 attendance 레코드들 조회 (batchGet)
+      const results: IAttendance[] = [];
+      if (keys.length > 0) {
+        try {
+          const batchResults = await this.model.batchGet(keys);
+          for (const item of batchResults) {
+            if (item) {
+              results.push(item as IAttendance);
+            }
+          }
+        } catch (batchError) {
+          console.error(`[dynamodb] batchGet error:`, batchError);
+          // batchGet 실패 시 fallback으로 빈 배열 사용
+        }
+      }
 
-      return attendances;
+      // 4. DynamoDB에 없는 레코드에 대해 fallback item 생성
+      const attendanceMap = new Map<string, IAttendance>(
+        results.map((attendance) => [
+          getDatePrefixFromDailyStudentKey(attendance.dailyStudentKey),
+          attendance,
+        ]),
+      );
+
+      const finalResults: IAttendance[] = [];
+
+      for (const schoolday of schooldays) {
+        if (!schoolday.group || !schoolday.group.picks) {
+          continue;
+        }
+
+        for (const pick of schoolday.group.picks) {
+          if (!pick.student || !schoolday.group.lesson) {
+            continue;
+          }
+
+          const dateKey = `DATE#${schoolday.today}`;
+
+          const existingAttendance = attendanceMap.get(dateKey);
+
+          if (existingAttendance) {
+            // DynamoDB에 레코드가 있는 경우
+            finalResults.push(existingAttendance);
+          } else {
+            // DynamoDB에 레코드가 없는 경우 fallback item 생성
+            const fallbackItem = createFallbackAttendanceItem(
+              schoolday,
+              pick.student.id,
+              groupKey,
+            );
+            finalResults.push(fallbackItem);
+          }
+        }
+      }
+
+      console.log(
+        `🎯 Final result: ${finalResults.length} attendances for group ${groupId} in ${monthStr}`,
+      );
+
+      return normalizeAttendances(finalResults);
     } catch (error) {
-      console.error(`[dynamodb] error`, error);
+      console.error(`[dynamodb] findAttendancesByMonth error:`, error);
       throw new BadRequestException(
         error.message || '출석 정보 조회에 실패했습니다.',
       );
@@ -1248,21 +1340,13 @@ export class GroupAttendanceService {
 
         try {
           // 1차 시도: update (레코드가 존재할 때만 업데이트, 없으면 에러)
-          console.log(`🔄 Attempting UPDATE for ${dto.dailyStudentKey}`);
-          console.log(`📝 UpsertData:`, JSON.stringify(upsertData, null, 2));
-
           const updateResult = await this.model.update(itemKey, upsertData, {
             condition: new dynamoose.Condition().where('groupKey').exists(),
             return: 'item',
           });
 
-          console.log(
-            `✅ UPDATE SUCCESS:`,
-            JSON.stringify(updateResult, null, 2),
-          );
           return updateResult;
         } catch (updateError: any) {
-          console.error(`☠️ Update failed, attempting create:`, updateError);
           // update 실패시 (아이템이 없거나 다른 이유) create 시도
           if (
             updateError.message?.includes('no item found') ||
@@ -1273,16 +1357,41 @@ export class GroupAttendanceService {
               dto.dailyStudentKey,
             );
 
-            // Group과 Student 정보를 병렬로 조회
-            const [group, student] = await Promise.all([
-              this.groupRepository.findOneOrFail({
-                where: { id: getGroupIdFromGroupKey(dto.groupKey) },
-                relations: ['lesson'],
-              }),
-              this.studentRepository.findOneOrFail({
-                where: { id: studentId },
-              }),
-            ]);
+            const dateStr = getDateFromDailyStudentKey(dto.dailyStudentKey);
+
+            // Group, Student, Schoolday 정보를 한 번의 쿼리로 조회 (최적화)
+            const groupId = getGroupIdFromGroupKey(dto.groupKey);
+            const result = await this.groupRepository
+              .createQueryBuilder('group')
+              .leftJoinAndSelect('group.lesson', 'lesson')
+              .leftJoinAndSelect('group.schooldays', 'schoolday')
+              .leftJoinAndSelect('group.picks', 'pick')
+              .leftJoinAndSelect('pick.student', 'student')
+              .where('group.id = :groupId', { groupId })
+              .andWhere('schoolday.today = :dateStr', { dateStr })
+              .andWhere('student.id = :studentId', { studentId })
+              .getOne();
+
+            if (!result) {
+              throw new NotFoundException(
+                'Group, Student, or Schoolday not found',
+              );
+            }
+
+            const group = result;
+            const student = result.picks?.find(
+              (p) => p.student.id === studentId,
+            )?.student;
+            const schoolday = result.schooldays?.find(
+              (s) => s.today === dateStr,
+            );
+
+            if (!student) {
+              throw new NotFoundException('Student not found in group');
+            }
+            if (!schoolday) {
+              throw new NotFoundException('Schoolday not found for the date');
+            }
 
             const expires = Math.floor(
               addDays(new Date(), 400).getTime() / 1000,
@@ -1299,14 +1408,10 @@ export class GroupAttendanceService {
               start: group.start,
               end: group.end,
               weekday: group.weekday,
+              weekNumber: schoolday.weekNumber,
               expires,
               ...upsertData,
             };
-
-            console.log(
-              `☠️ Creating new attendance record for ${dto.dailyStudentKey}`,
-              JSON.stringify(createData, null, 2),
-            );
 
             return await this.model.create(createData);
           }
@@ -1427,52 +1532,6 @@ export class GroupAttendanceService {
   }
 
   /**
-   * 학부모가 parentNote 를 남길때마다 그 학생의 키를 schoolday 에 추가
-   * status에 따라 해당 카운트도 증가
-   */
-  private async updateSchooldayDailyStudentKeys(
-    schoolday: Schoolday,
-    dailyStudentKey: string,
-    status: AttendanceStatus,
-  ): Promise<void> {
-    const updatedKeys = Array.from(
-      new Set([...(schoolday.dailyStudentKeys ?? []), dailyStudentKey]),
-    );
-
-    let queryBuilder = this.schooldayRepository
-      .createQueryBuilder()
-      .update(Schoolday)
-      .set({
-        dailyStudentKeys: updatedKeys,
-      })
-      .where('id = :id', { id: schoolday.id });
-
-    // status에 따른 카운트 증가
-    // todo. 기존상태가 설정된 상태라면 마이너스해줘야 하지 않을까?
-    if (
-      status === AttendanceStatus.EXCUSED_ABSENT ||
-      status === AttendanceStatus.ABSENT
-    ) {
-      queryBuilder = queryBuilder.set({
-        dailyStudentKeys: updatedKeys,
-        absentCount: () => 'absentCount + 1',
-      });
-    } else if (status === AttendanceStatus.LATE) {
-      queryBuilder = queryBuilder.set({
-        dailyStudentKeys: updatedKeys,
-        lateCount: () => 'lateCount + 1',
-      });
-    } else if (status === AttendanceStatus.LEFT) {
-      queryBuilder = queryBuilder.set({
-        dailyStudentKeys: updatedKeys,
-        leftCount: () => 'leftCount + 1',
-      });
-    }
-
-    await queryBuilder.execute();
-  }
-
-  /**
    * schoolday 카운트 업데이트 및 시작알림 발송시각 업데이트
    */
   private async updateSchooldayCountsAndStartNotifiedAt(
@@ -1500,52 +1559,7 @@ export class GroupAttendanceService {
     const startOfDay = new Date(`${date}T00:00:00.000Z`);
     const endOfDay = new Date(`${date}T23:59:59.999Z`);
 
-    // 디버깅: 실제 존재하는 schooldays 레코드 확인
-    const existingSchooldays = await this.schooldayRepository
-      .createQueryBuilder('schoolday')
-      .where('schoolday.groupId = :groupId', { groupId })
-      .andWhere(
-        'schoolday.startsAt >= :startOfDay AND schoolday.startsAt < :endOfDay',
-        {
-          startOfDay,
-          endOfDay,
-        },
-      )
-      .getMany();
-
-    console.log(`🔍 [DEBUG] notifyStart - groupId: ${groupId}, date: ${date}`);
-    console.log(
-      `🔍 [DEBUG] notifyStart - startOfDay: ${startOfDay.toISOString()}, endOfDay: ${endOfDay.toISOString()}`,
-    );
-    console.log(
-      `🔍 [DEBUG] notifyStart - found ${existingSchooldays.length} existing schooldays`,
-    );
-
-    if (existingSchooldays.length === 0) {
-      // 더 넓은 범위로 검색해보기
-      const allSchooldaysForGroup = await this.schooldayRepository
-        .createQueryBuilder('schoolday')
-        .where('schoolday.groupId = :groupId', { groupId })
-        .orderBy('schoolday.startsAt', 'ASC')
-        .getMany();
-
-      console.log(
-        `🔍 [DEBUG] notifyStart - total schooldays for group ${groupId}: ${allSchooldaysForGroup.length}`,
-      );
-      allSchooldaysForGroup.forEach((sd, index) => {
-        console.log(
-          `🔍 [DEBUG] notifyStart - schoolday[${index}]: id=${sd.id}, startsAt=${sd.startsAt?.toISOString()}, today=${sd.today}`,
-        );
-      });
-    } else {
-      existingSchooldays.forEach((sd, index) => {
-        console.log(
-          `🔍 [DEBUG] notifyStart - matching schoolday[${index}]: id=${sd.id}, startsAt=${sd.startsAt?.toISOString()}, today=${sd.today}`,
-        );
-      });
-    }
-
-    const result = await this.schooldayRepository
+    await this.schooldayRepository
       .createQueryBuilder()
       .update(Schoolday)
       .set({
@@ -1561,10 +1575,6 @@ export class GroupAttendanceService {
         endOfDay,
       })
       .execute();
-
-    console.log(
-      `🔍 [DEBUG] notifyStart - update result: affected rows = ${result.affected}`,
-    );
   }
 
   /**

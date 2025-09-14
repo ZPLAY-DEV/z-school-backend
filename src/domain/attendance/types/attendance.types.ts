@@ -24,6 +24,8 @@ export type AttendanceStatusRequest = {
 
 export interface AttendanceReportItem {
   date: string;
+  weekday: string;
+  weekNumber: number;
   status: string;
 }
 

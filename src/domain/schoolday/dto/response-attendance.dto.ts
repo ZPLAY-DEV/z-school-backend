@@ -99,6 +99,10 @@ export class BuildAttendanceBodyDto {
   @IsString()
   weekday: string;
 
+  @ApiProperty({ description: 'weekNumber', example: 1 })
+  @IsNumber()
+  weekNumber: number;
+
   @ApiProperty({ description: 'expires', example: 1718438400 })
   @IsNumber()
   expires: number;

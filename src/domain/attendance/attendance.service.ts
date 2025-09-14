@@ -308,6 +308,8 @@ export class AttendanceService {
       relations: ['schooldays', 'lesson', 'picks', 'picks.student'],
     });
     if (!group) throw new NotFoundException('Group not found');
+    if (!group.lesson) throw new NotFoundException('Lesson not found');
+    if (!group.picks) throw new NotFoundException('Picks not found');
 
     const schoolday = group.schooldays.find(
       (v) => formatInTimeZone(v.startsAt, 'Asia/Seoul', 'yyyy-MM-dd') === date,
@@ -335,6 +337,7 @@ export class AttendanceService {
       start: formatInTimeZone(schoolday.startsAt, 'Asia/Seoul', 'HH:mm'),
       end: formatInTimeZone(schoolday.endsAt, 'Asia/Seoul', 'HH:mm'),
       weekday: group.weekday,
+      weekNumber: schoolday.weekNumber,
       expires,
     };
 

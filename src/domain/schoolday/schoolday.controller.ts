@@ -17,6 +17,7 @@ import { Actor } from 'src/common/enums';
 
 import { UpdateSchooldayTimeDto } from 'src/domain/schoolday/dto/update-schoolday.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { getKoreanWeekday } from 'src/helpers/date';
 import { formatDateInKST } from 'src/helpers/time';
 import { SchooldayService } from './schoolday.service';
 import {
@@ -131,6 +132,7 @@ export class SchooldayController {
     if ('startsAt' in dto) {
       newSchoolday.original = newSchoolday.today;
       newSchoolday.today = formatDateInKST(newSchoolday.startsAt);
+      newSchoolday.weekday = getKoreanWeekday(newSchoolday.today);
     }
 
     return newSchoolday;

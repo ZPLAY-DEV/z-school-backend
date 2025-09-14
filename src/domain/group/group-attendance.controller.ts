@@ -7,6 +7,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   Res,
   UseInterceptors,
 } from '@nestjs/common';
@@ -76,6 +77,7 @@ export class GroupAttendanceController {
   }
 
   //! assumed each day has only one class by the groupId
+  //! 만일 해당 날짜에 다이나모 record 가 없으면 모두 새로 생성후, schoolday 업데이트
   @UpsertAttendanceDocs()
   @HttpCode(200)
   @Post(':groupId/attendances/:date/students/:studentId')
@@ -117,6 +119,14 @@ export class GroupAttendanceController {
     return await this.groupAttendancesService.getMonthlyReport(groupId, month);
   }
 
+  @Get(':groupId/attendance-report')
+  async getMonthlyAttendanceReport(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Query('month') month: string,
+  ): Promise<AttendanceReport[]> {
+    return await this.groupAttendancesService.getMonthlyReport(groupId, month);
+  }
+
   // schooldays 는 그날 수업이 있나 없나 판단 근거.
   // 학생별 출석자료 source of truth 는 dynamodb.
   @DownloadMonthlyReportExcelDocs()
@@ -147,16 +157,16 @@ export class GroupAttendanceController {
   }
 
   @GetStudentMonthlyReportDocs()
-  @Get(':groupId/attendances/:month/students/:studentId')
-  async getStudentMonthlyReport(
+  @Get(':groupId/students/:studentId/attendances')
+  async getStudentAttendances(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Param('month') month: string,
     @Param('studentId', ParseIntPipe) studentId: number,
+    @Query('month') month: string,
   ): Promise<IAttendance[]> {
-    return await this.groupAttendancesService.getStudentMonthlyReport(
+    return await this.groupAttendancesService.getStudentAttendances(
       groupId,
-      month,
       studentId,
+      month,
     );
   }
 }

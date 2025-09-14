@@ -1,6 +1,5 @@
 import { AttendanceStatus } from 'src/common/enums';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
-import { Student } from 'src/domain/student/entities/student.entity';
 
 export interface IAttendanceKey {
   groupKey: string; // partition key, e.g. "GROUP#1"
@@ -8,18 +7,18 @@ export interface IAttendanceKey {
 }
 
 export interface IAttendanceCore extends IAttendanceKey {
-  lessonId?: number;
-  lessonName?: string;
-  groupId?: number;
-  groupName?: string;
-  studentId?: number;
-  studentName?: string;
-  start?: string; // e.g. "14:00"
-  end?: string; // e.g. "14:40"
-  weekday?: string; // e.g. '월'
+  lessonId: number;
+  lessonName: string;
+  groupId: number;
+  groupName: string;
+  studentId: number;
+  studentName: string;
+  start: string; // e.g. "14:00"
+  end: string; // e.g. "14:40"
+  weekday: string; // e.g. '월'
+  weekNumber: number; // 주차 번호
   status?: AttendanceStatus;
   expires?: number; // for 400 days (a bit longer than 365 days)
-  student?: Student;
 }
 
 export interface IAttendance extends IAttendanceCore {
@@ -29,11 +28,6 @@ export interface IAttendance extends IAttendanceCore {
   schoolNotedAt?: Date | null;
   createdAt?: Date; // Dynamoose timestamps
   updatedAt?: Date; // Dynamoose timestamps
-}
-
-export interface IAttendanceWithWeekNumber extends IAttendance {
-  weekNumber: number;
-  dateStr: string; // Next class name or student's nextStop
 }
 
 export interface IAttendanceWithNextStop extends IAttendance {

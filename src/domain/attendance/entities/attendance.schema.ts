@@ -49,6 +49,10 @@ export const AttendanceSchema = new Schema(
       type: String,
       required: true,
     },
+    weekNumber: {
+      type: Number,
+      required: true,
+    },
     status: {
       type: String,
       enum: Object.values(AttendanceStatus),

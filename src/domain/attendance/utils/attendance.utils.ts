@@ -1,9 +1,13 @@
+import { AttendanceStatus } from 'src/common/enums';
 import {
   IAttendance,
   IAttendanceCore,
   IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
-import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
+import {
+  AttendanceReport,
+  AttendanceReportItem,
+} from 'src/domain/attendance/types/attendance.types';
 
 export function filterNoSql<T extends Record<string, any>>(obj: T): Partial<T> {
   return Object.fromEntries(
@@ -42,7 +46,7 @@ export function getStudentIdFromDailyStudentKey(
  * Generate daily student key for DynamoDB
  */
 export function generateDailyStudentKey(
-  localDateStr: string,
+  dateStr: string,
   studentId: number,
   grade: number,
   klass: string,
@@ -50,7 +54,7 @@ export function generateDailyStudentKey(
 ): string {
   const zeroPaddedCode = studentCode.toString().padStart(2, '0');
   const studentCodeStr = `${grade}-${klass}-${zeroPaddedCode}`;
-  return `DATE#${localDateStr}#STUDENT#${studentId}#${studentCodeStr}`;
+  return `DATE#${dateStr}#STUDENT#${studentId}#${studentCodeStr}`;
 }
 
 /**
@@ -91,7 +95,7 @@ export function processAttendanceReport(
     string,
     {
       studentName: string;
-      attendances: { date: string; status: string }[];
+      attendances: AttendanceReportItem[];
     }
   >();
 
@@ -114,6 +118,8 @@ export function processAttendanceReport(
     const studentData = groupedByStudent.get(studentKey)!;
     studentData.attendances.push({
       date,
+      weekday: item.weekday,
+      weekNumber: item.weekNumber,
       status: item.status || 'PENDING',
     });
   }
@@ -183,4 +189,70 @@ export async function fetchAllAttendanceItems(
   } while (lastKey);
 
   return allItems;
+}
+
+/**
+ * Create fallback attendance item when DynamoDB record doesn't exist
+ * @param schoolday - Schoolday entity with group and lesson relations
+ * @param studentId - Student ID
+ * @param groupKey - Group key for DynamoDB
+ * @returns Fallback attendance item
+ */
+export function createFallbackAttendanceItem(
+  schoolday: {
+    today: string;
+    lessonId: number;
+    groupId: number;
+    id: number;
+    weekNumber?: number;
+    group?: {
+      lesson?: { lessonName?: string };
+      groupName?: string;
+      start?: string;
+      end?: string;
+      weekday?: string;
+      picks?: Array<{
+        studentId: number;
+        student?: {
+          id: number;
+          name?: string;
+          grade: number;
+          class: string;
+          studentCode: number;
+        };
+      }>;
+    };
+  },
+  studentId: number,
+  groupKey: string,
+): IAttendance {
+  // schoolday.group.picks에서 해당 student 찾기
+  const pick = schoolday.group?.picks?.find(
+    (p: any) => p.studentId === studentId,
+  );
+  if (!pick || !pick.student) {
+    throw new Error('Student information not found in schoolday');
+  }
+
+  return {
+    groupKey: groupKey,
+    dailyStudentKey: generateDailyStudentKey(
+      schoolday.today,
+      pick.student.id,
+      pick.student.grade,
+      pick.student.class,
+      pick.student.studentCode,
+    ),
+    lessonId: schoolday.lessonId,
+    lessonName: schoolday.group?.lesson?.lessonName || '수업명',
+    groupId: schoolday.groupId,
+    groupName: schoolday.group?.groupName || '그룹명',
+    studentId: studentId,
+    studentName: pick.student.name || '학생명',
+    start: schoolday.group?.start || '09:00',
+    end: schoolday.group?.end || '10:00',
+    weekday: schoolday.group?.weekday || '월',
+    status: AttendanceStatus.NONE,
+    weekNumber: schoolday.weekNumber,
+  } as IAttendance;
 }

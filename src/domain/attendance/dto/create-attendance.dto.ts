@@ -56,6 +56,10 @@ export class CreateAttendanceDto {
   @IsString()
   weekday: string;
 
+  @ApiProperty({ description: '🈵 weekNumber (e.g. 1)' })
+  @IsNumber()
+  weekNumber: number;
+
   @ApiProperty({
     description: '🈵 status',
     default: AttendanceStatus.PRESENT,
