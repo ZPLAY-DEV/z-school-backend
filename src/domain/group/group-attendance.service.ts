@@ -30,6 +30,8 @@ import {
   getDatePrefixFromDailyStudentKey,
   getGroupIdFromGroupKey,
   getStudentIdFromDailyStudentKey,
+  normalizeAttendance,
+  normalizeAttendances,
   processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
@@ -473,17 +475,19 @@ export class GroupAttendanceService {
   ): Promise<IAttendance> {
     try {
       // 1차 시도: update (기존 아이템 업데이트)
-      return await this.model.update(itemKey, upsertData);
+      const result = await this.model.update(itemKey, upsertData);
+      return normalizeAttendance(result);
     } catch (updateError: any) {
       // update 실패시 (아이템이 없거나 다른 이유) create 시도
       if (
         updateError.message?.includes('no item found') ||
         updateError.name === 'ValidationException'
       ) {
-        return await this.model.create({
+        const result = await this.model.create({
           ...itemKey,
           ...upsertData,
         });
+        return normalizeAttendance(result);
       } else {
         throw updateError;
       }
@@ -601,17 +605,11 @@ export class GroupAttendanceService {
 
           const existingItem = itemMap.get(dailyStudentKey);
           if (existingItem) {
-            // 기존 아이템이 있는 경우, 누락된 필드들을 null로 정규화
-            return {
-              ...existingItem,
-              parentNote: existingItem.parentNote ?? null,
-              parentNotedAt: existingItem.parentNotedAt ?? null,
-              schoolNote: existingItem.schoolNote ?? null,
-              schoolNotedAt: existingItem.schoolNotedAt ?? null,
-            };
+            // 기존 아이템이 있는 경우, normalize 함수로 정규화
+            return normalizeAttendance(existingItem);
           } else {
             // 새로운 아이템 생성 시 모든 필드를 null로 초기화
-            return {
+            return normalizeAttendance({
               groupId: pick.group.id,
               start: pick.group.start,
               end: pick.group.end,
@@ -624,11 +622,7 @@ export class GroupAttendanceService {
               studentName: pick.student.name,
               dailyStudentKey: dailyStudentKey,
               status: AttendanceStatus.NONE,
-              parentNote: null,
-              parentNotedAt: null,
-              schoolNote: null,
-              schoolNotedAt: null,
-            } as IAttendance;
+            } as IAttendance);
           }
         },
       );
@@ -1197,13 +1191,7 @@ export class GroupAttendanceService {
 
           const existingAttendance = itemMap.get(dailyStudentKey);
           const attendance = existingAttendance
-            ? {
-                ...existingAttendance,
-                parentNote: existingAttendance.parentNote ?? null,
-                parentNotedAt: existingAttendance.parentNotedAt ?? null,
-                schoolNote: existingAttendance.schoolNote ?? null,
-                schoolNotedAt: existingAttendance.schoolNotedAt ?? null,
-              }
+            ? existingAttendance
             : ({
                 groupKey: groupKey,
                 dailyStudentKey: dailyStudentKey,
@@ -1217,13 +1205,9 @@ export class GroupAttendanceService {
                 end: pick.group.end,
                 weekday: pick.group.weekday,
                 status: AttendanceStatus.NONE,
-                parentNote: null,
-                parentNotedAt: null,
-                schoolNote: null,
-                schoolNotedAt: null,
               } as IAttendance);
 
-          attendances.push(attendance);
+          attendances.push(normalizeAttendance(attendance));
         }
       }
 
@@ -1331,7 +1315,7 @@ export class GroupAttendanceService {
       });
 
       const results = await Promise.all(upsertPromises);
-      return results;
+      return normalizeAttendances(results);
     } catch (error) {
       console.error(`[dynamodb] bulk upsert error`, error);
       throw new BadRequestException('출석 정보 일괄 upsert에 실패했습니다.');
@@ -1377,7 +1361,9 @@ export class GroupAttendanceService {
         console.log(
           `⏭️ No status changes needed, skipping all ${dtos.length} records`,
         );
-        return currentRecords.map((v) => v.currentRecord as IAttendance);
+        return normalizeAttendances(
+          currentRecords.map((v) => v.currentRecord as IAttendance),
+        );
       }
 
       // 3. 추출한 변경대상만 update 실행
@@ -1399,7 +1385,7 @@ export class GroupAttendanceService {
 
       const results = await Promise.all(updatePromises);
       // const skippedCount = dtos.length - recordsToUpdate.length;
-      return results;
+      return normalizeAttendances(results);
     } catch (error) {
       console.error(`[dynamodb] optimized bulk update error`, error);
       throw new BadRequestException(

@@ -22,6 +22,8 @@ import {
   getDateFromDailyStudentKey,
   getGroupIdFromGroupKey,
   getStudentIdFromDailyStudentKey,
+  normalizeAttendance,
+  normalizeAttendances,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
@@ -140,7 +142,7 @@ export class AttendanceService {
         : await query.exec();
 
       return {
-        items: result as IAttendance[],
+        items: normalizeAttendances(result as IAttendance[]),
         count: result.count,
         nextCursor: result.lastKey
           ? CursorUtils.encode(result.lastKey as IAttendanceKey)
@@ -169,7 +171,7 @@ export class AttendanceService {
         : await scanQuery.exec();
 
       return {
-        items: result as IAttendance[],
+        items: normalizeAttendances(result as IAttendance[]),
         count: result.count,
         nextCursor: result.lastKey
           ? CursorUtils.encode(result.lastKey as IAttendanceKey)
@@ -185,7 +187,8 @@ export class AttendanceService {
   async findById(dto: IAttendanceKey): Promise<IAttendance> {
     console.log(dto);
     try {
-      return (await this.model.get(dto)) as IAttendance;
+      const result = await this.model.get(dto);
+      return normalizeAttendance(result);
     } catch (error) {
       console.error(`[dynamodb] error`, error);
       throw new BadRequestException(error.message);
@@ -223,7 +226,7 @@ export class AttendanceService {
         }
       }
 
-      return results;
+      return normalizeAttendances(results);
     } catch (error) {
       console.error(`[dynamodb] fetchByKeys error:`, error);
       throw new BadRequestException(error.message);
@@ -282,7 +285,7 @@ export class AttendanceService {
         }
       }
 
-      return results;
+      return normalizeAttendances(results);
     } catch (error) {
       console.error(`[dynamodb] batchGetByIdWithUserId error:`, error);
       throw new BadRequestException(error.message);
@@ -367,7 +370,7 @@ export class AttendanceService {
         }
       }
 
-      return result;
+      return normalizeAttendance(result);
     } catch (err: any) {
       console.error(`[dynamoose v4] upsert error`, err);
 

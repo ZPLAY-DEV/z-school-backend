@@ -133,6 +133,29 @@ export function processAttendanceReport(
   return reports.sort((a, b) => a.studentKey.localeCompare(b.studentKey));
 }
 
+/**
+ * Normalize attendance item by ensuring all optional fields are present with null values
+ * This ensures consistent API response format across all attendance endpoints
+ */
+export function normalizeAttendance(attendance: IAttendance): IAttendance {
+  return {
+    ...attendance,
+    parentNote: attendance.parentNote ?? null,
+    parentNotedAt: attendance.parentNotedAt ?? null,
+    schoolNote: attendance.schoolNote ?? null,
+    schoolNotedAt: attendance.schoolNotedAt ?? null,
+  };
+}
+
+/**
+ * Normalize array of attendance items
+ */
+export function normalizeAttendances(
+  attendances: IAttendance[],
+): IAttendance[] {
+  return attendances.map(normalizeAttendance);
+}
+
 export async function fetchAllAttendanceItems(
   model,
   groupId: number,
@@ -159,12 +182,5 @@ export async function fetchAllAttendanceItems(
     lastKey = result.lastKey as IAttendanceKey | undefined;
   } while (lastKey);
 
-  // 클라이언트 개발자 요청: 누락된 필드들을 null로 정규화
-  return allItems.map((item) => ({
-    ...item,
-    parentNote: item.parentNote ?? null,
-    parentNotedAt: item.parentNotedAt ?? null,
-    schoolNote: item.schoolNote ?? null,
-    schoolNotedAt: item.schoolNotedAt ?? null,
-  }));
+  return allItems;
 }
