@@ -13,7 +13,9 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Cursor } from 'src/common/decorators/cursor.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
+import { DynamoResponse } from 'src/common/interfaces';
 import { AttendanceService } from 'src/domain/attendance/attendance.service';
 import {
   AttendanceKeyDto,
@@ -29,14 +31,6 @@ import {
   UpsertAttendanceDocs,
 } from 'src/domain/attendance/swagger/attendance-swagger.decorator';
 import { generateGroupKey } from 'src/domain/attendance/utils/attendance.utils';
-
-interface FetchResponse {
-  items: any[];
-  count: number;
-  nextCursor?: string;
-  hasMore: boolean;
-  totalScanned?: number;
-}
 
 @ApiTags('✳️ Attendances ( 출석 )')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -64,56 +58,31 @@ export class AttendanceController {
   @FetchAttendanceDocs()
   @Public()
   @Get()
-  async fetch(
+  async getByGroupId(
     @Query('groupId') groupId?: number,
-    @Query('cursor') cursor?: string,
+    @Cursor() lastKey?: IAttendanceKey,
     @Query('count') count?: number,
-  ): Promise<FetchResponse> {
+  ): Promise<DynamoResponse<IAttendance>> {
     try {
-      // Cursor를 lastKey로 안전하게 디코딩
-      let lastKey: IAttendanceKey | undefined = undefined;
-      if (cursor) {
-        lastKey = this.decodeCursor(cursor);
-      }
-
-      let result: {
-        items: any[];
-        count: number;
-        lastKey?: IAttendanceKey;
-      };
+      let result: DynamoResponse<IAttendance>;
 
       if (groupId) {
         // 특정 그룹 조회
         const groupKey = generateGroupKey(groupId);
-        this.logger.log(`Fetching attendance for group: ${groupKey}`);
-        result = await this.attendancesService.fetch(groupKey, lastKey, count);
+        result = await this.attendancesService.queryByGroupKey(
+          groupKey,
+          lastKey,
+          count,
+        );
       } else {
         // 전체 스캔 (청크 크기 20 또는 지정된 개수)
-        this.logger.log('Scanning all attendance records');
         result = await this.attendancesService.scanAll(lastKey, count);
       }
 
-      // nextCursor 생성
-      const nextCursor = result.lastKey
-        ? this.encodeCursor(result.lastKey)
-        : undefined;
-
-      const response: FetchResponse = {
-        items: result.items,
-        count: result.count,
-        nextCursor,
-        hasMore: !!result.lastKey,
-      };
-
-      // 전체 스캔인 경우 totalScanned 정보 추가
-      if (!groupId) {
-        response.totalScanned = result.count;
-      }
-
       this.logger.log(
-        `Fetched ${result.count} items, hasMore: ${!!result.lastKey}`,
+        `Fetched ${result.count} items, hasMore: ${result.hasMore}`,
       );
-      return response;
+      return result;
     } catch (error) {
       this.logger.error('Failed to fetch attendance records', error);
 
@@ -128,14 +97,17 @@ export class AttendanceController {
   }
 
   @Public()
-  @Post('batch')
-  async fetchByKeys(
-    @Body() body: { groupId: number; rangeKeys: string[] },
+  @Get('keys')
+  async batchGetByIdWithRangeKeys(
+    @Query('groupId') groupId: number,
+    @Query('keys') rangeKeys: string,
   ): Promise<IAttendance[]> {
     try {
-      const result = await this.attendancesService.fetchByKeys(
-        body.groupId,
-        body.rangeKeys,
+      // rangeKeys를 쉼표로 구분된 문자열에서 배열로 변환
+      const rangeKeysArray = rangeKeys ? rangeKeys.split(',') : [];
+      const result = await this.attendancesService.batchGetByIdWithRangeKeys(
+        groupId,
+        rangeKeysArray,
       );
       return result;
     } catch (error) {
@@ -147,20 +119,19 @@ export class AttendanceController {
   }
 
   @Public()
-  @Post('batch-optimized')
-  async fetchByAttendanceKeys(
-    @Body() body: { keys: IAttendanceKey[] },
+  @Get('students')
+  async batchGetByIdWithUserId(
+    @Query('groupId') groupId: number,
+    @Query('studentId') studentId: number,
   ): Promise<IAttendance[]> {
     try {
-      const result = await this.attendancesService.fetchByAttendanceKeys(
-        body.keys,
+      const result = await this.attendancesService.batchGetByIdWithUserId(
+        groupId,
+        studentId,
       );
       return result;
     } catch (error) {
-      this.logger.error(
-        'Failed to fetch attendance records by attendance keys',
-        error,
-      );
+      this.logger.error('Failed to fetch attendance records by keys', error);
       throw new BadRequestException(
         `출석 목록 조회에 실패했습니다: ${error.message}`,
       );
@@ -222,44 +193,6 @@ export class AttendanceController {
       throw new BadRequestException(
         `출석 기록 삭제에 실패했습니다: ${error.message}`,
       );
-    }
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? PRIVATE HELPERS
-  //? ---------------------------------------------------------------------- ?//
-
-  private decodeCursor(cursor: string): IAttendanceKey {
-    try {
-      const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
-      const cursorData = JSON.parse(decoded);
-
-      if (!cursorData.groupKey || !cursorData.dailyStudentKey) {
-        throw new Error('Invalid cursor structure');
-      }
-
-      return {
-        groupKey: cursorData.groupKey,
-        dailyStudentKey: cursorData.dailyStudentKey,
-      };
-    } catch (error) {
-      this.logger.warn(`Invalid cursor format: ${cursor}`, error);
-      throw new BadRequestException(
-        '유효하지 않은 커서 형식입니다. 올바른 Base64 인코딩된 커서를 제공해주세요.',
-      );
-    }
-  }
-
-  private encodeCursor(lastKey: IAttendanceKey): string {
-    try {
-      const cursorData = {
-        groupKey: lastKey.groupKey,
-        dailyStudentKey: lastKey.dailyStudentKey,
-      };
-      return Buffer.from(JSON.stringify(cursorData)).toString('base64');
-    } catch (error) {
-      this.logger.error('Failed to encode cursor', error);
-      throw new BadRequestException('커서 생성에 실패했습니다.');
     }
   }
 }

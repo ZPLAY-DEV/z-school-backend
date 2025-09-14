@@ -57,7 +57,7 @@ export class BookingController {
 
   @CancelBookingSwagger()
   @Delete(':id/manual')
-  async delete(@Param('id', ParseIntPipe) id: number): Promise<Booking> {
+  async deleteManual(@Param('id', ParseIntPipe) id: number): Promise<Booking> {
     return await this.bookingService.deleteManual(id);
   }
 

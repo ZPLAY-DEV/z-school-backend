@@ -8,7 +8,9 @@ import { addDays } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { SortOrder } from 'dynamoose/dist/General';
 import { InjectModel, Model } from 'nestjs-dynamoose';
+import { CursorUtils } from 'src/common/decorators/cursor.decorator';
 import { AttendanceStatus } from 'src/common/enums';
+import { DynamoResponse } from 'src/common/interfaces';
 import { UpsertAttendanceDto } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
   IAttendance,
@@ -22,6 +24,7 @@ import {
   getStudentIdFromDailyStudentKey,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Group } from 'src/domain/group/entities/group.entity';
+import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Repository } from 'typeorm';
@@ -39,6 +42,8 @@ export class AttendanceService {
     private readonly schooldayRepository: Repository<Schoolday>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
+    @InjectRepository(Pick)
+    private readonly pickRepository: Repository<Pick>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -117,15 +122,11 @@ export class AttendanceService {
   //? notice that records will be sorted by range key,
   //? which is dailyStudentKey
   //?
-  async fetch(
+  async queryByGroupKey(
     groupKey: string,
     lastKey?: IAttendanceKey,
     count?: number,
-  ): Promise<{
-    items: IAttendance[];
-    count: number;
-    lastKey?: IAttendanceKey;
-  }> {
+  ): Promise<DynamoResponse<IAttendance>> {
     try {
       const limit = count && count > 0 ? count : LIMIT;
       const query = this.model
@@ -141,7 +142,10 @@ export class AttendanceService {
       return {
         items: result as IAttendance[],
         count: result.count,
-        lastKey: result.lastKey as IAttendanceKey | undefined,
+        nextCursor: result.lastKey
+          ? CursorUtils.encode(result.lastKey as IAttendanceKey)
+          : undefined,
+        hasMore: !!result.lastKey,
       };
     } catch (error) {
       console.error(`[dynamodb] fetch error:`, error);
@@ -155,11 +159,7 @@ export class AttendanceService {
   async scanAll(
     lastKey?: IAttendanceKey,
     count?: number,
-  ): Promise<{
-    items: IAttendance[];
-    count: number;
-    lastKey?: IAttendanceKey;
-  }> {
+  ): Promise<DynamoResponse<IAttendance>> {
     try {
       const limit = count && count > 0 ? count : LIMIT;
       const scanQuery = this.model.scan().limit(limit);
@@ -171,7 +171,10 @@ export class AttendanceService {
       return {
         items: result as IAttendance[],
         count: result.count,
-        lastKey: result.lastKey as IAttendanceKey | undefined,
+        nextCursor: result.lastKey
+          ? CursorUtils.encode(result.lastKey as IAttendanceKey)
+          : undefined,
+        hasMore: !!result.lastKey,
       };
     } catch (error) {
       console.error(`[dynamodb] scan error:`, error);
@@ -195,17 +198,16 @@ export class AttendanceService {
    * @param rangeKeys - Comma separated rangeKeys string
    * @returns Array of attendance records
    */
-  async fetchByKeys(
+  async batchGetByIdWithRangeKeys(
     groupId: number,
     rangeKeys: string[],
   ): Promise<IAttendance[]> {
+    if (rangeKeys.length === 0) {
+      return [];
+    }
+
     try {
       const groupKey = generateGroupKey(groupId);
-
-      if (rangeKeys.length === 0) {
-        return [];
-      }
-
       const results: IAttendance[] = [];
 
       // DynamoDB batchGet을 사용하여 여러 키를 한 번에 조회
@@ -215,8 +217,6 @@ export class AttendanceService {
       }));
 
       const batchResults = await this.model.batchGet(keys);
-
-      // batchGet 결과에서 유효한 아이템들만 필터링
       for (const item of batchResults) {
         if (item) {
           results.push(item as IAttendance);
@@ -231,30 +231,60 @@ export class AttendanceService {
   }
 
   /**
-   * Fetch attendance records by IAttendanceKey array (most optimized for <25 items)
-   * @param keys - Array of IAttendanceKey objects
+   * Fetch attendance records by groupId and studentId using schooldays and picks
+   * @param groupId - Group ID to filter schooldays
+   * @param studentId - Student ID to filter picks
    * @returns Array of attendance records
    */
-  async fetchByAttendanceKeys(keys: IAttendanceKey[]): Promise<IAttendance[]> {
+  async batchGetByIdWithUserId(
+    groupId: number,
+    studentId: number,
+  ): Promise<IAttendance[]> {
     try {
-      if (keys.length === 0) {
-        return [];
+      // 한 번의 쿼리로 schooldays와 picks를 조인해서 해당 학생의 수업일 조회
+      const schooldays = await this.schooldayRepository
+        .createQueryBuilder('schoolday')
+        .innerJoin('schoolday.group', 'group')
+        .innerJoin('group.picks', 'pick')
+        .where('schoolday.groupId = :groupId', { groupId })
+        .andWhere('pick.studentId = :studentId', { studentId })
+        .orderBy('schoolday.startsAt', 'DESC')
+        .getMany();
+
+      if (schooldays.length === 0) {
+        return []; // 해당 학생이 이 그룹에 등록되지 않거나 수업일이 없음
       }
 
-      // 25개 미만이므로 한 번의 batchGet으로 충분
-      const batchResults = await this.model.batchGet(keys);
+      // schooldays를 기반으로 attendance 키 생성
+      const groupKey = generateGroupKey(groupId);
+      const keys = schooldays.map((schoolday) => {
+        const dailyStudentKey = generateDailyStudentKey(
+          schoolday.today,
+          schoolday.lessonId,
+          schoolday.groupId,
+          studentId.toString(),
+          schoolday.id,
+        );
+        return {
+          groupKey,
+          dailyStudentKey,
+        };
+      });
 
-      // 결과 필터링 및 반환
+      // DynamoDB에서 attendance 레코드들 조회
       const results: IAttendance[] = [];
-      for (const item of batchResults) {
-        if (item) {
-          results.push(item as IAttendance);
+      if (keys.length > 0) {
+        const batchResults = await this.model.batchGet(keys);
+        for (const item of batchResults) {
+          if (item) {
+            results.push(item as IAttendance);
+          }
         }
       }
 
       return results;
     } catch (error) {
-      console.error(`[dynamodb] fetchByAttendanceKeys error:`, error);
+      console.error(`[dynamodb] batchGetByIdWithUserId error:`, error);
       throw new BadRequestException(error.message);
     }
   }

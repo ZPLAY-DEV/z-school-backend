@@ -241,6 +241,21 @@ export interface IImageUploadOptions {
   generateThumbnail?: boolean;
 }
 
+/**
+ * DynamoDB API 응답용 제네릭 인터페이스
+ * @template T - 응답 아이템의 타입
+ */
+export interface DynamoResponse<T = any> {
+  /** 실제 반환된 아이템 배열 */
+  items: T[];
+  /** 반환된 아이템의 개수 */
+  count: number;
+  /** 다음 페이지를 위한 인코딩된 cursor (있는 경우) */
+  nextCursor?: string;
+  /** 더 많은 데이터가 있는지 여부 */
+  hasMore: boolean;
+}
+
 // export type FirebaseUser = admin.auth.DecodedIdToken;
 
 // export type StaleToken = {
