@@ -1194,7 +1194,7 @@ export class GroupAttendanceService {
         results.map((attendance) => [attendance.dailyStudentKey, attendance]),
       );
 
-      const finalResults: IAttendance[] = [];
+      const finalResults: any[] = [];
       for (const schoolday of schooldays) {
         // schoolday.group.picks에서 해당 student 찾기
         if (!schoolday.group || !schoolday.group.picks) {
@@ -1217,7 +1217,10 @@ export class GroupAttendanceService {
 
         if (existingAttendance) {
           // DynamoDB에 레코드가 있는 경우
-          finalResults.push(existingAttendance);
+          finalResults.push({
+            ...existingAttendance,
+            dateStr: schoolday.today,
+          });
         } else {
           // DynamoDB에 레코드가 없는 경우 fallback item 생성
           const fallbackItem = createFallbackAttendanceItem(
@@ -1225,11 +1228,11 @@ export class GroupAttendanceService {
             studentId,
             groupKey,
           );
-          finalResults.push(fallbackItem);
+          finalResults.push({ ...fallbackItem, dateStr: schoolday.today });
         }
       }
 
-      return normalizeAttendances(finalResults);
+      return normalizeAttendances(finalResults as IAttendance[]);
     } catch (error) {
       console.error(`[dynamodb] getStudentAttendances error:`, error);
       throw new BadRequestException(error.message);
