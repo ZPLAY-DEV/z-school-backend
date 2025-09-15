@@ -789,6 +789,15 @@ export class GroupAttendanceService {
   //? Report
   //? ---------------------------------------------------------------------- ?//
 
+  async getMonthlyReport(
+    groupId: number,
+    date: string, //? "2025-08"
+  ): Promise<AttendanceReport[]> {
+    const items = await this.findAttendancesByMonth(groupId, date);
+
+    return processAttendanceReport(items);
+  }
+
   async generateExcel(
     groupId: number,
     date: string, //? `2025-08`
@@ -1013,6 +1022,7 @@ export class GroupAttendanceService {
               break;
             default:
               statusText = '?';
+              break;
           }
           rowData.push(statusText);
         } else {
@@ -1084,15 +1094,6 @@ export class GroupAttendanceService {
     return workbook;
   }
 
-  async getMonthlyReport(
-    groupId: number,
-    date: string, //? "2025-08"
-  ): Promise<AttendanceReport[]> {
-    const items = await this.findAttendancesByMonth(groupId, date);
-
-    return processAttendanceReport(items);
-  }
-
   //? Optimized version using schoolday query + batchGet pattern
   //? This approach is much more efficient than fetching all attendance items
   async getStudentAttendances(
@@ -1154,11 +1155,32 @@ export class GroupAttendanceService {
       // 3. DynamoDB에서 attendance 레코드들 조회 (batchGetByIdWithUserId와 동일)
       const results: IAttendance[] = [];
       if (keys.length > 0) {
-        const batchResults = await this.model.batchGet(keys);
-        for (const item of batchResults) {
-          if (item) {
-            results.push(item as IAttendance);
+        try {
+          // DynamoDB BatchGetItem은 한 번에 최대 100개 아이템만 처리 가능
+          const BATCH_SIZE = 100;
+          const chunks: Array<
+            Array<{ groupKey: string; dailyStudentKey: string }>
+          > = [];
+
+          for (let i = 0; i < keys.length; i += BATCH_SIZE) {
+            chunks.push(keys.slice(i, i + BATCH_SIZE));
           }
+
+          console.log(
+            `[dynamodb] Processing ${keys.length} keys in ${chunks.length} chunks`,
+          );
+
+          for (const chunk of chunks) {
+            const batchResults = await this.model.batchGet(chunk);
+            for (const item of batchResults) {
+              if (item) {
+                results.push(item as IAttendance);
+              }
+            }
+          }
+        } catch (batchError) {
+          console.error(`[dynamodb] batchGet error:`, batchError);
+          // batchGet 실패 시 fallback으로 빈 배열 사용
         }
       }
 
@@ -1284,10 +1306,26 @@ export class GroupAttendanceService {
       const results: IAttendance[] = [];
       if (keys.length > 0) {
         try {
-          const batchResults = await this.model.batchGet(keys);
-          for (const item of batchResults) {
-            if (item) {
-              results.push(item as IAttendance);
+          // DynamoDB BatchGetItem은 한 번에 최대 100개 아이템만 처리 가능
+          const BATCH_SIZE = 100;
+          const chunks: Array<
+            Array<{ groupKey: string; dailyStudentKey: string }>
+          > = [];
+
+          for (let i = 0; i < keys.length; i += BATCH_SIZE) {
+            chunks.push(keys.slice(i, i + BATCH_SIZE));
+          }
+
+          console.log(
+            `[dynamodb] Processing ${keys.length} keys in ${chunks.length} chunks`,
+          );
+
+          for (const chunk of chunks) {
+            const batchResults = await this.model.batchGet(chunk);
+            for (const item of batchResults) {
+              if (item) {
+                results.push(item as IAttendance);
+              }
             }
           }
         } catch (batchError) {

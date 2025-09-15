@@ -238,10 +238,6 @@ export class LessonAttendanceService {
     return workbook;
   }
 
-  //? ---------------------------------------------------------------------- ?//
-  //? Private Utility Methods
-  //? ---------------------------------------------------------------------- ?//
-
   /**
    * 각각의 반별 출석부 sheet 생성
    */
@@ -325,13 +321,34 @@ export class LessonAttendanceService {
     // 헤더
     const headerRow = ['순번', '학년·반·번호', '이름'];
     monthSchooldays.forEach((schoolday) => {
-      const d = new Date(schoolday.today);
-      headerRow.push(`${month}월 ${d.getDate()}일 (${schoolday.weekday})`);
+      const date = new Date(schoolday.today);
+      const day = date.getDate().toString();
+      headerRow.push(`${month}월 ${day}일 (${schoolday.weekday})`);
     });
-    const headerRowObj = sheet.addRow(headerRow);
+    sheet.addRow(headerRow);
+
+    // 주차 정보 행 추가
+    const weekRow = ['', '', ''];
+    monthSchooldays.forEach((schoolday) => {
+      weekRow.push(`${schoolday.weekNumber}주차`);
+    });
+    sheet.addRow(weekRow);
+
+    const headerRowObj = sheet.getRow(sheet.rowCount - 1); // 헤더 행
     headerRowObj.font = { bold: true };
     headerRowObj.alignment = { horizontal: 'center' };
     headerRowObj.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    });
+
+    const weekRowObj = sheet.getRow(sheet.rowCount);
+    weekRowObj.alignment = { horizontal: 'center' };
+    weekRowObj.eachCell((cell) => {
       cell.border = {
         top: { style: 'thin' },
         left: { style: 'thin' },
@@ -389,6 +406,9 @@ export class LessonAttendanceService {
               break;
             case AttendanceStatus.INIT:
               statusText = '수업전';
+              break;
+            default:
+              statusText = '?';
               break;
           }
         }
@@ -493,13 +513,34 @@ export class LessonAttendanceService {
     // 헤더
     const headerRow = ['순번', '학년·반·번호', '이름'];
     monthSchooldays.forEach((schoolday) => {
-      const d = new Date(schoolday.today);
-      headerRow.push(`${month}월 ${d.getDate()}일 (${schoolday.weekday})`);
+      const date = new Date(schoolday.today);
+      const day = date.getDate().toString();
+      headerRow.push(`${month}월 ${day}일 (${schoolday.weekday})`);
     });
-    const headerRowObj = sheet.addRow(headerRow);
+    sheet.addRow(headerRow);
+
+    // 주차 정보 행 추가
+    const weekRow = ['', '', ''];
+    monthSchooldays.forEach((schoolday) => {
+      weekRow.push(`${schoolday.weekNumber}주차`);
+    });
+    sheet.addRow(weekRow);
+
+    const headerRowObj = sheet.getRow(sheet.rowCount - 1); // 헤더 행
     headerRowObj.font = { bold: true };
     headerRowObj.alignment = { horizontal: 'center' };
     headerRowObj.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      };
+    });
+
+    const weekRowObj = sheet.getRow(sheet.rowCount);
+    weekRowObj.alignment = { horizontal: 'center' };
+    weekRowObj.eachCell((cell) => {
       cell.border = {
         top: { style: 'thin' },
         left: { style: 'thin' },
@@ -549,6 +590,9 @@ export class LessonAttendanceService {
               break;
             case AttendanceStatus.INIT:
               statusText = '수업전';
+              break;
+            default:
+              statusText = '?';
               break;
           }
         }
@@ -619,6 +663,13 @@ export class LessonAttendanceService {
     });
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Private Utility Methods
+  //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * 해당 월 출석 데이터 조회
+   */
   private async findAttendancesByMonth(
     lessonId: number,
     date: string, //? `2025-08` (월 단위)
@@ -688,10 +739,26 @@ export class LessonAttendanceService {
       const results: IAttendance[] = [];
       if (keys.length > 0) {
         try {
-          const batchResults = await this.model.batchGet(keys);
-          for (const item of batchResults) {
-            if (item) {
-              results.push(item as IAttendance);
+          // DynamoDB BatchGetItem은 한 번에 최대 100개 아이템만 처리 가능
+          const BATCH_SIZE = 100;
+          const chunks: Array<
+            Array<{ groupKey: string; dailyStudentKey: string }>
+          > = [];
+
+          for (let i = 0; i < keys.length; i += BATCH_SIZE) {
+            chunks.push(keys.slice(i, i + BATCH_SIZE));
+          }
+
+          console.log(
+            `[dynamodb] Processing ${keys.length} keys in ${chunks.length} chunks`,
+          );
+
+          for (const chunk of chunks) {
+            const batchResults = await this.model.batchGet(chunk);
+            for (const item of batchResults) {
+              if (item) {
+                results.push(item as IAttendance);
+              }
             }
           }
         } catch (batchError) {
@@ -758,11 +825,14 @@ export class LessonAttendanceService {
   private async fetchAllAttendanceItems(groupId: number, date: string) {
     let allItems: IAttendance[] = [];
     let lastKey: IAttendanceKey | undefined = undefined;
+    const groupKey = generateGroupKey(groupId);
+
+    console.log(`🟢 groupKey`, groupKey, `DATE#${date}`);
 
     do {
       const query = this.model
         .query('groupKey')
-        .eq(generateGroupKey(groupId))
+        .eq(groupKey)
         .where('dailyStudentKey')
         .beginsWith(`DATE#${date}`);
 
@@ -778,6 +848,12 @@ export class LessonAttendanceService {
     } while (lastKey);
 
     // 클라이언트 개발자 요청: 누락된 필드들을 null로 정규화
-    return allItems.map((item) => normalizeAttendance(item));
+    return allItems.map((item) => ({
+      ...item,
+      parentNote: item.parentNote ?? null,
+      parentNotedAt: item.parentNotedAt ?? null,
+      schoolNote: item.schoolNote ?? null,
+      schoolNotedAt: item.schoolNotedAt ?? null,
+    }));
   }
 }
