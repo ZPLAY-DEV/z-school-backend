@@ -1,5 +1,6 @@
 import { AttendanceStatus } from 'src/common/enums';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
+import { Student } from 'src/domain/student/entities/student.entity';
 
 export interface IAttendanceKey {
   groupKey: string; // partition key, e.g. "GROUP#1"
@@ -32,6 +33,7 @@ export interface IAttendance extends IAttendanceCore {
 
 export interface IAttendanceWithNextStop extends IAttendance {
   next: string; // Next class name or student's nextStop
+  student: Student;
   departure?: Departure | null; // Departure entity with schoolday info
   isLast?: boolean; // 마지막 그룹임
 }

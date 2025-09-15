@@ -636,7 +636,10 @@ export class GroupAttendanceService {
         const existingItem = itemMap.get(dailyStudentKey);
         if (existingItem) {
           // 기존 아이템이 있는 경우, normalize 함수로 정규화
-          return normalizeAttendance(existingItem);
+          return {
+            ...normalizeAttendance(existingItem),
+            student: pick.student,
+          };
         } else {
           // 새로운 아이템 생성 시 모든 필드를 null로 초기화
           return normalizeAttendance({
@@ -651,8 +654,9 @@ export class GroupAttendanceService {
             studentId: pick.student.id,
             studentName: pick.student.name,
             dailyStudentKey: dailyStudentKey,
+            student: pick.student,
             status: AttendanceStatus.NONE,
-          } as IAttendance);
+          } as IAttendanceWithNextStop);
         }
       });
 
@@ -772,6 +776,7 @@ export class GroupAttendanceService {
         completeAttendanceItems.map((item) => {
           return {
             ...item, // Already converted by Dynamoose!
+            student: studentMap.get(item.studentId)!,
             isLast: studentIsLastMap.get(item.studentId) ?? false,
             next: studentNextMap.get(item.studentId) ?? '이동장소 미지정',
             departure: departureMap.get(item.studentId) ?? null,

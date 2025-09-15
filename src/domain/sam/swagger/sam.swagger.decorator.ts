@@ -1,13 +1,13 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiExtraModels,
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    ApiQuery,
-    ApiResponse,
-    getSchemaPath,
+  ApiBody,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -31,7 +31,8 @@ export const CreateSamDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '담임쌤 생성',
-      description: '새로운 담임쌤을 시스템에 등록합니다. 기존 강사와 연결하거나 새로운 강사와 함께 생성할 수 있습니다.',
+      description:
+        '새로운 담임쌤을 시스템에 등록합니다. 기존 강사와 연결하거나 새로운 강사와 함께 생성할 수 있습니다.',
     }),
     ApiBody({
       type: CreateSamDto,
@@ -92,7 +93,8 @@ export const SamDryRunDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '담임쌤 생성 사전 검증',
-      description: '담임쌤 생성 전 중복 여부를 사전 검증합니다. 중복이 없으면 null을, 있으면 중복되는 담임쌤 정보를 반환합니다.',
+      description:
+        '담임쌤 생성 전 중복 여부를 사전 검증합니다. 중복이 없으면 null을, 있으면 중복되는 담임쌤 정보를 반환합니다.',
     }),
     ApiBody({
       type: CreateSamDto,
@@ -140,7 +142,8 @@ export const GetSamByIdDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '담임쌤 상세 조회',
-      description: '특정 담임쌤의 상세 정보를 조회합니다. 강사 정보, 계약 정보, 그룹 정보, 수업 정보를 포함합니다.',
+      description:
+        '특정 담임쌤의 상세 정보를 조회합니다. 강사 정보, 계약 정보, 그룹 정보, 수업 정보를 포함합니다.',
     }),
     ApiParam({
       name: 'id',
@@ -208,7 +211,8 @@ export const GetSamGroupsDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '담임쌤의 반 목록 조회',
-      description: '담임쌤이 담당하는 반 목록을 조회합니다. 학기별 필터링과 정렬이 가능합니다.',
+      description:
+        '담임쌤이 담당하는 반 목록을 조회합니다. 학기별 필터링과 정렬이 가능합니다.',
     }),
     ApiParam({
       name: 'id',
@@ -228,7 +232,6 @@ export const GetSamGroupsDocs = () =>
       required: false,
       enum: ['weekday', 'name'],
     }),
-    ApiExtraModels(GroupWithPicksCount, Group, Lesson),
     ApiOkResponse({
       description: '반 목록 조회 성공',
       schema: {
@@ -266,7 +269,8 @@ export const GetAllSchooldaysDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '담임쌤의 모든 수업일 조회',
-      description: '담임쌤이 담당하는 모든 수업일을 조회합니다. 학기별, 월별 필터링이 가능합니다.',
+      description:
+        '담임쌤이 담당하는 모든 수업일을 조회합니다. 학기별, 월별 필터링이 가능합니다.',
     }),
     ApiParam({
       name: 'id',
@@ -354,7 +358,8 @@ export const UpdateSamDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '담임쌤 정보 수정',
-      description: '담임쌤의 정보를 수정합니다. alias, score, 권한, 강사 정보 등을 수정할 수 있습니다.',
+      description:
+        '담임쌤의 정보를 수정합니다. alias, score, 권한, 강사 정보 등을 수정할 수 있습니다.',
     }),
     ApiParam({
       name: 'id',
@@ -409,7 +414,8 @@ export const BulkUpdateSamsDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '담임쌤 일괄 수정',
-      description: '여러 담임쌤의 정보를 한 번에 일괄 수정합니다. samIds로 직접 지정하거나 termId로 학기별 일괄 수정이 가능합니다.',
+      description:
+        '여러 담임쌤의 정보를 한 번에 일괄 수정합니다. samIds로 직접 지정하거나 termId로 학기별 일괄 수정이 가능합니다.',
     }),
     ApiBody({
       type: BulkUpdateSamsDto,
@@ -441,7 +447,8 @@ export const BulkUpdateSamsDocs = () =>
     ApiQuery({
       name: 'termId',
       type: Number,
-      description: '학기 ID (선택사항, 전달 시 해당 학기의 모든 담임쌤을 자동 선택)',
+      description:
+        '학기 ID (선택사항, 전달 시 해당 학기의 모든 담임쌤을 자동 선택)',
       required: false,
     }),
     ApiOkResponseTemplate({
@@ -451,7 +458,8 @@ export const BulkUpdateSamsDocs = () =>
     }),
     ApiResponse({
       status: StatusCodes.BAD_REQUEST,
-      description: '요청 데이터 오류 - 데이터 형식 오류, 유효하지 않은 점수 범위',
+      description:
+        '요청 데이터 오류 - 데이터 형식 오류, 유효하지 않은 점수 범위',
     }),
     ApiResponse({
       status: StatusCodes.NOT_FOUND,
@@ -467,7 +475,8 @@ export const SoftDeleteSamDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '담임쌤 소프트 삭제',
-      description: '담임쌤을 소프트 삭제합니다. deletedAt 컬럼에 삭제 시각을 기록하여 논리적으로만 삭제합니다.',
+      description:
+        '담임쌤을 소프트 삭제합니다. deletedAt 컬럼에 삭제 시각을 기록하여 논리적으로만 삭제합니다.',
     }),
     ApiParam({
       name: 'id',
