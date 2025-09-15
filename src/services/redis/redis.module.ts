@@ -32,7 +32,7 @@ import { RedisCacheService } from 'src/services/redis/redis-cache.service';
         host: configService.get<string>('redis.host', 'localhost'),
         port: configService.get<number>('redis.port', 6379),
         password: configService.get<string>('redis.password', ''),
-        // prod 가 아닌 환경의 경우에만 db 0 지정
+        // prod 가 아닌 환경의 경우에만 db 0 지정 (기본이 0 이므로 불필요)
         ...(configService.get<string>('nodeEnv') !== 'prod' && {
           db: 0,
         }),

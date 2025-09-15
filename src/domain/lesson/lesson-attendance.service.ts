@@ -14,10 +14,13 @@ import {
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
+  createFallbackAttendanceItem,
   generateDailyStudentKey,
   generateGroupKey,
   getDateFromDailyStudentKey,
   getStudentIdFromDailyStudentKey,
+  normalizeAttendance,
+  normalizeAttendances,
   processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
@@ -26,9 +29,8 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { areTheyEqual } from 'src/helpers/array';
 import { translateActor } from 'src/helpers/translate';
-import { Between, In, Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 @Injectable()
 export class LessonAttendanceService {
@@ -122,9 +124,11 @@ export class LessonAttendanceService {
           pick.student.studentCode,
         );
 
-        return (
-          itemMap.get(dailyStudentKey) ||
-          ({
+        const existingItem = itemMap.get(dailyStudentKey);
+        if (existingItem) {
+          return normalizeAttendance(existingItem);
+        } else {
+          return normalizeAttendance({
             groupId: pick.group.id,
             start: pick.group.start,
             end: pick.group.end,
@@ -137,8 +141,8 @@ export class LessonAttendanceService {
             studentName: pick.student.name,
             dailyStudentKey: dailyStudentKey,
             status: AttendanceStatus.NONE,
-          } as IAttendance)
-        );
+          } as IAttendance);
+        }
       });
 
       return completeAttendanceItems;
@@ -151,6 +155,15 @@ export class LessonAttendanceService {
   //? ---------------------------------------------------------------------- ?//
   //? Report
   //? ---------------------------------------------------------------------- ?//
+
+  async getMonthlyReport(
+    lessonId: number,
+    date: string, //? "2025-08"
+  ): Promise<AttendanceReport[]> {
+    const items = await this.findAttendancesByMonth(lessonId, date);
+
+    return processAttendanceReport(items);
+  }
 
   async generateExcel(
     lessonId: number,
@@ -224,6 +237,10 @@ export class LessonAttendanceService {
 
     return workbook;
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Private Utility Methods
+  //? ---------------------------------------------------------------------- ?//
 
   /**
    * 각각의 반별 출석부 sheet 생성
@@ -602,19 +619,6 @@ export class LessonAttendanceService {
     });
   }
 
-  async getMonthlyReport(
-    lessonId: number,
-    date: string, //? "2025-08"
-  ): Promise<AttendanceReport[]> {
-    const items = await this.findAttendancesByMonth(lessonId, date);
-
-    return processAttendanceReport(items);
-  }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Private Utility Methods
-  //? ---------------------------------------------------------------------- ?//
-
   private async findAttendancesByMonth(
     lessonId: number,
     date: string, //? `2025-08` (월 단위)
@@ -624,144 +628,141 @@ export class LessonAttendanceService {
     const startOfMonth = new Date(year, month - 1, 1); // 월은 0-based
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // 다음 달의 0일 = 이번 달의 마지막 날 (23:59:59.999까지 포함)
 
-    const lesson = await this.lessonRepository.findOne({
-      where: { id: lessonId },
-      relations: { groups: true },
-    });
-    if (!lesson) {
-      throw new NotFoundException(`Lesson not found`);
-    }
-    if (!lesson.groups || lesson.groups.length === 0) {
-      throw new NotFoundException(`Groups not found`);
-    }
-    const groupIds = lesson.groups.map((group) => group.id);
-
     try {
-      // 1. 해당 반 수업이 있는 날짜 및 수업시간 조회
-      const schooldays = await this.schooldayRepository.find({
-        where: {
-          groupId: In(groupIds),
-          startsAt: Between(startOfMonth, endOfMonth),
-        },
-      });
+      // 1. 한 번의 쿼리로 schooldays와 picks, student를 조인해서 해당 수업의 모든 수업일과 학생 정보 조회
+      const schooldays = await this.schooldayRepository
+        .createQueryBuilder('schoolday')
+        .leftJoinAndSelect('schoolday.group', 'group')
+        .leftJoinAndSelect('group.picks', 'pick')
+        .leftJoinAndSelect('pick.student', 'student')
+        .leftJoinAndSelect('group.lesson', 'lesson')
+        .where('lesson.id = :lessonId', { lessonId })
+        .andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
+          beginning: startOfMonth,
+          ending: endOfMonth,
+        })
+        .orderBy('schoolday.startsAt', 'ASC')
+        .getMany();
 
       if (!schooldays || schooldays.length === 0) {
+        console.log(`📅 No schooldays found for lesson ${lessonId} in ${date}`);
         return [];
       }
 
-      // 2. schooldays 에 연관된 모든 attendance 데이터 조회 (DynamoDB)
-      const groupItems = await Promise.all(
-        groupIds.map(async (groupId) => {
-          const result = await this.fetchAllAttendanceItems(groupId, date);
-          return result;
-        }),
-      );
-
-      const allItems = groupItems.flat();
-
-      // 3. 출석부 레코드를 dailyStudentKey로 맵핑
-      const itemMap = new Map<string, IAttendance>(
-        allItems.map((v) => [v.dailyStudentKey, v]),
-      );
-
-      // 4. 반의 학생 아이디 추출 (picks 와 dynamo 둘 다)
-      const picks: Pick[] = [];
-      for (const groupId of groupIds) {
-        const groupPicks = await this.pickRepository.find({
-          where: { groupId: groupId },
-          relations: ['group', 'group.lesson', 'student'],
-        });
-        picks.push(...groupPicks);
-      }
-      const studentIdsFromPicks = [
-        ...new Set(picks.map((pick) => pick.studentId)),
-      ];
-      const studentIdsFromDynamoDb = [
-        ...new Set(
-          Array.from(itemMap.keys()).map((v) => {
-            return getStudentIdFromDailyStudentKey(v);
-          }),
-        ),
-      ];
-
-      if (!areTheyEqual(studentIdsFromPicks, studentIdsFromDynamoDb)) {
-        console.log(`🔵 mysql`, studentIdsFromPicks);
-        console.log(`🟢 dynamo`, studentIdsFromDynamoDb);
-        throw new Error('dynamo entries not matched');
-      }
-
-      // 5. 각 수업일별로 attendance 생성
-      const attendances: IAttendance[] = [];
+      // 2. schooldays를 기반으로 attendance 키 생성
+      const keys: Array<{ groupKey: string; dailyStudentKey: string }> = [];
 
       for (const schoolday of schooldays) {
-        console.log(`🔄 Processing schoolday: ${schoolday.today}`);
+        if (!schoolday.group || !schoolday.group.picks) {
+          console.warn(
+            `⚠️ Group or picks information not found for schoolday ${schoolday.today}`,
+          );
+          continue;
+        }
 
-        // 해당 수업일에 해당하는 그룹의 학생들만 필터링
-        const relevantPicks = picks.filter(
-          (pick) => pick.groupId === schoolday.groupId,
-        );
+        for (const pick of schoolday.group.picks) {
+          if (!pick.student) {
+            console.warn(
+              `⚠️ Student information not found for pick ${pick.id}`,
+            );
+            continue;
+          }
 
-        for (const pick of relevantPicks) {
+          const groupKey = generateGroupKey(schoolday.group.id);
           const dailyStudentKey = generateDailyStudentKey(
-            schoolday.today, // schoolday.today를 사용
-            pick.studentId,
+            schoolday.today,
+            pick.student.id,
             pick.student.grade,
             pick.student.class,
             pick.student.studentCode,
           );
 
-          const existingAttendance = itemMap.get(dailyStudentKey);
-          const attendance = existingAttendance
-            ? {
-                ...existingAttendance,
-                parentNote: existingAttendance.parentNote ?? null,
-                parentNotedAt: existingAttendance.parentNotedAt ?? null,
-                schoolNote: existingAttendance.schoolNote ?? null,
-                schoolNotedAt: existingAttendance.schoolNotedAt ?? null,
-              }
-            : ({
-                groupKey: generateGroupKey(pick.group.id),
-                dailyStudentKey: dailyStudentKey,
-                lessonId: pick.group.lessonId,
-                lessonName: pick.group.lesson.lessonName,
-                groupId: pick.group.id,
-                groupName: pick.group.groupName,
-                studentId: pick.student.id,
-                studentName: pick.student.name,
-                start: pick.group.start,
-                end: pick.group.end,
-                weekday: pick.group.weekday,
-                status: AttendanceStatus.NONE,
-                parentNote: null,
-                parentNotedAt: null,
-                schoolNote: null,
-                schoolNotedAt: null,
-              } as IAttendance);
-
-          attendances.push(attendance);
+          keys.push({
+            groupKey,
+            dailyStudentKey,
+          });
         }
       }
 
-      console.log(`🎯 Final result: ${attendances.length} attendances`);
+      // 3. DynamoDB에서 attendance 레코드들 조회 (batchGet)
+      const results: IAttendance[] = [];
+      if (keys.length > 0) {
+        try {
+          const batchResults = await this.model.batchGet(keys);
+          for (const item of batchResults) {
+            if (item) {
+              results.push(item as IAttendance);
+            }
+          }
+        } catch (batchError) {
+          console.error(`[dynamodb] batchGet error:`, batchError);
+          // batchGet 실패 시 fallback으로 빈 배열 사용
+        }
+      }
 
-      return attendances;
+      // 4. DynamoDB에 없는 레코드에 대해 fallback item 생성
+      const attendanceMap = new Map<string, IAttendance>(
+        results.map((attendance) => [attendance.dailyStudentKey, attendance]),
+      );
+
+      const finalResults: IAttendance[] = [];
+
+      for (const schoolday of schooldays) {
+        if (!schoolday.group || !schoolday.group.picks) {
+          continue;
+        }
+
+        for (const pick of schoolday.group.picks) {
+          if (!pick.student || !schoolday.group.lesson) {
+            continue;
+          }
+
+          const dailyStudentKey = generateDailyStudentKey(
+            schoolday.today,
+            pick.student.id,
+            pick.student.grade,
+            pick.student.class,
+            pick.student.studentCode,
+          );
+
+          const existingAttendance = attendanceMap.get(dailyStudentKey);
+
+          if (existingAttendance) {
+            // DynamoDB에 레코드가 있는 경우
+            finalResults.push(existingAttendance);
+          } else {
+            // DynamoDB에 레코드가 없는 경우 fallback item 생성
+            const fallbackItem = createFallbackAttendanceItem(
+              schoolday,
+              pick.student.id,
+              generateGroupKey(schoolday.group.id),
+            );
+            finalResults.push(fallbackItem);
+          }
+        }
+      }
+
+      console.log(
+        `🎯 Final result: ${finalResults.length} attendances for lesson ${lessonId} in ${date}`,
+      );
+
+      return normalizeAttendances(finalResults);
     } catch (error) {
-      console.error(`[dynamodb] error`, error);
-      throw new BadRequestException(`DynamoDB read error: ${error.message}`);
+      console.error(`[dynamodb] findAttendancesByMonth error:`, error);
+      throw new BadRequestException(
+        error.message || '출석 정보 조회에 실패했습니다.',
+      );
     }
   }
 
   private async fetchAllAttendanceItems(groupId: number, date: string) {
     let allItems: IAttendance[] = [];
     let lastKey: IAttendanceKey | undefined = undefined;
-    const groupKey = generateGroupKey(groupId);
-
-    console.log(`🟢 groupKey`, groupKey, `DATE#${date}`);
 
     do {
       const query = this.model
         .query('groupKey')
-        .eq(groupKey)
+        .eq(generateGroupKey(groupId))
         .where('dailyStudentKey')
         .beginsWith(`DATE#${date}`);
 
@@ -777,12 +778,6 @@ export class LessonAttendanceService {
     } while (lastKey);
 
     // 클라이언트 개발자 요청: 누락된 필드들을 null로 정규화
-    return allItems.map((item) => ({
-      ...item,
-      parentNote: item.parentNote ?? null,
-      parentNotedAt: item.parentNotedAt ?? null,
-      schoolNote: item.schoolNote ?? null,
-      schoolNotedAt: item.schoolNotedAt ?? null,
-    }));
+    return allItems.map((item) => normalizeAttendance(item));
   }
 }

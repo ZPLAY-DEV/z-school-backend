@@ -23,12 +23,10 @@ import {
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
   createFallbackAttendanceItem,
-  fetchAllAttendanceItems,
   filterNoSql,
   generateDailyStudentKey,
   generateGroupKey,
   getDateFromDailyStudentKey,
-  getDatePrefixFromDailyStudentKey,
   getGroupIdFromGroupKey,
   getStudentIdFromDailyStudentKey,
   normalizeAttendance,
@@ -36,8 +34,8 @@ import {
   processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
+import { PickedStudentDto } from 'src/domain/group/dto/picked-student.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { GroupService } from 'src/domain/group/group.service';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -66,7 +64,6 @@ export class GroupAttendanceService {
     @InjectModel('Attendance')
     private readonly model: Model<IAttendance, IAttendanceKey>,
     private readonly notificationService: NotificationService,
-    private readonly groupService: GroupService,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -417,17 +414,44 @@ export class GroupAttendanceService {
     schoolday: Schoolday,
   ): Promise<void> {
     // 1. 그룹의 모든 활성 수강생 목록 가져오기
-    const students = await this.groupService.listStudents(group.id, 'true');
+    const picks = await this.pickRepository
+      .createQueryBuilder('pick')
+      .leftJoinAndSelect('pick.group', 'group')
+      .leftJoinAndSelect('pick.student', 'student')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .where('pick.groupId = :groupId', { groupId: group.id })
+      .andWhere('pick.isActive = :isActive', { isActive: true })
+      .getMany();
+
+    const students = picks.map(
+      (v: Pick) =>
+        new PickedStudentDto({
+          id: v.studentId,
+          groupId: v.groupId,
+          groupName: v.group.groupName,
+          name: v.student.name,
+          grade: v.student.grade,
+          class: v.student.class,
+          studentCode: v.student.studentCode,
+          status: v.student.status,
+          phone: v.student.phone,
+          parentPhone: v.student.parent.phone,
+          nextStops: v.student.nextStops,
+          note: v.note,
+          startedBy: v.startedBy,
+          endedBy: v.endedBy,
+          start: v.start || null,
+          end: v.end || null,
+          isActive: v.isActive,
+        }),
+    );
+
     if (students.length === 0) {
       return;
     }
 
     // 2. 현재 DynamoDB에 있는 출석 레코드들 가져오기
-    const existingRecords = await fetchAllAttendanceItems(
-      this.model,
-      group.id,
-      date,
-    );
+    const existingRecords = await this.fetchAllAttendanceItems(group.id, date);
     const existingStudentIds = new Set(
       existingRecords.map((record) => record.studentId).filter(Boolean),
     );
@@ -511,7 +535,7 @@ export class GroupAttendanceService {
     dailyStudentKeys: string[],
   ): Promise<void> {
     // 1. DynamoDB에서 해당일의 모든 출석 레코드 가져오기
-    const allRecords = await fetchAllAttendanceItems(this.model, groupId, date);
+    const allRecords = await this.fetchAllAttendanceItems(groupId, date);
 
     // 2. 각 출석 상태별 카운트 계산
     const presentCount = allRecords.filter(
@@ -570,8 +594,7 @@ export class GroupAttendanceService {
       }
 
       // 2. DynamoDB에서 출석 데이터 조회
-      const allItems: IAttendance[] = await fetchAllAttendanceItems(
-        this.model,
+      const allItems: IAttendance[] = await this.fetchAllAttendanceItems(
         groupId,
         date,
       );
@@ -596,44 +619,42 @@ export class GroupAttendanceService {
       //const weekday = filteredPicks[0].group.weekday; // 오늘 수업으로부터 요일 추출
 
       // 5. 완전한 출석 목록 생성 (기존 레코드 + 기본 레코드)
-      const completeAttendanceItems: IAttendance[] = activePicks.map(
-        (pick: Pick) => {
-          if (!pick.student) {
-            throw new BadRequestException(
-              `no student associated with group ${pick.group.id}`,
-            );
-          }
-          const dailyStudentKey = generateDailyStudentKey(
-            date,
-            pick.studentId,
-            pick.student.grade,
-            pick.student.class,
-            pick.student.studentCode,
+      const completeAttendanceItems: IAttendance[] = activePicks.map((pick) => {
+        if (!pick.student) {
+          throw new BadRequestException(
+            `no student associated with group ${pick.group.id}`,
           );
+        }
+        const dailyStudentKey = generateDailyStudentKey(
+          date,
+          pick.studentId,
+          pick.student.grade,
+          pick.student.class,
+          pick.student.studentCode,
+        );
 
-          const existingItem = itemMap.get(dailyStudentKey);
-          if (existingItem) {
-            // 기존 아이템이 있는 경우, normalize 함수로 정규화
-            return normalizeAttendance(existingItem);
-          } else {
-            // 새로운 아이템 생성 시 모든 필드를 null로 초기화
-            return normalizeAttendance({
-              groupId: pick.group.id,
-              start: pick.group.start,
-              end: pick.group.end,
-              groupKey: generateGroupKey(pick.group.id),
-              lessonId: pick.group.lessonId,
-              lessonName: pick.group.lesson.lessonName,
-              groupName: pick.group.groupName,
-              weekday: pick.group.weekday,
-              studentId: pick.student.id,
-              studentName: pick.student.name,
-              dailyStudentKey: dailyStudentKey,
-              status: AttendanceStatus.NONE,
-            } as IAttendance);
-          }
-        },
-      );
+        const existingItem = itemMap.get(dailyStudentKey);
+        if (existingItem) {
+          // 기존 아이템이 있는 경우, normalize 함수로 정규화
+          return normalizeAttendance(existingItem);
+        } else {
+          // 새로운 아이템 생성 시 모든 필드를 null로 초기화
+          return normalizeAttendance({
+            groupId: pick.group.id,
+            start: pick.group.start,
+            end: pick.group.end,
+            groupKey: generateGroupKey(pick.group.id),
+            lessonId: pick.group.lessonId,
+            lessonName: pick.group.lesson.lessonName,
+            groupName: pick.group.groupName,
+            weekday: pick.group.weekday,
+            studentId: pick.student.id,
+            studentName: pick.student.name,
+            dailyStudentKey: dailyStudentKey,
+            status: AttendanceStatus.NONE,
+          } as IAttendance);
+        }
+      });
 
       // 6. 학생 ID 추출
       const studentIds = activePicks.map((v: Pick) => v.studentId);
@@ -1143,16 +1164,29 @@ export class GroupAttendanceService {
 
       // 4. DynamoDB에 없는 레코드에 대해 fallback item 생성
       const attendanceMap = new Map<string, IAttendance>(
-        results.map((attendance) => [
-          getDatePrefixFromDailyStudentKey(attendance.dailyStudentKey),
-          attendance,
-        ]),
+        results.map((attendance) => [attendance.dailyStudentKey, attendance]),
       );
 
       const finalResults: IAttendance[] = [];
       for (const schoolday of schooldays) {
-        const dateKey = `DATE#${schoolday.today}`;
-        const existingAttendance = attendanceMap.get(dateKey);
+        // schoolday.group.picks에서 해당 student 찾기
+        if (!schoolday.group || !schoolday.group.picks) {
+          throw new BadRequestException('Group or picks information not found');
+        }
+        const pick = schoolday.group.picks.find(
+          (p) => p.studentId === studentId,
+        );
+        if (!pick || !pick.student) {
+          throw new BadRequestException('Student information not found');
+        }
+        const dailyStudentKey = generateDailyStudentKey(
+          schoolday.today,
+          pick.student.id,
+          pick.student.grade,
+          pick.student.class,
+          pick.student.studentCode,
+        );
+        const existingAttendance = attendanceMap.get(dailyStudentKey);
 
         if (existingAttendance) {
           // DynamoDB에 레코드가 있는 경우
@@ -1264,10 +1298,7 @@ export class GroupAttendanceService {
 
       // 4. DynamoDB에 없는 레코드에 대해 fallback item 생성
       const attendanceMap = new Map<string, IAttendance>(
-        results.map((attendance) => [
-          getDatePrefixFromDailyStudentKey(attendance.dailyStudentKey),
-          attendance,
-        ]),
+        results.map((attendance) => [attendance.dailyStudentKey, attendance]),
       );
 
       const finalResults: IAttendance[] = [];
@@ -1282,9 +1313,15 @@ export class GroupAttendanceService {
             continue;
           }
 
-          const dateKey = `DATE#${schoolday.today}`;
+          const dailyStudentKey = generateDailyStudentKey(
+            schoolday.today,
+            pick.student.id,
+            pick.student.grade,
+            pick.student.class,
+            pick.student.studentCode,
+          );
 
-          const existingAttendance = attendanceMap.get(dateKey);
+          const existingAttendance = attendanceMap.get(dailyStudentKey);
 
           if (existingAttendance) {
             // DynamoDB에 레코드가 있는 경우
@@ -1621,5 +1658,31 @@ export class GroupAttendanceService {
         endOfDay,
       })
       .execute();
+  }
+
+  private async fetchAllAttendanceItems(groupId: number, date: string) {
+    let allItems: IAttendance[] = [];
+    let lastKey: IAttendanceKey | undefined = undefined;
+
+    do {
+      const query = this.model
+        .query('groupKey')
+        .eq(generateGroupKey(groupId))
+        .where('dailyStudentKey')
+        .beginsWith(`DATE#${date}`);
+
+      // lastKey가 존재할 때만 startAt 호출
+      if (lastKey) {
+        query.startAt(lastKey);
+      }
+
+      const result = await query.exec();
+
+      allItems = allItems.concat(result as IAttendance[]);
+      lastKey = result.lastKey as IAttendanceKey | undefined;
+    } while (lastKey);
+
+    // 클라이언트 개발자 요청: 누락된 필드들을 null로 정규화
+    return allItems.map((item) => normalizeAttendance(item));
   }
 }

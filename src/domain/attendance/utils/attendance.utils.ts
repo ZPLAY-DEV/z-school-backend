@@ -1,8 +1,7 @@
 import { AttendanceStatus } from 'src/common/enums';
 import {
   IAttendance,
-  IAttendanceCore,
-  IAttendanceKey,
+  IAttendanceCore
 } from 'src/domain/attendance/entities/attendance.interface';
 import {
   AttendanceReport,
@@ -160,35 +159,6 @@ export function normalizeAttendances(
   attendances: IAttendance[],
 ): IAttendance[] {
   return attendances.map(normalizeAttendance);
-}
-
-export async function fetchAllAttendanceItems(
-  model,
-  groupId: number,
-  date: string,
-) {
-  let allItems: IAttendance[] = [];
-  let lastKey: IAttendanceKey | undefined = undefined;
-
-  do {
-    const query = model
-      .query('groupKey')
-      .eq(generateGroupKey(groupId))
-      .where('dailyStudentKey')
-      .beginsWith(`DATE#${date}`);
-
-    // lastKey가 존재할 때만 startAt 호출
-    if (lastKey) {
-      query.startAt(lastKey);
-    }
-
-    const result = await query.exec();
-
-    allItems = allItems.concat(result as IAttendance[]);
-    lastKey = result.lastKey as IAttendanceKey | undefined;
-  } while (lastKey);
-
-  return allItems;
 }
 
 /**
