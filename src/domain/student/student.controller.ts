@@ -28,14 +28,11 @@ import { StudentService } from 'src/domain/student/student.service';
 import {
   CreateStudentDocs,
   CreateStudentDryRunDocs,
-  FindStudentBookingsDocs,
-  FindStudentByIdDocs,
-  FindStudentCanceledGroupsDocs,
-  FindStudentCanceledGroupsPaginatedDocs,
-  FindStudentGroupsDocs,
-  FindStudentGroupsPaginatedDocs,
-  FindStudentSchooldaysDocs,
-  FindStudentsPaginatedDocs,
+  FindByIdDocs,
+  GetAllSchooldaysDocs,
+  GetPaginatedStudentsDocs,
+  GetSchooldayByDateDocs,
+  GetStudentTermsDocs,
   RemoveStudentDocs,
   UpdateStudentDocs,
 } from 'src/domain/student/swagger/student-swagger.decorator';
@@ -83,6 +80,7 @@ export class StudentController {
   //? ---------------------------------------------------------------------- ?//
 
   @Public()
+  @GetStudentTermsDocs()
   @Get(':id/terms')
   async getStudentTerms(
     @Param('id') id: number,
@@ -92,7 +90,7 @@ export class StudentController {
     return await this.studentService.getStudentTerms(id, filter);
   }
 
-  @FindStudentsPaginatedDocs()
+  @GetPaginatedStudentsDocs()
   @Get('paginated')
   async infiniteList(
     @Paginate() query: PaginateQuery,
@@ -100,7 +98,7 @@ export class StudentController {
     return await this.studentService.infiniteList(query);
   }
 
-  @FindStudentByIdDocs()
+  @FindByIdDocs()
   @Get(':id')
   async findById(
     @Param('id') id: number,
@@ -109,7 +107,7 @@ export class StudentController {
     return await this.studentService.findById(id, termId);
   }
 
-  @FindStudentSchooldaysDocs()
+  @GetAllSchooldaysDocs()
   @Get(':id/all-schooldays')
   async getAllSchooldaysByTermId(
     @Param('id') id: number,
@@ -119,7 +117,7 @@ export class StudentController {
     return await this.studentService.getAllSchooldays(id, termId, month);
   }
 
-  @FindStudentSchooldaysDocs()
+  @GetSchooldayByDateDocs()
   @Get(':id/schooldays')
   async getSchooldaysByDate(
     @Param('id') id: number,
@@ -130,7 +128,6 @@ export class StudentController {
   }
 
   //! @deprecated
-  @FindStudentBookingsDocs()
   @Get(':id/bookings')
   async findBookingsById(
     @Param('id', ParseIntPipe) id: number,
@@ -140,7 +137,6 @@ export class StudentController {
   }
 
   //! @deprecated
-  @FindStudentGroupsDocs()
   @Get(':id/groups')
   async listGroups(
     @Param('id', ParseIntPipe) id: number,
@@ -150,7 +146,6 @@ export class StudentController {
   }
 
   //! @deprecated
-  @FindStudentGroupsPaginatedDocs()
   @Get(':id/groups/paginated')
   async infiniteListGroups(
     @Param('id', ParseIntPipe) id: number,
@@ -161,7 +156,6 @@ export class StudentController {
   }
 
   //! @deprecated
-  @FindStudentCanceledGroupsDocs()
   @Get(':id/canceled-groups')
   async listCanceledGroups(
     @Param('id', ParseIntPipe) id: number,
@@ -171,7 +165,6 @@ export class StudentController {
   }
 
   //! @deprecated
-  @FindStudentCanceledGroupsPaginatedDocs()
   @Get(':id/canceled-groups/paginated')
   async infiniteListCanceledGroups(
     @Param('id', ParseIntPipe) id: number,

@@ -390,7 +390,7 @@ export class StudentService {
   async getAllSchooldays(
     id: number,
     termId: number,
-    monthStr?: string, //! YYYY-MM
+    monthStr?: string, //! in YYYY-MM format
   ): Promise<Schoolday[]> {
     // QueryBuilder를 사용해서 SQL 레벨에서 필터링
     const queryBuilder = this.dataSource

@@ -4,50 +4,22 @@
 
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    ApiQuery,
-    ApiResponse,
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
-import {
-    ApiOkPaginatedResponse,
-    ApiPaginationQuery,
-    FilterOperator,
-    PaginateConfig,
-} from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { Booking } from 'src/domain/booking/entities/booking.entity';
-import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { NextStopDto } from 'src/domain/student/dto/next-stop.dto';
-import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
+import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
-
-// Student 페이지네이션 설정
-const STUDENT_CONFIG: PaginateConfig<Student> = {
-  sortableColumns: ['id', 'grade'],
-  defaultSortBy: [['id', 'DESC']],
-  filterableColumns: {
-    grade: [FilterOperator.EQ],
-    status: [FilterOperator.EQ],
-    schoolId: [FilterOperator.EQ],
-  },
-};
-
-// Group 페이지네이션 설정
-const GROUP_CONFIG: PaginateConfig<Group> = {
-  sortableColumns: ['id'],
-  defaultSortBy: [['id', 'DESC']],
-  filterableColumns: {
-    status: [FilterOperator.EQ],
-  },
-};
 
 //? ---------------------------------------------------------------------- ?//
 //? Create
@@ -287,7 +259,36 @@ export const CreateStudentDryRunDocs = () =>
 //? Read
 //? ---------------------------------------------------------------------- ?//
 
-export const FindStudentsPaginatedDocs = () =>
+export const GetStudentTermsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '📝 학생 학기 목록 조회',
+      description: `
+### 📋 기능 설명
+특정 학생이 속한 모든 학기 목록을 조회합니다.
+
+### 📤 Response
+학생이 수강한 모든 학기 정보 배열을 반환합니다.
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '학생 ID',
+      example: 1,
+    }),
+    ApiOkResponseTemplate({
+      description: '✅ 학생 학기 목록 조회 성공',
+      type: Student,
+      isArray: true,
+    }),
+    ApiResponse({
+      status: StatusCodes.NOT_FOUND,
+      description: '🔍 학생 없음 - 존재하지 않는 학생 ID',
+    }),
+  );
+
+export const GetPaginatedStudentsDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '📄 학생 목록 조회 (페이지네이션)',
@@ -295,75 +296,98 @@ export const FindStudentsPaginatedDocs = () =>
 ### 📋 기능 설명
 페이지네이션을 지원하는 학생 목록을 조회합니다.
 
-### 🔍 검색 및 필터링
-- **검색 가능**: name, phone
-- **정렬 가능**: id, grade
-- **필터링**: grade, status, schoolId
+### 🔍 필터링 옵션
+- **grade**: 학년별 필터링 (1~6)
+- **status**: 학생 상태별 필터링 (ATTENDING, TRANSFERRED 등)
+- **schoolId**: 학교별 필터링
 
-### 💡 사용 예시
-- 학생 관리 화면의 목록
-- 검색 및 필터링 기능
-- 무한 스크롤 구현
+### 📊 정렬 옵션
+- **기본 정렬**: ID 내림차순
+- **정렬 가능 컬럼**: id, grade
+
+### 📤 Response
+페이지네이션 정보와 함께 학생 목록을 반환합니다.
       `,
     }),
-    ApiPaginationQuery(STUDENT_CONFIG),
-    ApiOkPaginatedResponse(Student, STUDENT_CONFIG),
-    ApiStatuses(StatusCodes.BAD_REQUEST),
+    ApiQuery({
+      name: 'page',
+      type: Number,
+      description: '페이지 번호 (1부터 시작)',
+      required: false,
+      example: 1,
+    }),
+    ApiQuery({
+      name: 'limit',
+      type: Number,
+      description: '페이지당 항목 수',
+      required: false,
+      example: 10,
+    }),
+    ApiQuery({
+      name: 'grade',
+      type: Number,
+      description: '학년 필터 (1~6)',
+      required: false,
+      example: 3,
+    }),
+    ApiQuery({
+      name: 'status',
+      type: String,
+      description: '학생 상태 필터',
+      required: false,
+      example: 'ATTENDING',
+    }),
+    ApiQuery({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID 필터',
+      required: false,
+      example: 1,
+    }),
+    ApiOkResponseTemplate({
+      description: '✅ 학생 목록 조회 성공',
+      type: Student,
+    }),
   );
 
-export const FindStudentByIdDocs = () =>
+export const FindByIdDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '👤 학생 상세 조회',
+      summary: '🔍 학생 상세 조회',
       description: `
 ### 📋 기능 설명
-특정 학생의 상세 정보를 조회합니다.
+학생 ID로 특정 학생의 상세 정보를 조회합니다.
 
-### 📊 포함 정보
-- 학생 기본 정보
-- 학부모 정보 (relations 포함)
-- 학교 정보 (relations 포함)
-- 등록/수정 이력
-
-### 💡 사용 시점
-- 학생 상세 페이지
-- 학생 정보 수정 폼
-- 학부모 앱에서 자녀 정보 조회
+### 📤 Response
+학생의 모든 정보를 포함한 상세 데이터를 반환합니다.
       `,
     }),
     ApiParam({
       name: 'id',
       type: Number,
-      description: '학생 ID',
+      description: '조회할 학생 ID',
       example: 1,
     }),
     ApiOkResponseTemplate({
-      description: '✅ 학생 상세 정보',
+      description: '✅ 학생 상세 조회 성공',
       type: Student,
     }),
     ApiResponse({
       status: StatusCodes.NOT_FOUND,
-      description: '🔍 학생 없음 - 존재하지 않는 학생 ID 또는 삭제된 학생',
+      description: '🔍 학생 없음 - 존재하지 않는 학생 ID',
     }),
   );
 
-export const FindStudentSchooldaysDocs = () =>
+export const GetAllSchooldaysDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '📅 오늘의 수업 또는 특정일의 수업 조회',
+      summary: '📅 학생 수업일 목록 조회',
       description: `
 ### 📋 기능 설명
-특정 학생의 오늘 수업 또는 특정일의 수업 일정을 조회합니다.
+특정 학생의 모든 수업일 목록을 조회합니다.
 
-🏷️ 조회 조건
-- 기본: 오늘 날짜의 수업 조회
-- 특정일: date 파라미터로 특정 날짜의 수업 조회
-- 학기 필터: termId 전달 시 해당 학기의 수업만 필터링
-
-### 💡 사용 시점
-- 학생 출석 현황 조회
-- 학부모 앱에서 자녀 수업 일정 확인
-- 수업료 정산 근거 자료
+### 📤 Response
+학생이 속한 모든 수업일 정보 배열을 반환합니다.
       `,
     }),
     ApiParam({
@@ -372,37 +396,27 @@ export const FindStudentSchooldaysDocs = () =>
       description: '학생 ID',
       example: 1,
     }),
-    ApiQuery({
-      name: 'termId',
-      type: Number,
-      required: false,
-      description: '학기 ID (생략시 전체 학기)',
-      example: 1,
-    }),
     ApiOkResponseTemplate({
-      description: '✅ 학생 수업일 목록',
+      description: '✅ 학생 수업일 목록 조회 성공',
       type: Schoolday,
       isArray: true,
     }),
-    ApiStatuses(StatusCodes.NOT_FOUND),
+    ApiResponse({
+      status: StatusCodes.NOT_FOUND,
+      description: '🔍 학생 없음 - 존재하지 않는 학생 ID',
+    }),
   );
 
-export const FindStudentBookingsDocs = () =>
+export const GetSchooldayByDateDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '📋 학생 수강신청 목록 조회 ❌ deprecated',
+      summary: '📅 특정 날짜 학생 수업일 조회',
       description: `
 ### 📋 기능 설명
-특정 학생의 수강신청 목록을 조회합니다.
+특정 학생의 특정 날짜 수업일 정보를 출석 정보와 함께 조회합니다.
 
-### 🔍 필터링 옵션
-- **termId**: 특정 학기의 예약만 조회
-- **전체**: termId 생략시 모든 학기 예약
-
-### 💡 사용 시점
-- 학생 수강 이력 조회
-- 학부모 수강신청 현황 확인
-- 수업료 정산 및 환불 처리
+### 📤 Response
+수업일 정보와 출석 상태, 하교 정보를 포함한 상세 데이터를 반환합니다.
       `,
     }),
     ApiParam({
@@ -412,172 +426,23 @@ export const FindStudentBookingsDocs = () =>
       example: 1,
     }),
     ApiQuery({
-      name: 'termId',
-      type: Number,
-      required: false,
-      description: '학기 ID (생략시 전체 학기)',
-      example: 1,
+      name: 'date',
+      type: String,
+      description: '조회할 날짜 (YYYY-MM-DD 형식)',
+      example: '2025-01-15',
     }),
     ApiOkResponseTemplate({
-      description: '✅ 학생 예약 목록',
-      type: Booking,
-      isArray: true,
+      description: '✅ 특정 날짜 학생 수업일 조회 성공',
+      type: SchooldayWithAttendanceDto,
     }),
-    ApiStatuses(StatusCodes.NOT_FOUND),
-  );
-
-export const FindStudentGroupsDocs = () =>
-  applyDecorators(
-    ApiOperation({
-      summary: '👌 학생 수강중인 반 목록 조회 ❌ deprecated',
-      description: `
-### 📋 기능 설명
-특정 학생이 수강중인 반 목록을 조회합니다.
-
-### 🔍 필터링 옵션
-- **termId**: 특정 학기의 그룹만 조회
-- **전체**: termId 생략시 모든 학기 그룹
-
-### 💡 사용 시점
-- 학생 수강 현황 조회
-- 반 이동 및 변경 처리
-- 출석 관리 시스템
-      `,
+    ApiResponse({
+      status: StatusCodes.NOT_FOUND,
+      description: '🔍 학생 없음 - 존재하지 않는 학생 ID',
     }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: '학생 ID',
-      example: 1,
+    ApiResponse({
+      status: StatusCodes.BAD_REQUEST,
+      description: '🚫 잘못된 날짜 형식 - YYYY-MM-DD 형식으로 입력',
     }),
-    ApiQuery({
-      name: 'termId',
-      type: Number,
-      required: false,
-      description: '학기 ID (생략시 전체 학기)',
-      example: 1,
-    }),
-    ApiOkResponseTemplate({
-      description: '✅ 학생 소속 그룹 목록',
-      type: Group,
-      isArray: true,
-    }),
-    ApiStatuses(StatusCodes.NOT_FOUND),
-  );
-
-export const FindStudentGroupsPaginatedDocs = () =>
-  applyDecorators(
-    ApiOperation({
-      summary: '👌 학생 수강중인 반 목록 조회 (페이지네이션) ❌ deprecated',
-      description: `
-### 📋 기능 설명
-특정 학생이 수강중인 반 목록을 페이지네이션으로 조회합니다.
-
-### 🔍 검색 및 필터링
-- **검색 가능**: name (그룹명)
-- **정렬 가능**: id
-- **필터링**: status (그룹 상태)
-- **termId**: 학기별 필터링
-
-### 💡 사용 시점
-- 대량의 그룹 데이터 조회
-- 무한 스크롤 구현
-- 검색 기능이 필요한 경우
-      `,
-    }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: '학생 ID',
-      example: 1,
-    }),
-    ApiQuery({
-      name: 'termId',
-      type: Number,
-      required: false,
-      description: '학기 ID (생략시 전체 학기)',
-      example: 1,
-    }),
-    ApiPaginationQuery(GROUP_CONFIG),
-    ApiOkPaginatedResponse(Group, GROUP_CONFIG),
-    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
-  );
-
-export const FindStudentCanceledGroupsDocs = () =>
-  applyDecorators(
-    ApiOperation({
-      summary: '🤚 학생 수강 취소한 반 목록 조회 ❌ deprecated',
-      description: `
-### 📋 기능 설명
-학생이 수강 취소한 반 목록을 조회합니다.
-
-### 🔍 필터링 옵션
-- **termId**: 특정 학기의 취소 그룹만 조회
-- **전체**: termId 생략시 모든 학기 취소 그룹
-
-### 💡 사용 시점
-- 수강료 환불 처리
-- 대체 수업 안내
-- 수강 이력 관리
-      `,
-    }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: '학생 ID',
-      example: 1,
-    }),
-    ApiQuery({
-      name: 'termId',
-      type: Number,
-      required: false,
-      description: '학기 ID (생략시 전체 학기)',
-      example: 1,
-    }),
-    ApiOkResponseTemplate({
-      description: '✅ 학생 취소 그룹 목록',
-      type: Group,
-      isArray: true,
-    }),
-    ApiStatuses(StatusCodes.NOT_FOUND),
-  );
-
-export const FindStudentCanceledGroupsPaginatedDocs = () =>
-  applyDecorators(
-    ApiOperation({
-      summary: '🤚 학생 수강 취소한 반 목록 조회 (페이지네이션) ❌ deprecated',
-      description: `
-### 📋 기능 설명
-학생 수강 취소한 반 목록을 페이지네이션으로 조회합니다.
-
-### 🔍 검색 및 필터링
-- **검색 가능**: name (그룹명)
-- **정렬 가능**: id
-- **필터링**: status (그룹 상태)
-- **termId**: 학기별 필터링
-
-### 💡 사용 시점
-- 대량의 취소 그룹 데이터 조회
-- 환불 처리 현황 관리
-- 통계 및 분석 자료
-      `,
-    }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: '학생 ID',
-      example: 1,
-    }),
-    ApiQuery({
-      name: 'termId',
-      type: Number,
-      required: false,
-      description: '학기 ID (생략시 전체 학기)',
-      example: 1,
-    }),
-    ApiPaginationQuery(GROUP_CONFIG),
-    ApiOkPaginatedResponse(Group, GROUP_CONFIG),
-    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 
 //? ---------------------------------------------------------------------- ?//
@@ -585,135 +450,6 @@ export const FindStudentCanceledGroupsPaginatedDocs = () =>
 //? ---------------------------------------------------------------------- ?//
 
 export const UpdateStudentDocs = () =>
-  applyDecorators(
-    ApiOperation({
-      summary: '✏️ Update Student Information',
-      description: `
-### 📋 Function Description
-Update existing student information.
-
-### 🔄 Updatable Fields
-- **Student Info**: grade, class, studentCode, name, phone, nextStop, nextStops, status, note
-- **Parent Info**: name, phone, note, termsAgreedAt
-
-### 📍 Next Stop Information (nextStops)
-- **nextStops**: Array of daily next stop information (Recommended)
-  - place: Destination after school (Required)
-  - name: Person accompanying the student (Optional)
-  - phone: Phone number of accompanying person (Optional)
-- **nextStop**: String format next stop (Legacy support)
-
-### 📊 nextStops Array Support Cases
-1. **Empty Array []**: Clears nextStop field (sets to null)
-2. **Single Item**: Uses only the first item
-   Example: [{"place": "Home", "name": "Mom", "phone": "01012345678"}]
-3. **2-5 Items**: Uses only the first item (legacy compatibility)
-   Example: [{"place": "Home", "name": "Mom", "phone": "01012345678"}, {"place": "Academy", "name": null, "phone": null}]
-4. **6 Items (Complete Week)**: Uses all items for full week coverage
-   Example: 6 items representing Monday to Saturday
-5. **6+ Items**: Uses all items (comma-separated format)
-
-### ⛔ Non-updatable Fields
-- **schoolId**: School change requires transfer process
-- **parentId**: Parent change requires separate process
-
-### ⚠️ Important Notes
-- Partial update supported (send only fields to change)
-- Student code duplicate check (within same school)
-- Phone number format validation
-- Use either nextStops or nextStop, not both (nextStops recommended)
-- Empty array clears next stop information
-- Null values for name and phone are supported
-      `,
-    }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: 'Student ID to update',
-      example: 1,
-    }),
-    ApiBody({
-      type: UpdateStudentDto,
-      examples: {
-        grade_update: {
-          summary: 'Grade Promotion',
-          description: 'Update grade only',
-          value: {
-            grade: 4,
-            class: '4-1',
-          },
-        },
-        contact_update: {
-          summary: 'Contact Information Update',
-          description: 'Update student and parent contact information',
-          value: {
-            phone: '01098765432',
-            parent: {
-              phone: '01087654321',
-              note: 'Available only on weekday afternoons',
-            },
-          },
-        },
-        nextstops_single: {
-          summary: 'Single Next Stop Update',
-          description: 'Update with single next stop information',
-          value: {
-            nextStops: [{ place: 'Home', name: 'Mom', phone: '01012345678' }],
-          },
-        },
-        nextstops_complete: {
-          summary: 'Complete Week Next Stop Update',
-          description:
-            'Update with full week next stop information (Recommended)',
-          value: {
-            nextStops: [
-              { place: 'Home', name: 'Mom', phone: '01012345678' },
-              { place: 'Academy', name: null, phone: null },
-              { place: 'Library', name: 'Friend', phone: '01087654321' },
-              { place: 'Home', name: null, phone: null },
-              { place: 'Academy', name: 'Mom', phone: '01012345678' },
-              { place: 'Home', name: null, phone: null },
-            ],
-          },
-        },
-        nextstops_clear: {
-          summary: 'Clear Next Stop Information',
-          description: 'Clear next stop information by sending empty array',
-          value: {
-            nextStops: [],
-          },
-        },
-        status_update: {
-          summary: 'Student Status Change',
-          description: 'Transfer process',
-          value: {
-            status: 'TRANSFERRED',
-            note: 'Transferred in January 2025',
-          },
-        },
-      },
-    }),
-    ApiOkResponseTemplate({
-      description: '✅ Student information updated successfully',
-      type: Student,
-    }),
-    ApiResponse({
-      status: StatusCodes.BAD_REQUEST,
-      description:
-        '🚫 Request data error - Invalid data format, grade range exceeded, phone format error',
-    }),
-    ApiResponse({
-      status: StatusCodes.NOT_FOUND,
-      description: '🔍 Resource not found - Non-existent student ID',
-    }),
-    ApiResponse({
-      status: StatusCodes.CONFLICT,
-      description:
-        '⚠️ Data conflict - Student code duplicate within same school',
-    }),
-  );
-
-export const UpdateStudentNextStopDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '📍 학생 하교장소 수정 (Deprecated)',
@@ -730,11 +466,6 @@ export const UpdateStudentNextStopDocs = () =>
 - **place**: 하교 후 가는 장소 (필수)
 - **name**: 함께 가는 사람 이름 (선택, nullable)
 - **phone**: 함께 가는 사람 전화번호 (선택, nullable)
-
-### 📝 데이터 형식
-- 요일은 한글 키로 구분: 월, 화, 수, 목, 금, 토
-- 모든 요일 정보를 한 번에 전송
-- name과 phone은 null 값 허용
 
 ### ⚠️ 주의사항
 - 기존 하교장소 정보는 완전히 덮어쓰기
@@ -755,72 +486,24 @@ export const UpdateStudentNextStopDocs = () =>
           summary: '전체 하교장소 정보 수정',
           description: '모든 요일의 하교장소 정보를 한 번에 수정',
           value: {
-            월: {
-              place: '당구장',
-              name: '친구',
-              phone: '01012340001',
-            },
-            화: {
-              place: '찜질방',
-              name: '친구',
-              phone: '01012340002',
-            },
-            수: {
-              place: '당구장',
-              name: '친구',
-              phone: '01012340003',
-            },
-            목: {
-              place: '탁구장',
-              name: '친구',
-              phone: '01012340004',
-            },
-            금: {
-              place: '게임방',
-              name: '친구',
-              phone: '01012340005',
-            },
-            토: {
-              place: '노래방',
-              name: '친구',
-              phone: '01012340006',
-            },
+            월: { place: '당구장', name: '친구', phone: '01012340001' },
+            화: { place: '찜질방', name: '친구', phone: '01012340002' },
+            수: { place: '당구장', name: '친구', phone: '01012340003' },
+            목: { place: '탁구장', name: '친구', phone: '01012340004' },
+            금: { place: '게임방', name: '친구', phone: '01012340005' },
+            토: { place: '노래방', name: '친구', phone: '01012340006' },
           },
         },
         nullable_fields: {
           summary: 'nullable 필드 예시',
           description: 'name과 phone이 null인 경우',
           value: {
-            월: {
-              place: '집',
-              name: null,
-              phone: null,
-            },
-            화: {
-              place: '학원',
-              name: '엄마',
-              phone: null,
-            },
-            수: {
-              place: '도서관',
-              name: null,
-              phone: '01012340000',
-            },
-            목: {
-              place: '집',
-              name: null,
-              phone: null,
-            },
-            금: {
-              place: '학원',
-              name: '엄마',
-              phone: '01012340000',
-            },
-            토: {
-              place: '집',
-              name: null,
-              phone: null,
-            },
+            월: { place: '집', name: null, phone: null },
+            화: { place: '학원', name: '엄마', phone: null },
+            수: { place: '도서관', name: null, phone: '01012340000' },
+            목: { place: '집', name: null, phone: null },
+            금: { place: '학원', name: '엄마', phone: '01012340000' },
+            토: { place: '집', name: null, phone: null },
           },
         },
       },
@@ -895,7 +578,8 @@ export const RemoveStudentDocs = () =>
     }),
     ApiResponse({
       status: StatusCodes.BAD_REQUEST,
-      description: '⚠️ 삭제 불가 - picks가 존재하는 경우 (forceDelete=true 사용)',
+      description:
+        '⚠️ 삭제 불가 - picks가 존재하는 경우 (forceDelete=true 사용)',
     }),
     ApiResponse({
       status: StatusCodes.FORBIDDEN,

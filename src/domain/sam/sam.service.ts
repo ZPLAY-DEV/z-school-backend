@@ -274,7 +274,7 @@ export class SamService {
   async getAllSchooldays(
     id: number,
     termId: number,
-    monthStr?: string, //! must be in YYYY-MM format
+    monthStr?: string, //! in YYYY-MM format
   ): Promise<Schoolday[]> {
     const queryBuilder = this.dataSource
       .createQueryBuilder(Schoolday, 'schoolday')
