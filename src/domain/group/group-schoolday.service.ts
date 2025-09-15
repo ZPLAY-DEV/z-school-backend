@@ -7,6 +7,7 @@ import {
   PaginateQuery,
 } from 'nestjs-paginate';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { getKoreanWeekday } from 'src/helpers/date';
 import { DataSource, Repository } from 'typeorm';
 
 @Injectable()
@@ -54,16 +55,16 @@ export class GroupSchooldayService {
       // 원본 아이템 추가 (id는 그대로 유지)
       result.push(schoolday);
       // original이 null이 아닌 경우 중복 아이템 생성 (id만 0으로 설정)
-      // if (schoolday.original !== null) {
-      //   const duplicateItem = {
-      //     ...schoolday,
-      //     id: 0,
-      //     today: schoolday.original,
-      //     original: schoolday.today,
-      //     weekday: getKoreanWeekday(schoolday.original),
-      //   };
-      //   result.push(duplicateItem);
-      // }
+      if (schoolday.original !== null) {
+        const duplicateItem = {
+          ...schoolday,
+          id: 0,
+          today: schoolday.original,
+          original: schoolday.today,
+          weekday: getKoreanWeekday(schoolday.original),
+        };
+        result.push(duplicateItem);
+      }
     }
 
     // weekday 순차적으로 정렬

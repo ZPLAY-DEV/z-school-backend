@@ -14,6 +14,7 @@ import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { GroupWithPicksCount, Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { getKoreanWeekday } from 'src/helpers/date';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 @Injectable()
@@ -239,7 +240,7 @@ export class SamService {
     if (groups.length > 0) {
       const groupIds = groups.map((group) => group.id);
 
-      // 한 번의 쿼리로 모든 그룹의 active picks 수를 가져옴.
+      // 한 번의 쿼리로 해당 그룹의 모든 active picks 수를 가져옴.
       const picksCounts = await this.groupRepository
         .createQueryBuilder('group')
         .leftJoin('group.picks', 'pick')
@@ -272,21 +273,18 @@ export class SamService {
   //? SAM과 직접 관련된 그룹들의 schooldays만 조회 (SQL 레벨 최적화)
   async getAllSchooldays(
     id: number,
-    termId?: number,
-    date?: string, //! must be in YYYY-MM format
+    termId: number,
+    monthStr?: string, //! must be in YYYY-MM format
   ): Promise<Schoolday[]> {
     const queryBuilder = this.dataSource
       .createQueryBuilder(Schoolday, 'schoolday')
       .leftJoin('schoolday.group', 'group')
-      .where('group.samId = :samId', { samId: id });
+      .leftJoinAndSelect('schoolday.departures', 'departures')
+      .where('group.samId = :samId', { samId: id })
+      .andWhere('schoolday.termId = :termId', { termId });
 
-    if (termId) {
-      queryBuilder.andWhere('schoolday.termId = :termId', { termId });
-    }
-
-    if (date) {
-      // "2025-08" 형태의 문자열을 파싱하여 해당 월의 시작일과 마지막일 계산
-      const [year, month] = date.split('-').map(Number);
+    if (monthStr) {
+      const [year, month] = monthStr.split('-').map(Number);
       const startDate = new Date(year, month - 1, 1); // 월은 0부터 시작하므로 -1
       const endDate = new Date(year, month, 0); // 다음 달의 0일 = 이번 달의 마지막일
 
@@ -298,14 +296,30 @@ export class SamService {
       });
     }
 
-    return await queryBuilder.getMany();
+    const schooldays = await queryBuilder.getMany();
+    const result: Schoolday[] = [];
+
+    for (const schoolday of schooldays) {
+      result.push(schoolday);
+      if (schoolday.original !== null) {
+        const duplicateItem = {
+          ...schoolday,
+          id: 0,
+          today: schoolday.original,
+          original: schoolday.today,
+          weekday: getKoreanWeekday(schoolday.original),
+        };
+        result.push(duplicateItem);
+      }
+    }
+    return result;
   }
 
   //? SAM과 직접 관련된 그룹들의 schooldays만 조회 (SQL 레벨 최적화)
   async getSchooldaysByDate(
     id: number,
+    termId: number,
     date: string, //! YYYY-MM-DD
-    termId?: number,
   ): Promise<Schoolday[]> {
     const sam = await this.samRepository.findOneOrFail({
       where: { id },
@@ -316,16 +330,28 @@ export class SamService {
       .leftJoinAndSelect('schoolday.group', 'group')
       .leftJoinAndSelect('schoolday.departures', 'departures')
       .where('group.samId = :samId', { samId: id })
+      .andWhere('schoolday.termId = :termId', { termId })
       .andWhere('(schoolday.today = :date OR schoolday.original = :date)', {
         date,
       });
 
-    if (termId) {
-      queryBuilder.andWhere('schoolday.termId = :termId', { termId });
-    }
-
     const schooldays = await queryBuilder.getMany();
-    return schooldays;
+    const result: Schoolday[] = [];
+
+    for (const schoolday of schooldays) {
+      result.push(schoolday);
+      if (schoolday.original !== null) {
+        const duplicateItem = {
+          ...schoolday,
+          id: 0,
+          today: schoolday.original,
+          original: schoolday.today,
+          weekday: getKoreanWeekday(schoolday.original),
+        };
+        result.push(duplicateItem);
+      }
+    }
+    return result;
   }
 
   //? ---------------------------------------------------------------------- ?//

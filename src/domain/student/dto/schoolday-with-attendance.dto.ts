@@ -59,4 +59,25 @@ export class SchooldayWithAttendanceDto {
     example: '조퇴 예정입니다',
   })
   parentNote: string | null;
+
+  @ApiProperty({
+    description: '학부모 메모 시간',
+    nullable: true,
+    example: new Date(),
+  })
+  parentNotedAt: Date | null;
+
+  @ApiProperty({
+    description: '학교 메모',
+    nullable: true,
+    example: '조퇴 예정입니다',
+  })
+  schoolNote: string | null;
+
+  @ApiProperty({
+    description: '학교 메모 시간',
+    nullable: true,
+    example: new Date(),
+  })
+  schoolNotedAt: Date | null;
 }

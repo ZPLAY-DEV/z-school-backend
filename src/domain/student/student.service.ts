@@ -16,7 +16,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { AttendanceStatus } from 'src/common/enums';
+import { AttendanceStatus, ClassStatus } from 'src/common/enums';
 import {
   IAttendance,
   IAttendanceKey,
@@ -35,6 +35,7 @@ import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-wit
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
+import { getKoreanWeekday } from 'src/helpers/date';
 import { normalizePhone } from 'src/helpers/phone';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
@@ -305,8 +306,8 @@ export class StudentService {
   //? 학생의 수업일 조회 (SQL 레벨 최적화)
   async getSchooldaysByDate(
     id: number,
+    termId: number,
     date: string, //! YYYY-MM-DD
-    termId?: number,
   ): Promise<SchooldayWithAttendanceDto[]> {
     const student = await this.studentRepository.findOneOrFail({
       where: { id },
@@ -318,14 +319,11 @@ export class StudentService {
       .leftJoinAndSelect('schoolday.departures', 'departures')
       .leftJoin('group.picks', 'pick')
       .where('pick.studentId = :studentId', { studentId: id })
+      .andWhere('schoolday.termId = :termId', { termId })
       .andWhere('pick.isActive = :isActive', { isActive: true })
       .andWhere('(schoolday.today = :date OR schoolday.original = :date)', {
         date,
       });
-
-    if (termId) {
-      queryBuilder.andWhere('schoolday.termId = :termId', { termId });
-    }
 
     const schooldays = await queryBuilder.getMany();
     const attendanceKeys: IAttendanceKey[] = schooldays.map((v) => {
@@ -350,7 +348,8 @@ export class StudentService {
       attendanceMap.set(attendance.dailyStudentKey, attendance);
     });
 
-    return schooldays.map((schoolday): SchooldayWithAttendanceDto => {
+    const result: SchooldayWithAttendanceDto[] = [];
+    for (const schoolday of schooldays) {
       const dailyStudentKey = generateDailyStudentKey(
         schoolday.today,
         student.id,
@@ -360,59 +359,82 @@ export class StudentService {
       );
       const attendance = attendanceMap.get(dailyStudentKey);
 
-      return {
-        id: schoolday.id,
-        schoolId: schoolday.schoolId,
-        termId: schoolday.termId,
-        groupId: schoolday.groupId,
-        today: schoolday.today,
-        weekday: schoolday.weekday,
-        original: schoolday.original,
-        weekNumber: schoolday.weekNumber,
-        startsAt: schoolday.startsAt,
-        endsAt: schoolday.endsAt,
-        createdAt: schoolday.createdAt,
-        updatedAt: schoolday.updatedAt,
-        group: schoolday.group,
-        departures: schoolday.departures,
-        // attendance: attendance,
+      result.push({
+        ...schoolday,
         status: attendance?.status || AttendanceStatus.NONE,
         parentNote: attendance?.parentNote || null,
-      };
-    });
+        parentNotedAt: attendance?.parentNotedAt || null,
+        schoolNote: attendance?.schoolNote || null,
+        schoolNotedAt: attendance?.schoolNotedAt || null,
+      });
+      if (schoolday.original !== null) {
+        const duplicateItem = {
+          ...schoolday,
+          id: 0,
+          today: schoolday.original,
+          original: schoolday.today,
+          weekday: getKoreanWeekday(schoolday.original),
+          status: AttendanceStatus.NONE,
+          parentNote: null,
+          parentNotedAt: null,
+          schoolNote: null,
+          schoolNotedAt: null,
+        };
+        result.push(duplicateItem);
+      }
+    }
+    return result;
   }
 
   //? 학생의 수업일 조회 (SQL 레벨 최적화)
-  async getAllSchooldaysByTermId(
+  async getAllSchooldays(
     id: number,
     termId: number,
+    monthStr?: string, //! YYYY-MM
   ): Promise<Schoolday[]> {
     // QueryBuilder를 사용해서 SQL 레벨에서 필터링
     const queryBuilder = this.dataSource
       .createQueryBuilder(Schoolday, 'schoolday')
-      .leftJoinAndSelect('schoolday.group', 'group')
+      .leftJoin('schoolday.group', 'group')
       .leftJoinAndSelect('schoolday.departures', 'departures')
       .leftJoin('group.picks', 'pick')
       .where('pick.studentId = :studentId', { studentId: id })
+      .andWhere('group.status = :status', { status: ClassStatus.ACTIVE })
       .andWhere('pick.isActive = :isActive', { isActive: true })
       .andWhere('pick.termId = :termId', {
         termId: Number(termId),
       });
 
-    const schooldays = await queryBuilder.getMany();
+    if (monthStr) {
+      const [year, month] = monthStr.split('-').map(Number);
+      const startDate = new Date(year, month - 1, 1); // 월은 0부터 시작하므로 -1
+      const endDate = new Date(year, month, 0); // 다음 달의 0일 = 이번 달의 마지막일
 
-    // 순환 참조 방지를 위해 group에서 schooldays 제거
-    return schooldays.map((schoolday) => {
-      if (schoolday.group) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { schooldays: _, ...groupWithoutSchooldays } = schoolday.group;
-        return {
+      queryBuilder.andWhere('schoolday.startsAt >= :startDate', {
+        startDate,
+      });
+      queryBuilder.andWhere('schoolday.startsAt <= :endDate', {
+        endDate,
+      });
+    }
+
+    const schooldays = await queryBuilder.getMany();
+    const result: Schoolday[] = [];
+
+    for (const schoolday of schooldays) {
+      result.push(schoolday);
+      if (schoolday.original !== null) {
+        const duplicateItem = {
           ...schoolday,
-          group: groupWithoutSchooldays as any, // 타입 단언으로 순환 참조 방지
+          id: 0,
+          today: schoolday.original,
+          original: schoolday.today,
+          weekday: getKoreanWeekday(schoolday.original),
         };
+        result.push(duplicateItem);
       }
-      return schoolday;
-    });
+    }
+    return result;
   }
 
   //? 학생의 수강 신청 내역 조회

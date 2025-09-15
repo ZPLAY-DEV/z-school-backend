@@ -110,22 +110,23 @@ export class StudentController {
   }
 
   @FindStudentSchooldaysDocs()
-  @Get(':id/schooldays')
-  async getSchooldaysByDate(
-    @Param('id') id: number,
-    @Query('date') date: string,
-    @Query('termId') termId?: number,
-  ): Promise<SchooldayWithAttendanceDto[]> {
-    return await this.studentService.getSchooldaysByDate(id, date, termId);
-  }
-
-  @FindStudentSchooldaysDocs()
   @Get(':id/all-schooldays')
   async getAllSchooldaysByTermId(
     @Param('id') id: number,
     @Query('termId') termId: number,
+    @Query('month') month?: string, //! YYYY-MM
   ): Promise<Schoolday[]> {
-    return await this.studentService.getAllSchooldaysByTermId(id, termId);
+    return await this.studentService.getAllSchooldays(id, termId, month);
+  }
+
+  @FindStudentSchooldaysDocs()
+  @Get(':id/schooldays')
+  async getSchooldaysByDate(
+    @Param('id') id: number,
+    @Query('termId') termId: number,
+    @Query('date') date: string,
+  ): Promise<SchooldayWithAttendanceDto[]> {
+    return await this.studentService.getSchooldaysByDate(id, termId, date);
   }
 
   //! @deprecated
