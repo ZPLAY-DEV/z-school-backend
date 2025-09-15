@@ -12,6 +12,11 @@ import { Paginate, PaginateQuery } from 'nestjs-paginate';
 import { NewsletterType } from 'src/common/enums';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { SchoolTermNewsletterService } from 'src/domain/school/school-term-newsletter.service';
+import {
+  GetRegistrationNewsletterDocs,
+  InfiniteListSchoolTermNewslettersDocs,
+  ListSchoolTermNewslettersDocs,
+} from 'src/domain/school/swagger/school-newsletter-swagger.decorator';
 
 @ApiTags('✳️ Schools > Terms > Newsletters ( 학교 > 학기 > 뉴스레터 )')
 @Controller('schools')
@@ -25,6 +30,7 @@ export class SchoolTermNewsletterController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @GetRegistrationNewsletterDocs()
   @Get(':schoolId/terms/:termId/registration-newsletter')
   async getRegistrationNewsletter(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -36,6 +42,7 @@ export class SchoolTermNewsletterController {
     );
   }
 
+  @ListSchoolTermNewslettersDocs()
   @Get(':schoolId/terms/:termId/newsletters')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -45,6 +52,7 @@ export class SchoolTermNewsletterController {
     return await this.schoolTermNewsletterService.list(schoolId, termId, type);
   }
 
+  @InfiniteListSchoolTermNewslettersDocs()
   @Get(':schoolId/terms/:termId/newsletters/paginated')
   @UseInterceptors(ClassSerializerInterceptor)
   async infiniteList(

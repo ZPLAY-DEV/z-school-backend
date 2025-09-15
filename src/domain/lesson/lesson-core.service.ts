@@ -63,15 +63,23 @@ export class LessonCoreService {
   ): Promise<Lesson> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       //? 1. start/end 가 학기 기간 내에 있는지 확인
-      const termStartDate = term.start.toString().split('T')[0];
-      const termEndDate = term.end.toString().split('T')[0];
+      const termStartDate = new Date(term.start);
+      const termEndDate = new Date(term.end);
+      const lessonStartDate = dto.start ? new Date(dto.start) : null;
+      const lessonEndDate = dto.end ? new Date(dto.end) : null;
+
+      // 날짜 범위 검증: lesson의 시작일이 term 범위를 벗어나거나, 종료일이 term 범위를 벗어나는 경우
       if (
-        (dto.start && dto.start < termStartDate) ||
-        (dto.end && dto.end > termEndDate)
+        (lessonStartDate && lessonStartDate < termStartDate) ||
+        (lessonEndDate && lessonEndDate > termEndDate) ||
+        (lessonStartDate && lessonStartDate > termEndDate) ||
+        (lessonEndDate && lessonEndDate < termStartDate)
       ) {
-        console.log(`🥵`, termStartDate, termEndDate, dto.start, dto.end);
+        console.log(
+          `🥵 Term range: ${termStartDate.toISOString().split('T')[0]} ~ ${termEndDate.toISOString().split('T')[0]}, Lesson: ${dto.start || 'N/A'} ~ ${dto.end || 'N/A'}`,
+        );
         throw new BadRequestException(
-          `Lesson period is outside the term's range`,
+          `학기를 벗어난 날짜입니다. (${termStartDate.toISOString().split('T')[0]} ~ ${termEndDate.toISOString().split('T')[0]})`,
         );
       }
 
@@ -232,15 +240,23 @@ export class LessonCoreService {
       throw new NotFoundException('Term not found');
     }
 
-    const termStartDate = term.start.toString().split('T')[0];
-    const termEndDate = term.end.toString().split('T')[0];
+    const termStartDate = new Date(term.start);
+    const termEndDate = new Date(term.end);
+    const lessonStartDate = dto.start ? new Date(dto.start) : null;
+    const lessonEndDate = dto.end ? new Date(dto.end) : null;
+
+    // 날짜 범위 검증: lesson의 시작일이 term 범위를 벗어나거나, 종료일이 term 범위를 벗어나는 경우
     if (
-      (dto.start && dto.start < termStartDate) ||
-      (dto.end && dto.end > termEndDate)
+      (lessonStartDate && lessonStartDate < termStartDate) ||
+      (lessonEndDate && lessonEndDate > termEndDate) ||
+      (lessonStartDate && lessonStartDate > termEndDate) ||
+      (lessonEndDate && lessonEndDate < termStartDate)
     ) {
-      console.log(`🥵`, termStartDate, termEndDate, dto.start, dto.end);
+      console.log(
+        `🥵 Term range: ${termStartDate.toISOString().split('T')[0]} ~ ${termEndDate.toISOString().split('T')[0]}, Lesson: ${dto.start || 'N/A'} ~ ${dto.end || 'N/A'}`,
+      );
       throw new BadRequestException(
-        `Lesson period is outside the term's range`,
+        `학기를 벗어난 날짜입니다. (${termStartDate.toISOString().split('T')[0]} ~ ${termEndDate.toISOString().split('T')[0]})`,
       );
     }
 

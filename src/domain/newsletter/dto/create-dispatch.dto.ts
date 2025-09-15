@@ -104,6 +104,29 @@ export class CreateDispatchDto {
   scheduledAt?: Date | null;
 
   @ApiProperty({
+    description: '🈳 재발송 예약 시각 (기존 발송을 취소하고 새로운 시간에 재발송)',
+    example: '2025-06-26T00:30:00Z',
+    required: false,
+  })
+  @IsOptional()
+  @IsDate()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      // "YYYY-MM-DD HH:mm:ss" 형식이면 ISO 형식으로 변환
+      const dateStr = value.replace(' ', 'T');
+      if (!dateStr.includes('T')) {
+        return new Date(value);
+      }
+      if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+        return new Date(dateStr + 'Z');
+      }
+      return new Date(dateStr);
+    }
+    return value as Date | null | undefined;
+  })
+  rescheduledAt?: Date | null;
+
+  @ApiProperty({
     description:
       '🈵 뉴스레터 발송 상태 (INIT, READY, SCHEDULED, SENT, CANCELLED)',
     enum: SendStatus,

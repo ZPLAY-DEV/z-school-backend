@@ -1,10 +1,10 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -187,6 +187,17 @@ export const SendNewsletterDocs = () => {
             status: 'SCHEDULED',
           },
         },
+        'rescheduled-dispatch': {
+          summary: '재예약 발송',
+          description: '기존 발송을 취소하고 새로운 시간에 재발송',
+          value: {
+            target: 'GRADE',
+            targetItems: [3, 4],
+            targetLabel: '3, 4학년',
+            rescheduledAt: '2025-04-01T09:30:00Z',
+            status: 'SCHEDULED',
+          },
+        },
       },
     }),
     ApiCreatedResponseTemplate({
@@ -231,11 +242,12 @@ export const ResendNewsletterDocs = () => {
       description: '재발송할 뉴스레터의 ID',
       example: 1,
     }),
-    ApiParam({
-      name: 'uuid',
-      type: String,
-      description: '재발송을 위한 고유 식별자',
-      example: '550e8400-e29b-41d4-a716-446655440000',
+    ApiQuery({
+      name: 'dispatchId',
+      type: Number,
+      description: '재발송할 특정 dispatch ID (선택사항)',
+      example: 1,
+      required: false,
     }),
     ApiOkResponse({
       description: '뉴스레터 재발송 완료 (응답 본문 없음)',
@@ -248,62 +260,6 @@ export const ResendNewsletterDocs = () => {
 //? Newsletter Controller - READ
 //? ---------------------------------------------------------------------- ?//
 
-export const ListNewslettersDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '📋 뉴스레터 목록 조회',
-      description: `
-**📝 기능 설명**
-- 특정 학교와 학기의 뉴스레터 목록을 조회합니다
-- 뉴스레터 타입별 필터링과 학기별 그룹핑을 지원합니다
-- 삭제되지 않은 뉴스레터만 조회됩니다
-
-**🔄 비즈니스 로직**
-1. schoolId로 학교별 뉴스레터 필터링
-2. termId로 학기별 뉴스레터 필터링 (선택사항)
-3. type으로 뉴스레터 타입별 필터링 (선택사항)
-4. 생성일 기준 내림차순 정렬
-5. 삭제된 뉴스레터 제외
-
-**⚠️ 중요 제약사항**
-- schoolId는 필수 입력
-- termId와 type은 선택사항
-- 삭제된 뉴스레터는 목록에서 제외
-
-**📚 예시 시나리오**
-- 학교별 뉴스레터 목록 표시
-- 특정 학기 뉴스레터만 조회
-- 뉴스레터 타입별 분류 조회
-      `,
-    }),
-    ApiQuery({
-      name: 'schoolId',
-      type: Number,
-      description: '학교 ID (필수)',
-      example: 1,
-    }),
-    ApiQuery({
-      name: 'termId',
-      type: Number,
-      description: '학기 ID (선택사항)',
-      example: 1,
-      required: false,
-    }),
-    ApiQuery({
-      name: 'type',
-      enum: ['REGISTRATION', 'NEWS', 'SURVEY'],
-      description: '뉴스레터 타입 (선택사항)',
-      example: 'NEWS',
-      required: false,
-    }),
-    ApiOkResponseTemplate({
-      description: '뉴스레터 목록 조회 완료',
-      type: Newsletter,
-      isArray: true,
-    }),
-    ApiStatuses(StatusCodes.BAD_REQUEST),
-  );
-};
 
 export const FindPendingDispatchesDocs = () => {
   return applyDecorators(
@@ -402,7 +358,7 @@ export const UpdateNewsletterDocs = () => {
 1. ID로 수정 대상 뉴스레터 확인
 2. 제공된 필드만 선택적으로 업데이트
 3. scheduledAt 변경 시 발송 예약 상태 재설정
-4. rescheduledAt 설정 시 재발송 예약 처리
+4. rescheduledAt 설정 시 기존 발송을 취소하고 새로운 시간에 재발송 예약
 5. 수정된 뉴스레터 정보 반환
 
 **⚠️ 중요 제약사항**
@@ -449,6 +405,16 @@ export const UpdateNewsletterDocs = () => {
               'https://s3.amazonaws.com/bucket/new-image1.jpg',
               'https://s3.amazonaws.com/bucket/new-image2.jpg',
             ],
+          },
+        },
+        'reschedule-dispatch': {
+          summary: '발송 재예약',
+          description: '기존 발송을 취소하고 새로운 시간에 재발송 예약',
+          value: {
+            rescheduledAt: '2025-03-15T14:00:00Z',
+            target: 'GRADE',
+            targetItems: [1, 2],
+            targetLabel: '1, 2학년',
           },
         },
       },

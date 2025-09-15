@@ -56,7 +56,6 @@ export class NewsletterController {
   createNewsletter(
     @Body() dto: CreateNewsletterDto & CreateDispatchDto,
   ): Promise<Newsletter> {
-    console.log('😳😳😳😳😳😳😳😳 create', JSON.stringify(dto, null, 2));
     return this.newsletterService.createNewsletter(dto);
   }
 

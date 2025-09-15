@@ -32,7 +32,7 @@ export class SchoolTermNewsletterService {
         termId,
         type: NewsletterType.REGISTRATION,
       },
-      relations: ['dispatches', 'dispatches.shortlinks'],
+      relations: ['dispatches'],
       order: { id: 'DESC' },
     });
   }

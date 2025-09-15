@@ -1,19 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude } from 'class-transformer';
+import { Exclude, Transform } from 'class-transformer';
 import { NewsletterTarget } from 'src/common/enums';
 import { SendStatus } from 'src/common/enums/send-status';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
 import {
-    Column,
-    CreateDateColumn,
-    DeleteDateColumn,
-    Entity,
-    JoinColumn,
-    ManyToOne,
-    OneToMany,
-    PrimaryGeneratedColumn,
-    UpdateDateColumn,
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 //! notification target plus schedule
@@ -43,6 +43,15 @@ export class Dispatch {
     comment: '발송대상자 리스트. 발송하려면 deduped studentIds 필요',
     nullable: true,
   })
+  @Transform(({ value }) => {
+    if (!value) return null;
+    if (Array.isArray(value)) {
+      return value.map((id: string | number) =>
+        typeof id === 'string' ? parseInt(id, 10) : id,
+      );
+    }
+    return value as number[] | null;
+  })
   studentIds: number[] | null;
 
   @ApiProperty({
@@ -62,6 +71,15 @@ export class Dispatch {
     type: 'simple-array',
     comment: '대상별 아이템 아이디',
     nullable: true,
+  })
+  @Transform(({ value }) => {
+    if (!value) return null;
+    if (Array.isArray(value)) {
+      return value.map((id: string | number) =>
+        typeof id === 'string' ? parseInt(id, 10) : id,
+      );
+    }
+    return value as number[] | null;
   })
   targetItems: number[] | null;
 
@@ -83,6 +101,13 @@ export class Dispatch {
   })
   @Column({ type: 'timestamp', nullable: true, comment: '발송예약 시각' })
   scheduledAt: Date | null;
+
+  @ApiProperty({
+    description: '🈳 발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
+  })
+  @Column({ type: 'timestamp', nullable: true, comment: '발송예약 시각' })
+  rescheduledAt: Date | null;
 
   @ApiProperty({ description: '🈵 발송 상태' })
   @Column({
