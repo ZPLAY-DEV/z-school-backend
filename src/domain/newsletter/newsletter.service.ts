@@ -22,7 +22,6 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-dispatch.dto';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { CreateShortlinkDto } from 'src/domain/newsletter/dto/create-shortlink.dto';
-import { NewsletterWithReadStatsDto } from 'src/domain/newsletter/dto/newsletter-with-read-stats.dto';
 import { ReadStatDto } from 'src/domain/newsletter/dto/read-stat.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Dispatch } from 'src/domain/newsletter/entities/dispatch.entity';
@@ -275,9 +274,7 @@ export class NewsletterService {
     return newsletter;
   }
 
-  async findDetailById(
-    newsletterId: number,
-  ): Promise<NewsletterWithReadStatsDto> {
+  async findDetailById(newsletterId: number): Promise<Newsletter> {
     const newsletter: Newsletter =
       await this.newsletterRepository.findOneOrFail({
         where: { id: newsletterId },
@@ -288,14 +285,7 @@ export class NewsletterService {
       throw new NotFoundException('Newsletter not found');
     }
 
-    // readStats 조회 (최적화된 메서드 재사용)
-    const readStats = await this.findReadStats(newsletterId);
-
-    return new NewsletterWithReadStatsDto({
-      ...newsletter,
-      readStats,
-      total: readStats.length,
-    });
+    return newsletter;
   }
 
   async findReadStats(

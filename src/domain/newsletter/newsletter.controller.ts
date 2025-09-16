@@ -30,6 +30,8 @@ import {
   DeleteNewsletterDocs,
   FindNewsletterByIdDocs,
   FindPendingDispatchesDocs,
+  FindReadStatsDocs,
+  FindReadStatsPaginatedDocs,
   GenerateNewsletterS3UrlsDocs,
   MarkAsReadDocs,
   ResendNewsletterDocs,
@@ -95,6 +97,7 @@ export class NewsletterController {
     return await this.newsletterService.findDetailById(id);
   }
 
+  @FindReadStatsDocs()
   @Get(':id/stats')
   async findReadStats(
     @Param('id', ParseIntPipe) id: number,
@@ -102,6 +105,7 @@ export class NewsletterController {
     return await this.newsletterService.findReadStats(id);
   }
 
+  @FindReadStatsPaginatedDocs()
   @Get(':id/stats/paginated')
   async findReadStatsPaginated(
     @Param('id', ParseIntPipe) id: number,
@@ -120,7 +124,6 @@ export class NewsletterController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateNewsletterDto & UpdateDispatchDto,
   ): Promise<Newsletter> {
-    console.log(`🤮🤮🤮🤮🤮🤮🤮🤮 update ${id}`, JSON.stringify(dto, null, 2));
     return await this.newsletterService.update(id, dto);
   }
 

@@ -15,6 +15,7 @@ import { NewsletterWithReadStatsDto } from 'src/domain/newsletter/dto/newsletter
 import { Dispatch } from 'src/domain/newsletter/entities/dispatch.entity';
 import { CreateNewsletterDto } from '../dto/create-newsletter.dto';
 import { GenerateS3UrlsDto } from '../dto/generate-s3-urls.dto';
+import { ReadStatDto } from '../dto/read-stat.dto';
 import { UpdateNewsletterDto } from '../dto/update-newsletter.dto';
 import { Newsletter } from '../entities/newsletter.entity';
 
@@ -335,6 +336,162 @@ export const FindNewsletterByIdDocs = () => {
     ApiOkResponseTemplate({
       description: '뉴스레터 상세 조회 완료',
       type: NewsletterWithReadStatsDto,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+};
+
+export const FindReadStatsDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '📊 뉴스레터 읽음 통계 조회',
+      description: `
+**📝 기능 설명**
+- 특정 뉴스레터의 모든 대상 학생들의 읽음 상태를 조회합니다
+- 학생별 상세 정보와 읽음 여부를 포함한 완전한 목록을 제공합니다
+- 읽음률 분석과 미읽음 학생 식별에 활용됩니다
+
+**🔄 비즈니스 로직**
+1. 뉴스레터 ID로 발송 대상 학생 목록 조회
+2. 각 학생별 읽음 상태 확인
+3. 학생 기본 정보 (이름, 학년, 반, 학번) 포함
+4. 뉴스레터 링크와 읽음 시간 정보 제공
+5. 읽음/미읽음 상태별로 정렬하여 반환
+
+**⚠️ 중요 제약사항**
+- 존재하지 않는 뉴스레터 ID는 404 에러 반환
+- 발송되지 않은 뉴스레터는 빈 목록 반환
+- 삭제된 학생은 목록에서 제외
+
+**📚 예시 시나리오**
+- 뉴스레터 읽음률 분석
+- 미읽음 학생 리마인더 발송 대상 식별
+- 학급별 읽음 현황 모니터링
+- 발송 효과 분석 및 개선점 도출
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '읽음 통계를 조회할 뉴스레터의 ID',
+      example: 1,
+    }),
+    ApiOkResponseTemplate({
+      description: '뉴스레터 읽음 통계 조회 완료',
+      type: ReadStatDto,
+      isArray: true,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+};
+
+export const FindReadStatsPaginatedDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '📊 뉴스레터 읽음 통계 조회 (페이지네이션)',
+      description: `
+**📝 기능 설명**
+- 특정 뉴스레터의 읽음 통계를 페이지네이션으로 조회합니다
+- 대량의 학생 데이터를 효율적으로 처리할 수 있습니다
+- 정렬, 필터링, 검색 기능을 지원합니다
+
+**🔄 비즈니스 로직**
+1. 뉴스레터 ID로 발송 대상 학생 목록 조회
+2. 페이지네이션 파라미터에 따른 데이터 분할
+3. 정렬 옵션에 따른 데이터 정렬
+4. 각 학생별 읽음 상태와 상세 정보 포함
+5. 페이지네이션 메타데이터와 함께 반환
+
+**⚠️ 중요 제약사항**
+- 존재하지 않는 뉴스레터 ID는 404 에러 반환
+- 페이지 크기는 기본값 20, 최대 100까지 설정 가능
+- 정렬은 학생 이름, 학년, 반, 읽음 상태 등으로 가능
+
+**📚 예시 시나리오**
+- 대규모 학교의 뉴스레터 읽음 현황 조회
+- 읽음 상태별 필터링 및 정렬
+- 특정 학년이나 반별 읽음 현황 분석
+- 페이지별로 나누어 읽음 통계 확인
+      `,
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '읽음 통계를 조회할 뉴스레터의 ID',
+      example: 1,
+    }),
+    ApiQuery({
+      name: 'page',
+      type: Number,
+      description: '페이지 번호 (1부터 시작)',
+      example: 1,
+      required: false,
+    }),
+    ApiQuery({
+      name: 'limit',
+      type: Number,
+      description: '페이지당 항목 수 (기본값: 20, 최대: 100)',
+      example: 20,
+      required: false,
+    }),
+    ApiQuery({
+      name: 'sortBy',
+      type: String,
+      description: '정렬 기준 (name, grade, class, read, createdAt)',
+      example: 'name',
+      required: false,
+    }),
+    ApiQuery({
+      name: 'sortOrder',
+      type: String,
+      description: '정렬 순서 (ASC, DESC)',
+      example: 'ASC',
+      required: false,
+    }),
+    ApiQuery({
+      name: 'search',
+      type: String,
+      description: '학생 이름으로 검색',
+      example: '김철수',
+      required: false,
+    }),
+    ApiOkResponse({
+      description: '뉴스레터 읽음 통계 조회 완료 (페이지네이션)',
+      schema: {
+        type: 'object',
+        properties: {
+          data: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/ReadStatDto',
+            },
+          },
+          meta: {
+            type: 'object',
+            properties: {
+              itemsPerPage: { type: 'number', example: 20 },
+              totalItems: { type: 'number', example: 150 },
+              currentPage: { type: 'number', example: 1 },
+              totalPages: { type: 'number', example: 8 },
+              sortBy: { type: 'array', items: { type: 'array', items: { type: 'string' } } },
+              searchBy: { type: 'array', items: { type: 'string' } },
+              search: { type: 'string' },
+              select: { type: 'array', items: { type: 'string' } },
+              filter: { type: 'object' },
+            },
+          },
+          links: {
+            type: 'object',
+            properties: {
+              first: { type: 'string', example: '/newsletters/1/stats/paginated?page=1&limit=20' },
+              previous: { type: 'string', example: '/newsletters/1/stats/paginated?page=1&limit=20' },
+              current: { type: 'string', example: '/newsletters/1/stats/paginated?page=2&limit=20' },
+              next: { type: 'string', example: '/newsletters/1/stats/paginated?page=3&limit=20' },
+              last: { type: 'string', example: '/newsletters/1/stats/paginated?page=8&limit=20' },
+            },
+          },
+        },
+      },
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
   );
