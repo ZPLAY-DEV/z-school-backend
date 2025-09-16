@@ -20,12 +20,10 @@ import { SendStatus } from 'src/common/enums/send-status';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
-import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-notification.dto';
 import { CreateShortlinkDto } from 'src/domain/newsletter/dto/create-shortlink.dto';
 import { ReadStatDto } from 'src/domain/newsletter/dto/read-stat.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
-import { Dispatch } from 'src/domain/newsletter/entities/notification.entity';
 import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -88,17 +86,20 @@ export class NewsletterService {
       title = dto.title || `[${school.name}] ${term.termName} 공지사항`;
     }
 
-    const { students, label } = await this._getTargetStudents(
-      this.dataSource.manager,
-      dto.schoolId,
-      dto.target,
-      dto.targetItems,
-    );
-    const dedupedStudents = this._dedupeStudents(students);
-    const studentIds = dedupedStudents.map((student) => student.id);
-    newsletter.studentIds = studentIds;
-    newsletter.targetLabel = label;
-    newsletter.status = SendStatus.SCHEDULED;
+    let studentIds: number[] | null = null;
+    let targetLabel: string | null = null;
+
+    if (dto.target && dto.targetItems) {
+      const { students, label } = await this._getTargetStudents(
+        this.dataSource.manager,
+        dto.schoolId,
+        dto.target,
+        dto.targetItems,
+      );
+      const dedupedStudents = this._dedupeStudents(students);
+      studentIds = dedupedStudents.map((student) => student.id);
+      targetLabel = label;
+    }
 
     const newsletter = await this.newsletterRepository.save(
       this.newsletterRepository.create({
@@ -110,13 +111,13 @@ export class NewsletterService {
         body: dto.body || null,
         images: dto.images || null,
         type: dto.type,
-        studentIds: dto.studentIds || null,
+        studentIds: studentIds,
         target: dto.target || null,
         targetItems: dto.targetItems || null,
-        targetLabel: dto.targetLabel || null,
+        targetLabel: targetLabel,
         scheduledAt: dto.scheduledAt || null,
         rescheduledAt: dto.rescheduledAt || null,
-        status: SendStatus.INIT,
+        status: dto.status || SendStatus.INIT,
         notifications: dto.notifications || [],
       }),
     );
@@ -124,9 +125,12 @@ export class NewsletterService {
     return newsletter;
   }
 
-  async sendNewsletter(id: number, dto: CreateDispatchDto): Promise<Dispatch> {
+  async sendNewsletter(
+    id: number,
+    dto: UpdateNewsletterDto,
+  ): Promise<Newsletter> {
     // transaction 밖에서 validation 처리 (Auto-increment ID 낭비 방지)
-    const newsletter = await this.findById(id, ['dispatches', 'shortlinks']);
+    const newsletter = await this.findById(id, ['term', 'shortlinks']);
     if (!newsletter.term.bookingStart) {
       throw new BadRequestException('❌ Missing bookingStart info in term');
     }
@@ -139,14 +143,23 @@ export class NewsletterService {
     );
 
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      const dispatch = manager.create(Dispatch, { ...dto });
+      const dispatch = manager.create(Newsletter, { ...dto });
       const term = newsletter.term;
-      const { students, label } = await this._getTargetStudents(
-        manager,
-        newsletter.schoolId,
-        dto.target,
-        dto.targetItems,
-      );
+
+      let studentIds: number[] | null = null;
+      let targetLabel: string | null = null;
+
+      if (dto.target && dto.targetItems) {
+        const { students, label } = await this._getTargetStudents(
+          this.dataSource.manager,
+          newsletter.schoolId,
+          dto.target,
+          dto.targetItems,
+        );
+        const dedupedStudents = this._dedupeStudents(students);
+        studentIds = dedupedStudents.map((student) => student.id);
+        targetLabel = label;
+      }
       const dedupedStudents = this._dedupeStudents(students);
       const studentIds = dedupedStudents.map((student) => student.id);
       dispatch.studentIds = studentIds;
