@@ -19,13 +19,14 @@ import {
   In,
   InsertEvent,
 } from 'typeorm';
-import { Dispatch } from '../entities/dispatch.entity';
 import { Newsletter } from '../entities/newsletter.entity';
 import { Shortlink } from '../entities/shortlink.entity';
 
 @Injectable()
-export class DispatchSubscriber implements EntitySubscriberInterface<Dispatch> {
-  private readonly logger = new Logger(DispatchSubscriber.name);
+export class NewsletterSubscriber
+  implements EntitySubscriberInterface<Newsletter>
+{
+  private readonly logger = new Logger(NewsletterSubscriber.name);
   private readonly domain: string;
 
   constructor(
@@ -40,24 +41,23 @@ export class DispatchSubscriber implements EntitySubscriberInterface<Dispatch> {
   }
 
   listenTo() {
-    return Dispatch;
+    return Newsletter;
   }
 
-  async afterInsert(event: InsertEvent<Dispatch>) {
-    const dispatch = event.entity;
+  async afterInsert(event: InsertEvent<Newsletter>) {
+    const newsletter = event.entity;
 
     // studentIds가 있고, payload가 없는 경우에만 shortlinks 생성
     if (
-      dispatch.studentIds &&
-      dispatch.studentIds.length > 0 &&
-      !dispatch.payload
+      newsletter.studentIds &&
+      newsletter.studentIds.length > 0 &&
     ) {
       this.logger.log(
         `Processing shortlinks for dispatch ${dispatch.id} with ${dispatch.studentIds.length} students`,
       );
 
       try {
-        await this._processShortlinks(dispatch, event.manager);
+        await this._processShortlinks(newsletter, event.manager);
         this.logger.log(
           `Successfully processed shortlinks for dispatch ${dispatch.id}`,
         );

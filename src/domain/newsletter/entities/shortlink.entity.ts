@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { Dispatch } from 'src/domain/newsletter/entities/dispatch.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import {
@@ -92,10 +91,6 @@ export class Shortlink {
   @ManyToOne(() => Newsletter, (newsletter) => newsletter.shortlinks)
   @JoinColumn({ name: 'newsletterId' })
   newsletter: Newsletter;
-
-  @ManyToOne(() => Dispatch, (dispatch) => dispatch.shortlinks)
-  @JoinColumn({ name: 'dispatchId' })
-  dispatch: Dispatch;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 

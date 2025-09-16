@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude } from 'class-transformer';
+import { Exclude, Transform } from 'class-transformer';
 import { IsArray } from 'class-validator';
-import { NewsletterType } from 'src/common/enums';
-import { Dispatch } from 'src/domain/newsletter/entities/dispatch.entity';
+import { NewsletterTarget, NewsletterType } from 'src/common/enums';
+import { SendStatus } from 'src/common/enums/send-status';
+import { Notification } from 'src/domain/newsletter/entities/notification.entity';
 import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -73,6 +74,83 @@ export class Newsletter {
 
   // ------------------------------------------------------------------------ //
 
+  @ApiProperty({
+    description: '🈵 발송대상자 리스트. 발송하려면 deduped studentIds 필요',
+    example: [1, 2, 3],
+  })
+  @Column({
+    type: 'simple-array',
+    comment: '발송대상자 리스트. 발송하려면 deduped studentIds 필요',
+    nullable: true,
+  })
+  @Transform(({ value }) => {
+    if (!value) return null;
+    if (Array.isArray(value)) {
+      return value.map((id: string | number) =>
+        typeof id === 'string' ? parseInt(id, 10) : id,
+      );
+    }
+    return value as number[] | null;
+  })
+  studentIds: number[] | null;
+
+  @ApiProperty({
+    description: '🈵 발송 대상 유형; SCHOOL, GRADE, LESSON, GROUP, STUDENT',
+    example: NewsletterTarget.SCHOOL,
+  })
+  @Column({
+    type: 'enum',
+    enum: NewsletterTarget,
+    default: NewsletterTarget.SCHOOL,
+    nullable: true,
+  })
+  target: NewsletterTarget | null;
+
+  @ApiProperty({ description: '🈵 발송 대상 유형' })
+  @Column({
+    type: 'simple-array',
+    comment: '대상별 아이템 아이디',
+    nullable: true,
+  })
+  @Transform(({ value }) => {
+    if (!value) return null;
+    if (Array.isArray(value)) {
+      return value.map((id: string | number) =>
+        typeof id === 'string' ? parseInt(id, 10) : id,
+      );
+    }
+    return value as number[] | null;
+  })
+  targetItems: number[] | null;
+
+  @ApiProperty({ description: '🈵 발송 대상 유형' })
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  targetLabel: string | null;
+
+  @ApiProperty({
+    description: '🈳 발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
+  })
+  @Column({ type: 'timestamp', nullable: true, comment: '발송예약 시각' })
+  scheduledAt: Date | null;
+
+  @ApiProperty({
+    description: '🈳 발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
+  })
+  @Column({ type: 'timestamp', nullable: true, comment: '발송예약 시각' })
+  rescheduledAt: Date | null;
+
+  @ApiProperty({ description: '🈵 발송 상태' })
+  @Column({
+    type: 'enum',
+    enum: SendStatus,
+    default: SendStatus.INIT,
+  })
+  status: SendStatus;
+
+  // ------------------------------------------------------------------------ //
+
   @ApiProperty({ description: '🈵 createdAt' })
   @CreateDateColumn()
   createdAt: Date;
@@ -98,15 +176,15 @@ export class Newsletter {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
+  @OneToMany(() => Notification, (notification) => notification.newsletter, {
+    cascade: ['insert', 'update'],
+  })
+  notifications: Notification[];
+
   @OneToMany(() => Shortlink, (shortlink) => shortlink.newsletter, {
     cascade: ['insert', 'update'],
   })
   shortlinks: Shortlink[];
-
-  @OneToMany(() => Dispatch, (dispatch) => dispatch.newsletter, {
-    cascade: ['insert', 'update'],
-  })
-  dispatches: Dispatch[];
 
   //? Constructor ---------------------------------------------------------- ?//
   constructor(partial: Partial<Newsletter>) {

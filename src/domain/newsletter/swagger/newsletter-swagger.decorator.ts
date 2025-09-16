@@ -1,18 +1,18 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    ApiQuery,
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-dispatch.dto';
+import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-notification.dto';
 import { NewsletterWithReadStatsDto } from 'src/domain/newsletter/dto/newsletter-with-read-stats.dto';
-import { Dispatch } from 'src/domain/newsletter/entities/dispatch.entity';
+import { Dispatch } from 'src/domain/newsletter/entities/notification.entity';
 import { CreateNewsletterDto } from '../dto/create-newsletter.dto';
 import { GenerateS3UrlsDto } from '../dto/generate-s3-urls.dto';
 import { ReadStatDto } from '../dto/read-stat.dto';

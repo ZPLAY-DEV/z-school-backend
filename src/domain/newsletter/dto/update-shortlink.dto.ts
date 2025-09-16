@@ -1,4 +1,4 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
+import { CreateShortlinkDto } from 'src/domain/newsletter/dto/create-shortlink.dto';
 
-export class UpdateSamDto extends PartialType(CreateSamDto) {}
+export class UpdateShortlinkDto extends PartialType(CreateShortlinkDto) {}

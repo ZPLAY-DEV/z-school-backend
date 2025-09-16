@@ -8,21 +8,18 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Query,
+  Put,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { IS3Urls } from 'src/common/interfaces';
-import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-dispatch.dto';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { GenerateS3UrlsDto } from 'src/domain/newsletter/dto/generate-s3-urls.dto';
 import { NewsletterWithReadStatsDto } from 'src/domain/newsletter/dto/newsletter-with-read-stats.dto';
 import { ReadStatDto } from 'src/domain/newsletter/dto/read-stat.dto';
-import { UpdateDispatchDto } from 'src/domain/newsletter/dto/update-dispatch.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
-import { Dispatch } from 'src/domain/newsletter/entities/dispatch.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { NewsletterService } from 'src/domain/newsletter/newsletter.service';
 import {
@@ -55,28 +52,28 @@ export class NewsletterController {
 
   @CreateNewsletterDocs()
   @Post()
-  createNewsletter(
-    @Body() dto: CreateNewsletterDto & CreateDispatchDto,
+  async createNewsletter(
+    @Body() dto: CreateNewsletterDto,
   ): Promise<Newsletter> {
-    return this.newsletterService.createNewsletter(dto);
+    return await this.newsletterService.createNewsletter(dto);
   }
 
   @SendNewsletterDocs()
-  @Post(':id/send')
-  sendNewsletter(
+  @Put(':id/send')
+  async sendNewsletter(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CreateDispatchDto,
-  ): Promise<Dispatch> {
-    return this.newsletterService.sendNewsletter(id, dto);
+    @Body() dto: UpdateNewsletterDto,
+  ): Promise<void> {
+    return await this.newsletterService.sendNewsletter(id, dto);
   }
 
   @ResendNewsletterDocs()
-  @Post(':id/resend')
-  resendNewsletter(
+  @Put(':id/resend')
+  async resendNewsletter(
     @Param('id', ParseIntPipe) id: number,
-    @Query('dispatchId') dispatchId?: number,
+    @Body() dto: UpdateNewsletterDto,
   ): Promise<void> {
-    return this.newsletterService.resendNewsletter(id, dispatchId);
+    return this.newsletterService.resendNewsletter(id, dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -84,9 +81,9 @@ export class NewsletterController {
   //? ---------------------------------------------------------------------- ?//
 
   @FindPendingDispatchesDocs()
-  @Get('pending-dispatches')
-  async findPendingDispatches(): Promise<Dispatch[]> {
-    return await this.newsletterService.findPendingDispatches();
+  @Get('pending-items')
+  async findPendingItems(): Promise<Newsletter[]> {
+    return await this.newsletterService.findPendingItems();
   }
 
   @FindNewsletterByIdDocs()
@@ -122,7 +119,7 @@ export class NewsletterController {
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateNewsletterDto & UpdateDispatchDto,
+    @Body() dto: UpdateNewsletterDto,
   ): Promise<Newsletter> {
     return await this.newsletterService.update(id, dto);
   }

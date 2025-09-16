@@ -19,13 +19,13 @@ import {
 import { SendStatus } from 'src/common/enums/send-status';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
-import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-dispatch.dto';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
+import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-notification.dto';
 import { CreateShortlinkDto } from 'src/domain/newsletter/dto/create-shortlink.dto';
 import { ReadStatDto } from 'src/domain/newsletter/dto/read-stat.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
-import { Dispatch } from 'src/domain/newsletter/entities/dispatch.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { Dispatch } from 'src/domain/newsletter/entities/notification.entity';
 import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -53,8 +53,6 @@ export class NewsletterService {
   constructor(
     @InjectRepository(Newsletter)
     private readonly newsletterRepository: Repository<Newsletter>,
-    @InjectRepository(Dispatch)
-    private readonly dispatchRepository: Repository<Dispatch>,
     @InjectRepository(Term)
     private readonly termRepository: Repository<Term>,
     @InjectRepository(School)
@@ -76,9 +74,7 @@ export class NewsletterService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  async createNewsletter(
-    dto: CreateNewsletterDto & CreateDispatchDto,
-  ): Promise<Newsletter> {
+  async createNewsletter(dto: CreateNewsletterDto): Promise<Newsletter> {
     const school = await this._checkSchoolValidity(dto.schoolId);
     const term = await this._checkTermValidity(dto.termId);
     // upsert를 사용하므로 중복 체크 제거
@@ -86,11 +82,25 @@ export class NewsletterService {
     let title: string;
 
     if (dto.type === NewsletterType.REGISTRATION) {
-      title = `[${school.name}] ${term.termName} 수강신청 바로가기`;
+      title =
+        dto.title || `[${school.name}] ${term.termName} 수강신청 바로가기`;
     } else {
       title = dto.title || `[${school.name}] ${term.termName} 공지사항`;
     }
-    await this.newsletterRepository.save(
+
+    const { students, label } = await this._getTargetStudents(
+      this.dataSource.manager,
+      dto.schoolId,
+      dto.target,
+      dto.targetItems,
+    );
+    const dedupedStudents = this._dedupeStudents(students);
+    const studentIds = dedupedStudents.map((student) => student.id);
+    newsletter.studentIds = studentIds;
+    newsletter.targetLabel = label;
+    newsletter.status = SendStatus.SCHEDULED;
+
+    const newsletter = await this.newsletterRepository.save(
       this.newsletterRepository.create({
         schoolId: dto.schoolId,
         termId: dto.termId,
@@ -99,36 +109,17 @@ export class NewsletterService {
         title: title,
         body: dto.body || null,
         images: dto.images || null,
+        type: dto.type,
+        studentIds: dto.studentIds || null,
+        target: dto.target || null,
+        targetItems: dto.targetItems || null,
+        targetLabel: dto.targetLabel || null,
+        scheduledAt: dto.scheduledAt || null,
+        rescheduledAt: dto.rescheduledAt || null,
+        status: SendStatus.INIT,
+        notifications: dto.notifications || [],
       }),
     );
-    const newsletter = await this.newsletterRepository.findOneOrFail({
-      where: { schoolId: dto.schoolId, termId: dto.termId },
-    });
-
-    if (dto.target && dto.targetItems) {
-      // 1. Dispatch 생성 및 저장 (Subscriber가 자동으로 shortlinks 처리)
-      const dispatch = this.dispatchRepository.create({
-        ...dto,
-        status: SendStatus.SCHEDULED,
-        scheduledAt: dto.scheduledAt ?? fromZonedTime(new Date(), 'Asia/Seoul'),
-        termId: dto.termId,
-        newsletterId: newsletter.id,
-      });
-
-      const { students, label } = await this._getTargetStudents(
-        this.dataSource.manager,
-        newsletter.schoolId,
-        dto.target,
-        dto.targetItems,
-      );
-      const dedupedStudents = this._dedupeStudents(students);
-      const studentIds = dedupedStudents.map((student) => student.id);
-      dispatch.studentIds = studentIds;
-      dispatch.targetLabel = label;
-
-      // Dispatch 저장 (Subscriber가 백그라운드에서 shortlinks 생성 및 payload 업데이트)
-      await this.dispatchRepository.save(dispatch);
-    }
 
     return newsletter;
   }
@@ -153,8 +144,8 @@ export class NewsletterService {
       const { students, label } = await this._getTargetStudents(
         manager,
         newsletter.schoolId,
-        dto.target!,
-        dto.targetItems!,
+        dto.target,
+        dto.targetItems,
       );
       const dedupedStudents = this._dedupeStudents(students);
       const studentIds = dedupedStudents.map((student) => student.id);
