@@ -5,17 +5,17 @@
 
 const url = 'http://localhost:3001/v1';
 const data = [
-  {
-    uri: `schools`,
-    payload: {
-      name: '삼척초등학교',
-      authorityCode: 'K10',
-      phone: '0335728662', // 삼척초등학교
-      region: 'GANGWON', // 삼척초등학교
-      schoolCode: '7872025', // 삼척초등학교
-      address: '강원특별자치도 삼척시 교동로 100',
-    },
-  },
+  // {
+  //   uri: `schools`,
+  //   payload: {
+  //     name: '삼척초등학교',
+  //     authorityCode: 'K10',
+  //     phone: '0335728662', // 삼척초등학교
+  //     region: 'GANGWON', // 삼척초등학교
+  //     schoolCode: '7872025', // 삼척초등학교
+  //     address: '강원특별자치도 삼척시 교동로 100',
+  //   },
+  // },
   {
     uri: `terms`,
     payload: {

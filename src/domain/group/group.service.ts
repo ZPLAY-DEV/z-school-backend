@@ -12,7 +12,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { BookingStatus, ClassStatus } from 'src/common/enums';
+import { BookingStatus, ClassStatus, StudentStatus } from 'src/common/enums';
 import { RemovalStatus } from 'src/common/enums/removal-status';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Contract } from 'src/domain/contract/entities/contract.entity';
@@ -227,7 +227,10 @@ export class GroupService {
       .leftJoinAndSelect('pick.group', 'group')
       .leftJoinAndSelect('pick.student', 'student')
       .leftJoinAndSelect('student.parent', 'parent')
-      .where('pick.groupId = :groupId', { groupId: id });
+      .where('pick.groupId = :groupId', { groupId: id })
+      .andWhere('student.status = :status', {
+        status: StudentStatus.ATTENDING,
+      });
 
     if (isActive !== undefined) {
       const value = isActive === 'true' || isActive === '1' ? true : false;
@@ -266,7 +269,11 @@ export class GroupService {
   ): Promise<Paginated<PickedStudentDto>> {
     const queryBuilder = this.pickRepository
       .createQueryBuilder('pick')
-      .where('pick.groupId = :groupId', { groupId: id });
+      .leftJoin('pick.student', 'student')
+      .where('pick.groupId = :groupId', { groupId: id })
+      .andWhere('student.status = :status', {
+        status: StudentStatus.ATTENDING,
+      });
 
     const result = await paginate(query, queryBuilder, {
       relations: {
@@ -343,6 +350,7 @@ export class GroupService {
       .where('student.schoolId = :schoolId', {
         schoolId: group.lesson.schoolId,
       })
+      .andWhere('student.status = :status', { status: StudentStatus.ATTENDING })
       .andWhere('student.grade IN (:...allowedGrades)', { allowedGrades })
       .andWhere(
         'student.id NOT IN (SELECT DISTINCT p.studentId FROM `picks` p LEFT JOIN `groups` g ON p.groupId = g.id WHERE g.id = :groupId AND p.isActive = :isActive)',
@@ -379,6 +387,7 @@ export class GroupService {
       .where('student.schoolId = :schoolId', {
         schoolId: group.lesson.schoolId,
       })
+      .andWhere('student.status = :status', { status: StudentStatus.ATTENDING })
       .andWhere('student.grade IN (:...allowedGrades)', { allowedGrades })
       .andWhere(
         'student.id NOT IN (SELECT DISTINCT p.studentId FROM `picks` p LEFT JOIN `groups` g ON p.groupId = g.id WHERE g.id = :groupId AND p.isActive = :isActive)',

@@ -378,10 +378,27 @@ export class SchoolStudentService {
     worksheet.eachRow((row, index) => {
       if (index < 3) return;
 
-      const [, name, grade, className, studentCode, parentPhone, phone, note] =
-        row.values as any[]; // row.values[0] 은 항상 undefined
+      const [
+        ,
+        name,
+        grade,
+        className,
+        studentCode,
+        parentPhone,
+        phone,
+        note,
+        status,
+      ] = row.values as any[]; // row.values[0] 은 항상 undefined
 
-      if (!name || !grade || !className || !studentCode || !parentPhone) return;
+      if (
+        !name ||
+        !grade ||
+        !className ||
+        !studentCode ||
+        !parentPhone ||
+        status === '전학'
+      )
+        return;
 
       const student: CreateStudentDto = {
         name: name.toString().trim(),
@@ -414,7 +431,7 @@ export class SchoolStudentService {
 
     // 제목 행 추가 (셀 병합)
     const titleRow = worksheet.addRow(['전교생 리스트']);
-    worksheet.mergeCells('A1:G1');
+    worksheet.mergeCells('A1:H1');
     titleRow.getCell(1).alignment = {
       horizontal: 'center',
       vertical: 'middle',
@@ -430,6 +447,7 @@ export class SchoolStudentService {
       '학부모연락처',
       '학생연락처',
       '비고',
+      '전학여부',
     ]);
 
     // 헤더 스타일링
@@ -450,22 +468,29 @@ export class SchoolStudentService {
     });
 
     students.forEach((student) => {
-      if (student.status === StudentStatus.ATTENDING) {
-        const row = worksheet.addRow([
-          student.name,
-          student.grade,
-          student.class,
-          student.studentCode,
-          formatPhone(student.parent.phone),
-          formatPhone(student.phone),
-          student.note || '',
-        ]);
+      const row = worksheet.addRow([
+        student.name,
+        student.grade,
+        student.class,
+        student.studentCode,
+        formatPhone(student.parent.phone),
+        formatPhone(student.phone),
+        student.note || '',
+        student.status === StudentStatus.ATTENDING ? '' : '전학',
+      ]);
 
-        // 학년, 반, 번호는 가운데 정렬
-        row.getCell(2).alignment = { horizontal: 'center' };
-        row.getCell(3).alignment = { horizontal: 'center' };
-        row.getCell(4).alignment = { horizontal: 'center' };
+      // 전학인 경우 취소선 표기
+      if (student.status === StudentStatus.TRANSFERRED) {
+        for (let i = 1; i <= 7; i++) {
+          row.getCell(i).font = { strike: true };
+        }
       }
+
+      // 학년, 반, 번호는 가운데 정렬
+      row.getCell(2).alignment = { horizontal: 'center' };
+      row.getCell(3).alignment = { horizontal: 'center' };
+      row.getCell(4).alignment = { horizontal: 'center' };
+      row.getCell(8).alignment = { horizontal: 'center' };
     });
 
     // 컬럼 너비 자동 조정
@@ -474,6 +499,7 @@ export class SchoolStudentService {
         case 1:
         case 2:
         case 3:
+        case 7:
           column.width = 10;
           break;
         case 6:

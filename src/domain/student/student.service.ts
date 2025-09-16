@@ -112,6 +112,10 @@ export class StudentService {
     return await this.dataSource.transaction(async (manager) => {
       const { parent: parentDto, parentId, ...studentDto } = dto;
 
+      if (studentDto.class) {
+        studentDto.class = studentDto.class.trim().replace(/반$/, '');
+      }
+
       let finalParentId: number;
 
       // 1. 부모 처리: parentId 우선, 없으면 parent 객체 방식 사용

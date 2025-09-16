@@ -12,6 +12,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { ClassStatus } from 'src/common/enums';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -152,7 +153,7 @@ export class SchoolTermLessonService {
     worksheet.eachRow((row, index) => {
       if (index < 3) return;
 
-      const [, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r] =
+      const [, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s] =
         row.values as any[]; // row.values[0] 은 항상 undefined
 
       if (
@@ -191,6 +192,7 @@ export class SchoolTermLessonService {
       const bookFee = p ? Number(p) : 0;
       const materialFee = q ? Number(q) : 0;
       const note = r ? r.toString().trim() : null;
+      const status = s ? s.toString().trim() : null;
 
       items.push({
         schoolId,
@@ -213,6 +215,7 @@ export class SchoolTermLessonService {
         bookFee,
         materialFee,
         note,
+        status,
       });
     });
 
@@ -229,7 +232,10 @@ export class SchoolTermLessonService {
       if (!lessonGroups.has(lessonName)) {
         lessonGroups.set(lessonName, []);
       }
-      lessonGroups.get(lessonName)!.push(item);
+
+      if (item.status !== '폐강') {
+        lessonGroups.get(lessonName)!.push(item);
+      }
     });
 
     // CreateLessonDto[]로 변환
@@ -286,7 +292,7 @@ export class SchoolTermLessonService {
 
     // 제목 행 추가 (셀 병합)
     const titleRow = worksheet.addRow(['강좌 리스트']);
-    worksheet.mergeCells('A1:R1');
+    worksheet.mergeCells('A1:S1');
     titleRow.getCell(1).alignment = {
       horizontal: 'center',
       vertical: 'middle',
@@ -313,6 +319,7 @@ export class SchoolTermLessonService {
       '교재비',
       '재료비',
       '비고',
+      '폐강여부',
     ]);
 
     // 헤더 스타일링
@@ -367,16 +374,25 @@ export class SchoolTermLessonService {
           group.bookFee,
           group.materialFee,
           group.note || '',
+          group.status === ClassStatus.CANCELED ? '폐강' : '',
         ]);
+
+        // 폐강된 경우 취소선 표기
+        if (group.status === ClassStatus.CANCELED) {
+          for (let i = 1; i <= 14; i++) {
+            row.getCell(i).font = { strike: true };
+          }
+        }
 
         // 주당횟수, 수강가능학년은 가운데 정렬
         row.getCell(4).alignment = { horizontal: 'center' };
         row.getCell(9).alignment = { horizontal: 'center' };
         row.getCell(10).alignment = { horizontal: 'center' };
         row.getCell(14).alignment = { horizontal: 'center' };
+        row.getCell(19).alignment = { horizontal: 'center' };
 
-        // 마지막 4개 칼럼은 선택입력사항임을 흐리게 표시
-        for (let i = 15; i <= 18; i++) {
+        // 마지막 5개 칼럼은 선택입력사항임을 흐리게 표시 (사실 폐강여부는 입력사항은 아님)
+        for (let i = 15; i <= 19; i++) {
           const cell = row.getCell(i);
           cell.font = { color: { argb: 'FF808080' } };
           cell.fill = {
@@ -440,6 +456,7 @@ export class SchoolTermLessonService {
           column.width = 15;
           break;
         case 13: // 정원
+        case 18:
           column.width = 8;
           break;
         case 14: // 학기수강료
