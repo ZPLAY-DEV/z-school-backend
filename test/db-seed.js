@@ -22,9 +22,9 @@ const data = [
       schoolId: 1,
       schoolYear: 2025,
       schoolName: '신동초등학교',
-      termName: '1학기',
-      start: '2025-04-01',
-      end: '2025-09-30',
+      termName: '2학기',
+      start: '2025-09-01',
+      end: '2025-11-30',
     },
   },
   {

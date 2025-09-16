@@ -14,7 +14,6 @@ import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { GroupWithPicksCount, Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { getKoreanWeekday } from 'src/helpers/date';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 @Injectable()
@@ -284,34 +283,47 @@ export class SamService {
       .andWhere('schoolday.termId = :termId', { termId });
 
     if (monthStr) {
+      // "2025-08" 형태의 문자열을 파싱하여 해당 월의 시작일과 마지막일 계산
       const [year, month] = monthStr.split('-').map(Number);
       const startDate = new Date(year, month - 1, 1); // 월은 0부터 시작하므로 -1
-      const endDate = new Date(year, month, 0); // 다음 달의 0일 = 이번 달의 마지막일
-
-      queryBuilder.andWhere('schoolday.startsAt >= :startDate', {
-        startDate,
-      });
-      queryBuilder.andWhere('schoolday.startsAt <= :endDate', {
-        endDate,
-      });
+      const endDate = new Date(year, month, 0, 23, 59, 59, 999); // 다음 달의 0일 = 이번 달의 마지막일
+      // startsAt이 기간 안에 있는 경우를 처리 (datetime 비교로 효율성 향상)
+      queryBuilder.andWhere(
+        'schoolday.startsAt >= :startDate AND schoolday.startsAt <= :endDate',
+        {
+          startDate,
+          endDate,
+        },
+      );
     }
-
+    queryBuilder.orWhere('schoolday.original IS NOT NULL');
     const schooldays = await queryBuilder.getMany();
+
+    // original이 null이 아닌 아이템들에 대해 중복 아이템 생성
     const result: Schoolday[] = [];
 
     for (const schoolday of schooldays) {
-      result.push(schoolday);
+      // original이 null이 아닌 경우 중복 아이템 생성 (id만 0으로 설정)
       if (schoolday.original !== null) {
-        const duplicateItem = {
-          ...schoolday,
-          id: 0,
-          today: schoolday.original,
-          original: schoolday.today,
-          weekday: getKoreanWeekday(schoolday.original),
-        };
-        result.push(duplicateItem);
+        if (!monthStr) {
+          result.push(schoolday);
+        } else {
+          const [, m] = schoolday.today.split('-');
+          const [, n] = schoolday.original.split('-');
+          if (
+            Number(m) === Number(monthStr.split('-')[1]) ||
+            Number(n) === Number(monthStr.split('-')[1])
+          ) {
+            result.push(schoolday);
+          }
+        }
+      } else {
+        result.push(schoolday);
       }
     }
+    // weekday 순차적으로 정렬
+    result.sort((a, b) => Number(a.weekNumber) - Number(b.weekNumber));
+
     return result;
   }
 
@@ -334,22 +346,11 @@ export class SamService {
       .andWhere('(schoolday.today = :date OR schoolday.original = :date)', {
         date,
       });
-
     const schooldays = await queryBuilder.getMany();
     const result: Schoolday[] = [];
 
     for (const schoolday of schooldays) {
       result.push(schoolday);
-      if (schoolday.original !== null) {
-        const duplicateItem = {
-          ...schoolday,
-          id: 0,
-          today: schoolday.original,
-          original: schoolday.today,
-          weekday: getKoreanWeekday(schoolday.original),
-        };
-        result.push(duplicateItem);
-      }
     }
     return result;
   }

@@ -850,7 +850,7 @@ export class LessonCoreService {
 
       // 1. instructorId가 있으면 instructorId로 처리하고, 제공된 name/phone으로 업데이트
       if (groupDto.instructorId) {
-        instructorKey = `id-${groupDto.instructorId}`;
+        instructorKey = `${groupDto.instructorName || ''}-${instructorPhone}`;
 
         // 이미 처리한 강사인지 확인
         if (uniqueSams.has(instructorKey)) {
