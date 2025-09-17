@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { nanoid } from 'nanoid';
 import { NewsletterType } from 'src/common/enums';
+import { CreateShortlinkDto } from 'src/domain/newsletter/dto/create-shortlink.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
@@ -12,12 +13,14 @@ import {
   getTemplateOfRegistration,
 } from 'src/helpers/get-message-body';
 import { getMobileRoute } from 'src/helpers/uri';
+import { NotificationCoreData } from 'src/services/notification/types';
 import {
   DataSource,
   EntityManager,
   EntitySubscriberInterface,
   In,
   InsertEvent,
+  UpdateEvent,
 } from 'typeorm';
 import { Newsletter } from '../entities/newsletter.entity';
 import { Shortlink } from '../entities/shortlink.entity';
@@ -48,104 +51,110 @@ export class NewsletterSubscriber
     const newsletter = event.entity;
 
     // studentIds가 있고, payload가 없는 경우에만 shortlinks 생성
-    if (
-      newsletter.studentIds &&
-      newsletter.studentIds.length > 0 &&
-    ) {
-      this.logger.log(
-        `Processing shortlinks for dispatch ${dispatch.id} with ${dispatch.studentIds.length} students`,
-      );
-
+    if (newsletter.studentIds && newsletter.studentIds.length > 0) {
       try {
-        await this._processShortlinks(newsletter, event.manager);
-        this.logger.log(
-          `Successfully processed shortlinks for dispatch ${dispatch.id}`,
-        );
+        await this._generateShortlinks(newsletter, event.manager);
       } catch (error) {
         this.logger.error(
-          `Failed to process shortlinks for dispatch ${dispatch.id}:`,
+          `Failed to process shortlinks for newsletter ${newsletter.id}:`,
           error,
         );
       }
     }
   }
 
-  private async _processShortlinks(
-    dispatch: Dispatch,
+  async afterUpdate(event: UpdateEvent<Newsletter>) {
+    const newsletter = event.entity as Newsletter;
+    const previousNewsletter = event.databaseEntity;
+
+    if (
+      newsletter &&
+      previousNewsletter &&
+      (!previousNewsletter.studentIds ||
+        previousNewsletter.studentIds.length === 0) &&
+      newsletter.studentIds &&
+      newsletter.studentIds.length > 0
+    ) {
+      try {
+        await this._generateShortlinks(newsletter, event.manager);
+      } catch (error) {
+        this.logger.error(
+          `Failed to process shortlinks for newsletter ${newsletter.id} after update:`,
+          error,
+        );
+      }
+    }
+  }
+
+  private async _generateShortlinks(
+    newsletter: Newsletter,
     manager: EntityManager,
   ): Promise<void> {
-    // Newsletter와 Term 정보 조회
-    const newsletter = await manager.findOne(Newsletter, {
-      where: { id: dispatch.newsletterId },
-      relations: ['term'],
-    });
-
-    if (!newsletter) {
-      throw new Error(`Newsletter not found: ${dispatch.newsletterId}`);
-    }
-
     // 학생 정보 조회
     const students = await manager.find(Student, {
-      where: { id: In(dispatch.studentIds || []) },
+      where: { id: In(newsletter.studentIds || []) },
       relations: ['parent'],
+    });
+    const term = await manager.findOne(Term, {
+      where: { id: newsletter.termId },
     });
 
     if (students.length === 0) {
-      this.logger.warn(`No students found for dispatch ${dispatch.id}`);
+      this.logger.warn(`No students found for newsletter ${newsletter.id}`);
+      return;
+    }
+
+    if (term === null) {
+      this.logger.warn(`No term found for newsletter ${newsletter.id}`);
       return;
     }
 
     // Shortlinks 생성
-    const shortlinks = await this._createShortlinks(
+    await this._createShortlinks(
       manager,
+      term,
       newsletter,
       students,
-      dispatch.id,
+      newsletter.id,
     );
-
-    // Payload 생성 및 업데이트
-    const payload = this._buildNotificationFullData(
-      newsletter.term,
-      newsletter,
-      shortlinks,
-      students,
-    );
-
-    await manager.update(Dispatch, dispatch.id, { payload: payload as any });
   }
 
   private async _createShortlinks(
     manager: EntityManager,
+    term: Term,
     newsletter: Newsletter,
     students: Student[],
-    dispatchId: number,
+    newsletterId: number,
   ): Promise<Shortlink[]> {
-    const dtos: any[] = [];
-
+    const dtos: CreateShortlinkDto[] = [];
     for (const student of students) {
-      const randomId = nanoid();
-      const routes = JSON.stringify({
+      const data = {
+        nanoId: nanoid(),
         type:
           newsletter.type === NewsletterType.REGISTRATION
             ? 'REGISTRATION'
             : 'NOTIFICATION',
         termId: newsletter.termId,
         studentId: student.id,
-      });
+      };
+
+      const payload = this._buildNotificationCoreData(
+        data.nanoId,
+        term,
+        newsletter,
+        student,
+      );
+
       const dto = {
         parentId: student.parent.id,
-        newsletterId: newsletter.id,
-        dispatchId: dispatchId,
-        nanoid: randomId,
+        newsletterId: newsletterId,
+        nanoid: data.nanoId,
         role: 'PARENT',
-        url: getMobileRoute(
-          newsletter.type,
-          newsletter.termId,
-          randomId,
-          student.id,
-        ),
-        routes: routes,
-      };
+        url: getMobileRoute(data),
+        routes: JSON.stringify(data),
+        payload: payload,
+      } as CreateShortlinkDto;
+
       dtos.push(dto);
     }
 
@@ -156,23 +165,14 @@ export class NewsletterSubscriber
     for (const batch of batches) {
       try {
         this.logger.debug(`Processing batch with ${batch.length} items`);
-
         for (const dto of batch) {
           await manager
             .createQueryBuilder()
             .insert()
             .into(Shortlink)
-            .values({
-              parentId: dto.parentId,
-              newsletterId: dto.newsletterId,
-              dispatchId: dto.dispatchId,
-              nanoid: dto.nanoid,
-              role: dto.role,
-              url: dto.url,
-              routes: dto.routes || '{}',
-            })
+            .values(dto)
             .orUpdate(
-              ['dispatchId', 'nanoid', 'role', 'url', 'routes'],
+              ['newsletterId', 'nanoid', 'role', 'url', 'routes', 'payload'],
               ['parentId', 'newsletterId'],
             )
             .execute();
@@ -190,76 +190,95 @@ export class NewsletterSubscriber
     });
   }
 
-  private _buildNotificationFullData(
+  private _buildNotificationCoreData(
+    nanoId: string,
     term: Term,
     newsletter: Newsletter,
-    shortlinks: Shortlink[],
-    students: Student[],
-  ) {
+    student: Student,
+  ): NotificationCoreData {
     let body: string;
-    const messages = students.map((student: Student) => {
-      const shortlink = shortlinks.find(
-        (shortlink) => shortlink.parentId === student.parent.id,
-      );
 
-      switch (newsletter.type) {
-        case NewsletterType.REGISTRATION:
-          body = getTemplateOfRegistration({
-            school: newsletter.schoolName,
-            term: newsletter.termName,
-            period: term.bookingPeriod,
-            shortlink: `${this.domain}/${shortlink?.nanoid}`,
-          });
-          break;
-        case NewsletterType.CHANGES:
-          body = getTemplateOfNewsChanges({
-            school: newsletter.schoolName,
-            term: newsletter.termName,
-            title: newsletter.title || '수업 변동사항',
-            shortlink: `${this.domain}/${shortlink?.nanoid}`,
-          });
-          break;
-        case NewsletterType.SCHEDULES:
-          body = getTemplateOfNewsSchedules({
-            school: newsletter.schoolName,
-            term: newsletter.termName,
-            title: newsletter.title || '수업 준비물',
-            shortlink: `${this.domain}/${shortlink?.nanoid}`,
-          });
-          break;
-        case NewsletterType.SUPPLIES:
-          body = getTemplateOfNewsSupplies({
-            school: newsletter.schoolName,
-            term: newsletter.termName,
-            title: newsletter.title || '수업 일정변경',
-            shortlink: `${this.domain}/${shortlink?.nanoid}`,
-          });
-          break;
-        default:
-          body = '';
-      }
-
-      return {
-        token: student.parent.user?.pushToken || null,
-        phone: student.parent.phone,
-        title: newsletter.title,
-        body: body,
-        data: {
-          type: newsletter.type,
-          termId: newsletter.termId.toString(),
-          studentId: student.id.toString(),
-          shortlinkId: shortlink?.nanoid || '',
-          url: shortlink?.url
-            ? `${this.domain}/${shortlink?.nanoid}`
-            : undefined,
-        },
-      };
-    });
+    switch (newsletter.type) {
+      case NewsletterType.REGISTRATION:
+        body = getTemplateOfRegistration({
+          school: newsletter.schoolName,
+          term: newsletter.termName,
+          period: term.bookingPeriod,
+          shortlink: `${this.domain}/${nanoId}`,
+        });
+        break;
+      case NewsletterType.CHANGES:
+        body = getTemplateOfNewsChanges({
+          school: newsletter.schoolName,
+          term: newsletter.termName,
+          title: newsletter.title || '수업 변동사항',
+          shortlink: `${this.domain}/${nanoId}`,
+        });
+        break;
+      case NewsletterType.SCHEDULES:
+        body = getTemplateOfNewsSchedules({
+          school: newsletter.schoolName,
+          term: newsletter.termName,
+          title: newsletter.title || '수업 준비물',
+          shortlink: `${this.domain}/${nanoId}`,
+        });
+        break;
+      case NewsletterType.SUPPLIES:
+        body = getTemplateOfNewsSupplies({
+          school: newsletter.schoolName,
+          term: newsletter.termName,
+          title: newsletter.title || '수업 일정변경',
+          shortlink: `${this.domain}/${nanoId}`,
+        });
+        break;
+      default:
+        body = '';
+    }
 
     return {
-      type: newsletter.type,
-      schoolId: newsletter.schoolId,
-      messages: messages,
+      token: student.parent.user?.pushToken || null,
+      phone: student.parent.phone,
+      template: this._getTemplateName(newsletter.type),
+      title: newsletter.title || this._getDefaultTitle(newsletter.type),
+      body: body,
+      role: 'PARENT',
+      url: `${this.domain}/${nanoId}`,
+      routes: {
+        nanoId: nanoId,
+        type: newsletter.type,
+        termId: newsletter.termId.toString(),
+        studentId: student.id.toString(),
+      },
     };
+  }
+
+  private _getTemplateName(type: NewsletterType) {
+    switch (type) {
+      case NewsletterType.REGISTRATION:
+        return 'Registration1';
+      case NewsletterType.CHANGES:
+        return 'NewsChange1';
+      case NewsletterType.SCHEDULES:
+        return 'NewsSchedule1';
+      case NewsletterType.SUPPLIES:
+        return 'NewsSupplies1';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  private _getDefaultTitle(type: NewsletterType) {
+    switch (type) {
+      case NewsletterType.REGISTRATION:
+        return '수강신청안내';
+      case NewsletterType.CHANGES:
+        return '수업 변동사항';
+      case NewsletterType.SCHEDULES:
+        return '수업 준비물';
+      case NewsletterType.SUPPLIES:
+        return '수업 일정변경';
+      default:
+        return '새로운 공지사항';
+    }
   }
 }

@@ -318,12 +318,12 @@ export interface HttpErrorFormat {
   message: string;
 }
 
-export type ReadStat = {
-  id: number;
-  name: string;
-  grade: number;
-  class: string;
-  studentCode: number;
-  link: string | null;
-  read: boolean;
-};
+// export type ReadStat = {
+//   id: number;
+//   name: string;
+//   grade: number;
+//   class: string;
+//   studentCode: number;
+//   link: string | null;
+//   read: boolean;
+// };

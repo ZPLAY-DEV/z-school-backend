@@ -32,8 +32,6 @@ export class SchoolTermNewsletterService {
         termId,
         type: NewsletterType.REGISTRATION,
       },
-      relations: ['dispatches'],
-      order: { id: 'DESC' },
     });
   }
 

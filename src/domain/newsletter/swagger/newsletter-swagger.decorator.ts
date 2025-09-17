@@ -10,9 +10,6 @@ import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
-import { CreateDispatchDto } from 'src/domain/newsletter/dto/create-notification.dto';
-import { NewsletterWithReadStatsDto } from 'src/domain/newsletter/dto/newsletter-with-read-stats.dto';
-import { Dispatch } from 'src/domain/newsletter/entities/notification.entity';
 import { CreateNewsletterDto } from '../dto/create-newsletter.dto';
 import { GenerateS3UrlsDto } from '../dto/generate-s3-urls.dto';
 import { ReadStatDto } from '../dto/read-stat.dto';
@@ -142,7 +139,7 @@ export const SendNewsletterDocs = () => {
       example: 1,
     }),
     ApiBody({
-      type: CreateDispatchDto,
+      description: '뉴스레터 발송 정보',
       examples: {
         'school-wide-dispatch': {
           summary: '전교생 발송',
@@ -203,7 +200,7 @@ export const SendNewsletterDocs = () => {
     }),
     ApiCreatedResponseTemplate({
       description: '뉴스레터 발송 완료',
-      type: Dispatch,
+      type: Newsletter,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
@@ -215,26 +212,27 @@ export const ResendNewsletterDocs = () => {
       summary: '🔄 뉴스레터 재발송',
       description: `
 **📝 기능 설명**
-- 이미 발송된 뉴스레터를 즉시 재발송합니다
-- 동일한 대상자들에게 동일한 내용으로 재발송됩니다
-- 발송 상태를 업데이트하고 발송 큐에 등록합니다
+- 이미 발송된 뉴스레터를 읽지 않은 대상자들에게만 재발송합니다
+- 읽음 상태를 확인하여 미읽음 학부모들에게만 선별적으로 재발송
+- 발송 효율성을 높이고 중복 발송을 방지합니다
 
 **🔄 비즈니스 로직**
-1. ID로 재발송할 뉴스레터 확인
-2. 발송 상태를 재발송 대기로 변경
-3. 기존 발송 기록은 유지
-4. 동일한 발송 대상 및 내용으로 처리
-5. 발송 큐에 재발송 작업 등록
+1. ID로 재발송할 뉴스레터 확인 (SENT 상태만 가능)
+2. 해당 뉴스레터의 모든 shortlink 중 읽지 않은 것들 필터링
+3. 미읽음 shortlink들의 payload를 NotificationCoreData로 추출
+4. NotificationFullData 형태로 조합하여 알림 서비스에 전달
+5. 재발송 완료 후 상태 업데이트
 
 **⚠️ 중요 제약사항**
-- 이미 발송된 뉴스레터만 재발송 가능
 - 발송 상태가 SENT인 뉴스레터만 재발송 가능
-- 동일한 대상자들에게만 재발송
+- 이미 읽은 학부모들은 재발송 대상에서 제외
+- 모든 대상자가 읽은 경우 재발송 불가 (422 에러)
+- 재발송 시 rescheduledAt 필드에 시간 기록
 
 **📚 예시 시나리오**
-- 중요 공지사항의 리마인더 발송
-- 읽지 않은 학부모들을 위한 재발송
-- 시스템 오류로 누락된 발송 보완
+- 중요 공지사항의 리마인더 발송 (미읽음 대상만)
+- 읽지 않은 학부모들을 위한 선별적 재발송
+- 발송 효과 향상을 위한 미읽음 대상 재타겟팅
       `,
     }),
     ApiParam({
@@ -243,17 +241,14 @@ export const ResendNewsletterDocs = () => {
       description: '재발송할 뉴스레터의 ID',
       example: 1,
     }),
-    ApiQuery({
-      name: 'dispatchId',
-      type: Number,
-      description: '재발송할 특정 dispatch ID (선택사항)',
-      example: 1,
-      required: false,
-    }),
     ApiOkResponse({
       description: '뉴스레터 재발송 완료 (응답 본문 없음)',
     }),
-    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+    ApiStatuses(
+      StatusCodes.NOT_FOUND,
+      StatusCodes.BAD_REQUEST,
+      StatusCodes.UNPROCESSABLE_ENTITY,
+    ),
   );
 };
 
@@ -261,38 +256,38 @@ export const ResendNewsletterDocs = () => {
 //? Newsletter Controller - READ
 //? ---------------------------------------------------------------------- ?//
 
-
 export const FindPendingDispatchesDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '⏳ 대기 중인 발송 조회',
+      summary: '⏳ 발송 대기 중인 뉴스레터 조회',
       description: `
 **📝 기능 설명**
-- 발송 대기 상태인 뉴스레터 발송 목록을 조회합니다
-- 즉시 발송 대기와 예약 발송 대기 상태를 모두 포함합니다
-- 발송 관리자들이 발송 상태를 모니터링할 때 사용합니다
+- 발송 예약 시간이 지났지만 아직 발송되지 않은 뉴스레터들을 조회합니다
+- 스케줄된 발송이 실제로 실행되도록 백그라운드 작업에서 사용됩니다
+- 발송 지연이나 시스템 오류로 인한 누락 발송을 방지합니다
 
 **🔄 비즈니스 로직**
-1. 발송 상태가 INIT인 뉴스레터 발송 조회
-2. 발송 상태가 SCHEDULED인 예약 발송 조회
-3. 발송 예정 시간 순으로 정렬
-4. 발송 대상과 스케줄 정보 포함
-5. 발송 실패한 항목도 포함
+1. 현재 서울 시간을 UTC로 변환
+2. scheduledAt이 현재 시간보다 이전인 뉴스레터 조회
+3. 발송 상태가 SCHEDULED인 뉴스레터만 필터링
+4. 발송 예정 시간 순으로 정렬하여 반환
+5. 백그라운드 작업에서 자동 발송 처리
 
 **⚠️ 중요 제약사항**
-- 발송 상태가 INIT, SCHEDULED, FAILED인 항목만 조회
-- 이미 완료된 발송은 제외
-- 발송 실패한 항목은 재시도 가능
+- 발송 상태가 SCHEDULED인 뉴스레터만 조회
+- scheduledAt이 현재 시간보다 이전인 것만 포함
+- 이미 발송된(SENT) 뉴스레터는 제외
 
 **📚 예시 시나리오**
-- 발송 대기 상태 모니터링
-- 예약 발송 스케줄 확인
-- 발송 실패 항목 재처리
+- 예약 발송 스케줄 모니터링
+- 발송 지연 상황 확인
+- 백그라운드 발송 작업 대상 식별
+- 발송 시스템 상태 점검
       `,
     }),
     ApiOkResponseTemplate({
-      description: '대기 중인 발송 목록 조회 완료',
-      type: Dispatch,
+      description: '발송 대기 중인 뉴스레터 목록 조회 완료',
+      type: Newsletter,
       isArray: true,
     }),
     ApiStatuses(StatusCodes.INTERNAL_SERVER_ERROR),
@@ -306,25 +301,26 @@ export const FindNewsletterByIdDocs = () => {
       description: `
 **📝 기능 설명**
 - 특정 ID로 뉴스레터의 상세 정보를 조회합니다
-- 뉴스레터 기본 정보와 함께 관련 학생 정보도 포함됩니다
-- 읽음 상태 추적 정보를 함께 제공합니다
+- 뉴스레터의 모든 기본 정보와 관련 엔티티 정보를 포함합니다
+- 선택적으로 관련 엔티티(term 등)를 함께 로드할 수 있습니다
 
 **🔄 비즈니스 로직**
 1. ID로 뉴스레터 기본 정보 조회
-2. 발송 대상에 따른 학생 목록 조회
-3. 각 학생별 읽음 상태 확인
-4. 총 대상자 수와 읽음률 계산
-5. 첨부 이미지와 스케줄 정보 포함
+2. 선택적 relations 파라미터로 관련 엔티티 로드
+3. 뉴스레터의 모든 필드 정보 반환
+4. 발송 상태, 스케줄, 대상 정보 포함
+5. 첨부 이미지와 메타데이터 포함
 
 **⚠️ 중요 제약사항**
 - 존재하지 않는 ID는 404 에러 반환
 - 삭제된 뉴스레터는 조회 불가
-- 읽음 상태는 수강신청 타입에서만 제공
+- relations는 선택적 파라미터 (기본값: 빈 배열)
 
 **📚 예시 시나리오**
 - 뉴스레터 상세 페이지 표시
-- 발송 상태 및 읽음 통계 확인
+- 발송 상태 및 기본 정보 확인
 - 뉴스레터 수정을 위한 현재 정보 조회
+- 관련 엔티티 정보가 필요한 경우
       `,
     }),
     ApiParam({
@@ -333,9 +329,16 @@ export const FindNewsletterByIdDocs = () => {
       description: '조회할 뉴스레터의 ID',
       example: 1,
     }),
+    ApiQuery({
+      name: 'relations',
+      type: [String],
+      description: '함께 로드할 관련 엔티티 목록 (선택사항)',
+      example: ['term', 'school'],
+      required: false,
+    }),
     ApiOkResponseTemplate({
       description: '뉴스레터 상세 조회 완료',
-      type: NewsletterWithReadStatsDto,
+      type: Newsletter,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
   );
@@ -348,20 +351,21 @@ export const FindReadStatsDocs = () => {
       description: `
 **📝 기능 설명**
 - 특정 뉴스레터의 모든 대상 학생들의 읽음 상태를 조회합니다
+- 최적화된 쿼리로 학생 정보와 읽음 상태를 한번에 조회합니다
 - 학생별 상세 정보와 읽음 여부를 포함한 완전한 목록을 제공합니다
-- 읽음률 분석과 미읽음 학생 식별에 활용됩니다
 
 **🔄 비즈니스 로직**
 1. 뉴스레터 ID로 발송 대상 학생 목록 조회
-2. 각 학생별 읽음 상태 확인
+2. QueryBuilder로 학생과 shortlink 정보를 LEFT JOIN으로 조회
 3. 학생 기본 정보 (이름, 학년, 반, 학번) 포함
-4. 뉴스레터 링크와 읽음 시간 정보 제공
-5. 읽음/미읽음 상태별로 정렬하여 반환
+4. 각 학생별 shortlink 읽음 상태와 생성 시간 정보 제공
+5. 읽음 상태와 링크 URL 정보를 포함하여 반환
 
 **⚠️ 중요 제약사항**
 - 존재하지 않는 뉴스레터 ID는 404 에러 반환
 - 발송되지 않은 뉴스레터는 빈 목록 반환
 - 삭제된 학생은 목록에서 제외
+- 읽지 않은 학생의 경우 기본 링크 URL 생성
 
 **📚 예시 시나리오**
 - 뉴스레터 읽음률 분석
@@ -392,20 +396,21 @@ export const FindReadStatsPaginatedDocs = () => {
       description: `
 **📝 기능 설명**
 - 특정 뉴스레터의 읽음 통계를 페이지네이션으로 조회합니다
+- QueryBuilder와 paginateRaw를 사용하여 MySQL 호환 쿼리로 최적화
 - 대량의 학생 데이터를 효율적으로 처리할 수 있습니다
-- 정렬, 필터링, 검색 기능을 지원합니다
 
 **🔄 비즈니스 로직**
 1. 뉴스레터 ID로 발송 대상 학생 목록 조회
-2. 페이지네이션 파라미터에 따른 데이터 분할
-3. 정렬 옵션에 따른 데이터 정렬
-4. 각 학생별 읽음 상태와 상세 정보 포함
-5. 페이지네이션 메타데이터와 함께 반환
+2. QueryBuilder로 학생, 학부모, shortlink 정보를 LEFT JOIN으로 조회
+3. 페이지네이션 파라미터에 따른 데이터 분할
+4. 정렬 옵션에 따른 데이터 정렬 (학생 ID, 이름, 학년, 반, 읽음 상태 등)
+5. 페이지네이션 메타데이터와 링크 정보를 함께 반환
 
 **⚠️ 중요 제약사항**
 - 존재하지 않는 뉴스레터 ID는 404 에러 반환
 - 페이지 크기는 기본값 20, 최대 100까지 설정 가능
-- 정렬은 학생 이름, 학년, 반, 읽음 상태 등으로 가능
+- 정렬은 학생 ID, 이름, 학년, 반, 읽음 상태, 생성 시간 등으로 가능
+- 기본 정렬은 학생 ID 오름차순
 
 **📚 예시 시나리오**
 - 대규모 학교의 뉴스레터 읽음 현황 조회
@@ -473,7 +478,10 @@ export const FindReadStatsPaginatedDocs = () => {
               totalItems: { type: 'number', example: 150 },
               currentPage: { type: 'number', example: 1 },
               totalPages: { type: 'number', example: 8 },
-              sortBy: { type: 'array', items: { type: 'array', items: { type: 'string' } } },
+              sortBy: {
+                type: 'array',
+                items: { type: 'array', items: { type: 'string' } },
+              },
               searchBy: { type: 'array', items: { type: 'string' } },
               search: { type: 'string' },
               select: { type: 'array', items: { type: 'string' } },
@@ -483,11 +491,26 @@ export const FindReadStatsPaginatedDocs = () => {
           links: {
             type: 'object',
             properties: {
-              first: { type: 'string', example: '/newsletters/1/stats/paginated?page=1&limit=20' },
-              previous: { type: 'string', example: '/newsletters/1/stats/paginated?page=1&limit=20' },
-              current: { type: 'string', example: '/newsletters/1/stats/paginated?page=2&limit=20' },
-              next: { type: 'string', example: '/newsletters/1/stats/paginated?page=3&limit=20' },
-              last: { type: 'string', example: '/newsletters/1/stats/paginated?page=8&limit=20' },
+              first: {
+                type: 'string',
+                example: '/newsletters/1/stats/paginated?page=1&limit=20',
+              },
+              previous: {
+                type: 'string',
+                example: '/newsletters/1/stats/paginated?page=1&limit=20',
+              },
+              current: {
+                type: 'string',
+                example: '/newsletters/1/stats/paginated?page=2&limit=20',
+              },
+              next: {
+                type: 'string',
+                example: '/newsletters/1/stats/paginated?page=3&limit=20',
+              },
+              last: {
+                type: 'string',
+                example: '/newsletters/1/stats/paginated?page=8&limit=20',
+              },
             },
           },
         },
@@ -591,18 +614,19 @@ export const MarkAsReadDocs = () => {
       description: `
 **📝 기능 설명**
 - 특정 학부모가 특정 뉴스레터를 읽었음을 표시합니다
+- QueryBuilder를 사용하여 shortlink의 isRead 필드를 업데이트합니다
 - 읽음 통계와 추적을 위한 엔드포인트입니다
-- 뉴스레터별 읽음률 분석에 활용됩니다
 
 **🔄 비즈니스 로직**
-1. parentId와 newsletterId 조합으로 읽음 상태 기록
-2. 중복 호출 시에도 안전하게 처리
-3. 읽음 시간을 자동으로 기록
-4. 뉴스레터별 읽음률 통계 생성
-5. 미읽음 학부모 식별 가능
+1. newsletterId와 parentId 조합으로 해당 shortlink 조회
+2. QueryBuilder로 shortlink의 isRead 필드를 true로 업데이트
+3. 업데이트된 레코드 수를 확인하여 성공 여부 판단
+4. 해당 shortlink가 없는 경우 경고 로그 기록
+5. 중복 호출 시에도 안전하게 처리
 
 **⚠️ 중요 제약사항**
 - 유효한 newsletter ID와 parent ID 필요
+- 해당하는 shortlink가 없는 경우 경고 로그만 기록 (에러 없음)
 - 이미 읽음 처리된 경우에도 안전하게 처리
 - 삭제된 뉴스레터나 학부모는 처리 불가
 
@@ -610,6 +634,7 @@ export const MarkAsReadDocs = () => {
 - 학부모 앱에서 뉴스레터 열람 시 자동 호출
 - 웹페이지에서 뉴스레터 조회 시 추적
 - 발송 효과 분석 데이터 수집
+- 읽음률 통계 업데이트
       `,
     }),
     ApiParam({
@@ -643,17 +668,18 @@ export const DeleteNewsletterDocs = () => {
 **📝 기능 설명**
 - 뉴스레터를 소프트 삭제합니다
 - 삭제된 뉴스레터는 목록에서 제외되지만 데이터는 보존됩니다
-- 예약된 발송이 있다면 자동으로 취소됩니다
+- 관련된 모든 shortlink도 함께 삭제됩니다
 
 **🔄 비즈니스 로직**
 1. ID로 삭제 대상 뉴스레터 확인
-2. deletedAt 필드에 삭제 시간 기록
-3. 예약된 발송이 있으면 자동 취소
-4. 관련 shortlink와 읽음 기록은 유지
+2. 해당 뉴스레터의 모든 shortlink를 먼저 삭제
+3. 뉴스레터를 softRemove로 소프트 삭제
+4. deletedAt 필드에 삭제 시간 기록
 5. 삭제된 뉴스레터 정보 반환
 
 **⚠️ 중요 제약사항**
 - 발송 상태와 관계없이 삭제 가능
+- 관련된 모든 shortlink가 함께 삭제됨
 - 이미 발송된 메시지는 취소되지 않음
 - 소프트 삭제로 데이터 복구 가능
 
@@ -661,6 +687,7 @@ export const DeleteNewsletterDocs = () => {
 - 잘못 생성된 뉴스레터 제거
 - 테스트용 뉴스레터 정리
 - 부적절한 내용의 뉴스레터 삭제
+- 관련 데이터 정리
       `,
     }),
     ApiParam({

@@ -1,6 +1,4 @@
-import { ValidateNested } from '@nestjs/class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 import {
   IsArray,
   IsDateString,
@@ -12,7 +10,6 @@ import {
 } from 'class-validator';
 import { NewsletterTarget, NewsletterType } from 'src/common/enums';
 import { SendStatus } from 'src/common/enums/send-status';
-import { CreateNotificationDto } from 'src/domain/newsletter/dto/create-notification.dto';
 
 export class CreateNewsletterDto {
   @ApiProperty({ description: '🈵 schoolId', type: Number, example: 1 })
@@ -142,13 +139,4 @@ export class CreateNewsletterDto {
   @IsOptional()
   @IsEnum(SendStatus)
   status?: SendStatus;
-
-  @ApiProperty({
-    description: '🈵 알림 목록',
-    type: [CreateNotificationDto],
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateNotificationDto)
-  notifications: CreateNotificationDto[];
 }

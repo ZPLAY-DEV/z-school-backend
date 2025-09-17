@@ -1,24 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude } from 'class-transformer';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
+import { NotificationCoreData } from 'src/services/notification/types';
 import {
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   Entity,
   Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from 'typeorm';
 
 @Entity('shortlinks')
 @Unique(['parentId', 'newsletterId'])
 export class Shortlink {
-  @ApiProperty({ description: 'shortlinkId', example: 1 })
+  @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
@@ -36,10 +35,6 @@ export class Shortlink {
   @Column({ type: 'int', unsigned: true })
   newsletterId: number;
 
-  @ApiProperty({ description: '🈵 dispatch Id' })
-  @Column({ type: 'int', unsigned: true, nullable: true })
-  dispatchId: number | null;
-
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈵 21자리 나노아이디 값' })
@@ -51,10 +46,6 @@ export class Shortlink {
   @Column({ type: 'varchar', length: 16, default: 'PARENT' })
   role: string;
 
-  @ApiProperty({ description: '🈵 routing 정보 url' })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  url: string;
-
   @ApiProperty({ description: '🈵 routing 정보 routes' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   routes: string;
@@ -62,6 +53,10 @@ export class Shortlink {
   @ApiProperty({ description: '🈳 비고', example: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
+
+  @ApiProperty({ description: '🈵 notification service 에 전달할 payload' })
+  @Column({ type: 'json' })
+  payload: NotificationCoreData;
 
   @ApiProperty({ description: '🈳 열람 여부' })
   @Column({ type: 'boolean', default: false })
@@ -76,11 +71,6 @@ export class Shortlink {
   @ApiProperty({ description: '🈵 updatedAt' })
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @Exclude()
-  @ApiProperty({ description: '🈳 deletedAt' })
-  @DeleteDateColumn()
-  deletedAt: Date | null;
 
   //* M-to-1 belongsTo ------------------------------------------------------- *//
 

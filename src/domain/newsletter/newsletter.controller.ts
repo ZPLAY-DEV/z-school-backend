@@ -14,10 +14,11 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
+import { NewsletterTarget } from 'src/common/enums';
+import { SendStatus } from 'src/common/enums/send-status';
 import { IS3Urls } from 'src/common/interfaces';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { GenerateS3UrlsDto } from 'src/domain/newsletter/dto/generate-s3-urls.dto';
-import { NewsletterWithReadStatsDto } from 'src/domain/newsletter/dto/newsletter-with-read-stats.dto';
 import { ReadStatDto } from 'src/domain/newsletter/dto/read-stat.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
@@ -62,18 +63,21 @@ export class NewsletterController {
   @Put(':id/send')
   async sendNewsletter(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateNewsletterDto,
-  ): Promise<void> {
+    @Body()
+    dto: {
+      target: NewsletterTarget;
+      targetItems: number[];
+      scheduledAt: string;
+      status: SendStatus;
+    },
+  ): Promise<Newsletter> {
     return await this.newsletterService.sendNewsletter(id, dto);
   }
 
   @ResendNewsletterDocs()
   @Put(':id/resend')
-  async resendNewsletter(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateNewsletterDto,
-  ): Promise<void> {
-    return this.newsletterService.resendNewsletter(id, dto);
+  async resendNewsletter(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.newsletterService.resendNewsletter(id);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -90,8 +94,8 @@ export class NewsletterController {
   @Get(':id')
   async findDetailById(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<NewsletterWithReadStatsDto> {
-    return await this.newsletterService.findDetailById(id);
+  ): Promise<Newsletter> {
+    return await this.newsletterService.findById(id);
   }
 
   @FindReadStatsDocs()
