@@ -36,7 +36,6 @@ export class CreateStudentDto {
   })
   @IsNotEmpty({ message: '학교 ID는 필수입니다' })
   @IsInt({ message: '학교 ID는 정수여야 합니다' })
-  @Min(1, { message: '학교 ID는 1 이상이어야 합니다' })
   schoolId: number;
 
   @ApiProperty({
@@ -49,7 +48,7 @@ export class CreateStudentDto {
   @IsNotEmpty({ message: '학년은 필수입니다' })
   @IsInt({ message: '학년은 정수여야 합니다' })
   @Min(1, { message: '학년은 1 이상이어야 합니다' })
-  @Max(12, { message: '학년은 12 이하여야 합니다' })
+  @Max(6, { message: '학년은 6 이하여야 합니다' })
   grade: number;
 
   @ApiPropertyOptional({
@@ -74,7 +73,7 @@ export class CreateStudentDto {
   @IsInt({ message: '학번은 정수여야 합니다' })
   @Type(() => Number)
   @Min(1, { message: '학번은 1 이상이어야 합니다' })
-  @Max(100, { message: '학번은 100 이하여야 합니다' })
+  @Max(99, { message: '학번은 99 이하여야 합니다' })
   studentCode?: number;
 
   @ApiPropertyOptional({

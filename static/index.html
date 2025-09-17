@@ -10,6 +10,9 @@
       Uh-oh, you are not supposed to be here.
     </pre>
     <pre style="font-family: 'Courier New', Courier, monospace;" style="margin-bottom: 24px;">
+      Requested path: <span id="requested-path">Loading...</span>
+    </pre>
+    <pre style="font-family: 'Courier New', Courier, monospace;" style="margin-bottom: 24px;">
 
 /\_/\___  _   _( )_   _____   _ __ ___  __ _  ___| |__   ___  __| | | |_ ___          
 \_ _/ _ \| | | |/\ \ / / _ \ | '__/ _ \/ _` |/ __| '_ \ / _ \/ _` | | __/ _ \         
@@ -34,6 +37,15 @@
       Visit <a href="https://schoolhub.co.kr">https://schoolhub.co.kr</a> for more information.
     </pre>
   </div>
+
+  <script>
+    // 요청된 경로 표시
+    document.getElementById('requested-path').textContent = window.location.pathname + window.location.search;
+    
+    // 콘솔에도 로그 출력
+    console.log('404 - Requested path:', window.location.pathname + window.location.search);
+    console.log('Full URL:', window.location.href);
+  </script>
 </body>
 
 </html>

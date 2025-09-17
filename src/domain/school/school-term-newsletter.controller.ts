@@ -43,22 +43,22 @@ export class SchoolTermNewsletterController {
   }
 
   @ListSchoolTermNewslettersDocs()
-  @Get(':schoolId/terms/:termId/newsletters')
+  @Get(':schoolId/newsletters')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Param('termId', ParseIntPipe) termId: number,
+    @Query('termId') termId?: number,
     @Query('type') type?: NewsletterType,
   ): Promise<Newsletter[]> {
     return await this.schoolTermNewsletterService.list(schoolId, termId, type);
   }
 
   @InfiniteListSchoolTermNewslettersDocs()
-  @Get(':schoolId/terms/:termId/newsletters/paginated')
+  @Get(':schoolId/newsletters/paginated')
   @UseInterceptors(ClassSerializerInterceptor)
   async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Param('termId', ParseIntPipe) termId: number,
     @Paginate() query: PaginateQuery,
+    @Query('termId') termId: number,
     @Query('type') type?: NewsletterType,
   ) {
     return await this.schoolTermNewsletterService.infiniteList(

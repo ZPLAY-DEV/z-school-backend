@@ -70,8 +70,16 @@ export class SchoolTermNewsletterService {
       queryBuilder.andWhere('newsletter.termId = :termId', { termId });
     }
 
-    if (type !== undefined) {
-      queryBuilder.andWhere('newsletter.type = :type', { type });
+    if (type !== undefined && type === NewsletterType.REGISTRATION) {
+      queryBuilder.andWhere('newsletter.type = :type', {
+        type: 'REGISTRATION',
+      });
+    }
+
+    if (type !== undefined && type !== NewsletterType.REGISTRATION) {
+      queryBuilder.andWhere('newsletter.type != :type', {
+        type: 'REGISTRATION',
+      });
     }
 
     return await paginate<Newsletter>(query, queryBuilder, {

@@ -9,10 +9,9 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import {
-  FilterOperator,
   paginate,
   Paginated,
-  PaginateQuery,
+  PaginateQuery
 } from 'nestjs-paginate';
 import {
   NewsletterTarget,
@@ -189,22 +188,6 @@ export class NewsletterService {
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
-
-  async infiniteList(query: PaginateQuery): Promise<Paginated<Newsletter>> {
-    const queryBuilder =
-      this.newsletterRepository.createQueryBuilder('newsletter');
-
-    return await paginate(query, queryBuilder, {
-      sortableColumns: ['id'],
-      searchableColumns: ['title', 'body'],
-      defaultSortBy: [['id', 'DESC']],
-      filterableColumns: {
-        type: [FilterOperator.EQ],
-        schoolId: [FilterOperator.EQ],
-        termId: [FilterOperator.EQ],
-      },
-    });
-  }
 
   async findRegistrationNewsletter(
     schoolId: number,
