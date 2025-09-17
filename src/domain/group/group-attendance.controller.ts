@@ -161,7 +161,7 @@ export class GroupAttendanceController {
   async getStudentAttendances(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('studentId', ParseIntPipe) studentId: number,
-    @Query('month') month: string,
+    @Query('month') month?: string,
   ): Promise<IAttendance[]> {
     return await this.groupAttendancesService.getStudentAttendances(
       groupId,

@@ -1,10 +1,11 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiQuery,
+    ApiResponse,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -715,57 +716,58 @@ export const GetReportDocs = () => {
 export const GetStudentMonthlyReportDocs = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '📊 Get student monthly attendance report',
+      summary: '📊 학생별 월간 출석 보고서 조회',
       description: `
-### Overview
-Retrieves monthly attendance data for a specific student in a group.
-Returns all attendance records for the specified month filtered by student ID.
+### 🎯 기능 개요
+특정 반의 특정 학생에 대한 월간 출석 데이터를 조회합니다.
+지정된 월의 해당 학생 출석 기록을 모두 반환합니다.
 
-### Parameters
-- \`groupId\`: Group ID (number)
-- \`month\`: Target month (YYYY-MM format, e.g., "2025-08")
-- \`studentId\`: Student ID (number)
+### 📋 매개변수
+- \`groupId\`: 반 ID (숫자)
+- \`studentId\`: 학생 ID (숫자)
+- \`month\`: 대상 월 (YYYY-MM 형식, 예: "2025-08") - 쿼리 파라미터
 
-### Response
-Returns an array of attendance records for the specified student in the given month.
+### 📊 응답 데이터
+지정된 학생의 해당 월 출석 기록 배열을 반환합니다.
 
-### Use Cases
-- Monthly attendance analysis for individual students
-- Parent portal monthly attendance display
-- Student attendance pattern analysis
-- Academic performance tracking
+### 💡 주요 활용
+- 개별 학생의 월간 출석 분석
+- 학부모 포털 월간 출석 현황 표시
+- 학생 출석 패턴 분석
+- 학업 성과 추적
 
-### Data Structure
-- Each record contains daily attendance information
-- Records are filtered by student ID from monthly data
-- DynamoDB query uses beginsWith on dailyStudentKey with month prefix
+### 📈 데이터 구조
+- 각 기록은 일별 출석 정보를 포함
+- 월간 데이터에서 학생 ID로 필터링된 기록
+- DynamoDB 쿼리는 월 접두사로 dailyStudentKey beginsWith 사용
 
-### Performance Notes
-- Uses DynamoDB beginsWith query for efficient monthly data retrieval
-- Client-side filtering by student ID for precise results
-- Optimized for monthly report generation
+### ⚡ 성능 최적화
+- 효율적인 월간 데이터 조회를 위한 DynamoDB beginsWith 쿼리 사용
+- 정확한 결과를 위한 클라이언트 측 학생 ID 필터링
+- 월간 보고서 생성에 최적화
       `,
     }),
     ApiParam({
       name: 'groupId',
       type: 'number',
-      description: 'Group ID',
+      description: '반 ID',
       example: 123,
-    }),
-    ApiParam({
-      name: 'month',
-      type: 'string',
-      description: 'Target month (YYYY-MM format)',
-      example: '2025-08',
     }),
     ApiParam({
       name: 'studentId',
       type: 'number',
-      description: 'Student ID',
+      description: '학생 ID',
       example: 456,
     }),
+    ApiQuery({
+      name: 'month',
+      type: 'string',
+      description: '대상 월 (YYYY-MM 형식)',
+      example: '2025-08',
+      required: false,
+    }),
     ApiOkResponse({
-      description: 'Student monthly attendance report retrieved successfully',
+      description: '학생 월간 출석 보고서 조회 성공',
       schema: {
         type: 'array',
         items: {
@@ -773,22 +775,27 @@ Returns an array of attendance records for the specified student in the given mo
           properties: {
             groupKey: {
               type: 'string',
+              description: '반 식별자',
               example: 'GROUP#123',
             },
             dailyStudentKey: {
               type: 'string',
+              description: '일별 학생 키',
               example: 'DATE#2025-08-15#STUDENT#456#3-1-12',
             },
             studentName: {
               type: 'string',
-              example: 'John Doe',
+              description: '학생 이름',
+              example: '홍길동',
             },
             lessonName: {
               type: 'string',
-              example: 'Mathematics',
+              description: '수업명',
+              example: '수학',
             },
             status: {
               type: 'string',
+              description: '출석 상태',
               enum: [
                 'INIT',
                 'PRESENT',
@@ -803,20 +810,24 @@ Returns an array of attendance records for the specified student in the given mo
             },
             parentNote: {
               type: 'string',
-              example: 'Thank you for your attention.',
+              description: '학부모 메모',
+              example: '감사합니다.',
             },
             schoolNote: {
               type: 'string',
-              example: 'Student participated well in class.',
+              description: '학교 메모',
+              example: '수업에 잘 참여했습니다.',
             },
             parentNotedAt: {
               type: 'string',
               format: 'date-time',
+              description: '학부모 메모 작성 시간',
               example: '2025-08-15T09:00:00Z',
             },
             schoolNotedAt: {
               type: 'string',
               format: 'date-time',
+              description: '학교 메모 작성 시간',
               example: '2025-08-15T09:00:00Z',
             },
           },

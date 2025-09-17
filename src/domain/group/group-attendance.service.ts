@@ -1104,28 +1104,35 @@ export class GroupAttendanceService {
   async getStudentAttendances(
     groupId: number,
     studentId: number,
-    monthStr: string, //? ex. "2025-08"
+    monthStr?: string, //? ex. "2025-08"
   ): Promise<IAttendance[]> {
-    const year = Number(monthStr.split('-')[0]);
-    const month = Number(monthStr.split('-')[1]);
-    const startOfMonth = new Date(year, month - 1, 1); // 월은 0-base
-    const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // 다음 달의 0일 = 이번 달의 마지막 날 (23:59:59.999까지 포함)
-
     try {
       // 1. 한 번의 쿼리로 schooldays와 picks, student를 조인해서 해당 학생의 수업일 조회
-      const schooldays = await this.schooldayRepository
+      const qb = this.schooldayRepository
         .createQueryBuilder('schoolday')
         .leftJoinAndSelect('schoolday.group', 'group')
         .leftJoinAndSelect('group.picks', 'pick')
         .leftJoinAndSelect('pick.student', 'student')
         .where('schoolday.groupId = :groupId', { groupId })
         .andWhere('pick.studentId = :studentId', { studentId })
-        .andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
+        // .andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
+        //   beginning: startOfMonth,
+        //   ending: endOfMonth,
+        // })
+        .orderBy('schoolday.startsAt', 'ASC');
+
+      if (monthStr) {
+        const year = Number(monthStr.split('-')[0]);
+        const month = Number(monthStr.split('-')[1]);
+        const startOfMonth = new Date(year, month - 1, 1); // 월은 0-base
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // 다음 달의 0일 = 이번 달의 마지막 날 (23:59:59.999까지 포함)
+        qb.andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
           beginning: startOfMonth,
           ending: endOfMonth,
-        })
-        .orderBy('schoolday.startsAt', 'ASC')
-        .getMany();
+        });
+      }
+
+      const schooldays = await qb.getMany();
 
       if (schooldays.length === 0) {
         throw new BadRequestException(`수업일이 없거나 수강생이 아닙니다.`);
