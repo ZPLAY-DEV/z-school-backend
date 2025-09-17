@@ -130,19 +130,16 @@ export class NewsletterSubscriber
     for (const student of students) {
       const data = {
         nanoId: nanoid(),
-        type:
-          newsletter.type === NewsletterType.REGISTRATION
-            ? 'REGISTRATION'
-            : 'NOTIFICATION',
+        type: newsletter.type,
         termId: newsletter.termId,
         studentId: student.id,
       };
 
       const payload = this._buildNotificationCoreData(
         data.nanoId,
+        student,
         term,
         newsletter,
-        student,
       );
 
       const dto = {
@@ -192,9 +189,9 @@ export class NewsletterSubscriber
 
   private _buildNotificationCoreData(
     nanoId: string,
+    student: Student,
     term: Term,
     newsletter: Newsletter,
-    student: Student,
   ): NotificationCoreData {
     let body: string;
 

@@ -3,7 +3,6 @@ import { Exclude, Transform } from 'class-transformer';
 import { IsArray } from 'class-validator';
 import { NewsletterTarget, NewsletterType } from 'src/common/enums';
 import { SendStatus } from 'src/common/enums/send-status';
-import { Notification } from 'src/domain/newsletter/entities/notification.entity';
 import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -175,11 +174,6 @@ export class Newsletter {
   term: Term;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
-
-  @OneToMany(() => Notification, (notification) => notification.newsletter, {
-    cascade: ['insert', 'update'],
-  })
-  notifications: Notification[];
 
   @OneToMany(() => Shortlink, (shortlink) => shortlink.newsletter, {
     cascade: ['insert', 'update'],

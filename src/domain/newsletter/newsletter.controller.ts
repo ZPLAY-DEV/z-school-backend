@@ -85,6 +85,14 @@ export class NewsletterController {
   //? ---------------------------------------------------------------------- ?//
 
   @FindPendingDispatchesDocs()
+  @Get('paginated')
+  async infiniteList(
+    @Paginate() query: PaginateQuery,
+  ): Promise<Paginated<Newsletter>> {
+    return await this.newsletterService.infiniteList(query);
+  }
+
+  @FindPendingDispatchesDocs()
   @Get('pending-items')
   async findPendingItems(): Promise<Newsletter[]> {
     return await this.newsletterService.findPendingItems();
