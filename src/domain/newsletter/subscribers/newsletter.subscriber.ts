@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { nanoid } from 'nanoid';
 import { NewsletterType } from 'src/common/enums';
+import { SendStatus } from 'src/common/enums/send-status';
 import { CreateShortlinkDto } from 'src/domain/newsletter/dto/create-shortlink.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -12,7 +13,6 @@ import {
   getTemplateOfNewsSupplies,
   getTemplateOfRegistration,
 } from 'src/helpers/get-message-body';
-import { getMobileRoute } from 'src/helpers/uri';
 import { NotificationCoreData } from 'src/services/notification/types';
 import {
   DataSource,
@@ -70,8 +70,8 @@ export class NewsletterSubscriber
     if (
       newsletter &&
       previousNewsletter &&
-      (!previousNewsletter.studentIds ||
-        previousNewsletter.studentIds.length === 0) &&
+      previousNewsletter.status !== SendStatus.SCHEDULED &&
+      newsletter.status === SendStatus.SCHEDULED &&
       newsletter.studentIds &&
       newsletter.studentIds.length > 0
     ) {
@@ -147,7 +147,6 @@ export class NewsletterSubscriber
         newsletterId: newsletterId,
         nanoid: data.nanoId,
         role: 'PARENT',
-        url: getMobileRoute(data),
         routes: JSON.stringify(data),
         payload: payload,
       } as CreateShortlinkDto;
@@ -169,7 +168,7 @@ export class NewsletterSubscriber
             .into(Shortlink)
             .values(dto)
             .orUpdate(
-              ['newsletterId', 'nanoid', 'role', 'url', 'routes', 'payload'],
+              ['newsletterId', 'nanoid', 'role', 'routes', 'payload'],
               ['parentId', 'newsletterId'],
             )
             .execute();
