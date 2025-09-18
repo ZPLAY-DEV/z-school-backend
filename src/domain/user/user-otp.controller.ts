@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
@@ -56,6 +57,7 @@ export class UserOtpController {
   async sendOtpForExistingUser(
     @Param('key') key: string,
     @Body('role') role: string,
+    @Query('type') type?: string,
   ): Promise<string> {
     if (
       role.toUpperCase() !== 'PARENT' &&
@@ -64,7 +66,11 @@ export class UserOtpController {
       throw new BadRequestException('Invalid role');
     }
 
-    await this.userOtpService.sendOtpForExistingUser(key, role.toUpperCase());
+    await this.userOtpService.sendOtpForExistingUser(
+      key,
+      role.toUpperCase(),
+      type,
+    );
     return key;
   }
 

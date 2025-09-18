@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -71,11 +72,22 @@ export class UserOtpService {
   //? Existing User 본인인증 OTP 발송
   //? ---------------------------------------------------------------------- ?//
 
-  async sendOtpForExistingUser(val: string, role: string): Promise<void> {
+  async sendOtpForExistingUser(
+    val: string,
+    role: string,
+    type?: string,
+  ): Promise<void> {
     const phone = normalizePhone(val);
 
     if (!phone) {
       throw new BadRequestException('Invalid key');
+    }
+
+    if (type === 'REGISTRATION') {
+      const user = await this.userRepository.findOne({ where: { phone } });
+      if (user) {
+        throw new ConflictException('already registered');
+      }
     }
 
     if (role.toUpperCase() === 'PARENT') {
