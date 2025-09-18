@@ -11,7 +11,6 @@ import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CreateNewsletterDto } from '../dto/create-newsletter.dto';
-import { GenerateS3UrlsDto } from '../dto/generate-s3-urls.dto';
 import { ReadStatDto } from '../dto/read-stat.dto';
 import { UpdateNewsletterDto } from '../dto/update-newsletter.dto';
 import { Newsletter } from '../entities/newsletter.entity';
@@ -714,30 +713,69 @@ export const GenerateNewsletterS3UrlsDocs = () => {
       summary: '📎 뉴스레터 첨부파일 업로드 URL 생성',
       description: `
 **📝 기능 설명**
-- 뉴스레터에 첨부할 이미지 파일의 S3 업로드 URL을 생성합니다
+- 뉴스레터에 첨부할 이미지/문서 파일의 S3 업로드 URL을 생성합니다
 - Pre-signed URL 방식으로 안전한 파일 업로드를 지원합니다
 - 학교와 학기별로 파일이 체계적으로 관리됩니다
+- 환경별 경로 분리로 개발/운영 환경 격리
 
 **🔄 비즈니스 로직**
-1. schoolId와 termId로 업로드 경로 구성
-2. mimeType 검증 및 파일 확장자 추출
-3. 고유한 파일명 생성 (타임스탬프 + UUID)
-4. S3 Pre-signed URL 생성
-5. 업로드용 URL과 다운로드용 URL 반환
+1. schoolId와 termId로 업로드 경로 구성 (\`schools/{schoolId}/terms/{termId}/newsletters\`)
+2. mimeType 검증 및 지원 파일 형식 확인
+3. 고유한 파일명 생성 (타임스탬프 + UUID + 확장자)
+4. 환경별 경로 접두사 추가 (\`{environment}/schools/...\`)
+5. S3 Pre-signed URL 생성 (기본 10분 만료)
+6. 업로드용 URL과 파일 접근용 URL 반환
 
 **⚠️ 중요 제약사항**
-- 이미지 파일만 업로드 가능 (JPEG, PNG, GIF, WebP)
-- 파일 크기 제한과 보안 정책 적용
-- Pre-signed URL은 제한 시간 내에만 사용 가능
+- 지원 파일 형식: JPEG, JPG, PNG, GIF, WebP, PDF
+- Pre-signed URL은 10분 내에만 사용 가능 (만료 시 재생성 필요)
+- 파일명 미제공 시 자동 생성 (타임스탬프 + UUID)
+- CloudFront URL을 통한 파일 접근 (CDN 캐싱 적용)
+- 파일 크기 제한: S3 버킷 정책에 따라 제한
 
 **📚 예시 시나리오**
-- 뉴스레터 작성 시 이미지 첨부
-- 공지사항에 안내문 이미지 추가
+- 뉴스레터 작성 시 이미지 첨부 (안내문, 포스터 등)
+- 공지사항에 PDF 문서 첨부 (가정통신문, 안내서 등)
 - 설문조사에 참고 이미지 첨부
+- 이벤트 공지에 GIF 애니메이션 첨부
       `,
     }),
     ApiBody({
-      type: GenerateS3UrlsDto,
+      description: 'S3 업로드 URL 생성을 위한 요청 정보',
+      schema: {
+        type: 'object',
+        required: ['schoolId', 'termId', 'mimeType'],
+        properties: {
+          schoolId: {
+            type: 'number',
+            description: '학교 ID',
+            example: 1,
+          },
+          termId: {
+            type: 'number',
+            description: '학기 ID',
+            example: 1,
+          },
+          mimeType: {
+            type: 'string',
+            description: '파일의 MIME 타입',
+            enum: [
+              'image/jpeg',
+              'image/jpg',
+              'image/png',
+              'image/gif',
+              'image/webp',
+              'application/pdf',
+            ],
+            example: 'image/jpeg',
+          },
+          filename: {
+            type: 'string',
+            description: '파일명 (선택사항, 미제공 시 자동 생성)',
+            example: 'newsletter-attachment.jpg',
+          },
+        },
+      },
       examples: {
         'jpeg-image': {
           summary: 'JPEG 이미지 업로드',
@@ -748,13 +786,14 @@ export const GenerateNewsletterS3UrlsDocs = () => {
             mimeType: 'image/jpeg',
           },
         },
-        'png-image': {
-          summary: 'PNG 이미지 업로드',
-          description: 'PNG 형식의 이미지 파일 업로드 URL 생성',
+        'png-image-with-filename': {
+          summary: 'PNG 이미지 업로드 (파일명 지정)',
+          description: 'PNG 형식의 이미지 파일을 지정된 파일명으로 업로드',
           value: {
             schoolId: 1,
             termId: 1,
             mimeType: 'image/png',
+            filename: 'newsletter-banner.png',
           },
         },
         'webp-image': {
@@ -766,6 +805,35 @@ export const GenerateNewsletterS3UrlsDocs = () => {
             mimeType: 'image/webp',
           },
         },
+        'gif-animation': {
+          summary: 'GIF 애니메이션 업로드',
+          description: 'GIF 애니메이션 파일 업로드 (이벤트 공지용)',
+          value: {
+            schoolId: 1,
+            termId: 1,
+            mimeType: 'image/gif',
+            filename: 'event-animation.gif',
+          },
+        },
+        'pdf-document': {
+          summary: 'PDF 문서 업로드',
+          description: 'PDF 형식의 문서 파일 업로드 (가정통신문, 안내서 등)',
+          value: {
+            schoolId: 1,
+            termId: 1,
+            mimeType: 'application/pdf',
+            filename: 'parent-notice.pdf',
+          },
+        },
+        'different-school-term': {
+          summary: '다른 학교/학기 업로드',
+          description: '다른 학교의 다른 학기에 파일 업로드',
+          value: {
+            schoolId: 3,
+            termId: 2,
+            mimeType: 'image/jpeg',
+          },
+        },
       },
     }),
     ApiOkResponse({
@@ -775,15 +843,36 @@ export const GenerateNewsletterS3UrlsDocs = () => {
         properties: {
           uploadUrl: {
             type: 'string',
-            description: '파일 업로드용 Pre-signed URL',
+            description: '파일 업로드용 Pre-signed URL (10분 만료)',
             example:
-              'https://s3.amazonaws.com/bucket/schools/1/terms/1/newsletters/file.jpg?signature=...',
+              'https://s3.amazonaws.com/afterschool-files-bucket/dev/schools/1/terms/1/newsletters/1703123456789-abc123.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...',
           },
-          downloadUrl: {
+          fileUrl: {
             type: 'string',
-            description: '업로드 완료 후 접근 가능한 다운로드 URL',
+            description: '업로드 완료 후 접근 가능한 파일 URL (CloudFront CDN)',
             example:
-              'https://s3.amazonaws.com/bucket/schools/1/terms/1/newsletters/file.jpg',
+              'https://cdn.example.com/afterschool-files-bucket/dev/schools/1/terms/1/newsletters/1703123456789-abc123.jpg',
+          },
+        },
+        required: ['uploadUrl', 'fileUrl'],
+      },
+      examples: {
+        'successful-response': {
+          summary: '성공적인 URL 생성',
+          value: {
+            uploadUrl:
+              'https://s3.amazonaws.com/afterschool-files-bucket/dev/schools/1/terms/1/newsletters/1703123456789-abc123.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20231221%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20231221T120000Z&X-Amz-Expires=600&X-Amz-SignedHeaders=host&X-Amz-Signature=...',
+            fileUrl:
+              'https://cdn.example.com/afterschool-files-bucket/dev/schools/1/terms/1/newsletters/1703123456789-abc123.jpg',
+          },
+        },
+        'with-custom-filename': {
+          summary: '사용자 지정 파일명으로 생성',
+          value: {
+            uploadUrl:
+              'https://s3.amazonaws.com/afterschool-files-bucket/dev/schools/1/terms/1/newsletters/newsletter-banner.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...',
+            fileUrl:
+              'https://cdn.example.com/afterschool-files-bucket/dev/schools/1/terms/1/newsletters/newsletter-banner.png',
           },
         },
       },

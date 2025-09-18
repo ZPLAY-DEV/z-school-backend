@@ -209,9 +209,14 @@ export class UserController {
     dto: {
       userId: number;
       mimeType: string;
+      filename?: string;
     },
   ): Promise<IS3Urls> {
     const path = [`users`, `${dto.userId}`, `avatar`].join('/');
-    return await this.uploadService.generateUploadUrls(path, dto.mimeType);
+    return await this.uploadService.generateUploadUrls(
+      path,
+      dto.mimeType,
+      dto.filename,
+    );
   }
 }

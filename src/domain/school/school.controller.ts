@@ -116,9 +116,14 @@ export class SchoolController {
     dto: {
       schoolId: number;
       mimeType: string;
+      filename?: string;
     },
   ): Promise<IS3Urls> {
     const path = [`schools`, `${dto.schoolId}`, `promos`].join('/');
-    return await this.uploadService.generateUploadUrls(path, dto.mimeType);
+    return await this.uploadService.generateUploadUrls(
+      path,
+      dto.mimeType,
+      dto.filename,
+    );
   }
 }

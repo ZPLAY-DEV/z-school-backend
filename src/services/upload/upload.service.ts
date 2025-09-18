@@ -38,14 +38,20 @@ export class UploadService {
   async generateUploadUrls(
     path: string,
     mimeType: string,
+    filename?: string,
     options?: UploadOptions,
   ): Promise<IS3Urls> {
     if (!this.isValidMimeType(mimeType)) {
       throw new Error(`Unsupported MIME type: ${mimeType}`);
     }
 
-    const filename = randomFileName('file', mimeType);
-    const fullPath = `${this.environment}/${path}/${filename}`;
+    console.log('📎 path', path);
+    console.log('📎 mimeType', mimeType);
+    console.log('📎 filename', filename);
+    console.log('📎 options', options);
+
+    const name = filename ?? randomFileName('file', mimeType);
+    const fullPath = `${this.environment}/${path}/${name}`;
     const expiresIn = options?.expiresIn ?? this.DEFAULT_EXPIRES_IN;
 
     try {

@@ -18,7 +18,6 @@ import { NewsletterTarget } from 'src/common/enums';
 import { SendStatus } from 'src/common/enums/send-status';
 import { IS3Urls } from 'src/common/interfaces';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
-import { GenerateS3UrlsDto } from 'src/domain/newsletter/dto/generate-s3-urls.dto';
 import { ReadStatDto } from 'src/domain/newsletter/dto/read-stat.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
@@ -156,7 +155,15 @@ export class NewsletterController {
 
   @GenerateNewsletterS3UrlsDocs()
   @Post('s3urls')
-  async generateS3Urls(@Body() dto: GenerateS3UrlsDto): Promise<IS3Urls> {
+  async generateS3Urls(
+    @Body()
+    dto: {
+      schoolId: number;
+      termId: number;
+      mimeType: string;
+      filename?: string;
+    },
+  ): Promise<IS3Urls> {
     const path = [
       `schools`,
       `${dto.schoolId}`,
@@ -164,6 +171,10 @@ export class NewsletterController {
       `${dto.termId}`,
       `newsletters`,
     ].join('/');
-    return await this.uploadService.generateUploadUrls(path, dto.mimeType);
+    return await this.uploadService.generateUploadUrls(
+      path,
+      dto.mimeType,
+      dto.filename,
+    );
   }
 }

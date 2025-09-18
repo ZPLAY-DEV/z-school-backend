@@ -8,11 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
-import {
-  paginate,
-  Paginated,
-  PaginateQuery
-} from 'nestjs-paginate';
+import { paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import {
   NewsletterTarget,
   NewsletterType,
@@ -151,7 +147,7 @@ export class NewsletterService {
       newsletter.targetItems = dto.targetItems;
       newsletter.targetLabel = label;
       newsletter.studentIds = dedupedStudents.map((student) => student.id);
-      newsletter.scheduledAt = new Date(dto.scheduledAt);
+      newsletter.scheduledAt = fromZonedTime(dto.scheduledAt, 'Asia/Seoul');
       newsletter.status = dto.status;
     }
     return await this.newsletterRepository.save(newsletter);
