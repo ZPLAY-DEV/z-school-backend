@@ -370,7 +370,8 @@ export class SchoolStudentService {
     file: Express.Multer.File,
   ): Promise<CreateStudentDto[]> {
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(Buffer.from(file.buffer));
+    // file.buffer가 실제로는 ExcelJS가 처리할 수 있는 형태이지만 TypeScript 타입 시스템에서 정확히 매칭되지 않음.
+    await workbook.xlsx.load(file.buffer);
 
     // 첫번째 sheet
     const worksheet = workbook.worksheets[0];
@@ -457,7 +458,7 @@ export class SchoolStudentService {
         .join('\n');
 
       throw new BadRequestException(
-        `엑셀 파일의 ${validationErrors.length}개 행에서 validation 오류가 발생했습니다:\n${errorSummary}`,
+        `${validationErrors.length}개 행에서 입력오류가 발견됩니다:\n${errorSummary}`,
       );
     }
 

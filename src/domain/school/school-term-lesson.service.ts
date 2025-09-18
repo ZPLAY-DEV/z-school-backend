@@ -5,6 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { plainToClass } from 'class-transformer';
+import { validate } from 'class-validator';
 import * as ExcelJS from 'exceljs';
 import {
   FilterOperator,
@@ -134,6 +136,7 @@ export class SchoolTermLessonService {
     file: Express.Multer.File,
   ): Promise<CreateLessonDto[]> {
     const workbook = new ExcelJS.Workbook();
+    // file.buffer가 실제로는 ExcelJS가 처리할 수 있는 형태이지만 TypeScript 타입 시스템에서 정확히 매칭되지 않음.
     await workbook.xlsx.load(file.buffer);
     const term = await this.termRepository.findOne({
       where: { id: termId },
@@ -240,12 +243,17 @@ export class SchoolTermLessonService {
 
     // CreateLessonDto[]로 변환
     const dtos: CreateLessonDto[] = [];
+    const validationErrors: Array<{
+      row: number;
+      lessonName: string;
+      errors: string[];
+    }> = [];
 
     lessonGroups.forEach((groupItems, lessonName) => {
       // 첫 번째 아이템에서 공통 정보 추출
       const firstItem = groupItems[0];
 
-      const dto: CreateLessonDto = {
+      const lessonData = {
         schoolId: firstItem.schoolId,
         termId: firstItem.termId,
         categoryId: firstItem.categoryId,
@@ -256,25 +264,70 @@ export class SchoolTermLessonService {
         frequency: firstItem.frequency,
         bookFees: [],
         materialFees: [],
-        groups: groupItems.map((item) => ({
-          instructorName: item.instructorName,
-          instructorPhone: item.instructorPhone,
-          groupName: item.groupName,
-          weekday: item.weekday,
-          start: item.start,
-          end: item.end,
-          allowedGrades: item.allowedGrades,
-          location: item.location,
-          capacity: item.capacity,
-          tuition: item.tuition,
-          bookFee: item.bookFee,
-          materialFee: item.materialFee,
-          note: item.note,
+        groups: groupItems.map((v) => ({
+          instructorName: v.instructorName,
+          instructorPhone: v.instructorPhone,
+          groupName: v.groupName,
+          weekday: v.weekday,
+          start: v.start,
+          end: v.end,
+          allowedGrades: v.allowedGrades,
+          location: v.location,
+          capacity: v.capacity,
+          tuition: v.tuition,
+          bookFee: v.bookFee,
+          materialFee: v.materialFee,
+          note: v.note,
         })),
       };
 
-      dtos.push(dto);
+      dtos.push(lessonData);
     });
+
+    // validation 적용
+    for (let i = 0; i < dtos.length; i++) {
+      const lessonData = dtos[i];
+
+      // plainToClass를 사용하여 DTO 인스턴스로 변환
+      const lessonDto = plainToClass(CreateLessonDto, lessonData);
+
+      // validation 실행
+      const errors = await validate(lessonDto);
+
+      if (errors.length > 0) {
+        const errorMessages = errors.flatMap((error) =>
+          Object.values(error.constraints || {}),
+        );
+
+        validationErrors.push({
+          row: i + 1, // 강좌 순서
+          lessonName: lessonData.lessonName,
+          errors: errorMessages,
+        });
+
+        this.logger.warn(
+          `Validation failed for lesson "${lessonData.lessonName}": ${errorMessages.join(', ')}`,
+        );
+      }
+    }
+
+    // validation 에러가 있으면 상세한 에러 메시지와 함께 예외 발생
+    if (validationErrors.length > 0) {
+      const errorSummary = validationErrors
+        .map(
+          ({ row, lessonName, errors }) =>
+            `강좌 ${row} (${lessonName}): ${errors.join(', ')}`,
+        )
+        .join('\n');
+
+      throw new BadRequestException(
+        `${validationErrors.length}개 강좌에서 입력오류가 발견됩니다:\n${errorSummary}`,
+      );
+    }
+
+    this.logger.log(
+      `Successfully parsed and validated ${dtos.length} lessons from Excel file`,
+    );
 
     return dtos;
   }

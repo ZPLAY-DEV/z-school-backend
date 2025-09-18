@@ -172,7 +172,7 @@ export class SamService {
       if (existingInstructor) {
         targetInstructorId = existingInstructor.id;
       } else {
-        // 새로운 강사가 생성될 예정이므로 중복 체크 불가
+        // 새로운 강사가 생성될 예정이므로 중복 체크 불필요
         return null;
       }
     }

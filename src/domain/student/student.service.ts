@@ -244,8 +244,6 @@ export class StudentService {
       whereClause.studentCode = dto.studentCode;
     }
 
-    console.log(`🔥🔥🔥`, JSON.stringify(whereClause, null, 2));
-
     return await this.studentRepository.findOne({
       where: whereClause,
       // relations: ['parent'],
