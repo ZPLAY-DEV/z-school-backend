@@ -5,6 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { plainToClass } from 'class-transformer';
+import { validate } from 'class-validator';
 import * as ExcelJS from 'exceljs';
 import {
   FilterOperator,
@@ -368,11 +370,15 @@ export class SchoolStudentService {
     file: Express.Multer.File,
   ): Promise<CreateStudentDto[]> {
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(file.buffer);
+    await workbook.xlsx.load(Buffer.from(file.buffer));
 
     // 첫번째 sheet
     const worksheet = workbook.worksheets[0];
     const students: CreateStudentDto[] = [];
+    const validationErrors: Array<{
+      row: number;
+      errors: string[];
+    }> = [];
 
     // 실제 데이터 추출 (헤더 아래 행부터 시작)
     worksheet.eachRow((row, index) => {
@@ -400,7 +406,7 @@ export class SchoolStudentService {
       )
         return;
 
-      const student: CreateStudentDto = {
+      const studentData = {
         name: name.toString().trim(),
         grade: Number(grade),
         class: className?.toString().trim(),
@@ -415,8 +421,49 @@ export class SchoolStudentService {
         schoolId,
       };
 
-      students.push(student);
+      students.push(studentData);
     });
+
+    // validation 적용
+    for (let i = 0; i < students.length; i++) {
+      const studentData = students[i];
+
+      // plainToClass를 사용하여 DTO 인스턴스로 변환
+      const studentDto = plainToClass(CreateStudentDto, studentData);
+
+      // validation 실행
+      const errors = await validate(studentDto);
+
+      if (errors.length > 0) {
+        const errorMessages = errors.flatMap((error) =>
+          Object.values(error.constraints || {}),
+        );
+
+        validationErrors.push({
+          row: i + 4, // 엑셀 행 번호 (헤더 3행 + 1)
+          errors: errorMessages,
+        });
+
+        this.logger.warn(
+          `Validation failed for student at row ${i + 4}: ${errorMessages.join(', ')}`,
+        );
+      }
+    }
+
+    // validation 에러가 있으면 상세한 에러 메시지와 함께 예외 발생
+    if (validationErrors.length > 0) {
+      const errorSummary = validationErrors
+        .map(({ row, errors }) => `행 ${row}: ${errors.join(', ')}`)
+        .join('\n');
+
+      throw new BadRequestException(
+        `엑셀 파일의 ${validationErrors.length}개 행에서 validation 오류가 발생했습니다:\n${errorSummary}`,
+      );
+    }
+
+    this.logger.log(
+      `Successfully parsed and validated ${students.length} students from Excel file`,
+    );
 
     return students;
   }

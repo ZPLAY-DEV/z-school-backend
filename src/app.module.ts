@@ -57,7 +57,7 @@ import { UploadModule } from './services/upload/upload.module';
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'static'), // for index.html
-      // renderPath: '/', // 모든 경로를 index.html로 리다이렉트
+      // renderPath: '/', // uncomment 하면 ECS배포 시 404 오류로 배포불가
     }),
     TypeOrmModule.forRootAsync({
       useClass: OrmConfig,
