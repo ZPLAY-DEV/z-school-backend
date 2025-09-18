@@ -209,8 +209,6 @@ export class StudentService {
   async dryRun(dto: CreateStudentDto): Promise<Student | null> {
     const { parent: parentDto, parentId } = dto;
 
-    let targetParentId: number | null = null;
-
     // 1. 부모 처리: parentId 우선, 없으면 parent 객체 방식 사용
     if (parentId) {
       // parentId가 제공된 경우 - 기존 부모 직접 참조
@@ -220,7 +218,6 @@ export class StudentService {
       if (!existingParent) {
         throw new NotFoundException('Parent not found');
       }
-      targetParentId = parentId;
     } else if (parentDto.id) {
       // parent.id가 있으면 기존 부모 연결
       const existingParent = await this.parentRepository.findOne({
@@ -229,53 +226,30 @@ export class StudentService {
       if (!existingParent) {
         throw new NotFoundException('Parent not found');
       }
-      targetParentId = parentDto.id;
-    } else if (parentDto.phone) {
-      const existingParent = await this.parentRepository.findOne({
-        where: { phone: normalizePhone(parentDto.phone) },
-      });
-      if (existingParent) {
-        targetParentId = existingParent.id;
-      } else {
-        // 새로운 부모 생성 방식 - 전화번호로 기존 부모 확인
-        const existingParent = await this.parentRepository.findOne({
-          where: { phone: normalizePhone(parentDto.phone) },
-        });
-        if (existingParent) {
-          targetParentId = existingParent.id;
-        } else {
-          // 새로운 부모가 생성될 예정이므로 중복 체크 불가
-          return null;
-        }
-      }
     }
 
     // 2. 중복 체크 - 동일 학교 내 학생 중복
-    if (targetParentId) {
-      const whereCondition: any = {
-        schoolId: dto.schoolId,
-        grade: dto.grade,
-      };
+    const whereClause: any = {
+      schoolId: dto.schoolId,
+      grade: dto.grade,
+    };
 
-      // class 조건 추가
-      if (dto.class) {
-        whereCondition.class = dto.class;
-      }
-
-      // studentCode 조건 추가
-      if (dto.studentCode) {
-        whereCondition.studentCode = dto.studentCode;
-      }
-
-      const existingStudent = await this.studentRepository.findOne({
-        where: whereCondition,
-        relations: ['parent'],
-      });
-
-      return existingStudent || null;
+    // class 조건 추가
+    if (dto.class) {
+      whereClause.class = dto.class;
     }
 
-    return null;
+    // studentCode 조건 추가
+    if (dto.studentCode) {
+      whereClause.studentCode = dto.studentCode;
+    }
+
+    console.log(`🔥🔥🔥`, JSON.stringify(whereClause, null, 2));
+
+    return await this.studentRepository.findOne({
+      where: whereClause,
+      // relations: ['parent'],
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//
