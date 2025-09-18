@@ -72,6 +72,12 @@ export class BookedStudentDto {
   })
   bookingStatus: BookingStatus;
 
+  @ApiProperty({
+    description: '신청 생성일',
+    example: '2023-01-01',
+  })
+  createdAt: Date;
+
   constructor(partial: Partial<BookedStudentDto>) {
     Object.assign(this, partial);
   }

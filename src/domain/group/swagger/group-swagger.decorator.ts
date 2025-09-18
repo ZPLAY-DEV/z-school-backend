@@ -655,7 +655,8 @@ export const ListBookedPendingStudentsDocs = () => {
     "createdAt": "2025-01-15T09:00:00Z",
     "updatedAt": "2025-01-15T09:00:00Z",
     "waitingPosition": 1,
-    "bookingStatus": "PENDING"
+    "bookingStatus": "PENDING",
+    "createdAt": "2025-01-15T09:00:00Z"
   },
   {
     "id": 2,
@@ -668,7 +669,8 @@ export const ListBookedPendingStudentsDocs = () => {
     "createdAt": "2025-01-16T10:30:00Z",
     "updatedAt": "2025-01-16T10:30:00Z",
     "waitingPosition": 2,
-    "bookingStatus": "PENDING"
+    "bookingStatus": "PENDING",
+    "createdAt": "2025-01-16T10:30:00Z"
   }
 ]
 \`\`\`
@@ -711,22 +713,18 @@ export const ListBookedPendingStudentsDocs = () => {
               description: '학생 이름',
             },
             grade: { type: 'number', example: 2, description: '학년' },
+            class: { type: 'string', example: '1', description: '반' },
+            studentCode: {
+              type: 'number',
+              example: 11,
+              description: '학번/번호',
+            },
             schoolId: { type: 'number', example: 1, description: '학교 ID' },
             parentId: { type: 'number', example: 45, description: '학부모 ID' },
             status: {
               type: 'string',
               example: 'ACTIVE',
               description: '학생 상태',
-            },
-            createdAt: {
-              type: 'string',
-              format: 'date-time',
-              description: '생성일시',
-            },
-            updatedAt: {
-              type: 'string',
-              format: 'date-time',
-              description: '수정일시',
             },
             waitingPosition: {
               type: 'number',
@@ -738,6 +736,11 @@ export const ListBookedPendingStudentsDocs = () => {
               example: 'PENDING',
               description: '예약 상태',
             },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: '신청 생성일',
+            },
           },
         },
         example: [
@@ -745,25 +748,27 @@ export const ListBookedPendingStudentsDocs = () => {
             id: 123,
             name: '홍길동',
             grade: 2,
+            class: '1',
+            studentCode: 11,
             schoolId: 1,
             parentId: 45,
             status: 'ACTIVE',
-            createdAt: '2025-01-15T09:00:00Z',
-            updatedAt: '2025-01-15T09:00:00Z',
             waitingPosition: 1,
             bookingStatus: 'PENDING',
+            createdAt: '2025-01-15T09:00:00Z',
           },
           {
             id: 124,
             name: '김영희',
             grade: 3,
+            class: '1',
+            studentCode: 12,
             schoolId: 1,
             parentId: 46,
             status: 'ACTIVE',
-            createdAt: '2025-01-16T10:30:00Z',
-            updatedAt: '2025-01-16T10:30:00Z',
             waitingPosition: 2,
             bookingStatus: 'PENDING',
+            createdAt: '2025-01-16T10:30:00Z',
           },
         ],
       },

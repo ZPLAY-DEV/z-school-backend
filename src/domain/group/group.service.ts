@@ -445,6 +445,7 @@ export class GroupService {
             status: booking.student.status,
             waitingPosition: booking.waitingPosition,
             bookingStatus: booking.status,
+            createdAt: booking.createdAt,
           });
         });
     }
@@ -461,6 +462,7 @@ export class GroupService {
         status: booking.student.status,
         waitingPosition: booking.waitingPosition,
         bookingStatus: booking.status,
+        createdAt: booking.createdAt,
       });
     });
   }

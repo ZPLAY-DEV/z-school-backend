@@ -12,7 +12,7 @@ export const getTemplateOfClassStart = (dto: {
   period: string;
   name: string;
   status: string;
-}) => `[스쿨허브] 수업시작알림
+}) => `[${dto.school}] 수업시작알림
 
 ${dto.school} ${dto.lesson} 수업(담당: ${dto.samName} 선생님) 시작했습니다.
 
@@ -34,7 +34,7 @@ export const getTemplateOfClassEnd = (dto: {
   period: string;
   name: string;
   status: string;
-}) => `[스쿨허브] 수업종료알림
+}) => `[${dto.school}] 수업종료알림
 
 ${dto.school} ${dto.lesson} 수업(담당: ${dto.samName} 선생님) 종료했습니다.
 
@@ -58,7 +58,7 @@ export const getTemplateOfEarlyLeave = (dto: {
   school: string;
   timestamp: string;
   reason: string;
-}) => `[스쿨허브] 조퇴알림
+}) => `[${dto.school}] 조퇴알림
 
 ${dto.name} 학생이 ${dto.school} 에서 ${dto.timestamp}에 조퇴했습니다.
 `;
@@ -71,7 +71,7 @@ export const getTemplateOfDeparture = (dto: {
   name: string;
   school: string;
   timestamp: string;
-}) => `[스쿨허브] 하교알림
+}) => `[${dto.school}] 하교알림
 
 ${dto.name} 학생이 ${dto.school} 에서 ${dto.timestamp}에 하교했습니다.
 `;

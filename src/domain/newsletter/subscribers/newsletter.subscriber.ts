@@ -253,11 +253,11 @@ export class NewsletterSubscriber
       case NewsletterType.REGISTRATION:
         return 'Registration1';
       case NewsletterType.CHANGES:
-        return 'NewsChange1';
+        return 'NewsClassChange1';
       case NewsletterType.SCHEDULES:
-        return 'NewsSchedule1';
+        return 'NewsScheduleChange1';
       case NewsletterType.SUPPLIES:
-        return 'NewsSupplies1';
+        return 'NewsClassSupplies1';
       default:
         return 'Unknown';
     }

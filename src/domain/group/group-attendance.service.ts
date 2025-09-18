@@ -142,7 +142,7 @@ export class GroupAttendanceService {
         return {
           token: v.parent.user?.pushToken ?? null,
           phone: v.parent.phone,
-          template: 'ClassStart1',
+          template: 'ClassStart2',
           title: '수업시작알림',
           body: body,
           role: 'PARENT',
@@ -235,7 +235,7 @@ export class GroupAttendanceService {
         return {
           token: v.parent.user?.pushToken ?? null,
           phone: v.parent.phone,
-          template: 'ClassEnd1',
+          template: 'ClassEnd2',
           title: '수업종료알림',
           body: body,
           role: 'PARENT',
@@ -305,7 +305,7 @@ export class GroupAttendanceService {
         {
           token: student.parent.user?.pushToken ?? null,
           phone: student.parent.phone,
-          template: 'EarlyLeave1',
+          template: 'EarlyLeave2',
           title: '조퇴알림',
           body: body,
           role: 'PARENT',

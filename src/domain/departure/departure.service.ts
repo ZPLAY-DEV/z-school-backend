@@ -69,7 +69,7 @@ export class DepartureService {
           {
             token: student.parent.user?.pushToken ?? null,
             phone: student.parent.phone,
-            template: 'Departure1',
+            template: 'Departure2',
             body: body,
             role: 'PARENT',
           },
@@ -158,7 +158,7 @@ export class DepartureService {
       return {
         token: student.parent.user?.pushToken ?? null,
         phone: student.parent.phone,
-        template: 'Departure1',
+        template: 'Departure2',
         body: body,
         role: 'PARENT',
       };

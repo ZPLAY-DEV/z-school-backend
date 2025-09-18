@@ -86,6 +86,12 @@ export class SchoolStudentController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
   ): Promise<number | Student[]> {
     const koreanFaker = new Faker({ locale: [ko] });
+    const whitelist = [
+      { id: 2, name: '김영희', phone: '01089072911' },
+      { id: 3, name: '오진석', phone: '01094867415' },
+      { id: 4, name: '제이슨', phone: '01020440571' },
+      { id: 5, name: '김민지', phone: '01093924027' },
+    ];
 
     // 1-6학년, 각 학년당 4개 반, 각 반당 25명씩 생성
     const dtos: CreateStudentDto[] = [];
@@ -98,12 +104,7 @@ export class SchoolStudentController {
           const firstName = koreanFaker.person.firstName();
           const lastName = koreanFaker.person.lastName();
           const koreanName = lastName + firstName;
-          const parentPhone = this._parentPhone(
-            grade,
-            classNum,
-            studentCode,
-            koreanFaker.string.numeric(8),
-          );
+          const parentPhone = `010${koreanFaker.string.numeric(8)}`;
 
           const dto = new CreateStudentDto();
           dto.schoolId = schoolId;
@@ -115,45 +116,43 @@ export class SchoolStudentController {
           dto.status = StudentStatus.ATTENDING;
           dto.parent = {
             phone: parentPhone,
+            name: `${koreanName} 학부모`,
           };
 
           classDtos.push(dto);
         }
 
-        // 각 반의 20명 학생들을 name 기준으로 오름차순 정렬
-        classDtos.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        // // 각 반의 20명 학생들을 name 기준으로 오름차순 정렬
+        // classDtos.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-        // 정렬 후 studentCode를 1부터 20까지 순차적으로 재할당
-        classDtos.forEach((dto, index) => {
-          dto.studentCode = index + 1;
-        });
+        // // 정렬 후 studentCode를 1부터 20까지 순차적으로 재할당
+        // classDtos.forEach((dto, index) => {
+        //   dto.studentCode = index + 1;
+        // });
 
         dtos.push(...classDtos);
       }
     }
 
-    return await this.schoolStudentService.createBulk(schoolId, dtos);
-  }
+    dtos[1].parent.phone = whitelist[0].phone;
+    dtos[2].parent.phone = whitelist[1].phone;
+    dtos[3].parent.phone = whitelist[2].phone;
+    dtos[4].parent.phone = whitelist[3].phone;
 
-  private _parentPhone(
-    grade: number,
-    classNum: number,
-    studentCode: number,
-    random: string,
-  ) {
-    if (grade === 1 && classNum === 1 && studentCode === 1) {
-      return '01089072911';
-    }
-    if (grade === 1 && classNum === 1 && studentCode === 2) {
-      return '01094867415';
-    }
-    if (grade === 1 && classNum === 1 && studentCode === 3) {
-      return '01020440571';
-    }
-    if (grade === 1 && classNum === 1 && studentCode === 4) {
-      return '01093924027';
-    }
-    return `010${random}`;
+    dtos[1].parent.name = `${whitelist[0].name} 학부모`;
+    dtos[2].parent.name = `${whitelist[1].name} 학부모`;
+    dtos[3].parent.name = `${whitelist[2].name} 학부모`;
+    dtos[4].parent.name = `${whitelist[3].name} 학부모`;
+
+    dtos[1].name = whitelist[0].name;
+    dtos[2].name = whitelist[1].name;
+    dtos[3].name = whitelist[2].name;
+    dtos[4].name = whitelist[3].name;
+
+    console.log(`👉👉👉👉👉👉👉👉👉👉👉👉👉👉`);
+    console.log(JSON.stringify(dtos, null, 2));
+
+    return await this.schoolStudentService.createBulk(schoolId, dtos);
   }
 
   //? ---------------------------------------------------------------------- ?//
