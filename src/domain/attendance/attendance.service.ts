@@ -201,7 +201,7 @@ export class AttendanceService {
    * @param rangeKeys - Comma separated rangeKeys string
    * @returns Array of attendance records
    */
-  async batchGetByIdWithRangeKeys(
+  async batchGetByIdAndKeys(
     groupId: number,
     rangeKeys: string[],
   ): Promise<IAttendance[]> {

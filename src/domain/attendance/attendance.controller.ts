@@ -26,6 +26,7 @@ import {
   IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
 import {
+  BatchGetByIdAndKeysDocs,
   DeleteAttendanceDocs,
   FetchAttendanceDocs,
   UpsertAttendanceDocs,
@@ -96,16 +97,17 @@ export class AttendanceController {
     }
   }
 
+  @BatchGetByIdAndKeysDocs()
   @Public()
   @Get('keys')
-  async batchGetByIdWithRangeKeys(
+  async batchGetByIdAndKeys(
     @Query('groupId') groupId: number,
     @Query('keys') rangeKeys: string,
   ): Promise<IAttendance[]> {
     try {
       // rangeKeys를 쉼표로 구분된 문자열에서 배열로 변환
       const rangeKeysArray = rangeKeys ? rangeKeys.split(',') : [];
-      const result = await this.attendancesService.batchGetByIdWithRangeKeys(
+      const result = await this.attendancesService.batchGetByIdAndKeys(
         groupId,
         rangeKeysArray,
       );

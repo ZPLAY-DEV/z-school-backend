@@ -416,3 +416,300 @@ export const DeleteAttendanceDocs = () =>
     }),
     ApiStatuses(StatusCodes.BAD_REQUEST, StatusCodes.NOT_FOUND),
   );
+
+// Batch Get Attendance Records by Range Keys
+export const BatchGetByIdAndKeysDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '🔍 출석 기록 일괄 조회 (Range Keys)',
+      description: `
+**📝 기능 설명**
+- 특정 그룹의 여러 출석 기록을 rangeKeys 배열로 일괄 조회합니다
+- DynamoDB의 batchGetItem을 활용한 효율적인 다중 레코드 조회
+- 쉼표로 구분된 rangeKeys 문자열을 배열로 변환하여 처리합니다
+
+**🔄 비즈니스 로직**
+1. groupId로 partition key (groupKey) 생성
+2. 쉼표로 구분된 rangeKeys 문자열을 배열로 분할
+3. 각 rangeKey와 groupKey 조합으로 DynamoDB 키 생성
+4. batchGetItem으로 여러 레코드를 한 번에 조회
+5. 존재하는 레코드만 필터링하여 반환
+
+**🔐 키 형식**
+- groupKey: "GROUP#{groupId}" 형식 (예: GROUP#123)
+- dailyStudentKey: "DATE#YYYY-MM-DD#STUDENT#{studentId}#{grade}-{class}-{studentCode}" 형식
+- rangeKeys: 쉼표로 구분된 dailyStudentKey 문자열
+
+**⚠️ 중요 제약사항**
+- rangeKeys가 비어있으면 빈 배열 반환
+- 존재하지 않는 키는 결과에서 제외 (에러 발생하지 않음)
+- DynamoDB batchGetItem은 한 번에 최대 100개 아이템 처리 가능
+- 잘못된 키 형식은 조회에서 제외되지만 에러 발생하지 않음
+
+**📚 사용 시나리오**
+1. **특정 날짜 범위 조회**: 여러 날짜의 출석 기록을 한 번에 조회
+2. **학생별 출석 이력**: 특정 학생의 여러 날짜 출석 기록 조회
+3. **반별 출석 현황**: 특정 반의 여러 학생 출석 기록 일괄 조회
+4. **출석률 계산**: 여러 출석 기록을 기반으로 출석률 통계 생성
+5. **모바일 앱 최적화**: 여러 출석 기록을 한 번의 API 호출로 조회
+      `,
+    }),
+    ApiQuery({
+      name: 'groupId',
+      required: true,
+      type: Number,
+      description: `
+**그룹 ID (필수)**
+- 출석 기록을 조회할 그룹의 ID
+- GROUP#{groupId} 형식의 partition key로 변환
+- 예시: 123 → GROUP#123
+      `,
+      example: 123,
+    }),
+    ApiQuery({
+      name: 'keys',
+      required: true,
+      type: String,
+      description: `
+**Range Keys (필수)**
+- 쉼표로 구분된 dailyStudentKey 문자열
+- 각 키는 "DATE#YYYY-MM-DD#STUDENT#{studentId}#{grade}-{class}-{studentCode}" 형식
+- 빈 문자열이면 빈 배열 반환
+- 잘못된 형식의 키는 조회에서 제외
+      `,
+      example:
+        'DATE#2025-01-15#STUDENT#123#1-A-01,DATE#2025-01-16#STUDENT#123#1-A-01,DATE#2025-01-17#STUDENT#124#1-B-02',
+    }),
+    ApiOkResponse({
+      description: '출석 기록 일괄 조회 성공',
+      schema: {
+        type: 'array',
+        description: '조회된 출석 기록 배열 (존재하는 레코드만 포함)',
+        items: {
+          type: 'object',
+          properties: {
+            groupKey: {
+              type: 'string',
+              example: 'GROUP#123',
+              description: '그룹 키 (partition key)',
+            },
+            dailyStudentKey: {
+              type: 'string',
+              example: 'DATE#2025-01-15#STUDENT#123#1-A-01',
+              description: '일별 학생 키 (sort key)',
+            },
+            lessonId: {
+              type: 'number',
+              example: 1,
+              description: '강좌 ID',
+            },
+            lessonName: {
+              type: 'string',
+              example: '수학',
+              description: '강좌명',
+            },
+            groupId: {
+              type: 'number',
+              example: 123,
+              description: '그룹 ID',
+            },
+            groupName: {
+              type: 'string',
+              example: '1학년1반',
+              description: '그룹명',
+            },
+            studentId: {
+              type: 'number',
+              example: 123,
+              description: '학생 ID',
+            },
+            studentName: {
+              type: 'string',
+              example: '김철수',
+              description: '학생명',
+            },
+            start: {
+              type: 'string',
+              example: '14:00',
+              description: '수업 시작 시간',
+            },
+            end: {
+              type: 'string',
+              example: '15:00',
+              description: '수업 종료 시간',
+            },
+            weekday: {
+              type: 'string',
+              example: '월',
+              description: '요일',
+            },
+            weekNumber: {
+              type: 'number',
+              example: 1,
+              description: '주차 번호',
+            },
+            status: {
+              type: 'string',
+              example: 'PRESENT',
+              description: '출석 상태',
+              enum: [
+                'NONE',
+                'INIT',
+                'PRESENT',
+                'ABSENT',
+                'PENDING',
+                'LATE',
+                'LEFT',
+                'EXCUSED_ABSENT',
+              ],
+            },
+            parentNote: {
+              type: 'string',
+              example: '감사합니다',
+              description: '학부모 메모',
+              nullable: true,
+            },
+            parentNotedAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-01-15T14:30:00Z',
+              description: '학부모 메모 작성 시간',
+              nullable: true,
+            },
+            schoolNote: {
+              type: 'string',
+              example: '잘 참여했습니다',
+              description: '학교 메모',
+              nullable: true,
+            },
+            schoolNotedAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-01-15T15:00:00Z',
+              description: '학교 메모 작성 시간',
+              nullable: true,
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-01-15T14:00:00Z',
+              description: '생성 시간',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-01-15T14:00:00Z',
+              description: '수정 시간',
+            },
+          },
+        },
+      },
+      examples: {
+        'single-record': {
+          summary: '단일 출석 기록 조회',
+          value: [
+            {
+              groupKey: 'GROUP#123',
+              dailyStudentKey: 'DATE#2025-01-15#STUDENT#123#1-A-01',
+              lessonId: 1,
+              lessonName: '수학',
+              groupId: 123,
+              groupName: '1학년1반',
+              studentId: 123,
+              studentName: '김철수',
+              start: '14:00',
+              end: '15:00',
+              weekday: '월',
+              weekNumber: 1,
+              status: 'PRESENT',
+              parentNote: '감사합니다',
+              parentNotedAt: '2025-01-15T14:30:00Z',
+              schoolNote: '잘 참여했습니다',
+              schoolNotedAt: '2025-01-15T15:00:00Z',
+              createdAt: '2025-01-15T14:00:00Z',
+              updatedAt: '2025-01-15T14:00:00Z',
+            },
+          ],
+        },
+        'multiple-records': {
+          summary: '다중 출석 기록 조회',
+          value: [
+            {
+              groupKey: 'GROUP#123',
+              dailyStudentKey: 'DATE#2025-01-15#STUDENT#123#1-A-01',
+              lessonId: 1,
+              lessonName: '수학',
+              groupId: 123,
+              groupName: '1학년1반',
+              studentId: 123,
+              studentName: '김철수',
+              start: '14:00',
+              end: '15:00',
+              weekday: '월',
+              weekNumber: 1,
+              status: 'PRESENT',
+              parentNote: null,
+              parentNotedAt: null,
+              schoolNote: null,
+              schoolNotedAt: null,
+              createdAt: '2025-01-15T14:00:00Z',
+              updatedAt: '2025-01-15T14:00:00Z',
+            },
+            {
+              groupKey: 'GROUP#123',
+              dailyStudentKey: 'DATE#2025-01-16#STUDENT#123#1-A-01',
+              lessonId: 1,
+              lessonName: '수학',
+              groupId: 123,
+              groupName: '1학년1반',
+              studentId: 123,
+              studentName: '김철수',
+              start: '14:00',
+              end: '15:00',
+              weekday: '화',
+              weekNumber: 1,
+              status: 'ABSENT',
+              parentNote: '병으로 인한 결석',
+              parentNotedAt: '2025-01-16T08:00:00Z',
+              schoolNote: '결석 처리 완료',
+              schoolNotedAt: '2025-01-16T16:00:00Z',
+              createdAt: '2025-01-16T14:00:00Z',
+              updatedAt: '2025-01-16T16:00:00Z',
+            },
+          ],
+        },
+        'empty-result': {
+          summary: '빈 결과',
+          value: [],
+        },
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: '잘못된 요청 - 필수 파라미터 누락 또는 DynamoDB 조회 실패',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 400 },
+          message: {
+            oneOf: [
+              {
+                type: 'string',
+                example: 'groupId는 필수입니다.',
+              },
+              {
+                type: 'string',
+                example: 'keys는 필수입니다.',
+              },
+              {
+                type: 'string',
+                example: '출석 목록 조회에 실패했습니다: DynamoDB 연결 오류',
+              },
+            ],
+          },
+          error: { type: 'string', example: 'Bad Request' },
+        },
+      },
+    }),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
+  );
