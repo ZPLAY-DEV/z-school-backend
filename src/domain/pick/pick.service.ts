@@ -13,7 +13,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { Actor, BookingStatus } from 'src/common/enums';
+import { Actor, BookingStatus, ClassStatus } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import {
@@ -168,6 +168,9 @@ export class PickService {
 
       affectedRows++;
     }
+
+    // 그룹을 활성화 상태로 업데이트
+    await this.groupRepository.update(groupId, { status: ClassStatus.ACTIVE });
 
     return affectedRows;
   }

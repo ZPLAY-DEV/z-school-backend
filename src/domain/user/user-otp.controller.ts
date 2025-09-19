@@ -9,7 +9,7 @@ import {
   Patch,
   Post,
   Query,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
