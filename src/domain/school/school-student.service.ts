@@ -54,12 +54,12 @@ export class SchoolStudentService {
     }
 
     // 전화번호 정규화 at the DTO level
-    const normalizedDtos = dtos.map((dto) => ({
+    const normalizedDtos = dtos.map((dto: CreateStudentDto) => ({
       ...dto,
-      class: dto.class ? dto.class.trim().replace(/반$/, '') : undefined,
+      class: dto.class.trim().replace(/반$/, ''),
       parent: {
         ...dto.parent,
-        phone: dto.parent.phone ? normalizePhone(dto.parent.phone) : undefined,
+        phone: normalizePhone(dto.parent.phone)!,
       },
     }));
 
@@ -399,17 +399,13 @@ export class SchoolStudentService {
       ] = row.values as any[]; // row.values[0] 은 항상 undefined
 
       if (
-        !name ||
-        !grade ||
-        !className ||
-        !studentCode ||
-        !parentPhone ||
+        (!name && !grade && !className && !studentCode && !parentPhone) ||
         status === '전학'
       )
         return;
 
       const studentData = {
-        name: name.toString().trim(),
+        name: name?.toString().trim(),
         grade: Number(grade),
         class: className?.toString().trim(),
         studentCode: Number(studentCode),

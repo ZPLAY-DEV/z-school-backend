@@ -3,6 +3,7 @@ import { Transform } from 'class-transformer';
 import {
   IsDate,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
@@ -60,12 +61,12 @@ export class CreateParentDto {
     type: String,
     example: '01066661031',
   })
-  @IsOptional() // 기존 부모 연결 시에는 불필요하므로 optional로 변경
+  @IsNotEmpty()
   @IsString({ message: '전화번호는 문자열이어야 합니다' })
   @Matches(/^010(-\d{4}-\d{4}|\d{8})$/, {
     message: '휴대전화 번호형식이 아닙니다.',
   })
-  phone?: string;
+  phone: string;
 
   @ApiPropertyOptional({
     description: '비고 - 학부모에 대한 추가 정보나 특이사항 (최대 255자)',
