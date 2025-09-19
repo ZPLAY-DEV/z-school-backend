@@ -284,7 +284,11 @@ export class GroupService {
       },
       sortableColumns: ['id'],
       searchableColumns: ['note', 'student.name'],
-      defaultSortBy: [['id', 'DESC']],
+      defaultSortBy: [
+        ['student.grade', 'ASC'],
+        ['student.class', 'ASC'],
+        ['student.studentCode', 'ASC'],
+      ],
       filterableColumns: {
         isActive: [FilterOperator.EQ],
         startedBy: [FilterOperator.EQ],

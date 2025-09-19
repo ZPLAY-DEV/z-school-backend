@@ -8,7 +8,12 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
-import { paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
+import {
+  FilterOperator,
+  paginate,
+  Paginated,
+  PaginateQuery,
+} from 'nestjs-paginate';
 import {
   NewsletterTarget,
   NewsletterType,
@@ -276,41 +281,42 @@ export class NewsletterService {
       throw new NotFoundException('Newsletter not found');
     }
 
-    // 2. QueryBuilder 구성 후 paginate로 페이지네이션 처리
-    const qb = this.dataSource
-      .getRepository(Student)
-      .createQueryBuilder('student')
-      .leftJoinAndSelect('student.parent', 'parent')
-      .leftJoinAndSelect(
-        'parent.shortlinks',
-        'shortlinks',
-        'shortlinks.newsletterId = :newsletterId',
-        { newsletterId },
-      )
-      .where('student.id IN (:...studentIds)', {
-        studentIds: newsletter.studentIds,
-      })
-      .orderBy('student.id', 'ASC');
+    // 2. 표준 relations 방식으로 Student 엔티티 조회
+    const studentRepository = this.dataSource.getRepository(Student);
 
-    const paged = await paginate<any>(query, qb, {
+    const paged = await paginate<Student>(query, studentRepository, {
       defaultLimit: 20,
       maxLimit: 100,
-      sortableColumns: [
-        'student.id',
-        'student.name',
-        'student.grade',
-        'student.class',
-        'student.studentCode',
-        'shortlinks.createdAt',
-        'shortlinks.isRead',
-      ],
-      defaultSortBy: [['student.id', 'ASC']],
+      sortableColumns: ['id', 'name', 'grade', 'class', 'studentCode'],
+      filterableColumns: {
+        id: [FilterOperator.IN],
+        name: [FilterOperator.ILIKE],
+        grade: [FilterOperator.EQ],
+        class: [FilterOperator.EQ],
+        studentCode: [FilterOperator.ILIKE],
+        'parent.shortlinks.isRead': [FilterOperator.EQ],
+      },
+      defaultSortBy: [['id', 'ASC']],
+      relations: {
+        parent: {
+          shortlinks: true,
+        },
+      },
+      where: {
+        id: In(newsletter.studentIds || []),
+        parent: {
+          shortlinks: {
+            newsletterId: newsletterId,
+          },
+        },
+      },
     });
 
     // 3. 결과를 ReadStatDto 형태로 변환
-    // this is the only way to get it done so far.
-    const data = paged.data.map((student: any) => {
-      const shortlink = student.parent?.shortlinks?.[0];
+    const data = paged.data.map((student: Student) => {
+      const shortlink = student.parent?.shortlinks?.find(
+        (sl) => sl.newsletterId === newsletterId,
+      );
       return {
         id: student.id,
         name: student.name,
