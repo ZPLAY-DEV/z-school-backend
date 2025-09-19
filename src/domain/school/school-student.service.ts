@@ -56,6 +56,7 @@ export class SchoolStudentService {
     // 전화번호 정규화 at the DTO level
     const normalizedDtos = dtos.map((dto) => ({
       ...dto,
+      class: dto.class ? dto.class.trim().replace(/반$/, '') : undefined,
       parent: {
         ...dto.parent,
         phone: dto.parent.phone ? normalizePhone(dto.parent.phone) : undefined,

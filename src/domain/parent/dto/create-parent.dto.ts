@@ -5,6 +5,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -61,6 +62,9 @@ export class CreateParentDto {
   })
   @IsOptional() // 기존 부모 연결 시에는 불필요하므로 optional로 변경
   @IsString({ message: '전화번호는 문자열이어야 합니다' })
+  @Matches(/^010(-\d{4}-\d{4}|\d{8})$/, {
+    message: '휴대전화 번호형식이 아닙니다.',
+  })
   phone?: string;
 
   @ApiPropertyOptional({
