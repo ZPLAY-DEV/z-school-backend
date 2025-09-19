@@ -90,10 +90,10 @@ export class NewsletterSubscriber
     newsletter: Newsletter,
     manager: EntityManager,
   ): Promise<void> {
-    // 학생 정보 조회
+    // 학생 정보 조회 - parent.user 관계도 포함하여 N+1 Query 방지
     const students = await manager.find(Student, {
       where: { id: In(newsletter.studentIds || []) },
-      relations: ['parent'],
+      relations: ['parent', 'parent.user'],
     });
     const term = await manager.findOne(Term, {
       where: { id: newsletter.termId },
@@ -157,22 +157,20 @@ export class NewsletterSubscriber
     const batches = chunk(dtos, 500);
     this.logger.debug(`Total DTOs: ${dtos.length}, Batches: ${batches.length}`);
 
-    // Shortlinks 생성
+    // Shortlinks 생성 - 배치 INSERT 사용으로 N+1 Query 문제 해결
     for (const batch of batches) {
       try {
         this.logger.debug(`Processing batch with ${batch.length} items`);
-        for (const dto of batch) {
-          await manager
-            .createQueryBuilder()
-            .insert()
-            .into(Shortlink)
-            .values(dto)
-            .orUpdate(
-              ['newsletterId', 'nanoid', 'role', 'routes', 'payload'],
-              ['parentId', 'newsletterId'],
-            )
-            .execute();
-        }
+        await manager
+          .createQueryBuilder()
+          .insert()
+          .into(Shortlink)
+          .values(batch) // 전체 배치를 한 번에 INSERT
+          .orUpdate(
+            ['newsletterId', 'nanoid', 'role', 'routes', 'payload'],
+            ['parentId', 'newsletterId'],
+          )
+          .execute();
       } catch (error) {
         this.logger.error(`Failed to upsert Shortlinks: ${error.message}`);
         throw new Error('숏링크 생성에 실패했습니다.');

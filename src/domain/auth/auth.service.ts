@@ -116,16 +116,34 @@ export class AuthService {
       relations: ['parent', 'parent.user'],
     });
 
-    const user: User =
-      shortlink.parent?.user ||
-      ({
-        id: 0, // 임시 ID
-        username: 'unknown',
-        phone: shortlink.parent?.phone,
-        email: null,
-        avatar: 'https://placehold.co/100x100',
-        createdAt: new Date(),
-      } as User);
+    let user: User | undefined = shortlink.parent?.user;
+
+    // User가 없는 경우 새로 생성
+    if (!user && shortlink.parent) {
+      user = await this.userRepository.save(
+        new User({
+          username: shortlink.parent.phone,
+          phone: shortlink.parent.phone,
+        }),
+      );
+
+      // Parent와 User 연결
+      await this.parentRepository.update(shortlink.parent.id, {
+        userId: user.id,
+      });
+
+      // 관계 업데이트를 위해 다시 조회
+      const updatedParent = await this.parentRepository.findOne({
+        where: { id: shortlink.parent.id },
+        relations: ['user'],
+      });
+
+      user = updatedParent?.user || user;
+    }
+
+    if (!user) {
+      throw new Error('User not found and could not be created');
+    }
 
     return { ...user, parent: shortlink.parent };
   }
