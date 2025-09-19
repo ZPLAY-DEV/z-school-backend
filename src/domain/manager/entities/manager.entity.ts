@@ -15,7 +15,7 @@ import {
 
 @Entity('managers')
 export class Manager {
-  @ApiProperty({ description: 'managerId' })
+  @ApiProperty({ description: 'primary key' })
   @PrimaryGeneratedColumn('increment', { type: 'int', unsigned: true })
   id: number;
 

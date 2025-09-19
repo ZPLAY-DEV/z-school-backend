@@ -23,7 +23,7 @@ import {
 
 @Entity('schools')
 export class School {
-  @ApiProperty({ description: 'schoolId', example: 1 })
+  @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

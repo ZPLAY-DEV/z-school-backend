@@ -15,7 +15,7 @@ import {
 @ApiTags('⚠️ Ledgers ( 학생비용내역 )')
 @Entity('ledgers')
 export class Ledger {
-  @ApiProperty({ description: 'ledgerId' })
+  @ApiProperty({ description: 'primary key' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

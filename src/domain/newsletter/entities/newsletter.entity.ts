@@ -22,7 +22,7 @@ import {
 @Entity('newsletters')
 @Index(['schoolId', 'termId'])
 export class Newsletter {
-  @ApiProperty({ description: 'newsletterId' })
+  @ApiProperty({ description: 'primary key' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

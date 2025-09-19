@@ -17,7 +17,7 @@ import {
 @Unique(['studentId', 'schooldayId'])
 @Index(['date', 'studentId'])
 export class Departure {
-  @ApiProperty({ description: 'a primary key', example: 1 })
+  @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

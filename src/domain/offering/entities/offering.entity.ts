@@ -30,7 +30,7 @@ import {
 @Index(['schoolId', 'termId'])
 @Unique(['schoolId', 'termId', 'lessonId', 'groupName'])
 export class Offering {
-  @ApiProperty({ description: 'offeringId', example: 1 })
+  @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

@@ -9,6 +9,7 @@ import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
+import { Surveyer } from 'src/domain/survey/entities/surveyer.entity';
 import {
   Column,
   CreateDateColumn,
@@ -25,7 +26,7 @@ import {
 @Entity('students')
 @Unique(['schoolId', 'grade', 'class', 'studentCode'])
 export class Student {
-  @ApiProperty({ description: 'studentId', example: 1 })
+  @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number; // 43억개
 
@@ -130,6 +131,9 @@ export class Student {
   school: School;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @OneToMany(() => Surveyer, (surveyer) => surveyer.student)
+  surveyers: Surveyer[]; // 영수증
 
   @OneToMany(() => Booking, (booking) => booking.student)
   bookings: Booking[]; // 수강신청

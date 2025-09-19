@@ -28,7 +28,7 @@ import {
 @Index('idx_group_id_today', ['groupId', 'today'])
 @Unique(['schoolId', 'termId', 'lessonId', 'groupId', 'today'])
 export class Schoolday {
-  @ApiProperty({ description: 'schooldayId', example: 1 })
+  @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

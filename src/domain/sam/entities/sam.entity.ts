@@ -21,7 +21,7 @@ import {
 @Entity('sams')
 @Unique(['schoolId', 'instructorId'])
 export class Sam {
-  @ApiProperty({ description: 'samId', example: 1 })
+  @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

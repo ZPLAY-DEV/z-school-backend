@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { SubsidyStatus, SubsidyType } from 'src/common/enums';
+import { SubsidyStatus } from 'src/common/enums';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { Survey } from 'src/domain/survey/entities/survey.entity';
 import {
   Column,
   CreateDateColumn,
@@ -9,11 +10,13 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('subsidies')
-export class Subsidy {
+@Entity('surveyers')
+@Unique(['studentId', 'surveyId'])
+export class Surveyer {
   @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -22,23 +25,29 @@ export class Subsidy {
   @Column({ type: 'int', unsigned: true, nullable: true })
   studentId: number;
 
+  @ApiProperty({ description: '' })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  surveyId: number;
+
+  // a clear way to know which group belongs to which term
+  @ApiProperty({ description: 'schoolId', example: 1 })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  schoolId: number;
+
+  // a clear way to know which group belongs to which term
+  @ApiProperty({ description: 'termId', example: 1 })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  termId: number;
+
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '지원금 금액' })
   @Column({ type: 'int', unsigned: true, default: 0 })
-  amount: number;
+  views: number;
 
-  @ApiProperty({ description: '지원금 지급주체' })
-  @Column({ type: 'varchar', length: 32 })
-  source: string;
-
-  @ApiProperty({ description: '지원금 프로그램' })
-  @Column({
-    type: 'enum',
-    enum: SubsidyType,
-    default: SubsidyType.BASIC_EDUCATION_RECIPIENT,
-  })
-  type: SubsidyType;
+  @ApiProperty({ description: '지원금 금액' })
+  @Column({ type: 'int', unsigned: true, default: 0 })
+  answers: number;
 
   @ApiProperty({ description: '지원금 프로그램' })
   @Column({
@@ -68,13 +77,17 @@ export class Subsidy {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Student, (student) => student.subsidies)
+  @ManyToOne(() => Student, (student) => student.surveyers)
   @JoinColumn({ name: 'studentId' })
   student: Student;
 
+  @ManyToOne(() => Survey, (survey) => survey.surveyers)
+  @JoinColumn({ name: 'surveyId' })
+  survey: Survey;
+
   //? Constructor ---------------------------------------------------------- ?//
 
-  constructor(partial: Partial<Subsidy>) {
+  constructor(partial: Partial<Surveyer>) {
     Object.assign(this, partial);
   }
 }

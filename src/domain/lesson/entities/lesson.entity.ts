@@ -24,7 +24,7 @@ import {
 @Entity('lessons')
 @Unique(['schoolId', 'termId', 'lessonName'])
 export class Lesson {
-  @ApiProperty({ description: '🈵 lessonId', example: 1 })
+  @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

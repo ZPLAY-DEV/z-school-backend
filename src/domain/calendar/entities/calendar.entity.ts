@@ -15,7 +15,7 @@ import {
 @Entity('calendars')
 @Unique(['schoolId', 'date'])
 export class Calendar {
-  @ApiProperty({ description: 'calendarId' })
+  @ApiProperty({ description: 'primary key' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 

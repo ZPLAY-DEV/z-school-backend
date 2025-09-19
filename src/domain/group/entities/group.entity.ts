@@ -25,7 +25,7 @@ import {
 @Entity('groups')
 @Unique(['lessonId', 'groupName'])
 export class Group {
-  @ApiProperty({ description: 'group 의 id', example: 1 })
+  @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
