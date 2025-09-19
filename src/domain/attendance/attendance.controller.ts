@@ -97,6 +97,9 @@ export class AttendanceController {
     }
   }
 
+  //! @deprecated
+  //! rangeKeys has # and the browser will interpret it as a link.
+  //! GET method is not working always.
   @BatchGetByIdAndKeysDocs()
   @Public()
   @Get('keys')
@@ -110,6 +113,26 @@ export class AttendanceController {
       const result = await this.attendancesService.batchGetByIdAndKeys(
         groupId,
         rangeKeysArray,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to fetch attendance records by keys', error);
+      throw new BadRequestException(
+        `출석 목록 조회에 실패했습니다: ${error.message}`,
+      );
+    }
+  }
+
+  //! this is an alternative to the GET method.
+  @Post('batch')
+  async postBatchByIdAndKeys(
+    @Body() dto: { groupId: number; rangeKeys: string[] },
+  ): Promise<IAttendance[]> {
+    try {
+      // rangeKeys를 쉼표로 구분된 문자열에서 배열로 변환
+      const result = await this.attendancesService.batchGetByIdAndKeys(
+        dto.groupId,
+        dto.rangeKeys,
       );
       return result;
     } catch (error) {
