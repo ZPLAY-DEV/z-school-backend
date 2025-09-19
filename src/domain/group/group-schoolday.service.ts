@@ -43,7 +43,10 @@ export class GroupSchooldayService {
         },
       );
     }
-    queryBuilder.orWhere('schoolday.original IS NOT NULL');
+    queryBuilder.orWhere(
+      'schoolday.groupId = :groupId AND schoolday.original IS NOT NULL',
+      { groupId: groupId },
+    );
     const schooldays = await queryBuilder.getMany();
     const result: Schoolday[] = [];
 

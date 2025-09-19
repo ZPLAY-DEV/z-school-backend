@@ -296,8 +296,14 @@ export class SamService {
         },
       );
     }
-    queryBuilder.orWhere('schoolday.original IS NOT NULL');
-    const schooldays = await queryBuilder.getMany();
+    queryBuilder.orWhere(
+      '(schoolday.original IS NOT NULL AND group.samId = :samId)',
+      { samId: id },
+    );
+
+    const schooldays = await queryBuilder
+      .orderBy('schoolday.weekNumber', 'ASC')
+      .getMany();
 
     // original이 null이 아닌 아이템들에 대해 중복 아이템 생성
     const result: Schoolday[] = [];

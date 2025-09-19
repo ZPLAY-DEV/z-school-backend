@@ -376,7 +376,10 @@ export class StudentService {
         },
       );
     }
-    queryBuilder.orWhere('schoolday.original IS NOT NULL');
+    queryBuilder.orWhere(
+      '(schoolday.original IS NOT NULL AND pick.studentId = :studentId)',
+      { studentId: id },
+    );
     const schooldays = await queryBuilder.getMany();
 
     // original이 null이 아닌 아이템들에 대해 중복 아이템 생성
