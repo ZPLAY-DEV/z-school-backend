@@ -463,7 +463,11 @@ export class NewsletterService {
         },
         relations: { parent: { user: true } },
       });
-      label = `${targetItems.map((item) => `${item}`).join('·')}학년 학생`;
+
+      label =
+        targetItems.length < 6
+          ? `${targetItems.map((item) => `${item}`).join('·')}학년 학생`
+          : '전교생';
     } else if (target === NewsletterTarget.LESSON) {
       // 강좌
       if (!targetItems) {

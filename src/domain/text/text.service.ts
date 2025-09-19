@@ -53,7 +53,7 @@ export class TextService {
         {
           token: student.parent.user?.pushToken ?? null,
           phone: student.parent.phone,
-          template: 'NewsChanges1',
+          template: 'NewsClassChanges1',
           body: body,
           role: 'PARENT',
           url: dto.shortlink,
