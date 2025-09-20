@@ -53,7 +53,7 @@ export class CreateStudentDto {
   @Max(6, { message: '학년은 6 이하여야 합니다' })
   grade: number;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: '반 - 학생의 소속 반 (최대 8자)',
     type: String,
     example: '5',
@@ -64,7 +64,7 @@ export class CreateStudentDto {
   @MaxLength(8, { message: '반은 8자 이하여야 합니다' })
   class: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: '학번/번호 - 학교 내 학생 고유번호 (1~99999)',
     type: Number,
     example: 4,
@@ -78,15 +78,15 @@ export class CreateStudentDto {
   @Max(99, { message: '학번은 99 이하여야 합니다' })
   studentCode: number;
 
-  @ApiPropertyOptional({
-    description: '학생 이름 - 학생의 실명 (최대 16자, 한글/영문/숫자만 허용)',
+  @ApiProperty({
+    description: '학생 이름 - 학생의 실명 (최대 16자, 한글/영문만 허용)',
     type: String,
-    example: '이학상',
+    example: '홍길동',
     maxLength: 16,
   })
   @IsNotEmpty()
   @IsString({ message: '이름은 문자열이어야 합니다' })
-  @MinLength(1, { message: '이름이 없습니다.' })
+  @MinLength(2, { message: '이름이 없습니다.' })
   @MaxLength(16, { message: '이름은 최대 16자까지만 허용됩니다.' })
   name: string;
 

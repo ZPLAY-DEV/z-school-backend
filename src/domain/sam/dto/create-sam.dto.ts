@@ -4,11 +4,13 @@ import {
   IsBoolean,
   IsDefined,
   IsInt,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   MaxLength,
   Min,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
 import { CreateInstructorDto } from 'src/domain/instructor/dto/create-instructor.dto';
@@ -31,9 +33,9 @@ export class CreateSamDto {
     example: 1,
     minimum: 1,
   })
+  @IsNotEmpty({ message: '학교 ID는 필수입니다' })
   @IsInt({ message: '학교 ID는 정수여야 합니다' })
-  @IsOptional()
-  schoolId?: number;
+  schoolId: number;
 
   @ApiProperty({
     description:
@@ -42,7 +44,9 @@ export class CreateSamDto {
     example: '홍선생',
     maxLength: 16,
   })
+  @IsNotEmpty()
   @IsString({ message: '별칭은 문자열이어야 합니다' })
+  @MinLength(2, { message: '별칭이 없습니다.' })
   @MaxLength(16, { message: '별칭은 16자 이하여야 합니다' })
   alias: string;
 

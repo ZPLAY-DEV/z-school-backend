@@ -18,7 +18,6 @@ import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
-import { truncate } from 'src/helpers/formatter';
 import { formatPhone, normalizePhone } from 'src/helpers/phone';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 
@@ -56,7 +55,7 @@ export class SchoolSamService {
         ...dto,
         instructor: {
           ...dto.instructor,
-          phone: normalizePhone(dto.instructor.phone),
+          phone: normalizePhone(dto.instructor.phone)!,
         },
       };
     });
@@ -522,15 +521,15 @@ export class SchoolSamService {
 
       const [, name, phone, note] = row.values as any[]; // row.values[0] 은 항상 undefined
 
-      if (!name || !phone) return;
+      if (!name && !phone) return;
 
       const samData = {
-        alias: name.toString().trim(),
+        alias: name ? name.toString().trim() : null,
         instructor: {
-          name: name.toString().trim(),
-          phone: phone.toString().trim(),
+          name: name ? name.toString().trim() : null,
+          phone: phone ? phone.toString().trim() : null,
         },
-        note: note ? truncate(note.toString().trim() as string) : null,
+        note: note ? note.toString().trim() : null,
         schoolId,
       };
 

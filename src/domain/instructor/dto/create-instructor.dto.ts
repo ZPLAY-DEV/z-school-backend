@@ -3,11 +3,13 @@ import { Transform } from 'class-transformer';
 import {
   IsDate,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 
 /**
@@ -42,16 +44,17 @@ export class CreateInstructorDto {
   @Min(1, { message: 'User ID는 1 이상이어야 합니다' })
   userId?: number;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: '강사 이름 - 강사의 실명 (최대 16자, 한글/영문만 허용)',
     type: String,
     example: '홍길동',
     maxLength: 16,
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsString({ message: '강사 이름은 문자열이어야 합니다' })
+  @MinLength(2, { message: '이름이 없습니다.' })
   @MaxLength(16, { message: '강사 이름은 16자 이하여야 합니다' })
-  name?: string;
+  name: string;
 
   @ApiProperty({
     description: `전화번호 - 강사 연락처 (하이픈 없이 숫자만, 10~11자리)
@@ -60,12 +63,11 @@ export class CreateInstructorDto {
     type: String,
     example: '01012345678',
   })
-  @IsOptional() // 기존 강사 연결 시에는 불필요하므로 optional로 변경
   @IsString({ message: '전화번호는 문자열이어야 합니다' })
   @Matches(/^010(-\d{4}-\d{4}|\d{8})$/, {
     message: '휴대전화 번호형식이 아닙니다.',
   })
-  phone?: string;
+  phone: string;
 
   @ApiPropertyOptional({
     description: '비고 - 강사에 대한 추가 정보나 특이사항 (최대 255자)',
