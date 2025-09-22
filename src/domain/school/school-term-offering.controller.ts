@@ -48,16 +48,15 @@ export class SchoolTermOfferingController {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  @SchoolTermOfferingPaginatedListDocs()
   @Public()
-  @Get(':schoolId/terms/:termId/offerings/paginated')
+  @Get(':schoolId/terms/:termId/my-offerings/paginated')
   async getInfiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
     @Paginate() query: PaginateQuery,
     @Query('studentId') studentId?: number,
   ): Promise<Paginated<Offering>> {
-    return await this.schoolTermOfferingService.infiniteList(
+    return await this.schoolTermOfferingService.myInfiniteList(
       query,
       schoolId,
       termId,
@@ -65,22 +64,17 @@ export class SchoolTermOfferingController {
     );
   }
 
-  @SchoolTermOfferingListDocs()
   @Public()
-  @Get(':schoolId/terms/:termId/offerings')
+  @Get(':schoolId/terms/:termId/my-offerings')
   async getList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
-    @Query('grade') grade?: number,
-    @Query('categoryId') categoryId?: number,
-    @Query('weekday') weekday?: string,
+    @Query('studentId') studentId?: number,
   ): Promise<Offering[]> {
-    return await this.schoolTermOfferingService.list(
+    return await this.schoolTermOfferingService.myList(
       schoolId,
       termId,
-      grade,
-      categoryId,
-      weekday,
+      studentId,
     );
   }
 
@@ -91,13 +85,11 @@ export class SchoolTermOfferingController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
     @Paginate() query: PaginateQuery,
-    @Query('studentId') studentId?: number,
   ): Promise<Paginated<Offering>> {
     return await this.schoolTermOfferingService.infiniteList(
       query,
       schoolId,
       termId,
-      studentId,
     );
   }
 

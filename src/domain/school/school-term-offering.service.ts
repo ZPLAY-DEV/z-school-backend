@@ -151,7 +151,31 @@ export class SchoolTermOfferingService {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  async infiniteList(
+  async myList(
+    schoolId: number,
+    termId: number,
+    studentId?: number,
+  ): Promise<Offering[]> {
+    const queryBuilder = this.offeringRepository
+      .createQueryBuilder('offering')
+      .leftJoinAndSelect('offering.lesson', 'lesson')
+      // .leftJoinAndSelect('offering.picks', 'picks')
+      // .leftJoinAndSelect('offering.bookings', 'bookings')
+      .where('offering.schoolId = :schoolId', { schoolId })
+      .andWhere('offering.termId = :termId', { termId });
+
+    if (studentId) {
+      queryBuilder.andWhere('offering.bookings.studentId = :studentId', {
+        studentId,
+      });
+    }
+
+    const items = await queryBuilder.orderBy('offering.id', 'ASC').getMany();
+
+    return items;
+  }
+
+  async myInfiniteList(
     query: PaginateQuery,
     schoolId: number,
     termId: number,
@@ -194,6 +218,34 @@ export class SchoolTermOfferingService {
         data,
       };
     }
+
+    return result;
+  }
+
+  async infiniteList(
+    query: PaginateQuery,
+    schoolId: number,
+    termId: number,
+  ): Promise<Paginated<Offering>> {
+    const queryBuilder = this.offeringRepository
+      .createQueryBuilder('offering')
+      .leftJoinAndSelect('offering.lesson', 'lesson')
+      .leftJoinAndSelect('offering.picks', 'picks')
+      .leftJoinAndSelect('offering.bookings', 'bookings')
+      .where('offering.schoolId = :schoolId', { schoolId })
+      .andWhere('offering.termId = :termId', { termId });
+
+    const result = await paginate(query, queryBuilder, {
+      sortableColumns: ['id', 'createdAt', 'updatedAt'],
+      searchableColumns: ['lessonName', 'groupName'],
+      defaultSortBy: [],
+      filterableColumns: {
+        'lesson.categoryId': [FilterOperator.EQ, FilterOperator.IN],
+        pickRule: [FilterOperator.EQ, FilterOperator.IN],
+        weekday: [FilterOperator.EQ, FilterOperator.IN],
+        allowedGrades: [FilterOperator.EQ, FilterOperator.IN],
+      },
+    });
 
     return result;
   }

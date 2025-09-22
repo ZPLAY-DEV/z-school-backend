@@ -57,21 +57,21 @@ export class GroupSchooldayService {
 
     for (const schoolday of schooldays) {
       result.push(schoolday);
-      // original이 null이 아닌 경우 중복 아이템 생성 (id만 0으로 설정)
-      if (monthStr && schoolday.original) {
-        const [, m] = schoolday.today.split('-').map(Number);
-        const [, n] = schoolday.original.split('-').map(Number);
-        if (m == month || n === month) {
-          const duplicate = { ...schoolday };
-          duplicate.id = 0;
-          duplicate.today = schoolday.original;
-          duplicate.original = schoolday.today;
-          duplicate.weekday = getKoreanWeekday(schoolday.original);
-          duplicate.note = 'red';
-          result.push(duplicate);
+      if (schoolday.original) {
+        // original이 null이 아닌 경우 중복 아이템 생성 (id만 0으로 설정)
+        if (monthStr) {
+          const [, m] = schoolday.today.split('-').map(Number);
+          const [, n] = schoolday.original.split('-').map(Number);
+          if (n === month) {
+            const duplicate = { ...schoolday };
+            duplicate.id = 0;
+            duplicate.today = schoolday.original;
+            duplicate.original = schoolday.today;
+            duplicate.weekday = getKoreanWeekday(schoolday.original);
+            duplicate.note = 'red';
+            result.push(duplicate);
+          }
         }
-      } else {
-        result.push(schoolday);
       }
     }
     // today 날짜 순차적으로 정렬
