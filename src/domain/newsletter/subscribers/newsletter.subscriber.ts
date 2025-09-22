@@ -8,8 +8,9 @@ import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
 import {
-  getTemplateOfNewsChanges,
-  getTemplateOfNewsSchedules,
+  getTemplateOfNewsManagement,
+  getTemplateOfNewsRegistrationResult,
+  getTemplateOfNewsSchedule,
   getTemplateOfNewsSupplies,
   getTemplateOfRegistration,
 } from 'src/helpers/get-message-body';
@@ -202,18 +203,18 @@ export class NewsletterSubscriber
         });
         break;
       case NewsletterType.CHANGES:
-        body = getTemplateOfNewsChanges({
+        body = getTemplateOfNewsSchedule({
           school: newsletter.schoolName,
           term: newsletter.termName,
-          title: newsletter.title || '수업 변동사항',
+          title: newsletter.title || '수업 일정 안내',
           shortlink: `${this.domain}/${nanoId}`,
         });
         break;
-      case NewsletterType.SCHEDULES:
-        body = getTemplateOfNewsSchedules({
+      case NewsletterType.MANAGEMENT:
+        body = getTemplateOfNewsManagement({
           school: newsletter.schoolName,
           term: newsletter.termName,
-          title: newsletter.title || '수업 준비물',
+          title: newsletter.title || '수업 운영 안내',
           shortlink: `${this.domain}/${nanoId}`,
         });
         break;
@@ -221,7 +222,15 @@ export class NewsletterSubscriber
         body = getTemplateOfNewsSupplies({
           school: newsletter.schoolName,
           term: newsletter.termName,
-          title: newsletter.title || '수업 일정변경',
+          title: newsletter.title || '수업 준비물 안내',
+          shortlink: `${this.domain}/${nanoId}`,
+        });
+        break;
+      case NewsletterType.RESULT:
+        body = getTemplateOfNewsRegistrationResult({
+          school: newsletter.schoolName,
+          term: newsletter.termName,
+          title: newsletter.title || '수강 신청 결과',
           shortlink: `${this.domain}/${nanoId}`,
         });
         break;
@@ -251,9 +260,11 @@ export class NewsletterSubscriber
       case NewsletterType.REGISTRATION:
         return 'Registration1';
       case NewsletterType.CHANGES:
-        return 'NewsClassChange1';
-      case NewsletterType.SCHEDULES:
-        return 'NewsScheduleChange1';
+        return 'NewsSchedule1';
+      case NewsletterType.MANAGEMENT:
+        return 'NewsManagement1';
+      case NewsletterType.RESULT:
+        return 'NewsRegistrationResult1';
       case NewsletterType.SUPPLIES:
         return 'NewsClassSupplies1';
       default:
@@ -264,13 +275,15 @@ export class NewsletterSubscriber
   private _getDefaultTitle(type: NewsletterType) {
     switch (type) {
       case NewsletterType.REGISTRATION:
-        return '수강신청안내';
+        return '수강 신청 안내';
       case NewsletterType.CHANGES:
-        return '수업 변동사항';
-      case NewsletterType.SCHEDULES:
-        return '수업 준비물';
+        return '수업 일정 안내';
+      case NewsletterType.MANAGEMENT:
+        return '수업 운영 안내';
+      case NewsletterType.RESULT:
+        return '수강 신청 결과';
       case NewsletterType.SUPPLIES:
-        return '수업 일정변경';
+        return '수업 준비물 안내';
       default:
         return '새로운 공지사항';
     }

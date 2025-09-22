@@ -7,13 +7,15 @@ import {
 export const translateNewsletterType = (type: NewsletterType): string => {
   switch (type) {
     case NewsletterType.REGISTRATION:
-      return '수강신청';
+      return '수강 신청 안내';
     case NewsletterType.CHANGES:
-      return '수업 변동사항';
-    case NewsletterType.SCHEDULES:
-      return '수업 일정변경';
+      return '수업 일정 안내';
+    case NewsletterType.MANAGEMENT:
+      return '수업 운영 안내';
+    case NewsletterType.RESULT:
+      return '수강 신청 결과';
     case NewsletterType.SUPPLIES:
-      return '수업 준비물';
+      return '수업 준비물 안내';
     default:
       return '기타';
   }

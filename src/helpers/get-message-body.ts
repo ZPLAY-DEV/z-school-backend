@@ -77,7 +77,7 @@ ${dto.name} 학생이 ${dto.school} 에서 ${dto.timestamp}에 하교했습니�
 `;
 
 //? ------------------------------------------------------------------------ ?//
-//? 수강신청안내
+//? 수강 신청 안내
 //? ------------------------------------------------------------------------ ?//
 
 export const getTemplateOfRegistration = (dto: {
@@ -95,42 +95,64 @@ ${dto.school} 에 자녀를 등록한 학부모님께 ${dto.term} 늘봄학교 �
 ※ 이 메시지는 ${dto.school} 늘봄학교 수강신청 안내를 위한 목적으로 발송되었습니다.
 `;
 
+//! ------------------------------------------------------------------------ ?//
+//! 공지사항) 수업변동사항안내 (NewsClassChange1)
+//! 공지사항) 수업일정변경안내 (NewsScheduleChange1)
+//! ------------------------------------------------------------------------ ?//
+
 //? ------------------------------------------------------------------------ ?//
-//? 공지사항안내 (NewsClassChange1)
+//? 공지사항) 수업 일정 안내 (NewsSchedule1)
 //? ------------------------------------------------------------------------ ?//
 
-export const getTemplateOfNewsChanges = (dto: {
+export const getTemplateOfNewsSchedule = (dto: {
   school: string;
   term: string; // `2025학년도 2학기`
   title: string; // `제목`
   shortlink: string;
-}) => `[${dto.school}] 수업 변동사항 안내
+}) => `[${dto.school}] 수업 일정 안내
 
-${dto.school} ${dto.term} 늘봄학교 신청하신 학부모님께 수업 변동사항 안내를 위해 전달드립니다.
+${dto.school} ${dto.term} 늘봄학교를 신청하신 학부모님께 수업 일정 안내를 위해 전달드립니다.
 
 ◼ 제목 : ${dto.title}
 ◼ 학인하기 : ${dto.shortlink}
 `;
 
 //? ------------------------------------------------------------------------ ?//
-//? 공지사항안내 (NewsScheduleChange1)
+//? 공지사항) 수업 운영 안내 (NewsManagement1)
 //? ------------------------------------------------------------------------ ?//
 
-export const getTemplateOfNewsSchedules = (dto: {
+export const getTemplateOfNewsManagement = (dto: {
   school: string;
   term: string; // `2025학년도 2학기`
   title: string; // `제목`
   shortlink: string;
-}) => `[${dto.school}] 수업 일정변경 안내
+}) => `[${dto.school}] 수업 운영 안내
 
-${dto.school} ${dto.term} 늘봄학교 신청하신 학부모님께 수업 일정변경 안내를 위해 전달드립니다.
+${dto.school} ${dto.term} 늘봄학교를 신청하신 학부모님께 수업 운영 안내를 위해 전달드립니다.
 
 ◼ 제목 : ${dto.title}
 ◼ 학인하기 : ${dto.shortlink}
 `;
 
 //? ------------------------------------------------------------------------ ?//
-//? 공지사항안내 (NewsClassSupplies1)
+//? 공지사항) 수업 일정 안내 (NewsRegistrationResult1)
+//? ------------------------------------------------------------------------ ?//
+
+export const getTemplateOfNewsRegistrationResult = (dto: {
+  school: string;
+  term: string; // `2025학년도 2학기`
+  title: string; // `제목`
+  shortlink: string;
+}) => `[${dto.school}] 수강 신청 결과
+
+${dto.school} ${dto.term} 늘봄학교를 신청하신 학부모님께 수강 신청 결과 안내를 위해 전달드립니다.
+
+◼ 제목 : ${dto.title}
+◼ 학인하기 : ${dto.shortlink}
+`;
+
+//? ------------------------------------------------------------------------ ?//
+//? 공지사항) 수업 준비물 안내 (NewsClassSupplies1)
 //? ------------------------------------------------------------------------ ?//
 
 export const getTemplateOfNewsSupplies = (dto: {

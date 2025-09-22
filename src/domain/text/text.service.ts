@@ -5,7 +5,7 @@ import { NewsletterType } from 'src/common/enums';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { classifyMessage } from 'src/helpers/classify';
 import {
-  getTemplateOfNewsChanges,
+  getTemplateOfNewsSchedule,
   getTemplateOfRegistration,
 } from 'src/helpers/get-message-body';
 import { AligoService } from 'src/services/aligo/aligo.service';
@@ -45,7 +45,7 @@ export class TextService {
       throw new NotFoundException('Student not found.');
     }
 
-    const body = getTemplateOfNewsChanges(dto);
+    const body = getTemplateOfNewsSchedule(dto);
     const data = {
       type: NewsletterType.CHANGES,
       schoolId: 1,
