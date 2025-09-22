@@ -151,89 +151,93 @@ export class SchoolTermOfferingService {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  async myList(
+  async getMyList(
     schoolId: number,
     termId: number,
-    studentId?: number,
+    studentId: number,
   ): Promise<Offering[]> {
     const queryBuilder = this.offeringRepository
       .createQueryBuilder('offering')
       .leftJoinAndSelect('offering.lesson', 'lesson')
       // .leftJoinAndSelect('offering.picks', 'picks')
-      // .leftJoinAndSelect('offering.bookings', 'bookings')
       .where('offering.schoolId = :schoolId', { schoolId })
-      .andWhere('offering.termId = :termId', { termId });
+      .andWhere('offering.termId = :termId', { termId })
+      .andWhere(
+        `(
+          EXISTS (
+            SELECT 1 FROM bookings b 
+            WHERE b.offeringId = offering.id 
+            AND b.studentId = :studentId
+          ) 
+          OR (
+            offering.prepickedStudentIds IS NOT NULL 
+            AND offering.prepickedStudentIds != ''
+            AND FIND_IN_SET(:studentId, offering.prepickedStudentIds) > 0
+          )
+        )`,
+        {
+          studentId,
+        },
+      );
 
-    if (studentId) {
-      queryBuilder.andWhere('offering.bookings.studentId = :studentId', {
-        studentId,
-      });
-    }
+    const [myListSql, myListParams] = queryBuilder.getQueryAndParameters();
+    this.logger.debug(
+      `[myList] schoolId=${schoolId}, termId=${termId}, studentId=${studentId}, sql=${myListSql}, params=${JSON.stringify(
+        myListParams,
+      )}`,
+    );
 
     const items = await queryBuilder.orderBy('offering.id', 'ASC').getMany();
+    this.logger.debug(`[myList] items.length=${items.length}`);
 
     return items;
   }
 
-  async myInfiniteList(
+  async getMyInfiniteList(
     query: PaginateQuery,
     schoolId: number,
     termId: number,
-    studentId?: number,
+    studentId: number,
   ): Promise<Paginated<Offering>> {
     const queryBuilder = this.offeringRepository
       .createQueryBuilder('offering')
       .leftJoinAndSelect('offering.lesson', 'lesson')
-      .leftJoinAndSelect('offering.picks', 'picks')
-      .leftJoinAndSelect('offering.bookings', 'bookings')
+      // .leftJoinAndSelect('offering.picks', 'picks')
+      .leftJoin('offering.bookings', 'bookings')
       .where('offering.schoolId = :schoolId', { schoolId })
-      .andWhere('offering.termId = :termId', { termId });
+      .andWhere('offering.termId = :termId', { termId })
+      .distinct(true);
 
-    const result = await paginate(query, queryBuilder, {
-      sortableColumns: ['id', 'createdAt', 'updatedAt'],
-      searchableColumns: ['lessonName', 'groupName'],
-      defaultSortBy: [],
-      filterableColumns: {
-        'lesson.categoryId': [FilterOperator.EQ, FilterOperator.IN],
-        pickRule: [FilterOperator.EQ, FilterOperator.IN],
-        allowedGrades: [FilterOperator.EQ, FilterOperator.IN],
-      },
-    });
+    // studentId 직접 andWhere로 필터링 (customFilters 미사용)
+    queryBuilder.andWhere(
+      'bookings.studentId = :studentId OR FIND_IN_SET(:studentId, offering.prepickedStudentIds) > 0',
+      { studentId },
+    );
 
-    if (studentId) {
-      const data = result.data.map((offering) => {
-        const bookings = offering.bookings.filter(
-          (booking) => booking.studentId === +studentId,
+    // allowedGrades $contains 필터를 수동으로 처리
+    if (query.filter && query.filter.allowedGrades) {
+      const allowedGradesFilter = query.filter.allowedGrades;
+      if (Array.isArray(allowedGradesFilter)) {
+        allowedGradesFilter.forEach((filter) => {
+          if (typeof filter === 'string' && filter.includes('$contains:')) {
+            const grade = filter.replace('$contains:', '');
+            queryBuilder.andWhere(
+              `FIND_IN_SET(:grade, offering.allowedGrades) > 0`,
+              { grade },
+            );
+          }
+        });
+      } else if (
+        typeof allowedGradesFilter === 'string' &&
+        allowedGradesFilter.includes('$contains:')
+      ) {
+        const grade = allowedGradesFilter.replace('$contains:', '');
+        queryBuilder.andWhere(
+          `FIND_IN_SET(:grade, offering.allowedGrades) > 0`,
+          { grade },
         );
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { bookings: _, ...offeringWithoutBookings } = offering;
-        return {
-          ...offeringWithoutBookings,
-          booking: bookings.length > 0 ? bookings[0] : null,
-        } as Offering & { booking: any };
-      });
-
-      return {
-        ...result,
-        data,
-      };
+      }
     }
-
-    return result;
-  }
-
-  async infiniteList(
-    query: PaginateQuery,
-    schoolId: number,
-    termId: number,
-  ): Promise<Paginated<Offering>> {
-    const queryBuilder = this.offeringRepository
-      .createQueryBuilder('offering')
-      .leftJoinAndSelect('offering.lesson', 'lesson')
-      .leftJoinAndSelect('offering.picks', 'picks')
-      .leftJoinAndSelect('offering.bookings', 'bookings')
-      .where('offering.schoolId = :schoolId', { schoolId })
-      .andWhere('offering.termId = :termId', { termId });
 
     const result = await paginate(query, queryBuilder, {
       sortableColumns: ['id', 'createdAt', 'updatedAt'],
@@ -247,10 +251,14 @@ export class SchoolTermOfferingService {
       },
     });
 
+    this.logger.debug(
+      `[myInfiniteList] meta.totalItems=${result.meta.totalItems}, data.length=${result.data.length}`,
+    );
+
     return result;
   }
 
-  async list(
+  async getList(
     schoolId: number,
     termId: number,
     grade?: number,
@@ -289,6 +297,59 @@ export class SchoolTermOfferingService {
     }
 
     return items;
+  }
+
+  async getInfiniteList(
+    query: PaginateQuery,
+    schoolId: number,
+    termId: number,
+  ): Promise<Paginated<Offering>> {
+    const queryBuilder = this.offeringRepository
+      .createQueryBuilder('offering')
+      .leftJoinAndSelect('offering.lesson', 'lesson')
+      .leftJoinAndSelect('offering.picks', 'picks')
+      .leftJoinAndSelect('offering.bookings', 'bookings')
+      .where('offering.schoolId = :schoolId', { schoolId })
+      .andWhere('offering.termId = :termId', { termId });
+
+    // allowedGrades $contains 필터를 수동으로 처리
+    if (query.filter && query.filter.allowedGrades) {
+      const allowedGradesFilter = query.filter.allowedGrades;
+      if (Array.isArray(allowedGradesFilter)) {
+        allowedGradesFilter.forEach((filter) => {
+          if (typeof filter === 'string' && filter.includes('$contains:')) {
+            const grade = filter.replace('$contains:', '');
+            queryBuilder.andWhere(
+              `FIND_IN_SET(:grade, offering.allowedGrades) > 0`,
+              { grade },
+            );
+          }
+        });
+      } else if (
+        typeof allowedGradesFilter === 'string' &&
+        allowedGradesFilter.includes('$contains:')
+      ) {
+        const grade = allowedGradesFilter.replace('$contains:', '');
+        queryBuilder.andWhere(
+          `FIND_IN_SET(:grade, offering.allowedGrades) > 0`,
+          { grade },
+        );
+      }
+    }
+
+    const result = await paginate(query, queryBuilder, {
+      sortableColumns: ['id', 'createdAt', 'updatedAt'],
+      searchableColumns: ['lessonName', 'groupName'],
+      defaultSortBy: [],
+      filterableColumns: {
+        'lesson.categoryId': [FilterOperator.EQ, FilterOperator.IN],
+        pickRule: [FilterOperator.EQ, FilterOperator.IN],
+        weekday: [FilterOperator.EQ, FilterOperator.IN],
+        allowedGrades: [FilterOperator.EQ, FilterOperator.IN],
+      },
+    });
+
+    return result;
   }
 
   async personalList(

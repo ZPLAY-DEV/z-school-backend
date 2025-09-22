@@ -19,8 +19,6 @@ import {
   CreateSchoolTermOfferingsDocs,
   DeleteAllSchoolTermOfferingsDocs,
   GetPersonalListDocs,
-  SchoolTermOfferingListDocs,
-  SchoolTermOfferingPaginatedListDocs,
 } from 'src/domain/school/swagger/school-term-offering-swagger.decorator';
 
 @Controller('schools')
@@ -50,13 +48,13 @@ export class SchoolTermOfferingController {
 
   @Public()
   @Get(':schoolId/terms/:termId/my-offerings/paginated')
-  async getInfiniteList(
+  async getMyInfiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
     @Paginate() query: PaginateQuery,
-    @Query('studentId') studentId?: number,
+    @Query('studentId') studentId: number,
   ): Promise<Paginated<Offering>> {
-    return await this.schoolTermOfferingService.myInfiniteList(
+    return await this.schoolTermOfferingService.getMyInfiniteList(
       query,
       schoolId,
       termId,
@@ -66,44 +64,42 @@ export class SchoolTermOfferingController {
 
   @Public()
   @Get(':schoolId/terms/:termId/my-offerings')
-  async getList(
+  async getMyList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
-    @Query('studentId') studentId?: number,
+    @Query('studentId') studentId: number,
   ): Promise<Offering[]> {
-    return await this.schoolTermOfferingService.myList(
+    return await this.schoolTermOfferingService.getMyList(
       schoolId,
       termId,
       studentId,
     );
   }
 
-  @SchoolTermOfferingPaginatedListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/offerings/paginated')
-  async getInfiniteListByStudentId(
+  async getInfiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
     @Paginate() query: PaginateQuery,
   ): Promise<Paginated<Offering>> {
-    return await this.schoolTermOfferingService.infiniteList(
+    return await this.schoolTermOfferingService.getInfiniteList(
       query,
       schoolId,
       termId,
     );
   }
 
-  @SchoolTermOfferingListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/offerings')
-  async getListByStudentId(
+  async getList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
     @Query('grade') grade?: number,
     @Query('categoryId') categoryId?: number,
     @Query('weekday') weekday?: string,
   ): Promise<Offering[]> {
-    return await this.schoolTermOfferingService.list(
+    return await this.schoolTermOfferingService.getList(
       schoolId,
       termId,
       grade,
