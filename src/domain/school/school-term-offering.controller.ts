@@ -71,9 +71,17 @@ export class SchoolTermOfferingController {
   async getList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
-    @Query('grade') grade: string | null = null,
+    @Query('grade') grade?: number,
+    @Query('categoryId') categoryId?: number,
+    @Query('weekday') weekday?: string,
   ): Promise<Offering[]> {
-    return await this.schoolTermOfferingService.list(schoolId, termId, grade);
+    return await this.schoolTermOfferingService.list(
+      schoolId,
+      termId,
+      grade,
+      categoryId,
+      weekday,
+    );
   }
 
   @GetPersonalListDocs()

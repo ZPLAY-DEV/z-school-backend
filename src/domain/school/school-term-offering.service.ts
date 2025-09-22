@@ -201,20 +201,38 @@ export class SchoolTermOfferingService {
   async list(
     schoolId: number,
     termId: number,
-    grade: string | null = null,
+    grade?: number,
+    categoryId?: number,
+    weekday?: string,
   ): Promise<Offering[]> {
-    const items = await this.offeringRepository
+    const queryBuilder = this.offeringRepository
       .createQueryBuilder('offering')
-      .leftJoinAndSelect('offering.picks', 'picks')
-      .leftJoinAndSelect('offering.bookings', 'bookings')
+      .leftJoinAndSelect('offering.lesson', 'lesson')
+      // .leftJoinAndSelect('offering.picks', 'picks')
+      // .leftJoinAndSelect('offering.bookings', 'bookings')
       .where('offering.schoolId = :schoolId', { schoolId })
-      .andWhere('offering.termId = :termId', { termId })
-      .orderBy('offering.id', 'ASC')
-      .getMany();
+      .andWhere('offering.termId = :termId', { termId });
 
+    if (categoryId) {
+      queryBuilder.andWhere('lesson.categoryId = :categoryId', { categoryId });
+    }
+
+    if (weekday) {
+      // JSON 배열에서 특정 weekday를 가진 요소가 있는지 확인
+      queryBuilder.andWhere(
+        'JSON_SEARCH(times, "one", :weekday, NULL, "$[*].weekday") IS NOT NULL',
+        {
+          weekday,
+        },
+      );
+    }
+
+    const items = await queryBuilder.orderBy('offering.id', 'ASC').getMany();
+
+    // 100개 미만의 작은 데이터셋에서는 FIND_IN_SET쿼리로 처리보다, 후처리 필터링이 더 효율적
     if (grade) {
       return items.filter((item: Offering) =>
-        item.allowedGrades.includes(+grade),
+        item.allowedGrades.includes(grade),
       );
     }
 

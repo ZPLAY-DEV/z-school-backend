@@ -1,16 +1,16 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
-    ApiQuery,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-    ApiOkPaginatedResponse,
-    ApiPaginationQuery,
-    FilterOperator,
-    PaginateConfig,
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
+  PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
@@ -197,18 +197,27 @@ export const SchoolTermOfferingListDocs = () => {
     ApiOperation({
       summary: '📋 학기별 수강신청과목 전체 목록',
       description: `
-**📝 Notes**
-NO NEED TO PROVIDE \`selected\` PARAMETER ANYMORE.
+**📝 기능 설명**
+특정 학기에 속한 수강신청과목들의 전체 목록을 조회합니다.
 
-**📋 required params**
-- \`schoolId\`: 학교 ID (path parameter)
-- \`termId\`: 학기 ID (path parameter)  
-- \`studentId\`: 학생 ID (query parameter)
-- \`grade\`: 학년 (query parameter)
+**🔄 비즈니스 로직**
+- 학기별로 생성된 모든 수강신청과목을 조회
+- 학년(grade), 카테고리(categoryId), 요일(weekday)로 필터링 가능
+- 모든 파라미터는 선택적(optional)
+
+**⚠️ 중요 제약사항**
+- 학교 ID와 학기 ID가 유효해야 함
+- 모든 쿼리 파라미터는 선택적
+
+**📚 예시 시나리오**
+1. **전체 수강신청과목 조회**: 특정 학기의 모든 수강신청과목 목록
+2. **학년별 필터링**: 특정 학년만 수강 가능한 과목들만 조회
+3. **카테고리별 필터링**: 특정 카테고리의 과목들만 조회
+4. **요일별 필터링**: 특정 요일에 수업하는 과목들만 조회
 
 **API 호출 예시**
 \`\`\`
-GET /v1/schools/123/terms/456/offerings?studentId=789&grade=1
+GET /v1/schools/123/terms/456/offerings?grade=1&categoryId=5&weekday=월
 \`\`\`
 
 **Request Parameters:**
@@ -218,8 +227,9 @@ Path Parameters:
 - termId: 456 (학기 ID)
 
 Query Parameters:
-- studentId: 789 (required)
-- grade: 1 (required, 1-6)
+- grade: 1 (선택적, 학년)
+- categoryId: 5 (선택적, 카테고리 ID)
+- weekday: "월" (선택적, 요일)
 \`\`\`
 
 **Response Example:**
@@ -231,8 +241,8 @@ Query Parameters:
     "termId": 456,
     "lessonId": 789,
     "lessonName": "수학",
-    "groupName": "1-1",
-    "samName": "김선생님",
+    "groupName": "독서논술A",
+    "samName": "김선생",
     "capacity": 25,
     "bookingCount": 18,
     "prepicked": 2,
@@ -242,61 +252,65 @@ Query Parameters:
       {
         "start": "09:00",
         "end": "09:50",
-        "dayOfWeek": 1
-      },
-      {
-        "start": "10:00", 
-        "end": "10:50",
-        "dayOfWeek": 3
+        "weekday": "월"
       }
     ],
     "prepickedStudentIds": [567, 890],
-    "status": "ACTIVE",
-    "totals": [50000, 45000],
-    "booking": {
-      "id": 2001,
-      "studentId": 789,
-      "lessonName": "수학",
-      "offeringId": 1001,
-      "status": "ENROLLED",
-      "waitingPosition": 0,
-      "createdAt": "2024-01-15T09:00:00.000Z"
-    },
-    "selectable": true
-  },
-  {
-    "id": 1002,
-    "schoolId": 123,
-    "termId": 456,
-    "lessonId": 790,
-    "lessonName": "영어",
-    "groupName": "1-2",
-    "samName": "이선생님",
-    "capacity": 20,
-    "bookingCount": 20,
-    "prepicked": 1,
-    "allowedGrades": [1],
-    "pickRule": "RANDOM",
-    "times": [
-      {
-        "start": "11:00",
-        "end": "11:50", 
-        "dayOfWeek": 2
-      }
+    "bitmasks": [
+        648,
+        649,
+        650,
+        651,
+        652,
+        653,
+        654,
+        655,
+        656,
+        657,
+        658,
+        659
     ],
-    "prepickedStudentIds": [234],
+    "groupIds": [
+        1
+    ],
+    "lastSyncTimestamp": "0",
     "status": "ACTIVE",
-    "totals": [40000],
-    "booking": null,
-    "selectable": false
+    "createdAt": "2025-09-19T09:53:07.816Z",
+    "updatedAt": "2025-09-19T09:54:02.000Z",
+    "lesson": {
+        "id": 1,
+        "schoolId": 1,
+        "termId": 1,
+        "categoryId": 4,
+        "schoolName": "신동초등학교",
+        "lessonName": "독서논술",
+        "description": "",
+        "start": "2025-09-01",
+        "end": "2025-11-30",
+        "frequency": 1,
+        "total": 0,
+        "instructorFee": 0,
+        "bookFees": [],
+        "materialFees": [],
+        "operationFee": 0,
+        "operationFeeRule": "CO-1000",
+        "note": "",
+        "status": "ACTIVE",
+        "createdAt": "2025-09-19T09:53:07.306Z",
+        "updatedAt": "2025-09-19T09:54:02.000Z",
+        "deletedAt": null
+    }
   }
 ]
 \`\`\`
 
 **📊 Response Fields**
-- \`totals\`: the total cost array for each class (tuition + textbook fee + material fee)
-- \`booking\`: booking record if exists
-- \`selectable\`: "true" (able to select the class), "false" (unable to select the class. bitmasks intersection found)
+- \`lesson\`: 과목 상세 정보 (카테고리, 설명, 수강료 등 포함)
+- \`bitmasks\`: 수업시간 겹치는지 판단하기 위한 비트마스크 배열
+- \`groupIds\`: 수강신청과목에 포함된 반 ID 배열
+- \`lastSyncTimestamp\`: 마지막 동기화 시간
+- \`times\`: 수업 시간 정보 배열 (시작시간, 종료시간, 요일 포함)
+- \`prepickedStudentIds\`: 지난 학기에 수강한 학생 ID 목록
       `,
     }),
     ApiParam({
@@ -310,26 +324,26 @@ Query Parameters:
       example: 456,
     }),
     ApiQuery({
-      name: 'studentId',
-      description: '학생 ID (필수)',
-      required: true,
-      example: 789,
-    }),
-    ApiQuery({
       name: 'grade',
-      description: '학년 (1-6, 필수)',
-      required: true,
+      description: '학년 (선택적)',
+      required: false,
       example: 1,
     }),
     ApiQuery({
-      name: 'selected',
-      description: '선택된 과목만 조회 (선택적)',
+      name: 'categoryId',
+      description: '카테고리 ID (선택적)',
       required: false,
-      example: 'true',
+      example: 5,
+    }),
+    ApiQuery({
+      name: 'weekday',
+      description: '요일 (월,화,수,목,금,토 중 1개)',
+      required: false,
+      example: '월',
     }),
     ApiOkResponseTemplate({
       description: '수강신청과목 전체 목록 조회 완료',
-      type: ResponseSchoolOfferingListDto,
+      type: Offering,
       isArray: true,
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
