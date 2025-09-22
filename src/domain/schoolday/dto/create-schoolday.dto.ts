@@ -8,7 +8,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-import { Actor } from 'src/common/enums';
+import { Actor, Weekday } from 'src/common/enums';
 
 export class CreateSchooldayDto {
   @ApiPropertyOptional({ description: 'schoolId', example: 1 })
@@ -38,6 +38,47 @@ export class CreateSchooldayDto {
   @IsString()
   @MaxLength(16)
   name: string;
+
+  @ApiProperty({
+    description: '수업 요일',
+    enum: Weekday,
+    example: Weekday.MONDAY,
+  })
+  @IsEnum(Weekday)
+  weekday: Weekday;
+
+  @ApiProperty({ description: '주차', example: 1 })
+  @IsInt()
+  @Type(() => Number)
+  weekNumber: number;
+
+  @ApiProperty({
+    description: '검색용 날짜',
+    example: '2025-07-16',
+  })
+  @IsString()
+  @MaxLength(10)
+  today: string;
+
+  @ApiProperty({
+    description: '원래 수업일 (불변)',
+    example: '2025-07-16',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  initial: string;
+
+  @ApiProperty({
+    description: '이전 수업일',
+    example: '2025-07-16',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  original?: string | null;
 
   @ApiProperty({ description: '시작시각 (DateTime)' })
   @Type(() => Date)

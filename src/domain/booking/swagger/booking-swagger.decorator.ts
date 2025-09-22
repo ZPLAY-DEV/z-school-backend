@@ -20,28 +20,39 @@ export const CreateBookingSwagger = () => {
       summary: '✅ Course Registration',
       description: `
 **📝 Feature Description**
-- Real-time course registration API with instant feedback
-- Supports multiple registration rules (First-come-first-served, Random, Anyone)
-- Redis-based real-time processing to handle concurrency issues
+- 실시간 수강신청 API로 즉시 피드백 제공
+- 다양한 신청 규칙 지원 (선착순, 무작위, 누구나)
+- 동시성 문제 해결을 위한 Redis 기반 실시간 처리
 
 **🔄 Business Logic**
-1. For 'FIRST' (first-come-first-served): Redis-based processing with real-time enrollment
-2. For 'RANDOM' (lottery): DB-based processing, results announced after registration period
-3. For 'ANYONE' (open enrollment): Immediate enrollment with no capacity limits
-4. Handles waiting queue when capacity is exceeded
-5. Prevents duplicate registrations
+1. **FIRST (선착순)**: Redis 기반 실시간 처리
+   - 즉시 수강 확정 또는 대기열 등록
+   - 수용인원 초과 시 대기순번 자동 할당
+   - 실시간 경쟁 상황 처리
+2. **RANDOM (무작위)**: DB 기반 처리
+   - 신청 기간 종료 후 결과 발표 예정
+   - 모든 신청자를 PENDING 상태로 등록
+3. **ANYONE (누구나)**: 즉시 확정 처리
+   - 수용인원 제한 없이 즉시 ENROLLED 상태
+   - 대기순번 없음
 
 **⚠️ Important Constraints**
-- offeringId and studentId are required parameters
-- No duplicate registrations for the same student
-- Capacity limit check (when capacity > 0)
-- Only available during registration period
+- termId, offeringId, studentId는 필수 파라미터
+- 동일 학생의 중복 신청 불가
+- 수용인원 제한 확인 (capacity > 0일 때)
+- 신청 기간 내에서만 가능
+
+**📚 Response Messages**
+- **ENROLLED**: "🟢 수강신청결과 {과목명} 수강이 확정되었습니다."
+- **PENDING**: "🟡 수강신청결과 {과목명} 수강이 대기상태입니다. (대기 {순번}번)"
+- **FULL**: "🔴 수강신청결과 {과목명} 수강이 불가합니다."
+- **RANDOM**: "🔵 {과목명} 수강신청 했습니다. (신청기간이후 결과발표예정)"
 
 **📚 Example Scenarios**
-- Real-time first-come-first-served class registration
-- Lottery-based enrollment for popular classes
-- Open enrollment for unlimited capacity classes
-- Waiting queue management for oversubscribed courses
+- 실시간 선착순 수강신청
+- 인기 과목의 무작위 추첨 신청
+- 무제한 수용인원 과목의 즉시 신청
+- 초과 신청 시 대기열 관리
       `,
     }),
     ApiBody({
@@ -49,29 +60,32 @@ export const CreateBookingSwagger = () => {
       examples: {
         'First-come-first-served': {
           value: {
+            termId: 1,
             offeringId: 1,
             studentId: 1,
             capacity: 20,
             pickRule: 'FIRST',
-            lessonName: 'Violin',
+            lessonName: '바이올린',
           },
         },
         'Random/Lottery': {
           value: {
+            termId: 1,
             offeringId: 10,
             studentId: 11,
             capacity: 20,
             pickRule: 'RANDOM',
-            lessonName: 'Minecraft',
+            lessonName: '마인크래프트',
           },
         },
         Anyone: {
           value: {
+            termId: 1,
             offeringId: 30,
             studentId: 31,
             capacity: 0,
             pickRule: 'ANYONE',
-            lessonName: 'Creative Classroom A',
+            lessonName: '창의교실 A',
           },
         },
       },
@@ -177,39 +191,77 @@ export const CreateManualBookingDocs = () => {
 export const CancelBookingSwagger = () => {
   return applyDecorators(
     ApiOperation({
-      summary: '❌ Cancel Course Registration',
+      summary: '❌ 수강신청 취소',
       description: `
-**📝 Feature Description**
-- Cancels existing course registration and automatically assigns to waiting students
-- Real-time course registration cancellation API with instant feedback
-- Manages waiting queue automatically upon cancellation
+**📝 기능 설명**
+- 기존 수강신청을 취소하고 대기 중인 학생들에게 자동으로 자리를 할당
+- 실시간 수강신청 취소 API로 즉시 피드백 제공
+- 취소 시 대기열을 자동으로 관리하여 다음 학생에게 기회 제공
 
-**🔄 Business Logic**
-1. For 'FIRST' (first-come-first-served): Redis-based processing with real-time queue management
-2. For other rules ('RANDOM', 'ANYONE'): DB-based processing
-3. Updates existing registration data (soft delete or status change)
-4. Automatically assigns available spots to waiting students
-5. Returns the number of affected records
+**🔄 비즈니스 로직**
+1. **FIRST (선착순)**: Redis 기반 실시간 처리
+   - 즉시 수강신청 취소 처리
+   - 대기열에서 다음 학생을 자동으로 수강 확정
+   - 실시간 대기열 순번 업데이트
+2. **RANDOM/ANYONE**: DB 기반 처리
+   - 수강신청 상태를 취소로 변경
+   - 대기 중인 학생이 있다면 자동으로 승격
+3. 취소된 수강신청 데이터 업데이트 (소프트 삭제 또는 상태 변경)
+4. 대기 중인 학생들에게 자동으로 자리 할당
+5. 영향받은 레코드 수 반환
 
-**⚠️ Important Constraints**
-- Only valid registrations can be cancelled
-- Already cancelled registrations cannot be cancelled again
-- Cancellation period restrictions may apply
-- Automatic notification sent when waitlisted students are promoted
+**⚠️ 중요 제약사항**
+- 유효한 수강신청만 취소 가능
+- 이미 취소된 수강신청은 재취소 불가
+- 취소 기간 제한이 있을 수 있음
+- 대기 중인 학생이 승격될 때 자동 알림 발송
+- offeringId, studentId, pickRule, lessonName은 필수 파라미터
 
-**📚 Example Scenarios**
-- Student voluntarily cancels their registration
-- Administrator forcibly cancels a registration
-- System error correction through cancellation
-- Giving up a spot to waitlisted students
+**📚 사용 예시**
+- 학생이 자발적으로 수강신청 취소
+- 관리자가 강제로 수강신청 취소
+- 시스템 오류 수정을 위한 취소
+- 대기 중인 학생에게 자리 양보
+- 개인 사정으로 인한 수강 포기
+
+**📚 응답 데이터**
+- 취소 처리된 레코드 수 (Number)
+- 성공 시: 1 (정상 취소)
+- 실패 시: 0 (취소할 수강신청 없음)
       `,
     }),
     ApiBody({
       type: CancelBookingDto,
       required: true,
+      examples: {
+        '선착순 수강신청 취소': {
+          value: {
+            offeringId: 1,
+            studentId: 1,
+            pickRule: 'FIRST',
+            lessonName: '바이올린',
+          },
+        },
+        '무작위 수강신청 취소': {
+          value: {
+            offeringId: 10,
+            studentId: 11,
+            pickRule: 'RANDOM',
+            lessonName: '마인크래프트',
+          },
+        },
+        '누구나 수강신청 취소': {
+          value: {
+            offeringId: 30,
+            studentId: 31,
+            pickRule: 'ANYONE',
+            lessonName: '창의교실 A',
+          },
+        },
+      },
     }),
     ApiOkResponseTemplate({
-      description: 'Course registration cancelled successfully',
+      description: '수강신청 취소 성공',
       type: Number,
     }),
     ApiStatuses(

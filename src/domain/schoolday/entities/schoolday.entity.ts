@@ -65,24 +65,36 @@ export class Schoolday {
   today: string; // '2025-07-16'
 
   @ApiProperty({
-    description: '수업 요일',
-    enum: Weekday,
-    example: Weekday.MONDAY,
-  })
-  @Column({ type: 'enum', enum: Weekday, default: Weekday.MONDAY })
-  weekday: Weekday;
-
-  @ApiProperty({
-    description: '원래 날짜',
+    description: '원래 수업일 (불변)',
     example: '2025-07-16',
   })
   @Column({
     type: 'varchar',
     length: 10,
     nullable: true,
-    comment: '원래 수업일',
+    comment: '원래 수업일 (불변)',
+  })
+  initial: string; // '2025-07-20'
+
+  @ApiProperty({
+    description: '이전 수업일',
+    example: '2025-07-16',
+  })
+  @Column({
+    type: 'varchar',
+    length: 10,
+    nullable: true,
+    comment: '이전 수업일',
   })
   original: string | null; // '2025-07-20'
+
+  @ApiProperty({
+    description: '수업 요일',
+    enum: Weekday,
+    example: Weekday.MONDAY,
+  })
+  @Column({ type: 'enum', enum: Weekday, default: Weekday.MONDAY })
+  weekday: Weekday;
 
   @ApiProperty({ description: '주차', example: 1 })
   @Column({ type: 'tinyint', unsigned: true })

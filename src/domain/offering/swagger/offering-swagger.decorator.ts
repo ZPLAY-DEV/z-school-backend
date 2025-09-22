@@ -553,3 +553,49 @@ export const RemoveOfferingDocs = () => {
     ApiStatuses(StatusCodes.NOT_FOUND),
   );
 };
+
+//? ---------------------------------------------------------------------- ?//
+//? Get By Student ID
+//? ---------------------------------------------------------------------- ?//
+
+export const GetByStudentIdDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '👨‍🎓 학생별 수강신청과목 목록 조회',
+      description: `
+**📝 기능 설명**
+- 특정 학생이 재수강 우선권을 가진 수강신청과목 목록을 조회합니다
+- prepickedStudentIds에 포함된 학생의 offering들을 반환합니다
+- 학생이 재수강할 수 있는 과목들을 확인할 때 사용됩니다
+
+**🔄 비즈니스 로직**
+1. prepickedStudentIds 배열에서 해당 studentId 포함 여부 확인
+2. 해당 학생이 재수강 우선권을 가진 offering들 조회
+3. 수업, 그룹, 강사, 예약 정보 포함하여 반환
+4. 재수강 우선권이 있는 과목만 반환
+
+**📊 반환 데이터**
+- 수강신청과목 기본 정보 (ID, 과목명, 그룹명 등)
+- 수업 시간표 및 정원 정보
+- 강사 정보 및 그룹 상세 정보
+- 현재 예약 현황 및 대기열 정보
+
+**⚠️ 중요 사항**
+- prepickedStudentIds에 포함된 학생만 대상
+- 재수강 우선권이 없는 일반 수강신청은 포함되지 않음
+- 모든 관련 엔터티 정보 포함하여 반환
+      `,
+    }),
+    ApiParam({
+      name: 'studentId',
+      description: '학생 ID',
+      type: 'number',
+      example: 456,
+    }),
+    ApiOkResponseTemplate({
+      type: Offering,
+      description: '학생이 재수강 우선권을 가진 수강신청과목 목록',
+    }),
+    ApiStatuses(StatusCodes.OK),
+  );
+};

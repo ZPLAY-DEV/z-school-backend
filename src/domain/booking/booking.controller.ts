@@ -4,7 +4,7 @@ import {
   Delete,
   Param,
   ParseIntPipe,
-  Post,
+  Post
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PickRule } from 'src/common/enums';

@@ -84,6 +84,42 @@ export class SchoolTermOfferingController {
     );
   }
 
+  @SchoolTermOfferingPaginatedListDocs()
+  @Public()
+  @Get(':schoolId/terms/:termId/offerings/paginated')
+  async getInfiniteListByStudentId(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+    @Paginate() query: PaginateQuery,
+    @Query('studentId') studentId?: number,
+  ): Promise<Paginated<Offering>> {
+    return await this.schoolTermOfferingService.infiniteList(
+      query,
+      schoolId,
+      termId,
+      studentId,
+    );
+  }
+
+  @SchoolTermOfferingListDocs()
+  @Public()
+  @Get(':schoolId/terms/:termId/offerings')
+  async getListByStudentId(
+    @Param('schoolId', ParseIntPipe) schoolId: number,
+    @Param('termId', ParseIntPipe) termId: number,
+    @Query('grade') grade?: number,
+    @Query('categoryId') categoryId?: number,
+    @Query('weekday') weekday?: string,
+  ): Promise<Offering[]> {
+    return await this.schoolTermOfferingService.list(
+      schoolId,
+      termId,
+      grade,
+      categoryId,
+      weekday,
+    );
+  }
+
   @GetPersonalListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/offerings/personal')

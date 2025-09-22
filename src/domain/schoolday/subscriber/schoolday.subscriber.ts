@@ -35,9 +35,6 @@ export class SchooldaySubscriber
 
     const original = prev?.today ?? formatDateInKST(prev.startsAt);
     const today = format(schoolday.startsAt, 'yyyy-MM-dd');
-
-    if (original === today) return;
-
     const weekday = getKoreanWeekday(today);
 
     this.logger.log(
