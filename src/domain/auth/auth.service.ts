@@ -448,8 +448,7 @@ export class AuthService {
       where: { phone: dto.phone },
       relations: ['instructor', 'parent', 'manager'],
     });
-
-    console.log(`🟢🟢🟢🟢`, user);
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
     if (user) {
       if (
         (dto.role === Role.INSTRUCTOR && user.instructor) ||
@@ -459,11 +458,10 @@ export class AuthService {
       }
       await this.userRepository.update(user.id, {
         username: dto.phone,
-        password: dto.password,
         phone: dto.phone,
+        password: hashedPassword,
       });
     } else {
-      const hashedPassword = await bcrypt.hash(dto.password, 10);
       user = await this.userRepository.save(
         new User({
           username: dto.phone,
