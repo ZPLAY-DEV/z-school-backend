@@ -4,8 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { format } from 'date-fns';
-import { fromZonedTime } from 'date-fns-tz';
 import { School } from 'src/domain/school/entities/school.entity';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
 import { UpdateTermDto } from 'src/domain/term/dto/update-term.dto';
@@ -51,12 +49,6 @@ export class TermService {
     // 3. 생성
     const newTerm = this.termRepository.create({
       ...dto,
-      ...(dto.start && {
-        start: format(fromZonedTime(dto.start, 'Asia/Seoul'), 'yyyy-MM-dd'),
-      }),
-      ...(dto.end && {
-        end: format(fromZonedTime(dto.end, 'Asia/Seoul'), 'yyyy-MM-dd'),
-      }),
       schoolName: dto.schoolName ?? school.name,
     });
     return this.termRepository.save(newTerm);

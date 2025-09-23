@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose } from 'class-transformer';
 import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import {
   NewsletterType,
   PickRule,
@@ -220,8 +221,14 @@ export class Term {
       return '미설정';
     }
 
-    const startFormatted = format(this.bookingStart, 'M월d일 HH:mm');
-    const endFormatted = format(this.bookingEnd, 'M월d일 HH:mm');
+    const startFormatted = format(
+      toZonedTime(this.bookingStart, 'Asia/Seoul'),
+      'M월d일 HH:mm',
+    );
+    const endFormatted = format(
+      toZonedTime(this.bookingEnd, 'Asia/Seoul'),
+      'M월d일 HH:mm',
+    );
 
     return `${startFormatted}~${endFormatted}`;
   }
