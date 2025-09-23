@@ -2,15 +2,15 @@ import { ApiProperty } from '@nestjs/swagger';
 import { School } from 'src/domain/school/entities/school.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
-  Column,
-  CreateDateColumn,
-  DeleteDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  OneToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    DeleteDateColumn,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    OneToOne,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('managers')
@@ -33,11 +33,11 @@ export class Manager {
   @Column({ type: 'varchar', length: 24, nullable: true })
   schoolName: string | null;
 
-  @ApiProperty({ description: '🈳 매니저 이름' })
+  @ApiProperty({ description: '🈳 관리자 이름' })
   @Column({ type: 'varchar', length: 16, nullable: true })
   name: string | null;
 
-  @ApiProperty({ description: '🈳 매니저 전화번호 (숫자만 입력)' })
+  @ApiProperty({ description: '🈳 관리자 전화번호 (숫자만 입력)' })
   @Column({ type: 'varchar', length: 16, nullable: true })
   phone: string | null;
 

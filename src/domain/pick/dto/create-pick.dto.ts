@@ -1,13 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsEnum,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsPositive,
-  IsString,
-  Matches,
-  MaxLength,
+    IsEnum,
+    IsInt,
+    IsNotEmpty,
+    IsOptional,
+    IsPositive,
+    IsString,
+    Matches,
+    MaxLength,
 } from 'class-validator';
 import { Actor } from 'src/common/enums';
 
@@ -52,7 +52,7 @@ export class CreatePickDto {
 
   @ApiPropertyOptional({
     description:
-      '수업시작일 등록자 구분 - 누가 수업시작일을 등록했는지 기록. MANAGER: 매니저, INSTRUCTOR: 강사, OTHER: 기타',
+      '수업시작일 등록자 구분 - 누가 수업시작일을 등록했는지 기록. MANAGER: 관리자, INSTRUCTOR: 강사, OTHER: 기타',
     enum: Actor,
     enumName: 'Actor',
     example: Actor.MANAGER,
@@ -81,7 +81,7 @@ export class CreatePickDto {
 
   @ApiPropertyOptional({
     description:
-      '수업종료일 등록자 구분 - 누가 수업종료일을 등록했는지 기록. MANAGER: 매니저, INSTRUCTOR: 강사, OTHER: 기타',
+      '수업종료일 등록자 구분 - 누가 수업종료일을 등록했는지 기록. MANAGER: 관리자, INSTRUCTOR: 강사, OTHER: 기타',
     enum: Actor,
     enumName: 'Actor',
     example: Actor.INSTRUCTOR,
@@ -129,7 +129,7 @@ export class CreatePickDto {
 export class StartPickDto extends CreatePickDto {
   @ApiProperty({
     description:
-      '수업시작일 등록자 구분 - 누가 수업시작일을 등록했는지 기록. MANAGER: 매니저, INSTRUCTOR: 강사, OTHER: 기타',
+      '수업시작일 등록자 구분 - 누가 수업시작일을 등록했는지 기록. MANAGER: 관리자, INSTRUCTOR: 강사, OTHER: 기타',
     enum: Actor,
     example: Actor.MANAGER,
   })
@@ -164,7 +164,7 @@ export class StartPickDto extends CreatePickDto {
 export class EndPickDto extends CreatePickDto {
   @ApiProperty({
     description:
-      '수업종료일 등록자 구분 - 누가 수업종료일을 등록했는지 기록. MANAGER: 매니저, INSTRUCTOR: 강사, OTHER: 기타',
+      '수업종료일 등록자 구분 - 누가 수업종료일을 등록했는지 기록. MANAGER: 관리자, INSTRUCTOR: 강사, OTHER: 기타',
     enum: Actor,
     enumName: 'Actor',
     example: Actor.MANAGER,

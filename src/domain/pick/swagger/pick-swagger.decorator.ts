@@ -1,16 +1,16 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiResponse,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiResponse,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-  ApiOkPaginatedResponse,
-  ApiPaginationQuery,
-  FilterOperator,
-  PaginateConfig,
+    ApiOkPaginatedResponse,
+    ApiPaginationQuery,
+    FilterOperator,
+    PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
@@ -231,7 +231,7 @@ export const EndPickDocs = () =>
 **📚 예시 시나리오**
 - 이사로 인해 7월 20일 마지막 수업 참여
 - 비고에 "이사로 인한 수강 중단" 기록
-- 매니저가 처리하여 endedBy는 MANAGER로 설정
+- 관리자가 처리하여 endedBy는 MANAGER로 설정
       `,
     }),
     ApiBody({
@@ -427,7 +427,7 @@ export const PaginatedListStudentsDocs = () =>
 **📊 쿼리 파라미터 예시**
 - \`?page=1&limit=20\`: 첫 페이지, 20개씩
 - \`?search=전학&sortBy=id:ASC\`: '전학' 키워드 검색, ID 오름차순
-- \`?filter.enrolledBy=MANAGER\`: 매니저가 등록한 학생만
+- \`?filter.enrolledBy=MANAGER\`: 관리자가 등록한 학생만
       `,
     }),
     ApiPaginationQuery(LIST_STUDENTS_CONFIG),

@@ -1,12 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import { Role } from 'src/common/enums';
+import { CreateSchoolDto } from 'src/domain/school/dto/create-school.dto';
 
 // Manager 로그인시 또는 Manager 회원가입시 사용
 export class UserCredentialsDto {
@@ -41,4 +44,25 @@ export class UserCredentialsDtoWithPhone extends UserCredentialsDto {
   @IsNotEmpty()
   @IsString()
   phone: string;
+}
+
+export class UserCredentialsDtoWithSchool {
+  @ApiProperty({ description: '🈵 username (email)' })
+  @IsString()
+  username: string;
+
+  @ApiProperty({ description: '🈵 password' })
+  @IsNotEmpty()
+  @IsString()
+  password: string;
+
+  @ApiProperty({ description: '🈳 role' })
+  @IsOptional()
+  @IsEnum(Role)
+  role?: Role;
+
+  @ApiProperty({ description: '🈳 schoolId' })
+  @ValidateNested()
+  @Type(() => CreateSchoolDto)
+  school?: CreateSchoolDto;
 }

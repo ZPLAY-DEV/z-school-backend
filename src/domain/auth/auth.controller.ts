@@ -25,6 +25,7 @@ import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
   UserCredentialsDto,
   UserCredentialsDtoWithPhone,
+  UserCredentialsDtoWithSchool,
 } from 'src/domain/auth/dto/user-credentials.dto';
 import {
   LoginDocs,
@@ -88,7 +89,7 @@ export class AuthController {
   @Public()
   @Post('register/manager')
   async registerManager(
-    @Body() dto: UserCredentialsDto,
+    @Body() dto: UserCredentialsDtoWithSchool,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthUserDto> {
     const tokens = await this.authService.registerManager(dto);

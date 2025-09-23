@@ -1,12 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-  Min,
+    IsEnum,
+    IsInt,
+    IsOptional,
+    IsString,
+    Matches,
+    MaxLength,
+    Min,
 } from 'class-validator';
 import { Actor } from 'src/common/enums';
 
@@ -38,7 +38,7 @@ export class UpdatePickDto {
 
   @ApiPropertyOptional({
     description:
-      '수업시작일 등록자 구분 - MANAGER: 매니저, INSTRUCTOR: 강사, OTHER: 기타',
+      '수업시작일 등록자 구분 - MANAGER: 관리자, INSTRUCTOR: 강사, OTHER: 기타',
     enum: Actor,
     enumName: 'Actor',
     example: Actor.MANAGER,
@@ -64,7 +64,7 @@ export class UpdatePickDto {
 
   @ApiPropertyOptional({
     description:
-      '수업종료일 등록자 구분 - MANAGER: 매니저, INSTRUCTOR: 강사, OTHER: 기타',
+      '수업종료일 등록자 구분 - MANAGER: 관리자, INSTRUCTOR: 강사, OTHER: 기타',
     enum: Actor,
     enumName: 'Actor',
     example: Actor.INSTRUCTOR,

@@ -402,8 +402,8 @@ const data = [
         frequency: 1,
         groups: [
           {
-            instructorName: '이육영',
-            instructorPhone: '010-9478-7204',
+            instructorName: '김형필',
+            instructorPhone: '010-3469-3115',
             groupName: '창의과학A',
             location: '늘봄선택형교실2',
             capacity: 16,
@@ -416,8 +416,8 @@ const data = [
             materialFee: 12000,
           },
           {
-            instructorName: '이육영',
-            instructorPhone: '010-9478-7204',
+            instructorName: '김형필',
+            instructorPhone: '010-3469-3115',
             groupName: '창의과학B',
             location: '늘봄선택형교실2',
             capacity: 16,
@@ -618,8 +618,8 @@ const data = [
         frequency: 1,
         groups: [
           {
-            instructorName: '박정연',
-            instructorPhone: '010-3737-6198',
+            instructorName: '권서현',
+            instructorPhone: '010-6566-5090',
             groupName: '토탈공예A',
             location: '늘봄선택형교실3',
             capacity: 16,
@@ -632,8 +632,8 @@ const data = [
             materialFee: 9000,
           },
           {
-            instructorName: '박정연',
-            instructorPhone: '010-3737-6198',
+            instructorName: '권서현',
+            instructorPhone: '010-6566-5090',
             groupName: '토탈공예B',
             location: '늘봄선택형교실3',
             capacity: 16,

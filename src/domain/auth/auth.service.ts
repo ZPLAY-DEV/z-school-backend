@@ -17,12 +17,14 @@ import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
   UserCredentialsDto,
   UserCredentialsDtoWithPhone,
+  UserCredentialsDtoWithSchool,
 } from 'src/domain/auth/dto/user-credentials.dto';
 import { UserDto } from 'src/domain/auth/dto/user.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
+import { School } from 'src/domain/school/entities/school.entity';
 import { Token } from 'src/domain/user/entities/token.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { normalizePhone } from 'src/helpers/phone';
@@ -52,8 +54,9 @@ export class AuthService {
   private readonly instructorRepository: Repository<Instructor>;
   private readonly parentRepository: Repository<Parent>;
   private readonly managerRepository: Repository<Manager>;
-  private readonly tokenRepository: Repository<Token>;
+  private readonly schoolRepository: Repository<School>;
   private readonly shortlinkRepository: Repository<Shortlink>;
+  private readonly tokenRepository: Repository<Token>;
 
   constructor(
     private readonly jwtService: JwtService,
@@ -71,8 +74,9 @@ export class AuthService {
     this.instructorRepository = this.dataSource.getRepository(Instructor);
     this.parentRepository = this.dataSource.getRepository(Parent);
     this.managerRepository = this.dataSource.getRepository(Manager);
-    this.tokenRepository = this.dataSource.getRepository(Token);
     this.shortlinkRepository = this.dataSource.getRepository(Shortlink);
+    this.schoolRepository = this.dataSource.getRepository(School);
+    this.tokenRepository = this.dataSource.getRepository(Token);
   }
 
   /**
@@ -209,11 +213,13 @@ export class AuthService {
   /**
    * Register a manager (without phone number)
    */
-  async registerManager(dto: UserCredentialsDto): Promise<AuthUserDto> {
+  async registerManager(
+    dto: UserCredentialsDtoWithSchool,
+  ): Promise<AuthUserDto> {
     try {
       // Validate manager role
-      if (dto.role !== Role.MANAGER) {
-        throw new BadRequestException('Invalid role');
+      if (!dto.role) {
+        dto.role = Role.MANAGER;
       }
 
       // Check if user exists and create/update as needed
@@ -511,7 +517,11 @@ export class AuthService {
   /**
    * Find an existing manager by username or create a new one
    */
-  private async createManager(dto: UserCredentialsDto): Promise<User> {
+  private async createManager(
+    dto: UserCredentialsDtoWithSchool,
+  ): Promise<User> {
+    let school: School | null = null;
+
     const dbUser = await this.userRepository.findOne({
       where: { username: dto.username },
       relations: ['instructor', 'parent', 'manager'],
@@ -522,17 +532,36 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    // Create new user
     const user = await this.userRepository.save(
       new User({
         username: dto.username,
         password: hashedPassword,
       }),
     );
+
+    if (dto.school) {
+      school = await this.schoolRepository.findOne({
+        where: { name: dto.school.name },
+      });
+      if (!school) {
+        school = await this.schoolRepository.save(
+          this.schoolRepository.create(dto.school),
+        );
+      }
+    }
+
     await this.managerRepository.save(
-      new Manager({
-        userId: user.id,
-      }),
+      new Manager(
+        school
+          ? {
+              userId: user.id,
+              schoolId: school.id,
+              schoolName: school.name,
+            }
+          : {
+              userId: user.id,
+            },
+      ),
     );
 
     return await this.userRepository.findOneOrFail({
