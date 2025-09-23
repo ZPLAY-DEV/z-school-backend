@@ -93,6 +93,8 @@ export class SchoolStudentController {
       { id: 5, name: '김민지', phone: '01093924027' },
       { id: 6, name: '임승희', phone: '01020239567' },
       { id: 7, name: '기다은', phone: '01094183655' },
+      { id: 8, name: '권서현', phone: '01065665090' },
+      { id: 9, name: '김형필', phone: '01034693115' },
     ];
 
     // 1-6학년, 각 학년당 4개 반, 각 반당 25명씩 생성
@@ -142,6 +144,8 @@ export class SchoolStudentController {
     dtos[4].parent.phone = whitelist[3].phone;
     dtos[5].parent.phone = whitelist[4].phone;
     dtos[6].parent.phone = whitelist[5].phone;
+    dtos[7].parent.phone = whitelist[6].phone;
+    dtos[8].parent.phone = whitelist[7].phone;
 
     dtos[1].parent.name = `${whitelist[0].name} 학부모`;
     dtos[2].parent.name = `${whitelist[1].name} 학부모`;
@@ -149,6 +153,8 @@ export class SchoolStudentController {
     dtos[4].parent.name = `${whitelist[3].name} 학부모`;
     dtos[5].parent.name = `${whitelist[4].name} 학부모`;
     dtos[6].parent.name = `${whitelist[5].name} 학부모`;
+    dtos[7].parent.name = `${whitelist[6].name} 학부모`;
+    dtos[8].parent.name = `${whitelist[7].name} 학부모`;
 
     dtos[1].name = whitelist[0].name;
     dtos[2].name = whitelist[1].name;
@@ -156,6 +162,8 @@ export class SchoolStudentController {
     dtos[4].name = whitelist[3].name;
     dtos[5].name = whitelist[4].name;
     dtos[6].name = whitelist[5].name;
+    dtos[7].name = whitelist[6].name;
+    dtos[8].name = whitelist[7].name;
 
     console.log(JSON.stringify(dtos, null, 2));
 

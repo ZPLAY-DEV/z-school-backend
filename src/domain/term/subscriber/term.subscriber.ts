@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -133,7 +134,20 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
       schoolId,
       lessons as Lesson[],
     );
-    await manager.getRepository(Offering).save(offerings);
+
+    // Offering 저장
+    const savedOfferings = await manager
+      .getRepository(Offering)
+      .save(offerings);
+
+    // 각 Group의 offeringId 설정
+    for (const offering of savedOfferings) {
+      for (const groupId of offering.groupIds) {
+        await manager
+          .getRepository(Group)
+          .update(groupId, { offeringId: offering.id });
+      }
+    }
   }
 
   /**
