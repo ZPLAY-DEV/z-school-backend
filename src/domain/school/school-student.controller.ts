@@ -91,6 +91,8 @@ export class SchoolStudentController {
       { id: 3, name: '오진석', phone: '01094867415' },
       { id: 4, name: '제이슨', phone: '01020440571' },
       { id: 5, name: '김민지', phone: '01093924027' },
+      { id: 6, name: '임승희', phone: '01020239567' },
+      { id: 7, name: '기다은', phone: '01094183655' },
     ];
 
     // 1-6학년, 각 학년당 4개 반, 각 반당 25명씩 생성
@@ -138,18 +140,23 @@ export class SchoolStudentController {
     dtos[2].parent.phone = whitelist[1].phone;
     dtos[3].parent.phone = whitelist[2].phone;
     dtos[4].parent.phone = whitelist[3].phone;
+    dtos[5].parent.phone = whitelist[4].phone;
+    dtos[6].parent.phone = whitelist[5].phone;
 
     dtos[1].parent.name = `${whitelist[0].name} 학부모`;
     dtos[2].parent.name = `${whitelist[1].name} 학부모`;
     dtos[3].parent.name = `${whitelist[2].name} 학부모`;
     dtos[4].parent.name = `${whitelist[3].name} 학부모`;
+    dtos[5].parent.name = `${whitelist[4].name} 학부모`;
+    dtos[6].parent.name = `${whitelist[5].name} 학부모`;
 
     dtos[1].name = whitelist[0].name;
     dtos[2].name = whitelist[1].name;
     dtos[3].name = whitelist[2].name;
     dtos[4].name = whitelist[3].name;
+    dtos[5].name = whitelist[4].name;
+    dtos[6].name = whitelist[5].name;
 
-    console.log(`👉👉👉👉👉👉👉👉👉👉👉👉👉👉`);
     console.log(JSON.stringify(dtos, null, 2));
 
     return await this.schoolStudentService.createBulk(schoolId, dtos);
@@ -168,6 +175,11 @@ export class SchoolStudentController {
     const workbook = await this.schoolStudentService.generateExcel(schoolId);
     const date = new Date().toISOString().split('T')[0];
 
+    // 한글 파일명을 URL 인코딩
+    const filename = `학생목록-${date}.xlsx`;
+    const encodedFilename = encodeURIComponent(filename);
+    const asciiFilename = `students-${date}.xlsx`; // ASCII fallback
+
     // 헤더 설정
     res.setHeader(
       'Content-Type',
@@ -175,7 +187,7 @@ export class SchoolStudentController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="학생목록-${date}.xlsx"`,
+      `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodedFilename}`,
     );
 
     // 엑셀 파일을 response stream으로 작성

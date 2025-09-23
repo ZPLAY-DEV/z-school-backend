@@ -282,8 +282,8 @@ const data = [
         frequency: 1,
         groups: [
           {
-            instructorName: '김혜영',
-            instructorPhone: '010-9770-9603',
+            instructorName: '임승희',
+            instructorPhone: '010-2023-9567',
             groupName: '사물놀이 (월)',
             location: '음악실',
             capacity: 20,
@@ -296,8 +296,8 @@ const data = [
             materialFee: 0,
           },
           {
-            instructorName: '김혜영',
-            instructorPhone: '010-9770-9603',
+            instructorName: '임승희',
+            instructorPhone: '010-2023-9567',
             groupName: '사물놀이 (수)',
             location: '음악실',
             capacity: 20,
@@ -322,8 +322,8 @@ const data = [
         frequency: 1,
         groups: [
           {
-            instructorName: '이명아',
-            instructorPhone: '010-4343-0058',
+            instructorName: '기다은',
+            instructorPhone: '010-9418-3655',
             groupName: '요리교실A',
             location: '늘봄선택형교실2',
             capacity: 16,
@@ -336,8 +336,8 @@ const data = [
             materialFee: 13000,
           },
           {
-            instructorName: '이명아',
-            instructorPhone: '010-4343-0058',
+            instructorName: '기다은',
+            instructorPhone: '010-9418-3655',
             groupName: '요리교실B',
             location: '늘봄선택형교실2',
             capacity: 16,
