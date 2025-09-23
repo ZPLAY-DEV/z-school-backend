@@ -374,7 +374,7 @@ export class SamService {
           .createQueryBuilder(Sam, 'sam')
           .distinct()
           .select('sam.id')
-          .innerJoin('sam.contracts', 'contract')
+          .leftJoin('sam.contracts', 'contract')
           .where('contract.termId = :termId', { termId })
           .getMany()) || [];
 
@@ -383,7 +383,9 @@ export class SamService {
       samIds = dto.samIds || [];
     }
     if (samIds.length === 0) {
-      throw new NotFoundException(`No Sams found.`);
+      throw new NotFoundException(
+        `이번 학기 반에 할당된 담당 강사가 없습니다.`,
+      );
     }
 
     return await this.dataSource.transaction(async (manager: EntityManager) => {
