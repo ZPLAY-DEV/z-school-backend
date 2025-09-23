@@ -91,7 +91,7 @@ export class SchoolSamController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="sams-${date}.xlsx"`,
+      `attachment; filename="강사목록-${date}.xlsx"`,
     );
 
     // 엑셀 파일을 response stream으로 작성

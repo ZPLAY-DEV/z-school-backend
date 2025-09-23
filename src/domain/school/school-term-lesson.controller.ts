@@ -130,7 +130,7 @@ export class SchoolTermLessonController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="lessons-${date}.xlsx"`,
+      `attachment; filename="강좌목록-${date}.xlsx"`,
     );
 
     // 엑셀 파일을 response stream으로 작성

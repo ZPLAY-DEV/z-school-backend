@@ -457,6 +457,11 @@ export class AuthService {
       ) {
         throw new ConflictException('already registered');
       }
+      await this.userRepository.update(user.id, {
+        username: dto.phone,
+        password: dto.password,
+        phone: dto.phone,
+      });
     } else {
       const hashedPassword = await bcrypt.hash(dto.password, 10);
       user = await this.userRepository.save(
