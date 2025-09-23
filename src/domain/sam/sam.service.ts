@@ -384,7 +384,7 @@ export class SamService {
     }
     if (samIds.length === 0) {
       throw new NotFoundException(
-        `이번 학기 반에 할당된 담당 강사가 없습니다.`,
+        `이번 학기 강좌에 배정된 강사가 없습니다. 강좌 등록 후 다시 시도하세요.`,
       );
     }
 
