@@ -127,7 +127,6 @@ export class SchoolTermLessonController {
     // 한글 파일명을 URL 인코딩
     const filename = `강좌목록-${date}.xlsx`;
     const encodedFilename = encodeURIComponent(filename);
-    const asciiFilename = `lessons-${date}.xlsx`; // ASCII fallback
 
     // 헤더 설정
     res.setHeader(
@@ -136,7 +135,7 @@ export class SchoolTermLessonController {
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodedFilename}`,
+      `attachment; filename*=UTF-8''${encodedFilename}`,
     );
 
     // 엑셀 파일을 response stream으로 작성
