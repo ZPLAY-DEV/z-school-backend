@@ -262,7 +262,7 @@ export class NewsletterSubscriber
       case NewsletterType.CHANGES:
         return 'NewsSchedule1';
       case NewsletterType.MANAGEMENT:
-        return 'NewsManagement1';
+        return 'NewsClassChange1';
       case NewsletterType.RESULT:
         return 'NewsRegistrationResult1';
       case NewsletterType.SUPPLIES:
@@ -279,7 +279,7 @@ export class NewsletterSubscriber
       case NewsletterType.CHANGES:
         return '수업 일정 안내';
       case NewsletterType.MANAGEMENT:
-        return '수업 운영 안내';
+        return '수업 변동사항 안내';
       case NewsletterType.RESULT:
         return '수강 신청 결과';
       case NewsletterType.SUPPLIES:
