@@ -19,6 +19,8 @@ import {
   CreateSchoolTermOfferingsDocs,
   DeleteAllSchoolTermOfferingsDocs,
   GetPersonalListDocs,
+  SchoolTermOfferingListDocs,
+  SchoolTermOfferingPaginatedListDocs,
 } from 'src/domain/school/swagger/school-term-offering-swagger.decorator';
 
 @Controller('schools')
@@ -76,6 +78,7 @@ export class SchoolTermOfferingController {
     );
   }
 
+  @SchoolTermOfferingPaginatedListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/offerings/paginated')
   async getInfiniteList(
@@ -90,6 +93,7 @@ export class SchoolTermOfferingController {
     );
   }
 
+  @SchoolTermOfferingListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/offerings')
   async getList(
