@@ -131,6 +131,16 @@ export class CreateTermDto {
   isOfferingReady?: boolean;
 
   @ApiPropertyOptional({
+    description: '수강확정 상태 - 수강확정 완료 여부',
+    type: Boolean,
+    default: false,
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: '수강확정 상태는 불린값이어야 합니다' })
+  isOfferingComplete?: boolean;
+
+  @ApiPropertyOptional({
     description:
       '수강신청 시작 일시 - ISO 형식 날짜/시간 (학기 시작 전이어야 함)',
     type: String,

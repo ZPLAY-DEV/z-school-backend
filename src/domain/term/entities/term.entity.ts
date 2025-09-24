@@ -100,9 +100,17 @@ export class Term {
   @Column({
     type: 'boolean',
     default: false,
-    comment: '수강신청 준비 상태. [null => 날짜] 지정시 자동으로 true',
+    comment: '수강신청 준비 상태',
   })
   isOfferingReady: boolean;
+
+  @ApiProperty({ description: '🈳 수강확정 상태', default: false })
+  @Column({
+    type: 'boolean',
+    default: false,
+    comment: '수강확정 상태',
+  })
+  isOfferingComplete: boolean;
 
   // ------------------------------------------------------------------------ //
 

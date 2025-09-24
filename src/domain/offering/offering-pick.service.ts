@@ -198,6 +198,10 @@ export class OfferingPickService {
         messages: messages,
       });
 
+      await this.termRepository.update(termId, {
+        isOfferingComplete: true,
+      });
+
       return messages.length;
     }
   }
