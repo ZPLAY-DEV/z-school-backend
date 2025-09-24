@@ -104,14 +104,14 @@ export class Schoolday {
     description: '시작시각 DateTime',
     example: '2025-05-27 08:00:00',
   })
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   startsAt: Date;
 
   @ApiProperty({
     description: '종료시각 DateTime',
     example: '2025-05-27 09:00:00',
   })
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   endsAt: Date;
 
   @ApiProperty({ description: '수업 시간 (분)', example: 60 })

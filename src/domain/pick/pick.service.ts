@@ -196,6 +196,11 @@ export class PickService {
         relations: ['group'],
       });
 
+      console.log(
+        `✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️`,
+        JSON.stringify(existingPicks, null, 2),
+      );
+
       // 각 기존 pick과 새로운 group의 시간 충돌 검증
       for (const existingPick of existingPicks) {
         if (

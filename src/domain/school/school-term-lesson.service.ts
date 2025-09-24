@@ -178,6 +178,13 @@ export class SchoolTermLessonService {
         return;
 
       const termName = a ? a.toString().trim() : null;
+
+      // term.name과 Excel에서 읽은 termName이 일치하지 않으면 오류 발생
+      if (termName && termName !== term.termName) {
+        throw new BadRequestException(
+          `Excel 파일의 학기명 "${termName}"이 요청된 학기명 "${term.termName}"과 일치하지 않습니다.`,
+        );
+      }
       const lessonName = b ? b.toString().trim() : null;
       const categoryName = c as string;
       const categoryId = this._getCategoryIdFromCategoryName(categoryName);

@@ -51,7 +51,7 @@ export class Payout {
 
   //* ---------------------------------------------------------------------- *//
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   notifiedAt: Date | null;
 
   @ApiProperty({ description: '🈵 createdAt' })
