@@ -425,7 +425,8 @@ export class GroupService {
     const bookings = await this.bookingRepository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.student', 'student')
-      .leftJoinAndSelect('booking.offering', 'offering')
+      .leftJoinAndSelect('student.parent', 'parent')
+      .leftJoin('booking.offering', 'offering')
       .leftJoinAndSelect('offering.groups', 'groups')
       .where('groups.id IN (:...ids)', { ids: [id] })
       .orderBy('booking.status', 'ASC')
@@ -446,6 +447,7 @@ export class GroupService {
             grade: booking.student.grade,
             class: booking.student.class,
             studentCode: booking.student.studentCode,
+            studentParentPhone: booking.student.parent.phone,
             status: booking.student.status,
             waitingPosition: booking.waitingPosition,
             bookingStatus: booking.status,
@@ -463,6 +465,7 @@ export class GroupService {
         grade: booking.student.grade,
         class: booking.student.class,
         studentCode: booking.student.studentCode,
+        studentParentPhone: booking.student.parent.phone,
         status: booking.student.status,
         waitingPosition: booking.waitingPosition,
         bookingStatus: booking.status,

@@ -51,6 +51,12 @@ export class BookedStudentDto {
   studentCode: number;
 
   @ApiProperty({
+    description: '학생 부모 전화번호',
+    example: '01012345678',
+  })
+  studentParentPhone: string;
+
+  @ApiProperty({
     description: '학생 상태',
     example: StudentStatus.ATTENDING,
     enum: StudentStatus,
