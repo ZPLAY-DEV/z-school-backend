@@ -362,7 +362,17 @@ export class SamService {
     const result: Schoolday[] = [];
 
     for (const schoolday of schooldays) {
-      result.push(schoolday);
+      if (schoolday.original !== null && schoolday.original === date) {
+        const duplicate = { ...schoolday };
+        duplicate.id = 0;
+        duplicate.today = schoolday.original;
+        duplicate.original = schoolday.today;
+        duplicate.weekday = getKoreanWeekday(schoolday.original);
+        duplicate.note = 'red';
+        result.push(duplicate);
+      } else {
+        result.push(schoolday);
+      }
     }
     return result;
   }
