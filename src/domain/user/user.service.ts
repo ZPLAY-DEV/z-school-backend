@@ -286,18 +286,21 @@ export class UserService {
 
     if (dto.role === Role.INSTRUCTOR && user.instructor) {
       if (user.instructor.sams.length > 0) {
-        for (const sam of user.instructor.sams) {
-          for (const contract of sam.contracts) {
-            const now = new Date();
-            if (
-              !contract.endedBy &&
-              new Date(contract.start) <= now &&
-              new Date(contract.end) > now
-            ) {
-              throw new ForbiddenException('instructor has active contracts');
-            }
-          }
-        }
+        throw new ForbiddenException(
+          '등록된 선생님은 탈퇴할 수 없습니다. 관리자에게 연락하세요.',
+        );
+        // for (const sam of user.instructor.sams) {
+        //   for (const contract of sam.contracts) {
+        //     const now = new Date();
+        //     if (
+        //       !contract.endedBy &&
+        //       new Date(contract.start) <= now &&
+        //       new Date(contract.end) > now
+        //     ) {
+        //       throw new ForbiddenException('instructor has active contracts');
+        //     }
+        //   }
+        // }
       }
       await this._resetInstructor(user.instructor.phone);
     }

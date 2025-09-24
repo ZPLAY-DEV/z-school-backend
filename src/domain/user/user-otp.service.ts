@@ -90,6 +90,13 @@ export class UserOtpService {
       }
     }
 
+    if (type === 'FORGOT_PASSWORD') {
+      const user = await this.userRepository.findOne({ where: { phone } });
+      if (!user) {
+        throw new ConflictException('회원가입이 되어있지 않습니다.');
+      }
+    }
+
     if (role.toUpperCase() === 'PARENT') {
       const parent = await this.parentRepository.findOne({ where: { phone } });
       if (!parent) {
