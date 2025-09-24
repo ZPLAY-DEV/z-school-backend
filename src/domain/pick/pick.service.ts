@@ -26,7 +26,7 @@ import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { isTimeConflict } from 'src/helpers/parse';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 @Injectable()
 export class PickService {
@@ -189,6 +189,15 @@ export class PickService {
     const conflictingStudentNames: string[] = [];
     const studentIds = [...new Set(dtos.map((dto) => dto.studentId))];
 
+    // 모든 학생의 이름을 미리 조회 (N+1 쿼리 방지)
+    const students = await this.studentRepository.find({
+      where: { id: In(studentIds) },
+      select: ['id', 'name'],
+    });
+    const studentNameMap = new Map(
+      students.map((student) => [student.id, student.name]),
+    );
+
     for (const studentId of studentIds) {
       // 해당 학생의 모든 picks 조회
       const existingPicks = await this.pickRepository.find({
@@ -213,14 +222,10 @@ export class PickService {
             newGroup.end,
           )
         ) {
-          // 충돌하는 학생의 이름 조회
-          const student = await this.studentRepository.findOne({
-            where: { id: studentId },
-            select: ['name'],
-          });
-
-          if (student && !conflictingStudentNames.includes(student.name)) {
-            conflictingStudentNames.push(student.name);
+          // 미리 조회한 학생 이름 사용
+          const studentName = studentNameMap.get(studentId);
+          if (studentName && !conflictingStudentNames.includes(studentName)) {
+            conflictingStudentNames.push(studentName);
           }
           break; // 한 학생당 하나의 충돌만 체크하면 되므로 break
         }
@@ -231,14 +236,20 @@ export class PickService {
   }
 
   private async _validateStudents(studentIds: number[]): Promise<void> {
-    for (const studentId of studentIds) {
-      const student = await this.studentRepository.findOne({
-        where: { id: studentId },
-      });
+    const students = await this.studentRepository.find({
+      where: { id: In(studentIds) },
+      select: ['id'],
+    });
 
-      if (!student) {
-        throw new NotFoundException(`Student with id ${studentId} not found`);
-      }
+    const foundStudentIds = students.map((student) => student.id);
+    const missingStudentIds = studentIds.filter(
+      (id) => !foundStudentIds.includes(id),
+    );
+
+    if (missingStudentIds.length > 0) {
+      throw new NotFoundException(
+        `Students with ids ${missingStudentIds.join(', ')} not found`,
+      );
     }
   }
 

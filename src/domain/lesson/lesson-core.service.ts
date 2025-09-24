@@ -287,22 +287,23 @@ export class LessonCoreService {
           : { ...groupDto, lessonId: existingLesson.id };
       });
 
+      // # 자동삭제 방지 - Lesson 업데이트 시 Group 자동 삭제는 위험하므로 비활성화
       // 업데이트 요청에 포함된 반ID 목록
-      const newGroupIds = dto.groups
-        .filter((g) => g.id !== undefined)
-        .map((g) => g.id);
+      // const newGroupIds = dto.groups
+      //   .filter((g) => g.id !== undefined)
+      //   .map((g) => g.id);
 
       // 강좌의 모든 반 중에서 newGroupIds 에 미포함된 반ID 목록
-      const groupsToDelete = existingLesson.groups.filter(
-        (group) => !newGroupIds.includes(group.id),
-      );
+      // const groupsToDelete = existingLesson.groups.filter(
+      //   (group) => !newGroupIds.includes(group.id),
+      // );
 
-      if (groupsToDelete.length > 0) {
-        await manager.softDelete(
-          Group,
-          groupsToDelete.map((g) => g.id),
-        );
-      }
+      // if (groupsToDelete.length > 0) {
+      //   await manager.softDelete(
+      //     Group,
+      //     groupsToDelete.map((g) => g.id),
+      //   );
+      // }
     }
 
     //? 4단계) 강좌 업데이트
@@ -1008,23 +1009,24 @@ export class LessonCoreService {
         .upsert(upsertData, ['lessonId', 'groupName']);
     }
 
+    // # 자동삭제 방지 - Lesson 업데이트 시 Group 자동 삭제는 위험하므로 비활성화
     // 전달된 DTO에 없는 기존 그룹 찾아서 삭제하기
-    const existingLesson = await manager.findOne(Lesson, {
-      where: { id: lesson.id },
-      relations: { groups: true },
-    });
-    if (existingLesson && existingLesson.groups.length > 0) {
-      const newGroupNames = dto.groups?.map((g) => g.groupName || '') || [];
-      const groupsToDelete = existingLesson.groups.filter(
-        (g) => !newGroupNames.includes(g.groupName || ''),
-      );
-      if (groupsToDelete.length > 0) {
-        await manager.softDelete(
-          Group,
-          groupsToDelete.map((g) => g.id),
-        );
-      }
-    }
+    // const existingLesson = await manager.findOne(Lesson, {
+    //   where: { id: lesson.id },
+    //   relations: { groups: true },
+    // });
+    // if (existingLesson && existingLesson.groups.length > 0) {
+    //   const newGroupNames = dto.groups?.map((g) => g.groupName || '') || [];
+    //   const groupsToDelete = existingLesson.groups.filter(
+    //     (g) => !newGroupNames.includes(g.groupName || ''),
+    //   );
+    //   if (groupsToDelete.length > 0) {
+    //     await manager.softDelete(
+    //       Group,
+    //       groupsToDelete.map((g) => g.id),
+    //     );
+    //   }
+    // }
 
     // 저장된 groups 데이터가 lesson 객체에 반영되도록
     lesson.groups = await manager.find(Group, {
