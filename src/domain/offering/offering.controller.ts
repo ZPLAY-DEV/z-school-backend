@@ -80,6 +80,7 @@ export class OfferingController {
     return await this.offeringService.findBookings(id);
   }
 
+  // offeringId 로 지난학기 termId, lesson 구해서 그 과목 수강한 학생들 리턴
   @GetFormerStudentsDocs()
   @Get(':id/former-students')
   async getFormerStudents(

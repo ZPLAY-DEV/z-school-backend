@@ -808,6 +808,7 @@ export class GroupAttendanceService {
     date: string, //? `2025-08`
   ): Promise<ExcelJS.Workbook> {
     let rowIndex;
+    const today = new Date();
     const year = Number(date.split('-')[0]);
     const month = Number(date.split('-')[1]);
     const firstDay = `${month}월 1일`;
@@ -1026,7 +1027,7 @@ export class GroupAttendanceService {
               statusText = '수업전';
               break;
             default:
-              statusText = '?';
+              statusText = today > new Date(schoolday.today) ? '-' : '수업전';
               break;
           }
           rowData.push(statusText);
