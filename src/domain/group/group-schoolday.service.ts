@@ -52,21 +52,22 @@ export class GroupSchooldayService {
       );
     }
 
-    //! monthStr이 있거나 없거나 모두 동일한 날짜 조건으로 조회후 필터링
+    //! monthStr 관계없이 모두 동일한 날짜 조건으로 조회후 필터링
     queryBuilder.orWhere(
-      'schoolday.groupId = :groupId AND schoolday.original IS NOT NULL',
+      '(schoolday.original IS NOT NULL AND schoolday.groupId = :groupId)',
       { groupId: groupId },
     );
     const schooldays = await queryBuilder
       .orderBy('schoolday.weekNumber', 'ASC')
       .getMany();
+
+    // original이 null이 아닌 아이템들에 대해 중복 아이템 생성
     let result: Schoolday[] = [];
 
     for (const schoolday of schooldays) {
       result.push(schoolday);
-      console.log(schoolday.today);
-      if (schoolday.original) {
-        // original이 null이 아닌 경우 중복 아이템 생성 (id만 0으로 설정)
+      // original이 null이 아닌 경우 중복 아이템 생성 (id만 0으로 설정)
+      if (schoolday.original !== null) {
         const duplicate = { ...schoolday };
         duplicate.id = 0;
         duplicate.today = schoolday.original;
@@ -85,7 +86,6 @@ export class GroupSchooldayService {
         return schooldayMonth === targetMonth;
       });
     }
-
     // today 날짜 순차적으로 정렬
     result.sort((a, b) => a.today.localeCompare(b.today));
 

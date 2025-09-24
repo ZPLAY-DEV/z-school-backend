@@ -35,6 +35,7 @@ import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-wit
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
+import { getKoreanWeekday } from 'src/helpers/date';
 import { normalizePhone } from 'src/helpers/phone';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
@@ -376,34 +377,44 @@ export class StudentService {
         },
       );
     }
+
+    //! monthStr 관계없이 모두 동일한 날짜 조건으로 조회후 필터링
     queryBuilder.orWhere(
       '(schoolday.original IS NOT NULL AND pick.studentId = :studentId)',
       { studentId: id },
     );
-    const schooldays = await queryBuilder.getMany();
+    const schooldays = await queryBuilder
+      .orderBy('schoolday.weekNumber', 'ASC')
+      .getMany();
 
     // original이 null이 아닌 아이템들에 대해 중복 아이템 생성
-    const result: Schoolday[] = [];
+    let result: Schoolday[] = [];
 
     for (const schoolday of schooldays) {
+      result.push(schoolday);
       // original이 null이 아닌 경우 중복 아이템 생성 (id만 0으로 설정)
       if (schoolday.original !== null) {
-        if (!monthStr) {
-          result.push(schoolday);
-        } else {
-          const [, m] = schoolday.today.split('-');
-          const [, n] = schoolday.original.split('-');
-          if (
-            Number(m) === Number(monthStr.split('-')[1]) ||
-            Number(n) === Number(monthStr.split('-')[1])
-          ) {
-            result.push(schoolday);
-          }
-        }
-      } else {
-        result.push(schoolday);
+        const duplicate = { ...schoolday };
+        duplicate.id = 0;
+        duplicate.today = schoolday.original;
+        duplicate.original = schoolday.today;
+        duplicate.weekday = getKoreanWeekday(schoolday.original);
+        duplicate.note = 'red';
+        result.push(duplicate);
       }
     }
+
+    // monthStr이 있을 때 today 속성으로 월별 필터링
+    if (monthStr) {
+      const [, targetMonth] = monthStr.split('-').map(Number);
+      result = result.filter((schoolday) => {
+        const [, schooldayMonth] = schoolday.today.split('-').map(Number);
+        return schooldayMonth === targetMonth;
+      });
+    }
+    // today 날짜 순차적으로 정렬
+    result.sort((a, b) => a.today.localeCompare(b.today));
+
     return result;
   }
 

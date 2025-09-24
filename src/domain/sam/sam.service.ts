@@ -14,6 +14,7 @@ import { UpdateSamDto } from 'src/domain/sam/dto/update-sam.dto';
 import { GroupWithPicksCount, Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { getKoreanWeekday } from 'src/helpers/date';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 @Injectable()
@@ -296,6 +297,8 @@ export class SamService {
         },
       );
     }
+
+    //! monthStr 관계없이 모두 동일한 날짜 조건으로 조회후 필터링
     queryBuilder.orWhere(
       '(schoolday.original IS NOT NULL AND group.samId = :samId)',
       { samId: id },
@@ -306,29 +309,32 @@ export class SamService {
       .getMany();
 
     // original이 null이 아닌 아이템들에 대해 중복 아이템 생성
-    const result: Schoolday[] = [];
+    let result: Schoolday[] = [];
 
     for (const schoolday of schooldays) {
+      result.push(schoolday);
       // original이 null이 아닌 경우 중복 아이템 생성 (id만 0으로 설정)
       if (schoolday.original !== null) {
-        if (!monthStr) {
-          result.push(schoolday);
-        } else {
-          const [, m] = schoolday.today.split('-');
-          const [, n] = schoolday.original.split('-');
-          if (
-            Number(m) === Number(monthStr.split('-')[1]) ||
-            Number(n) === Number(monthStr.split('-')[1])
-          ) {
-            result.push(schoolday);
-          }
-        }
-      } else {
-        result.push(schoolday);
+        const duplicate = { ...schoolday };
+        duplicate.id = 0;
+        duplicate.today = schoolday.original;
+        duplicate.original = schoolday.today;
+        duplicate.weekday = getKoreanWeekday(schoolday.original);
+        duplicate.note = 'red';
+        result.push(duplicate);
       }
     }
+
+    // monthStr이 있을 때 today 속성으로 월별 필터링
+    if (monthStr) {
+      const [, targetMonth] = monthStr.split('-').map(Number);
+      result = result.filter((schoolday) => {
+        const [, schooldayMonth] = schoolday.today.split('-').map(Number);
+        return schooldayMonth === targetMonth;
+      });
+    }
     // weekday 순차적으로 정렬
-    result.sort((a, b) => Number(a.weekNumber) - Number(b.weekNumber));
+    result.sort((a, b) => Number(a.today) - Number(b.today));
 
     return result;
   }
