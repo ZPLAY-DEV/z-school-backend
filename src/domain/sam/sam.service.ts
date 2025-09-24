@@ -198,16 +198,30 @@ export class SamService {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  async findById(id: number, relations: string[] = []): Promise<Sam> {
+  async findById(
+    id: number,
+    relations: string[] = [],
+    termId?: number,
+  ): Promise<Sam> {
     try {
-      return relations.length > 0
-        ? await this.samRepository.findOneOrFail({
-            where: { id },
-            relations,
-          })
-        : await this.samRepository.findOneOrFail({
-            where: { id },
-          });
+      const sam =
+        relations.length > 0
+          ? await this.samRepository.findOneOrFail({
+              where: { id },
+              relations,
+            })
+          : await this.samRepository.findOneOrFail({
+              where: { id },
+            });
+
+      // termId가 제공된 경우 contracts를 필터링
+      if (termId && sam.contracts) {
+        sam.contracts = sam.contracts.filter(
+          (contract) => contract.termId === Number(termId),
+        );
+      }
+
+      return sam;
     } catch (e) {
       this.logger.error(e);
       throw new NotFoundException('Sam not found');
@@ -345,7 +359,8 @@ export class SamService {
     termId: number,
     date: string, //! YYYY-MM-DD
   ): Promise<Schoolday[]> {
-    const sam = await this.samRepository.findOneOrFail({
+    // Sam 존재 여부 확인
+    await this.samRepository.findOneOrFail({
       where: { id },
     });
 
