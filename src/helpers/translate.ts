@@ -45,7 +45,7 @@ export const translateActor = (type: Actor | null): string => {
     case Actor.INSTRUCTOR:
       return '강사';
     case Actor.MANAGER:
-      return '매니저';
+      return '관리자';
     default:
       return '기타';
   }

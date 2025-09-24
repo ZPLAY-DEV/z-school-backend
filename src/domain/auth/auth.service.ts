@@ -106,6 +106,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid role');
     }
 
+    // user.password가 null인 경우 처리
+    if (!user.password) {
+      throw new UnauthorizedException('회원가입부터 하세요.');
+    }
+
     const passwordMatches = await bcrypt.compare(password, user.password);
     if (!passwordMatches) {
       throw new UnauthorizedException('Invalid credentials');
