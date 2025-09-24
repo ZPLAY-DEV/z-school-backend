@@ -457,8 +457,9 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     if (user) {
       if (
-        (dto.role === Role.INSTRUCTOR && user.instructor) ||
-        (dto.role === Role.PARENT && user.parent)
+        user.password !== null &&
+        ((dto.role === Role.INSTRUCTOR && user.instructor) ||
+          (dto.role === Role.PARENT && user.parent))
       ) {
         throw new ConflictException('already registered');
       }

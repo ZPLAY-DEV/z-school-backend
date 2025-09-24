@@ -34,6 +34,7 @@ export class CategoryController {
   //? SEED (DB 생성 후, 단 한번만 호출)
   //? ---------------------------------------------------------------------- ?//
 
+  @Public()
   @ApiOperation({ summary: '⚙️ to initialize table' })
   @Post('seed')
   async seed(): Promise<number> {
