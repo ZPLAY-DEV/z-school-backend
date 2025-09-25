@@ -201,7 +201,7 @@ export class PickService {
     for (const studentId of studentIds) {
       // 해당 학생의 모든 picks 조회
       const existingPicks = await this.pickRepository.find({
-        where: { studentId, termId },
+        where: { studentId, termId, isActive: true },
         relations: ['group'],
       });
 

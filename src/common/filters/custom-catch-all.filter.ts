@@ -104,7 +104,10 @@ export class CustomCatchAllFilter extends BaseExceptionFilter {
         if (httpStatus === 401) {
           errorResponse = {
             error: 'UNAUTHORIZED',
-            message: '인증 오류가 발생했습니다.',
+            message:
+              typeof response === 'string'
+                ? response
+                : exception.message || '인증 오류가 발생했습니다.',
             description: req.url,
           };
         } else if (httpStatus === 404) {
@@ -113,20 +116,28 @@ export class CustomCatchAllFilter extends BaseExceptionFilter {
             message:
               typeof response === 'string'
                 ? response
-                : '리소스를 찾을 수 없습니다.',
+                : exception.message || '리소스를 찾을 수 없습니다.',
+            description: req.url,
+          };
+        } else if (httpStatus === 409) {
+          // ConflictException 처리
+          errorResponse = {
+            error: 'CONFLICT',
+            message:
+              typeof response === 'string'
+                ? response
+                : exception.message || '데이터 충돌이 발생했습니다.',
             description: req.url,
           };
         } else {
           errorResponse = {
             error: 'HTTP_EXCEPTION',
             message:
-              typeof response === 'string' ? response : exception.message,
+              typeof response === 'string'
+                ? response
+                : exception.message || '오류가 발생했습니다.',
             description: req.url,
           };
-        }
-
-        if (typeof response === 'string') {
-          errorResponse.message = response;
         }
       }
     } else {
