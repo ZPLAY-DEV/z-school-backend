@@ -128,7 +128,7 @@ export class CreateAttendanceWithKeyDto extends AttendanceKeyDto {
 
   @ApiProperty({
     description: '🈵 optional date',
-    default: '감사합니다.',
+    default: 'date',
     required: false,
   })
   @IsOptional()

@@ -1,14 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-    IsEnum,
-    IsInt,
-    IsOptional,
-    IsString,
-    Max,
-    MaxLength,
-    Min,
-    ValidateNested,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
 } from 'class-validator';
 import { StudentStatus } from 'src/common/enums';
 import { UpdateParentDto } from 'src/domain/parent/dto/update-parent.dto';

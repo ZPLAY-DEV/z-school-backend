@@ -17,8 +17,8 @@ import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-crea
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
-import { NextStopDto } from 'src/domain/student/dto/next-stop.dto';
 import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
+import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 
 //? ---------------------------------------------------------------------- ?//
@@ -49,7 +49,7 @@ export const CreateStudentDocs = () =>
 ### 📌 비즈니스 규칙
 - **필수 정보**: schoolId, grade, parent (또는 parentId)
 - **부모 정보**: parent 객체는 항상 필수 (parentId 미제공시)
-- **선택 정보**: class, studentCode, name, phone, escortPhone, nextStop, status, note
+- **선택 정보**: class, studentCode, name, phone, status, note
 - **중복 체크**: 동일 학교 내 학번 중복 불가
 - **학년 범위**: 1~6학년만 가능
 
@@ -452,25 +452,52 @@ export const GetSchooldayByDateDocs = () =>
 export const UpdateStudentDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '📍 학생 하교장소 수정 (Deprecated)',
+      summary: '✏️ 학생 정보 수정',
       description: `
-### ⚠️ Deprecated
-이 엔드포인트는 더 이상 권장되지 않습니다. 
-대신 \`PATCH /students/:id\` 엔드포인트의 \`nextStops\` 필드를 사용하세요.
-
 ### 📋 기능 설명
-학생의 요일별 하교장소 정보를 수정합니다.
+학생의 기본 정보를 수정합니다. 필요한 필드만 선택적으로 업데이트할 수 있습니다.
 
-### 📅 요일별 정보 구조
-각 요일(월~토)마다 다음 정보를 포함:
+### 🏷️ 수정 가능한 필드들
+- **기본 정보**: 학년, 반, 학번, 이름, 전화번호
+- **하교장소**: nextStops (배열 - 권장)
+- **상태**: 재학 상태 (ATTENDING, TRANSFERRED)
+- **부모 정보**: parentId 또는 parent 객체로 부모 변경
+- **비고**: 추가 정보나 특이사항
+
+### 🏷️ 부모 연결 방식 (우선순위)
+**1️⃣ parentId 우선**: 제공시 parent 객체 무시
+**2️⃣ parent.id**: 기존 부모와 연결
+**3️⃣ parent 객체**: 전화번호로 기존 부모 찾기 또는 새로 생성
+
+### 📅 하교장소 정보 (nextStops)
+배열 형태로 요일별 하교장소 정보를 관리:
 - **place**: 하교 후 가는 장소 (필수)
 - **name**: 함께 가는 사람 이름 (선택, nullable)
 - **phone**: 함께 가는 사람 전화번호 (선택, nullable)
 
 ### ⚠️ 주의사항
-- 기존 하교장소 정보는 완전히 덮어쓰기
-- 모든 요일 정보를 포함하여 전송
-- 전화번호는 하이픈 없이 숫자만 입력
+- **schoolId는 수정 불가**: 학교 변경은 전학 프로세스를 통해서만
+- **학번 중복**: 동일 학교 내에서 학번 중복 불가
+- **학년 범위**: 1~6학년만 가능
+- **전화번호**: 하이픈 없이 숫자만 입력
+- **부분 업데이트**: 제공된 필드만 업데이트, 나머지는 기존 값 유지
+
+### 💡 사용 예시
+\`\`\`json
+{
+  "grade": 4,
+  "class": "2",
+  "studentCode": 15,
+  "name": "김학생",
+  "phone": "01098765432",
+  "nextStops": [
+    { "place": "집", "name": "엄마", "phone": "01012345678" },
+    { "place": "학원", "name": null, "phone": null }
+  ],
+  "status": "ATTENDING",
+  "note": "집중력 향상을 위해 앞자리 배치 요청"
+}
+\`\`\`
       `,
     }),
     ApiParam({
@@ -480,45 +507,86 @@ export const UpdateStudentDocs = () =>
       example: 1,
     }),
     ApiBody({
-      type: NextStopDto,
+      type: UpdateStudentDto,
       examples: {
-        complete_update: {
-          summary: '전체 하교장소 정보 수정',
-          description: '모든 요일의 하교장소 정보를 한 번에 수정',
+        basic_info: {
+          summary: '기본 정보 수정',
+          description: '학년, 반, 학번, 이름 등 기본 정보만 수정',
           value: {
-            월: { place: '당구장', name: '친구', phone: '01012340001' },
-            화: { place: '찜질방', name: '친구', phone: '01012340002' },
-            수: { place: '당구장', name: '친구', phone: '01012340003' },
-            목: { place: '탁구장', name: '친구', phone: '01012340004' },
-            금: { place: '게임방', name: '친구', phone: '01012340005' },
-            토: { place: '노래방', name: '친구', phone: '01012340006' },
+            grade: 4,
+            class: '2',
+            studentCode: 15,
+            name: '김학생',
+            phone: '01098765432',
           },
         },
-        nullable_fields: {
-          summary: 'nullable 필드 예시',
-          description: 'name과 phone이 null인 경우',
+        nextstops_update: {
+          summary: '하교장소 정보 수정',
+          description: '요일별 하교장소 정보를 배열로 수정',
           value: {
-            월: { place: '집', name: null, phone: null },
-            화: { place: '학원', name: '엄마', phone: null },
-            수: { place: '도서관', name: null, phone: '01012340000' },
-            목: { place: '집', name: null, phone: null },
-            금: { place: '학원', name: '엄마', phone: '01012340000' },
-            토: { place: '집', name: null, phone: null },
+            nextStops: [
+              { place: '집', name: '엄마', phone: '01012345678' },
+              { place: '학원', name: null, phone: null },
+              { place: '도서관', name: '친구', phone: '01098765432' },
+            ],
+          },
+        },
+        parent_change: {
+          summary: '부모 정보 변경',
+          description: '기존 부모 ID로 변경하거나 새로운 부모 정보로 변경',
+          value: {
+            parentId: 5,
+            // 또는
+            // parent: {
+            //   name: '새로운부모',
+            //   phone: '01011112222'
+            // }
+          },
+        },
+        status_change: {
+          summary: '재학 상태 변경',
+          description: '학생의 재학 상태를 변경 (전학 등)',
+          value: {
+            status: 'TRANSFERRED',
+            note: '다른 학교로 전학',
+          },
+        },
+        complete_update: {
+          summary: '전체 정보 수정',
+          description: '모든 수정 가능한 필드를 포함한 전체 업데이트',
+          value: {
+            grade: 5,
+            class: '3',
+            studentCode: 20,
+            name: '이학생',
+            phone: '01055556666',
+            nextStops: [
+              { place: '집', name: '엄마', phone: '01012345678' },
+              { place: '학원', name: '선생님', phone: '01087654321' },
+            ],
+            status: 'ATTENDING',
+            note: '올해부터 5학년으로 진급',
+            parentId: 3,
           },
         },
       },
     }),
     ApiOkResponseTemplate({
-      description: '✅ 학생 하교장소 수정 완료',
+      description: '✅ 학생 정보 수정 완료',
       type: Student,
     }),
     ApiResponse({
       status: StatusCodes.BAD_REQUEST,
-      description: '🚫 요청 데이터 오류 - 잘못된 데이터 형식, 필수 필드 누락',
+      description:
+        '🚫 요청 데이터 오류 - 잘못된 데이터 형식, 필수 필드 누락, 학번 중복',
     }),
     ApiResponse({
       status: StatusCodes.NOT_FOUND,
       description: '🔍 학생 없음 - 존재하지 않는 학생 ID',
+    }),
+    ApiResponse({
+      status: StatusCodes.CONFLICT,
+      description: '⚠️ 데이터 충돌 - 학번 중복, 부모 정보 중복 등',
     }),
   );
 

@@ -82,15 +82,12 @@ export class Student {
   })
   status: StudentStatus;
 
-  // @ApiProperty({
-  //   description: '귀가동행인 전화번호 (숫자만 입력)',
-  //   example: '01012345678',
-  // })
-  // @Column({ type: 'varchar', length: 16, nullable: true })
-  // escortPhone: string | null;
-
-  @ApiProperty({ description: 'deprecated', example: 'deprecated' })
-  @Column({ type: 'varchar', length: 4, nullable: true })
+  @ApiProperty({ description: 'not used anymore' })
+  @Column({
+    type: 'varchar',
+    length: 16,
+    nullable: true,
+  })
   nextStop: string | null;
 
   @ApiProperty({ description: '요일별 하교후 목적지', example: 'encrypted' })

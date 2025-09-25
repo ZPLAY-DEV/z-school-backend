@@ -560,19 +560,20 @@ export class StudentService {
       return student;
     }
 
-    const otherStudent = await this.studentRepository.findOneOrFail({
-      where: {
-        class: dto.class,
-        grade: dto.grade,
-        studentCode: dto.studentCode,
-        schoolId: student.schoolId,
-      },
-    });
+    if (dto.class && dto.grade && dto.studentCode) {
+      const otherStudent = await this.studentRepository.findOneOrFail({
+        where: {
+          class: dto.class,
+          grade: dto.grade,
+          studentCode: dto.studentCode,
+          schoolId: student.schoolId,
+        },
+      });
 
-    if (otherStudent && otherStudent.id !== id) {
-      throw new ConflictException('아뿔사! 학년,반,번호의 다른학생 이미 존재');
+      if (otherStudent && otherStudent.id !== id) {
+        throw new ConflictException('학년,반,번호의 다른학생 이미 존재합니다.');
+      }
     }
-
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       const { parent: parentDto, parentId, ...studentDto } = dto;
 
