@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { CreateTermDto } from 'src/domain/term/dto/create-term.dto';
 import { UpdateTermDto } from 'src/domain/term/dto/update-term.dto';
@@ -17,6 +18,8 @@ export class TermService {
     private readonly termRepository: Repository<Term>,
     @InjectRepository(School)
     private readonly schoolRepository: Repository<School>,
+    @InjectRepository(Offering)
+    private readonly offeringRepository: Repository<Offering>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -101,6 +104,24 @@ export class TermService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateTermDto): Promise<Term> {
+    const existingTerm = await this.findById(id);
+
+    // pickRule 변경 시 비즈니스 로직 검증
+    if (dto.pickRule && existingTerm.pickRule !== dto.pickRule) {
+      if (existingTerm.isOfferingReady) {
+        const now = new Date();
+        if (existingTerm.bookingStart && existingTerm.bookingStart <= now) {
+          throw new BadRequestException(
+            '수강신청 기간 중에는 확정 방식을 변경할 수 없습니다',
+          );
+        }
+        await this.offeringRepository.update(
+          { termId: id },
+          { pickRule: dto.pickRule },
+        );
+      }
+    }
+
     const term = await this.termRepository.preload({
       id,
       ...dto,

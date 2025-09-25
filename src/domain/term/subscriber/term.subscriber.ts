@@ -80,14 +80,16 @@ export class TermSubscriber implements EntitySubscriberInterface<Term> {
 
   async afterUpdate(event: UpdateEvent<Term>) {
     const term = event.entity as Term;
-    const oldStatus = event.databaseEntity?.bookingStart;
-    const newStatus = term?.bookingStart;
+    const previousTerm = event.databaseEntity;
+
+    const newBookingStart = term?.bookingStart;
+    const oldBookingStart = previousTerm?.bookingStart;
 
     // bookingStart 가 처음 설정될 때 해야할 일
     // 1. 모든 Term > Lesson > Group 에 대해서 Offering 생성
     // 2. set isOfferingReady to true
     // 3. Slack 알림 발송
-    if (term && oldStatus === null && newStatus !== null) {
+    if (term && oldBookingStart === null && newBookingStart !== null) {
       try {
         //? offerings 생성하기
         await this.makeOfferings(term, event.manager);
