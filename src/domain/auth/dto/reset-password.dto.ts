@@ -17,6 +17,6 @@ export class ResetPasswordDto {
   @ApiProperty({ description: '🈵 비밀번호' })
   @IsNotEmpty()
   @IsString()
-  @MinLength(6)
+  @MinLength(4)
   password: string;
 }

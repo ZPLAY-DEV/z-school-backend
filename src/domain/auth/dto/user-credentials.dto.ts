@@ -54,6 +54,7 @@ export class UserCredentialsDtoWithSchool {
   @ApiProperty({ description: '🈵 password' })
   @IsNotEmpty()
   @IsString()
+  @MinLength(4)
   password: string;
 
   @ApiProperty({ description: '🈳 role' })
