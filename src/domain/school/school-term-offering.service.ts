@@ -38,6 +38,10 @@ export class SchoolTermOfferingService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(schoolId: number, termId: number): Promise<Offering[]> {
+    this.logger.debug(
+      `[createOfferings] 시작 - schoolId: ${schoolId}, termId: ${termId}`,
+    );
+
     const lessons = await this.lessonRepository
       .createQueryBuilder('lesson')
       .leftJoinAndSelect('lesson.groups', 'group')
@@ -45,8 +49,39 @@ export class SchoolTermOfferingService {
       .orderBy('lesson.id', 'ASC')
       .getMany();
 
+    this.logger.debug(
+      `[createOfferings] lessons 조회 완료 - lessons.length: ${lessons.length}`,
+    );
+    this.logger.debug(
+      `[createOfferings] lessons 상세:`,
+      lessons.map((lesson) => ({
+        id: lesson.id,
+        lessonName: lesson.lessonName,
+        frequency: lesson.frequency,
+        groupsCount: lesson.groups?.length || 0,
+        groups: lesson.groups?.map((group) => ({
+          id: group.id,
+          groupName: group.groupName,
+          capacity: group.capacity,
+          allowedGrades: group.allowedGrades,
+          weekday: group.weekday,
+        })),
+      })),
+    );
+
     const term = await this.termRepository.findOneOrFail({
       where: { id: termId },
+    });
+
+    this.logger.debug(
+      `[createOfferings] term 조회 완료 - term.pickRule: ${term.pickRule}`,
+    );
+    this.logger.debug(`[createOfferings] term 상세:`, {
+      id: term.id,
+      pickRule: term.pickRule,
+      termName: term.termName,
+      start: term.start,
+      end: term.end,
     });
 
     const offerings = makeOfferingsFromLessons(
@@ -56,10 +91,50 @@ export class SchoolTermOfferingService {
       lessons,
     );
 
+    this.logger.debug(
+      `[createOfferings] offerings 생성 완료 - offerings.length: ${offerings.length}`,
+    );
+    this.logger.debug(
+      `[createOfferings] offerings pickRule 분포:`,
+      offerings.reduce(
+        (acc, offering) => {
+          acc[offering.pickRule] = (acc[offering.pickRule] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+    );
+    this.logger.debug(
+      `[createOfferings] offerings 상세:`,
+      offerings.map((offering) => ({
+        id: offering.id,
+        lessonId: offering.lessonId,
+        lessonName: offering.lessonName,
+        groupName: offering.groupName,
+        capacity: offering.capacity,
+        pickRule: offering.pickRule,
+        allowedGrades: offering.allowedGrades,
+      })),
+    );
+
     // 기존 offerings 조회 (unique constraint 기준)
     const existingOfferings = await this.offeringRepository.find({
       where: { schoolId, termId },
     });
+
+    this.logger.debug(
+      `[createOfferings] 기존 offerings 조회 완료 - existingOfferings.length: ${existingOfferings.length}`,
+    );
+    this.logger.debug(
+      `[createOfferings] 기존 offerings pickRule 분포:`,
+      existingOfferings.reduce(
+        (acc, offering) => {
+          acc[offering.pickRule] = (acc[offering.pickRule] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+    );
 
     // 기존 offerings와 새로운 offerings를 매핑하여 ID 설정
     const offeringsToUpsert = offerings.map((newOffering) => {
@@ -73,12 +148,22 @@ export class SchoolTermOfferingService {
 
       // 기존 offering이 있으면 ID를 설정하여 update가 되도록 함
       if (existing) {
+        this.logger.debug(
+          `[createOfferings] 기존 offering 업데이트 - lessonId: ${newOffering.lessonId}, groupName: ${newOffering.groupName}, 기존 pickRule: ${existing.pickRule}, 새로운 pickRule: ${newOffering.pickRule}`,
+        );
         return { ...newOffering, id: existing.id };
       }
 
       // 새로운 offering이면 ID 없이 반환 (insert가 됨)
+      this.logger.debug(
+        `[createOfferings] 새로운 offering 생성 - lessonId: ${newOffering.lessonId}, groupName: ${newOffering.groupName}, pickRule: ${newOffering.pickRule}`,
+      );
       return newOffering;
     });
+
+    this.logger.debug(
+      `[createOfferings] upsert 대상 - offeringsToUpsert.length: ${offeringsToUpsert.length}`,
+    );
 
     // upsert: 복합 유니크 키 기준으로 insert or update
     await this.offeringRepository.upsert(offeringsToUpsert, [
@@ -88,14 +173,34 @@ export class SchoolTermOfferingService {
       'groupName',
     ]);
 
+    this.logger.debug(`[createOfferings] upsert 완료`);
+
     // 실제 저장된 offerings를 다시 조회
     const savedOfferings = await this.offeringRepository.find({
       where: { schoolId, termId },
       order: { id: 'ASC' },
     });
 
+    this.logger.debug(
+      `[createOfferings] 저장된 offerings 조회 완료 - savedOfferings.length: ${savedOfferings.length}`,
+    );
+    this.logger.debug(
+      `[createOfferings] 저장된 offerings pickRule 분포:`,
+      savedOfferings.reduce(
+        (acc, offering) => {
+          acc[offering.pickRule] = (acc[offering.pickRule] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+    );
+
     // Group의 offeringId 갱신
     await this._updateGroupOfferingIds(offerings, savedOfferings);
+
+    this.logger.debug(
+      `[createOfferings] 완료 - 최종 반환할 offerings.length: ${savedOfferings.length}`,
+    );
 
     return savedOfferings;
   }

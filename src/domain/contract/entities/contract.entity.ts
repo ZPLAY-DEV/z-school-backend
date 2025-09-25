@@ -97,6 +97,13 @@ export class Contract {
   })
   end: string;
 
+  @ApiProperty({ description: '🈵 계약 여부' })
+  @Column({
+    type: 'boolean',
+    default: true,
+  })
+  isActive: boolean;
+
   @ApiProperty({ description: '🈳 비고', example: '비고' })
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;

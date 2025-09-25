@@ -841,10 +841,21 @@ export class LessonCoreService {
     // groups: CreateGroupWithInstructorDto[],
     manager: EntityManager,
   ): Promise<void> {
+    this.logger.log(
+      `🔍 [processGroups] Starting group processing for lesson ${lesson.id}`,
+    );
+    this.logger.log(
+      `📊 [processGroups] Processing ${dto.groups?.length || 0} groups from DTO`,
+    );
+
     const uniqueSams = new Map<string, number>(); // key: `${instructorName}-${instructorPhone}`
     const groupsWithSamData: GroupSamData[] = [];
 
     for (const groupDto of dto.groups || []) {
+      this.logger.log(
+        `🔍 [processGroups] Processing group: ${groupDto.groupName} (instructorId: ${groupDto.instructorId}, instructorName: ${groupDto.instructorName}, instructorPhone: ${groupDto.instructorPhone})`,
+      );
+
       const instructorPhone = normalizePhone(groupDto.instructorPhone || '');
       let instructorKey: string;
       let instructor: any;
@@ -970,10 +981,29 @@ export class LessonCoreService {
         samId: Number(sam.id),
         ...groupDto,
       } as GroupSamData);
+
+      this.logger.log(
+        `✅ [processGroups] Group ${groupDto.groupName} mapped to samId: ${sam.id} (instructorKey: ${instructorKey})`,
+      );
     }
 
+    this.logger.log(
+      `📊 [processGroups] Unique sams mapping: ${JSON.stringify(Array.from(uniqueSams.entries()))}`,
+    );
+    this.logger.log(
+      `📊 [processGroups] Groups with sam data: ${groupsWithSamData.length} groups`,
+    );
+
     // Upsert groups with both lessonId and samId
+    this.logger.log(
+      `🔄 [processGroups] Starting group upsert for ${groupsWithSamData.length} groups`,
+    );
+
     for (const groupData of groupsWithSamData) {
+      this.logger.log(
+        `🔍 [processGroups] Upserting group: ${groupData.groupName} (id: ${groupData.id}, samId: ${groupData.samId})`,
+      );
+
       const groupStart = parseTimeFormat(parseTime(groupData.start));
       const groupEnd = parseTimeFormat(parseTime(groupData.end));
       const groupAllowedGrades = parseRangeFormat(
@@ -1000,6 +1030,9 @@ export class LessonCoreService {
       };
       if ('id' in groupData && groupData.id) {
         upsertData.id = Number(groupData.id);
+        this.logger.log(`  📝 Using existing group ID: ${groupData.id}`);
+      } else {
+        this.logger.log(`  🆕 Creating new group (no ID provided)`);
       }
       // Ensure lessonId is always set correctly
       upsertData.lessonId = lesson.id;
@@ -1007,6 +1040,10 @@ export class LessonCoreService {
       await manager
         .getRepository(Group)
         .upsert(upsertData, ['lessonId', 'groupName']);
+
+      this.logger.log(
+        `✅ [processGroups] Group upsert completed for: ${groupData.groupName}`,
+      );
     }
 
     // # 자동삭제 방지 - Lesson 업데이트 시 Group 자동 삭제는 위험하므로 비활성화
@@ -1033,7 +1070,17 @@ export class LessonCoreService {
       where: { lessonId: lesson.id, deletedAt: IsNull() },
     });
 
+    this.logger.log(
+      `📊 [processGroups] Final groups loaded from DB: ${lesson.groups.length} groups`,
+    );
+    lesson.groups.forEach((group) => {
+      this.logger.log(
+        `  - Group ${group.id}: ${group.groupName} (samId: ${group.samId})`,
+      );
+    });
+
     // Contract 관계를 정교하게 관리: 기존 데이터와 비교하여 정확한 처리
+    this.logger.log(`🔄 [processGroups] Starting contract management`);
     await this.manageContracts(
       lesson.id,
       uniqueSams,
@@ -1042,6 +1089,7 @@ export class LessonCoreService {
       lesson,
       manager,
     );
+    this.logger.log(`✅ [processGroups] Contract management completed`);
   }
 
   /**
@@ -1050,6 +1098,13 @@ export class LessonCoreService {
    * - 새로운 contracts는 upsert
    * - 삭제된 sam이나 group과 연관된 기존 contracts는 삭제
    * - 데이터 정합성 보장 및 불필요한 작업 최소화
+   *
+   * 🔥 수정된 핵심 로직:
+   * - 각 group은 자신의 samId와만 contract를 가져야 함
+   * - 기존 문제: 모든 samId와 모든 groupId의 조합을 생성하여 불필요한 contract 생성
+   * - 예시: lessonId=14, groupId=[31,32], samId=[5,13]인 경우
+   *   - 잘못된 기존 로직: (31,14,5), (31,14,13), (32,14,5), (32,14,13) 모두 생성
+   *   - 올바른 수정 로직: (31,14,5), (32,14,13)만 생성 (각 group의 실제 samId와 매칭)
    */
   private async manageContracts(
     lessonId: number,
@@ -1059,13 +1114,28 @@ export class LessonCoreService {
     lesson: Lesson,
     manager: EntityManager,
   ): Promise<void> {
+    this.logger.log(
+      `🔍 [manageContracts] Starting contract management for lesson ${lessonId}`,
+    );
+
     // 1. 기존 contracts 조회
     const existingContracts = await manager.getRepository(Contract).find({
       where: { lessonId },
-      select: ['id', 'samId', 'groupId'],
+      select: ['id', 'samId', 'groupId', 'termId', 'start', 'end'],
     });
 
-    // 2. 새로운 contract 데이터 생성
+    this.logger.log(
+      `📊 [manageContracts] Found ${existingContracts.length} existing contracts for lesson ${lessonId}:`,
+    );
+    existingContracts.forEach((contract) => {
+      this.logger.log(
+        `  - Contract ${contract.id}: (groupId: ${contract.groupId}, samId: ${contract.samId}, termId: ${contract.termId})`,
+      );
+    });
+
+    // 2. 새로운 contract 데이터 생성 - 각 group에 대해 해당하는 samId만 매핑
+    // 🔥 중요: 각 group은 자신의 samId와만 contract를 가져야 함
+    // 기존 문제: 모든 samId와 모든 groupId의 조합을 생성하여 불필요한 contract가 생성됨
     const contractData: Array<{
       samId: number;
       lessonId: number;
@@ -1076,21 +1146,51 @@ export class LessonCoreService {
     }> = [];
 
     const samIds = Array.from(uniqueSams.values());
-    for (const samId of samIds) {
-      for (const group of groups) {
+    this.logger.log(
+      `📊 [manageContracts] Processing ${groups.length} groups with ${samIds.length} unique sams: [${samIds.join(', ')}]`,
+    );
+
+    for (const group of groups) {
+      this.logger.log(
+        `🔍 [manageContracts] Processing group ${group.id} (${group.groupName}) with samId: ${group.samId}`,
+      );
+
+      // 🔥 핵심 수정: 각 group은 자신의 samId와만 contract를 가져야 함
+      // 기존 문제: 모든 sam-group 조합을 생성하여 (31,14,5), (32,14,5) 같은 잘못된 contract 생성
+      if (group.samId) {
         contractData.push({
-          samId,
+          samId: group.samId,
           lessonId,
           groupId: group.id,
           termId: lesson.termId,
           start: dto.start ?? lesson.start,
           end: dto.end ?? lesson.end,
         });
+        this.logger.log(
+          `  ✅ Added contract data: (groupId: ${group.id}, samId: ${group.samId})`,
+        );
+      } else {
+        this.logger.warn(
+          `  ⚠️ Group ${group.id} has no samId, skipping contract creation`,
+        );
       }
     }
 
+    this.logger.log(
+      `📊 [manageContracts] Generated ${contractData.length} contract data entries:`,
+    );
+    contractData.forEach((data, index) => {
+      this.logger.log(
+        `  ${index + 1}. (groupId: ${data.groupId}, samId: ${data.samId}, termId: ${data.termId})`,
+      );
+    });
+
     // 3. 새로운 contracts upsert
     if (contractData.length > 0) {
+      this.logger.log(
+        `🔄 [manageContracts] Executing upsert for ${contractData.length} contracts`,
+      );
+
       const placeholders = contractData
         .map(() => '(?, ?, ?, ?, ?, ?)')
         .join(', ');
@@ -1112,27 +1212,75 @@ export class LessonCoreService {
           end = new_contract.end,
           updatedAt = CURRENT_TIMESTAMP
       `;
+
+      this.logger.log(`🔍 [manageContracts] Upsert query: ${upsertQuery}`);
+      this.logger.log(`🔍 [manageContracts] Values: [${values.join(', ')}]`);
+
       await manager.query(upsertQuery, values);
+      this.logger.log(`✅ [manageContracts] Upsert completed successfully`);
     }
 
-    // 4. 현재 유효한 sam-group 조합 생성
+    // 4. 현재 유효한 sam-group 조합 생성 (각 group은 자신의 samId와만 조합)
+    // 🔥 핵심 수정: 각 group은 자신의 samId와만 조합되어야 함
     const currentValidCombinations = new Set<string>();
-    for (const samId of samIds) {
-      for (const group of groups) {
-        currentValidCombinations.add(`${samId}-${group.id}`);
+    for (const group of groups) {
+      if (group.samId) {
+        currentValidCombinations.add(`${group.samId}-${group.id}`);
+        this.logger.log(
+          `  ✅ Valid combination: (samId: ${group.samId}, groupId: ${group.id})`,
+        );
       }
     }
+
+    this.logger.log(
+      `📊 [manageContracts] Current valid combinations: [${Array.from(currentValidCombinations).join(', ')}]`,
+    );
 
     // 5. 삭제해야 할 기존 contracts 찾기
     const contractsToDelete = existingContracts.filter((contract) => {
       const combination = `${contract.samId}-${contract.groupId}`;
-      return !currentValidCombinations.has(combination);
+      const shouldDelete = !currentValidCombinations.has(combination);
+      if (shouldDelete) {
+        this.logger.log(
+          `  🗑️ Contract ${contract.id} marked for deletion: (samId: ${contract.samId}, groupId: ${contract.groupId}) - not in valid combinations`,
+        );
+      }
+      return shouldDelete;
     });
+
+    this.logger.log(
+      `📊 [manageContracts] Found ${contractsToDelete.length} contracts to delete`,
+    );
 
     // 6. 불필요한 contracts 삭제
     if (contractsToDelete.length > 0) {
       const idsToDelete = contractsToDelete.map((contract) => contract.id);
+      this.logger.log(
+        `🗑️ [manageContracts] Deleting contracts with IDs: [${idsToDelete.join(', ')}]`,
+      );
       await manager.getRepository(Contract).delete(idsToDelete);
+      this.logger.log(
+        `✅ [manageContracts] Successfully deleted ${contractsToDelete.length} contracts`,
+      );
     }
+
+    // 7. 최종 상태 확인
+    const finalContracts = await manager.getRepository(Contract).find({
+      where: { lessonId },
+      select: ['id', 'samId', 'groupId', 'termId'],
+    });
+
+    this.logger.log(
+      `📊 [manageContracts] Final state - ${finalContracts.length} contracts for lesson ${lessonId}:`,
+    );
+    finalContracts.forEach((contract) => {
+      this.logger.log(
+        `  - Contract ${contract.id}: (groupId: ${contract.groupId}, samId: ${contract.samId}, termId: ${contract.termId})`,
+      );
+    });
+
+    this.logger.log(
+      `✅ [manageContracts] Contract management completed for lesson ${lessonId}`,
+    );
   }
 }

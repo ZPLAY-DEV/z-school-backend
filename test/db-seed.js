@@ -23,7 +23,7 @@ const data = [
       schoolYear: 2025,
       schoolName: '신동초등학교',
       termName: '2학기',
-      pickRule: 'FIRST',
+      pickRule: 'RANDOM',
       start: '2025-09-01',
       end: '2025-11-30',
     },
