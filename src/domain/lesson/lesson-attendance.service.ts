@@ -1,7 +1,7 @@
 import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
+    BadRequestException,
+    Injectable,
+    NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { lastDayOfMonth } from 'date-fns';
@@ -9,19 +9,19 @@ import * as ExcelJS from 'exceljs';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
 import {
-  IAttendance,
-  IAttendanceKey,
+    IAttendance,
+    IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
-  createFallbackAttendanceItem,
-  generateDailyStudentKey,
-  generateGroupKey,
-  getDateFromDailyStudentKey,
-  getStudentIdFromDailyStudentKey,
-  normalizeAttendance,
-  normalizeAttendances,
-  processAttendanceReport,
+    createFallbackAttendanceItem,
+    generateDailyStudentKey,
+    generateGroupKey,
+    getDateFromDailyStudentKey,
+    getStudentIdFromDailyStudentKey,
+    normalizeAttendance,
+    normalizeAttendances,
+    processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -96,10 +96,10 @@ export class LessonAttendanceService {
         allItems.map((v) => [v.dailyStudentKey, v]),
       );
 
-      // 4. 등록된 학생들(picks) 조회
+      // 4. 등록된 학생들(picks) 조회 - termId 필터링 추가
       const picks =
         (await this.pickRepository.find({
-          where: { groupId: In(groupIds) },
+          where: { groupId: In(groupIds), termId: lesson.termId },
           relations: ['student', 'group', 'group.lesson'],
         })) || [];
 

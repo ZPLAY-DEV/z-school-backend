@@ -604,10 +604,20 @@ export class GroupAttendanceService {
         allItems.map((v) => [v.dailyStudentKey, v]),
       );
 
-      // 4. 등록된 학생들(picks) 조회
+      // 4. 해당 그룹의 termId 조회
+      const group = await this.groupRepository.findOne({
+        where: { id: groupId },
+        select: ['termId'],
+      });
+
+      if (!group?.termId) {
+        return [];
+      }
+
+      // 5. 등록된 학생들(picks) 조회 - termId 필터링 추가
       const picks =
         (await this.pickRepository.find({
-          where: { groupId },
+          where: { groupId, termId: group.termId },
           relations: ['student', 'group', 'group.lesson'],
         })) || [];
 
@@ -618,7 +628,7 @@ export class GroupAttendanceService {
       }
       //const weekday = filteredPicks[0].group.weekday; // 오늘 수업으로부터 요일 추출
 
-      // 5. 완전한 출석 목록 생성 (기존 레코드 + 기본 레코드)
+      // 6. 완전한 출석 목록 생성 (기존 레코드 + 기본 레코드)
       const completeAttendanceItems: IAttendance[] = activePicks.map((pick) => {
         if (!pick.student) {
           throw new BadRequestException(
@@ -704,7 +714,7 @@ export class GroupAttendanceService {
         departures.map((departure) => [departure.studentId, departure]),
       );
 
-      // 11. 한 번의 최적화된 쿼리로 각 학생의 해당일 모든 그룹 스케줄 조회
+      // 11. 한 번의 최적화된 쿼리로 각 학생의 해당일 모든 그룹 스케줄 조회 - termId 필터링 추가
       const studentScheduleData: {
         studentId: number;
         groupId: number;
@@ -722,6 +732,7 @@ export class GroupAttendanceService {
         ])
         .where('pick.studentId IN (:...studentIds)', { studentIds })
         .andWhere('schoolday.today = :date', { date })
+        .andWhere('pick.termId = :termId', { termId: group.termId })
         .orderBy('pick.studentId')
         .addOrderBy('schoolday.endsAt', 'ASC')
         .getRawMany();
