@@ -1038,7 +1038,10 @@ export class GroupAttendanceService {
               statusText = '수업전';
               break;
             default:
-              statusText = today > new Date(schoolday.today) ? '-' : '수업전';
+              statusText =
+                today > new Date(schoolday.today)
+                  ? `-${schoolday.today}`
+                  : `수업전${schoolday.today}`;
               break;
           }
           rowData.push(statusText);
