@@ -841,6 +841,8 @@ export class GroupAttendanceService {
     // 3. 해당 월의 출석 데이터 조회
     const attendances = await this.findAttendancesByMonth(groupId, date);
 
+    console.log('🚗 attendances:', JSON.stringify(attendances, null, 2));
+
     // 4. 출석 데이터를 Map으로 변환 (빠른 lookup을 위해)
     const attendanceMap = new Map<string, IAttendance>();
     attendances.forEach((attendance) => {
@@ -849,8 +851,16 @@ export class GroupAttendanceService {
         attendance.dailyStudentKey,
       );
       const key = `${date}_${studentId}`;
+      console.log('Adding to attendanceMap:', {
+        key,
+        dailyStudentKey: attendance.dailyStudentKey,
+        status: attendance.status,
+      });
       attendanceMap.set(key, attendance);
     });
+
+    console.log('🚗 attendanceMap keys:', Array.from(attendanceMap.keys()));
+    console.log('🚗 attendanceMap size:', attendanceMap.size);
 
     // 5. 타이틀 행 추가
     const titleRow = sheet.addRow([`${year}년 ${month}월 ${group.groupName}`]);
@@ -1013,6 +1023,7 @@ export class GroupAttendanceService {
       }
 
       // 각 수업일별 출석 상태 추가
+      console.log('monthSchooldays:', JSON.stringify(monthSchooldays, null, 2));
       monthSchooldays.forEach((schoolday) => {
         const key = `${schoolday.today}_${student.id}`;
         const attendance = attendanceMap.get(key);
