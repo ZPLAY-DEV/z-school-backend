@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { addDays } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
@@ -166,7 +172,15 @@ export class SchooldayService {
     if (!schoolday) {
       throw new NotFoundException(`entity not found`);
     }
-    return await this.schooldayRepository.save(schoolday);
+    try {
+      return await this.schooldayRepository.save(schoolday);
+    } catch (error) {
+      this.logger.error(error);
+      if (error.code === 'ER_DUP_ENTRY') {
+        throw new ConflictException('선택한 날짜에 수업이 이미 있습니다.');
+      }
+      throw new BadRequestException('수업일 업데이트 중 오류가 발생했습니다.');
+    }
   }
 
   //? ---------------------------------------------------------------------- ?//
