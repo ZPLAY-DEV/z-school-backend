@@ -5,17 +5,17 @@
 
 const url = 'http://localhost:3001/v1';
 const data = [
-  {
-    uri: `schools`,
-    payload: {
-      name: '신동초등학교',
-      authorityCode: 'K10',
-      phone: '0332434302', // 신동초등학교
-      region: 'GANGWON', // 신동초등학교
-      schoolCode: '7812075', // 신동초등학교
-      address: '강원특별자치도 춘천시 닭갈비로 100',
-    },
-  },
+  // {
+  //   uri: `schools`,
+  //   payload: {
+  //     name: '신동초등학교',
+  //     authorityCode: 'K10',
+  //     phone: '0332434302', // 신동초등학교
+  //     region: 'GANGWON', // 신동초등학교
+  //     schoolCode: '7812075', // 신동초등학교
+  //     address: '강원특별자치도 춘천시 닭갈비로 100',
+  //   },
+  // },
   {
     uri: `terms`,
     payload: {
@@ -714,8 +714,8 @@ async function loginAndGetToken() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      username: 'test@gmail.com',
-      password: 'password',
+      username: 'sindong@gmail.com',
+      password: '1234',
       role: 'MANAGER',
     }),
   });
