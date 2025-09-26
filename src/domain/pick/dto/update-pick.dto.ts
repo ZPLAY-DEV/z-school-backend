@@ -1,12 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
-    IsEnum,
-    IsInt,
-    IsOptional,
-    IsString,
-    Matches,
-    MaxLength,
-    Min,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength
 } from 'class-validator';
 import { Actor } from 'src/common/enums';
 
@@ -16,26 +14,6 @@ import { Actor } from 'src/common/enums';
  * - groupId, studentId, offeringId, termId는 수정 불가 (비즈니스 규칙)
  */
 export class UpdatePickDto {
-  @ApiPropertyOptional({
-    description: '학생별 개별 책값 (원) - 수정 가능',
-    example: 15000,
-    minimum: 0,
-  })
-  @IsOptional()
-  @IsInt({ message: '책값은 정수여야 합니다' })
-  @Min(0, { message: '책값은 0 이상이어야 합니다' })
-  bookFee?: number;
-
-  @ApiPropertyOptional({
-    description: '학생별 개별 재료비 (원) - 수정 가능',
-    example: 8500,
-    minimum: 0,
-  })
-  @IsOptional()
-  @IsInt({ message: '재료비는 정수여야 합니다' })
-  @Min(0, { message: '재료비는 0 이상이어야 합니다' })
-  materialFee?: number;
-
   @ApiPropertyOptional({
     description:
       '수업시작일 등록자 구분 - MANAGER: 관리자, INSTRUCTOR: 강사, OTHER: 기타',
@@ -97,4 +75,20 @@ export class UpdatePickDto {
   @IsString({ message: '비고는 문자열이어야 합니다' })
   @MaxLength(255, { message: '비고는 255자를 초과할 수 없습니다' })
   note?: string;
+
+  // @ApiPropertyOptional({
+  //   description: '학생별 개별 책값 (원) - 수정 가능',
+  //   example: 15000,
+  // })
+  // @IsOptional()
+  // @IsInt({ message: '책값은 정수여야 합니다' })
+  // bookFee?: number;
+
+  // @ApiPropertyOptional({
+  //   description: '학생별 개별 재료비 (원) - 수정 가능',
+  //   example: 8500,
+  // })
+  // @IsOptional()
+  // @IsInt({ message: '재료비는 정수여야 합니다' })
+  // materialFee?: number;
 }

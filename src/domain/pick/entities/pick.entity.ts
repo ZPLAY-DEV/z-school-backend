@@ -108,6 +108,22 @@ export class Pick {
   @Column({ type: 'varchar', length: 255, nullable: true })
   note: string | null;
 
+  // @ApiProperty({
+  //   description: '학생별 개별 책값 (원)',
+  //   example: 15000,
+  //   minimum: 0,
+  // })
+  // @Column({ type: 'int', nullable: true, default: null })
+  // bookFee: number | null;
+
+  // @ApiProperty({
+  //   description: '학생별 개별 재료비 (원)',
+  //   example: 8500,
+  //   minimum: 0,
+  // })
+  // @Column({ type: 'int', nullable: true, default: null })
+  // materialFee: number | null;
+
   // 합류/취소 이벤트 히스토리 누적
   @Column({ type: 'json', nullable: true })
   history: {

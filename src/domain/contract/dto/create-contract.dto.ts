@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsOptional,
@@ -64,6 +65,14 @@ export class CreateContractDto {
   @IsString()
   @IsOptional()
   end?: string;
+
+  @ApiProperty({
+    description: '강사 상태',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 
   @ApiPropertyOptional({ description: '비고', example: '비고' })
   @IsString()

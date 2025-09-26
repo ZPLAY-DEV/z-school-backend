@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -108,6 +109,14 @@ export class CreatePickDto {
   @IsOptional()
   end?: string;
 
+  @ApiProperty({
+    description: '학생별 수강여부',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive: boolean;
+
   @ApiPropertyOptional({
     description: '비고 - 등록/변경 사유나 특이사항 기록 (최대 255자)',
     example: '중간 전학으로 인한 반 편입',
@@ -117,6 +126,22 @@ export class CreatePickDto {
   @IsString({ message: '비고는 문자열이어야 합니다' })
   @MaxLength(255, { message: '비고는 255자를 초과할 수 없습니다' })
   note?: string;
+
+  // @ApiPropertyOptional({
+  //   description: '학생별 개별 책값 (원) - 수정 가능',
+  //   example: 15000,
+  // })
+  // @IsOptional()
+  // @IsInt({ message: '책값은 정수여야 합니다' })
+  // bookFee?: number;
+
+  // @ApiPropertyOptional({
+  //   description: '학생별 개별 재료비 (원) - 수정 가능',
+  //   example: 8500,
+  // })
+  // @IsOptional()
+  // @IsInt({ message: '재료비는 정수여야 합니다' })
+  // materialFee?: number;
 }
 
 /**
