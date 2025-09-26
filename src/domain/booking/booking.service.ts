@@ -13,6 +13,7 @@ import { IBookingSnapshotItem } from 'src/common/interfaces';
 import { CreateManualBookingDto } from 'src/domain/booking/dto/create-manual-booking.dto';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { Student } from 'src/domain/student/entities/student.entity';
 import { SqsService } from 'src/services/aws/sqs.service';
 import { RedisBookingService } from 'src/services/redis/redis-booking.service';
 import { In, Repository } from 'typeorm';
@@ -30,6 +31,8 @@ export class BookingService {
     private readonly bookingRepository: Repository<Booking>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
     @InjectRepository(Offering)
     private readonly offeringRepository: Repository<Offering>,
     @Inject(AWS_SQS_CLIENT)
@@ -63,13 +66,18 @@ export class BookingService {
       where: {
         offeringId: group.offeringId,
         studentId: In(dto.studentIds),
+        status: In([BookingStatus.PENDING, BookingStatus.ENROLLED]),
       },
     });
 
     if (existingBookings.length > 0) {
       const duplicateStudentIds = existingBookings.map((b) => b.studentId);
+
+      const students = await this.studentRepository.find({
+        where: { id: In(duplicateStudentIds) },
+      });
       throw new UnprocessableEntityException(
-        `이미 수강신청한 학생이 있습니다: ${duplicateStudentIds.join(', ')}`,
+        `이미 수강신청한 학생이 있습니다: ${students?.map((v: Student) => v.name).join(', ')}`,
       );
     }
 
@@ -86,20 +94,45 @@ export class BookingService {
 
     for (let i = 0; i < dto.studentIds.length; i++) {
       const waitingPosition = baseWaitingPosition + i + 1;
-      const booking = this.bookingRepository.create({
-        termId: group.termId,
-        offeringId: group.offeringId,
-        studentId: dto.studentIds[i],
-        lessonName: group.lesson.lessonName,
-        waitingPosition,
-        status,
-        note,
+      const studentId = dto.studentIds[i];
+
+      // MySQL에서 ON DUPLICATE KEY UPDATE 사용
+      await this.bookingRepository.query(
+        `
+        INSERT INTO bookings (termId, offeringId, studentId, lessonName, waitingPosition, status, note) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          termId = VALUES(termId),
+          lessonName = VALUES(lessonName),
+          waitingPosition = VALUES(waitingPosition),
+          status = VALUES(status),
+          note = VALUES(note),
+          updatedAt = NOW()
+        `,
+        [
+          group.termId,
+          group.offeringId,
+          studentId,
+          group.lesson.lessonName,
+          waitingPosition,
+          status,
+          note,
+        ],
+      );
+
+      const booking = await this.bookingRepository.findOne({
+        where: {
+          offeringId: group.offeringId,
+          studentId: studentId,
+        },
       });
 
-      bookings.push(booking);
+      if (booking) {
+        bookings.push(booking);
+      }
     }
 
-    return await this.bookingRepository.save(bookings);
+    return bookings;
   }
 
   //? ---------------------------------------------------------------------- ?//

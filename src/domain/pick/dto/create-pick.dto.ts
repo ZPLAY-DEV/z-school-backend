@@ -127,21 +127,21 @@ export class CreatePickDto {
   @MaxLength(255, { message: '비고는 255자를 초과할 수 없습니다' })
   note?: string;
 
-  // @ApiPropertyOptional({
-  //   description: '학생별 개별 책값 (원) - 수정 가능',
-  //   example: 15000,
-  // })
-  // @IsOptional()
-  // @IsInt({ message: '책값은 정수여야 합니다' })
-  // bookFee?: number;
+  @ApiPropertyOptional({
+    description: '학생별 개별 책값 (원) - 수정 가능',
+    example: 15000,
+  })
+  @IsOptional()
+  @IsInt({ message: '책값은 정수여야 합니다' })
+  bookFee?: number;
 
-  // @ApiPropertyOptional({
-  //   description: '학생별 개별 재료비 (원) - 수정 가능',
-  //   example: 8500,
-  // })
-  // @IsOptional()
-  // @IsInt({ message: '재료비는 정수여야 합니다' })
-  // materialFee?: number;
+  @ApiPropertyOptional({
+    description: '학생별 개별 재료비 (원) - 수정 가능',
+    example: 8500,
+  })
+  @IsOptional()
+  @IsInt({ message: '재료비는 정수여야 합니다' })
+  materialFee?: number;
 }
 
 /**

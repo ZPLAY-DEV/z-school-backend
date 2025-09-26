@@ -26,7 +26,7 @@ import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import { isTimeConflict } from 'src/helpers/parse';
-import { In, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 
 @Injectable()
 export class PickService {
@@ -43,6 +43,7 @@ export class PickService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
+    private readonly dataSource: DataSource,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -123,6 +124,7 @@ export class PickService {
           .update(Pick)
           .set({
             ...dto,
+            offeringId: groupWithLesson.offeringId!,
             isActive: true,
             termId: termId,
             startedBy: role,
@@ -267,7 +269,7 @@ export class PickService {
     await this.bookingRepository
       .createQueryBuilder()
       .update(Booking)
-      .set({ waitingPosition: 0, status })
+      .set({ waitingPosition: 0, status: status })
       .where('offeringId = :offeringId', { offeringId })
       .andWhere('studentId = :studentId', { studentId })
       .execute();
@@ -283,35 +285,41 @@ export class PickService {
       throw new NotFoundException('pick entity not found');
     }
 
-    await this.pickRepository
-      .createQueryBuilder()
-      .update(Pick)
-      .set({
-        isActive: false,
-        endedBy: dto.endedBy ?? Actor.OTHER,
-        end: dto.end,
-        note: dto.note ?? null,
-        history: () => `JSON_ARRAY_APPEND(
-          COALESCE(history, JSON_ARRAY()),
-          '$',
-          JSON_OBJECT(
-            'event', 'CANCEL',
-            'by', '${dto.endedBy}',
-            'date', '${new Date().toISOString().slice(0, 10)}'
-          )
-        )`,
-      })
-      .where('id = :id', { id: pick.id })
-      .execute();
+    // transaction으로 묶기
+    await this.dataSource.transaction(async (manager) => {
+      // pick 업데이트
+      await manager
+        .createQueryBuilder()
+        .update(Pick)
+        .set({
+          isActive: false,
+          endedBy: dto.endedBy ?? Actor.OTHER,
+          end: dto.end,
+          note: dto.note ?? null,
+          history: () => `JSON_ARRAY_APPEND(
+            COALESCE(history, JSON_ARRAY()),
+            '$',
+            JSON_OBJECT(
+              'event', 'CANCEL',
+              'by', '${dto.endedBy}',
+              'date', '${new Date().toISOString().slice(0, 10)}'
+            )
+          )`,
+        })
+        .where('id = :id', { id: pick.id })
+        .execute();
 
-    // booking 상태를 CANCELED로 업데이트
-    if (pick.offeringId) {
-      await this._updateBookingStatus(
-        pick.offeringId,
-        pick.studentId,
-        BookingStatus.CANCELED,
-      );
-    }
+      // booking 상태를 CANCELED로 업데이트
+      if (pick.offeringId) {
+        await manager
+          .createQueryBuilder()
+          .update(Booking)
+          .set({ waitingPosition: 0, status: BookingStatus.CANCELED })
+          .where('offeringId = :offeringId', { offeringId: pick.offeringId })
+          .andWhere('studentId = :studentId', { studentId: pick.studentId })
+          .execute();
+      }
+    });
 
     pick.isActive = false;
     pick.endedBy = dto.endedBy ?? Actor.OTHER;
@@ -321,7 +329,8 @@ export class PickService {
     return pick;
   }
 
-  // groupId, studentId, offeringId, termId, start
+  //! client 에서 이를 사용하지 않는 것 같다.
+  //! groupId, studentId, offeringId, termId, start
   async restartPick(dto: StartPickDto): Promise<Pick> {
     const pick = await this.pickRepository.findOneOrFail({
       where: { groupId: dto.groupId, studentId: dto.studentId },
