@@ -9,7 +9,7 @@ import {
   Patch,
   Post,
   Query,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
@@ -36,8 +36,8 @@ export class UserOtpController {
     @Body('role') role: string,
   ): Promise<any> {
     if (
-      role.toLowerCase() !== 'parent' &&
-      role.toLowerCase() !== 'instructor'
+      role?.toUpperCase() !== 'PARENT' &&
+      role?.toUpperCase() !== 'INSTRUCTOR'
     ) {
       throw new BadRequestException('Invalid role');
     }
@@ -48,7 +48,7 @@ export class UserOtpController {
     return { data: 'ok' };
   }
 
-  @ApiOperation({ description: 'existing user(phone/email) 으로 OTP 발급' })
+  @ApiOperation({ description: 'existing user(phone/email) 로 OTP 발급' })
   // @UseGuards(ThrottlerBehindProxyGuard)
   // @Throttle({ default: { limit: 2, ttl: 60000 } })
   @Public()
@@ -60,8 +60,8 @@ export class UserOtpController {
     @Query('type') type?: string,
   ): Promise<string> {
     if (
-      role.toUpperCase() !== 'PARENT' &&
-      role.toUpperCase() !== 'INSTRUCTOR'
+      role?.toUpperCase() !== 'PARENT' &&
+      role?.toUpperCase() !== 'INSTRUCTOR'
     ) {
       throw new BadRequestException('Invalid role');
     }
