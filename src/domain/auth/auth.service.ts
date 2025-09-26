@@ -217,6 +217,9 @@ export class AuthService {
 
   /**
    * Register a manager (without phone number)
+   * - school upsert
+   * - manager upsert
+   * - user upsert
    */
   async registerManager(
     dto: UserCredentialsDtoWithSchool,
@@ -546,14 +549,14 @@ export class AuthService {
     );
 
     if (dto.school) {
+      // Upsert school using schoolCode as unique identifier
+      const schoolData = this.schoolRepository.create(dto.school);
+      await this.schoolRepository.upsert(schoolData, ['schoolCode']);
+
+      // Retrieve the upserted school for further use
       school = await this.schoolRepository.findOne({
-        where: { name: dto.school.name },
+        where: { schoolCode: dto.school.schoolCode },
       });
-      if (!school) {
-        school = await this.schoolRepository.save(
-          this.schoolRepository.create(dto.school),
-        );
-      }
     }
 
     await this.managerRepository.save(
