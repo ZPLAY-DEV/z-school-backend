@@ -111,15 +111,20 @@ export class Pick {
   @ApiProperty({
     description: '학생별 개별 책값 (원)',
     example: 15000,
-    minimum: 0,
+  })
+  @Column({ type: 'int', nullable: true, default: null })
+  tuition: number | null;
+
+  @ApiProperty({
+    description: '학생별 개별 책값 (원)',
+    example: 5000,
   })
   @Column({ type: 'int', nullable: true, default: null })
   bookFee: number | null;
 
   @ApiProperty({
     description: '학생별 개별 재료비 (원)',
-    example: 8500,
-    minimum: 0,
+    example: 5000,
   })
   @Column({ type: 'int', nullable: true, default: null })
   materialFee: number | null;

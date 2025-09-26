@@ -201,16 +201,11 @@ export class PickService {
     );
 
     for (const studentId of studentIds) {
-      // 해당 학생의 모든 picks 조회
+      // 해당 학생의 모든 picks 조회 (lesson 정보를 포함하여 포함)
       const existingPicks = await this.pickRepository.find({
         where: { studentId, termId, isActive: true },
         relations: ['group'],
       });
-
-      console.log(
-        `✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️✳️`,
-        JSON.stringify(existingPicks, null, 2),
-      );
 
       // 각 기존 pick과 새로운 group의 시간 충돌 검증
       for (const existingPick of existingPicks) {
@@ -224,10 +219,14 @@ export class PickService {
             newGroup.end,
           )
         ) {
-          // 미리 조회한 학생 이름 사용
+          // 미리 조회한 학생 이름과 충돌하는 과목명 조합
           const studentName = studentNameMap.get(studentId);
-          if (studentName && !conflictingStudentNames.includes(studentName)) {
-            conflictingStudentNames.push(studentName);
+          if (studentName) {
+            const groupName = existingPick.group.groupName || '반이름없음';
+            const conflictInfo = `${studentName}:${groupName}`;
+            if (!conflictingStudentNames.includes(conflictInfo)) {
+              conflictingStudentNames.push(conflictInfo);
+            }
           }
           break; // 한 학생당 하나의 충돌만 체크하면 되므로 break
         }

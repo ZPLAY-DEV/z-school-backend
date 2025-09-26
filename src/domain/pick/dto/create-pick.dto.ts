@@ -128,16 +128,24 @@ export class CreatePickDto {
   note?: string;
 
   @ApiPropertyOptional({
-    description: '학생별 개별 책값 (원) - 수정 가능',
+    description: '학생별 수업료 - 수정 가능',
     example: 15000,
+  })
+  @IsOptional()
+  @IsInt({ message: '책값은 정수여야 합니다' })
+  tuition?: number;
+
+  @ApiPropertyOptional({
+    description: '학생별 개별 책값 - 수정 가능',
+    example: 5000,
   })
   @IsOptional()
   @IsInt({ message: '책값은 정수여야 합니다' })
   bookFee?: number;
 
   @ApiPropertyOptional({
-    description: '학생별 개별 재료비 (원) - 수정 가능',
-    example: 8500,
+    description: '학생별 개별 재료비 - 수정 가능',
+    example: 5000,
   })
   @IsOptional()
   @IsInt({ message: '재료비는 정수여야 합니다' })

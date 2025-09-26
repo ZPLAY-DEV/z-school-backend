@@ -112,7 +112,7 @@ export class TermService {
         const now = new Date();
         if (existingTerm.bookingStart && existingTerm.bookingStart <= now) {
           throw new BadRequestException(
-            '수강신청 기간 중에는 확정 방식을 변경할 수 없습니다',
+            '수강신청이 시작된 후에는 확정방식을 변경할 수 없습니다',
           );
         }
         await this.offeringRepository.update(
