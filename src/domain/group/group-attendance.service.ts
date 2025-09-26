@@ -19,6 +19,7 @@ import {
 import {
   IAttendance,
   IAttendanceKey,
+  IAttendanceWithDate,
   IAttendanceWithNextStop,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
@@ -1133,11 +1134,15 @@ export class GroupAttendanceService {
     groupId: number,
     studentId: number,
     monthStr?: string, //? ex. "2025-08"
-  ): Promise<IAttendance[]> {
+  ): Promise<IAttendanceWithDate[]> {
     let year = 0;
     let month = 0;
     let startDate: Date | undefined;
     let endDate: Date | undefined;
+
+    // if (!monthStr) {
+    //   throw new BadRequestException('월을 입력해주세요.');
+    // }
 
     try {
       const queryBuilder = this.schooldayRepository
@@ -1179,19 +1184,33 @@ export class GroupAttendanceService {
         throw new BadRequestException(`수업일이 없거나 수강생이 아닙니다.`);
       }
 
+      // 1. schooldays 데이터 검증 및 필요한 정보 미리 추출
+      //    미리 필터링을 하면 안된다.
+      const validatedSchooldays = schooldays
+        // .filter((schoolday) => {
+        //   const [, schooldayMonth] = schoolday.today.split('-').map(Number);
+        //   return schooldayMonth === month;
+        // })
+        .map((schoolday) => {
+          // schoolday.group.picks에서 해당 student 찾기
+          if (!schoolday.group || !schoolday.group.picks) {
+            throw new BadRequestException('반에 수강생이 없습니다.');
+          }
+          const pick = schoolday.group.picks.find(
+            (p) => p.studentId === studentId,
+          );
+          if (!pick || !pick.student) {
+            throw new BadRequestException('이 학생은 수강생이 아니네요.');
+          }
+          return {
+            schoolday,
+            pick,
+          };
+        });
+
       // 2. schooldays를 기반으로 attendance 키 생성
       const groupKey = generateGroupKey(groupId);
-      const keys = schooldays.map((schoolday) => {
-        // schoolday.group.picks에서 해당 student 찾기
-        if (!schoolday.group || !schoolday.group.picks) {
-          throw new BadRequestException('반에 수강생이 없습니다.');
-        }
-        const pick = schoolday.group.picks.find(
-          (p) => p.studentId === studentId,
-        );
-        if (!pick || !pick.student) {
-          throw new BadRequestException('이 학생은 수강생이 아니네요.');
-        }
+      const keys = validatedSchooldays.map(({ schoolday, pick }) => {
         const dailyStudentKey = generateDailyStudentKey(
           schoolday.today,
           pick.student.id,
@@ -1242,18 +1261,10 @@ export class GroupAttendanceService {
         results.map((attendance) => [attendance.dailyStudentKey, attendance]),
       );
 
-      const finalResults: any[] = [];
-      for (const schoolday of schooldays) {
-        // schoolday.group.picks에서 해당 student 찾기
-        if (!schoolday.group || !schoolday.group.picks) {
-          throw new BadRequestException('Group or picks information not found');
-        }
-        const pick = schoolday.group.picks.find(
-          (p) => p.studentId === studentId,
-        );
-        if (!pick || !pick.student) {
-          throw new BadRequestException('Student information not found');
-        }
+      // original이 null이 아닌 아이템들에 대해 중복 아이템 생성 x
+      let dataResults: IAttendanceWithDate[] = [];
+
+      for (const { schoolday, pick } of validatedSchooldays) {
         const dailyStudentKey = generateDailyStudentKey(
           schoolday.today,
           pick.student.id,
@@ -1262,25 +1273,35 @@ export class GroupAttendanceService {
           pick.student.studentCode,
         );
         const existingAttendance = attendanceMap.get(dailyStudentKey);
+        const finalAttendance = existingAttendance
+          ? {
+              ...existingAttendance,
+              dateStr: schoolday.today,
+              original:
+                schoolday.today === schoolday.initial
+                  ? null
+                  : schoolday.initial,
+            }
+          : {
+              ...createFallbackAttendanceItem(schoolday, studentId, groupKey),
+              dateStr: schoolday.today,
+              original:
+                schoolday.today === schoolday.initial
+                  ? null
+                  : schoolday.initial,
+            };
 
-        if (existingAttendance) {
-          // DynamoDB에 레코드가 있는 경우
-          finalResults.push({
-            ...existingAttendance,
-            dateStr: schoolday.today,
-          });
-        } else {
-          // DynamoDB에 레코드가 없는 경우 fallback item 생성
-          const fallbackItem = createFallbackAttendanceItem(
-            schoolday,
-            studentId,
-            groupKey,
-          );
-          finalResults.push({ ...fallbackItem, dateStr: schoolday.today });
-        }
+        dataResults.push(finalAttendance);
       }
 
-      return normalizeAttendances(finalResults as IAttendance[]);
+      if (monthStr) {
+        dataResults = dataResults.filter((v) => {
+          const [, attendanceMonth] = v.dateStr.split('-').map(Number);
+          return attendanceMonth === month;
+        });
+      }
+
+      return normalizeAttendances(dataResults) as IAttendanceWithDate[];
     } catch (error) {
       console.error(`[dynamodb] getStudentAttendances error:`, error);
       throw new BadRequestException(error.message);

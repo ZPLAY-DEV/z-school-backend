@@ -37,3 +37,8 @@ export interface IAttendanceWithNextStop extends IAttendance {
   departure?: Departure | null; // Departure entity with schoolday info
   isLast?: boolean; // 마지막 그룹임
 }
+
+export interface IAttendanceWithDate extends IAttendance {
+  dateStr: string;
+  original: string | null;
+}
