@@ -66,15 +66,12 @@ export class UpdateStudentDto {
   name?: string;
 
   @ApiPropertyOptional({
-    description:
-      '학생 전화번호 - 학생 개인 휴대폰 번호 (하이픈 없이 숫자만, 최대 16자)',
+    description: '학생 전화번호',
     type: String,
     example: '01098765432',
-    maxLength: 16,
   })
   @IsOptional()
   @IsString({ message: '학생 전화번호는 문자열이어야 합니다' })
-  @MaxLength(16, { message: '학생 전화번호는 16자 이하여야 합니다' })
   phone?: string;
 
   @IsOptional()

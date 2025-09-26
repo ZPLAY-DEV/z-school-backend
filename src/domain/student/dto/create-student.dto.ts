@@ -8,7 +8,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  Matches,
   Max,
   MaxLength,
   Min,
@@ -106,17 +105,12 @@ export class CreateStudentDto {
   status: StudentStatus = StudentStatus.ATTENDING;
 
   @ApiPropertyOptional({
-    description:
-      '학생 전화번호 - 010으로 시작하는 휴대폰 번호 (010-XXXX-XXXX 또는 010XXXXXXXX 형식)',
+    description: '학생 전화번호',
     type: String,
     example: '010-1234-5678',
-    pattern: '^010(-\\d{4}-\\d{4}|\\d{8})$',
   })
   @IsOptional()
   @IsString({ message: '학생 전화번호는 문자열이어야 합니다' })
-  @Matches(/^010(-\d{4}-\d{4}|\d{8})$/, {
-    message: '휴대전화 번호형식이 아닙니다.',
-  })
   phone?: string;
 
   @IsOptional()
