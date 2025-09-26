@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -50,6 +51,8 @@ import { In, Repository } from 'typeorm';
 
 @Injectable()
 export class GroupAttendanceService {
+  private readonly logger = new Logger(GroupAttendanceService.name);
+
   constructor(
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
@@ -1131,33 +1134,46 @@ export class GroupAttendanceService {
     studentId: number,
     monthStr?: string, //? ex. "2025-08"
   ): Promise<IAttendance[]> {
+    let year = 0;
+    let month = 0;
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+
     try {
-      // 1. 한 번의 쿼리로 schooldays와 picks, student를 조인해서 해당 학생의 수업일 조회
-      const qb = this.schooldayRepository
+      const queryBuilder = this.schooldayRepository
         .createQueryBuilder('schoolday')
         .leftJoinAndSelect('schoolday.group', 'group')
         .leftJoinAndSelect('group.picks', 'pick')
         .leftJoinAndSelect('pick.student', 'student')
         .where('schoolday.groupId = :groupId', { groupId })
-        .andWhere('pick.studentId = :studentId', { studentId })
-        // .andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
-        //   beginning: startOfMonth,
-        //   ending: endOfMonth,
-        // })
-        .orderBy('schoolday.startsAt', 'ASC');
+        .andWhere('pick.studentId = :studentId', { studentId });
 
       if (monthStr) {
-        const year = Number(monthStr.split('-')[0]);
-        const month = Number(monthStr.split('-')[1]);
-        const startOfMonth = new Date(year, month - 1, 1); // 월은 0-base
-        const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // 다음 달의 0일 = 이번 달의 마지막 날 (23:59:59.999까지 포함)
-        qb.andWhere('schoolday.startsAt BETWEEN :beginning AND :ending', {
-          beginning: startOfMonth,
-          ending: endOfMonth,
-        });
+        // "2025-08" 형태의 문자열을 파싱하여 해당 월의 시작일과 마지막일 계산
+        [year, month] = monthStr.split('-').map(Number);
+        this.logger.debug(
+          `Parsed monthStr: ${monthStr}, year: ${year}, month: ${month}`,
+        );
+        startDate = new Date(year, month - 1, 1); // 월은 0-base
+        endDate = new Date(year, month, 0, 23, 59, 59, 999); // 다음 달의 0일 = 이번 달 마지막 날 23:59:59.999
+        // startsAt이 기간 안에 있는 경우를 처리 (datetime 비교로 효율성 향상)
+        queryBuilder.andWhere(
+          'schoolday.startsAt >= :startDate AND schoolday.startsAt <= :endDate',
+          {
+            startDate,
+            endDate,
+          },
+        );
       }
 
-      const schooldays = await qb.getMany();
+      //! monthStr 관계없이 모두 동일한 날짜 조건으로 조회후 필터링
+      queryBuilder.orWhere(
+        '(schoolday.original IS NOT NULL AND schoolday.groupId = :groupId)',
+        { groupId: groupId },
+      );
+      const schooldays = await queryBuilder
+        .orderBy('schoolday.weekNumber', 'ASC')
+        .getMany();
 
       if (schooldays.length === 0) {
         throw new BadRequestException(`수업일이 없거나 수강생이 아닙니다.`);
@@ -1168,13 +1184,13 @@ export class GroupAttendanceService {
       const keys = schooldays.map((schoolday) => {
         // schoolday.group.picks에서 해당 student 찾기
         if (!schoolday.group || !schoolday.group.picks) {
-          throw new BadRequestException('Group or picks information not found');
+          throw new BadRequestException('반에 수강생이 없습니다.');
         }
         const pick = schoolday.group.picks.find(
           (p) => p.studentId === studentId,
         );
         if (!pick || !pick.student) {
-          throw new BadRequestException('Student information not found');
+          throw new BadRequestException('이 학생은 수강생이 아니네요.');
         }
         const dailyStudentKey = generateDailyStudentKey(
           schoolday.today,
@@ -1204,7 +1220,7 @@ export class GroupAttendanceService {
           }
 
           console.log(
-            `[dynamodb] Processing ${keys.length} keys in ${chunks.length} chunks`,
+            `[DynamoDB] processing ${keys.length} keys in ${chunks.length} chunks`,
           );
 
           for (const chunk of chunks) {
@@ -1216,12 +1232,12 @@ export class GroupAttendanceService {
             }
           }
         } catch (batchError) {
-          console.error(`[dynamodb] batchGet error:`, batchError);
+          console.error(`[DynamoDB] batchGet error:`, batchError);
           // batchGet 실패 시 fallback으로 빈 배열 사용
         }
       }
 
-      // 4. DynamoDB에 없는 레코드에 대해 fallback item 생성
+      // 4. DynamoDB 레코드가 없다면, fallback item 생성
       const attendanceMap = new Map<string, IAttendance>(
         results.map((attendance) => [attendance.dailyStudentKey, attendance]),
       );

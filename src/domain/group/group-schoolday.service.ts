@@ -25,14 +25,14 @@ export class GroupSchooldayService {
   //? ---------------------------------------------------------------------- ?//
 
   async list(groupId: number, monthStr?: string): Promise<Schoolday[]> {
-    let month = 0;
     let year = 0;
+    let month = 0;
     let startDate: Date | undefined;
     let endDate: Date | undefined;
     const queryBuilder = this.dataSource
       .createQueryBuilder(Schoolday, 'schoolday')
       .leftJoin('schoolday.group', 'group')
-      .where('schoolday.groupId = :groupId', { groupId: groupId });
+      .where('schoolday.groupId = :groupId', { groupId });
 
     if (monthStr) {
       // "2025-08" 형태의 문자열을 파싱하여 해당 월의 시작일과 마지막일 계산
@@ -40,8 +40,8 @@ export class GroupSchooldayService {
       this.logger.debug(
         `Parsed monthStr: ${monthStr}, year: ${year}, month: ${month}`,
       );
-      startDate = new Date(year, month - 1, 1); // 월은 0부터 시작하므로 -1
-      endDate = new Date(year, month, 0, 23, 59, 59, 999); // 이번 달의 마지막일 23:59:59.999
+      startDate = new Date(year, month - 1, 1); // 월은 0-base
+      endDate = new Date(year, month, 0, 23, 59, 59, 999); // 다음 달의 0일 = 이번 달 마지막 날 23:59:59.999
       // startsAt이 기간 안에 있는 경우를 처리 (datetime 비교로 효율성 향상)
       queryBuilder.andWhere(
         'schoolday.startsAt >= :startDate AND schoolday.startsAt <= :endDate',
