@@ -1023,7 +1023,7 @@ export class GroupAttendanceService {
       }
 
       // 각 수업일별 출석 상태 추가
-      console.log('monthSchooldays:', JSON.stringify(monthSchooldays, null, 2));
+      // console.log('monthSchooldays:', JSON.stringify(monthSchooldays, null, 2));
       monthSchooldays.forEach((schoolday) => {
         const key = `${schoolday.today}_${student.id}`;
         const attendance = attendanceMap.get(key);
@@ -1046,13 +1046,12 @@ export class GroupAttendanceService {
               statusText = '조퇴';
               break;
             case AttendanceStatus.INIT:
-              statusText = '수업전';
+              statusText =
+                today > new Date(schoolday.today) ? '기록없음.' : `수업전`;
               break;
             default:
               statusText =
-                today > new Date(schoolday.today)
-                  ? `-${schoolday.today}`
-                  : `수업전${schoolday.today}`;
+                today > new Date(schoolday.today) ? `기록없음` : `수업전`;
               break;
           }
           rowData.push(statusText);
