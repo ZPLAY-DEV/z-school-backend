@@ -480,9 +480,9 @@ export const BulkUpdateSamsDocs = () =>
 export const SoftDeleteSamDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '담임쌤 소프트 삭제',
+      summary: '담임쌤 삭제',
       description:
-        '담임쌤을 소프트 삭제합니다. deletedAt 컬럼에 삭제 시각을 기록하여 논리적으로만 삭제합니다.',
+        '담임쌤을 삭제합니다. note가 제공되면 소프트 삭제(deletedAt 기록), 없으면 완전 삭제. 연결된 강사가 해당 담임쌤만 남아있으면 강사도 함께 삭제됩니다.',
     }),
     ApiParam({
       name: 'id',
@@ -495,7 +495,7 @@ export const SoftDeleteSamDocs = () =>
         properties: {
           note: {
             type: 'string',
-            description: '삭제 사유 (선택사항)',
+            description: '삭제 사유 (선택사항) - 제공시 소프트 삭제, 없으면 완전 삭제',
             example: '퇴사',
           },
         },
@@ -503,7 +503,7 @@ export const SoftDeleteSamDocs = () =>
       required: false,
     }),
     ApiOkResponseTemplate({
-      description: '담임쌤 소프트 삭제 완료',
+      description: '담임쌤 삭제 완료',
     }),
     ApiResponse({
       status: StatusCodes.NOT_FOUND,
@@ -511,6 +511,6 @@ export const SoftDeleteSamDocs = () =>
     }),
     ApiResponse({
       status: StatusCodes.BAD_REQUEST,
-      description: '요청 데이터 오류',
+      description: '담당했던 반이 있는 경우 삭제 불가',
     }),
   );

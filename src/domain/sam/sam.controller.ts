@@ -143,10 +143,10 @@ export class SamController {
 
   @SoftDeleteSamDocs()
   @Delete(':id')
-  async softDelete(
+  async delete(
     @Param('id', ParseIntPipe) id: number,
     @Body('note') note?: string,
   ): Promise<void> {
-    return await this.samService.softDelete(id, note);
+    return await this.samService.delete(id, note);
   }
 }

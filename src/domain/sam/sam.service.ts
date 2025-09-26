@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -638,13 +639,53 @@ export class SamService {
   //? Delete
   //? ---------------------------------------------------------------------- ?//
 
-  async softDelete(id: number, note: string | undefined): Promise<void> {
-    if (note) {
-      await this.samRepository.update({ id }, { note, deletedAt: new Date() });
-    } else {
-      const sam = await this.findById(id);
-      await this.samRepository.softRemove(sam);
-    }
+  async delete(id: number, note?: string): Promise<void> {
+    return await this.dataSource.transaction(async (manager: EntityManager) => {
+      const sam = await manager.findOne(Sam, {
+        where: { id },
+        relations: ['groups', 'instructor'],
+      });
+
+      if (!sam) {
+        throw new NotFoundException('Sam not found');
+      }
+
+      if (sam.groups && sam.groups.length > 0) {
+        throw new BadRequestException(
+          '담당했던 반이 있는 경우, 삭제할 수 없습니다.',
+        );
+      }
+
+      const instructorId = sam.instructorId;
+
+      if (note) {
+        await manager.update(Sam, { id }, { note, deletedAt: new Date() });
+      } else {
+        // 해당 강사의 Sam 개수를 먼저 확인 (Sam 삭제 전)
+        const allSamsForInstructor = await manager.find(Sam, {
+          where: { instructorId },
+          select: ['id'],
+        });
+
+        // 해당 강사의 Sam이 정확히 1개이고, 그것이 지금 삭제하는 Sam인 경우 강사도 함께 삭제할 예정인지 확인
+        const shouldDeleteInstructor =
+          allSamsForInstructor.length === 1 &&
+          allSamsForInstructor[0].id === id;
+
+        // Sam 삭제
+        await manager.remove(sam);
+
+        // 해당 강사의 Sam이 1개뿐이었고 그것이 방금 삭제한 Sam인 경우 강사도 삭제
+        if (shouldDeleteInstructor) {
+          const instructor = await manager.findOne(Instructor, {
+            where: { id: instructorId },
+          });
+          if (instructor) {
+            await manager.remove(instructor);
+          }
+        }
+      }
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//
