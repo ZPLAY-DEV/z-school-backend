@@ -474,8 +474,9 @@ export class SchoolSamService {
     const queryBuilder = this.samRepository
       .createQueryBuilder('sam')
       .where('sam.schoolId = :schoolId', { schoolId });
+
     // contracts.termId 필터가 있는 경우 해당 termId를 가진 Sam만 필터링
-    if (query.filter && query.filter['contracts.termId']) {
+    if (Number(query.filter?.['contracts.termId']) > 0) {
       return await paginate<Sam>(query, queryBuilder, {
         relations: {
           instructor: true,
@@ -498,6 +499,7 @@ export class SchoolSamService {
       return await paginate<Sam>(query, queryBuilder, {
         relations: {
           instructor: true,
+          contracts: true,
         },
         sortableColumns: ['alias'],
         searchableColumns: ['alias', 'instructor.phone'],
