@@ -559,6 +559,7 @@ export class SchoolTermLessonService {
       searchableColumns: ['lessonName'],
       defaultSortBy: [
         ['id', 'DESC'],
+        ['groups.id', 'ASC'],
         ['groups.weekdayNumber', 'ASC'],
       ],
       filterableColumns: {
