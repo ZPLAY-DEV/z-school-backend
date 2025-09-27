@@ -78,10 +78,6 @@ export class Group {
   @Column({ type: 'enum', enum: Weekday, default: Weekday.MONDAY })
   weekday: Weekday;
 
-  @ApiProperty({ description: '수업 요일 번호', example: 0 })
-  @Column({ type: 'tinyint', unsigned: true, default: 0 })
-  weekdayNumber: number;
-
   @ApiProperty({ description: '수업 시작 시간 (HH:mm)', example: '14:40' })
   @Column({ type: 'varchar', length: 5 })
   start: string;

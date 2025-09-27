@@ -71,13 +71,6 @@ export class CreateGroupDto {
   weekday: Weekday;
 
   @ApiProperty({
-    description: '수업 요일 번호',
-    example: 0,
-  })
-  @IsInt({ message: '수업 요일 번호는 정수여야 합니다' })
-  weekdayNumber?: number;
-
-  @ApiProperty({
     description: '수업 시작 시간 - HH:MM 형식 (24시간제)',
     type: String,
     example: '15:00',

@@ -560,7 +560,6 @@ export class SchoolTermLessonService {
       defaultSortBy: [
         ['id', 'DESC'],
         ['groups.id', 'ASC'],
-        ['groups.weekdayNumber', 'ASC'],
       ],
       filterableColumns: {
         termId: [FilterOperator.EQ],
