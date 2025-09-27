@@ -558,8 +558,8 @@ export class SchoolTermLessonService {
       sortableColumns: ['id', 'lessonName', 'termId', 'groups.weekday'],
       searchableColumns: ['lessonName'],
       defaultSortBy: [
-        ['schoolId', 'DESC'],
         ['id', 'DESC'],
+        ['groups.weekday', 'ASC'],
       ],
       filterableColumns: {
         termId: [FilterOperator.EQ],
