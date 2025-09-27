@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { QuestionType } from 'src/common/enums/question-type';
 import { Survey } from 'src/domain/survey/entities/survey.entity';
 import {
   Column,
@@ -23,8 +24,11 @@ export class SurveyQuestion {
   @Column({ type: 'int', unsigned: true })
   studentId: number;
 
-  @Column({ type: 'json' })
-  answers: any; // [{questionId, optionId?, text?}, ...]
+  @Column({ type: 'varchar', length: 255 })
+  question: string; // [{questionId, optionId?, text?}, ...]
+
+  @Column({ type: 'enum', enum: QuestionType })
+  type: QuestionType; // [{questionId, optionId?, text?}, ...]
 
   // ------------------------------------------------------------------------ //
 

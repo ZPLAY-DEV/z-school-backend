@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { School } from 'src/domain/school/entities/school.entity';
 import { SurveyAnswer } from 'src/domain/survey/entities/survey_answer.entity';
 import { SurveyQuestion } from 'src/domain/survey/entities/survey_question.entity';
-import { Surveyer } from 'src/domain/survey/entities/surveyer.entity';
+import { SurveyTarget } from 'src/domain/survey/entities/survey_target.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
@@ -36,6 +36,20 @@ export class Survey {
 
   // ------------------------------------------------------------------------ //
 
+  @ApiProperty({ description: 'KPI' })
+  @Column({ type: 'int', unsigned: true, default: 0 })
+  totalTargets: number;
+
+  @ApiProperty({ description: 'KPI' })
+  @Column({ type: 'int', unsigned: true, default: 0 })
+  totalResponded: number;
+
+  @ApiProperty({ description: 'KPI' })
+  @Column({ type: 'json', default: null })
+  detail: Record<string, number> | null;
+
+  // ------------------------------------------------------------------------ //
+
   @ApiProperty({
     description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
     example: '2025-01-01',
@@ -62,8 +76,8 @@ export class Survey {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @OneToMany(() => Surveyer, (surveyer) => surveyer.survey)
-  surveyers: Surveyer[]; // 영수증
+  @OneToMany(() => SurveyTarget, (surveyTarget) => surveyTarget.survey)
+  surveyTargets: SurveyTarget[]; // 영수증
 
   @OneToMany(() => SurveyQuestion, (surveyQuestion) => surveyQuestion.survey)
   surveyQuestions: SurveyQuestion[]; // 영수증

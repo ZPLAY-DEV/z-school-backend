@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { SubsidyStatus } from 'src/common/enums';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Survey } from 'src/domain/survey/entities/survey.entity';
 import {
@@ -15,9 +14,9 @@ import {
 } from 'typeorm';
 
 //? 설문조사 대상자 (학생기준)
-@Entity('surveyers')
+@Entity('survey_targets')
 @Unique(['studentId', 'surveyId'])
-export class Surveyer {
+export class SurveyTarget {
   @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -40,21 +39,9 @@ export class Surveyer {
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '지원금 금액' })
-  @Column({ type: 'int', unsigned: true, default: 0 })
-  views: number;
-
-  @ApiProperty({ description: '지원금 금액' })
-  @Column({ type: 'int', unsigned: true, default: 0 })
-  answers: number;
-
-  @ApiProperty({ description: '지원금 프로그램' })
-  @Column({
-    type: 'enum',
-    enum: SubsidyStatus,
-    default: SubsidyStatus.PENDING,
-  })
-  status: SubsidyStatus;
+  @ApiProperty({ description: '🈳 답변시각', example: '2025-06-26T00:30:00Z' })
+  @Column({ type: 'timestamp', nullable: true, comment: '답변 시각' })
+  answeredAt: Date | null;
 
   @ApiProperty({ description: '비고' })
   @Column({ type: 'varchar', length: 128, nullable: true })
@@ -76,17 +63,17 @@ export class Surveyer {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Student, (student) => student.surveyers)
+  @ManyToOne(() => Student, (student) => student.surveyTargets)
   @JoinColumn({ name: 'studentId' })
   student: Student;
 
-  @ManyToOne(() => Survey, (survey) => survey.surveyers)
+  @ManyToOne(() => Survey, (survey) => survey.surveyTargets)
   @JoinColumn({ name: 'surveyId' })
   survey: Survey;
 
   //? Constructor ---------------------------------------------------------- ?//
 
-  constructor(partial: Partial<Surveyer>) {
+  constructor(partial: Partial<SurveyTarget>) {
     Object.assign(this, partial);
   }
 }

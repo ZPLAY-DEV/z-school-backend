@@ -9,7 +9,7 @@ import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
-import { Surveyer } from 'src/domain/survey/entities/surveyer.entity';
+import { SurveyTarget } from 'src/domain/survey/entities/survey_target.entity';
 import {
   Column,
   CreateDateColumn,
@@ -129,8 +129,8 @@ export class Student {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @OneToMany(() => Surveyer, (surveyer) => surveyer.student)
-  surveyers: Surveyer[]; // 영수증
+  @OneToMany(() => SurveyTarget, (surveyTarget) => surveyTarget.student)
+  surveyTargets: SurveyTarget[]; // 영수증
 
   @OneToMany(() => Booking, (booking) => booking.student)
   bookings: Booking[]; // 수강신청
