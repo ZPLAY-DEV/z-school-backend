@@ -7,6 +7,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { WeekdayOrder } from 'src/common/enums/weekday';
 import { CalendarService } from 'src/domain/calendar/calendar.service';
 import { Contract } from 'src/domain/contract/entities/contract.entity';
 import { CreateGroupWithInstructorDto } from 'src/domain/group/dto/create-group.dto';
@@ -1020,6 +1021,7 @@ export class LessonCoreService {
         capacity: groupData.capacity,
         allowedGrades: groupAllowedGrades,
         weekday: groupData.weekday,
+        weekdayNumber: WeekdayOrder[groupData.weekday], // JavaScript getDay() 값으로 설정
         start: groupStart,
         end: groupEnd,
         tuition: groupData.tuition,
