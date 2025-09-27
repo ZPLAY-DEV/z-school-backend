@@ -1301,7 +1301,15 @@ export class GroupAttendanceService {
         });
       }
 
-      return normalizeAttendances(dataResults) as IAttendanceWithDate[];
+      const normalizedAttendances = normalizeAttendances(
+        dataResults,
+      ) as IAttendanceWithDate[];
+
+      return normalizedAttendances.sort((a, b) => {
+        if (a.dateStr < b.dateStr) return -1;
+        if (a.dateStr > b.dateStr) return 1;
+        return 0;
+      });
     } catch (error) {
       console.error(`[dynamodb] getStudentAttendances error:`, error);
       throw new BadRequestException(error.message);
