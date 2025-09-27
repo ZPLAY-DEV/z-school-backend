@@ -80,10 +80,9 @@ export class GroupSchooldayService {
 
     // monthStr이 있을 때 today 속성으로 월별 필터링
     if (monthStr) {
-      const [, targetMonth] = monthStr.split('-').map(Number);
       result = result.filter((schoolday) => {
         const [, schooldayMonth] = schoolday.today.split('-').map(Number);
-        return schooldayMonth === targetMonth;
+        return schooldayMonth === month;
       });
     }
     // today 날짜 순차적으로 정렬

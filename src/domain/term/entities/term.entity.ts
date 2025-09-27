@@ -15,6 +15,7 @@ import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
+import { Survey } from 'src/domain/survey/entities/survey.entity';
 import {
   Column,
   CreateDateColumn,
@@ -183,6 +184,11 @@ export class Term {
   @OneToMany(() => Newsletter, (newsletter: Newsletter) => newsletter.term)
   @Exclude()
   newsletters: Newsletter[];
+
+  @OneToMany(() => Survey, (survey) => survey.term, {
+    cascade: ['insert', 'update'],
+  })
+  surveys: Survey[];
 
   @OneToMany(() => Group, (group: Group) => group.term)
   groups: Group[];

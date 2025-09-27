@@ -14,12 +14,21 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+//? 설문조사 대상자 (학생기준)
 @Entity('surveyers')
 @Unique(['studentId', 'surveyId'])
 export class Surveyer {
   @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
+
+  @ApiProperty({ description: 'schoolId', example: 1 })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  schoolId: number;
+
+  @ApiProperty({ description: 'termId', example: 1 })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  termId: number;
 
   @ApiProperty({ description: '' })
   @Column({ type: 'int', unsigned: true, nullable: true })
@@ -28,16 +37,6 @@ export class Surveyer {
   @ApiProperty({ description: '' })
   @Column({ type: 'int', unsigned: true, nullable: true })
   surveyId: number;
-
-  // a clear way to know which group belongs to which term
-  @ApiProperty({ description: 'schoolId', example: 1 })
-  @Column({ type: 'int', unsigned: true, nullable: true })
-  schoolId: number;
-
-  // a clear way to know which group belongs to which term
-  @ApiProperty({ description: 'termId', example: 1 })
-  @Column({ type: 'int', unsigned: true, nullable: true })
-  termId: number;
 
   // ------------------------------------------------------------------------ //
 

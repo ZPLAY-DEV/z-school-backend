@@ -1,7 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { School } from 'src/domain/school/entities/school.entity';
 import { SurveyAnswer } from 'src/domain/survey/entities/survey_answer.entity';
+import { SurveyQuestion } from 'src/domain/survey/entities/survey_question.entity';
 import { Surveyer } from 'src/domain/survey/entities/surveyer.entity';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Term } from 'src/domain/term/entities/term.entity';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity('surveys')
 export class Survey {
@@ -9,8 +19,22 @@ export class Survey {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @Column({ length: 100 })
+  @Column({ type: 'int', unsigned: true })
+  schoolId: number;
+
+  @Column({ type: 'int', unsigned: true })
+  termId: number;
+
+  @Column({ type: 'varchar', length: 80 })
   title: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  intro: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  outro: string | null;
+
+  // ------------------------------------------------------------------------ //
 
   @ApiProperty({
     description: 'ISO 형식의 날짜 문자열 (YYYY-MM-DD)',
@@ -26,13 +50,23 @@ export class Survey {
   @Column({ type: 'date' })
   end: string;
 
-  @Column({ type: 'json' })
-  questions: any; // [{id, type, text, options?}, ...]
+  //* M-to-1 belongsTo ----------------------------------------------------- *//
+
+  @ManyToOne(() => School, (school) => school.surveys)
+  @JoinColumn({ name: 'schoolId' })
+  school: School;
+
+  @ManyToOne(() => Term, (term) => term.surveys)
+  @JoinColumn({ name: 'termId' })
+  term: Term;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
   @OneToMany(() => Surveyer, (surveyer) => surveyer.survey)
   surveyers: Surveyer[]; // 영수증
+
+  @OneToMany(() => SurveyQuestion, (surveyQuestion) => surveyQuestion.survey)
+  surveyQuestions: SurveyQuestion[]; // 영수증
 
   @OneToMany(() => SurveyAnswer, (surveyAnswer) => surveyAnswer.survey)
   surveyAnswers: SurveyAnswer[]; // 영수증
