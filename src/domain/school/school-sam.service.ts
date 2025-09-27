@@ -473,11 +473,18 @@ export class SchoolSamService {
   ): Promise<Paginated<Sam>> {
     const queryBuilder = this.samRepository
       .createQueryBuilder('sam')
-      .leftJoinAndSelect('sam.instructor', 'instructor')
+      .innerJoinAndSelect('sam.instructor', 'instructor')
       .leftJoinAndSelect('sam.contracts', 'contracts')
       .leftJoinAndSelect('contracts.group', 'group')
       .leftJoinAndSelect('contracts.lesson', 'lesson')
       .where('sam.schoolId = :schoolId', { schoolId });
+
+    // contracts.termId 필터가 있는 경우 해당 termId를 가진 Sam만 필터링
+    if (query.filter && query.filter['contracts.termId']) {
+      queryBuilder.andWhere('contracts.termId = :termId', {
+        termId: query.filter['contracts.termId'],
+      });
+    }
 
     return await paginate<Sam>(query, queryBuilder, {
       sortableColumns: ['alias'],
