@@ -93,6 +93,8 @@ async function bootstrap() {
     console.log(
       `🚀 Application's running on port ${port} in ${configService.get<string>('nodeEnv')} mode!`,
     );
+    console.log('TZ =', process.env.TZ);
+    console.log('Now =', new Date().toString());
   });
 }
 
