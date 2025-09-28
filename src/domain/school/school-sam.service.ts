@@ -471,47 +471,26 @@ export class SchoolSamService {
     query: PaginateQuery,
     schoolId: number,
   ): Promise<Paginated<Sam>> {
+    console.log(`🌳🌳🌳🌳🌳🌳🌳🌳🌳🌳`, query.filter);
     const queryBuilder = this.samRepository
       .createQueryBuilder('sam')
       .where('sam.schoolId = :schoolId', { schoolId });
 
-    // contracts.termId 필터가 있는 경우 해당 termId를 가진 Sam만 필터링
-    if (Number(query.filter?.['contracts.termId']) > 0) {
-      return await paginate<Sam>(query, queryBuilder, {
-        relations: {
-          instructor: true,
-          contracts: {
-            group: true,
-            lesson: true,
-          },
-        },
-        sortableColumns: ['alias'],
-        searchableColumns: ['alias', 'instructor.phone'],
-        defaultSortBy: [['alias', 'ASC']],
-        filterableColumns: {
-          alias: [FilterOperator.EQ, FilterOperator.ILIKE],
-          'instructor.name': [FilterOperator.EQ, FilterOperator.ILIKE],
-          'instructor.phone': [FilterOperator.EQ, FilterOperator.ILIKE],
-          'contracts.termId': [FilterOperator.EQ],
-        },
-      });
-    } else {
-      return await paginate<Sam>(query, queryBuilder, {
-        relations: {
-          instructor: true,
-          contracts: true,
-        },
-        sortableColumns: ['alias'],
-        searchableColumns: ['alias', 'instructor.phone'],
-        defaultSortBy: [['alias', 'ASC']],
-        filterableColumns: {
-          alias: [FilterOperator.EQ, FilterOperator.ILIKE],
-          'instructor.name': [FilterOperator.EQ, FilterOperator.ILIKE],
-          'instructor.phone': [FilterOperator.EQ, FilterOperator.ILIKE],
-          'contracts.termId': [FilterOperator.EQ],
-        },
-      });
-    }
+    return await paginate(query, queryBuilder, {
+      relations: {
+        instructor: true,
+        groups: true,
+      },
+      sortableColumns: ['id', 'alias'],
+      searchableColumns: ['alias', 'instructor.phone'],
+      defaultSortBy: [['alias', 'ASC']],
+      filterableColumns: {
+        alias: [FilterOperator.EQ, FilterOperator.ILIKE],
+        'instructor.name': [FilterOperator.EQ, FilterOperator.ILIKE],
+        'instructor.phone': [FilterOperator.EQ, FilterOperator.ILIKE],
+        'groups.termId': [FilterOperator.EQ],
+      },
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//
