@@ -68,11 +68,15 @@ export function getDatesForWeekdayBetween(
   end: Date,
   weekday: number,
 ): Date[] {
+  // KST 시간대로 정규화
+  const kstStart = toZonedTime(start, 'Asia/Seoul');
+  const kstEnd = toZonedTime(end, 'Asia/Seoul');
+
   const dates: Date[] = [];
-  const current = new Date(start);
+  const current = new Date(kstStart);
   // 첫 해당 요일까지 이동
   current.setDate(current.getDate() + ((7 + weekday - current.getDay()) % 7));
-  while (current <= end) {
+  while (current <= kstEnd) {
     dates.push(new Date(current));
     current.setDate(current.getDate() + 7);
   }
