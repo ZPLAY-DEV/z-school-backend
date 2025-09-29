@@ -130,7 +130,7 @@ ${dto.school} ${dto.term} 늘봄학교 신청하신 학부모님께 수업 변�
 `;
 
 //? ------------------------------------------------------------------------ ?//
-//? 공지사항) 수업 일정 안내 (NewsRegistrationResult1)
+//? 공지사항) 수강 신청 결과 안내 (NewsRegistrationResult1)
 //? ------------------------------------------------------------------------ ?//
 
 export const getTemplateOfNewsRegistrationResult = (dto: {

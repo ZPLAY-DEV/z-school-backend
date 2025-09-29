@@ -379,6 +379,7 @@ export class SamService {
     const result: Schoolday[] = [];
 
     for (const schoolday of schooldays) {
+      result.push(schoolday);
       if (schoolday.original !== null && schoolday.original === date) {
         const duplicate = { ...schoolday };
         duplicate.id = 0;
@@ -387,10 +388,12 @@ export class SamService {
         duplicate.weekday = getKoreanWeekday(schoolday.original);
         duplicate.note = 'red';
         result.push(duplicate);
-      } else {
-        result.push(schoolday);
       }
     }
+
+    // today 날짜 순차적으로 정렬
+    // result.sort((a, b) => a.today.localeCompare(b.today));
+
     return result;
   }
 
