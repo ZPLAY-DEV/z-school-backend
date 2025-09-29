@@ -18,7 +18,7 @@ import { Actor } from 'src/common/enums';
 import { UpdateSchooldayTimeDto } from 'src/domain/schoolday/dto/update-schoolday.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { getKoreanWeekday } from 'src/helpers/date';
-import { formatDateInKST } from 'src/helpers/time';
+import { convertKSTToUTC, formatDateInKST } from 'src/helpers/time';
 import { SchooldayService } from './schoolday.service';
 import {
   GetSchooldayByIdDocs,
@@ -123,10 +123,22 @@ export class SchooldayController {
         : user.role === 'INSTRUCTOR'
           ? Actor.INSTRUCTOR
           : Actor.OTHER;
-    const newSchoolday = await this.schooldayService.update(id, {
+
+    // KST로 입력된 시간을 UTC로 변환
+    const updateData: UpdateSchooldayTimeDto & { updatedBy: Actor } = {
       ...dto,
       updatedBy: role,
-    });
+    };
+
+    if ('startsAt' in dto) {
+      updateData.startsAt = convertKSTToUTC(dto.startsAt);
+    }
+
+    if ('endsAt' in dto) {
+      updateData.endsAt = convertKSTToUTC(dto.endsAt);
+    }
+
+    const newSchoolday = await this.schooldayService.update(id, updateData);
 
     // manipulate the response payload to reflect the changes
     if ('startsAt' in dto) {

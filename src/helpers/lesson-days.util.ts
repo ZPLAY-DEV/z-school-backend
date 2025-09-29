@@ -80,10 +80,8 @@ export function generateSchooldays(
     // KST 시간을 UTC로 변환
     const startsAtString = `${startDateStr} ${startTimeStr}:00`;
     const endsAtString = `${endDateStr} ${endTimeStr}:00`;
-
-    // KST 시간을 명시적으로 UTC로 변환
-    const startsAt = new Date(`${startsAtString}+09:00`);
-    const endsAt = new Date(`${endsAtString}+09:00`);
+    const startsAt = new Date(`${startsAtString}+09:00`); // String 값을 KST 로 해석해서 UTC로 변환
+    const endsAt = new Date(`${endsAtString}+09:00`); // String 값을 KST 로 해석해서 UTC로 변환
 
     const duration = differenceInMinutes(endsAt, startsAt);
 
@@ -98,8 +96,8 @@ export function generateSchooldays(
       initial: today,
       weekday: group.weekday,
       weekNumber: weekNumber++,
-      startsAt: startsAt,
-      endsAt: endsAt,
+      startsAt: startsAt, // datetime in UTC
+      endsAt: endsAt, // datetime in UTC
       note: null,
     } as unknown as Schoolday;
 

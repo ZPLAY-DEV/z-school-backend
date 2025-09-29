@@ -1,5 +1,5 @@
 import { add, differenceInMinutes, format, parse } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 
 /**
  * duration in minutes
@@ -55,4 +55,12 @@ export function delay(ms: number): Promise<void> {
  */
 export function formatDateInKST(date: Date): string {
   return format(toZonedTime(date, 'Asia/Seoul'), 'yyyy-MM-dd');
+}
+
+/**
+ * Convert KST Date to UTC Date
+ * KST로 입력된 Date 객체를 UTC로 변환하여 반환
+ */
+export function convertKSTToUTC(kstDate: Date): Date {
+  return fromZonedTime(kstDate, 'Asia/Seoul');
 }
