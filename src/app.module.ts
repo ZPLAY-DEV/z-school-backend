@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { JwtModule } from '@nestjs/jwt';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SentryModule } from '@sentry/nestjs/setup';
@@ -13,10 +14,10 @@ import { AppController } from 'src/app.controller';
 import { AppService } from 'src/app.service';
 import { configuration } from 'src/common/config/configuration';
 import { CustomCatchAllFilter } from 'src/common/filters/custom-catch-all.filter';
+import { JwtContextGuard } from 'src/common/guards/jwt-context.guard';
 import { DuplicateEntryErrorInterceptor } from 'src/common/interceptors/duplicate-entry-error.interceptor';
 import { AttendanceModule } from 'src/domain/attendance/attendance.module';
 import { AuthModule } from 'src/domain/auth/auth.module';
-import { JwtAuthGuard } from 'src/domain/auth/guards/jwt-auth.guard';
 import { BookingModule } from 'src/domain/booking/booking.module';
 import { CalendarModule } from 'src/domain/calendar/calendar.module';
 import { CategoryModule } from 'src/domain/category/category.module';
@@ -118,6 +119,7 @@ import { UploadModule } from './services/upload/upload.module';
     DepartureModule,
     GroupModule,
     InstructorModule,
+    JwtModule,
     LedgerModule,
     LessonModule,
     NewsletterModule,
@@ -143,7 +145,7 @@ import { UploadModule } from './services/upload/upload.module';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: JwtContextGuard,
     },
     {
       provide: APP_INTERCEPTOR,

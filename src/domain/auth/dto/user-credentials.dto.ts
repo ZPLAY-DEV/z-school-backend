@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -30,6 +31,15 @@ export class UserCredentialsDto {
   @IsNotEmpty()
   @IsEnum(Role)
   role: Role;
+
+  @ApiProperty({
+    description: '🈳 schoolId for multi-tenancy (optional)',
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt()
+  schoolId?: number | null;
 }
 
 // Parent 또는 Instructor 회원가입 시 사용
@@ -61,6 +71,15 @@ export class UserCredentialsDtoWithSchool {
   @IsOptional()
   @IsEnum(Role)
   role?: Role;
+
+  @ApiProperty({
+    description: '🈳 schoolId for multi-tenancy (optional)',
+    example: 1,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt()
+  schoolId?: number | null;
 
   @ApiProperty({ description: '🈳 schoolId' })
   @ValidateNested()

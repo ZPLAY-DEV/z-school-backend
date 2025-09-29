@@ -20,5 +20,6 @@ import { JwtRefreshStrategy } from 'src/domain/auth/strategies/jwt-refresh.strat
     FirebaseStrategy,
   ],
   controllers: [AuthController],
+  exports: [JwtModule],
 })
 export class AuthModule {}

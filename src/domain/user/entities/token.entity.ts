@@ -11,9 +11,9 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-//! 같은 role 로 다중 디바이스 로그인 허용하기 때문에 테이블 크기가 커질 수 있음
+//! 같은 role + schoolId 조합으로 다중 디바이스 로그인 허용하기 때문에 테이블 크기가 커질 수 있음
 @Entity('tokens')
-@Unique(['userId', 'role', 'partialToken'])
+@Unique(['userId', 'role', 'schoolId', 'partialToken'])
 export class Token {
   @ApiProperty({ description: 'UUID token ID' })
   @PrimaryGeneratedColumn('uuid')
@@ -30,6 +30,10 @@ export class Token {
     default: Role.PARENT,
   })
   role: Role;
+
+  @ApiProperty({ description: '🈳 schoolId for multi-tenancy' })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  schoolId: number | null;
 
   @ApiProperty({ description: '🈵 Hashed refresh token' })
   @Column({ type: 'varchar', length: 64 })

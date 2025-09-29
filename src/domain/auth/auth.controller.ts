@@ -17,16 +17,19 @@ import { Request as ExpressRequest, Response } from 'express';
 import { ONE_HOUR, THIRTY_DAYS } from 'src/common/constants';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Role } from 'src/common/enums';
+import { IRequestUser } from 'src/common/interfaces';
 import { AuthService } from 'src/domain/auth/auth.service';
 import { AuthTokenDto } from 'src/domain/auth/dto/auth-token.dto';
 import { AuthUserDto } from 'src/domain/auth/dto/auth-user.dto';
+import { LoginCredentialsDto } from 'src/domain/auth/dto/login-credentials.dto';
+import { LoginResponseDto } from 'src/domain/auth/dto/login-response.dto';
 import { LogoutDto } from 'src/domain/auth/dto/logout.dto';
-import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import {
-  UserCredentialsDto,
-  UserCredentialsDtoWithPhone,
-  UserCredentialsDtoWithSchool,
-} from 'src/domain/auth/dto/user-credentials.dto';
+  RegisterCredentialsDto,
+  RegisterManagerCredentialsDto,
+} from 'src/domain/auth/dto/register-credentials.dto';
+import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
+import { SwitchSchoolDto } from 'src/domain/auth/dto/switch-school.dto';
 import {
   LoginDocs,
   LoginWithNanoidDocs,
@@ -59,22 +62,24 @@ export class AuthController {
   @Public()
   @Post('register')
   async register(
-    @Body() dto: UserCredentialsDtoWithPhone,
+    @Body() dto: RegisterCredentialsDto,
+    @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<any> {
+  ): Promise<LoginResponseDto> {
     if (!dto.username) {
       dto.username = dto.phone;
     }
-    const tokens = await this.authService.register(dto);
 
-    res.cookie('accessToken', tokens.accessToken, {
+    const response = await this.authService.register(dto);
+
+    res.cookie('accessToken', response.accessToken, {
       httpOnly: true,
       secure: this.environment === 'prod',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
     });
-    res.cookie('refreshToken', tokens.refreshToken, {
+    res.cookie('refreshToken', response.refreshToken, {
       httpOnly: true,
       secure: this.environment === 'prod',
       sameSite: 'lax',
@@ -82,14 +87,15 @@ export class AuthController {
       maxAge: THIRTY_DAYS,
     });
 
-    return tokens; // added more props for sams and it ended up returning any
+    return response;
   }
 
   @RegisterManagerDocs()
   @Public()
   @Post('register/manager')
   async registerManager(
-    @Body() dto: UserCredentialsDtoWithSchool,
+    @Body() dto: RegisterManagerCredentialsDto,
+    @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthUserDto> {
     const tokens = await this.authService.registerManager(dto);
@@ -130,7 +136,8 @@ export class AuthController {
   @Public()
   @Post('login')
   async login(
-    @Body() dto: UserCredentialsDto,
+    @Body() dto: LoginCredentialsDto,
+    @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<any> {
     const tokens = await this.authService.login(dto);
@@ -159,6 +166,7 @@ export class AuthController {
   @Post('login/nanoid/:id')
   async loginWithNanoid(
     @Param('id') id: string,
+    @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthUserDto> {
     const tokens = await this.authService.loginWithNanoid(id);
@@ -230,6 +238,52 @@ export class AuthController {
       path: '/',
       maxAge: ONE_HOUR,
     });
+
+    return tokens;
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? 학교 전환
+  //? ---------------------------------------------------------------------- ?//
+
+  @HttpCode(200)
+  @Post('switch-school')
+  async switchSchool(
+    @Req() req: ExpressRequest,
+    @Res({ passthrough: true }) res: Response,
+    @Body() dto: SwitchSchoolDto,
+  ): Promise<AuthTokenDto> {
+    const user = req['user'] as IRequestUser;
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    // Extract schoolId from header as fallback
+    const headerSchoolId = req.headers['x-school-id']
+      ? parseInt(req.headers['x-school-id'] as string)
+      : null;
+
+    const tokens = await this.authService.switchSchool(
+      user.id,
+      dto.role,
+      dto.schoolId ?? headerSchoolId ?? null,
+    );
+
+    // Update cookies with new tokens
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: this.environment === 'prod',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: ONE_HOUR,
+    });
+    // res.cookie('refreshToken', tokens.refreshToken, {
+    //   httpOnly: true,
+    //   secure: this.environment === 'prod',
+    //   sameSite: 'lax',
+    //   path: '/',
+    //   maxAge: THIRTY_DAYS,
+    // });
 
     return tokens;
   }

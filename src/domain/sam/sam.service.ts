@@ -391,10 +391,7 @@ export class SamService {
       }
     }
 
-    // today 날짜 순차적으로 정렬
-    // result.sort((a, b) => a.today.localeCompare(b.today));
-
-    return result;
+    return result.filter((schoolday) => schoolday.today === date);
   }
 
   //? ---------------------------------------------------------------------- ?//

@@ -178,6 +178,7 @@ export interface IRequestUser {
   id: number;
   username: string;
   role: Role;
+  schoolId: number | null;
   refreshToken?: string;
 }
 export interface INextStop {
