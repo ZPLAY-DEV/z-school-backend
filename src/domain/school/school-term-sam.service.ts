@@ -236,7 +236,7 @@ export class SchoolTermSamService {
     schoolId: number,
     termId: number,
     samId: number,
-    date?: string,
+    date?: string, //! 2025-09-29
   ): Promise<ResponseWeeklySchooldayDto> {
     try {
       // 1. date 파라미터 처리 (null이면 오늘 날짜)
@@ -248,7 +248,7 @@ export class SchoolTermSamService {
         kstDate = toZonedTime(targetDate, 'Asia/Seoul');
       } catch (timezoneError) {
         this.logger.warn('시간대 변환 실패, 로컬 시간 사용:', timezoneError);
-        // 시간대 변환 실패시 로컬 시간 사용
+        // 시간대 변환 실패시 서버 시간 사용
         kstDate = targetDate;
       }
 

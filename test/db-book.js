@@ -10,8 +10,8 @@ async function loginAndGetToken() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      username: 'sindong@gmail.com',
-      password: '1234',
+      username: 'a@gmail.com',
+      password: '1111',
       role: 'MANAGER',
     }),
   });

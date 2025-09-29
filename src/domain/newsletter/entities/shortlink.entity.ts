@@ -3,15 +3,15 @@ import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { NotificationCoreData } from 'src/services/notification/types';
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  Unique,
-  UpdateDateColumn
+    Column,
+    CreateDateColumn,
+    Entity,
+    Index,
+    JoinColumn,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    Unique,
+    UpdateDateColumn
 } from 'typeorm';
 
 @Entity('shortlinks')

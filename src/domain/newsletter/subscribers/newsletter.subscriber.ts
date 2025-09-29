@@ -129,15 +129,16 @@ export class NewsletterSubscriber
   ): Promise<Shortlink[]> {
     const dtos: CreateShortlinkDto[] = [];
     for (const student of students) {
+      const nanoId = nanoid();
       const data = {
-        nanoId: nanoid(),
+        nanoId: nanoId,
         type: newsletter.type,
         termId: newsletter.termId,
         studentId: student.id,
       };
 
       const payload = this._buildNotificationCoreData(
-        data.nanoId,
+        nanoId,
         student,
         term,
         newsletter,
@@ -146,7 +147,7 @@ export class NewsletterSubscriber
       const dto = {
         parentId: student.parent.id,
         newsletterId: newsletterId,
-        nanoid: data.nanoId,
+        nanoid: nanoId,
         role: 'PARENT',
         routes: JSON.stringify(data),
         payload: payload,
