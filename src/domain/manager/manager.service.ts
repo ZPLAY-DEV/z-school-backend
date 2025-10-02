@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-  FilterOperator,
-  paginate,
-  Paginated,
-  PaginateQuery,
+    FilterOperator,
+    paginate,
+    Paginated,
+    PaginateQuery,
 } from 'nestjs-paginate';
 import { CreateManagerDto } from 'src/domain/manager/dto/create-manager.dto';
 import { UpdateManagerDto } from 'src/domain/manager/dto/update-manager.dto';
@@ -35,7 +35,7 @@ export class ManagerService {
     const queryBuilder = this.managerRepository
       .createQueryBuilder('manager')
       .leftJoinAndSelect('manager.user', 'user')
-      .leftJoinAndSelect('manager.school', 'school');
+      .leftJoinAndSelect('manager.affiliations', 'affiliations');
 
     return await paginate(query, queryBuilder, {
       sortableColumns: ['id', 'name', 'phone'],
@@ -51,7 +51,7 @@ export class ManagerService {
     return await this.managerRepository
       .createQueryBuilder('manager')
       .leftJoinAndSelect('manager.user', 'user')
-      .leftJoinAndSelect('manager.school', 'school')
+      .leftJoinAndSelect('manager.managerAffiliations', 'managerAffiliations')
       .orderBy('manager.id', 'DESC')
       .getMany();
   }

@@ -21,8 +21,8 @@ const data = [
     payload: {
       schoolId: 1,
       schoolYear: 2025,
-      schoolName: '신동초등학교',
-      termName: '2학기',
+      schoolName: '한국초등학교',
+      termName: '1학기',
       pickRule: 'RANDOM',
       start: '2025-09-01',
       end: '2025-11-30',
@@ -714,7 +714,7 @@ async function loginAndGetToken() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      username: 'sd@gmail.com',
+      username: 'a@gmail.com',
       password: '1111',
       role: 'MANAGER',
     }),

@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -40,12 +41,12 @@ export class RegisterCredentialsDto {
 }
 
 export class RegisterManagerCredentialsDto {
-  @ApiProperty({ description: '🈵 username', example: 'manager.kim' })
+  @ApiProperty({ description: '🈵 username', example: 'a@gmail.com' })
   @IsString()
   @IsNotEmpty()
   username: string;
 
-  @ApiProperty({ description: '🈵 password', example: 'password123' })
+  @ApiProperty({ description: '🈵 password', example: 'password' })
   @IsString()
   @IsNotEmpty()
   @MinLength(4)
@@ -53,8 +54,27 @@ export class RegisterManagerCredentialsDto {
 
   @ApiProperty({ description: '🈵 role', enum: Role, example: Role.PARENT })
   @IsEnum(Role)
+  @IsNotEmpty()
+  role: Role;
+
+  @ApiProperty({ description: '🈵 name', example: '홍길동' })
   @IsOptional()
-  role?: Role;
+  name?: string | null;
+
+  @ApiProperty({ description: '🈵 phone', example: '01012345678' })
+  @IsString()
+  @MinLength(4)
+  @IsOptional()
+  phone?: string;
+
+  @ApiProperty({ description: '🈵 note', example: 'note' })
+  @IsOptional()
+  note?: string | null;
+
+  @ApiProperty({ description: '🈵 schoolIds', example: [1, 2, 3] })
+  @IsArray()
+  @IsOptional()
+  schoolIds?: number[];
 
   @ApiProperty({ description: '🈳 school' })
   @ValidateNested()

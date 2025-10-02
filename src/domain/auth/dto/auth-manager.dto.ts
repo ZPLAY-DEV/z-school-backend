@@ -1,5 +1,6 @@
-import { Expose } from 'class-transformer';
-import { IsNumber, IsString } from 'class-validator';
+import { Expose, Type } from 'class-transformer';
+import { IsArray, IsNumber, IsString } from 'class-validator';
+import { AuthAffiliationDto } from 'src/domain/auth/dto/auth-affiliation.dto';
 
 export class AuthManagerDto {
   @Expose()
@@ -8,9 +9,14 @@ export class AuthManagerDto {
 
   @Expose()
   @IsString()
-  schoolId: number;
+  name: string | null;
 
   @Expose()
   @IsString()
-  schoolName: string | null;
+  phone: string | null;
+
+  @Expose()
+  @IsArray()
+  @Type(() => AuthAffiliationDto)
+  affiliations: AuthAffiliationDto[];
 }

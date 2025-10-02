@@ -1,18 +1,18 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiCreatedResponse,
-  ApiExtraModels,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
+    ApiBody,
+    ApiCreatedResponse,
+    ApiExtraModels,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-  ApiOkPaginatedResponse,
-  ApiPaginationQuery,
-  FilterOperator,
-  PaginateConfig,
+    ApiOkPaginatedResponse,
+    ApiPaginationQuery,
+    FilterOperator,
+    PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { CreateManagerDto } from '../dto/create-manager.dto';
@@ -109,7 +109,7 @@ export const GetManagersPaginatedDocs = () => {
       description: `
 **📝 기능 설명**
 - 페이지네이션이 적용된 관리자 목록을 조회합니다
-- User, School 정보를 함께 제공합니다
+- User, Affiliation 정보를 함께 제공합니다
 
 **🔄 필터링 및 정렬**
 - 검색: name (관리자 이름)
@@ -143,7 +143,7 @@ export const GetActiveManagersDocs = () => {
 **🔄 비즈니스 로직**
 1. 소프트 삭제된 관리자 제외
 2. ID 내림차순 정렬
-3. User, School 정보 포함
+3. User, Affiliation 정보 포함
 
 **📚 사용 시나리오**
 - 드롭다운 메뉴용 관리자 목록
@@ -168,12 +168,12 @@ export const GetManagerByIdDocs = () => {
       description: `
 **📝 기능 설명**
 - 특정 관리자의 상세 정보를 조회합니다
-- 연결된 User, School 정보 포함
+- 연결된 User, Affiliation 정보 포함
 
 **🔄 조회 정보**
 - 관리자 기본 정보 (이름, 전화번호, 메모 등)
 - 연결된 User 계정 정보
-- 소속 School 정보
+- 소속 Affiliation 정보
 
 **📚 사용 시나리오**
 - 관리자 프로필 페이지

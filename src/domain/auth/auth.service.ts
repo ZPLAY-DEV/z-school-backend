@@ -23,6 +23,7 @@ import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import { UserCredentialsDto } from 'src/domain/auth/dto/user-credentials.dto';
 import { UserDto } from 'src/domain/auth/dto/user.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
+import { Affiliation } from 'src/domain/manager/entities/affiliation.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
 import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
@@ -56,13 +57,14 @@ export class AuthService {
   private readonly environment: string;
   private readonly appUrl: string;
 
-  private readonly userRepository: Repository<User>;
+  private readonly affiliationRepository: Repository<Affiliation>;
   private readonly instructorRepository: Repository<Instructor>;
-  private readonly parentRepository: Repository<Parent>;
   private readonly managerRepository: Repository<Manager>;
+  private readonly parentRepository: Repository<Parent>;
   private readonly schoolRepository: Repository<School>;
   private readonly shortlinkRepository: Repository<Shortlink>;
   private readonly tokenRepository: Repository<Token>;
+  private readonly userRepository: Repository<User>;
 
   constructor(
     private readonly jwtService: JwtService,
@@ -76,13 +78,14 @@ export class AuthService {
       'http://localhost:3000',
     );
 
-    this.userRepository = this.dataSource.getRepository(User);
+    this.affiliationRepository = this.dataSource.getRepository(Affiliation);
     this.instructorRepository = this.dataSource.getRepository(Instructor);
-    this.parentRepository = this.dataSource.getRepository(Parent);
     this.managerRepository = this.dataSource.getRepository(Manager);
-    this.shortlinkRepository = this.dataSource.getRepository(Shortlink);
+    this.parentRepository = this.dataSource.getRepository(Parent);
     this.schoolRepository = this.dataSource.getRepository(School);
+    this.shortlinkRepository = this.dataSource.getRepository(Shortlink);
     this.tokenRepository = this.dataSource.getRepository(Token);
+    this.userRepository = this.dataSource.getRepository(User);
   }
 
   /**
@@ -101,6 +104,7 @@ export class AuthService {
         'parent',
         'parent.students',
         'manager',
+        'manager.affiliations',
       ],
     });
 
@@ -166,7 +170,9 @@ export class AuthService {
 
   /**
    * ✅ Register a parent or instructor user
-   * - 한번 가입 후 다시 재가입은 안된다. 이미 존재하는 경우 로그인 후 학교 변경 가능하도록.
+   * - 한번 가입 후 다시 재가입은 안된다.
+   * - 다자녀 학부모의 경우, 무조건 첫번째 자녀로 로그인된다.
+   *  가능하도록.
    */
   async register(dto: RegisterCredentialsDto): Promise<LoginResponseDto> {
     try {
@@ -176,8 +182,11 @@ export class AuthService {
         phone: normalizePhone(dto.phone) as string,
       });
 
-      // 다자녀 부모의 경우, 어떤 자녀가 다니는 학교인지 지정하지 않았다면, 첫번째 자녀의 학교를 사용한다.
-      if (dto.role === Role.PARENT && !dto.schoolId) {
+      // 여러 학교에 연결된 경우 (다자녀 부모, 여러학교 강의), 첫번째 학교를 사용
+      if (
+        (dto.role === Role.PARENT || dto.role === Role.INSTRUCTOR) &&
+        !dto.schoolId
+      ) {
         const schoolId = await this.determineSchoolId(user, dto.role);
         dto.schoolId = schoolId;
       }
@@ -216,10 +225,6 @@ export class AuthService {
     dto: RegisterManagerCredentialsDto,
   ): Promise<LoginResponseDto> {
     try {
-      if (!dto.role) {
-        dto.role = Role.MANAGER;
-      }
-
       const user = await this.createManager(dto);
       const { accessToken, refreshToken } = await this.generateTokens(
         user,
@@ -253,12 +258,12 @@ export class AuthService {
   async login(dto: LoginCredentialsDto): Promise<LoginResponseDto> {
     const user = await this.validateUser(dto);
     const schoolId = this.resolveSchoolId(dto.role, dto.schoolId);
-    const schoolIds = this.findSchoolIdsForUser(user, dto.role);
-    if (!schoolId || !schoolIds.includes(schoolId)) {
-      throw new BadRequestException(
-        `잘못된 schoolId(${schoolId})가 지정되었습니다.`,
-      );
-    }
+    // const schoolIds = this.findSchoolIdsForUser(user, dto.role);
+    // if (!schoolId || !schoolIds.includes(schoolId)) {
+    //   throw new BadRequestException(
+    //     `잘못된 schoolId(${schoolId})가 지정되었습니다.`,
+    //   );
+    // }
 
     const { accessToken, refreshToken } = await this.generateTokens(
       user,
@@ -388,11 +393,12 @@ export class AuthService {
         relations: [
           'instructor',
           'instructor.sams',
-          'instructor.sams.school',
+          //'instructor.sams.school',
           'parent',
           'parent.students',
-          'parent.students.school',
+          // 'parent.students.school',
           'manager',
+          'manager.affiliations',
         ],
       });
 
@@ -504,14 +510,14 @@ export class AuthService {
   /**
    * Resolve schoolId with priority: dto.schoolId -> header.schoolId -> null
    */
-  private resolveSchoolId(role: Role, schoolId: number | null): number | null {
+  private resolveSchoolId(role: Role, schoolId?: number): number | null {
     if (schoolId) {
       return schoolId;
     }
 
-    if (role === Role.MANAGER) {
-      throw new BadRequestException('로그인할 학교를 지정해주세요.');
-    }
+    // if (role === Role.MANAGER) {
+    //   throw new BadRequestException('로그인할 학교를 지정해주세요.');
+    // }
 
     return null;
   }
@@ -522,13 +528,28 @@ export class AuthService {
   private async determineSchoolId(user: User, role: Role): Promise<number> {
     try {
       switch (role) {
-        case Role.MANAGER:
-          if (!user.manager?.schoolId) {
+        case Role.MANAGER: {
+          if (
+            !user.manager?.affiliations ||
+            user.manager.affiliations.length === 0
+          ) {
             throw new BadRequestException(
-              `관리자 사용자(${user.id}) has no associated school`,
+              `연결된 학교정보가 없는 관리자 사용자(${user.id}) 입니다.`,
             );
           }
-          return user.manager.schoolId;
+
+          // 활성화된 첫 번째 학교를 사용
+          const activeSchool = user.manager.affiliations.find(
+            (ms) => ms.isActive,
+          );
+          if (!activeSchool) {
+            throw new BadRequestException(
+              `활성화된 학교가 없는 관리자 사용자(${user.id}) 입니다.`,
+            );
+          }
+
+          return activeSchool.schoolId;
+        }
 
         case Role.PARENT: {
           const parent = await this.parentRepository.findOne({
@@ -538,17 +559,15 @@ export class AuthService {
 
           if (!parent || !parent.students || parent.students.length === 0) {
             throw new BadRequestException(
-              `Parent user ${user.id} has no associated students`,
+              `연결된 학생정보가 없는 학부모 사용자(${user.id}) 입니다.`,
             );
           }
 
           // fallback: 학생의 첫번째 학교를 사용
-          const firstStudent = parent.students.find(
-            (student) => student.schoolId,
-          );
-          if (!firstStudent) {
+          const firstStudent = parent.students[0];
+          if (!firstStudent.schoolId) {
             throw new BadRequestException(
-              `Parent user ${user.id} has no valid school for students`,
+              `학교정보없이 잘못 등록된 학생(${firstStudent.id})의 학부모 사용자(${user.id}) 입니다.`,
             );
           }
 
@@ -563,15 +582,15 @@ export class AuthService {
 
           if (!instructor || !instructor.sams || instructor.sams.length === 0) {
             throw new BadRequestException(
-              `Instructor user ${user.id} has no associated SAMs (School Assignment Management)`,
+              `강의정보가 없는 강사 사용자(${user.id})입니다.`,
             );
           }
 
           // fallback: 담임쌤의 첫번째 학교를 사용
-          const firstSam = instructor.sams.find((sam) => sam.schoolId);
-          if (!firstSam) {
+          const firstSam = instructor.sams[0];
+          if (!firstSam.schoolId) {
             throw new BadRequestException(
-              `Instructor user ${user.id} has no valid school in SAMs`,
+              `강의정보없이 잘못 등록된 단임쌤(${firstSam.id})의 강사 사용자(${user.id}) 입니다.`,
             );
           }
 
@@ -580,19 +599,12 @@ export class AuthService {
 
         default:
           throw new BadRequestException(
-            `Unknown or unsupported role ${role} for user ${user.id}`,
+            `잘못된 role(${role})이 지정되었습니다.`,
           );
       }
     } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      this.logger.error(
-        `Error determining schoolId for user ${user.id} with role ${role}:`,
-        error,
-      );
       throw new BadRequestException(
-        `Failed to determine schoolId for user ${user.id} with role ${role}`,
+        `Failed to determine schoolId for user ${user.id} with role ${role}. ${error.message}`,
       );
     }
   }
@@ -603,7 +615,11 @@ export class AuthService {
   private findSchoolIdsForUser(user: User, role: Role): number[] {
     switch (role) {
       case Role.MANAGER:
-        return user.manager?.schoolId ? [user.manager.schoolId] : [];
+        return (
+          user.manager?.affiliations
+            ?.filter((ms) => ms.isActive)
+            ?.map((ms) => ms.schoolId) ?? []
+        );
 
       case Role.PARENT:
         return [
@@ -679,11 +695,13 @@ export class AuthService {
    * ✅ Register a user (강사 이면서, 학부모인 경우, 이미 존재할 수 도 있다.)
    */
   private async findOrCreateUser(dto: RegisterCredentialsDto): Promise<User> {
+    const phone = normalizePhone(dto.phone) as string;
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
     let user = await this.userRepository.findOne({
-      where: { phone: dto.phone },
+      where: { phone },
       relations: ['instructor', 'parent', 'manager'],
     });
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
     if (user) {
       if (
         user.password !== null &&
@@ -695,15 +713,15 @@ export class AuthService {
         );
       }
       await this.userRepository.update(user.id, {
-        username: dto.phone,
-        phone: dto.phone,
+        username: phone,
+        phone: phone,
         password: hashedPassword,
       });
     } else {
       user = await this.userRepository.save(
         new User({
-          username: dto.phone,
-          phone: dto.phone,
+          username: phone,
+          phone: phone,
           password: hashedPassword,
         }),
       );
@@ -711,27 +729,27 @@ export class AuthService {
 
     if (dto.role === Role.INSTRUCTOR) {
       const instructor = await this.instructorRepository.findOne({
-        where: { phone: dto.phone },
+        where: { phone },
         relations: ['sams'],
       });
       if (instructor) {
-        instructor.userId = user?.id; // userId 할당
+        instructor.userId = user.id; // userId 할당
         await this.instructorRepository.upsert(instructor, ['phone']);
       } else {
         throw new ConflictException(
-          '이 번호에 연결된 사전등록된 강사 정보가 없습니다.',
+          '이 전화번호는 강사 권한으로 사전등록되지 않았습니다.',
         );
       }
     } else if (dto.role === Role.PARENT) {
       const parent = await this.parentRepository.findOne({
-        where: { phone: dto.phone },
+        where: { phone },
       });
       if (parent) {
         parent.userId = user.id; // userId 할당
         await this.parentRepository.upsert(parent, ['phone']);
       } else {
         throw new ConflictException(
-          '이 번호에 연결된 사전등록된 학부모 정보가 없습니다.',
+          '이 전화번호는 학부모 권한으로 사전등록되지 않았습니다.',
         );
       }
     } else {
@@ -739,11 +757,11 @@ export class AuthService {
     }
 
     return await this.userRepository.findOneOrFail({
-      where: { phone: dto.phone },
+      where: { phone },
       relations: [
         'instructor',
         'instructor.sams',
-        'instructor.sams.school',
+        // 'instructor.sams.school', // wonder if this is needed
         'parent',
         'parent.students',
         'manager',
@@ -757,52 +775,198 @@ export class AuthService {
   private async createManager(
     dto: RegisterManagerCredentialsDto,
   ): Promise<User> {
-    let school: School | null = null;
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    const dbUser = await this.userRepository.findOne({
-      where: { username: dto.username },
-      relations: ['instructor', 'parent', 'manager'],
-    });
-
-    if (dbUser) {
-      throw new ConflictException('already registered');
+    if (!dto.username.includes('@')) {
+      throw new BadRequestException('사용자명은 반드시 @을 포함해야 합니다.');
     }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const user = await this.userRepository.save(
-      new User({
-        username: dto.username,
-        password: hashedPassword,
-      }),
-    );
+    // 1. User 레코드 처리
+    let user = await this.userRepository.findOne({
+      where: { username: dto.username },
+      relations: ['manager'],
+    });
 
-    if (dto.school) {
-      await this.schoolRepository.upsert(dto.school, ['schoolCode']);
+    if (user) {
+      if (user.manager) {
+        throw new ConflictException(
+          '동일한 사용자명으로 등록한 관리자가 이미 존재합니다.',
+        );
+      } else {
+        // user.manager 정보가 없으면 dto 정보로 user 레코드 덮어쓰기
+        await this.userRepository.upsert(
+          {
+            ...user,
+            username: dto.username,
+            password: hashedPassword,
+          },
+          ['username'],
+        );
+      }
+    } else {
+      // 존재하지 않는 경우 dto 정보로 user 레코드 생성
+      await this.userRepository.upsert(
+        {
+          username: dto.username,
+          password: hashedPassword,
+        },
+        ['username'],
+      );
+    }
 
-      // 다시 school 정보 가져오기
-      school = await this.schoolRepository.findOne({
+    // 업데이트된 user 다시 조회
+    user = await this.userRepository.findOneOrFail({
+      where: { username: dto.username },
+      relations: ['manager'],
+    });
+
+    // 2. Manager 레코드 처리
+    let manager: Manager;
+
+    if (!dto.phone) {
+      // dto.phone이 없는 경우 dto.school 반드시 있어야 함
+      if (!dto.school) {
+        throw new BadRequestException(
+          '전화번호가 없는 경우 학교 정보는 반드시 제공되어야 합니다.',
+        );
+      }
+
+      // dto.school 정보로 학교를 upsert
+      await this.dataSource.query(
+        `\
+        INSERT INTO schools (schoolCode, name, phone, authorityCode, region, address)
+        VALUES (?, ?, ?, ?, ?, ?) AS new_values
+        ON DUPLICATE KEY UPDATE
+          name = new_values.name,
+          phone = new_values.phone,
+          authorityCode = new_values.authorityCode,
+          region = new_values.region,
+          address = new_values.address
+      `,
+        [
+          dto.school.schoolCode,
+          dto.school.name,
+          dto.school.phone,
+          dto.school.authorityCode,
+          dto.school.region,
+          dto.school.address,
+        ],
+      );
+
+      // 생성된/업데이트된 학교 정보 조회
+      const schoolEntity = await this.schoolRepository.findOne({
         where: { schoolCode: dto.school.schoolCode },
       });
-    }
 
-    await this.managerRepository.save(
-      new Manager(
-        school
-          ? {
-              userId: user.id,
+      if (!schoolEntity) {
+        throw new BadRequestException('학교 정보 생성에 실패했습니다.');
+      }
+
+      // 이 학교의 manager를 생성
+      manager = await this.managerRepository.save(
+        new Manager({
+          name: dto.name,
+          phone: null,
+          note: dto.note,
+          userId: user.id,
+        }),
+      );
+
+      // Affiliation 관계 생성 (upsert 사용)
+      await this.affiliationRepository.upsert(
+        {
+          managerId: manager.id,
+          schoolId: schoolEntity.id,
+          schoolName: schoolEntity.name,
+          isActive: true,
+        },
+        ['managerId', 'schoolId'],
+      );
+    } else {
+      // dto.phone이 있는 경우
+      const phone = normalizePhone(dto.phone) as string;
+
+      // 이 정보에 연결된 manager를 찾는다
+      const foundManager = await this.managerRepository.findOne({
+        where: { phone },
+        relations: ['affiliations'],
+      });
+
+      if (!foundManager) {
+        // manager가 없으면 생성
+        manager = await this.managerRepository.save(
+          new Manager({
+            name: dto.name,
+            phone: phone,
+            note: dto.note,
+            userId: user.id,
+          }),
+        );
+      } else {
+        manager = foundManager;
+
+        // manager가 있다면, 이 manager와 연결된 affiliation을 찾아본다
+        if (!manager.affiliations || manager.affiliations.length === 0) {
+          throw new NotFoundException(
+            '관리자가 존재하지만, 해당 관리자가 관리하는 학교정보가 없습니다.',
+          );
+        }
+
+        // 정상적인 경우이므로 이 manager.id를 user에 연결
+        await this.managerRepository.update(manager.id, {
+          name: dto.name,
+          note: dto.note,
+          userId: user.id,
+        });
+      }
+
+      // schoolIds가 있는 경우 처리
+      if (dto.schoolIds && dto.schoolIds.length > 0) {
+        // schoolIds의 모든 학교가 존재하는지 검증
+        const schools = await this.schoolRepository.find({
+          where: { id: In(dto.schoolIds) },
+        });
+
+        if (schools.length !== dto.schoolIds.length) {
+          const foundSchoolIds = schools.map((school) => school.id);
+          const missingSchoolIds = dto.schoolIds.filter(
+            (id) => !foundSchoolIds.includes(id),
+          );
+          throw new NotFoundException(
+            `다음 학교 ID들이 존재하지 않습니다: ${missingSchoolIds.join(', ')}`,
+          );
+        }
+
+        // 모든 학교와 affiliation 관계 생성 (upsert 사용)
+        for (const school of schools) {
+          await this.affiliationRepository.upsert(
+            {
+              managerId: manager.id,
               schoolId: school.id,
               schoolName: school.name,
-            }
-          : {
-              userId: user.id,
+              isActive: true,
             },
-      ),
-    );
+            ['managerId', 'schoolId'],
+          );
+        }
+      }
+    }
 
-    return await this.userRepository.findOneOrFail({
+    user = await this.userRepository.findOneOrFail({
       where: { id: user.id },
-      relations: ['instructor', 'parent', 'manager'],
+      relations: [
+        'instructor',
+        'instructor.sams',
+        'parent',
+        'parent.students',
+        'manager',
+        'manager.affiliations',
+      ],
     });
+
+    console.log('💚 user', user);
+
+    return user;
   }
 
   // ------------------------------------------------------------------------ //
@@ -972,6 +1136,38 @@ export class AuthService {
   }
 
   // ------------------------------------------------------------------------ //
+
+  /**
+   * Get current user information
+   */
+  async getCurrentUser(userId: number, role: Role): Promise<UserDto> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: [
+        'instructor',
+        'instructor.sams',
+        'instructor.sams.school',
+        'parent',
+        'parent.students',
+        'parent.students.school',
+        'manager',
+        'manager.affiliations',
+      ],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const hasRole = this.checkUserHasRole(user, role);
+    if (!hasRole) {
+      throw new UnauthorizedException('Access denied');
+    }
+
+    return plainToClass(UserDto, user, {
+      excludeExtraneousValues: true,
+    });
+  }
 
   /**
    * ✅ Send registration notification to Slack

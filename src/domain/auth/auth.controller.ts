@@ -2,6 +2,7 @@ import {
   Body,
   ClassSerializerInterceptor,
   Controller,
+  Get,
   HttpCode,
   Param,
   Patch,
@@ -30,7 +31,9 @@ import {
 } from 'src/domain/auth/dto/register-credentials.dto';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import { SwitchSchoolDto } from 'src/domain/auth/dto/switch-school.dto';
+import { UserDto } from 'src/domain/auth/dto/user.dto';
 import {
+  GetMeDocs,
   LoginDocs,
   LoginWithNanoidDocs,
   LogOutDocs,
@@ -38,6 +41,7 @@ import {
   RegisterDocs,
   RegisterManagerDocs,
   ResetPasswordDocs,
+  SwitchSchoolDocs,
 } from 'src/domain/auth/swagger/auth-swagger.decorator';
 import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
 
@@ -70,16 +74,16 @@ export class AuthController {
       dto.username = dto.phone;
     }
 
-    const response = await this.authService.register(dto);
+    const tokenResponse = await this.authService.register(dto);
 
-    res.cookie('accessToken', response.accessToken, {
+    res.cookie('accessToken', tokenResponse.accessToken, {
       httpOnly: true,
       secure: this.environment === 'prod',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
     });
-    res.cookie('refreshToken', response.refreshToken, {
+    res.cookie('refreshToken', tokenResponse.refreshToken, {
       httpOnly: true,
       secure: this.environment === 'prod',
       sameSite: 'lax',
@@ -87,7 +91,7 @@ export class AuthController {
       maxAge: THIRTY_DAYS,
     });
 
-    return response;
+    return tokenResponse;
   }
 
   @RegisterManagerDocs()
@@ -97,17 +101,17 @@ export class AuthController {
     @Body() dto: RegisterManagerCredentialsDto,
     @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthUserDto> {
-    const tokens = await this.authService.registerManager(dto);
+  ): Promise<LoginResponseDto> {
+    const tokenResponse = await this.authService.registerManager(dto);
 
-    res.cookie('accessToken', tokens.accessToken, {
+    res.cookie('accessToken', tokenResponse.accessToken, {
       httpOnly: true,
       secure: this.environment === 'prod',
       sameSite: 'lax',
       path: '/',
       maxAge: ONE_HOUR,
     });
-    res.cookie('refreshToken', tokens.refreshToken, {
+    res.cookie('refreshToken', tokenResponse.refreshToken, {
       httpOnly: true,
       secure: this.environment === 'prod',
       sameSite: 'lax',
@@ -115,7 +119,7 @@ export class AuthController {
       maxAge: THIRTY_DAYS,
     });
 
-    return tokens;
+    return tokenResponse;
   }
 
   @ResetPasswordDocs()
@@ -246,6 +250,7 @@ export class AuthController {
   //? 학교 전환
   //? ---------------------------------------------------------------------- ?//
 
+  @SwitchSchoolDocs()
   @HttpCode(200)
   @Post('switch-school')
   async switchSchool(
@@ -286,6 +291,21 @@ export class AuthController {
     // });
 
     return tokens;
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? 내 정보 조회
+  //? ---------------------------------------------------------------------- ?//
+
+  @GetMeDocs()
+  @Get('me')
+  async getMe(@Req() req: ExpressRequest): Promise<UserDto> {
+    const user = req['user'] as IRequestUser;
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    return await this.authService.getCurrentUser(user.id, user.role);
   }
 
   //? ---------------------------------------------------------------------- ?//

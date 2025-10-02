@@ -4,7 +4,7 @@ import { IsArray, IsEnum, IsString } from 'class-validator';
 import { Permission, Region } from 'src/common/enums';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
-import { Manager } from 'src/domain/manager/entities/manager.entity';
+import { Affiliation } from 'src/domain/manager/entities/affiliation.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
@@ -94,16 +94,16 @@ export class School {
     description: '🈵 학교에서 허용하는 기본 권한 리스트',
     example: [Permission.ALLOW_INSTRUCTOR_ADD_STUDENT],
   })
-  @Column({ type: 'json', comment: '학교에서 허용하는 기본 권한 리스트' })
+  @Column({ type: 'json', default: null })
   @IsArray()
   @IsEnum(Permission, { each: true })
-  permissions: Permission[];
+  permissions: Permission[] | null;
 
   @ApiProperty({ description: '🈵 promo video urls' })
-  @Column('json')
+  @Column({ type: 'json', default: null })
   @IsArray()
   @IsString({ each: true })
-  promos: string[];
+  promos: string[] | null;
 
   @ApiProperty({ description: '🈵 절약모드 여부' })
   @Column({
@@ -159,10 +159,10 @@ export class School {
   })
   students: Student[];
 
-  @OneToMany(() => Manager, (manager) => manager.school, {
+  @OneToMany(() => Affiliation, (affiliation) => affiliation.school, {
     cascade: ['insert', 'update'],
   })
-  managers: Manager[];
+  affiliations: Affiliation[];
 
   @OneToMany(() => Sam, (sam) => sam.school, {
     cascade: ['insert', 'update'],

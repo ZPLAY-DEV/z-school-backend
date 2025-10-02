@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
@@ -32,5 +33,6 @@ export class LoginCredentialsDto {
     example: 1,
   })
   @IsInt()
-  schoolId: number;
+  @IsOptional()
+  schoolId?: number;
 }

@@ -1,12 +1,12 @@
 import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  UseInterceptors,
+    Body,
+    ClassSerializerInterceptor,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    Patch,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
@@ -15,11 +15,11 @@ import { UpdateManagerDto } from 'src/domain/manager/dto/update-manager.dto';
 import { Manager as ManagerEntity } from 'src/domain/manager/entities/manager.entity';
 import { ManagerService } from 'src/domain/manager/manager.service';
 import {
-  DeleteManagerDocs,
-  GetActiveManagersDocs,
-  GetManagerByIdDocs,
-  GetManagersPaginatedDocs,
-  UpdateManagerDocs,
+    DeleteManagerDocs,
+    GetActiveManagersDocs,
+    GetManagerByIdDocs,
+    GetManagersPaginatedDocs,
+    UpdateManagerDocs,
 } from './swagger/manager.swagger.decorator';
 
 @ApiTags('✳️ Managers ( 관리자 )')
@@ -51,7 +51,7 @@ export class ManagerController {
   @GetManagerByIdDocs()
   @Get(':id')
   async getManagerById(@Param('id') id: number): Promise<ManagerEntity> {
-    return await this.managerService.findById(id, [`user`, `school`]);
+    return await this.managerService.findById(id, [`user`, `affiliations`]);
   }
 
   //? ---------------------------------------------------------------------- ?//
