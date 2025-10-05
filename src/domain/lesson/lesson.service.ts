@@ -229,7 +229,7 @@ export class LessonService {
     const bookings = await this.bookingRepository
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.student', 'student')
-      .leftJoin('student.parent', 'parent')
+      .leftJoinAndSelect('student.parent', 'parent')
       .leftJoin('booking.offering', 'offering')
       .leftJoinAndSelect('offering.groups', 'groups')
       .leftJoin('groups.lesson', 'lesson')
