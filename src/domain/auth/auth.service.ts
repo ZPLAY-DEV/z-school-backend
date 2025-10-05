@@ -342,31 +342,65 @@ export class AuthService {
     role: Role,
     refreshToken: string,
   ): Promise<AuthTokenDto> {
+    this.logger.log('=== AuthService refreshToken 시작 ===');
+    this.logger.log(`입력 파라미터 - userId: ${userId}, role: ${role}`);
+    this.logger.log(`refreshToken: ${refreshToken.substring(0, 20)}...`);
+
+    const searchCriteria = {
+      userId,
+      role,
+      partialToken: `${refreshToken}-L`,
+      expiresAt: MoreThan(new Date()),
+    };
+    this.logger.log('토큰 검색 조건:', JSON.stringify(searchCriteria, null, 2));
+
     const tokenRecord = await this.tokenRepository.findOne({
-      where: {
-        userId,
-        role,
-        partialToken: `${refreshToken}-L`,
-        expiresAt: MoreThan(new Date()),
-      },
+      where: searchCriteria,
       relations: ['user', 'user.instructor', 'user.parent', 'user.manager'],
     });
+
+    this.logger.log(
+      `토큰 레코드 검색 결과: ${tokenRecord ? '발견됨' : '없음'}`,
+    );
+
+    if (tokenRecord) {
+      this.logger.log(`토큰 만료 시간: ${tokenRecord.expiresAt.toISOString()}`);
+      this.logger.log(
+        `사용자 ID: ${tokenRecord.userId}, 역할: ${tokenRecord.role}`,
+      );
+      this.logger.log(`학교 ID: ${tokenRecord.schoolId}`);
+    }
 
     if (
       !tokenRecord ||
       !(await bcrypt.compare(refreshToken, tokenRecord.hashedToken))
     ) {
+      this.logger.error('토큰 검증 실패');
+      this.logger.error(`토큰 레코드 존재: ${!!tokenRecord}`);
+      if (tokenRecord) {
+        this.logger.error(
+          `bcrypt 비교 결과: ${await bcrypt.compare(refreshToken, tokenRecord.hashedToken)}`,
+        );
+      }
       throw new UnauthorizedException('Invalid token');
     }
 
+    this.logger.log('토큰 검증 성공');
+
     const user = tokenRecord.user;
+    this.logger.log(`사용자 정보 - ID: ${user.id}, username: ${user.username}`);
+
     const hasRole = this.checkUserHasRole(user, role);
+    this.logger.log(`사용자 역할 확인 결과: ${hasRole}`);
+
     if (!hasRole) {
+      this.logger.error('사용자에게 요청된 역할이 없습니다');
       throw new UnauthorizedException('Access denied');
     }
 
     // Use schoolId from tokenRecord for consistency
     const schoolId = tokenRecord.schoolId;
+    this.logger.log(`새 액세스 토큰 생성 - schoolId: ${schoolId}`);
 
     const accessToken = await this.generateAccessToken({
       sub: user.id,
@@ -374,6 +408,11 @@ export class AuthService {
       role,
       schoolId,
     });
+
+    this.logger.log(
+      `새 액세스 토큰 생성 완료: ${accessToken.substring(0, 20)}...`,
+    );
+    this.logger.log('=== AuthService refreshToken 완료 ===');
 
     return { accessToken };
   }
@@ -1063,7 +1102,7 @@ export class AuthService {
 
     const accessTokenOptions = {
       secret: this.configService.get('jwt.authSecret'),
-      expiresIn: '1h', //? ONE_HOUR,
+      expiresIn: '10m', //? ONE_HOUR,
     };
 
     return this.jwtService.signAsync(tokenClaims, accessTokenOptions);

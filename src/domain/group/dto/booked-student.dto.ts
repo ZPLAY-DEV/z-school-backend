@@ -54,7 +54,7 @@ export class BookedStudentDto {
     description: '학생 부모 전화번호',
     example: '01012345678',
   })
-  studentParentPhone: string;
+  parentPhone: string;
 
   @ApiProperty({
     description: '학생 상태',

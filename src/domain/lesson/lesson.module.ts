@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DynamooseModule } from 'nestjs-dynamoose';
 import { AttendanceSchema } from 'src/domain/attendance/entities/attendance.schema';
+import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { CalendarModule } from 'src/domain/calendar/calendar.module';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
@@ -21,6 +22,7 @@ import { Term } from 'src/domain/term/entities/term.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
+      Booking,
       Category,
       Departure,
       Group,

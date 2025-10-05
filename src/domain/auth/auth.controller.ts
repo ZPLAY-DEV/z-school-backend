@@ -1,16 +1,17 @@
 import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Get,
-  HttpCode,
-  Param,
-  Patch,
-  Post,
-  Req,
-  Res,
-  UnauthorizedException,
-  UseInterceptors,
+    Body,
+    ClassSerializerInterceptor,
+    Controller,
+    Get,
+    HttpCode,
+    Logger,
+    Param,
+    Patch,
+    Post,
+    Req,
+    Res,
+    UnauthorizedException,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiTags } from '@nestjs/swagger';
@@ -26,22 +27,22 @@ import { LoginCredentialsDto } from 'src/domain/auth/dto/login-credentials.dto';
 import { LoginResponseDto } from 'src/domain/auth/dto/login-response.dto';
 import { LogoutDto } from 'src/domain/auth/dto/logout.dto';
 import {
-  RegisterCredentialsDto,
-  RegisterManagerCredentialsDto,
+    RegisterCredentialsDto,
+    RegisterManagerCredentialsDto,
 } from 'src/domain/auth/dto/register-credentials.dto';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import { SwitchSchoolDto } from 'src/domain/auth/dto/switch-school.dto';
 import { UserDto } from 'src/domain/auth/dto/user.dto';
 import {
-  GetMeDocs,
-  LoginDocs,
-  LoginWithNanoidDocs,
-  LogOutDocs,
-  RefreshDocs,
-  RegisterDocs,
-  RegisterManagerDocs,
-  ResetPasswordDocs,
-  SwitchSchoolDocs,
+    GetMeDocs,
+    LoginDocs,
+    LoginWithNanoidDocs,
+    LogOutDocs,
+    RefreshDocs,
+    RegisterDocs,
+    RegisterManagerDocs,
+    ResetPasswordDocs,
+    SwitchSchoolDocs,
 } from 'src/domain/auth/swagger/auth-swagger.decorator';
 import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
 
@@ -49,6 +50,7 @@ import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
 @ApiTags('✳️ Auth ( 인증 )')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
   private readonly environment: string;
 
   constructor(
@@ -205,6 +207,16 @@ export class AuthController {
     @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthTokenDto> {
+    this.logger.log('=== Refresh Token 요청 시작 ===');
+    this.logger.log(`요청 IP: ${req.ip}`);
+    this.logger.log(`User-Agent: ${req.get('User-Agent')}`);
+    this.logger.log(
+      `요청 헤더 Authorization: ${req.get('Authorization') ? '존재' : '없음'}`,
+    );
+    this.logger.log(
+      `쿠키 refreshToken: ${req.cookies?.refreshToken ? '존재' : '없음'}`,
+    );
+
     const authHeader = req.get('Authorization');
     const refreshToken =
       req.cookies?.refreshToken ||
@@ -212,38 +224,66 @@ export class AuthController {
         ? authHeader.replace(/^Bearer\s/, '').trim()
         : null);
 
+    this.logger.log(
+      `추출된 refreshToken: ${refreshToken ? `${refreshToken.substring(0, 20)}...` : 'null'}`,
+    );
+
     if (!refreshToken) {
+      this.logger.error('Refresh token이 없습니다');
       throw new UnauthorizedException('Invalid refresh token');
     }
 
     const [, userId, role] = refreshToken.split('-') ?? [];
+    this.logger.log(`토큰 파싱 결과 - userId: ${userId}, role: ${role}`);
 
     if (!userId || !role) {
+      this.logger.error(
+        `토큰 형식이 잘못되었습니다 - userId: ${userId}, role: ${role}`,
+      );
       throw new UnauthorizedException('Invalid token');
     }
 
-    const tokens = await this.authService.refreshToken(
-      +userId,
+    const roleEnum =
       role === 'P'
         ? Role.PARENT
         : role === 'I'
           ? Role.INSTRUCTOR
           : role === 'M'
             ? Role.MANAGER
-            : Role.ADMIN,
-      refreshToken as string,
-    );
+            : Role.ADMIN;
 
-    // Update accessToken cookie only
-    res.cookie('accessToken', tokens.accessToken, {
-      httpOnly: true,
-      secure: this.environment === 'prod',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: ONE_HOUR,
-    });
+    this.logger.log(`Role enum 변환: ${role} -> ${roleEnum}`);
 
-    return tokens;
+    try {
+      const tokens = await this.authService.refreshToken(
+        +userId,
+        roleEnum,
+        refreshToken as string,
+      );
+
+      this.logger.log('토큰 갱신 성공');
+      this.logger.log(
+        `새로운 accessToken: ${tokens.accessToken.substring(0, 20)}...`,
+      );
+
+      // Update accessToken cookie only
+      res.cookie('accessToken', tokens.accessToken, {
+        httpOnly: true,
+        secure: this.environment === 'prod',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: ONE_HOUR,
+      });
+
+      this.logger.log('AccessToken 쿠키 설정 완료');
+      this.logger.log('=== Refresh Token 요청 완료 ===');
+
+      return tokens;
+    } catch (error) {
+      this.logger.error('토큰 갱신 실패:', error.message);
+      this.logger.error('에러 스택:', error.stack);
+      throw error;
+    }
   }
 
   //? ---------------------------------------------------------------------- ?//

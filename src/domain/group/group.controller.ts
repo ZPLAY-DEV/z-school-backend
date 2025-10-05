@@ -16,6 +16,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor, RemovalStatus } from 'src/common/enums';
+import { BookedStudentDto } from 'src/domain/group/dto/booked-student.dto';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
 import { PickedStudentDto } from 'src/domain/group/dto/picked-student.dto';
@@ -28,8 +29,8 @@ import {
   FindGroupDocs,
   ListAvailableStudentsDocs,
   ListAvailableStudentsPaginatedDocs,
-  ListCurrentStudentsDocs,
-  ListCurrentStudentsPaginatedDocs,
+  ListPickedStudentsDocs,
+  ListPickedStudentsPaginatedDocs,
   RestoreGroupDocs,
   UpdateGroupDocs,
 } from 'src/domain/group/swagger/group-swagger.decorator';
@@ -68,18 +69,18 @@ export class GroupController {
     ]);
   }
 
-  @ListCurrentStudentsDocs()
+  @ListPickedStudentsDocs()
   @Get(':id/students')
-  async listCurrentStudents(
+  async listPickedStudents(
     @Param('id', ParseIntPipe) id: number,
     @Query('isActive') isActive?: string,
   ): Promise<PickedStudentDto[]> {
     return await this.groupService.listStudents(id, isActive);
   }
 
-  @ListCurrentStudentsPaginatedDocs()
+  @ListPickedStudentsPaginatedDocs()
   @Get(':id/students/paginated')
-  async listCurrentStudentsPaginated(
+  async listPickedStudentsPaginated(
     @Param('id', ParseIntPipe) id: number,
     @Paginate() query: PaginateQuery,
   ): Promise<Paginated<PickedStudentDto>> {
@@ -107,7 +108,7 @@ export class GroupController {
   async listBookedStudents(
     @Param('id', ParseIntPipe) id: number,
     @Query('isPending') isPending?: string,
-  ): Promise<any[]> {
+  ): Promise<BookedStudentDto[]> {
     return await this.groupService.listBookedStudents(id, isPending);
   }
 

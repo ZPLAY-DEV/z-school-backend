@@ -1,23 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { Actor, StudentStatus } from 'src/common/enums';
-import { INextStop } from 'src/common/interfaces';
+import { Actor } from 'src/common/enums';
+import { Student } from 'src/domain/student/entities/student.entity';
 
-export class PickedStudentDto {
-  @ApiProperty({
-    description: '학생 ID',
-    example: 1,
-  })
-  @Expose()
-  id: number;
-
-  @ApiProperty({
-    description: '그룹 ID',
-    example: 1,
-  })
-  @Expose()
-  groupId: number;
-
+export class PickedStudentDto extends Student {
   @ApiProperty({
     description: '그룹 이름',
     example: '배드민턴A',
@@ -26,75 +12,10 @@ export class PickedStudentDto {
   groupName: string;
 
   @ApiProperty({
-    description: '학생 이름',
-    example: '홍길동',
-  })
-  @Expose()
-  name: string;
-
-  @ApiProperty({
-    description: '학년',
-    example: 2,
-  })
-  @Expose()
-  grade: number;
-
-  @ApiProperty({
-    description: '반',
-    example: '1반',
-  })
-  class: string;
-
-  @ApiProperty({
-    description: '학번/번호',
-    example: 10,
-  })
-  studentCode: number;
-
-  @ApiProperty({
-    description: '학생 상태',
-    example: StudentStatus.ATTENDING,
-    enum: StudentStatus,
-  })
-  status: StudentStatus;
-
-  @ApiProperty({
-    description: '학생 전화번호',
-    example: '01012345678',
-  })
-  phone: string | null;
-
-  @ApiProperty({
     description: '부모 전화번호',
     example: '01012345678',
   })
   parentPhone: string;
-
-  @ApiProperty({
-    description: '요일별 하교후 목적지',
-    example: [{ place: '집', name: '엄마', phone: '01012345678' }],
-  })
-  nextStops: INextStop[];
-
-  @ApiProperty({
-    description: '비고',
-    example: '왕따',
-  })
-  note: string | null;
-
-  @ApiProperty({
-    description: '등록자',
-    example: Actor.MANAGER,
-    enum: Actor,
-  })
-  startedBy: Actor | null;
-
-  @ApiProperty({
-    description: '등록자',
-    example: Actor.MANAGER,
-    enum: Actor,
-  })
-  endedBy: Actor | null;
 
   @ApiProperty({
     description: '수업 시작일',
@@ -105,6 +26,13 @@ export class PickedStudentDto {
   start: string | null;
 
   @ApiProperty({
+    description: '등록자',
+    example: Actor.MANAGER,
+    enum: Actor,
+  })
+  startedBy: Actor | null;
+
+  @ApiProperty({
     description: '수업 취소일',
     example: '2023-01-01',
     nullable: true,
@@ -113,12 +41,20 @@ export class PickedStudentDto {
   end: string | null;
 
   @ApiProperty({
+    description: '등록자',
+    example: Actor.MANAGER,
+    enum: Actor,
+  })
+  endedBy: Actor | null;
+
+  @ApiProperty({
     description: '수업 여부',
     example: true,
   })
   isActive: boolean;
 
   constructor(partial: Partial<PickedStudentDto>) {
+    super(partial);
     Object.assign(this, partial);
   }
 }

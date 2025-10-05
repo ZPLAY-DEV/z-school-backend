@@ -14,8 +14,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Paginated, PaginateQuery } from 'nestjs-paginate';
+import { PickedStudentDto } from 'src/domain/group/dto/picked-student.dto';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
-import { ExtendedStudentDto } from 'src/domain/lesson/dto/extended-student.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { LessonService } from 'src/domain/lesson/lesson.service';
@@ -69,12 +69,28 @@ export class LessonController {
   }
 
   @GetStudentsByLessonIdDocs()
+  @Get(':id/students')
+  async listPickedStudents(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<PickedStudentDto[]> {
+    return await this.lessonService.listPickedStudents(id);
+  }
+
+  @GetStudentsByLessonIdDocs()
   @Get(':id/students/paginated')
-  async findStudentsById(
+  async listPickedStudentsPaginated(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: PaginateQuery,
-  ): Promise<Paginated<ExtendedStudentDto>> {
-    return await this.lessonService.findStudentsById(id, query);
+  ): Promise<Paginated<PickedStudentDto>> {
+    return await this.lessonService.listPickedStudentsPaginated(id, query);
+  }
+
+  @Get(':id/booked-students')
+  async listBookedStudents(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('isPending') isPending?: string,
+  ): Promise<any[]> {
+    return await this.lessonService.listBookedStudents(id, isPending);
   }
 
   //? ---------------------------------------------------------------------- ?//

@@ -412,7 +412,7 @@ export const GetStudentsByLessonIdDocs = () => {
 **조회 경로:**
 \`lesson → groups → picks → student\`
 
-**확장 정보 (ExtendedStudentDto):**
+**확장 정보 (PickedStudentDto):**
 - ✅ **학생 기본 정보**: 이름, 학년, 반 등
 - ✅ **groupName**: 소속 반 이름
 - ✅ **groupStart**: 수업 시작 시간

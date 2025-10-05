@@ -1,17 +1,17 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiExtraModels,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  getSchemaPath,
+    ApiBody,
+    ApiExtraModels,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    getSchemaPath,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-  ApiOkPaginatedResponse,
-  ApiPaginationQuery,
-  FilterOperator,
+    ApiOkPaginatedResponse,
+    ApiPaginationQuery,
+    FilterOperator,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { RemovalStatus } from 'src/common/enums';
@@ -266,7 +266,7 @@ export const FindGroupDocs = () => {
 //? List Current Students
 //? ---------------------------------------------------------------------- ?//
 
-export const ListCurrentStudentsDocs = () => {
+export const ListPickedStudentsDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '👥 현재 수강생 목록 조회',
@@ -1101,7 +1101,7 @@ export const DeleteGroupDocs = () => {
 //? List Current Students Paginated
 //? ---------------------------------------------------------------------- ?//
 
-export const ListCurrentStudentsPaginatedDocs = () =>
+export const ListPickedStudentsPaginatedDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '👥📄 현재 수강생 목록 페이지네이션 조회',

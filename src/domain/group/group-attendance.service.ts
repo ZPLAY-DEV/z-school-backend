@@ -431,7 +431,7 @@ export class GroupAttendanceService {
       (v: Pick) =>
         new PickedStudentDto({
           id: v.studentId,
-          groupId: v.groupId,
+          // groupId: v.groupId,
           groupName: v.group.groupName,
           name: v.student.name,
           grade: v.student.grade,

@@ -40,12 +40,12 @@ export class GroupService {
   private readonly logger = new Logger(GroupService.name);
 
   constructor(
+    @InjectRepository(Booking)
+    private readonly bookingRepository: Repository<Booking>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(Pick)
     private readonly pickRepository: Repository<Pick>,
-    @InjectRepository(Booking)
-    private readonly bookingRepository: Repository<Booking>,
     @InjectRepository(Offering)
     private readonly offeringRepository: Repository<Offering>,
     private readonly dataSource: DataSource,
@@ -243,7 +243,7 @@ export class GroupService {
       (v: Pick) =>
         new PickedStudentDto({
           id: v.studentId,
-          groupId: v.groupId,
+          // groupId: v.groupId,
           groupName: v.group.groupName,
           name: v.student.name,
           grade: v.student.grade,
@@ -306,7 +306,7 @@ export class GroupService {
 
       return new PickedStudentDto({
         id: pick.studentId,
-        groupId: pick.groupId,
+        // groupId: pick.groupId,
         groupName: pick.group.groupName,
         name: pick.student.name,
         grade: pick.student.grade,
@@ -447,7 +447,7 @@ export class GroupService {
             grade: booking.student.grade,
             class: booking.student.class,
             studentCode: booking.student.studentCode,
-            studentParentPhone: booking.student.parent.phone,
+            parentPhone: booking.student.parent.phone,
             status: booking.student.status,
             waitingPosition: booking.waitingPosition,
             bookingStatus: booking.status,
@@ -465,7 +465,7 @@ export class GroupService {
         grade: booking.student.grade,
         class: booking.student.class,
         studentCode: booking.student.studentCode,
-        studentParentPhone: booking.student.parent.phone,
+        parentPhone: booking.student.parent.phone,
         status: booking.student.status,
         waitingPosition: booking.waitingPosition,
         bookingStatus: booking.status,
