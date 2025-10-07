@@ -39,6 +39,6 @@ export interface IAttendanceWithNextStop extends IAttendance {
 }
 
 export interface IAttendanceWithDate extends IAttendance {
-  dateStr: string;
+  today: string;
   original: string | null;
 }

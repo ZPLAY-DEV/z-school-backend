@@ -194,6 +194,7 @@ export class SchoolTermSamService {
       lessonId: sd.lessonId,
       groupId: sd.groupId,
       name: sd.name,
+      weekNumber: sd.weekNumber,
       startsAt: sd.startsAt?.toISOString() ?? (null as unknown as string),
       endsAt: sd.endsAt?.toISOString() ?? (null as unknown as string),
       duration: sd.duration,
@@ -312,6 +313,7 @@ export class SchoolTermSamService {
                 lessonId: schoolday.lessonId,
                 groupId: schoolday.groupId,
                 name: schoolday.name,
+                weekNumber: schoolday.weekNumber,
                 startsAt:
                   schoolday.startsAt?.toISOString() ??
                   (null as unknown as string),

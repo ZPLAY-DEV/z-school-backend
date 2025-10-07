@@ -1276,7 +1276,7 @@ export class GroupAttendanceService {
         const finalAttendance = existingAttendance
           ? {
               ...existingAttendance,
-              dateStr: schoolday.today,
+              today: schoolday.today,
               original:
                 schoolday.today === schoolday.initial
                   ? null
@@ -1284,7 +1284,7 @@ export class GroupAttendanceService {
             }
           : {
               ...createFallbackAttendanceItem(schoolday, studentId, groupKey),
-              dateStr: schoolday.today,
+              today: schoolday.today,
               original:
                 schoolday.today === schoolday.initial
                   ? null
@@ -1296,7 +1296,7 @@ export class GroupAttendanceService {
 
       if (monthStr) {
         dataResults = dataResults.filter((v) => {
-          const [, attendanceMonth] = v.dateStr.split('-').map(Number);
+          const [, attendanceMonth] = v.today.split('-').map(Number);
           return attendanceMonth === month;
         });
       }
@@ -1306,8 +1306,8 @@ export class GroupAttendanceService {
       ) as IAttendanceWithDate[];
 
       return normalizedAttendances.sort((a, b) => {
-        if (a.dateStr < b.dateStr) return -1;
-        if (a.dateStr > b.dateStr) return 1;
+        if (a.today < b.today) return -1;
+        if (a.today > b.today) return 1;
         return 0;
       });
     } catch (error) {

@@ -19,6 +19,7 @@ import {
 } from 'src/domain/attendance/dto/upsert-attendance.dto';
 import {
   IAttendance,
+  IAttendanceWithDate,
   IAttendanceWithNextStop,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
@@ -162,7 +163,7 @@ export class GroupAttendanceController {
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('studentId', ParseIntPipe) studentId: number,
     @Query('month') month?: string,
-  ): Promise<IAttendance[]> {
+  ): Promise<IAttendanceWithDate[]> {
     return await this.groupAttendancesService.getStudentAttendances(
       groupId,
       studentId,

@@ -88,6 +88,9 @@ export class ResponseSchooldayItemDto {
   @ApiProperty({ example: '수학' })
   name: string | null;
 
+  @ApiProperty({ example: 1 })
+  weekNumber: number;
+
   @ApiProperty({ type: String, format: 'date-time' })
   startsAt: string;
 

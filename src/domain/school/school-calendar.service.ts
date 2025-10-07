@@ -112,7 +112,7 @@ export class SchoolCalendarService {
     const queryBuilder = this.calendarRepository
       .createQueryBuilder('calendar')
       .where('calendar.schoolId = :schoolId', { schoolId })
-      .orderBy('calendar.id', 'DESC');
+      .orderBy('calendar.id', 'ASC');
 
     return await queryBuilder.getMany();
   }

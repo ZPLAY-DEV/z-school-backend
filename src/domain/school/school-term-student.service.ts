@@ -207,6 +207,7 @@ export class SchoolTermStudentService {
       lessonId: sd.lessonId,
       groupId: sd.groupId,
       name: sd.name,
+      weekNumber: sd.weekNumber,
       startsAt: sd.startsAt?.toISOString() ?? (null as unknown as string), // ensure string
       endsAt: sd.endsAt?.toISOString() ?? (null as unknown as string),
       duration: sd.duration,
@@ -281,6 +282,7 @@ export class SchoolTermStudentService {
           'schoolday.lessonId',
           'schoolday.groupId',
           'schoolday.name',
+          'schoolday.weekNumber',
           'schoolday.startsAt',
           'schoolday.endsAt',
           'schoolday.duration',
@@ -383,6 +385,7 @@ export class SchoolTermStudentService {
           lessonId: row.schoolday_lessonId,
           groupId: row.schoolday_groupId,
           name: row.schoolday_name,
+          weekNumber: row.schoolday_weekNumber,
           startsAt: (row.schoolday_startsAt as Date).toISOString(),
           endsAt: (row.schoolday_endsAt as Date).toISOString(),
           duration: row.schoolday_duration,

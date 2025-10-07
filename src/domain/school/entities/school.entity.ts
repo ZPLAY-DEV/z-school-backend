@@ -33,19 +33,7 @@ export class School {
   @IsString()
   name: string;
 
-  @ApiProperty({ description: '🈵 학교 코드' })
-  @Column({
-    type: 'varchar',
-    length: 16,
-    unique: true,
-    comment: '학교 코드',
-  })
-  schoolCode: string;
-
-  @ApiProperty({
-    description:
-      '🈵 학교 전화. 학교 > phones 의 isActive 설정할때 동일번호로 설정.',
-  })
+  @ApiProperty({ description: '🈵 학교 전화' })
   @Column({
     type: 'varchar',
     length: 16,
@@ -54,6 +42,15 @@ export class School {
     nullable: true,
   })
   phone: string;
+
+  @ApiProperty({ description: '🈵 학교 코드' })
+  @Column({
+    type: 'varchar',
+    length: 16,
+    unique: true,
+    comment: '학교 코드',
+  })
+  schoolCode: string;
 
   @ApiProperty({ description: '🈵 관할 교육청 코드' })
   @Column({
