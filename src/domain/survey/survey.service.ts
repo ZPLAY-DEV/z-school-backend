@@ -31,6 +31,21 @@ export class SurveyService {
   }
 
   //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
+
+  async findById(id: number, relations?: string[]): Promise<Survey> {
+    const survey = await this.surveyRepository.findOne({
+      where: { id },
+      relations,
+    });
+    if (!survey) {
+      throw new NotFoundException(`Survey not found`);
+    }
+    return survey;
+  }
+
+  //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
 

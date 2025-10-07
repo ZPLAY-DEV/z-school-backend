@@ -6,11 +6,14 @@ import { SurveyTarget } from 'src/domain/survey/entities/survey_target.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
+  CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('surveys')
@@ -63,6 +66,20 @@ export class Survey {
   })
   @Column({ type: 'date' })
   end: string;
+
+  // ------------------------------------------------------------------------ //
+
+  @CreateDateColumn()
+  @ApiProperty({ description: 'createdAt' })
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  @ApiProperty({ description: 'updatedAt' })
+  updatedAt: Date;
+
+  @ApiProperty({ description: 'deletedAt' })
+  @DeleteDateColumn()
+  deletedAt: Date | null;
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 

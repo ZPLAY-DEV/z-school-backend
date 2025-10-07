@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Param,
   ParseIntPipe,
   Patch,
@@ -25,6 +26,22 @@ export class SurveyController {
   @Post()
   async create(@Body() dto: CreateSurveyDto): Promise<Survey> {
     return await this.surveyService.create(dto);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
+
+  @ApiOperation({ description: 'Survey 상세 조회' })
+  @Get(':id')
+  async getSurveyById(@Param('id', ParseIntPipe) id: number): Promise<Survey> {
+    return await this.surveyService.findById(id, [
+      'school',
+      'term',
+      'surveyTargets',
+      'surveyQuestions',
+      'surveyAnswers',
+    ]);
   }
 
   //? ---------------------------------------------------------------------- ?//

@@ -21,28 +21,11 @@ export class SurveyQuestion {
   @Column({ type: 'int', unsigned: true })
   surveyId: number;
 
-  @Column({ type: 'int', unsigned: true })
-  studentId: number;
-
   @Column({ type: 'varchar', length: 255 })
   question: string; // [{questionId, optionId?, text?}, ...]
 
   @Column({ type: 'enum', enum: QuestionType })
   type: QuestionType; // [{questionId, optionId?, text?}, ...]
-
-  // ------------------------------------------------------------------------ //
-
-  @CreateDateColumn()
-  @ApiProperty({ description: 'createdAt' })
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  @ApiProperty({ description: 'updatedAt' })
-  updatedAt: Date;
-
-  @ApiProperty({ description: 'deletedAt' })
-  @DeleteDateColumn()
-  deletedAt: Date | null;
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
