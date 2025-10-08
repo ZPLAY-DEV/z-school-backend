@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { User } from 'src/domain/user/entities/user.entity';
 import {
@@ -78,10 +77,8 @@ export class Parent {
   })
   students: Student[];
 
-  @OneToMany(() => Shortlink, (shortlink) => shortlink.parent, {
-    cascade: ['insert', 'update'],
-  })
-  shortlinks: Shortlink[];
+  // Note: Recipient는 Student를 통해 간접적으로 조회
+  // recipients = student.recipients where student.parentId = parent.id
 
   //? Constructor ---------------------------------------------------------- ?//
 

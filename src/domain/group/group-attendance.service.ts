@@ -10,7 +10,10 @@ import { formatInTimeZone } from 'date-fns-tz';
 import * as dynamoose from 'dynamoose';
 import * as ExcelJS from 'exceljs';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import { AlarmType, AttendanceStatus } from 'src/common/enums';
+import {
+  AttendanceStatus,
+  NotificationSourceType
+} from 'src/common/enums';
 import { INextStop } from 'src/common/interfaces';
 import {
   CreateAttendanceWithGroupStudentDto,
@@ -155,7 +158,7 @@ export class GroupAttendanceService {
 
     //? 수업시작알림 SMS/Notification 발송
     await this.notificationService.send({
-      type: AlarmType.CLASS,
+      type: NotificationSourceType.OTHER,
       schoolId: group.lesson.schoolId,
       messages: messages,
     });
@@ -248,7 +251,7 @@ export class GroupAttendanceService {
 
     //? 수업종료알림 SMS/Notification 발송
     await this.notificationService.send({
-      type: AlarmType.CLASS,
+      type: NotificationSourceType.OTHER,
       schoolId: group.lesson.schoolId,
       messages: messages,
     });
@@ -318,7 +321,7 @@ export class GroupAttendanceService {
 
       //? 커스텀 알림 SMS/Notification 발송
       const result = await this.notificationService.send({
-        type: AlarmType.CLASS,
+        type: NotificationSourceType.OTHER,
         schoolId: group.lesson.schoolId,
         messages: messages,
       });

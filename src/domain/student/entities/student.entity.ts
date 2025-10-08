@@ -5,11 +5,11 @@ import { INextStop } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
+import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Subsidy } from 'src/domain/subsidy/entities/subsidy.entity';
-import { SurveyTarget } from 'src/domain/survey/entities/survey_target.entity';
 import {
   Column,
   CreateDateColumn,
@@ -82,14 +82,6 @@ export class Student {
   })
   status: StudentStatus;
 
-  @ApiProperty({ description: 'not used anymore' })
-  @Column({
-    type: 'varchar',
-    length: 16,
-    nullable: true,
-  })
-  nextStop: string | null;
-
   @ApiProperty({ description: '요일별 하교후 목적지', example: 'encrypted' })
   @Column({
     type: 'json',
@@ -129,8 +121,8 @@ export class Student {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @OneToMany(() => SurveyTarget, (surveyTarget) => surveyTarget.student)
-  surveyTargets: SurveyTarget[]; // 영수증
+  @OneToMany(() => Recipient, (recipient) => recipient.student)
+  recipients: Recipient[];
 
   @OneToMany(() => Booking, (booking) => booking.student)
   bookings: Booking[]; // 수강신청

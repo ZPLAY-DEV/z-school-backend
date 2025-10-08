@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { SurveyAnswer } from 'src/domain/survey/entities/survey_answer.entity';
 import { SurveyQuestion } from 'src/domain/survey/entities/survey_question.entity';
-import { SurveyTarget } from 'src/domain/survey/entities/survey_target.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
   Column,
@@ -12,6 +12,7 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -27,6 +28,10 @@ export class Survey {
 
   @Column({ type: 'int', unsigned: true })
   termId: number;
+
+  @ApiProperty({ description: '🈳 NotificationId (통합 알림 관리)' })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  notifiableId: number | null;
 
   @Column({ type: 'varchar', length: 80 })
   title: string;
@@ -91,14 +96,19 @@ export class Survey {
   @JoinColumn({ name: 'termId' })
   term: Term;
 
+  //* 1-to-1 hasOne -------------------------------------------------------- *//
+
+  @OneToOne(() => Notifiable, (notifiable) => notifiable.survey, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'notifiableId' })
+  notifiable: Notifiable | null;
+
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @OneToMany(() => SurveyTarget, (surveyTarget) => surveyTarget.survey)
-  surveyTargets: SurveyTarget[]; // 영수증
-
   @OneToMany(() => SurveyQuestion, (surveyQuestion) => surveyQuestion.survey)
-  surveyQuestions: SurveyQuestion[]; // 영수증
+  surveyQuestions: SurveyQuestion[];
 
   @OneToMany(() => SurveyAnswer, (surveyAnswer) => surveyAnswer.survey)
-  surveyAnswers: SurveyAnswer[]; // 영수증
+  surveyAnswers: SurveyAnswer[];
 }

@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude } from 'class-transformer';
+import { Exclude, Transform } from 'class-transformer';
 import { IsArray } from 'class-validator';
-import { NewsletterType } from 'src/common/enums';
+import { NotifiableTarget } from 'src/common/enums';
+import { SendStatus } from 'src/common/enums/send-status';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -10,17 +11,17 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  Index,
   JoinColumn,
   ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('newsletters')
-@Index(['schoolId', 'termId'])
-export class Newsletter {
+@Entity('reminders')
+@Unique(['schoolId', 'termId']) // 학기당 1개만 생성 가능
+export class Reminder {
   @ApiProperty({ description: 'primary key' })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -63,19 +64,82 @@ export class Newsletter {
   @IsArray()
   images: string[] | null;
 
+  // ------------------------------------------------------------------------ //
+
   @ApiProperty({
-    description: '발송유형 (CHANGES, MANAGEMENT, RESULT, SUPPLIES)',
+    description: '🈵 발송대상자 리스트. 발송하려면 deduped studentIds 필요',
+    example: [1, 2, 3],
+  })
+  @Column({
+    type: 'simple-array',
+    comment: '발송대상자 리스트. 발송하려면 deduped studentIds 필요',
+    nullable: true,
+  })
+  @Transform(({ value }) => {
+    if (!value) return null;
+    if (Array.isArray(value)) {
+      return value.map((id: string | number) =>
+        typeof id === 'string' ? parseInt(id, 10) : id,
+      );
+    }
+    return value as number[] | null;
+  })
+  studentIds: number[] | null;
+
+  @ApiProperty({
+    description: '🈵 발송 대상 유형; SCHOOL, GRADE, LESSON, GROUP, STUDENT',
+    example: NotifiableTarget.SCHOOL,
   })
   @Column({
     type: 'enum',
-    enum: NewsletterType,
-    default: NewsletterType.CHANGES,
-    comment:
-      '발송유형 (수업 일정 안내, 수업 운영 안내, 수강 신청 결과, 수업 준비물 안내)',
+    enum: NotifiableTarget,
+    default: NotifiableTarget.SCHOOL,
+    nullable: true,
   })
-  type: NewsletterType;
+  target: NotifiableTarget | null;
 
-  // ------------------------------------------------------------------------ //
+  @ApiProperty({ description: '🈵 발송 대상 유형' })
+  @Column({
+    type: 'simple-array',
+    comment: '대상별 아이템 아이디',
+    nullable: true,
+  })
+  @Transform(({ value }) => {
+    if (!value) return null;
+    if (Array.isArray(value)) {
+      return value.map((id: string | number) =>
+        typeof id === 'string' ? parseInt(id, 10) : id,
+      );
+    }
+    return value as number[] | null;
+  })
+  targetItems: number[] | null;
+
+  @ApiProperty({ description: '🈵 발송 대상 유형' })
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  targetLabel: string | null;
+
+  @ApiProperty({
+    description: '🈳 발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
+  })
+  @Column({ type: 'timestamp', nullable: true, comment: '발송예약 시각' })
+  scheduledAt: Date | null;
+
+  @ApiProperty({
+    description: '🈳 발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
+  })
+  @Column({ type: 'timestamp', nullable: true, comment: '발송예약 시각' })
+  rescheduledAt: Date | null;
+
+  @ApiProperty({ description: '🈵 발송 상태' })
+  @Column({
+    type: 'enum',
+    enum: SendStatus,
+    default: SendStatus.INIT,
+  })
+  status: SendStatus;
 
   // ------------------------------------------------------------------------ //
 
@@ -94,24 +158,24 @@ export class Newsletter {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => School, (school: School) => school.newsletters)
+  @ManyToOne(() => School, (school: School) => school.reminders)
   @JoinColumn({ name: 'schoolId' })
   school: School;
 
-  @ManyToOne(() => Term, (term: Term) => term.newsletters)
+  @ManyToOne(() => Term, (term: Term) => term.reminders)
   @JoinColumn({ name: 'termId' })
   term: Term;
 
   //* 1-to-1 hasOne -------------------------------------------------------- *//
 
-  @OneToOne(() => Notifiable, (notifiable) => notifiable.newsletter, {
+  @OneToOne(() => Notifiable, (notifiable) => notifiable.reminder, {
     nullable: true,
   })
   @JoinColumn({ name: 'notifiableId' })
   notifiable: Notifiable | null;
 
   //? Constructor ---------------------------------------------------------- ?//
-  constructor(partial: Partial<Newsletter>) {
+  constructor(partial: Partial<Reminder>) {
     Object.assign(this, partial);
   }
 }

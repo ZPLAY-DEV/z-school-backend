@@ -14,8 +14,6 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
-import { NewsletterTarget } from 'src/common/enums';
-import { SendStatus } from 'src/common/enums/send-status';
 import { IS3Urls } from 'src/common/interfaces';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { ReadStatDto } from 'src/domain/newsletter/dto/read-stat.dto';
@@ -26,13 +24,11 @@ import {
   CreateNewsletterDocs,
   DeleteNewsletterDocs,
   FindNewsletterByIdDocs,
-  FindPendingDispatchesDocs,
   FindReadStatsDocs,
   FindReadStatsPaginatedDocs,
   GenerateNewsletterS3UrlsDocs,
   MarkAsReadDocs,
   ResendNewsletterDocs,
-  SendNewsletterDocs,
   UpdateNewsletterDocs,
 } from 'src/domain/newsletter/swagger/newsletter-swagger.decorator';
 import { UploadService } from 'src/services/upload/upload.service';
@@ -58,20 +54,10 @@ export class NewsletterController {
     return await this.newsletterService.createNewsletter(dto);
   }
 
-  @SendNewsletterDocs()
-  @Put(':id/send')
-  async sendNewsletter(
-    @Param('id', ParseIntPipe) id: number,
-    @Body()
-    dto: {
-      target: NewsletterTarget;
-      targetItems: number[];
-      scheduledAt: string;
-      status: SendStatus;
-    },
-  ): Promise<Newsletter> {
-    return await this.newsletterService.sendNewsletter(id, dto);
-  }
+  // TODO: 발송 관련 로직은 Notifiable로 이관 필요
+  // @SendNewsletterDocs()
+  // @Put(':id/send')
+  // async sendNewsletter(...)
 
   @ResendNewsletterDocs()
   @Put(':id/resend')
@@ -83,11 +69,10 @@ export class NewsletterController {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  @FindPendingDispatchesDocs()
-  @Get('pending-items')
-  async findPendingItems(): Promise<Newsletter[]> {
-    return await this.newsletterService.findPendingItems();
-  }
+  // TODO: Notifiable로 이관 필요
+  // @FindPendingDispatchesDocs()
+  // @Get('pending-items')
+  // async findPendingItems()...
 
   @FindNewsletterByIdDocs()
   @Get(':id')

@@ -25,7 +25,7 @@ import { UserDto } from 'src/domain/auth/dto/user.dto';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Affiliation } from 'src/domain/manager/entities/affiliation.entity';
 import { Manager } from 'src/domain/manager/entities/manager.entity';
-import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
+import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Token } from 'src/domain/user/entities/token.entity';
@@ -62,7 +62,7 @@ export class AuthService {
   private readonly managerRepository: Repository<Manager>;
   private readonly parentRepository: Repository<Parent>;
   private readonly schoolRepository: Repository<School>;
-  private readonly shortlinkRepository: Repository<Shortlink>;
+  private readonly recipientRepository: Repository<Recipient>;
   private readonly tokenRepository: Repository<Token>;
   private readonly userRepository: Repository<User>;
 
@@ -83,7 +83,7 @@ export class AuthService {
     this.managerRepository = this.dataSource.getRepository(Manager);
     this.parentRepository = this.dataSource.getRepository(Parent);
     this.schoolRepository = this.dataSource.getRepository(School);
-    this.shortlinkRepository = this.dataSource.getRepository(Shortlink);
+    this.recipientRepository = this.dataSource.getRepository(Recipient);
     this.tokenRepository = this.dataSource.getRepository(Token);
     this.userRepository = this.dataSource.getRepository(User);
   }
@@ -131,30 +131,35 @@ export class AuthService {
   }
 
   async validateUserWithNanoid(id: string): Promise<User> {
-    const shortlink = await this.shortlinkRepository.findOneOrFail({
+    const recipient = await this.recipientRepository.findOneOrFail({
       where: { nanoid: id },
-      relations: ['parent', 'parent.user'],
+      relations: ['student', 'student.parent', 'student.parent.user'],
     });
 
-    let user: User | undefined = shortlink.parent?.user;
+    const parent = recipient.student.parent;
+    if (!parent) {
+      throw new NotFoundException('Parent not found');
+    }
+
+    let user: User | undefined = parent.user;
 
     // User가 없는 경우 새로 생성
-    if (!user && shortlink.parent) {
+    if (!user) {
       user = await this.userRepository.save(
         new User({
-          username: shortlink.parent.phone,
-          phone: shortlink.parent.phone,
+          username: parent.phone,
+          phone: parent.phone,
         }),
       );
 
       // Parent와 User 연결
-      await this.parentRepository.update(shortlink.parent.id, {
+      await this.parentRepository.update(parent.id, {
         userId: user.id,
       });
 
       // 관계 업데이트를 위해 다시 조회
       const updatedParent = await this.parentRepository.findOne({
-        where: { id: shortlink.parent.id },
+        where: { id: parent.id },
         relations: ['user'],
       });
 
@@ -165,7 +170,7 @@ export class AuthService {
       throw new Error('User not found and could not be created');
     }
 
-    return { ...user, parent: shortlink.parent };
+    return { ...user, parent };
   }
 
   /**

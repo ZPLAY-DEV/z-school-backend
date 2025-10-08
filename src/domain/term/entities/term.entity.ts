@@ -12,7 +12,9 @@ import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { Reminder } from 'src/domain/reminder/entities/reminder.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Survey } from 'src/domain/survey/entities/survey.entity';
@@ -184,6 +186,15 @@ export class Term {
   @OneToMany(() => Newsletter, (newsletter: Newsletter) => newsletter.term)
   @Exclude()
   newsletters: Newsletter[];
+
+  @OneToMany(() => Reminder, (reminder: Reminder) => reminder.term)
+  @Exclude()
+  reminders: Reminder[];
+
+  @OneToMany(() => Notifiable, (notifiable) => notifiable.term, {
+    cascade: ['insert', 'update'],
+  })
+  notifiables: Notifiable[];
 
   @OneToMany(() => Survey, (survey) => survey.term, {
     cascade: ['insert', 'update'],

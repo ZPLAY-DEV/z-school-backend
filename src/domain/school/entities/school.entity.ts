@@ -6,7 +6,9 @@ import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Affiliation } from 'src/domain/manager/entities/affiliation.entity';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { Reminder } from 'src/domain/reminder/entities/reminder.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Statement } from 'src/domain/statement/entities/statement.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -145,6 +147,16 @@ export class School {
     cascade: ['insert', 'update'],
   })
   newsletters: Newsletter[];
+
+  @OneToMany(() => Reminder, (reminder) => reminder.school, {
+    cascade: ['insert', 'update'],
+  })
+  reminders: Reminder[];
+
+  @OneToMany(() => Notifiable, (notifiable) => notifiable.school, {
+    cascade: ['insert', 'update'],
+  })
+  notifiables: Notifiable[];
 
   @OneToMany(() => Survey, (survey) => survey.school, {
     cascade: ['insert', 'update'],

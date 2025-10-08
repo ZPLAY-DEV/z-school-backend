@@ -7,36 +7,21 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
-import {
-  FilterOperator,
-  paginate,
-  Paginated,
-  PaginateQuery,
-} from 'nestjs-paginate';
-import {
-  NewsletterTarget,
-  NewsletterType,
-  StudentStatus,
-} from 'src/common/enums';
+import { Paginated, PaginateQuery } from 'nestjs-paginate';
+import { NewsletterType } from 'src/common/enums';
 import { SendStatus } from 'src/common/enums/send-status';
-import { Group } from 'src/domain/group/entities/group.entity';
-import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { ReadStatDto } from 'src/domain/newsletter/dto/read-stat.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
-import { Shortlink } from 'src/domain/newsletter/entities/shortlink.entity';
+import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
+import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { NotificationService } from 'src/services/notification/notification.service';
-import {
-  NotificationCoreData,
-  NotificationFullData,
-} from 'src/services/notification/types';
 import { SlackService } from 'src/services/slack/slack.service';
-import { DataSource, EntityManager, In, LessThan, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 
 @Injectable()
 export class NewsletterService {
@@ -45,6 +30,10 @@ export class NewsletterService {
   constructor(
     @InjectRepository(Newsletter)
     private readonly newsletterRepository: Repository<Newsletter>,
+    @InjectRepository(Notifiable)
+    private readonly notifiableRepository: Repository<Notifiable>,
+    @InjectRepository(Recipient)
+    private readonly recipientRepository: Repository<Recipient>,
     @InjectRepository(Term)
     private readonly termRepository: Repository<Term>,
     @InjectRepository(School)
@@ -53,8 +42,6 @@ export class NewsletterService {
     private readonly slack: SlackService,
     private readonly notificationService: NotificationService,
     private readonly configService: ConfigService,
-    // @Inject(REDIS_TRACKING_CLIENT)
-    // private readonly redisTrackingService: RedisTrackingService,
   ) {
     this.domain =
       this.configService.get('nodeEnv') === 'prod'
@@ -66,34 +53,11 @@ export class NewsletterService {
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  //? 발송을 원한다면, dto.status 를 SCHEDULED 로 지정하라.
   async createNewsletter(dto: CreateNewsletterDto): Promise<Newsletter> {
     const school = await this._checkSchoolValidity(dto.schoolId);
     const term = await this._checkTermValidity(dto.termId);
-    // upsert를 사용하므로 중복 체크 제거
-    await this._checkNewsletterValidity(dto);
-    let title: string;
-    let studentIds: number[] | null = null;
-    let targetLabel: string | null = null;
 
-    if (dto.type === NewsletterType.REGISTRATION) {
-      title =
-        dto.title || `[${school.name}] ${term.termName} 수강신청 바로가기`;
-    } else {
-      title = dto.title || `[${school.name}] ${term.termName} 공지사항`;
-    }
-
-    if (dto.target && dto.targetItems) {
-      const { students, label } = await this._getTargetStudents(
-        this.dataSource.manager,
-        dto.schoolId,
-        dto.target,
-        dto.targetItems,
-      );
-      const dedupedStudents = this._dedupeStudents(students);
-      studentIds = dedupedStudents.map((student) => student.id);
-      targetLabel = label;
-    }
+    const title = dto.title || `[${school.name}] ${term.termName} 공지사항`;
 
     const newsletter = await this.newsletterRepository.save(
       this.newsletterRepository.create({
@@ -104,86 +68,40 @@ export class NewsletterService {
         title: title,
         body: dto.body || null,
         images: dto.images || null,
-        type: dto.type,
-        studentIds: studentIds,
-        target: dto.target || null,
-        targetItems: dto.targetItems || null,
-        targetLabel: targetLabel,
-        scheduledAt: dto.scheduledAt || null,
-        rescheduledAt: dto.rescheduledAt || null,
-        status: dto.status || SendStatus.INIT,
+        type: dto.type || NewsletterType.CHANGES,
       }),
     );
 
     return newsletter;
   }
 
-  async sendNewsletter(
-    id: number,
-    dto: {
-      target: NewsletterTarget;
-      targetItems: number[];
-      scheduledAt: string;
-      status: SendStatus;
-    },
-  ): Promise<Newsletter> {
-    const newsletter = await this.findById(id, ['term']);
-    if (!newsletter.term.bookingStart) {
-      throw new BadRequestException('학기의 수강신청기간을 먼저 설정하세요.');
-    }
-    if (newsletter.status === SendStatus.SENT) {
-      throw new BadRequestException('이미 발송했습니다.');
-    }
-    if (newsletter.status === SendStatus.SCHEDULED && newsletter.scheduledAt) {
-      throw new BadRequestException(
-        `이미 발송예약중입니다. @${formatInTimeZone(newsletter.scheduledAt, 'Asia/Seoul', 'yyyy-MM-dd HH:mm')}`,
-      );
-    }
-
-    if (dto.target && dto.targetItems) {
-      const { students, label } = await this._getTargetStudents(
-        this.dataSource.manager,
-        newsletter.schoolId,
-        dto.target,
-        dto.targetItems,
-      );
-      const dedupedStudents = this._dedupeStudents(students);
-      newsletter.target = dto.target;
-      newsletter.targetItems = dto.targetItems;
-      newsletter.targetLabel = label;
-      newsletter.studentIds = dedupedStudents.map((student) => student.id);
-      newsletter.scheduledAt = fromZonedTime(dto.scheduledAt, 'Asia/Seoul');
-      newsletter.status = dto.status;
-    }
-    return await this.newsletterRepository.save(newsletter);
-  }
+  // TODO: Notifiable로 발송 로직 이관 필요
 
   async resendNewsletter(id: number): Promise<void> {
-    const newsletter = await this.findById(id, ['shortlinks']);
-    if (newsletter.status !== SendStatus.SENT) {
-      throw new BadRequestException('발송 후 다시 시도하세요.');
-    }
-    if (newsletter.rescheduledAt) {
-      throw new BadRequestException(`이미 재발송 하였습니다.`);
+    const newsletter = await this.findById(id, ['notifiable']);
+
+    if (!newsletter.notifiable) {
+      throw new NotFoundException('Notifiable not found for newsletter');
     }
 
-    const unreadShortlinks = newsletter.shortlinks.filter((v) => !v.isRead);
-    if (unreadShortlinks.length === 0) {
+    if (newsletter.notifiable.status !== SendStatus.SENT) {
+      throw new BadRequestException('발송 후 다시 시도하세요.');
+    }
+
+    // 읽지 않은 수신자 조회
+    const unreadRecipients = await this.recipientRepository.find({
+      where: {
+        notifiableId: newsletter.notifiable.id,
+        isRead: false,
+      },
+    });
+
+    if (unreadRecipients.length === 0) {
       throw new UnprocessableEntityException('everyone has read');
     }
 
-    // payload 재구성
-    const data: NotificationFullData =
-      this._buildNotificationCoreDataFromUnreadShortlinks(
-        newsletter,
-        unreadShortlinks,
-      );
-    await this.notificationService.sendViaQueue(data);
-
-    // rescheduledAt을 현재 시각으로 업데이트
-    await this.newsletterRepository.update(id, {
-      rescheduledAt: new Date(),
-    });
+    // TODO: payload 재구성 및 재발송 로직 구현 필요
+    this.logger.warn('⚠️ Resend logic needs to be reimplemented');
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -221,50 +139,31 @@ export class NewsletterService {
   async findReadStats(newsletterId: number): Promise<ReadStatDto[]> {
     const newsletter = await this.newsletterRepository.findOne({
       where: { id: newsletterId },
-      relations: { shortlinks: true },
+      relations: { notifiable: true },
     });
 
-    if (!newsletter) {
-      throw new NotFoundException('Newsletter not found');
+    if (!newsletter || !newsletter.notifiable) {
+      throw new NotFoundException('Newsletter or Notifiable not found');
     }
 
-    // 2. 최적화된 쿼리로 학생 정보와 읽음 상태를 한번에 조회
-    const results = await this.dataSource
-      .getRepository(Student)
-      .createQueryBuilder('student')
-      .leftJoin('student.parent', 'parent')
-      .leftJoin(
-        'parent.shortlinks',
-        'shortlinks',
-        'shortlinks.newsletterId = :newsletterId',
-        { newsletterId },
-      )
-      .select([
-        'student.id',
-        'student.name',
-        'student.grade',
-        'student.class',
-        'student.studentCode',
-        'shortlinks.isRead',
-        'shortlinks.nanoid',
-        'shortlinks.routes',
-        'shortlinks.createdAt',
-      ])
-      .where('student.id IN (:...studentIds)', {
-        studentIds: newsletter.studentIds,
-      })
-      .getRawMany();
+    // Recipient를 통해 Student와 함께 조회
+    const recipients = await this.recipientRepository.find({
+      where: {
+        notifiableId: newsletter.notifiable.id,
+      },
+      relations: ['student'],
+    });
 
-    // 3. 결과를 ReadStatDto 형태로 변환
-    return results.map((row) => ({
-      id: row.student_id,
-      name: row.student_name,
-      grade: row.student_grade,
-      class: row.student_class,
-      studentCode: row.student_studentCode,
-      link: `${this.domain}/${row.shortlinks_nanoid}`,
-      read: row.shortlinks_isRead || false,
-      createdAt: row.shortlinks_createdAt || new Date(),
+    // 결과를 ReadStatDto 형태로 변환
+    return recipients.map((recipient) => ({
+      id: recipient.student.id,
+      name: recipient.student.name,
+      grade: recipient.student.grade,
+      class: recipient.student.class,
+      studentCode: recipient.student.studentCode,
+      link: recipient.nanoid ? `${this.domain}/${recipient.nanoid}` : null,
+      read: recipient.isRead ?? false,
+      createdAt: recipient.createdAt,
     }));
   }
 
@@ -272,82 +171,12 @@ export class NewsletterService {
     newsletterId: number,
     query: PaginateQuery,
   ): Promise<Paginated<ReadStatDto>> {
-    // 1. 발송된 학생 ID들을 조회
-    const newsletter = await this.newsletterRepository.findOne({
-      where: { id: newsletterId },
-    });
-
-    if (!newsletter) {
-      throw new NotFoundException('Newsletter not found');
-    }
-
-    // 2. 표준 relations 방식으로 Student 엔티티 조회
-    const studentRepository = this.dataSource.getRepository(Student);
-
-    const paged = await paginate<Student>(query, studentRepository, {
-      defaultLimit: 20,
-      maxLimit: 100,
-      sortableColumns: ['id', 'name', 'grade', 'class', 'studentCode'],
-      filterableColumns: {
-        id: [FilterOperator.IN],
-        name: [FilterOperator.ILIKE],
-        grade: [FilterOperator.EQ],
-        class: [FilterOperator.EQ],
-        studentCode: [FilterOperator.ILIKE],
-        'parent.shortlinks.isRead': [FilterOperator.EQ],
-      },
-      defaultSortBy: [['id', 'ASC']],
-      relations: {
-        parent: {
-          shortlinks: true,
-        },
-      },
-      where: {
-        id: In(newsletter.studentIds || []),
-        parent: {
-          shortlinks: {
-            newsletterId: newsletterId,
-          },
-        },
-      },
-    });
-
-    // 3. 결과를 ReadStatDto 형태로 변환
-    const data = paged.data.map((student: Student) => {
-      const shortlink = student.parent?.shortlinks?.find(
-        (sl) => sl.newsletterId === newsletterId,
-      );
-      return {
-        id: student.id,
-        name: student.name,
-        grade: student.grade,
-        class: student.class,
-        studentCode: student.studentCode,
-        link: shortlink?.nanoid ? `${this.domain}/${shortlink.nanoid}` : null,
-        read: shortlink?.isRead ?? false,
-        createdAt: shortlink?.createdAt ?? new Date(),
-      };
-    });
-
-    return {
-      data,
-      meta: paged.meta as any,
-      links: paged.links,
-    };
+    // TODO: NotificationRecipient로 페이지네이션 재구현 필요
+    this.logger.warn('⚠️ findReadStatsPaginated needs to be reimplemented');
+    throw new UnprocessableEntityException('Not implemented yet');
   }
 
-  async findPendingItems(): Promise<Newsletter[]> {
-    // 현재 서울 시간을 UTC로 변환
-    const nowInSeoul = new Date();
-    const nowInUTC = fromZonedTime(nowInSeoul, 'Asia/Seoul');
-
-    return await this.newsletterRepository.find({
-      where: {
-        scheduledAt: LessThan(nowInUTC),
-        status: SendStatus.SCHEDULED,
-      },
-    });
-  }
+  // TODO: Notifiable에서 pending items 조회하도록 이관 필요
 
   //? ---------------------------------------------------------------------- ?//
   //? Update
@@ -355,7 +184,6 @@ export class NewsletterService {
 
   async update(id: number, dto: UpdateNewsletterDto): Promise<Newsletter> {
     return await this.dataSource.transaction(async (manager: EntityManager) => {
-      // 업데이트할 데이터로 preload
       const newsletter = await this.newsletterRepository.preload({
         id,
         ...dto,
@@ -363,28 +191,50 @@ export class NewsletterService {
       if (!newsletter) {
         throw new NotFoundException('Newsletter not found');
       }
-      // 저장
       return await manager.save(newsletter);
     });
   }
 
   async markAsRead(newsletterId: number, parentId: number): Promise<void> {
-    const result = await this.dataSource
-      .getRepository(Shortlink)
+    // Newsletter의 Notifiable 조회
+    const newsletter = await this.newsletterRepository.findOne({
+      where: { id: newsletterId },
+      relations: ['notifiable'],
+    });
+
+    if (!newsletter?.notifiable) {
+      this.logger.warn(`⚠️ No notifiable found for newsletter ${newsletterId}`);
+      return;
+    }
+
+    // Recipient 업데이트 (Parent의 모든 자녀에 대한 recipient 업데이트)
+    // 1. Parent의 자녀들 조회
+    const students = await this.dataSource.getRepository(Student).find({
+      where: { parentId },
+      select: ['id'],
+    });
+    const studentIds = students.map((s) => s.id);
+
+    if (studentIds.length === 0) {
+      this.logger.warn(`⚠️ No students found for parent ${parentId}`);
+      return;
+    }
+
+    // 2. Recipient 업데이트
+    const result = await this.recipientRepository
       .createQueryBuilder()
-      .update(Shortlink)
-      .set({ isRead: true })
-      .where('newsletterId = :newsletterId AND parentId = :parentId', {
-        newsletterId,
-        parentId,
+      .update(Recipient)
+      .set({ isRead: true, readAt: new Date() })
+      .where('notifiableId = :notifiableId AND studentId IN (:...studentIds)', {
+        notifiableId: newsletter.notifiable.id,
+        studentIds,
       })
       .execute();
 
     if (result.affected === 0) {
       this.logger.warn(
-        `⚠️ No shortlink found for for newsletter ${newsletterId}, parent ${parentId}`,
+        `⚠️ No recipient found for newsletter ${newsletterId}, parent ${parentId}`,
       );
-      return;
     }
   }
 
@@ -393,8 +243,16 @@ export class NewsletterService {
   //? ---------------------------------------------------------------------- ?//
 
   async delete(id: number): Promise<Newsletter> {
-    const newsletter = await this.findById(id);
-    await this._deleteShortlinks(newsletter.id);
+    const newsletter = await this.findById(id, ['notifiable']);
+
+    // Recipient 삭제 (cascade로 자동 삭제될 수도 있음)
+    if (newsletter.notifiable) {
+      await this.recipientRepository.delete({
+        notifiableId: newsletter.notifiable.id,
+      });
+      await this.notifiableRepository.softRemove(newsletter.notifiable);
+    }
+
     return await this.newsletterRepository.softRemove(newsletter);
   }
 
@@ -420,157 +278,5 @@ export class NewsletterService {
     return term;
   }
 
-  private async _checkNewsletterValidity(dto: CreateNewsletterDto) {
-    const newsletter = await this.newsletterRepository.findOne({
-      where: {
-        schoolId: dto.schoolId,
-        termId: dto.termId,
-        type: NewsletterType.REGISTRATION,
-      },
-    });
-    if (dto.type === NewsletterType.REGISTRATION && newsletter) {
-      throw new BadRequestException(
-        '❌ Registration newsletter already exists',
-      );
-    }
-    return newsletter;
-  }
-
-  //? with target/targetItems combo, get the target students and label
-  private async _getTargetStudents(
-    manager: EntityManager,
-    schoolId: number,
-    target: NewsletterTarget,
-    targetItems: number[],
-  ): Promise<{ students: Student[]; label: string }> {
-    let students: Student[] = []; //! student must have parent key exists
-    let label: string = '';
-
-    if (target === NewsletterTarget.SCHOOL) {
-      students = await manager.find(Student, {
-        where: { schoolId },
-        relations: { parent: { user: true } },
-      });
-      label = '전교생';
-    } else if (target === NewsletterTarget.GRADE) {
-      if (!targetItems) {
-        throw new BadRequestException('발송 대상 학년 정보가 없습니다.');
-      }
-      students = await manager.find(Student, {
-        where: {
-          schoolId,
-          grade: In(targetItems),
-        },
-        relations: { parent: { user: true } },
-      });
-
-      label =
-        targetItems.length < 6
-          ? `${targetItems.map((item) => `${item}`).join('·')}학년 학생`
-          : '전교생';
-    } else if (target === NewsletterTarget.LESSON) {
-      // 강좌
-      if (!targetItems) {
-        throw new BadRequestException('발송 대상 강좌 정보가 없습니다.');
-      }
-      // lesson → groups → picks → students 관계를 QueryBuilder로 조회
-      students = await manager
-        .createQueryBuilder(Student, 'student')
-        .leftJoinAndSelect('student.parent', 'parent')
-        .leftJoinAndSelect('parent.user', 'user')
-        .leftJoin('student.picks', 'pick')
-        .leftJoin('pick.group', 'group')
-        .leftJoin('group.lesson', 'lesson')
-        .where('lesson.id IN (:...lessonIds)', {
-          lessonIds: targetItems,
-        })
-        .getMany();
-      const lessons = await manager
-        .createQueryBuilder(Lesson, 'lesson')
-        .where('lesson.id IN (:...lessonIds)', {
-          lessonIds: targetItems,
-        })
-        .getMany();
-      label = `${lessons.map((lesson) => lesson.lessonName).join('·')} 수강생`;
-    } else if (target === NewsletterTarget.GROUP) {
-      // 반
-      if (!targetItems) {
-        throw new BadRequestException('발송 대상 반 정보가 없습니다.');
-      }
-      // group → picks → students 관계를 QueryBuilder로 조회
-      students = await manager
-        .createQueryBuilder(Student, 'student')
-        .leftJoinAndSelect('student.parent', 'parent')
-        .leftJoinAndSelect('parent.user', 'user')
-        .leftJoin('student.picks', 'pick')
-        .leftJoin('pick.group', 'group')
-        .where('group.id IN (:...groupIds)', {
-          groupIds: targetItems,
-        })
-        .getMany();
-      const groups = await manager
-        .createQueryBuilder(Group, 'group')
-        .where('group.id IN (:...groupIds)', {
-          groupIds: targetItems,
-        })
-        .getMany();
-      label = `${groups.map((group) => group.groupName).join('·')} 수강생`;
-    } else {
-      // 학생
-      if (!targetItems) {
-        throw new BadRequestException('발송 대상 학생 정보가 없습니다.');
-      }
-      students = await manager.find(Student, {
-        where: { id: In(targetItems) },
-        relations: { parent: { user: true } },
-      });
-      label = `${targetItems.length}명 학생`;
-    }
-
-    // TRANSFERRED 제외 필터링
-    students = students.filter(
-      (student) => student.status === StudentStatus.ATTENDING,
-    );
-
-    return { students, label };
-  }
-
-  //? student must have parent key exists
-  private _dedupeStudents(students: Student[]): Student[] {
-    const parentIdMap = new Map<number, Student>();
-    students.forEach((student) => {
-      if (!parentIdMap.has(student.parent.id)) {
-        parentIdMap.set(student.parent.id, student);
-      }
-    });
-    return Array.from(parentIdMap.values());
-  }
-
-  private async _deleteShortlinks(newsletterId: number): Promise<void> {
-    try {
-      await this.dataSource
-        .getRepository(Shortlink)
-        .delete({ newsletterId: newsletterId });
-    } catch (err) {
-      this.logger.error(
-        `❌ Failed to delete shortlinks for newsletter ${newsletterId}: ${err.message}`,
-        err,
-      );
-    }
-  }
-
-  private _buildNotificationCoreDataFromUnreadShortlinks(
-    newsletter: Newsletter,
-    unreadShortlinks: Shortlink[],
-  ): NotificationFullData {
-    const messages: NotificationCoreData[] = unreadShortlinks.map(
-      (v) => v.payload,
-    );
-
-    return {
-      type: newsletter.type,
-      schoolId: newsletter.schoolId,
-      messages,
-    };
-  }
+  // TODO: Helper methods 재구현 필요
 }

@@ -1,15 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsArray,
-  IsDateString,
   IsEnum,
   IsInt,
   IsOptional,
   IsString,
   MaxLength,
 } from 'class-validator';
-import { NewsletterTarget, NewsletterType } from 'src/common/enums';
-import { SendStatus } from 'src/common/enums/send-status';
+import { NewsletterType } from 'src/common/enums';
 
 export class CreateNewsletterDto {
   @ApiProperty({ description: '🈵 schoolId', type: Number, example: 1 })
@@ -19,6 +17,10 @@ export class CreateNewsletterDto {
   @ApiProperty({ description: '🈵 termId', type: Number, example: 1 })
   @IsInt()
   termId: number;
+
+  @ApiProperty({ description: '🈵 notifiableId', type: Number, example: 1 })
+  @IsInt()
+  notifiableId: number;
 
   @ApiProperty({
     description: '🈳 관리자 편의를 위한 학교명',
@@ -70,73 +72,9 @@ export class CreateNewsletterDto {
     description: '🈵 뉴스레터 종류',
     enum: NewsletterType,
     required: true,
-    example: NewsletterType.REGISTRATION,
+    example: NewsletterType.CHANGES,
   })
   @IsOptional()
   @IsEnum(NewsletterType)
   type?: NewsletterType;
-
-  @ApiProperty({
-    description: '🈵 발송대상자 리스트. 발송하려면 deduped studentIds 필요',
-    example: [1, 2, 3],
-    type: [Number],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsInt({ each: true })
-  studentIds?: number[] | null;
-
-  @ApiProperty({
-    description: '🈵 발송 대상 유형; SCHOOL, GRADE, LESSON, GROUP, STUDENT',
-    example: NewsletterTarget.SCHOOL,
-    enum: NewsletterTarget,
-  })
-  @IsOptional()
-  @IsEnum(NewsletterTarget)
-  target?: NewsletterTarget | null;
-
-  @ApiProperty({
-    description: '🈵 발송 대상 유형별 아이템 아이디',
-    example: [1, 2, 3],
-    type: [Number],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsInt({ each: true })
-  targetItems?: number[] | null;
-
-  @ApiProperty({
-    description: '🈵 발송 대상 유형 라벨',
-    example: '1학년 전체',
-    maxLength: 128,
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(128)
-  targetLabel?: string | null;
-
-  @ApiProperty({
-    description: '🈳 발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
-    example: '2025-06-26T00:30:00Z',
-  })
-  @IsOptional()
-  @IsDateString()
-  scheduledAt?: Date | null;
-
-  @ApiProperty({
-    description: '🈳 재발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
-    example: '2025-06-26T00:30:00Z',
-  })
-  @IsOptional()
-  @IsDateString()
-  rescheduledAt?: Date | null;
-
-  @ApiProperty({
-    description: '🈵 발송 상태',
-    enum: SendStatus,
-    example: SendStatus.INIT,
-  })
-  @IsOptional()
-  @IsEnum(SendStatus)
-  status?: SendStatus;
 }

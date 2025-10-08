@@ -1,8 +1,4 @@
-import { Actor } from 'src/common/enums';
-import {
-  NewsletterTarget,
-  NewsletterType,
-} from 'src/common/enums/newsletter-type';
+import { Actor, NewsletterType, NotifiableTarget } from 'src/common/enums';
 
 export const translateNewsletterType = (type: NewsletterType): string => {
   switch (type) {
@@ -21,19 +17,19 @@ export const translateNewsletterType = (type: NewsletterType): string => {
   }
 };
 
-export const translateNewsletterTarget = (
-  type: NewsletterTarget | null,
+export const translateNotifiableTarget = (
+  type: NotifiableTarget | null,
 ): string => {
   switch (type) {
-    case NewsletterTarget.SCHOOL:
+    case NotifiableTarget.SCHOOL:
       return '전체';
-    case NewsletterTarget.GRADE:
+    case NotifiableTarget.GRADE:
       return '학년';
-    case NewsletterTarget.LESSON:
+    case NotifiableTarget.LESSON:
       return '강좌';
-    case NewsletterTarget.GROUP:
+    case NotifiableTarget.GROUP:
       return '반';
-    case NewsletterTarget.STUDENT:
+    case NotifiableTarget.STUDENT:
       return '학생';
     default:
       return '미지정';
