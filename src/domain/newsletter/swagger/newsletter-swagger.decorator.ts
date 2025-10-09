@@ -175,31 +175,55 @@ export const UpdateNewsletterDocs = () => {
   );
 };
 
-export const MarkAsReadDocs = () => {
-  return applyDecorators(
+export const MarkAsReadByParentDocs = () =>
+  applyDecorators(
     ApiOperation({
-      summary: '✅ 뉴스레터 읽음 표시',
+      summary: '✅ 뉴스레터 읽음 표시 (학부모 기준)',
       description:
-        '학부모가 뉴스레터를 읽었음을 표시합니다 (해당 학부모의 모든 자녀에 대해 readAt 업데이트).',
+        '학부모의 모든 자녀에 대해 뉴스레터를 읽음 처리합니다 (다자녀 가정 편의성). 💡 특정 학생만 읽음 처리는 PATCH /newsletters/:id/students/:studentId/read 사용.',
     }),
     ApiParam({
       name: 'id',
       type: Number,
-      description: '읽음 표시할 뉴스레터의 ID',
+      description: '뉴스레터 ID',
       example: 1,
     }),
     ApiParam({
       name: 'parentId',
       type: Number,
-      description: '읽음 표시할 학부모의 ID',
+      description: '학부모 ID',
       example: 5,
     }),
     ApiOkResponse({
-      description: '읽음 표시 완료 (응답 본문 없음)',
+      description: '읽음 표시 완료',
     }),
-    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
-};
+
+export const MarkAsReadByStudentDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '✅ 뉴스레터 읽음 표시 (학생 기준)',
+      description:
+        '특정 학생에 대해서만 뉴스레터를 읽음 처리합니다 (정확한 개별 처리). 💡 모든 자녀 일괄 읽음 처리는 PATCH /newsletters/:id/parents/:parentId/read 사용.',
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '뉴스레터 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'studentId',
+      type: Number,
+      description: '학생 ID',
+      example: 10,
+    }),
+    ApiOkResponse({
+      description: '읽음 표시 완료',
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
 
 //? ---------------------------------------------------------------------- ?//
 //? Newsletter Controller - DELETE

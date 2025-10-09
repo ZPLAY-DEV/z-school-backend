@@ -22,7 +22,8 @@ import {
   DeleteReminderDocs,
   FindReminderByIdDocs,
   GenerateReminderS3UrlsDocs,
-  MarkAsReadDocs,
+  MarkAsReadByParentDocs,
+  MarkAsReadByStudentDocs,
   UpdateReminderDocs,
 } from 'src/domain/reminder/swagger/reminder-swagger.decorator';
 import { UploadService } from 'src/services/upload/upload.service';
@@ -71,14 +72,27 @@ export class ReminderController {
     return await this.reminderService.update(id, dto);
   }
 
-  @MarkAsReadDocs()
+  @MarkAsReadByParentDocs()
   @Public()
   @Patch(':id/parents/:parentId/read')
-  async markAsRead(
+  async markAsReadByParent(
     @Param('id', ParseIntPipe) reminderId: number,
     @Param('parentId', ParseIntPipe) parentId: number,
   ): Promise<void> {
-    return await this.reminderService.markAsRead(reminderId, parentId);
+    return await this.reminderService.markAsReadByParent(reminderId, parentId);
+  }
+
+  @MarkAsReadByStudentDocs()
+  @Public()
+  @Patch(':id/students/:studentId/read')
+  async markAsReadByStudent(
+    @Param('id', ParseIntPipe) reminderId: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+  ): Promise<void> {
+    return await this.reminderService.markAsReadByStudent(
+      reminderId,
+      studentId,
+    );
   }
 
   //? ---------------------------------------------------------------------- ?//

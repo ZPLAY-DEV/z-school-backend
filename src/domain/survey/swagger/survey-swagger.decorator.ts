@@ -1,5 +1,10 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+} from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
@@ -103,28 +108,52 @@ export const DeleteSurveyDocs = () => {
   );
 };
 
-export const MarkAsReadDocs = () => {
-  return applyDecorators(
+export const MarkAsReadByParentDocs = () =>
+  applyDecorators(
     ApiOperation({
-      summary: '✅ 설문조사 읽음 표시',
+      summary: '✅ 설문조사 읽음 표시 (학부모 기준)',
       description:
-        '학부모가 설문조사를 읽었음을 표시합니다 (해당 학부모의 모든 자녀에 대해 readAt 업데이트).',
+        '학부모의 모든 자녀에 대해 설문조사를 읽음 처리합니다 (다자녀 가정 편의성). 💡 특정 학생만 읽음 처리는 PATCH /surveys/:id/students/:studentId/read 사용.',
     }),
     ApiParam({
       name: 'id',
       type: Number,
-      description: '읽음 표시할 설문조사의 ID',
+      description: '설문조사 ID',
       example: 1,
     }),
     ApiParam({
       name: 'parentId',
       type: Number,
-      description: '읽음 표시할 학부모의 ID',
+      description: '학부모 ID',
       example: 5,
     }),
-    ApiOkResponseTemplate({
-      description: '읽음 표시 완료 (응답 본문 없음)',
+    ApiOkResponse({
+      description: '읽음 표시 완료',
     }),
-    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+    ApiStatuses(StatusCodes.NOT_FOUND),
   );
-};
+
+export const MarkAsReadByStudentDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '✅ 설문조사 읽음 표시 (학생 기준)',
+      description:
+        '특정 학생에 대해서만 설문조사를 읽음 처리합니다 (정확한 개별 처리). 💡 모든 자녀 일괄 읽음 처리는 PATCH /surveys/:id/parents/:parentId/read 사용.',
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '설문조사 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'studentId',
+      type: Number,
+      description: '학생 ID',
+      example: 10,
+    }),
+    ApiOkResponse({
+      description: '읽음 표시 완료',
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );

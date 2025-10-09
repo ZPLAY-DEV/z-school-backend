@@ -22,7 +22,8 @@ import {
   DeleteNewsletterDocs,
   FindNewsletterByIdDocs,
   GenerateNewsletterS3UrlsDocs,
-  MarkAsReadDocs,
+  MarkAsReadByParentDocs,
+  MarkAsReadByStudentDocs,
   UpdateNewsletterDocs,
 } from 'src/domain/newsletter/swagger/newsletter-swagger.decorator';
 import { UploadService } from 'src/services/upload/upload.service';
@@ -73,14 +74,27 @@ export class NewsletterController {
     return await this.newsletterService.update(id, dto);
   }
 
-  @MarkAsReadDocs()
+  @MarkAsReadByParentDocs()
   @Public()
   @Patch(':id/parents/:parentId/read')
-  async markAsRead(
+  async markAsReadByParent(
     @Param('id', ParseIntPipe) newsletterId: number,
     @Param('parentId', ParseIntPipe) parentId: number,
   ): Promise<void> {
-    return await this.newsletterService.markAsRead(newsletterId, parentId);
+    return await this.newsletterService.markAsReadByParent(
+      newsletterId,
+      parentId,
+    );
+  }
+
+  @MarkAsReadByStudentDocs()
+  @Public()
+  @Patch(':id/students/:studentId/read')
+  async markAsReadByStudent(
+    @Param('id', ParseIntPipe) newsletterId: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+  ): Promise<void> {
+    await this.newsletterService.markAsReadByStudent(newsletterId, studentId);
   }
 
   //? ---------------------------------------------------------------------- ?//

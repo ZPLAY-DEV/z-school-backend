@@ -8,10 +8,14 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { NotifiableTarget, SendStatus } from 'src/common/enums';
+import { NotifiableTarget } from 'src/common/enums';
 
+/**
+ * Notifiable 발송을 위한 DTO
+ * - CreateReminderDto, CreateNewsletterDto, CreateSurveyDto 에 embed 되어 사용
+ */
 export class SendNotifiableDto {
-  @ApiProperty({ description: '🈵 Notifiable ID', example: 1 })
+  @ApiProperty({ description: '🈵 notifiableId', example: 1 })
   @IsNumber()
   @IsNotEmpty()
   notifiableId: number;
@@ -37,7 +41,7 @@ export class SendNotifiableDto {
 
   @ApiProperty({
     description: '🈳 발송 대상 레이블',
-    example: '전교생',
+    example: '3학년',
     required: false,
   })
   @IsString()
@@ -45,21 +49,11 @@ export class SendNotifiableDto {
   targetLabel?: string;
 
   @ApiProperty({
-    description: '🈳 발송예약 시각',
+    description: '🈳 발송예약 시각 (없으면 즉시 발송)',
     example: '2025-06-26T00:30:00Z',
     required: false,
   })
   @IsDateString()
   @IsOptional()
   scheduledAt?: Date;
-
-  @ApiProperty({
-    description: '🈳 발송 상태',
-    enum: SendStatus,
-    example: SendStatus.INIT,
-    required: false,
-  })
-  @IsEnum(SendStatus)
-  @IsOptional()
-  status?: SendStatus;
 }

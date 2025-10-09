@@ -1,4 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Group } from 'src/domain/group/entities/group.entity';
+import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { SurveyAnswer } from 'src/domain/survey/entities/survey_answer.entity';
@@ -30,6 +32,14 @@ export class Survey {
   @ApiProperty({ description: '🈳 termId (학기ID)', example: 1 })
   @Column({ type: 'int', unsigned: true })
   termId: number;
+
+  @ApiProperty({ description: '🈳 lessonId (과목ID)', example: 1 })
+  @Column({ type: 'int', unsigned: true })
+  lessonId: number;
+
+  @ApiProperty({ description: '🈳 groupId (반ID)', example: 1 })
+  @Column({ type: 'int', unsigned: true })
+  groupId: number;
 
   @ApiProperty({ description: '🈳 notifiableId (알림ID)', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
@@ -109,6 +119,14 @@ export class Survey {
   @ManyToOne(() => Term, (term) => term.surveys)
   @JoinColumn({ name: 'termId' })
   term: Term;
+
+  @ManyToOne(() => Lesson)
+  @JoinColumn({ name: 'lessonId' })
+  lesson: Lesson;
+
+  @ManyToOne(() => Group)
+  @JoinColumn({ name: 'groupId' })
+  group: Group;
 
   //* 1-to-1 hasOne -------------------------------------------------------- *//
 

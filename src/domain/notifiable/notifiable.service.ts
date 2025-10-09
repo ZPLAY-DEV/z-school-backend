@@ -6,18 +6,37 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { nanoid } from 'nanoid';
 import {
   FilterOperator,
   paginate,
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { NotifiableTarget, SendStatus } from 'src/common/enums';
+import {
+  NewsletterType,
+  NotifiableSourceType,
+  NotifiableTarget,
+  SendStatus,
+} from 'src/common/enums';
+import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { NotifiableStatusItemDto } from 'src/domain/notifiable/dto/notifiable-status-item.dto';
 import { SendNotifiableDto } from 'src/domain/notifiable/dto/send-notifiable.dto';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
+import { Reminder } from 'src/domain/reminder/entities/reminder.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { Survey } from 'src/domain/survey/entities/survey.entity';
+import { Term } from 'src/domain/term/entities/term.entity';
+import { chunk } from 'src/helpers/array';
+import {
+  getTemplateOfNewsManagement,
+  getTemplateOfNewsRegistrationResult,
+  getTemplateOfNewsSchedule,
+  getTemplateOfNewsSupplies,
+  getTemplateOfRegistration,
+} from 'src/helpers/get-message-body';
+import { NotificationCoreData } from 'src/services/notification/types';
 import { DataSource, In, LessThanOrEqual, Repository } from 'typeorm';
 
 @Injectable()
@@ -48,7 +67,8 @@ export class NotifiableService {
   /**
    * Notifiable 발송
    * - 발송 대상 설정 및 학생 목록 조회
-   * - scheduledAt에 따라 즉시 발송 또는 예약 발송
+   * - Recipients 생성 및 발송 예약
+   * - 실제 발송은 Queue Handler Lambda 함수가 처리
    */
   async send(dto: SendNotifiableDto): Promise<Notifiable> {
     const notifiable = await this.findById(dto.notifiableId, [
@@ -56,6 +76,24 @@ export class NotifiableService {
       'survey',
       'reminder',
     ]);
+
+    // 이미 발송된 경우 예외 처리
+    if (notifiable.status === SendStatus.SENT) {
+      throw new BadRequestException('이미 발송된 알림입니다.');
+    }
+
+    // SourceType 설정
+    if (!notifiable.sourceType) {
+      if (notifiable.newsletter) {
+        notifiable.sourceType = NotifiableSourceType.NEWSLETTER;
+      } else if (notifiable.reminder) {
+        notifiable.sourceType = NotifiableSourceType.REMINDER;
+      } else if (notifiable.survey) {
+        notifiable.sourceType = NotifiableSourceType.SURVEY;
+      } else {
+        notifiable.sourceType = NotifiableSourceType.OTHER;
+      }
+    }
 
     // 발송 대상 학생 목록 조회
     const students = await this._getStudentsByTarget(
@@ -81,26 +119,19 @@ export class NotifiableService {
     notifiable.targetItems = dto.targetItems || null;
     notifiable.targetLabel = dto.targetLabel || null;
     notifiable.studentIds = studentIds;
-    notifiable.scheduledAt = dto.scheduledAt || null;
-    notifiable.status = dto.status || SendStatus.INIT;
+    notifiable.scheduledAt = dto.scheduledAt || new Date(); // null이면 현재 시각으로 설정
+    notifiable.status = SendStatus.SCHEDULED; // 발송 예약 상태로 설정
 
-    // scheduledAt이 없으면 즉시 발송, 있으면 예약 발송
-    if (!dto.scheduledAt) {
-      notifiable.status = SendStatus.INIT;
-      this.logger.log(
-        `⚡ Immediate send requested for notifiable ${notifiable.id}`,
-      );
-    } else {
-      notifiable.status = SendStatus.SCHEDULED;
-      this.logger.log(
-        `⏰ Scheduled send for notifiable ${notifiable.id} at ${dto.scheduledAt?.toString()}`,
-      );
-    }
+    this.logger.log(
+      `⏰ Scheduled send for notifiable ${notifiable.id} at ${notifiable.scheduledAt.toISOString()}`,
+    );
 
     const savedNotifiable = await this.notifiableRepository.save(notifiable);
 
-    // TODO: 실제 발송 로직 구현 필요 (Recipient 생성, NotificationService 호출)
-    this.logger.warn('⚠️ Actual send logic needs to be implemented');
+    // Recipients 생성 (studentIds가 있는 경우에만)
+    if (savedNotifiable.studentIds && savedNotifiable.studentIds.length > 0) {
+      await this._generateRecipients(savedNotifiable);
+    }
 
     return savedNotifiable;
   }
@@ -477,5 +508,325 @@ export class NotifiableService {
         id: In(studentIds),
       },
     });
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Recipients Management
+  //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * Recipients 생성
+   * - Notifiable의 studentIds를 기반으로 각 학생에게 보낼 개인화된 링크와 알림 데이터 생성
+   * - Newsletter, Reminder, Survey 모든 타입 지원
+   */
+  private async _generateRecipients(notifiable: Notifiable): Promise<void> {
+    this.logger.debug(
+      `📝 Generating recipients for notifiable ${notifiable.id}`,
+    );
+
+    // 학생 정보 조회 - parent.user 관계도 포함하여 N+1 Query 방지
+    const students = await this.studentRepository.find({
+      where: { id: In(notifiable.studentIds || []) },
+      relations: ['parent', 'parent.user'],
+    });
+
+    // Term 정보 조회
+    const term = await this.dataSource.getRepository(Term).findOne({
+      where: { id: notifiable.termId },
+    });
+
+    if (students.length === 0) {
+      this.logger.warn(`No students found for notifiable ${notifiable.id}`);
+      return;
+    }
+
+    if (!term) {
+      this.logger.warn(`No term found for notifiable ${notifiable.id}`);
+      return;
+    }
+
+    // Source entity 조회 (Newsletter, Reminder, Survey)
+    let sourceEntity: Newsletter | Reminder | Survey | null = null;
+    if (notifiable.sourceType === NotifiableSourceType.NEWSLETTER) {
+      sourceEntity = await this.dataSource.getRepository(Newsletter).findOne({
+        where: { notifiableId: notifiable.id },
+      });
+    } else if (notifiable.sourceType === NotifiableSourceType.REMINDER) {
+      sourceEntity = await this.dataSource.getRepository(Reminder).findOne({
+        where: { notifiableId: notifiable.id },
+      });
+    } else if (notifiable.sourceType === NotifiableSourceType.SURVEY) {
+      sourceEntity = await this.dataSource.getRepository(Survey).findOne({
+        where: { notifiableId: notifiable.id },
+      });
+    }
+
+    if (!sourceEntity) {
+      this.logger.warn(
+        `No source entity found for notifiable ${notifiable.id} (type: ${notifiable.sourceType})`,
+      );
+      return;
+    }
+
+    // Recipients 생성
+    await this._createRecipients(notifiable, term, sourceEntity, students);
+  }
+
+  /**
+   * Recipients를 벌크로 생성 (upsert)
+   * - 배치 INSERT로 성능 최적화
+   * - Newsletter: parent 기준 dedup (다자녀 학부모는 1번만 수신)
+   * - Reminder/Survey: student 기준 (학생별 개별 링크)
+   */
+  private async _createRecipients(
+    notifiable: Notifiable,
+    term: Term,
+    sourceEntity: Newsletter | Reminder | Survey,
+    students: Student[],
+  ): Promise<void> {
+    const recipients: Partial<Recipient>[] = [];
+
+    // Newsletter는 parent 기준 dedup
+    if (notifiable.sourceType === NotifiableSourceType.NEWSLETTER) {
+      // parentId 기준으로 dedup (다자녀 학부모는 첫 번째 자녀만 사용)
+      const parentMap = new Map<number, Student>();
+      for (const student of students) {
+        if (!parentMap.has(student.parentId)) {
+          parentMap.set(student.parentId, student);
+        }
+      }
+
+      this.logger.debug(
+        `📧 Newsletter: ${students.length} students → ${parentMap.size} unique parents`,
+      );
+
+      for (const [parentId, student] of parentMap.entries()) {
+        const nanoId = nanoid();
+
+        const context = {
+          parentId: parentId,
+          termId: notifiable.termId,
+          type: (sourceEntity as Newsletter).type,
+        };
+
+        const recipient: Partial<Recipient> = {
+          notifiableId: notifiable.id,
+          studentId: student.id, // 대표 학생 (첫 번째 자녀)
+          nanoid: nanoId,
+          context: context,
+          sentAt: null,
+          failedAt: null,
+          errorMessage: null,
+          readAt: null,
+          answeredAt: null,
+        };
+
+        recipients.push(recipient);
+      }
+    } else {
+      // Reminder, Survey는 학생 기준 (개별 링크)
+      for (const student of students) {
+        const nanoId = nanoid();
+
+        const context = {
+          studentId: student.id,
+          termId: notifiable.termId,
+        };
+
+        const recipient: Partial<Recipient> = {
+          notifiableId: notifiable.id,
+          studentId: student.id,
+          nanoid: nanoId,
+          context: context,
+          sentAt: null,
+          failedAt: null,
+          errorMessage: null,
+          readAt: null,
+          answeredAt: null,
+        };
+
+        recipients.push(recipient);
+      }
+    }
+
+    // 배치 INSERT 실행
+    const batches = chunk(recipients, 500);
+    this.logger.debug(
+      `Total Recipients: ${recipients.length}, Batches: ${batches.length}`,
+    );
+
+    for (const batch of batches) {
+      try {
+        this.logger.debug(`Processing batch with ${batch.length} items`);
+        await this.dataSource
+          .createQueryBuilder()
+          .insert()
+          .into(Recipient)
+          .values(batch)
+          .orUpdate(['nanoid', 'context'], ['notifiableId', 'studentId'])
+          .execute();
+      } catch (error) {
+        this.logger.error(`Failed to upsert Recipients: ${error.message}`);
+        throw new Error('수신자 정보 생성에 실패했습니다.');
+      }
+    }
+
+    this.logger.log(
+      `✅ Successfully created ${recipients.length} recipients for notifiable ${notifiable.id}`,
+    );
+  }
+
+  /**
+   * 알림 데이터 생성 (NotificationCoreData)
+   * - Newsletter, Reminder, Survey 타입별로 다른 템플릿 사용
+   * - 실제 발송 시 사용할 데이터 구조
+   */
+  private _buildNotificationCoreData(
+    nanoId: string,
+    student: Student,
+    term: Term,
+    notifiable: Notifiable,
+    sourceEntity: Newsletter | Reminder | Survey,
+  ): NotificationCoreData {
+    let body: string;
+    let title: string;
+    let template: string;
+
+    const shortlink = `${this.domain}/${nanoId}`;
+
+    switch (notifiable.sourceType) {
+      case NotifiableSourceType.NEWSLETTER: {
+        const newsletter = sourceEntity as Newsletter;
+        title =
+          newsletter.title || this._getDefaultNewsletterTitle(newsletter.type);
+        body = this._getNewsletterBody(newsletter, term, shortlink);
+        template = this._getNewsletterTemplateName(newsletter.type);
+        break;
+      }
+
+      case NotifiableSourceType.REMINDER: {
+        const reminder = sourceEntity as Reminder;
+        title = reminder.title || '수강 신청 안내';
+        body = getTemplateOfRegistration({
+          school: reminder.schoolName,
+          term: reminder.termName,
+          period: term.bookingPeriod,
+          shortlink: shortlink,
+        });
+        template = 'Registration1';
+        break;
+      }
+
+      case NotifiableSourceType.SURVEY: {
+        const survey = sourceEntity as Survey;
+        const schoolName =
+          typeof notifiable.school === 'string'
+            ? notifiable.school
+            : notifiable.school?.name || '학교';
+        title = survey.title || '만족도 조사';
+        body = `[${schoolName}] 만족도 조사\n\n${survey.intro || ''}\n\n◼ 참여하기 : ${shortlink}`;
+        template = 'Survey1';
+        break;
+      }
+
+      default:
+        title = notifiable.title || '새로운 알림';
+        body = notifiable.message;
+        template = 'Unknown';
+    }
+
+    return {
+      token: student.parent.user?.pushToken || null,
+      phone: student.parent.phone,
+      template: template,
+      title: title,
+      body: body,
+      role: 'PARENT',
+      url: shortlink,
+      routes: {
+        nanoId: nanoId,
+        type: notifiable.sourceType,
+        termId: notifiable.termId.toString(),
+        studentId: student.id.toString(),
+      },
+    };
+  }
+
+  /**
+   * Newsletter 타입별 본문 생성
+   */
+  private _getNewsletterBody(
+    newsletter: Newsletter,
+    term: Term,
+    shortlink: string,
+  ): string {
+    switch (newsletter.type) {
+      case NewsletterType.CHANGES:
+        return getTemplateOfNewsSchedule({
+          school: newsletter.schoolName,
+          term: newsletter.termName,
+          title: newsletter.title || '수업 일정 안내',
+          shortlink: shortlink,
+        });
+      case NewsletterType.MANAGEMENT:
+        return getTemplateOfNewsManagement({
+          school: newsletter.schoolName,
+          term: newsletter.termName,
+          title: newsletter.title || '수업 운영 안내',
+          shortlink: shortlink,
+        });
+      case NewsletterType.SUPPLIES:
+        return getTemplateOfNewsSupplies({
+          school: newsletter.schoolName,
+          term: newsletter.termName,
+          title: newsletter.title || '수업 준비물 안내',
+          shortlink: shortlink,
+        });
+      case NewsletterType.RESULT:
+        return getTemplateOfNewsRegistrationResult({
+          school: newsletter.schoolName,
+          term: newsletter.termName,
+          title: newsletter.title || '수강 신청 결과',
+          shortlink: shortlink,
+        });
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * Newsletter 타입별 템플릿 이름
+   */
+  private _getNewsletterTemplateName(type: NewsletterType): string {
+    switch (type) {
+      case NewsletterType.CHANGES:
+        return 'NewsSchedule1';
+      case NewsletterType.MANAGEMENT:
+        return 'NewsClassChange1';
+      case NewsletterType.RESULT:
+        return 'NewsRegistrationResult1';
+      case NewsletterType.SUPPLIES:
+        return 'NewsClassSupplies1';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  /**
+   * Newsletter 타입별 기본 제목
+   */
+  private _getDefaultNewsletterTitle(type: NewsletterType): string {
+    switch (type) {
+      case NewsletterType.CHANGES:
+        return '수업 일정 안내';
+      case NewsletterType.MANAGEMENT:
+        return '수업 변동사항 안내';
+      case NewsletterType.RESULT:
+        return '수강 신청 결과';
+      case NewsletterType.SUPPLIES:
+        return '수업 준비물 안내';
+      default:
+        return '새로운 공지사항';
+    }
   }
 }

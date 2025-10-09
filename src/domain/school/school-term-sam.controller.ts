@@ -16,6 +16,7 @@ import {
 import { SchoolTermSamService } from 'src/domain/school/school-term-sam.service';
 import { ResponseSchoolTermSamOfferingDto } from './dto/response-school-term-sam-offering.dto';
 import {
+  SchoolTermSamGroupsDocs,
   SchoolTermSamOfferingsDocs,
   SchoolTermSamSchooldaysDocs,
   SchoolTermSamWeeklySchooldaysDocs,
@@ -31,6 +32,7 @@ export class SchoolTermSamController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @SchoolTermSamGroupsDocs()
   @Get(':schoolId/terms/:termId/sams/:samId/groups')
   async listGroups(
     @Param('schoolId', ParseIntPipe) schoolId: number,

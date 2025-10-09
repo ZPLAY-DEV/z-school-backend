@@ -173,8 +173,9 @@ export const SchoolTermStudentBookingStatsDocs = () =>
 export const SchoolTermStudentSchooldaysDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '📅 학생 수업일 조회 (all)',
-      description: '학생의 모든 수업일을 조회합니다 (Group 정보 포함).',
+      summary: '📅 학생의 학기 전체 수업일 조회 (all)',
+      description:
+        '학생의 학기 전체 수업일을 조회합니다 (관리 화면용 - Group 상세 정보 포함). 💡 특정 날짜 출석 정보는 /students/:id/schooldays?date=YYYY-MM-DD 사용.',
     }),
     ApiParam({
       name: 'schoolId',
@@ -231,9 +232,76 @@ export const SchoolTermStudentGroupsDocs = () =>
       example: 1,
     }),
     ApiOkResponseTemplate({
-      description: '✅ 학생 소속 그룹 목록',
+      description: '학생 수강중인 반 목록 조회 완료',
       type: Group,
       isArray: true,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+//? ---------------------------------------------------------------------- ?//
+//? Get School Term Student Groups Weekly
+//? ---------------------------------------------------------------------- ?//
+
+export const SchoolTermStudentGroupsWeeklyDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '👌 학생 수강중인 반 주간 목록 조회 (요일별)',
+      description: '학생이 수강중인 반 목록을 요일별로 그룹화하여 조회합니다.',
+    }),
+    ApiParam({
+      name: 'schoolId',
+      type: Number,
+      description: '학교 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID',
+      example: 1,
+    }),
+    ApiParam({
+      name: 'studentId',
+      type: Number,
+      description: '학생 ID',
+      example: 1,
+    }),
+    ApiOkResponse({
+      description: '학생 수강중인 반 주간 목록 조회 완료 (요일별 그룹화)',
+      schema: {
+        type: 'object',
+        properties: {
+          SUN: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Group' },
+          },
+          MON: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Group' },
+          },
+          TUE: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Group' },
+          },
+          WED: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Group' },
+          },
+          THU: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Group' },
+          },
+          FRI: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Group' },
+          },
+          SAT: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Group' },
+          },
+        },
+      },
     }),
     ApiStatuses(StatusCodes.NOT_FOUND),
   );

@@ -410,14 +410,9 @@ export const GetAllSchooldaysDocs = () =>
 export const GetSchooldayByDateDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: '📅 특정 날짜 학생 수업일 조회',
-      description: `
-### 📋 기능 설명
-특정 학생의 특정 날짜 수업일 정보를 출석 정보와 함께 조회합니다.
-
-### 📤 Response
-수업일 정보와 출석 상태, 하교 정보를 포함한 상세 데이터를 반환합니다.
-      `,
+      summary: '📅 특정 날짜 학생 수업일 조회 (출석/하교 정보 포함)',
+      description:
+        '특정 날짜의 학생 수업일을 출석/하교 정보와 함께 조회합니다 (학부모/학생 앱용 - departure 포함). 💡 학기 전체 일정 조회는 /schools/:schoolId/terms/:termId/students/:studentId/schooldays 사용.',
     }),
     ApiParam({
       name: 'id',
@@ -426,23 +421,25 @@ export const GetSchooldayByDateDocs = () =>
       example: 1,
     }),
     ApiQuery({
+      name: 'termId',
+      type: Number,
+      description: '학기 ID (필수)',
+      required: true,
+      example: 1,
+    }),
+    ApiQuery({
       name: 'date',
       type: String,
-      description: '조회할 날짜 (YYYY-MM-DD 형식)',
+      description: '조회할 날짜 (YYYY-MM-DD 형식, 필수)',
+      required: true,
       example: '2025-01-15',
     }),
     ApiOkResponseTemplate({
-      description: '✅ 특정 날짜 학생 수업일 조회 성공',
+      description: '특정 날짜 수업일 조회 완료 (출석/하교 정보 포함)',
       type: SchooldayWithAttendanceDto,
+      isArray: true,
     }),
-    ApiResponse({
-      status: StatusCodes.NOT_FOUND,
-      description: '🔍 학생 없음 - 존재하지 않는 학생 ID',
-    }),
-    ApiResponse({
-      status: StatusCodes.BAD_REQUEST,
-      description: '🚫 잘못된 날짜 형식 - YYYY-MM-DD 형식으로 입력',
-    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
   );
 
 //? ---------------------------------------------------------------------- ?//

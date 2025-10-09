@@ -1,16 +1,59 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
+  IsDateString,
+  IsEnum,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
-  IsDateString,
-  IsUUID,
-  IsArray,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { NotifiableTarget } from 'src/common/enums';
 import { CreateSurveyQuestionDto } from './create-survey-question.dto';
+
+/**
+ * Survey 발송 정보 (optional)
+ */
+export class SendSurveyDto {
+  @ApiProperty({
+    description: '🈵 발송 대상 유형',
+    enum: NotifiableTarget,
+    example: NotifiableTarget.GROUP,
+  })
+  @IsEnum(NotifiableTarget)
+  target: NotifiableTarget;
+
+  @ApiProperty({
+    description: '🈳 대상별 아이템 ID 리스트 (GROUP의 경우 groupId 배열)',
+    example: [1],
+    required: false,
+  })
+  @IsArray()
+  @IsNumber({}, { each: true })
+  @IsOptional()
+  targetItems?: number[];
+
+  @ApiProperty({
+    description: '🈳 발송 대상 레이블',
+    example: '3학년 1반',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  targetLabel?: string;
+
+  @ApiProperty({
+    description: '🈳 발송예약 시각 (없으면 즉시 발송)',
+    example: '2025-06-26T00:30:00Z',
+    required: false,
+  })
+  @IsDateString()
+  @IsOptional()
+  scheduledAt?: Date;
+}
 
 export class CreateSurveyDto {
   @ApiProperty({ description: '학교 ID', example: 1 })
@@ -22,6 +65,16 @@ export class CreateSurveyDto {
   @IsNotEmpty()
   @IsInt()
   termId: number;
+
+  @ApiProperty({ description: '과목 ID', example: 1 })
+  @IsNotEmpty()
+  @IsInt()
+  lessonId: number;
+
+  @ApiProperty({ description: '반 ID', example: 1 })
+  @IsNotEmpty()
+  @IsInt()
+  groupId: number;
 
   @ApiProperty({ description: '설문조사 제목', example: '만족도 조사' })
   @IsNotEmpty()
@@ -68,16 +121,26 @@ export class CreateSurveyDto {
     example: [
       {
         question: '수업에 만족하시나요?',
-        type: 'MULTIPLE_CHOICE'
+        type: 'MULTIPLE_CHOICE',
       },
       {
         question: '개선사항이 있다면 알려주세요.',
-        type: 'SHORT_ANSWER'
-      }
-    ]
+        type: 'SHORT_ANSWER',
+      },
+    ],
   })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateSurveyQuestionDto)
   questions: CreateSurveyQuestionDto[];
+
+  @ApiProperty({
+    description: '🈳 발송 정보 (발송하려면 필수)',
+    type: SendSurveyDto,
+    required: false,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SendSurveyDto)
+  send?: SendSurveyDto;
 }

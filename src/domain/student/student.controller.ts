@@ -7,19 +7,16 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
   Res,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
-import { Booking } from 'src/domain/booking/entities/booking.entity';
-import { Group } from 'src/domain/group/entities/group.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
@@ -125,57 +122,6 @@ export class StudentController {
     @Query('date') date: string,
   ): Promise<SchooldayWithAttendanceDto[]> {
     return await this.studentService.getSchooldaysByDate(id, termId, date);
-  }
-
-  //! @deprecated
-  @Get(':id/bookings')
-  async findBookingsById(
-    @Param('id', ParseIntPipe) id: number,
-    @Query('termId') termId?: number,
-  ): Promise<Booking[]> {
-    return await this.studentService.findBookingsById(id, termId);
-  }
-
-  //! @deprecated
-  @Get(':id/groups')
-  async listGroups(
-    @Param('id', ParseIntPipe) id: number,
-    @Query('termId') termId?: number,
-  ): Promise<Group[]> {
-    return await this.studentService.listGroups(id, termId);
-  }
-
-  //! @deprecated
-  @Get(':id/groups/paginated')
-  async infiniteListGroups(
-    @Param('id', ParseIntPipe) id: number,
-    @Paginate() query: PaginateQuery,
-    @Query('termId') termId?: number,
-  ): Promise<Paginated<Group>> {
-    return await this.studentService.infiniteListGroups(id, query, termId);
-  }
-
-  //! @deprecated
-  @Get(':id/canceled-groups')
-  async listCanceledGroups(
-    @Param('id', ParseIntPipe) id: number,
-    @Query('termId') termId?: number,
-  ): Promise<Group[]> {
-    return await this.studentService.listCanceledGroups(id, termId);
-  }
-
-  //! @deprecated
-  @Get(':id/canceled-groups/paginated')
-  async infiniteListCanceledGroups(
-    @Param('id', ParseIntPipe) id: number,
-    @Paginate() query: PaginateQuery,
-    @Query('termId') termId?: number,
-  ): Promise<Paginated<Group>> {
-    return await this.studentService.infiniteListCanceledGroups(
-      id,
-      query,
-      termId,
-    );
   }
 
   //? ---------------------------------------------------------------------- ?//

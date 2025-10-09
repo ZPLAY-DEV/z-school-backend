@@ -1,13 +1,15 @@
 import {
-    BadRequestException,
-    Injectable,
-    Logger,
-    NotFoundException,
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { NotifiableSourceType } from 'src/common/enums';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
+import { NotifiableService } from 'src/domain/notifiable/notifiable.service';
 import { CreateReminderDto } from 'src/domain/reminder/dto/create-reminder.dto';
 import { UpdateReminderDto } from 'src/domain/reminder/dto/update-reminder.dto';
 import { Reminder } from 'src/domain/reminder/entities/reminder.entity';
@@ -22,7 +24,7 @@ import { DataSource, EntityManager, Repository } from 'typeorm';
 export class ReminderService {
   private readonly logger = new Logger(ReminderService.name);
   private readonly domain;
-  
+
   constructor(
     @InjectRepository(Reminder)
     private readonly reminderRepository: Repository<Reminder>,
@@ -37,6 +39,7 @@ export class ReminderService {
     private readonly dataSource: DataSource,
     private readonly slack: SlackService,
     private readonly notificationService: NotificationService,
+    private readonly notifiableService: NotifiableService,
     private readonly configService: ConfigService,
   ) {
     this.domain =
@@ -59,15 +62,34 @@ export class ReminderService {
     });
 
     if (existing) {
-      throw new BadRequestException('이미 해당 학기에 수강신청 안내가 존재합니다.');
+      throw new BadRequestException(
+        '이미 해당 학기에 수강신청 안내가 존재합니다.',
+      );
     }
 
-    const title = dto.title || `[${school.name}] ${term.termName} 수강신청 안내`;
+    const title =
+      dto.title || `[${school.name}] ${term.termName} 수강신청 안내`;
 
+    // Notifiable 생성 (send 정보가 있는 경우)
+    let notifiable: Notifiable | null = null;
+    if (dto.send) {
+      notifiable = await this.notifiableRepository.save(
+        this.notifiableRepository.create({
+          schoolId: dto.schoolId,
+          termId: dto.termId,
+          sourceType: NotifiableSourceType.REMINDER,
+          title: title,
+          message: dto.body || '수강신청 안내를 확인해주세요.',
+        }),
+      );
+    }
+
+    // Reminder 생성
     const reminder = await this.reminderRepository.save(
       this.reminderRepository.create({
         schoolId: dto.schoolId,
         termId: dto.termId,
+        notifiableId: notifiable?.id || null,
         schoolName: school.name,
         termName: term.termName,
         title: title,
@@ -76,6 +98,17 @@ export class ReminderService {
       }),
     );
 
+    // 발송 예약 (send 정보가 있는 경우)
+    if (dto.send && notifiable) {
+      await this.notifiableService.send({
+        notifiableId: notifiable.id,
+        target: dto.send.target,
+        targetItems: undefined, // Reminder는 항상 전교생 대상
+        targetLabel: '전교생',
+        scheduledAt: dto.send.scheduledAt,
+      });
+    }
+
     return reminder;
   }
 
@@ -83,7 +116,10 @@ export class ReminderService {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  async findBySchoolAndTerm(schoolId: number, termId: number): Promise<Reminder> {
+  async findBySchoolAndTerm(
+    schoolId: number,
+    termId: number,
+  ): Promise<Reminder> {
     const reminder = await this.reminderRepository.findOne({
       where: { schoolId, termId },
     });
@@ -125,7 +161,13 @@ export class ReminderService {
     });
   }
 
-  async markAsRead(reminderId: number, parentId: number): Promise<void> {
+  /**
+   * Parent의 모든 자녀 recipients를 읽음 처리 (다자녀 가정 편의성)
+   */
+  async markAsReadByParent(
+    reminderId: number,
+    parentId: number,
+  ): Promise<void> {
     // Reminder의 Notifiable 조회
     const reminder = await this.reminderRepository.findOne({
       where: { id: reminderId },
@@ -163,7 +205,53 @@ export class ReminderService {
       this.logger.warn(
         `⚠️ No recipient found for reminder ${reminderId}, parent ${parentId}`,
       );
+      return;
     }
+
+    this.logger.log(
+      `✅ Reminder ${reminderId} marked as read for ${result.affected} recipients (parent ${parentId})`,
+    );
+  }
+
+  /**
+   * 특정 Student의 recipient만 읽음 처리 (정확성)
+   */
+  async markAsReadByStudent(
+    reminderId: number,
+    studentId: number,
+  ): Promise<void> {
+    // Reminder의 Notifiable 조회
+    const reminder = await this.reminderRepository.findOne({
+      where: { id: reminderId },
+      relations: ['notifiable'],
+    });
+
+    if (!reminder?.notifiable) {
+      this.logger.warn(`⚠️ No notifiable found for reminder ${reminderId}`);
+      return;
+    }
+
+    // Recipient 업데이트 (특정 학생의 recipient만)
+    const result = await this.recipientRepository
+      .createQueryBuilder()
+      .update(Recipient)
+      .set({ readAt: new Date() })
+      .where('notifiableId = :notifiableId AND studentId = :studentId', {
+        notifiableId: reminder.notifiable.id,
+        studentId,
+      })
+      .execute();
+
+    if (result.affected === 0) {
+      this.logger.warn(
+        `⚠️ No recipient found for reminder ${reminderId}, student ${studentId}`,
+      );
+      return;
+    }
+
+    this.logger.log(
+      `✅ Reminder ${reminderId} marked as read for student ${studentId}`,
+    );
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -206,4 +294,3 @@ export class ReminderService {
     return term;
   }
 }
-

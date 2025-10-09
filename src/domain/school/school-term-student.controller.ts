@@ -28,6 +28,7 @@ import {
   SchoolTermStudentCanceledGroupsPaginatedDocs,
   SchoolTermStudentGroupsDocs,
   SchoolTermStudentGroupsPaginatedDocs,
+  SchoolTermStudentGroupsWeeklyDocs,
   SchoolTermStudentListDocs,
   SchoolTermStudentSchooldaysDocs,
   SchoolTermStudentWeeklySchooldaysDocs,
@@ -130,6 +131,7 @@ export class SchoolTermStudentController {
     );
   }
 
+  @SchoolTermStudentGroupsWeeklyDocs()
   @Get(':schoolId/terms/:termId/students/:studentId/weekly-groups')
   async listGroupsWeekly(
     @Param('schoolId', ParseIntPipe) schoolId: number,

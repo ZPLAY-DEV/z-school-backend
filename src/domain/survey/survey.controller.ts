@@ -20,7 +20,8 @@ import {
   CreateSurveyDocs,
   DeleteSurveyDocs,
   FindSurveyByIdDocs,
-  MarkAsReadDocs,
+  MarkAsReadByParentDocs,
+  MarkAsReadByStudentDocs,
   UpdateSurveyDocs,
 } from 'src/domain/survey/swagger/survey-swagger.decorator';
 
@@ -68,14 +69,24 @@ export class SurveyController {
     return await this.surveyService.update(id, dto);
   }
 
-  @MarkAsReadDocs()
+  @MarkAsReadByParentDocs()
   @Public()
   @Patch(':id/parents/:parentId/read')
-  async markAsRead(
+  async markAsReadByParent(
     @Param('id', ParseIntPipe) surveyId: number,
     @Param('parentId', ParseIntPipe) parentId: number,
   ): Promise<void> {
-    return await this.surveyService.markAsRead(surveyId, parentId);
+    return await this.surveyService.markAsReadByParent(surveyId, parentId);
+  }
+
+  @MarkAsReadByStudentDocs()
+  @Public()
+  @Patch(':id/students/:studentId/read')
+  async markAsReadByStudent(
+    @Param('id', ParseIntPipe) surveyId: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+  ): Promise<void> {
+    return await this.surveyService.markAsReadByStudent(surveyId, studentId);
   }
 
   //? ---------------------------------------------------------------------- ?//
