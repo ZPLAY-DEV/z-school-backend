@@ -3,10 +3,9 @@ import { Exclude, Expose } from 'class-transformer';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import {
-  NewsletterType,
   PickRule,
   TermStatus,
-  TermType,
+  TermType
 } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
@@ -206,20 +205,6 @@ export class Term {
 
   @OneToMany(() => Booking, (booking: Booking) => booking.term)
   bookings: Booking[];
-
-  @ApiProperty({
-    description: '수강신청 뉴스레터 (type이 REGISTRATION인 newsletter)',
-    type: () => Newsletter,
-    nullable: true,
-  })
-  @Expose()
-  get registrationNewsletter(): Newsletter | null {
-    if (!this.newsletters) return null;
-    return (
-      this.newsletters.find((n) => n.type === NewsletterType.REGISTRATION) ||
-      null
-    );
-  }
 
   @ApiProperty({
     description: '학기 기간 (예: 2월1일~3월1일)',

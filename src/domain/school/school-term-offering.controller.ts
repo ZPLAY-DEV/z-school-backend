@@ -18,6 +18,8 @@ import { SchoolTermOfferingService } from 'src/domain/school/school-term-offerin
 import {
   CreateSchoolTermOfferingsDocs,
   DeleteAllSchoolTermOfferingsDocs,
+  GetMyOfferingsListDocs,
+  GetMyOfferingsPaginatedListDocs,
   GetPersonalListDocs,
   SchoolTermOfferingListDocs,
   SchoolTermOfferingPaginatedListDocs,
@@ -48,6 +50,7 @@ export class SchoolTermOfferingController {
   //? READ
   //? ---------------------------------------------------------------------- ?//
 
+  @GetMyOfferingsPaginatedListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/my-offerings/paginated')
   async getMyInfiniteList(
@@ -64,6 +67,7 @@ export class SchoolTermOfferingController {
     );
   }
 
+  @GetMyOfferingsListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/my-offerings')
   async getMyList(

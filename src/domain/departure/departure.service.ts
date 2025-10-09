@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { formatInTimeZone } from 'date-fns-tz';
-import { NotificationSourceType } from 'src/common/enums';
+import { NotifiableSourceType } from 'src/common/enums';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { getTemplateOfDeparture } from 'src/helpers/get-message-body';
@@ -63,7 +63,7 @@ export class DepartureService {
         timestamp: `${formatInTimeZone(new Date(), 'Asia/Seoul', 'M월d일 H시m분')}`,
       });
       await this.notificationService.send({
-        type: NotificationSourceType.OTHER,
+        type: NotifiableSourceType.OTHER,
         schoolId: student.schoolId,
         messages: [
           {
@@ -167,7 +167,7 @@ export class DepartureService {
     // 알림 발송 (새로 생성된 학생들만)
     if (newStudents.length > 0) {
       await this.notificationService.send({
-        type: NotificationSourceType.OTHER,
+        type: NotifiableSourceType.OTHER,
         schoolId: newStudents[0].schoolId,
         messages,
       });

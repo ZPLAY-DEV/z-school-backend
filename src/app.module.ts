@@ -29,16 +29,19 @@ import { LedgerModule } from 'src/domain/ledger/ledger.module';
 import { LessonModule } from 'src/domain/lesson/lesson.module';
 import { ManagerModule } from 'src/domain/manager/manager.module';
 import { NewsletterModule } from 'src/domain/newsletter/newsletter.module';
+import { NotifiableModule } from 'src/domain/notifiable/notifiable.module';
 import { OfferingModule } from 'src/domain/offering/offering.module';
 import { ParentModule } from 'src/domain/parent/parent.module';
 import { PayoutModule } from 'src/domain/payout/payout.module';
 import { PickModule } from 'src/domain/pick/pick.module';
+import { ReminderModule } from 'src/domain/reminder/reminder.module';
 import { SamModule } from 'src/domain/sam/sam.module';
 import { SchoolModule } from 'src/domain/school/school.module';
 import { SchooldayModule } from 'src/domain/schoolday/schoolday.module';
 import { StatementModule } from 'src/domain/statement/statement.module';
 import { StudentModule } from 'src/domain/student/student.module';
 import { SubsidyModule } from 'src/domain/subsidy/subsidy.module';
+import { SurveyModule } from 'src/domain/survey/survey.module';
 import { TermModule } from 'src/domain/term/term.module';
 import { TextModule } from 'src/domain/text/text.module';
 import { UserModule } from 'src/domain/user/user.module';
@@ -123,6 +126,8 @@ import { UploadModule } from './services/upload/upload.module';
     LedgerModule,
     LessonModule,
     NewsletterModule,
+    NotifiableModule,
+    ReminderModule,
     ManagerModule,
     OfferingModule,
     ParentModule,
@@ -136,6 +141,7 @@ import { UploadModule } from './services/upload/upload.module';
     StatementModule,
     StudentModule,
     SubsidyModule,
+    SurveyModule,
     TermModule,
     TextModule,
     UploadModule,

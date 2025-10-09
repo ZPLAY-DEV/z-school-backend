@@ -79,10 +79,6 @@ export class Recipient {
   // Read Tracking
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '🈳 열람 여부' })
-  @Column({ type: 'boolean', default: false })
-  isRead: boolean;
-
   @ApiProperty({
     description: '🈳 열람 시각 (YYYY-MM-DD HH:mm:ss)',
     example: '2025-06-26T00:30:00Z',

@@ -1,17 +1,8 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Paginated, PaginateQuery } from 'nestjs-paginate';
 import { NewsletterType } from 'src/common/enums';
-import { SendStatus } from 'src/common/enums/send-status';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
-import { ReadStatDto } from 'src/domain/newsletter/dto/read-stat.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
@@ -75,35 +66,6 @@ export class NewsletterService {
     return newsletter;
   }
 
-  // TODO: Notifiable로 발송 로직 이관 필요
-
-  async resendNewsletter(id: number): Promise<void> {
-    const newsletter = await this.findById(id, ['notifiable']);
-
-    if (!newsletter.notifiable) {
-      throw new NotFoundException('Notifiable not found for newsletter');
-    }
-
-    if (newsletter.notifiable.status !== SendStatus.SENT) {
-      throw new BadRequestException('발송 후 다시 시도하세요.');
-    }
-
-    // 읽지 않은 수신자 조회
-    const unreadRecipients = await this.recipientRepository.find({
-      where: {
-        notifiableId: newsletter.notifiable.id,
-        isRead: false,
-      },
-    });
-
-    if (unreadRecipients.length === 0) {
-      throw new UnprocessableEntityException('everyone has read');
-    }
-
-    // TODO: payload 재구성 및 재발송 로직 구현 필요
-    this.logger.warn('⚠️ Resend logic needs to be reimplemented');
-  }
-
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
@@ -135,48 +97,6 @@ export class NewsletterService {
 
     return newsletter;
   }
-
-  async findReadStats(newsletterId: number): Promise<ReadStatDto[]> {
-    const newsletter = await this.newsletterRepository.findOne({
-      where: { id: newsletterId },
-      relations: { notifiable: true },
-    });
-
-    if (!newsletter || !newsletter.notifiable) {
-      throw new NotFoundException('Newsletter or Notifiable not found');
-    }
-
-    // Recipient를 통해 Student와 함께 조회
-    const recipients = await this.recipientRepository.find({
-      where: {
-        notifiableId: newsletter.notifiable.id,
-      },
-      relations: ['student'],
-    });
-
-    // 결과를 ReadStatDto 형태로 변환
-    return recipients.map((recipient) => ({
-      id: recipient.student.id,
-      name: recipient.student.name,
-      grade: recipient.student.grade,
-      class: recipient.student.class,
-      studentCode: recipient.student.studentCode,
-      link: recipient.nanoid ? `${this.domain}/${recipient.nanoid}` : null,
-      read: recipient.isRead ?? false,
-      createdAt: recipient.createdAt,
-    }));
-  }
-
-  async findReadStatsPaginated(
-    newsletterId: number,
-    query: PaginateQuery,
-  ): Promise<Paginated<ReadStatDto>> {
-    // TODO: NotificationRecipient로 페이지네이션 재구현 필요
-    this.logger.warn('⚠️ findReadStatsPaginated needs to be reimplemented');
-    throw new UnprocessableEntityException('Not implemented yet');
-  }
-
-  // TODO: Notifiable에서 pending items 조회하도록 이관 필요
 
   //? ---------------------------------------------------------------------- ?//
   //? Update
@@ -224,7 +144,7 @@ export class NewsletterService {
     const result = await this.recipientRepository
       .createQueryBuilder()
       .update(Recipient)
-      .set({ isRead: true, readAt: new Date() })
+      .set({ readAt: new Date() })
       .where('notifiableId = :notifiableId AND studentId IN (:...studentIds)', {
         notifiableId: newsletter.notifiable.id,
         studentIds,

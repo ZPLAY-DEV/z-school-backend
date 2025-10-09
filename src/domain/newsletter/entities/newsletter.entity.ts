@@ -33,7 +33,7 @@ export class Newsletter {
   @Column({ type: 'int', unsigned: true })
   termId: number;
 
-  @ApiProperty({ description: '🈳 NotificationId (통합 알림 관리)' })
+  @ApiProperty({ description: '🈳 NotifiableId (통합 알림 관리)' })
   @Column({ type: 'int', unsigned: true, nullable: true })
   notifiableId: number | null;
 
@@ -74,8 +74,6 @@ export class Newsletter {
       '발송유형 (수업 일정 안내, 수업 운영 안내, 수강 신청 결과, 수업 준비물 안내)',
   })
   type: NewsletterType;
-
-  // ------------------------------------------------------------------------ //
 
   // ------------------------------------------------------------------------ //
 

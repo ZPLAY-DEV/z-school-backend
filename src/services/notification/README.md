@@ -106,7 +106,7 @@ async sendNotifications() {
 
 ## 📋 파라미터 상세 설명
 
-### 알림 타입 (NotificationType)
+### 알림 타입 (NotifiableSourceType)
 - `REGISTRATION`: 수강신청 알림
 - `NEWS`: 공지사항 알림
 - `SURVEY`: 설문조사 알림
@@ -281,7 +281,7 @@ await notificationService.send({
 ```typescript
 // 기본 타입들
 export type PartitioningMeta = {
-  type: NotificationType;  // 알림 타입
+  type: NotifiableSourceType;  // 알림 타입
   schoolId: number;        // 학교 ID
   role: string;            // PARENT 또는 INSTRUCTOR
 };

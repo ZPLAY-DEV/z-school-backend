@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-  AlarmType,
   BookingStatus,
   ClassStatus,
+  NotifiableSourceType,
   PickRule,
 } from 'src/common/enums';
 import { IPickKeys } from 'src/common/interfaces';
@@ -193,7 +193,7 @@ export class OfferingPickService {
         });
 
       await this.notificationService.send({
-        type: AlarmType.SCHOOL,
+        type: NotifiableSourceType.OTHER,
         schoolId: schoolId,
         messages: messages,
       });

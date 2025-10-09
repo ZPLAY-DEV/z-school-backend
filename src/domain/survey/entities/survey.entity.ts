@@ -23,22 +23,36 @@ export class Survey {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
+  @ApiProperty({ description: '🈳 schoolId (학교ID)', example: 1 })
   @Column({ type: 'int', unsigned: true })
   schoolId: number;
 
+  @ApiProperty({ description: '🈳 termId (학기ID)', example: 1 })
   @Column({ type: 'int', unsigned: true })
   termId: number;
 
-  @ApiProperty({ description: '🈳 NotificationId (통합 알림 관리)' })
+  @ApiProperty({ description: '🈳 notifiableId (알림ID)', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
   notifiableId: number | null;
 
+  @ApiProperty({
+    description: '🈳 title (만족도조사 제목)',
+    example: '만족도조사 제목',
+  })
   @Column({ type: 'varchar', length: 80 })
   title: string;
 
+  @ApiProperty({
+    description: '🈳 intro (만족도조사 소개)',
+    example: '만족도조사 소개',
+  })
   @Column({ type: 'varchar', length: 255, nullable: true })
   intro: string | null;
 
+  @ApiProperty({
+    description: '🈳 outro (만족도조사 마무리)',
+    example: '만족도조사 마무리',
+  })
   @Column({ type: 'varchar', length: 255, nullable: true })
   outro: string | null;
 
@@ -54,7 +68,7 @@ export class Survey {
 
   @ApiProperty({ description: 'KPI' })
   @Column({ type: 'json', default: null })
-  detail: Record<string, number> | null;
+  result: Record<string, number> | null;
 
   // ------------------------------------------------------------------------ //
 

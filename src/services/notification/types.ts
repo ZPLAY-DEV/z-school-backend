@@ -1,9 +1,7 @@
-import { NewsletterType } from 'src/common/enums/newsletter-type';
-import { NotificationSourceType } from 'src/common/enums/notification-source-type';
-import { NotificationType } from 'src/common/enums/notification-type';
+import { NotifiableSourceType } from 'src/common/enums/notifiable-source-type';
 
 export type PartitioningMeta = {
-  type: NotificationSourceType | NotificationType | NewsletterType;
+  type: NotifiableSourceType;
   schoolId: number; // 학교아이디
 };
 

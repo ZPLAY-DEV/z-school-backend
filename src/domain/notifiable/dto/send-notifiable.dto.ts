@@ -1,0 +1,65 @@
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsArray,
+  IsDateString,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { NotifiableTarget, SendStatus } from 'src/common/enums';
+
+export class SendNotifiableDto {
+  @ApiProperty({ description: '🈵 Notifiable ID', example: 1 })
+  @IsNumber()
+  @IsNotEmpty()
+  notifiableId: number;
+
+  @ApiProperty({
+    description: '🈵 발송 대상 유형',
+    enum: NotifiableTarget,
+    example: NotifiableTarget.SCHOOL,
+  })
+  @IsEnum(NotifiableTarget)
+  @IsNotEmpty()
+  target: NotifiableTarget;
+
+  @ApiProperty({
+    description: '🈳 대상별 아이템 ID 리스트',
+    example: [1, 2, 3],
+    required: false,
+  })
+  @IsArray()
+  @IsNumber({}, { each: true })
+  @IsOptional()
+  targetItems?: number[];
+
+  @ApiProperty({
+    description: '🈳 발송 대상 레이블',
+    example: '전교생',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  targetLabel?: string;
+
+  @ApiProperty({
+    description: '🈳 발송예약 시각',
+    example: '2025-06-26T00:30:00Z',
+    required: false,
+  })
+  @IsDateString()
+  @IsOptional()
+  scheduledAt?: Date;
+
+  @ApiProperty({
+    description: '🈳 발송 상태',
+    enum: SendStatus,
+    example: SendStatus.INIT,
+    required: false,
+  })
+  @IsEnum(SendStatus)
+  @IsOptional()
+  status?: SendStatus;
+}

@@ -24,8 +24,10 @@ import {
   CreateSchoolTermLessonsBulkDocs,
   CreateSchoolTermLessonsBulkDryRunDocs,
   DeleteAllSchoolTermLessonsDocs,
+  DownloadSchoolTermLessonsExcelDocs,
   SchoolTermLessonListDocs,
   SchoolTermLessonPaginatedListDocs,
+  UploadSchoolTermLessonsExcelDocs,
 } from 'src/domain/school/swagger/school-term-lesson-swagger.decorator';
 
 @ApiTags('✳️ Schools > Terms > Lessons ( 학교 > 학기 > 과목 )')
@@ -82,6 +84,7 @@ export class SchoolTermLessonController {
     );
   }
 
+  @UploadSchoolTermLessonsExcelDocs()
   @Post(':schoolId/terms/:termId/lessons/upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadStudents(
@@ -111,6 +114,7 @@ export class SchoolTermLessonController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @DownloadSchoolTermLessonsExcelDocs()
   @Public()
   @Get(':schoolId/terms/:termId/lessons/download')
   async downloadExcel(

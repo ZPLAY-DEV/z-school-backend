@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FilterOperator, paginate, PaginateQuery } from 'nestjs-paginate';
-import { NewsletterType } from 'src/common/enums/newsletter-type';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Repository } from 'typeorm';
 
@@ -15,39 +14,14 @@ export class SchoolTermNewsletterService {
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? Create
-  //? ---------------------------------------------------------------------- ?//
-
-  //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  async getRegistrationNewsletter(
-    schoolId: number,
-    termId: number,
-  ): Promise<Newsletter> {
-    return await this.newsletterRepository.findOneOrFail({
-      where: {
-        schoolId,
-        termId,
-        type: NewsletterType.REGISTRATION,
-      },
-    });
-  }
-
-  async list(
-    schoolId: number,
-    termId?: number,
-    type?: NewsletterType,
-  ): Promise<Newsletter[]> {
+  async list(schoolId: number, termId?: number): Promise<Newsletter[]> {
     const whereCondition: any = { schoolId };
 
     if (termId !== undefined) {
       whereCondition.termId = termId;
-    }
-
-    if (type !== undefined) {
-      whereCondition.type = type;
     }
 
     return await this.newsletterRepository.find({
@@ -56,30 +30,13 @@ export class SchoolTermNewsletterService {
     });
   }
 
-  async infiniteList(
-    schoolId: number,
-    query: PaginateQuery,
-    termId?: number,
-    type?: NewsletterType,
-  ) {
+  async infiniteList(schoolId: number, query: PaginateQuery, termId?: number) {
     const queryBuilder = this.newsletterRepository
       .createQueryBuilder('newsletter')
       .where('newsletter.schoolId = :schoolId', { schoolId });
 
     if (termId !== undefined) {
       queryBuilder.andWhere('newsletter.termId = :termId', { termId });
-    }
-
-    if (type !== undefined && type === NewsletterType.REGISTRATION) {
-      queryBuilder.andWhere('newsletter.type = :type', {
-        type: 'REGISTRATION',
-      });
-    }
-
-    if (type !== undefined && type !== NewsletterType.REGISTRATION) {
-      queryBuilder.andWhere('newsletter.type != :type', {
-        type: 'REGISTRATION',
-      });
     }
 
     return await paginate<Newsletter>(query, queryBuilder, {

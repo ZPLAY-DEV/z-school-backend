@@ -2,8 +2,6 @@ import { Actor, NewsletterType, NotifiableTarget } from 'src/common/enums';
 
 export const translateNewsletterType = (type: NewsletterType): string => {
   switch (type) {
-    case NewsletterType.REGISTRATION:
-      return '수강 신청 안내';
     case NewsletterType.CHANGES:
       return '수업 일정 안내';
     case NewsletterType.MANAGEMENT:

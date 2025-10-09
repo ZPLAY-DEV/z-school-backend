@@ -12,7 +12,7 @@ import * as ExcelJS from 'exceljs';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import {
   AttendanceStatus,
-  NotificationSourceType
+  NotifiableSourceType
 } from 'src/common/enums';
 import { INextStop } from 'src/common/interfaces';
 import {
@@ -158,7 +158,7 @@ export class GroupAttendanceService {
 
     //? 수업시작알림 SMS/Notification 발송
     await this.notificationService.send({
-      type: NotificationSourceType.OTHER,
+      type: NotifiableSourceType.OTHER,
       schoolId: group.lesson.schoolId,
       messages: messages,
     });
@@ -251,7 +251,7 @@ export class GroupAttendanceService {
 
     //? 수업종료알림 SMS/Notification 발송
     await this.notificationService.send({
-      type: NotificationSourceType.OTHER,
+      type: NotifiableSourceType.OTHER,
       schoolId: group.lesson.schoolId,
       messages: messages,
     });
@@ -321,7 +321,7 @@ export class GroupAttendanceService {
 
       //? 커스텀 알림 SMS/Notification 발송
       const result = await this.notificationService.send({
-        type: NotificationSourceType.OTHER,
+        type: NotifiableSourceType.OTHER,
         schoolId: group.lesson.schoolId,
         messages: messages,
       });

@@ -11,7 +11,6 @@ import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { CreateNewsletterDto } from '../dto/create-newsletter.dto';
-import { ReadStatDto } from '../dto/read-stat.dto';
 import { UpdateNewsletterDto } from '../dto/update-newsletter.dto';
 import { Newsletter } from '../entities/newsletter.entity';
 
@@ -23,30 +22,8 @@ export const CreateNewsletterDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '📧 뉴스레터 생성',
-      description: `
-**📝 기능 설명**
-- 학교의 특정 학기에 귀속된 뉴스레터를 생성합니다
-- 다양한 발송 대상과 스케줄링을 지원합니다
-- 3가지 타입의 뉴스레터 작성 가능
-
-**🔄 비즈니스 로직**
-1. 뉴스레터 타입별 제한 확인 (REGISTRATION은 학기당 1회)
-2. 발송 대상 유효성 검증 및 targetItems 배열 처리
-3. scheduledAt이 null이면 즉시 발송 대기 상태로 설정
-4. 예약 시간 지정 시 최대 5분 지연으로 스케줄링 처리
-5. S3 이미지 URL 배열로 첨부파일 저장
-
-**⚠️ 중요 제약사항**
-- REGISTRATION 타입은 학기당 1개만 생성 가능
-- targetItems는 target 타입에 맞는 ID 배열이어야 함
-- scheduledAt은 현재 시간 이후여야 함
-- 제목은 최대 64자, 본문은 TEXT 타입으로 제한 없음
-
-**📚 예시 시나리오**
-- 전교생 대상 수강신청 안내 (REGISTRATION)
-- 특정 학년 현장학습 공지 (NEWS)
-- 강좌별 만족도 조사 (SURVEY)
-      `,
+      description:
+        '학교의 특정 학기에 귀속된 뉴스레터를 생성합니다 (타입: REGISTRATION/NEWS/CHANGES).',
     }),
     ApiBody({
       type: CreateNewsletterDto,
@@ -102,225 +79,15 @@ export const CreateNewsletterDocs = () => {
   );
 };
 
-export const SendNewsletterDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '📤 뉴스레터 발송',
-      description: `
-**📝 기능 설명**
-- 기존 뉴스레터를 대상자들에게 발송합니다
-- 다양한 발송 대상과 스케줄링을 지원합니다
-- 발송 상태 추적과 재발송 기능을 제공합니다
-
-**🔄 비즈니스 로직**
-1. 뉴스레터 ID로 발송 대상 뉴스레터 확인
-2. 발송 대상 설정 및 유효성 검증
-3. scheduledAt 설정에 따른 발송 스케줄링
-4. 발송 상태 초기화 및 큐 등록
-5. 발송 결과 반환
-
-**⚠️ 중요 제약사항**
-- 유효한 뉴스레터 ID 필요
-- target과 targetItems는 일치해야 함
-- scheduledAt은 현재 시간 이후여야 함
-- 이미 발송된 뉴스레터도 재발송 가능
-
-**📚 예시 시나리오**
-- 공지사항 발송
-- 설문조사 안내 발송
-- 특별활동 공지 발송
-      `,
-    }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: '발송할 뉴스레터의 ID',
-      example: 1,
-    }),
-    ApiBody({
-      description: '뉴스레터 발송 정보',
-      examples: {
-        'school-wide-dispatch': {
-          summary: '전교생 발송',
-          description: '전교생 대상 뉴스레터 발송',
-          value: {
-            target: 'SCHOOL',
-            targetItems: null,
-            targetLabel: '전교생',
-            scheduledAt: null,
-            status: 'INIT',
-          },
-        },
-        'grade-specific-dispatch': {
-          summary: '특정 학년 발송',
-          description: '1, 2학년 대상 뉴스레터 발송',
-          value: {
-            target: 'GRADE',
-            targetItems: [1, 2],
-            targetLabel: '1, 2학년',
-            scheduledAt: '2025-03-10T09:00:00Z',
-            status: 'SCHEDULED',
-          },
-        },
-        'lesson-specific-dispatch': {
-          summary: '특정 강좌 발송',
-          description: '미술반 수강생 대상 발송',
-          value: {
-            target: 'LESSON',
-            targetItems: [10, 11],
-            targetLabel: '미술반 A, B조',
-            scheduledAt: null,
-            status: 'INIT',
-          },
-        },
-        'individual-dispatch': {
-          summary: '개별 학생 발송',
-          description: '특정 학생들 대상 발송',
-          value: {
-            target: 'STUDENT',
-            targetItems: [123, 124, 125],
-            targetLabel: '특별활동 선발 학생',
-            scheduledAt: '2025-05-01T10:00:00Z',
-            status: 'SCHEDULED',
-          },
-        },
-        'rescheduled-dispatch': {
-          summary: '재예약 발송',
-          description: '기존 발송을 취소하고 새로운 시간에 재발송',
-          value: {
-            target: 'GRADE',
-            targetItems: [3, 4],
-            targetLabel: '3, 4학년',
-            rescheduledAt: '2025-04-01T09:30:00Z',
-            status: 'SCHEDULED',
-          },
-        },
-      },
-    }),
-    ApiCreatedResponseTemplate({
-      description: '뉴스레터 발송 완료',
-      type: Newsletter,
-    }),
-    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
-  );
-};
-
-export const ResendNewsletterDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '🔄 뉴스레터 재발송',
-      description: `
-**📝 기능 설명**
-- 이미 발송된 뉴스레터를 읽지 않은 대상자들에게만 재발송합니다
-- 읽음 상태를 확인하여 미읽음 학부모들에게만 선별적으로 재발송
-- 발송 효율성을 높이고 중복 발송을 방지합니다
-
-**🔄 비즈니스 로직**
-1. ID로 재발송할 뉴스레터 확인 (SENT 상태만 가능)
-2. 해당 뉴스레터의 모든 shortlink 중 읽지 않은 것들 필터링
-3. 미읽음 shortlink들의 payload를 NotificationCoreData로 추출
-4. NotificationFullData 형태로 조합하여 알림 서비스에 전달
-5. 재발송 완료 후 상태 업데이트
-
-**⚠️ 중요 제약사항**
-- 발송 상태가 SENT인 뉴스레터만 재발송 가능
-- 이미 읽은 학부모들은 재발송 대상에서 제외
-- 모든 대상자가 읽은 경우 재발송 불가 (422 에러)
-- 재발송 시 rescheduledAt 필드에 시간 기록
-
-**📚 예시 시나리오**
-- 중요 공지사항의 리마인더 발송 (미읽음 대상만)
-- 읽지 않은 학부모들을 위한 선별적 재발송
-- 발송 효과 향상을 위한 미읽음 대상 재타겟팅
-      `,
-    }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: '재발송할 뉴스레터의 ID',
-      example: 1,
-    }),
-    ApiOkResponse({
-      description: '뉴스레터 재발송 완료 (응답 본문 없음)',
-    }),
-    ApiStatuses(
-      StatusCodes.NOT_FOUND,
-      StatusCodes.BAD_REQUEST,
-      StatusCodes.UNPROCESSABLE_ENTITY,
-    ),
-  );
-};
-
 //? ---------------------------------------------------------------------- ?//
 //? Newsletter Controller - READ
 //? ---------------------------------------------------------------------- ?//
-
-export const FindPendingDispatchesDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '⏳ 발송 대기 중인 뉴스레터 조회',
-      description: `
-**📝 기능 설명**
-- 발송 예약 시간이 지났지만 아직 발송되지 않은 뉴스레터들을 조회합니다
-- 스케줄된 발송이 실제로 실행되도록 백그라운드 작업에서 사용됩니다
-- 발송 지연이나 시스템 오류로 인한 누락 발송을 방지합니다
-
-**🔄 비즈니스 로직**
-1. 현재 서울 시간을 UTC로 변환
-2. scheduledAt이 현재 시간보다 이전인 뉴스레터 조회
-3. 발송 상태가 SCHEDULED인 뉴스레터만 필터링
-4. 발송 예정 시간 순으로 정렬하여 반환
-5. 백그라운드 작업에서 자동 발송 처리
-
-**⚠️ 중요 제약사항**
-- 발송 상태가 SCHEDULED인 뉴스레터만 조회
-- scheduledAt이 현재 시간보다 이전인 것만 포함
-- 이미 발송된(SENT) 뉴스레터는 제외
-
-**📚 예시 시나리오**
-- 예약 발송 스케줄 모니터링
-- 발송 지연 상황 확인
-- 백그라운드 발송 작업 대상 식별
-- 발송 시스템 상태 점검
-      `,
-    }),
-    ApiOkResponseTemplate({
-      description: '발송 대기 중인 뉴스레터 목록 조회 완료',
-      type: Newsletter,
-      isArray: true,
-    }),
-    ApiStatuses(StatusCodes.INTERNAL_SERVER_ERROR),
-  );
-};
 
 export const FindNewsletterByIdDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '🔍 뉴스레터 상세 조회',
-      description: `
-**📝 기능 설명**
-- 특정 ID로 뉴스레터의 상세 정보를 조회합니다
-- 뉴스레터의 모든 기본 정보와 관련 엔티티 정보를 포함합니다
-- 선택적으로 관련 엔티티(term 등)를 함께 로드할 수 있습니다
-
-**🔄 비즈니스 로직**
-1. ID로 뉴스레터 기본 정보 조회
-2. 선택적 relations 파라미터로 관련 엔티티 로드
-3. 뉴스레터의 모든 필드 정보 반환
-4. 발송 상태, 스케줄, 대상 정보 포함
-5. 첨부 이미지와 메타데이터 포함
-
-**⚠️ 중요 제약사항**
-- 존재하지 않는 ID는 404 에러 반환
-- 삭제된 뉴스레터는 조회 불가
-- relations는 선택적 파라미터 (기본값: 빈 배열)
-
-**📚 예시 시나리오**
-- 뉴스레터 상세 페이지 표시
-- 발송 상태 및 기본 정보 확인
-- 뉴스레터 수정을 위한 현재 정보 조회
-- 관련 엔티티 정보가 필요한 경우
-      `,
+      description: '뉴스레터의 상세 정보를 조회합니다.',
     }),
     ApiParam({
       name: 'id',
@@ -343,182 +110,6 @@ export const FindNewsletterByIdDocs = () => {
   );
 };
 
-export const FindReadStatsDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '📊 뉴스레터 읽음 통계 조회',
-      description: `
-**📝 기능 설명**
-- 특정 뉴스레터의 모든 대상 학생들의 읽음 상태를 조회합니다
-- 최적화된 쿼리로 학생 정보와 읽음 상태를 한번에 조회합니다
-- 학생별 상세 정보와 읽음 여부를 포함한 완전한 목록을 제공합니다
-
-**🔄 비즈니스 로직**
-1. 뉴스레터 ID로 발송 대상 학생 목록 조회
-2. QueryBuilder로 학생과 shortlink 정보를 LEFT JOIN으로 조회
-3. 학생 기본 정보 (이름, 학년, 반, 학번) 포함
-4. 각 학생별 shortlink 읽음 상태와 생성 시간 정보 제공
-5. 읽음 상태와 링크 URL 정보를 포함하여 반환
-
-**⚠️ 중요 제약사항**
-- 존재하지 않는 뉴스레터 ID는 404 에러 반환
-- 발송되지 않은 뉴스레터는 빈 목록 반환
-- 삭제된 학생은 목록에서 제외
-- 읽지 않은 학생의 경우 기본 링크 URL 생성
-
-**📚 예시 시나리오**
-- 뉴스레터 읽음률 분석
-- 미읽음 학생 리마인더 발송 대상 식별
-- 학급별 읽음 현황 모니터링
-- 발송 효과 분석 및 개선점 도출
-      `,
-    }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: '읽음 통계를 조회할 뉴스레터의 ID',
-      example: 1,
-    }),
-    ApiOkResponseTemplate({
-      description: '뉴스레터 읽음 통계 조회 완료',
-      type: ReadStatDto,
-      isArray: true,
-    }),
-    ApiStatuses(StatusCodes.NOT_FOUND),
-  );
-};
-
-export const FindReadStatsPaginatedDocs = () => {
-  return applyDecorators(
-    ApiOperation({
-      summary: '📊 뉴스레터 읽음 통계 조회 (페이지네이션)',
-      description: `
-**📝 기능 설명**
-- 특정 뉴스레터의 읽음 통계를 페이지네이션으로 조회합니다
-- QueryBuilder와 paginateRaw를 사용하여 MySQL 호환 쿼리로 최적화
-- 대량의 학생 데이터를 효율적으로 처리할 수 있습니다
-
-**🔄 비즈니스 로직**
-1. 뉴스레터 ID로 발송 대상 학생 목록 조회
-2. QueryBuilder로 학생, 학부모, shortlink 정보를 LEFT JOIN으로 조회
-3. 페이지네이션 파라미터에 따른 데이터 분할
-4. 정렬 옵션에 따른 데이터 정렬 (학생 ID, 이름, 학년, 반, 읽음 상태 등)
-5. 페이지네이션 메타데이터와 링크 정보를 함께 반환
-
-**⚠️ 중요 제약사항**
-- 존재하지 않는 뉴스레터 ID는 404 에러 반환
-- 페이지 크기는 기본값 20, 최대 100까지 설정 가능
-- 정렬은 학생 ID, 이름, 학년, 반, 읽음 상태, 생성 시간 등으로 가능
-- 기본 정렬은 학생 ID 오름차순
-
-**📚 예시 시나리오**
-- 대규모 학교의 뉴스레터 읽음 현황 조회
-- 읽음 상태별 필터링 및 정렬
-- 특정 학년이나 반별 읽음 현황 분석
-- 페이지별로 나누어 읽음 통계 확인
-      `,
-    }),
-    ApiParam({
-      name: 'id',
-      type: Number,
-      description: '읽음 통계를 조회할 뉴스레터의 ID',
-      example: 1,
-    }),
-    ApiQuery({
-      name: 'page',
-      type: Number,
-      description: '페이지 번호 (1부터 시작)',
-      example: 1,
-      required: false,
-    }),
-    ApiQuery({
-      name: 'limit',
-      type: Number,
-      description: '페이지당 항목 수 (기본값: 20, 최대: 100)',
-      example: 20,
-      required: false,
-    }),
-    ApiQuery({
-      name: 'sortBy',
-      type: String,
-      description: '정렬 기준 (name, grade, class, read, createdAt)',
-      example: 'name',
-      required: false,
-    }),
-    ApiQuery({
-      name: 'sortOrder',
-      type: String,
-      description: '정렬 순서 (ASC, DESC)',
-      example: 'ASC',
-      required: false,
-    }),
-    ApiQuery({
-      name: 'search',
-      type: String,
-      description: '학생 이름으로 검색',
-      example: '김철수',
-      required: false,
-    }),
-    ApiOkResponse({
-      description: '뉴스레터 읽음 통계 조회 완료 (페이지네이션)',
-      schema: {
-        type: 'object',
-        properties: {
-          data: {
-            type: 'array',
-            items: {
-              $ref: '#/components/schemas/ReadStatDto',
-            },
-          },
-          meta: {
-            type: 'object',
-            properties: {
-              itemsPerPage: { type: 'number', example: 20 },
-              totalItems: { type: 'number', example: 150 },
-              currentPage: { type: 'number', example: 1 },
-              totalPages: { type: 'number', example: 8 },
-              sortBy: {
-                type: 'array',
-                items: { type: 'array', items: { type: 'string' } },
-              },
-              searchBy: { type: 'array', items: { type: 'string' } },
-              search: { type: 'string' },
-              select: { type: 'array', items: { type: 'string' } },
-              filter: { type: 'object' },
-            },
-          },
-          links: {
-            type: 'object',
-            properties: {
-              first: {
-                type: 'string',
-                example: '/newsletters/1/stats/paginated?page=1&limit=20',
-              },
-              previous: {
-                type: 'string',
-                example: '/newsletters/1/stats/paginated?page=1&limit=20',
-              },
-              current: {
-                type: 'string',
-                example: '/newsletters/1/stats/paginated?page=2&limit=20',
-              },
-              next: {
-                type: 'string',
-                example: '/newsletters/1/stats/paginated?page=3&limit=20',
-              },
-              last: {
-                type: 'string',
-                example: '/newsletters/1/stats/paginated?page=8&limit=20',
-              },
-            },
-          },
-        },
-      },
-    }),
-    ApiStatuses(StatusCodes.NOT_FOUND),
-  );
-};
-
 //? ---------------------------------------------------------------------- ?//
 //? Newsletter Controller - UPDATE
 //? ---------------------------------------------------------------------- ?//
@@ -527,30 +118,8 @@ export const UpdateNewsletterDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '✏️ 뉴스레터 수정',
-      description: `
-**📝 기능 설명**
-- 기존 뉴스레터의 정보를 부분적으로 수정합니다
-- 모든 필드는 선택사항이며 제공된 필드만 업데이트됩니다
-- 발송 전후 모든 상태에서 수정 가능합니다
-
-**🔄 비즈니스 로직**
-1. ID로 수정 대상 뉴스레터 확인
-2. 제공된 필드만 선택적으로 업데이트
-3. scheduledAt 변경 시 발송 예약 상태 재설정
-4. rescheduledAt 설정 시 기존 발송을 취소하고 새로운 시간에 재발송 예약
-5. 수정된 뉴스레터 정보 반환
-
-**⚠️ 중요 제약사항**
-- type, schoolId, termId는 수정 불가
-- 제목은 최대 64자까지 가능
-- targetItems는 target 타입에 맞는 ID 배열이어야 함
-- 이미 발송된 뉴스레터도 재발송 예약 가능
-
-**📚 예시 시나리오**
-- 잘못된 내용 수정
-- 발송 대상 변경
-- 발송 예약 시간 조정
-      `,
+      description:
+        '뉴스레터 정보를 부분적으로 수정합니다 (제공된 필드만 업데이트).',
     }),
     ApiParam({
       name: 'id',
@@ -610,31 +179,8 @@ export const MarkAsReadDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '✅ 뉴스레터 읽음 표시',
-      description: `
-**📝 기능 설명**
-- 특정 학부모가 특정 뉴스레터를 읽었음을 표시합니다
-- QueryBuilder를 사용하여 shortlink의 isRead 필드를 업데이트합니다
-- 읽음 통계와 추적을 위한 엔드포인트입니다
-
-**🔄 비즈니스 로직**
-1. newsletterId와 parentId 조합으로 해당 shortlink 조회
-2. QueryBuilder로 shortlink의 isRead 필드를 true로 업데이트
-3. 업데이트된 레코드 수를 확인하여 성공 여부 판단
-4. 해당 shortlink가 없는 경우 경고 로그 기록
-5. 중복 호출 시에도 안전하게 처리
-
-**⚠️ 중요 제약사항**
-- 유효한 newsletter ID와 parent ID 필요
-- 해당하는 shortlink가 없는 경우 경고 로그만 기록 (에러 없음)
-- 이미 읽음 처리된 경우에도 안전하게 처리
-- 삭제된 뉴스레터나 학부모는 처리 불가
-
-**📚 예시 시나리오**
-- 학부모 앱에서 뉴스레터 열람 시 자동 호출
-- 웹페이지에서 뉴스레터 조회 시 추적
-- 발송 효과 분석 데이터 수집
-- 읽음률 통계 업데이트
-      `,
+      description:
+        '학부모가 뉴스레터를 읽었음을 표시합니다 (해당 학부모의 모든 자녀에 대해 readAt 업데이트).',
     }),
     ApiParam({
       name: 'id',
@@ -663,31 +209,8 @@ export const DeleteNewsletterDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '🗑️ 뉴스레터 삭제',
-      description: `
-**📝 기능 설명**
-- 뉴스레터를 소프트 삭제합니다
-- 삭제된 뉴스레터는 목록에서 제외되지만 데이터는 보존됩니다
-- 관련된 모든 shortlink도 함께 삭제됩니다
-
-**🔄 비즈니스 로직**
-1. ID로 삭제 대상 뉴스레터 확인
-2. 해당 뉴스레터의 모든 shortlink를 먼저 삭제
-3. 뉴스레터를 softRemove로 소프트 삭제
-4. deletedAt 필드에 삭제 시간 기록
-5. 삭제된 뉴스레터 정보 반환
-
-**⚠️ 중요 제약사항**
-- 발송 상태와 관계없이 삭제 가능
-- 관련된 모든 shortlink가 함께 삭제됨
-- 이미 발송된 메시지는 취소되지 않음
-- 소프트 삭제로 데이터 복구 가능
-
-**📚 예시 시나리오**
-- 잘못 생성된 뉴스레터 제거
-- 테스트용 뉴스레터 정리
-- 부적절한 내용의 뉴스레터 삭제
-- 관련 데이터 정리
-      `,
+      description:
+        '뉴스레터를 소프트 삭제합니다 (Notifiable과 Recipient도 함께 삭제).',
     }),
     ApiParam({
       name: 'id',
@@ -711,34 +234,8 @@ export const GenerateNewsletterS3UrlsDocs = () => {
   return applyDecorators(
     ApiOperation({
       summary: '📎 뉴스레터 첨부파일 업로드 URL 생성',
-      description: `
-**📝 기능 설명**
-- 뉴스레터에 첨부할 이미지/문서 파일의 S3 업로드 URL을 생성합니다
-- Pre-signed URL 방식으로 안전한 파일 업로드를 지원합니다
-- 학교와 학기별로 파일이 체계적으로 관리됩니다
-- 환경별 경로 분리로 개발/운영 환경 격리
-
-**🔄 비즈니스 로직**
-1. schoolId와 termId로 업로드 경로 구성 (\`schools/{schoolId}/terms/{termId}/newsletters\`)
-2. mimeType 검증 및 지원 파일 형식 확인
-3. 고유한 파일명 생성 (타임스탬프 + UUID + 확장자)
-4. 환경별 경로 접두사 추가 (\`{environment}/schools/...\`)
-5. S3 Pre-signed URL 생성 (기본 10분 만료)
-6. 업로드용 URL과 파일 접근용 URL 반환
-
-**⚠️ 중요 제약사항**
-- 지원 파일 형식: JPEG, JPG, PNG, GIF, WebP, PDF
-- Pre-signed URL은 10분 내에만 사용 가능 (만료 시 재생성 필요)
-- 파일명 미제공 시 자동 생성 (타임스탬프 + UUID)
-- CloudFront URL을 통한 파일 접근 (CDN 캐싱 적용)
-- 파일 크기 제한: S3 버킷 정책에 따라 제한
-
-**📚 예시 시나리오**
-- 뉴스레터 작성 시 이미지 첨부 (안내문, 포스터 등)
-- 공지사항에 PDF 문서 첨부 (가정통신문, 안내서 등)
-- 설문조사에 참고 이미지 첨부
-- 이벤트 공지에 GIF 애니메이션 첨부
-      `,
+      description:
+        '뉴스레터 첨부 파일의 S3 Pre-signed 업로드 URL을 생성합니다 (10분 유효).',
     }),
     ApiBody({
       description: 'S3 업로드 URL 생성을 위한 요청 정보',

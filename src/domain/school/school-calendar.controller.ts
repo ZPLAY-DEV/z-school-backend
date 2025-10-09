@@ -13,9 +13,14 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 
 import { SchoolCalendarService } from 'src/domain/school/school-calendar.service';
-import { CreateSchoolCalendarDocs } from 'src/domain/school/swagger/school-calendar-swagger.decorator';
+import {
+  CreateAllSchoolCalendarsDocs,
+  CreateSchoolCalendarDocs,
+  ListSchoolCalendarsDocs,
+  PaginatedSchoolCalendarsDocs,
+} from 'src/domain/school/swagger/school-calendar-swagger.decorator';
 
-@ApiTags('✳️ Schools > Calendar ( 학교 > 캘린더 )')
+@ApiTags('✳️ Schools > Calendar ( 학교 > 학사일정 )')
 @Controller('schools')
 @UseInterceptors(ClassSerializerInterceptor)
 export class SchoolCalendarController {
@@ -25,6 +30,7 @@ export class SchoolCalendarController {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
+  @CreateAllSchoolCalendarsDocs()
   @Public()
   @Post('all/calendars')
   async createAll(): Promise<number> {
@@ -44,6 +50,7 @@ export class SchoolCalendarController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @ListSchoolCalendarsDocs()
   @Get(':schoolId/calendars')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -51,6 +58,7 @@ export class SchoolCalendarController {
     return await this.schoolCalendarService.list(schoolId);
   }
 
+  @PaginatedSchoolCalendarsDocs()
   @Get(':schoolId/calendars/paginated')
   async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,

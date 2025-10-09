@@ -1,5 +1,4 @@
 export enum NewsletterType {
-  REGISTRATION = 'REGISTRATION', // 수강신청 (Reminder와 별도)
   CHANGES = 'CHANGES', // 수업 일정 안내
   MANAGEMENT = 'MANAGEMENT', // 수업 운영 안내
   RESULT = 'RESULT', // 수강 신청 결과

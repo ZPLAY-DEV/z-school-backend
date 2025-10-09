@@ -7,10 +7,14 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import { Paginate, PaginateQuery } from 'nestjs-paginate';
-import { Survey } from 'src/domain/survey/entities/survey.entity';
 import { SchoolTermSurveyService } from 'src/domain/school/school-term-survey.service';
+import {
+  InfiniteListSchoolTermSurveysDocs,
+  ListSchoolTermSurveysDocs,
+} from 'src/domain/school/swagger/school-survey-swagger.decorator';
+import { Survey } from 'src/domain/survey/entities/survey.entity';
 
 @ApiTags('✳️ Schools > Terms > Surveys ( 학교 > 학기 > 설문조사 )')
 @Controller('schools')
@@ -24,7 +28,7 @@ export class SchoolTermSurveyController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: '학교별 설문조사 목록 조회' })
+  @ListSchoolTermSurveysDocs()
   @Get(':schoolId/surveys')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
@@ -33,13 +37,13 @@ export class SchoolTermSurveyController {
     return await this.schoolTermSurveyService.list(schoolId, termId);
   }
 
-  @ApiOperation({ description: '학교별 설문조사 페이지네이션 목록 조회' })
+  @InfiniteListSchoolTermSurveysDocs()
   @Get(':schoolId/surveys/paginated')
   @UseInterceptors(ClassSerializerInterceptor)
   async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Paginate() query: PaginateQuery,
-    @Query('termId') termId?: number,
+    @Query('termId') termId: number,
   ) {
     return await this.schoolTermSurveyService.infiniteList(
       schoolId,

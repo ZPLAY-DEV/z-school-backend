@@ -6,6 +6,7 @@ import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { LessonModule } from 'src/domain/lesson/lesson.module';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { Reminder } from 'src/domain/reminder/entities/reminder.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { SchoolTermComboController } from 'src/domain/school/school-term-combo.controller';
@@ -16,16 +17,21 @@ import { SchoolTermNewsletterController } from 'src/domain/school/school-term-ne
 import { SchoolTermNewsletterService } from 'src/domain/school/school-term-newsletter.service';
 import { SchoolTermOfferingController } from 'src/domain/school/school-term-offering.controller';
 import { SchoolTermOfferingService } from 'src/domain/school/school-term-offering.service';
+import { SchoolTermReminderController } from 'src/domain/school/school-term-reminder.controller';
+import { SchoolTermReminderService } from 'src/domain/school/school-term-reminder.service';
 import { SchoolTermSamController } from 'src/domain/school/school-term-sam.controller';
 import { SchoolTermSamService } from 'src/domain/school/school-term-sam.service';
 import { SchoolTermSchooldayController } from 'src/domain/school/school-term-schoolday.controller';
 import { SchoolTermSchooldayService } from 'src/domain/school/school-term-schoolday.service';
 import { SchoolTermStudentController } from 'src/domain/school/school-term-student.controller';
 import { SchoolTermStudentService } from 'src/domain/school/school-term-student.service';
+import { SchoolTermSurveyController } from 'src/domain/school/school-term-survey.controller';
+import { SchoolTermSurveyService } from 'src/domain/school/school-term-survey.service';
 import { SchoolTermController } from 'src/domain/school/school-term.controller';
 import { SchoolTermService } from 'src/domain/school/school-term.service';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { Survey } from 'src/domain/survey/entities/survey.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { SqsModule } from 'src/services/aws/sqs.module';
 
@@ -37,10 +43,12 @@ import { SqsModule } from 'src/services/aws/sqs.module';
       Lesson,
       Newsletter,
       Offering,
+      Reminder,
       Sam,
       School,
       Schoolday,
       Student,
+      Survey,
       Term,
     ]),
     LessonModule,
@@ -54,6 +62,8 @@ import { SqsModule } from 'src/services/aws/sqs.module';
     SchoolTermComboController,
     SchoolTermLessonController,
     SchoolTermNewsletterController,
+    SchoolTermReminderController,
+    SchoolTermSurveyController,
     SchoolTermOfferingController,
   ],
   providers: [
@@ -64,6 +74,8 @@ import { SqsModule } from 'src/services/aws/sqs.module';
     SchoolTermComboService,
     SchoolTermLessonService,
     SchoolTermNewsletterService,
+    SchoolTermReminderService,
+    SchoolTermSurveyService,
     SchoolTermOfferingService,
   ],
   exports: [
@@ -73,6 +85,8 @@ import { SqsModule } from 'src/services/aws/sqs.module';
     SchoolTermComboService,
     SchoolTermLessonService,
     SchoolTermNewsletterService,
+    SchoolTermReminderService,
+    SchoolTermSurveyService,
     SchoolTermOfferingService,
   ],
 })

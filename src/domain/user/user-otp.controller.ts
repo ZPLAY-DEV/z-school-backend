@@ -11,13 +11,14 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Secret } from 'src/domain/user/entities/secret.entity';
 import { UserOtpService } from 'src/domain/user/user-otp.service';
 
-@UseInterceptors(ClassSerializerInterceptor)
+@ApiTags('✳️ Users > Otp ( 알림 발송 )')
 @Controller('users')
+@UseInterceptors(ClassSerializerInterceptor)
 export class UserOtpController {
   constructor(private readonly userOtpService: UserOtpService) {}
 

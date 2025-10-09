@@ -9,11 +9,9 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, PaginateQuery } from 'nestjs-paginate';
-import { NewsletterType } from 'src/common/enums';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { SchoolTermNewsletterService } from 'src/domain/school/school-term-newsletter.service';
 import {
-  GetRegistrationNewsletterDocs,
   InfiniteListSchoolTermNewslettersDocs,
   ListSchoolTermNewslettersDocs,
 } from 'src/domain/school/swagger/school-newsletter-swagger.decorator';
@@ -30,26 +28,13 @@ export class SchoolTermNewsletterController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @GetRegistrationNewsletterDocs()
-  @Get(':schoolId/terms/:termId/registration-newsletter')
-  async getRegistrationNewsletter(
-    @Param('schoolId', ParseIntPipe) schoolId: number,
-    @Param('termId', ParseIntPipe) termId: number,
-  ): Promise<Newsletter> {
-    return await this.schoolTermNewsletterService.getRegistrationNewsletter(
-      schoolId,
-      termId,
-    );
-  }
-
   @ListSchoolTermNewslettersDocs()
   @Get(':schoolId/newsletters')
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Query('termId') termId?: number,
-    @Query('type') type?: NewsletterType,
   ): Promise<Newsletter[]> {
-    return await this.schoolTermNewsletterService.list(schoolId, termId, type);
+    return await this.schoolTermNewsletterService.list(schoolId, termId);
   }
 
   @InfiniteListSchoolTermNewslettersDocs()
@@ -59,13 +44,11 @@ export class SchoolTermNewsletterController {
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Paginate() query: PaginateQuery,
     @Query('termId') termId: number,
-    @Query('type') type?: NewsletterType,
   ) {
     return await this.schoolTermNewsletterService.infiniteList(
       schoolId,
       query,
       termId,
-      type,
     );
   }
 }

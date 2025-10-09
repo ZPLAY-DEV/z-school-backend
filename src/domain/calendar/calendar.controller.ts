@@ -14,7 +14,7 @@ import { UpdateCalendarDto } from 'src/domain/calendar/dto/update-calendar.dto';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 import { CalendarService } from './calendar.service';
 
-@ApiTags('✅ Calendars ( 학사일정 )')
+@ApiTags('✳️ Calendars ( 학사일정 )')
 @Controller('calendars')
 @UseInterceptors(ClassSerializerInterceptor)
 export class CalendarController {

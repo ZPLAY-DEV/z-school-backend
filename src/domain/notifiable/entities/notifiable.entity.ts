@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
+  NotifiableSourceType,
   NotifiableTarget,
-  NotificationSourceType,
   SendStatus,
 } from 'src/common/enums';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
@@ -27,7 +27,6 @@ import {
 
 @Entity('notifiables')
 @Index(['schoolId', 'termId'])
-@Index(['sourceType', 'sourceId'])
 export class Notifiable {
   @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
@@ -47,21 +46,14 @@ export class Notifiable {
 
   @ApiProperty({
     description: '발송 원천 타입 (Newsletter, Reminder, Survey)',
-    example: NotificationSourceType.NEWSLETTER,
+    example: NotifiableSourceType.NEWSLETTER,
   })
   @Column({
     type: 'enum',
-    enum: NotificationSourceType,
+    enum: NotifiableSourceType,
     comment: '발송 원천 타입',
   })
-  sourceType: NotificationSourceType;
-
-  @ApiProperty({
-    description: '발송 원천 ID (newsletter.id, reminder.id, survey.id)',
-    example: 1,
-  })
-  @Column({ type: 'int', unsigned: true, comment: '발송 원천 ID' })
-  sourceId: number;
+  sourceType: NotifiableSourceType;
 
   // ------------------------------------------------------------------------ //
   // Content
@@ -79,7 +71,7 @@ export class Notifiable {
   message: string;
 
   // ------------------------------------------------------------------------ //
-  // Scheduling & Status
+  // 언제
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({
@@ -103,6 +95,10 @@ export class Notifiable {
     default: SendStatus.INIT,
   })
   status: SendStatus;
+
+  // ------------------------------------------------------------------------ //
+  // 대상
+  // ------------------------------------------------------------------------ //
 
   @ApiProperty({
     description: '🈵 발송대상자 리스트. 발송하려면 deduped studentIds 필요',

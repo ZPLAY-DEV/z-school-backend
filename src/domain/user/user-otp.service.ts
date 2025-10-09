@@ -9,7 +9,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { addMinutes, isAfter } from 'date-fns';
 import * as random from 'randomstring';
-import { AlarmType } from 'src/common/enums';
+import { NotifiableSourceType } from 'src/common/enums';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Secret } from 'src/domain/user/entities/secret.entity';
@@ -181,7 +181,7 @@ export class UserOtpService {
       const body = getTemplateOfOtp({ otp });
 
       await this.notificationService.send({
-        type: AlarmType.OTHER,
+        type: NotifiableSourceType.OTHER,
         schoolId: 0,
         messages: [
           {

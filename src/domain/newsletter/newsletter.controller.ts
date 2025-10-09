@@ -8,15 +8,12 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Put,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { IS3Urls } from 'src/common/interfaces';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
-import { ReadStatDto } from 'src/domain/newsletter/dto/read-stat.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { NewsletterService } from 'src/domain/newsletter/newsletter.service';
@@ -24,11 +21,8 @@ import {
   CreateNewsletterDocs,
   DeleteNewsletterDocs,
   FindNewsletterByIdDocs,
-  FindReadStatsDocs,
-  FindReadStatsPaginatedDocs,
   GenerateNewsletterS3UrlsDocs,
   MarkAsReadDocs,
-  ResendNewsletterDocs,
   UpdateNewsletterDocs,
 } from 'src/domain/newsletter/swagger/newsletter-swagger.decorator';
 import { UploadService } from 'src/services/upload/upload.service';
@@ -54,25 +48,9 @@ export class NewsletterController {
     return await this.newsletterService.createNewsletter(dto);
   }
 
-  // TODO: 발송 관련 로직은 Notifiable로 이관 필요
-  // @SendNewsletterDocs()
-  // @Put(':id/send')
-  // async sendNewsletter(...)
-
-  @ResendNewsletterDocs()
-  @Put(':id/resend')
-  async resendNewsletter(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.newsletterService.resendNewsletter(id);
-  }
-
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
-
-  // TODO: Notifiable로 이관 필요
-  // @FindPendingDispatchesDocs()
-  // @Get('pending-items')
-  // async findPendingItems()...
 
   @FindNewsletterByIdDocs()
   @Get(':id')
@@ -80,23 +58,6 @@ export class NewsletterController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Newsletter> {
     return await this.newsletterService.findById(id);
-  }
-
-  @FindReadStatsDocs()
-  @Get(':id/stats')
-  async findReadStats(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<ReadStatDto[]> {
-    return await this.newsletterService.findReadStats(id);
-  }
-
-  @FindReadStatsPaginatedDocs()
-  @Get(':id/stats/paginated')
-  async findReadStatsPaginated(
-    @Param('id', ParseIntPipe) id: number,
-    @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<ReadStatDto>> {
-    return await this.newsletterService.findReadStatsPaginated(id, query);
   }
 
   //? ---------------------------------------------------------------------- ?//

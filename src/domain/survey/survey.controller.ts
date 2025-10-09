@@ -1,44 +1,55 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
   Patch,
   Post,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+import { Public } from 'src/common/decorators/public.decorator';
 import { CreateSurveyDto } from 'src/domain/survey/dto/create-survey.dto';
 import { UpdateSurveyDto } from 'src/domain/survey/dto/update-survey.dto';
 import { Survey } from 'src/domain/survey/entities/survey.entity';
 import { SurveyService } from 'src/domain/survey/survey.service';
+import {
+  CreateSurveyDocs,
+  DeleteSurveyDocs,
+  FindSurveyByIdDocs,
+  MarkAsReadDocs,
+  UpdateSurveyDocs,
+} from 'src/domain/survey/swagger/survey-swagger.decorator';
 
-@ApiTags('⚠️ Surveys ( 설문조사 )')
+@ApiTags('✳️ Surveys ( 설문조사 )')
 @Controller('surveys')
+@UseInterceptors(ClassSerializerInterceptor)
 export class SurveyController {
   constructor(private readonly surveyService: SurveyService) {}
 
   //? ---------------------------------------------------------------------- ?//
-  //? Create
+  //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Survey 생성' })
+  @CreateSurveyDocs()
   @Post()
   async create(@Body() dto: CreateSurveyDto): Promise<Survey> {
     return await this.surveyService.create(dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
-  //? Read
+  //? READ
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Survey 상세 조회' })
+  @FindSurveyByIdDocs()
   @Get(':id')
-  async getSurveyById(@Param('id', ParseIntPipe) id: number): Promise<Survey> {
+  async findDetailById(@Param('id', ParseIntPipe) id: number): Promise<Survey> {
     return await this.surveyService.findById(id, [
       'school',
       'term',
-      'surveyTargets',
       'surveyQuestions',
       'surveyAnswers',
     ]);
@@ -48,12 +59,32 @@ export class SurveyController {
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
 
-  @ApiOperation({ description: 'Survey 수정' })
-  @Patch(':surveyId')
+  @UpdateSurveyDocs()
+  @Patch(':id')
   async update(
-    @Param('surveyId', ParseIntPipe) surveyId: number,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateSurveyDto,
   ): Promise<Survey> {
-    return await this.surveyService.update(surveyId, dto);
+    return await this.surveyService.update(id, dto);
+  }
+
+  @MarkAsReadDocs()
+  @Public()
+  @Patch(':id/parents/:parentId/read')
+  async markAsRead(
+    @Param('id', ParseIntPipe) surveyId: number,
+    @Param('parentId', ParseIntPipe) parentId: number,
+  ): Promise<void> {
+    return await this.surveyService.markAsRead(surveyId, parentId);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? DELETE
+  //? ---------------------------------------------------------------------- ?//
+
+  @DeleteSurveyDocs()
+  @Delete(':id')
+  async deleteSurvey(@Param('id', ParseIntPipe) id: number): Promise<Survey> {
+    return await this.surveyService.delete(id);
   }
 }

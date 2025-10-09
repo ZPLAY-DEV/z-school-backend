@@ -1,8 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Transform } from 'class-transformer';
 import { IsArray } from 'class-validator';
-import { NotifiableTarget } from 'src/common/enums';
-import { SendStatus } from 'src/common/enums/send-status';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -34,7 +32,7 @@ export class Reminder {
   @Column({ type: 'int', unsigned: true })
   termId: number;
 
-  @ApiProperty({ description: '🈳 NotificationId (통합 알림 관리)' })
+  @ApiProperty({ description: '🈳 NotifiableId (통합 알림 관리)' })
   @Column({ type: 'int', unsigned: true, nullable: true })
   notifiableId: number | null;
 
@@ -51,11 +49,11 @@ export class Reminder {
   @Column({ type: 'varchar', length: 16 })
   termName: string;
 
-  @ApiProperty({ description: '🈵 게시글 제목' })
+  @ApiProperty({ description: '🈵 수강신청안내 제목' })
   @Column({ type: 'varchar', length: 64, nullable: true })
   title: string | null;
 
-  @ApiProperty({ description: '🈳 게시글 본문' })
+  @ApiProperty({ description: '🈳 수강신청안내 본문' })
   @Column({ type: 'text', nullable: true })
   body: string | null;
 
@@ -85,61 +83,6 @@ export class Reminder {
     return value as number[] | null;
   })
   studentIds: number[] | null;
-
-  @ApiProperty({
-    description: '🈵 발송 대상 유형; SCHOOL, GRADE, LESSON, GROUP, STUDENT',
-    example: NotifiableTarget.SCHOOL,
-  })
-  @Column({
-    type: 'enum',
-    enum: NotifiableTarget,
-    default: NotifiableTarget.SCHOOL,
-    nullable: true,
-  })
-  target: NotifiableTarget | null;
-
-  @ApiProperty({ description: '🈵 발송 대상 유형' })
-  @Column({
-    type: 'simple-array',
-    comment: '대상별 아이템 아이디',
-    nullable: true,
-  })
-  @Transform(({ value }) => {
-    if (!value) return null;
-    if (Array.isArray(value)) {
-      return value.map((id: string | number) =>
-        typeof id === 'string' ? parseInt(id, 10) : id,
-      );
-    }
-    return value as number[] | null;
-  })
-  targetItems: number[] | null;
-
-  @ApiProperty({ description: '🈵 발송 대상 유형' })
-  @Column({ type: 'varchar', length: 128, nullable: true })
-  targetLabel: string | null;
-
-  @ApiProperty({
-    description: '🈳 발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
-    example: '2025-06-26T00:30:00Z',
-  })
-  @Column({ type: 'timestamp', nullable: true, comment: '발송예약 시각' })
-  scheduledAt: Date | null;
-
-  @ApiProperty({
-    description: '🈳 발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
-    example: '2025-06-26T00:30:00Z',
-  })
-  @Column({ type: 'timestamp', nullable: true, comment: '발송예약 시각' })
-  rescheduledAt: Date | null;
-
-  @ApiProperty({ description: '🈵 발송 상태' })
-  @Column({
-    type: 'enum',
-    enum: SendStatus,
-    default: SendStatus.INIT,
-  })
-  status: SendStatus;
 
   // ------------------------------------------------------------------------ //
 

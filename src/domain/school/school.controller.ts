@@ -25,6 +25,7 @@ import {
   DeleteSchoolDocs,
   FindSchoolDocs,
   GenerateS3UrlsDocs,
+  GetSchoolLessonsDocs,
   ListSchoolsDocs,
   PaginatedSchoolsDocs,
   UpdateSchoolDocs,
@@ -59,6 +60,7 @@ export class SchoolController {
     return await this.schoolService.list(region);
   }
 
+  @GetSchoolLessonsDocs()
   @Get(':id/lessons')
   async getLessons(@Param('id', ParseIntPipe) id: number) {
     return await this.schoolService.getLessons(id);

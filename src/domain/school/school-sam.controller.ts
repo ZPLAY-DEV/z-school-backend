@@ -23,8 +23,10 @@ import { UploadService } from 'src/services/upload/upload.service';
 import {
   CreateSchoolSamBulkDocs,
   CreateSchoolSamBulkDryRunDocs,
+  DownloadSchoolSamExcelDocs,
   SchoolSamListDocs,
   SchoolSamPaginatedDocs,
+  UploadSchoolSamExcelDocs,
 } from './swagger/school-sam.swagger.decorator';
 
 @ApiTags('✳️ Schools > Sams ( 학교 > 담임쌤 )')
@@ -59,6 +61,7 @@ export class SchoolSamController {
     return await this.schoolSamService.createBulk(schoolId, dtos);
   }
 
+  @UploadSchoolSamExcelDocs()
   @Post(':schoolId/sams/upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadStudents(
@@ -76,6 +79,7 @@ export class SchoolSamController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  @DownloadSchoolSamExcelDocs()
   @Get(':schoolId/sams/download')
   async downloadSams(
     @Param('schoolId', ParseIntPipe) schoolId: number,
