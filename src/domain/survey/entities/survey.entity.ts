@@ -37,9 +37,13 @@ export class Survey {
   @Column({ type: 'int', unsigned: true })
   lessonId: number;
 
-  @ApiProperty({ description: '🈳 groupId (반ID)', example: 1 })
-  @Column({ type: 'int', unsigned: true })
-  groupId: number;
+  @ApiProperty({
+    description: '🈳 groupId (반ID)',
+    example: 1,
+    required: false,
+  })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  groupId: number | null;
 
   @ApiProperty({ description: '🈳 notifiableId (알림ID)', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
@@ -70,11 +74,11 @@ export class Survey {
 
   @ApiProperty({ description: 'KPI' })
   @Column({ type: 'int', unsigned: true, default: 0 })
-  totalTargets: number;
+  totalRecipients: number;
 
   @ApiProperty({ description: 'KPI' })
   @Column({ type: 'int', unsigned: true, default: 0 })
-  totalResponded: number;
+  totalAnswered: number;
 
   @ApiProperty({ description: 'KPI' })
   @Column({ type: 'json', default: null })
@@ -124,9 +128,9 @@ export class Survey {
   @JoinColumn({ name: 'lessonId' })
   lesson: Lesson;
 
-  @ManyToOne(() => Group)
+  @ManyToOne(() => Group, { nullable: true })
   @JoinColumn({ name: 'groupId' })
-  group: Group;
+  group: Group | null;
 
   //* 1-to-1 hasOne -------------------------------------------------------- *//
 

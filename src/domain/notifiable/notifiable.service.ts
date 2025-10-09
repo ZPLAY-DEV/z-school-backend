@@ -36,6 +36,7 @@ import {
   getTemplateOfNewsSupplies,
   getTemplateOfRegistration,
 } from 'src/helpers/get-message-body';
+import { translateNotifiableTarget } from 'src/helpers/translate';
 import { NotificationCoreData } from 'src/services/notification/types';
 import { DataSource, In, LessThanOrEqual, Repository } from 'typeorm';
 
@@ -117,13 +118,16 @@ export class NotifiableService {
     // Notifiable 업데이트
     notifiable.target = dto.target;
     notifiable.targetItems = dto.targetItems || null;
-    notifiable.targetLabel = dto.targetLabel || null;
+    notifiable.targetLabel =
+      dto.targetLabel || translateNotifiableTarget(dto.target);
     notifiable.studentIds = studentIds;
-    notifiable.scheduledAt = dto.scheduledAt || new Date(); // null이면 현재 시각으로 설정
-    notifiable.status = SendStatus.SCHEDULED; // 발송 예약 상태로 설정
+    notifiable.scheduledAt = dto.scheduledAt || null;
+    notifiable.status = dto.scheduledAt
+      ? SendStatus.SCHEDULED
+      : SendStatus.INIT; //  발송 예약 상태로 설정
 
     this.logger.log(
-      `⏰ Scheduled send for notifiable ${notifiable.id} at ${notifiable.scheduledAt.toISOString()}`,
+      `⏰ Scheduled send for notifiable ${notifiable.id} at ${notifiable.scheduledAt?.toISOString()}`,
     );
 
     const savedNotifiable = await this.notifiableRepository.save(notifiable);

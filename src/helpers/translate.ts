@@ -26,7 +26,7 @@ export const translateNotifiableTarget = (
     case NotifiableTarget.LESSON:
       return '강좌';
     case NotifiableTarget.GROUP:
-      return '반';
+      return '분반';
     case NotifiableTarget.STUDENT:
       return '학생';
     default:

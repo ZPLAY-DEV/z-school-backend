@@ -38,6 +38,9 @@ export class SurveyController {
   @CreateSurveyDocs()
   @Post()
   async create(@Body() dto: CreateSurveyDto): Promise<Survey> {
+    console.log('📋 Controller received DTO:', JSON.stringify(dto, null, 2));
+    console.log('📋 DTO type:', typeof dto);
+    console.log('📋 DTO constructor:', dto?.constructor?.name);
     return await this.surveyService.create(dto);
   }
 
@@ -49,8 +52,7 @@ export class SurveyController {
   @Get(':id')
   async findDetailById(@Param('id', ParseIntPipe) id: number): Promise<Survey> {
     return await this.surveyService.findById(id, [
-      'school',
-      'term',
+      'notifiable',
       'surveyQuestions',
       'surveyAnswers',
     ]);

@@ -46,7 +46,7 @@ export class SendSurveyDto {
   targetLabel?: string;
 
   @ApiProperty({
-    description: '🈳 발송예약 시각 (없으면 즉시 발송)',
+    description: '🈳 발송예약 시각 (없으면 draft 상태)',
     example: '2025-06-26T00:30:00Z',
     required: false,
   })
@@ -72,9 +72,9 @@ export class CreateSurveyDto {
   lessonId: number;
 
   @ApiProperty({ description: '반 ID', example: 1 })
-  @IsNotEmpty()
+  @IsOptional()
   @IsInt()
-  groupId: number;
+  groupId?: number | null;
 
   @ApiProperty({ description: '설문조사 제목', example: '만족도 조사' })
   @IsNotEmpty()

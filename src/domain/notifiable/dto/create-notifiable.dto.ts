@@ -1,17 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-    IsArray,
-    IsDateString,
-    IsEnum,
-    IsNotEmpty,
-    IsNumber,
-    IsOptional,
-    IsString,
+  IsArray,
+  IsDateString,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
 } from 'class-validator';
 import {
-    NotifiableSourceType,
-    NotifiableTarget,
-    SendStatus,
+  NotifiableSourceType,
+  NotifiableTarget,
+  SendStatus,
 } from 'src/common/enums';
 
 export class CreateNotifiableDto {
@@ -38,14 +38,6 @@ export class CreateNotifiableDto {
   @IsString()
   @IsNotEmpty()
   title: string;
-
-  @ApiProperty({
-    description: '🈵 알림 메시지',
-    example: '공지사항을 확인해주세요.',
-  })
-  @IsString()
-  @IsNotEmpty()
-  message: string;
 
   @ApiProperty({
     description: '🈳 발송예약 시각',
@@ -105,4 +97,3 @@ export class CreateNotifiableDto {
   @IsOptional()
   targetLabel?: string;
 }
-

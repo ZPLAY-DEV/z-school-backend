@@ -40,6 +40,7 @@ export class SchoolTermSurveyService {
     }
 
     return await paginate<Survey>(query, queryBuilder, {
+      relations: ['surveyQuestions', 'surveyAnswers', 'notifiable'],
       sortableColumns: ['id', 'createdAt', 'start', 'end'],
       searchableColumns: ['title', 'intro', 'outro'],
       defaultSortBy: [['id', 'DESC']],

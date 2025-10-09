@@ -35,6 +35,8 @@ export class SurveyService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateSurveyDto): Promise<Survey> {
+    console.log(`🧡🧡🧡🧡🧡`, dto);
+
     try {
       // Notifiable 생성 (send 정보가 있는 경우)
       let notifiable: Notifiable | null = null;
@@ -56,7 +58,7 @@ export class SurveyService {
           schoolId: dto.schoolId,
           termId: dto.termId,
           lessonId: dto.lessonId,
-          groupId: dto.groupId,
+          groupId: dto.groupId || null,
           notifiableId: notifiable?.id || null,
           title: dto.title,
           intro: dto.intro,
