@@ -59,13 +59,12 @@ async function bootstrap() {
 
   const corsOrigins = [
     '*',
-    'http://localhost:3000',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5175',
-    'https://schoolhub.co.kr',
-    'https://admin.schoolhub.co.kr',
-    'https://app.schoolhub.co.kr',
+    'https://qa.xn--ov3b17fd5n5vf.kr',
+    'https://app.xn--ov3b17fd5n5vf.kr',
+    'https://xn--ov3b17fd5n5vf.kr',
   ];
 
   app.enableCors({
