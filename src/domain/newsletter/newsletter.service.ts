@@ -60,7 +60,7 @@ export class NewsletterService {
         this.notifiableRepository.create({
           schoolId: dto.schoolId,
           termId: dto.termId,
-          sourceType: NotifiableSourceType.NEWSLETTER,
+          type: NotifiableSourceType.NEWSLETTER,
           title: title,
           message: dto.body || '공지사항을 확인해주세요.',
         }),

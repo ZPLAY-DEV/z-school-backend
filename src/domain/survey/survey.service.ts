@@ -45,7 +45,7 @@ export class SurveyService {
           this.notifiableRepository.create({
             schoolId: dto.schoolId,
             termId: dto.termId,
-            sourceType: NotifiableSourceType.SURVEY,
+            type: NotifiableSourceType.SURVEY,
             title: dto.title,
             message: dto.intro || '만족도 조사에 참여해주세요.',
           }),

@@ -21,7 +21,7 @@ export class NotifiableStatusItemDto {
   link: string | null;
 
   @ApiProperty({ description: '발송 원천 타입' })
-  sourceType: NotifiableSourceType;
+  type: NotifiableSourceType;
 
   @ApiProperty({
     description: '열람 시각 (읽음 여부 확인용)',

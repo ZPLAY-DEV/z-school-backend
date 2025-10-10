@@ -77,7 +77,7 @@ export class ReminderService {
         this.notifiableRepository.create({
           schoolId: dto.schoolId,
           termId: dto.termId,
-          sourceType: NotifiableSourceType.REMINDER,
+          type: NotifiableSourceType.REMINDER,
           title: title,
           message: dto.body || '수강신청 안내를 확인해주세요.',
         }),

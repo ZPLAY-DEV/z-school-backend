@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
-  NotifiableSourceType,
-  NotifiableTarget,
-  SendStatus,
+    NotifiableSourceType,
+    NotifiableTarget,
+    SendStatus,
 } from 'src/common/enums';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
@@ -12,17 +12,17 @@ import { School } from 'src/domain/school/entities/school.entity';
 import { Survey } from 'src/domain/survey/entities/survey.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
-  Column,
-  CreateDateColumn,
-  DeleteDateColumn,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
-  OneToMany,
-  OneToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    DeleteDateColumn,
+    Entity,
+    Index,
+    JoinColumn,
+    ManyToOne,
+    OneToMany,
+    OneToOne,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('notifiables')
@@ -53,7 +53,7 @@ export class Notifiable {
     enum: NotifiableSourceType,
     comment: '발송 원천 타입',
   })
-  sourceType: NotifiableSourceType;
+  type: NotifiableSourceType;
 
   // ------------------------------------------------------------------------ //
   // Content

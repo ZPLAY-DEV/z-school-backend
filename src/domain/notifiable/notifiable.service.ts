@@ -1,23 +1,23 @@
 import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
+    BadRequestException,
+    Injectable,
+    Logger,
+    NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { nanoid } from 'nanoid';
 import {
-  FilterOperator,
-  paginate,
-  Paginated,
-  PaginateQuery,
+    FilterOperator,
+    paginate,
+    Paginated,
+    PaginateQuery,
 } from 'nestjs-paginate';
 import {
-  NewsletterType,
-  NotifiableSourceType,
-  NotifiableTarget,
-  SendStatus,
+    NewsletterType,
+    NotifiableSourceType,
+    NotifiableTarget,
+    SendStatus,
 } from 'src/common/enums';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { NotifiableStatusItemDto } from 'src/domain/notifiable/dto/notifiable-status-item.dto';
@@ -30,11 +30,11 @@ import { Survey } from 'src/domain/survey/entities/survey.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
 import {
-  getTemplateOfNewsManagement,
-  getTemplateOfNewsRegistrationResult,
-  getTemplateOfNewsSchedule,
-  getTemplateOfNewsSupplies,
-  getTemplateOfRegistration,
+    getTemplateOfNewsManagement,
+    getTemplateOfNewsRegistrationResult,
+    getTemplateOfNewsSchedule,
+    getTemplateOfNewsSupplies,
+    getTemplateOfRegistration,
 } from 'src/helpers/get-message-body';
 import { translateNotifiableTarget } from 'src/helpers/translate';
 import { NotificationCoreData } from 'src/services/notification/types';
@@ -84,15 +84,15 @@ export class NotifiableService {
     }
 
     // SourceType 설정
-    if (!notifiable.sourceType) {
+    if (!notifiable.type) {
       if (notifiable.newsletter) {
-        notifiable.sourceType = NotifiableSourceType.NEWSLETTER;
+        notifiable.type = NotifiableSourceType.NEWSLETTER;
       } else if (notifiable.reminder) {
-        notifiable.sourceType = NotifiableSourceType.REMINDER;
+        notifiable.type = NotifiableSourceType.REMINDER;
       } else if (notifiable.survey) {
-        notifiable.sourceType = NotifiableSourceType.SURVEY;
+        notifiable.type = NotifiableSourceType.SURVEY;
       } else {
-        notifiable.sourceType = NotifiableSourceType.OTHER;
+        notifiable.type = NotifiableSourceType.OTHER;
       }
     }
 
@@ -221,7 +221,7 @@ export class NotifiableService {
       class: recipient.student.class,
       studentCode: recipient.student.studentCode,
       link: recipient.nanoid ? `${this.domain}/${recipient.nanoid}` : null,
-      sourceType: notifiable.sourceType,
+      type: notifiable.type,
       readAt: recipient.readAt,
       answeredAt: recipient.answeredAt,
       createdAt: recipient.createdAt,
@@ -275,7 +275,7 @@ export class NotifiableService {
         class: recipient.student.class,
         studentCode: recipient.student.studentCode,
         link: recipient.nanoid ? `${this.domain}/${recipient.nanoid}` : null,
-        sourceType: notifiable.sourceType,
+        type: notifiable.type,
         readAt: recipient.readAt,
         answeredAt: recipient.answeredAt,
         createdAt: recipient.createdAt,
@@ -551,15 +551,15 @@ export class NotifiableService {
 
     // Source entity 조회 (Newsletter, Reminder, Survey)
     let sourceEntity: Newsletter | Reminder | Survey | null = null;
-    if (notifiable.sourceType === NotifiableSourceType.NEWSLETTER) {
+    if (notifiable.type === NotifiableSourceType.NEWSLETTER) {
       sourceEntity = await this.dataSource.getRepository(Newsletter).findOne({
         where: { notifiableId: notifiable.id },
       });
-    } else if (notifiable.sourceType === NotifiableSourceType.REMINDER) {
+    } else if (notifiable.type === NotifiableSourceType.REMINDER) {
       sourceEntity = await this.dataSource.getRepository(Reminder).findOne({
         where: { notifiableId: notifiable.id },
       });
-    } else if (notifiable.sourceType === NotifiableSourceType.SURVEY) {
+    } else if (notifiable.type === NotifiableSourceType.SURVEY) {
       sourceEntity = await this.dataSource.getRepository(Survey).findOne({
         where: { notifiableId: notifiable.id },
       });
@@ -567,7 +567,7 @@ export class NotifiableService {
 
     if (!sourceEntity) {
       this.logger.warn(
-        `No source entity found for notifiable ${notifiable.id} (type: ${notifiable.sourceType})`,
+        `No source entity found for notifiable ${notifiable.id} (type: ${notifiable.type})`,
       );
       return;
     }
@@ -591,7 +591,7 @@ export class NotifiableService {
     const recipients: Partial<Recipient>[] = [];
 
     // Newsletter는 parent 기준 dedup
-    if (notifiable.sourceType === NotifiableSourceType.NEWSLETTER) {
+    if (notifiable.type === NotifiableSourceType.NEWSLETTER) {
       // parentId 기준으로 dedup (다자녀 학부모는 첫 번째 자녀만 사용)
       const parentMap = new Map<number, Student>();
       for (const student of students) {
@@ -698,7 +698,7 @@ export class NotifiableService {
 
     const shortlink = `${this.domain}/${nanoId}`;
 
-    switch (notifiable.sourceType) {
+    switch (notifiable.type) {
       case NotifiableSourceType.NEWSLETTER: {
         const newsletter = sourceEntity as Newsletter;
         title =
@@ -749,7 +749,7 @@ export class NotifiableService {
       url: shortlink,
       routes: {
         nanoId: nanoId,
-        type: notifiable.sourceType,
+        type: notifiable.type,
         termId: notifiable.termId.toString(),
         studentId: student.id.toString(),
       },
