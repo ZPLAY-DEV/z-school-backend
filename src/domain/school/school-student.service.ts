@@ -620,9 +620,9 @@ export class SchoolStudentService {
         ['studentCode', 'ASC'],
       ],
       filterableColumns: {
-        grade: [FilterOperator.EQ],
-        class: [FilterOperator.EQ],
-        studentCode: [FilterOperator.EQ],
+        grade: [FilterOperator.EQ, FilterOperator.IN],
+        class: [FilterOperator.EQ, FilterOperator.IN],
+        studentCode: [FilterOperator.EQ, FilterOperator.IN],
         name: [FilterOperator.EQ, FilterOperator.ILIKE],
         status: [FilterOperator.EQ, FilterOperator.IN],
         'picks.termId': [FilterOperator.EQ],
