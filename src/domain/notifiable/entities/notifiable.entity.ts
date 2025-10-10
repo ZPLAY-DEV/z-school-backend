@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
-    NotifiableSourceType,
-    NotifiableTarget,
-    SendStatus,
+  NotifiableSourceType,
+  NotifiableTarget,
+  SendStatus,
 } from 'src/common/enums';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
@@ -12,17 +12,17 @@ import { School } from 'src/domain/school/entities/school.entity';
 import { Survey } from 'src/domain/survey/entities/survey.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import {
-    Column,
-    CreateDateColumn,
-    DeleteDateColumn,
-    Entity,
-    Index,
-    JoinColumn,
-    ManyToOne,
-    OneToMany,
-    OneToOne,
-    PrimaryGeneratedColumn,
-    UpdateDateColumn,
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('notifiables')
@@ -73,20 +73,6 @@ export class Notifiable {
   // ------------------------------------------------------------------------ //
   // 언제
   // ------------------------------------------------------------------------ //
-
-  @ApiProperty({
-    description: '🈳 발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
-    example: '2025-06-26T00:30:00Z',
-  })
-  @Column({ type: 'timestamp', nullable: true, comment: '발송예약 시각' })
-  scheduledAt: Date | null;
-
-  @ApiProperty({
-    description: '🈳 실제 발송 시각 (YYYY-MM-DD HH:mm:ss)',
-    example: '2025-06-26T00:30:00Z',
-  })
-  @Column({ type: 'timestamp', nullable: true, comment: '실제 발송 시각' })
-  sentAt: Date | null;
 
   @ApiProperty({ description: '🈵 발송 상태' })
   @Column({
@@ -156,6 +142,20 @@ export class Notifiable {
   // ------------------------------------------------------------------------ //
   // Timestamps
   // ------------------------------------------------------------------------ //
+
+  @ApiProperty({
+    description: '🈳 발송예약 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
+  })
+  @Column({ type: 'timestamp', nullable: true, comment: '발송예약 시각' })
+  scheduledAt: Date | null;
+
+  @ApiProperty({
+    description: '🈳 실제 발송 시각 (YYYY-MM-DD HH:mm:ss)',
+    example: '2025-06-26T00:30:00Z',
+  })
+  @Column({ type: 'timestamp', nullable: true, comment: '실제 발송 시각' })
+  sentAt: Date | null;
 
   @ApiProperty({ description: '🈵 createdAt' })
   @CreateDateColumn()

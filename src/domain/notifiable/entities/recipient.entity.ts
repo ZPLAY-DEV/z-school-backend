@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { NotificationCoreData } from 'src/services/notification/types';
 import {
   Column,
   CreateDateColumn,
@@ -46,6 +47,8 @@ export class Recipient {
     comment: '개인화 컨텍스트 (라우팅에 필요한 추가 정보)',
   })
   context: {
+    schoolId?: number;
+    termId?: number;
     studentId?: number;
     groupId?: number;
     lessonId?: number;
@@ -55,6 +58,14 @@ export class Recipient {
 
   // ------------------------------------------------------------------------ //
   // Delivery Tracking
+  // ------------------------------------------------------------------------ //
+
+  @ApiProperty({ description: '🈳 발송 실패 사유' })
+  @Column({ type: 'json' })
+  payload: NotificationCoreData;
+
+  // ------------------------------------------------------------------------ //
+  // Read Tracking
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({
@@ -70,14 +81,6 @@ export class Recipient {
   })
   @Column({ type: 'timestamp', nullable: true, comment: '발송 실패 시각' })
   failedAt: Date | null;
-
-  @ApiProperty({ description: '🈳 발송 실패 사유' })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  errorMessage: string | null;
-
-  // ------------------------------------------------------------------------ //
-  // Read Tracking
-  // ------------------------------------------------------------------------ //
 
   @ApiProperty({
     description: '🈳 열람 시각 (YYYY-MM-DD HH:mm:ss)',

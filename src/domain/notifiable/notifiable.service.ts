@@ -1,23 +1,23 @@
 import {
-    BadRequestException,
-    Injectable,
-    Logger,
-    NotFoundException,
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { nanoid } from 'nanoid';
 import {
-    FilterOperator,
-    paginate,
-    Paginated,
-    PaginateQuery,
+  FilterOperator,
+  paginate,
+  Paginated,
+  PaginateQuery,
 } from 'nestjs-paginate';
 import {
-    NewsletterType,
-    NotifiableSourceType,
-    NotifiableTarget,
-    SendStatus,
+  NewsletterType,
+  NotifiableSourceType,
+  NotifiableTarget,
+  SendStatus,
 } from 'src/common/enums';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { NotifiableStatusItemDto } from 'src/domain/notifiable/dto/notifiable-status-item.dto';
@@ -30,11 +30,11 @@ import { Survey } from 'src/domain/survey/entities/survey.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { chunk } from 'src/helpers/array';
 import {
-    getTemplateOfNewsManagement,
-    getTemplateOfNewsRegistrationResult,
-    getTemplateOfNewsSchedule,
-    getTemplateOfNewsSupplies,
-    getTemplateOfRegistration,
+  getTemplateOfNewsManagement,
+  getTemplateOfNewsRegistrationResult,
+  getTemplateOfNewsSchedule,
+  getTemplateOfNewsSupplies,
+  getTemplateOfRegistration,
 } from 'src/helpers/get-message-body';
 import { translateNotifiableTarget } from 'src/helpers/translate';
 import { NotificationCoreData } from 'src/services/notification/types';
@@ -618,9 +618,15 @@ export class NotifiableService {
           studentId: student.id, // 대표 학생 (첫 번째 자녀)
           nanoid: nanoId,
           context: context,
+          payload: this._buildNotificationCoreData(
+            nanoId,
+            student,
+            term,
+            notifiable,
+            sourceEntity,
+          ),
           sentAt: null,
           failedAt: null,
-          errorMessage: null,
           readAt: null,
           answeredAt: null,
         };
@@ -642,9 +648,15 @@ export class NotifiableService {
           studentId: student.id,
           nanoid: nanoId,
           context: context,
+          payload: this._buildNotificationCoreData(
+            nanoId,
+            student,
+            term,
+            notifiable,
+            sourceEntity,
+          ),
           sentAt: null,
           failedAt: null,
-          errorMessage: null,
           readAt: null,
           answeredAt: null,
         };
