@@ -253,7 +253,13 @@ export class NotifiableService {
       .addOrderBy('student.studentCode', 'ASC');
 
     const paginatedResult = await paginate<Recipient>(query, queryBuilder, {
-      sortableColumns: ['id', 'student.name', 'student.grade', 'createdAt'],
+      relations: ['student'],
+      sortableColumns: [
+        'id',
+        'student.grade',
+        'student.class',
+        'student.studentCode',
+      ],
       searchableColumns: ['student.name'],
       defaultSortBy: [
         ['student.grade', 'ASC'],
