@@ -6,14 +6,16 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
+import { CreateNotifiableDto } from 'src/domain/notifiable/dto/create-notifiable.dto';
 import { NotifiableStatusItemDto } from 'src/domain/notifiable/dto/notifiable-status-item.dto';
-import { SendNotifiableDto } from 'src/domain/notifiable/dto/send-notifiable.dto';
+import { UpdateNotifiableDto } from 'src/domain/notifiable/dto/update-notifiable.dto';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { NotifiableService } from 'src/domain/notifiable/notifiable.service';
 import {
@@ -21,7 +23,9 @@ import {
   GetNotifiableStatusItemsDocs,
   GetNotifiableStatusItemsPaginatedDocs,
   ResendNotifiableDocs,
+  SaveNotifiableDocs,
   SendNotifiableDocs,
+  UpdateNotifiableDocs,
 } from './swagger/notifiable-swagger.decorator';
 
 @ApiTags('✳️ Notifiables ( 알림 발송 )')
@@ -34,10 +38,16 @@ export class NotifiableController {
   //? CREATE / SEND
   //? ---------------------------------------------------------------------- ?//
 
+  @SaveNotifiableDocs()
+  @Post()
+  async save(@Body() dto: CreateNotifiableDto): Promise<Notifiable> {
+    return await this.notifiableService.save(dto);
+  }
+
   @SendNotifiableDocs()
-  @Post('send')
-  send(@Body() dto: SendNotifiableDto): Promise<Notifiable> {
-    return this.notifiableService.send(dto);
+  @Post('send/:id')
+  async send(@Param('id', ParseIntPipe) id: number): Promise<Notifiable> {
+    return await this.notifiableService.send(id);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -78,6 +88,15 @@ export class NotifiableController {
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
+
+  @UpdateNotifiableDocs()
+  @Patch(':id')
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateNotifiableDto,
+  ): Promise<Notifiable> {
+    return await this.notifiableService.update(id, dto);
+  }
 
   @ResendNotifiableDocs()
   @Put(':id/resend')

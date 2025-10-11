@@ -1,24 +1,27 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { NewsletterType, NotifiableSourceType } from 'src/common/enums';
+import {
+  NewsletterType,
+  NotifiableSourceType,
+  SendStatus,
+} from 'src/common/enums';
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
 import { NotifiableService } from 'src/domain/notifiable/notifiable.service';
-import { School } from 'src/domain/school/entities/school.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { Term } from 'src/domain/term/entities/term.entity';
-import { NotificationService } from 'src/services/notification/notification.service';
-import { SlackService } from 'src/services/slack/slack.service';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
 @Injectable()
 export class NewsletterService {
   private readonly logger = new Logger(NewsletterService.name);
-  private readonly domain;
   constructor(
     @InjectRepository(Newsletter)
     private readonly newsletterRepository: Repository<Newsletter>,
@@ -26,94 +29,61 @@ export class NewsletterService {
     private readonly notifiableRepository: Repository<Notifiable>,
     @InjectRepository(Recipient)
     private readonly recipientRepository: Repository<Recipient>,
-    @InjectRepository(Term)
-    private readonly termRepository: Repository<Term>,
-    @InjectRepository(School)
-    private readonly schoolRepository: Repository<School>,
     private readonly dataSource: DataSource,
-    private readonly slack: SlackService,
-    private readonly notificationService: NotificationService,
     private readonly notifiableService: NotifiableService,
-    private readonly configService: ConfigService,
-  ) {
-    this.domain =
-      this.configService.get('nodeEnv') === 'prod'
-        ? 'https://스쿨허브.kr'
-        : 'https://dev.스쿨허브.kr';
-  }
+  ) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? CREATE
   //? ---------------------------------------------------------------------- ?//
 
   async createNewsletter(dto: CreateNewsletterDto): Promise<Newsletter> {
-    const school = await this._checkSchoolValidity(dto.schoolId);
-    const term = await this._checkTermValidity(dto.termId);
-
-    const title = dto.title || `[${school.name}] ${term.termName} 공지사항`;
     const newsletterType = dto.type || NewsletterType.CHANGES;
 
-    // Notifiable 생성 (send 정보가 있는 경우)
     let notifiable: Notifiable | null = null;
-    if (dto.send) {
-      notifiable = await this.notifiableRepository.save(
-        this.notifiableRepository.create({
+    try {
+      if (dto.send) {
+        notifiable = await this.notifiableService.save({
           schoolId: dto.schoolId,
           termId: dto.termId,
           type: NotifiableSourceType.NEWSLETTER,
-          title: title,
-          message: dto.body || '공지사항을 확인해주세요.',
+          title: dto.title || `공지사항`,
+          status: SendStatus.INIT,
+          target: dto.send.target,
+          targetItems: dto.send.targetItems,
+          targetLabel: dto.send.targetLabel,
+          scheduledAt: dto.send.scheduledAt,
+        });
+      }
+
+      // Newsletter 생성
+      const newsletter = await this.newsletterRepository.save(
+        this.newsletterRepository.create({
+          schoolId: dto.schoolId,
+          termId: dto.termId,
+          notifiableId: notifiable?.id || null,
+          title: dto.title || `공지사항`,
+          body: dto.body || null,
+          images: dto.images || null,
+          type: newsletterType,
         }),
       );
+
+      // 발송 예약 (send 정보의 scheduledAt가 있는 경우)
+      if (dto.send && dto.send.scheduledAt && notifiable) {
+        await this.notifiableService.send(notifiable.id);
+      }
+
+      return newsletter;
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
     }
-
-    // Newsletter 생성
-    const newsletter = await this.newsletterRepository.save(
-      this.newsletterRepository.create({
-        schoolId: dto.schoolId,
-        termId: dto.termId,
-        notifiableId: notifiable?.id || null,
-        schoolName: school.name,
-        termName: term.termName,
-        title: title,
-        body: dto.body || null,
-        images: dto.images || null,
-        type: newsletterType,
-      }),
-    );
-
-    // 발송 예약 (send 정보가 있는 경우)
-    if (dto.send && notifiable) {
-      await this.notifiableService.send({
-        notifiableId: notifiable.id,
-        target: dto.send.target,
-        targetItems: dto.send.targetItems,
-        targetLabel: dto.send.targetLabel,
-        scheduledAt: dto.send.scheduledAt,
-      });
-    }
-
-    return newsletter;
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? READ
   //? ---------------------------------------------------------------------- ?//
-
-  async findRegistrationNewsletter(
-    schoolId: number,
-    termId: number,
-  ): Promise<Newsletter> {
-    const newsletter = await this.newsletterRepository.findOne({
-      where: { schoolId, termId },
-    });
-
-    if (!newsletter) {
-      throw new NotFoundException('Newsletter not found');
-    }
-
-    return newsletter;
-  }
 
   async findById(id: number, relations?: string[]): Promise<Newsletter> {
     const newsletter = await this.newsletterRepository.findOne({
@@ -133,6 +103,59 @@ export class NewsletterService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateNewsletterDto): Promise<Newsletter> {
+    // send 키가 있는 경우, notifiable 업데이트 로직 처리
+    if (dto.send) {
+      const existingNewsletter = await this.newsletterRepository.findOne({
+        where: { id },
+        relations: ['notifiable'],
+      });
+
+      if (!existingNewsletter) {
+        throw new NotFoundException('Newsletter not found');
+      }
+
+      if (existingNewsletter.notifiable) {
+        const { status } = existingNewsletter.notifiable;
+
+        // SCHEDULED나 SENT 상태인 경우 오류 발생
+        if (status === SendStatus.SCHEDULED || status === SendStatus.SENT) {
+          throw new BadRequestException('변경 가능한 상태가 아닙니다.');
+        }
+
+        // INIT 상태인 경우 notifiable 업데이트
+        if (status === SendStatus.INIT) {
+          await this.notifiableRepository.update(
+            existingNewsletter.notifiable.id,
+            {
+              title: dto.title || existingNewsletter.title || '',
+              target: dto.send.target,
+              targetItems: dto.send.targetItems || undefined,
+              targetLabel: dto.send.targetLabel || undefined,
+              scheduledAt: dto.send.scheduledAt || null,
+            },
+          );
+        }
+      } else {
+        // notifiable이 없는 경우 새로 생성
+        const notifiable = await this.notifiableService.save({
+          schoolId: existingNewsletter.schoolId,
+          termId: existingNewsletter.termId,
+          type: NotifiableSourceType.NEWSLETTER,
+          title: dto.title || existingNewsletter.title || '',
+          status: SendStatus.INIT,
+          target: dto.send.target,
+          targetItems: dto.send.targetItems,
+          targetLabel: dto.send.targetLabel,
+          scheduledAt: dto.send.scheduledAt,
+        });
+
+        // Newsletter에 notifiableId 연결
+        existingNewsletter.notifiableId = notifiable.id;
+        await this.newsletterRepository.save(existingNewsletter);
+      }
+    }
+
+    // Newsletter 업데이트
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       const newsletter = await this.newsletterRepository.preload({
         id,
@@ -250,28 +273,4 @@ export class NewsletterService {
 
     return await this.newsletterRepository.softRemove(newsletter);
   }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? Private Methods
-  //? ---------------------------------------------------------------------- ?//
-
-  private async _checkSchoolValidity(schoolId: number): Promise<School> {
-    const school = await this.schoolRepository.findOne({
-      where: { id: schoolId },
-    });
-    if (!school) {
-      throw new NotFoundException('⚠️ School not found');
-    }
-    return school;
-  }
-
-  private async _checkTermValidity(termId: number): Promise<Term> {
-    const term = await this.termRepository.findOne({ where: { id: termId } });
-    if (!term) {
-      throw new NotFoundException('⚠️ Term not found');
-    }
-    return term;
-  }
-
-  // TODO: Helper methods 재구현 필요
 }

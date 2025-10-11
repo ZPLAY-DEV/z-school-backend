@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { NotifiableSourceType } from 'src/common/enums';
+import { NotifiableSourceType, SendStatus } from 'src/common/enums';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
 import { NotifiableService } from 'src/domain/notifiable/notifiable.service';
@@ -73,15 +73,15 @@ export class ReminderService {
     // Notifiable 생성 (send 정보가 있는 경우)
     let notifiable: Notifiable | null = null;
     if (dto.send) {
-      notifiable = await this.notifiableRepository.save(
-        this.notifiableRepository.create({
-          schoolId: dto.schoolId,
-          termId: dto.termId,
-          type: NotifiableSourceType.REMINDER,
-          title: title,
-          message: dto.body || '수강신청 안내를 확인해주세요.',
-        }),
-      );
+      notifiable = await this.notifiableService.save({
+        schoolId: dto.schoolId,
+        termId: dto.termId,
+        type: NotifiableSourceType.REMINDER,
+        title: title,
+        status: SendStatus.INIT,
+        target: dto.send.target,
+        scheduledAt: dto.send.scheduledAt,
+      });
     }
 
     // Reminder 생성
@@ -100,13 +100,7 @@ export class ReminderService {
 
     // 발송 예약 (send 정보가 있는 경우)
     if (dto.send && notifiable) {
-      await this.notifiableService.send({
-        notifiableId: notifiable.id,
-        target: dto.send.target,
-        targetItems: undefined, // Reminder는 항상 전교생 대상
-        targetLabel: '전교생',
-        scheduledAt: dto.send.scheduledAt,
-      });
+      await this.notifiableService.send(notifiable.id);
     }
 
     return reminder;
@@ -149,6 +143,55 @@ export class ReminderService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateReminderDto): Promise<Reminder> {
+    // send 키가 있는 경우, notifiable 업데이트 로직 처리
+    if (dto.send) {
+      const existingReminder = await this.reminderRepository.findOne({
+        where: { id },
+        relations: ['notifiable'],
+      });
+
+      if (!existingReminder) {
+        throw new NotFoundException('Reminder not found');
+      }
+
+      if (existingReminder.notifiable) {
+        const { status } = existingReminder.notifiable;
+
+        // SCHEDULED나 SENT 상태인 경우 오류 발생
+        if (status === SendStatus.SCHEDULED || status === SendStatus.SENT) {
+          throw new BadRequestException('변경 가능한 상태가 아닙니다.');
+        }
+
+        // INIT 상태인 경우 notifiable 업데이트
+        if (status === SendStatus.INIT) {
+          await this.notifiableRepository.update(
+            existingReminder.notifiable.id,
+            {
+              title: dto.title || existingReminder.title || '',
+              target: dto.send.target,
+              scheduledAt: dto.send.scheduledAt || null,
+            },
+          );
+        }
+      } else {
+        // notifiable이 없는 경우 새로 생성
+        const notifiable = await this.notifiableService.save({
+          schoolId: existingReminder.schoolId,
+          termId: existingReminder.termId,
+          type: NotifiableSourceType.REMINDER,
+          title: dto.title || existingReminder.title || '',
+          status: SendStatus.INIT,
+          target: dto.send.target,
+          scheduledAt: dto.send.scheduledAt,
+        });
+
+        // Reminder에 notifiableId 연결
+        existingReminder.notifiableId = notifiable.id;
+        await this.reminderRepository.save(existingReminder);
+      }
+    }
+
+    // Reminder 업데이트
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       const reminder = await this.reminderRepository.preload({
         id,

@@ -66,16 +66,6 @@ export class CreateSurveyDto {
   @IsInt()
   termId: number;
 
-  @ApiProperty({ description: '과목 ID', example: 1 })
-  @IsNotEmpty()
-  @IsInt()
-  lessonId: number;
-
-  @ApiProperty({ description: '반 ID', example: 1 })
-  @IsOptional()
-  @IsInt()
-  groupId?: number | null;
-
   @ApiProperty({ description: '설문조사 제목', example: '만족도 조사' })
   @IsNotEmpty()
   @IsString()
@@ -132,7 +122,7 @@ export class CreateSurveyDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateSurveyQuestionDto)
-  questions: CreateSurveyQuestionDto[];
+  surveyQuestions: CreateSurveyQuestionDto[];
 
   @ApiProperty({
     description: '🈳 발송 정보 (발송하려면 필수)',

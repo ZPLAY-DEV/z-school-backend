@@ -1,22 +1,87 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiQuery,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiCreatedResponseTemplate } from 'src/common/swagger/response/api-created.response';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
+import { CreateNotifiableDto } from '../dto/create-notifiable.dto';
 import { NotifiableStatusItemDto } from '../dto/notifiable-status-item.dto';
 import { SendNotifiableDto } from '../dto/send-notifiable.dto';
+import { UpdateNotifiableDto } from '../dto/update-notifiable.dto';
 import { Notifiable } from '../entities/notifiable.entity';
 
 //? ---------------------------------------------------------------------- ?//
 //? Notifiable Controller - CREATE / SEND
 //? ---------------------------------------------------------------------- ?//
+
+export const SaveNotifiableDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '💾 Notifiable 생성',
+      description:
+        'Notifiable을 생성합니다. 발송 대상과 예약 시간을 설정할 수 있습니다.',
+    }),
+    ApiBody({
+      type: CreateNotifiableDto,
+      examples: {
+        'school-wide': {
+          summary: '전교생 대상',
+          description: '전교생 대상 Notifiable 생성',
+          value: {
+            schoolId: 1,
+            termId: 1,
+            type: 'NEWSLETTER',
+            title: '중요 공지사항',
+            status: 'INIT',
+            target: 'SCHOOL',
+            targetLabel: '전교생',
+            scheduledAt: null,
+          },
+        },
+        'grade-specific': {
+          summary: '학년별 대상',
+          description: '특정 학년 대상 Notifiable 생성',
+          value: {
+            schoolId: 1,
+            termId: 1,
+            type: 'NEWSLETTER',
+            title: '3학년 현장학습 안내',
+            status: 'SCHEDULED',
+            target: 'GRADE',
+            targetItems: [3],
+            targetLabel: '3학년',
+            scheduledAt: '2025-03-15T09:00:00Z',
+          },
+        },
+        'lesson-specific': {
+          summary: '과목별 대상',
+          description: '특정 과목 수강생 대상 Notifiable 생성',
+          value: {
+            schoolId: 1,
+            termId: 1,
+            type: 'REMINDER',
+            title: '미술반 준비물 안내',
+            status: 'INIT',
+            target: 'LESSON',
+            targetItems: [10],
+            targetLabel: '미술반',
+          },
+        },
+      },
+    }),
+    ApiCreatedResponseTemplate({
+      description: 'Notifiable 생성 완료',
+      type: Notifiable,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+};
 
 export const SendNotifiableDocs = () => {
   return applyDecorators(
@@ -88,6 +153,67 @@ export const SendNotifiableDocs = () => {
 //? ---------------------------------------------------------------------- ?//
 //? Notifiable Controller - UPDATE
 //? ---------------------------------------------------------------------- ?//
+
+export const UpdateNotifiableDocs = () => {
+  return applyDecorators(
+    ApiOperation({
+      summary: '✏️ Notifiable 수정',
+      description:
+        'Notifiable의 정보를 수정합니다 (제목, 발송 대상, 예약 시간 등).',
+    }),
+    ApiParam({
+      name: 'id',
+      type: Number,
+      description: '수정할 Notifiable의 ID',
+      example: 1,
+    }),
+    ApiBody({
+      type: UpdateNotifiableDto,
+      examples: {
+        'update-title': {
+          summary: '제목 수정',
+          description: 'Notifiable 제목만 수정',
+          value: {
+            title: '수정된 공지사항 제목',
+          },
+        },
+        'update-target': {
+          summary: '발송 대상 수정',
+          description: '발송 대상을 3학년으로 변경',
+          value: {
+            target: 'GRADE',
+            targetItems: [3],
+            targetLabel: '3학년',
+          },
+        },
+        'update-schedule': {
+          summary: '예약 시간 수정',
+          description: '발송 예약 시간 변경',
+          value: {
+            scheduledAt: '2025-03-20T14:00:00Z',
+            status: 'SCHEDULED',
+          },
+        },
+        'update-all': {
+          summary: '전체 정보 수정',
+          description: '제목, 대상, 예약 시간 모두 수정',
+          value: {
+            title: '긴급 공지사항',
+            target: 'SCHOOL',
+            targetLabel: '전교생',
+            scheduledAt: '2025-03-18T09:00:00Z',
+            status: 'SCHEDULED',
+          },
+        },
+      },
+    }),
+    ApiOkResponseTemplate({
+      description: 'Notifiable 수정 완료',
+      type: Notifiable,
+    }),
+    ApiStatuses(StatusCodes.NOT_FOUND, StatusCodes.BAD_REQUEST),
+  );
+};
 
 export const ResendNotifiableDocs = () => {
   return applyDecorators(

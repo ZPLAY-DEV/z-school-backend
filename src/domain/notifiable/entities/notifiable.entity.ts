@@ -22,11 +22,13 @@ import {
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('notifiables')
 @Index(['schoolId', 'termId'])
+@Unique(['schoolId', 'termId', 'type', 'title'])
 export class Notifiable {
   @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
@@ -59,7 +61,7 @@ export class Notifiable {
   // Content
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({ description: '🈵 알림 제목', example: '새로운 공지사항' })
+  @ApiProperty({ description: '🈵 알림 제목', example: '알림 제목' })
   @Column({ type: 'varchar', length: 128 })
   title: string;
 
@@ -67,8 +69,8 @@ export class Notifiable {
     description: '🈵 알림 메시지',
     example: '공지사항을 확인해주세요.',
   })
-  @Column({ type: 'text' })
-  message: string;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  message: string | null;
 
   // ------------------------------------------------------------------------ //
   // 언제
@@ -108,15 +110,14 @@ export class Notifiable {
 
   @ApiProperty({
     description: '🈵 발송 대상 유형; SCHOOL, GRADE, LESSON, GROUP, STUDENT',
-    example: NotifiableTarget.SCHOOL,
+    example: NotifiableTarget.GRADE,
   })
   @Column({
     type: 'enum',
     enum: NotifiableTarget,
-    default: NotifiableTarget.SCHOOL,
-    nullable: true,
+    default: NotifiableTarget.GRADE,
   })
-  target: NotifiableTarget | null;
+  target: NotifiableTarget;
 
   @ApiProperty({ description: '🈵 발송 대상 유형' })
   @Column({

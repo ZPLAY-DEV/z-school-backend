@@ -39,17 +39,6 @@ export class Newsletter {
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({
-    description: '🈳 학교명',
-    example: '홍익대학교 사범대학 부속 초등학교',
-  })
-  @Column({ type: 'varchar', length: 24 })
-  schoolName: string; // 관리자 편의를 위한 Column.
-
-  @ApiProperty({ description: '늘봄학교 수강기간명', example: '2025-1학기' })
-  @Column({ type: 'varchar', length: 16 })
-  termName: string;
-
   @ApiProperty({ description: '🈵 게시글 제목' })
   @Column({ type: 'varchar', length: 64, nullable: true })
   title: string | null;

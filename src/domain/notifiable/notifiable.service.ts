@@ -20,8 +20,9 @@ import {
   SendStatus,
 } from 'src/common/enums';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { CreateNotifiableDto } from 'src/domain/notifiable/dto/create-notifiable.dto';
 import { NotifiableStatusItemDto } from 'src/domain/notifiable/dto/notifiable-status-item.dto';
-import { SendNotifiableDto } from 'src/domain/notifiable/dto/send-notifiable.dto';
+import { UpdateNotifiableDto } from 'src/domain/notifiable/dto/update-notifiable.dto';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
 import { Reminder } from 'src/domain/reminder/entities/reminder.entity';
@@ -36,7 +37,6 @@ import {
   getTemplateOfNewsSupplies,
   getTemplateOfRegistration,
 } from 'src/helpers/get-message-body';
-import { translateNotifiableTarget } from 'src/helpers/translate';
 import { NotificationCoreData } from 'src/services/notification/types';
 import { DataSource, In, LessThanOrEqual, Repository } from 'typeorm';
 
@@ -66,42 +66,90 @@ export class NotifiableService {
   //? ---------------------------------------------------------------------- ?//
 
   /**
+   * Notifiable 생성 (upsert)
+   * - [schoolId, termId, type, title]이 동일한 레코드가 있으면 업데이트
+   * - 없으면 새로 생성
+   */
+  async save(dto: CreateNotifiableDto): Promise<Notifiable> {
+    // target이 있으면 학생 목록 조회
+    let studentIds: number[] | null = null;
+    if (dto.target) {
+      const students = await this._getStudentsByTarget(
+        dto.schoolId,
+        dto.termId,
+        dto.target,
+        dto.targetItems,
+      );
+      studentIds = Array.from(new Set(students.map((s) => s.id)));
+    }
+
+    // 기존 notifiable 조회 (unique constraint 기준)
+    const existing = await this.notifiableRepository.findOne({
+      where: {
+        schoolId: dto.schoolId,
+        termId: dto.termId,
+        type: dto.type,
+        title: dto.title,
+      },
+    });
+
+    if (existing) {
+      // 기존 레코드가 있으면 업데이트
+      existing.status = dto.status || existing.status;
+      existing.target = dto.target || existing.target;
+      existing.targetItems = dto.targetItems || existing.targetItems;
+      existing.targetLabel = dto.targetLabel || existing.targetLabel;
+      existing.studentIds = studentIds || existing.studentIds;
+      existing.scheduledAt = dto.scheduledAt || existing.scheduledAt;
+
+      return await this.notifiableRepository.save(existing);
+    }
+
+    // 새로 생성
+    const notifiable = this.notifiableRepository.create({
+      schoolId: dto.schoolId,
+      termId: dto.termId,
+      type: dto.type,
+      title: dto.title,
+      message: null,
+      status: dto.status || SendStatus.INIT,
+      target: dto.target,
+      targetItems: dto.targetItems || null,
+      targetLabel: dto.targetLabel || null,
+      studentIds: studentIds,
+      scheduledAt: dto.scheduledAt || null,
+    });
+
+    return await this.notifiableRepository.save(notifiable);
+  }
+
+  /**
    * Notifiable 발송
-   * - 발송 대상 설정 및 학생 목록 조회
-   * - Recipients 생성 및 발송 예약
+   * - notifiableId로 지정된 Notifiable을 발송 예약
+   * - _generateRecipients 생성 후 status를 INIT => SCHEDULED로 변경
    * - 실제 발송은 Queue Handler Lambda 함수가 처리
    */
-  async send(dto: SendNotifiableDto): Promise<Notifiable> {
-    const notifiable = await this.findById(dto.notifiableId, [
+  async send(notifiableId: number): Promise<Notifiable> {
+    const notifiable = await this.findById(notifiableId, [
       'newsletter',
       'survey',
       'reminder',
     ]);
 
     // 이미 발송된 경우 예외 처리
+    if (notifiable.status === SendStatus.SCHEDULED) {
+      throw new BadRequestException('이미 발송 예약된 알림입니다.');
+    }
     if (notifiable.status === SendStatus.SENT) {
       throw new BadRequestException('이미 발송된 알림입니다.');
-    }
-
-    // SourceType 설정
-    if (!notifiable.type) {
-      if (notifiable.newsletter) {
-        notifiable.type = NotifiableSourceType.NEWSLETTER;
-      } else if (notifiable.reminder) {
-        notifiable.type = NotifiableSourceType.REMINDER;
-      } else if (notifiable.survey) {
-        notifiable.type = NotifiableSourceType.SURVEY;
-      } else {
-        notifiable.type = NotifiableSourceType.OTHER;
-      }
     }
 
     // 발송 대상 학생 목록 조회
     const students = await this._getStudentsByTarget(
       notifiable.schoolId,
       notifiable.termId,
-      dto.target,
-      dto.targetItems,
+      notifiable.target,
+      notifiable.targetItems || undefined,
     );
 
     if (students.length === 0) {
@@ -111,31 +159,16 @@ export class NotifiableService {
     // 중복 제거된 학생 ID 목록
     const studentIds = Array.from(new Set(students.map((s) => s.id)));
 
-    this.logger.log(
-      `📤 Preparing to send notifiable ${dto.notifiableId} to ${studentIds.length} students`,
-    );
-
-    // Notifiable 업데이트
-    notifiable.target = dto.target;
-    notifiable.targetItems = dto.targetItems || null;
-    notifiable.targetLabel =
-      dto.targetLabel || translateNotifiableTarget(dto.target);
+    // studentIds 업데이트
     notifiable.studentIds = studentIds;
-    notifiable.scheduledAt = dto.scheduledAt || null;
-    notifiable.status = dto.scheduledAt
-      ? SendStatus.SCHEDULED
-      : SendStatus.INIT; //  발송 예약 상태로 설정
 
-    this.logger.log(
-      `⏰ Scheduled send for notifiable ${notifiable.id} at ${notifiable.scheduledAt?.toISOString()}`,
-    );
+    // Recipients 생성
+    await this._generateRecipients(notifiable);
+
+    // status를 SCHEDULED로 변경
+    notifiable.status = SendStatus.SCHEDULED;
 
     const savedNotifiable = await this.notifiableRepository.save(notifiable);
-
-    // Recipients 생성 (studentIds가 있는 경우에만)
-    if (savedNotifiable.studentIds && savedNotifiable.studentIds.length > 0) {
-      await this._generateRecipients(savedNotifiable);
-    }
 
     return savedNotifiable;
   }
@@ -295,20 +328,58 @@ export class NotifiableService {
     };
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? UPDATE
+  //? ---------------------------------------------------------------------- ?//
+
   /**
-   * 발송 상태 업데이트
+   * Notifiable 수정
    */
-  async updateStatus(
-    id: number,
-    status: SendStatus,
-    sentAt?: Date,
-  ): Promise<Notifiable> {
+  async update(id: number, dto: UpdateNotifiableDto): Promise<Notifiable> {
     const notifiable = await this.findById(id);
 
-    notifiable.status = status;
-    if (sentAt) {
-      notifiable.sentAt = sentAt;
+    // DTO에서 제공된 필드만 업데이트
+    if (dto.schoolId !== undefined) notifiable.schoolId = dto.schoolId;
+    if (dto.termId !== undefined) notifiable.termId = dto.termId;
+    if (dto.type !== undefined) notifiable.type = dto.type;
+    if (dto.title !== undefined) notifiable.title = dto.title;
+    if (dto.status !== undefined) notifiable.status = dto.status;
+    if (dto.target !== undefined) notifiable.target = dto.target;
+    if (dto.targetItems !== undefined) notifiable.targetItems = dto.targetItems;
+    if (dto.targetLabel !== undefined) notifiable.targetLabel = dto.targetLabel;
+    if (dto.scheduledAt !== undefined) notifiable.scheduledAt = dto.scheduledAt;
+
+    // target이 변경되었거나 targetItems가 변경된 경우 studentIds 재계산
+    if (dto.target !== undefined || dto.targetItems !== undefined) {
+      const currentTarget =
+        dto.target !== undefined ? dto.target : notifiable.target;
+      const currentTargetItems =
+        dto.targetItems !== undefined
+          ? dto.targetItems
+          : notifiable.targetItems;
+
+      if (currentTarget) {
+        const students = await this._getStudentsByTarget(
+          notifiable.schoolId,
+          notifiable.termId,
+          currentTarget,
+          currentTargetItems || undefined,
+        );
+        notifiable.studentIds = Array.from(new Set(students.map((s) => s.id)));
+      }
     }
+
+    return await this.notifiableRepository.save(notifiable);
+  }
+
+  /**
+   * 상태를 발송으로 업데이트하는 helper 함수
+   */
+  async updateStatusToSent(id: number): Promise<Notifiable> {
+    const notifiable = await this.findById(id);
+
+    notifiable.status = SendStatus.SENT;
+    notifiable.sentAt = new Date();
 
     return await this.notifiableRepository.save(notifiable);
   }
@@ -372,7 +443,7 @@ export class NotifiableService {
   async delete(id: number): Promise<Notifiable> {
     const notifiable = await this.findById(id);
 
-    // Recipients도 함께 삭제
+    // Recipients 는 사전에 완전 제거
     await this.recipientRepository.delete({
       notifiableId: id,
     });
@@ -560,14 +631,17 @@ export class NotifiableService {
     if (notifiable.type === NotifiableSourceType.NEWSLETTER) {
       sourceEntity = await this.dataSource.getRepository(Newsletter).findOne({
         where: { notifiableId: notifiable.id },
+        relations: ['school', 'term'],
       });
     } else if (notifiable.type === NotifiableSourceType.REMINDER) {
       sourceEntity = await this.dataSource.getRepository(Reminder).findOne({
         where: { notifiableId: notifiable.id },
+        relations: ['school', 'term'],
       });
     } else if (notifiable.type === NotifiableSourceType.SURVEY) {
       sourceEntity = await this.dataSource.getRepository(Survey).findOne({
         where: { notifiableId: notifiable.id },
+        relations: ['school', 'term'],
       });
     }
 
@@ -728,10 +802,12 @@ export class NotifiableService {
 
       case NotifiableSourceType.REMINDER: {
         const reminder = sourceEntity as Reminder;
+        const schoolName = reminder.school.name;
+        const termName = reminder.term.termName;
         title = reminder.title || '수강 신청 안내';
         body = getTemplateOfRegistration({
-          school: reminder.schoolName,
-          term: reminder.termName,
+          school: schoolName,
+          term: termName,
           period: term.bookingPeriod,
           shortlink: shortlink,
         });
@@ -741,10 +817,7 @@ export class NotifiableService {
 
       case NotifiableSourceType.SURVEY: {
         const survey = sourceEntity as Survey;
-        const schoolName =
-          typeof notifiable.school === 'string'
-            ? notifiable.school
-            : notifiable.school?.name || '학교';
+        const schoolName = survey.school.name;
         title = survey.title || '만족도 조사';
         body = `[${schoolName}] 만족도 조사\n\n${survey.intro || ''}\n\n◼ 참여하기 : ${shortlink}`;
         template = 'Survey1';
@@ -753,7 +826,7 @@ export class NotifiableService {
 
       default:
         title = notifiable.title || '새로운 알림';
-        body = notifiable.message;
+        body = notifiable.message || '';
         template = 'Unknown';
     }
 
@@ -785,29 +858,29 @@ export class NotifiableService {
     switch (newsletter.type) {
       case NewsletterType.CHANGES:
         return getTemplateOfNewsSchedule({
-          school: newsletter.schoolName,
-          term: newsletter.termName,
+          school: newsletter.school.name,
+          term: newsletter.term.termName,
           title: newsletter.title || '수업 일정 안내',
           shortlink: shortlink,
         });
       case NewsletterType.MANAGEMENT:
         return getTemplateOfNewsManagement({
-          school: newsletter.schoolName,
-          term: newsletter.termName,
+          school: newsletter.school.name,
+          term: newsletter.term.termName,
           title: newsletter.title || '수업 운영 안내',
           shortlink: shortlink,
         });
       case NewsletterType.SUPPLIES:
         return getTemplateOfNewsSupplies({
-          school: newsletter.schoolName,
-          term: newsletter.termName,
+          school: newsletter.school.name,
+          term: newsletter.term.termName,
           title: newsletter.title || '수업 준비물 안내',
           shortlink: shortlink,
         });
       case NewsletterType.RESULT:
         return getTemplateOfNewsRegistrationResult({
-          school: newsletter.schoolName,
-          term: newsletter.termName,
+          school: newsletter.school.name,
+          term: newsletter.term.termName,
           title: newsletter.title || '수강 신청 결과',
           shortlink: shortlink,
         });

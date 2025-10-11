@@ -17,13 +17,13 @@ import { NotifiableTarget } from 'src/common/enums';
 export class SendNotifiableDto {
   @ApiProperty({ description: '🈵 notifiableId', example: 1 })
   @IsNumber()
-  @IsNotEmpty()
-  notifiableId: number;
+  @IsOptional()
+  notifiableId?: number;
 
   @ApiProperty({
     description: '🈵 발송 대상 유형',
     enum: NotifiableTarget,
-    example: NotifiableTarget.SCHOOL,
+    example: NotifiableTarget.GRADE,
   })
   @IsEnum(NotifiableTarget)
   @IsNotEmpty()

@@ -58,7 +58,7 @@ export class NewsletterController {
   async findDetailById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Newsletter> {
-    return await this.newsletterService.findById(id);
+    return await this.newsletterService.findById(id, ['notifiable']);
   }
 
   //? ---------------------------------------------------------------------- ?//

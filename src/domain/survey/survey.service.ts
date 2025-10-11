@@ -1,6 +1,11 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { NotifiableSourceType } from 'src/common/enums';
+import { NotifiableSourceType, SendStatus } from 'src/common/enums';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
 import { NotifiableService } from 'src/domain/notifiable/notifiable.service';
@@ -9,7 +14,6 @@ import { CreateSurveyDto } from 'src/domain/survey/dto/create-survey.dto';
 import { UpdateSurveyDto } from 'src/domain/survey/dto/update-survey.dto';
 import { Survey } from 'src/domain/survey/entities/survey.entity';
 import { SurveyQuestion } from 'src/domain/survey/entities/survey_question.entity';
-import { SlackService } from 'src/services/slack/slack.service';
 import { DataSource, Repository } from 'typeorm';
 
 @Injectable()
@@ -26,7 +30,6 @@ export class SurveyService {
     @InjectRepository(SurveyQuestion)
     private readonly surveyQuestionRepository: Repository<SurveyQuestion>,
     private readonly dataSource: DataSource,
-    private readonly slack: SlackService,
     private readonly notifiableService: NotifiableService,
   ) {}
 
@@ -35,21 +38,20 @@ export class SurveyService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateSurveyDto): Promise<Survey> {
-    console.log(`🧡🧡🧡🧡🧡`, dto);
-
+    let notifiable: Notifiable | null = null;
     try {
-      // Notifiable 생성 (send 정보가 있는 경우)
-      let notifiable: Notifiable | null = null;
       if (dto.send) {
-        notifiable = await this.notifiableRepository.save(
-          this.notifiableRepository.create({
-            schoolId: dto.schoolId,
-            termId: dto.termId,
-            type: NotifiableSourceType.SURVEY,
-            title: dto.title,
-            message: dto.intro || '만족도 조사에 참여해주세요.',
-          }),
-        );
+        notifiable = await this.notifiableService.save({
+          schoolId: dto.schoolId,
+          termId: dto.termId,
+          type: NotifiableSourceType.SURVEY,
+          title: dto.title || '만족도 조사',
+          status: SendStatus.INIT,
+          target: dto.send.target,
+          targetItems: dto.send.targetItems,
+          targetLabel: dto.send.targetLabel,
+          scheduledAt: dto.send.scheduledAt,
+        });
       }
 
       // Survey 생성
@@ -57,8 +59,6 @@ export class SurveyService {
         this.surveyRepository.create({
           schoolId: dto.schoolId,
           termId: dto.termId,
-          lessonId: dto.lessonId,
-          groupId: dto.groupId || null,
           notifiableId: notifiable?.id || null,
           title: dto.title,
           intro: dto.intro,
@@ -68,26 +68,39 @@ export class SurveyService {
         }),
       );
 
-      // SurveyQuestion 생성
-      if (dto.questions && dto.questions.length > 0) {
-        const questions = dto.questions.map((q) =>
-          this.surveyQuestionRepository.create({
-            ...q,
-            surveyId: survey.id,
+      // SurveyQuestion upsert (id가 있으면 업데이트, 없으면 생성)
+      if (dto.surveyQuestions && dto.surveyQuestions.length > 0) {
+        const questions = await Promise.all(
+          dto.surveyQuestions.map(async (q) => {
+            if (q.id) {
+              // id가 있으면 기존 레코드 업데이트
+              const existing = await this.surveyQuestionRepository.preload({
+                id: q.id,
+                ...q,
+                surveyId: survey.id,
+              });
+              return (
+                existing ||
+                this.surveyQuestionRepository.create({
+                  ...q,
+                  surveyId: survey.id,
+                })
+              );
+            } else {
+              // id가 없으면 새로 생성
+              return this.surveyQuestionRepository.create({
+                ...q,
+                surveyId: survey.id,
+              });
+            }
           }),
         );
         await this.surveyQuestionRepository.save(questions);
       }
 
       // 발송 예약 (send 정보가 있는 경우)
-      if (dto.send && notifiable) {
-        await this.notifiableService.send({
-          notifiableId: notifiable.id,
-          target: dto.send.target,
-          targetItems: dto.send.targetItems,
-          targetLabel: dto.send.targetLabel,
-          scheduledAt: dto.send.scheduledAt,
-        });
+      if (dto.send && dto.send.scheduledAt && notifiable) {
+        await this.notifiableService.send(notifiable.id);
       }
 
       return survey;
@@ -117,6 +130,86 @@ export class SurveyService {
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateSurveyDto) {
+    // send 키가 있는 경우, notifiable 업데이트 로직 처리
+    if (dto.send) {
+      const existingSurvey = await this.surveyRepository.findOne({
+        where: { id },
+        relations: ['notifiable'],
+      });
+
+      if (!existingSurvey) {
+        throw new NotFoundException(`Survey not found`);
+      }
+
+      if (existingSurvey.notifiable) {
+        const { status } = existingSurvey.notifiable;
+
+        // SCHEDULED나 SENT 상태인 경우 오류 발생
+        if (status === SendStatus.SCHEDULED || status === SendStatus.SENT) {
+          throw new BadRequestException('변경 가능한 상태가 아닙니다.');
+        }
+
+        // INIT 상태인 경우 notifiable 업데이트
+        if (status === SendStatus.INIT) {
+          await this.notifiableRepository.update(existingSurvey.notifiable.id, {
+            title: dto.title || existingSurvey.title,
+            target: dto.send.target,
+            targetItems: dto.send.targetItems || null,
+            targetLabel: dto.send.targetLabel || null,
+            scheduledAt: dto.send.scheduledAt || null,
+          });
+        }
+      } else {
+        // notifiable이 없는 경우 새로 생성
+        const notifiable = await this.notifiableService.save({
+          schoolId: existingSurvey.schoolId,
+          termId: existingSurvey.termId,
+          type: NotifiableSourceType.SURVEY,
+          title: dto.title || existingSurvey.title,
+          status: SendStatus.INIT,
+          target: dto.send.target,
+          targetItems: dto.send.targetItems,
+          targetLabel: dto.send.targetLabel,
+          scheduledAt: dto.send.scheduledAt,
+        });
+
+        // Survey에 notifiableId 연결
+        existingSurvey.notifiableId = notifiable.id;
+        await this.surveyRepository.save(existingSurvey);
+      }
+    }
+
+    // SurveyQuestion upsert (dto에 surveyQuestions가 있는 경우)
+    if (dto.surveyQuestions && dto.surveyQuestions.length > 0) {
+      const questions = await Promise.all(
+        dto.surveyQuestions.map(async (q) => {
+          if (q.id) {
+            // id가 있으면 기존 레코드 업데이트
+            const existing = await this.surveyQuestionRepository.preload({
+              id: q.id,
+              ...q,
+              surveyId: id,
+            });
+            return (
+              existing ||
+              this.surveyQuestionRepository.create({
+                ...q,
+                surveyId: id,
+              })
+            );
+          } else {
+            // id가 없으면 새로 생성
+            return this.surveyQuestionRepository.create({
+              ...q,
+              surveyId: id,
+            });
+          }
+        }),
+      );
+      await this.surveyQuestionRepository.save(questions);
+    }
+
+    // Survey 업데이트
     const survey = await this.surveyRepository.preload({
       id,
       ...dto,

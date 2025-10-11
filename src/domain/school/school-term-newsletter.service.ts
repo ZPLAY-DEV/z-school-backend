@@ -40,6 +40,7 @@ export class SchoolTermNewsletterService {
     }
 
     return await paginate<Newsletter>(query, queryBuilder, {
+      relations: ['notifiable'],
       sortableColumns: ['id'],
       searchableColumns: ['title', 'body'],
       defaultSortBy: [['id', 'DESC']],
