@@ -1,17 +1,17 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiConsumes,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiProduces,
+    ApiBody,
+    ApiConsumes,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiProduces,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-  ApiOkPaginatedResponse,
-  ApiPaginationQuery,
-  PaginateConfig,
+    ApiOkPaginatedResponse,
+    ApiPaginationQuery,
+    PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
@@ -31,7 +31,7 @@ const TERM_LESSON_CONFIG: PaginateConfig<Lesson> = {
 //? Create School > Term > Lessons (Bulk)
 //? ---------------------------------------------------------------------- ?//
 
-export const CreateSchoolTermLessonsBulkDocs = () =>
+export const SchoolTermLessonsCreateBulkDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '🈵 학기별 과목 일괄 생성',
@@ -75,7 +75,7 @@ export const CreateSchoolTermLessonsBulkDocs = () =>
 //? Create School > Term > Lessons (Bulk DryRun)
 //? ---------------------------------------------------------------------- ?//
 
-export const CreateSchoolTermLessonsBulkDryRunDocs = () =>
+export const SchoolTermLessonsCreateBulkDryrunDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '🔍 학기별 과목 일괄 생성 시뮬레이션',
@@ -116,7 +116,7 @@ export const CreateSchoolTermLessonsBulkDryRunDocs = () =>
 //? Get School > Term > Lessons Paginated List
 //? ---------------------------------------------------------------------- ?//
 
-export const SchoolTermLessonPaginatedListDocs = () =>
+export const SchoolTermLessonsPaginatedDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '👥📄 학기별 과목 페이지네이션 목록',
@@ -144,7 +144,7 @@ export const SchoolTermLessonPaginatedListDocs = () =>
 //? Get School > Term > Lessons List
 //? ---------------------------------------------------------------------- ?//
 
-export const SchoolTermLessonListDocs = () =>
+export const SchoolTermLessonsDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '👥 학기별 전체 과목 목록',
@@ -174,7 +174,7 @@ export const SchoolTermLessonListDocs = () =>
 //? Delete School > Term > Lessons
 //? ---------------------------------------------------------------------- ?//
 
-export const DeleteAllSchoolTermLessonsDocs = () =>
+export const SchoolTermLessonsDeleteAllDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '🗑️ 학기별 모든 과목 삭제',
@@ -208,7 +208,7 @@ export const DeleteAllSchoolTermLessonsDocs = () =>
 //? Upload School Term Lessons Excel
 //? ---------------------------------------------------------------------- ?//
 
-export const UploadSchoolTermLessonsExcelDocs = () =>
+export const SchoolTermLessonsUploadExcelDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '📊 Excel 파일로 과목 일괄 등록',
@@ -255,7 +255,7 @@ export const UploadSchoolTermLessonsExcelDocs = () =>
 //? Download School Term Lessons Excel
 //? ---------------------------------------------------------------------- ?//
 
-export const DownloadSchoolTermLessonsExcelDocs = () =>
+export const SchoolTermLessonsDownloadExcelDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: '📥 과목 목록 Excel 파일 다운로드',

@@ -8,12 +8,16 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Cache } from 'cache-manager';
-import { Observable } from 'rxjs';
+import { from, Observable, switchMap } from 'rxjs';
 import { KEYV_REDIS } from 'src/common/constants';
 import {
-  getAllEntitiesFromUrl,
-  getBaseEntityFromUrl,
-} from 'src/helpers/uri-segments';
+  CACHE_INVALIDATE_KEY,
+  CacheInvalidateOptions,
+} from 'src/common/decorators/cache-invalidate.decorator';
+import {
+  HTTP_CACHE_KEY,
+  HttpCacheOptions,
+} from 'src/common/decorators/http-cache.decorator';
 
 @Injectable()
 export class HttpCacheInterceptor extends CacheInterceptor {
@@ -29,34 +33,30 @@ export class HttpCacheInterceptor extends CacheInterceptor {
     return await this.keyvRedis.getClient();
   }
 
-  _extractCacheTagsToRemove(baseUrl: string): string[] {
-    return getAllEntitiesFromUrl(baseUrl).map((entity) => `cache:${entity}`);
-  }
-
-  async _saveCacheTags(requestUrl: string, baseEntity: string) {
-    const tagKey = `cache:${baseEntity}`;
+  async _saveCacheTags(requestUrl: string, tag: string) {
+    const tagKey = `tag:${tag}`;
     const client = await this._getRedisClient();
     const exists = await client?.sIsMember(tagKey, requestUrl);
     if (!exists) {
       await client?.sAdd(tagKey, requestUrl);
-      console.log(`✅ cache updated for: ${requestUrl}`);
+      console.log(`✅ cache updated for: ${requestUrl} [tag: ${tag}]`);
     } else {
-      console.log(`⚠️ cache bypassed for: ${requestUrl}`);
+      console.log(`⚠️ cache bypassed for: ${requestUrl} [tag: ${tag}]`);
     }
   }
 
-  async _invalidateCacheTags(tag: string) {
+  async _invalidateCacheTags(tagKey: string) {
     const client = await this._getRedisClient();
-    const keys = await client?.sMembers(tag);
+    const keys = await client?.sMembers(tagKey);
     if (keys && keys.length > 0) {
       const pipeline = client?.multi(); // node-redis에서는 multi() 사용
       if (pipeline) {
         for (const key of keys) {
-          pipeline.sRem(tag, key);
+          pipeline.sRem(tagKey, key);
           pipeline.del(key);
           console.log(`🚫 cache removed for: ${key}`);
         }
-        pipeline.del(tag);
+        pipeline.del(tagKey);
         await pipeline.exec(); // node-redis에서도 exec()로 실행
       }
     }
@@ -67,38 +67,35 @@ export class HttpCacheInterceptor extends CacheInterceptor {
     const { httpAdapter } = this.httpAdapterHost;
 
     const isGetRequest = httpAdapter.getRequestMethod(request) === 'GET';
+
+    // GET 요청이 아니면 캐시하지 않음
+    if (!isGetRequest) return undefined;
+
+    // Reflector로 @HttpCache 데코레이터 확인 (opt-in)
+    const cacheOptions = this.reflector.get<HttpCacheOptions>(
+      HTTP_CACHE_KEY,
+      context.getHandler(),
+    );
+
+    // 데코레이터가 없으면 캐시하지 않음
+    if (!cacheOptions) return undefined;
+
     const requestUrl = httpAdapter.getRequestUrl(request) as string;
-    const baseUrl = requestUrl.split('?')[0];
 
-    const excludePaths = ['/v1/version', '/v1/counts', '/v1/bust'];
-    if (isGetRequest && excludePaths.includes(requestUrl)) return undefined;
-    if (isGetRequest && requestUrl.startsWith('/v1/users')) return undefined;
+    // 태그 평가 (함수면 실행, 배열이면 그대로 사용)
+    const tags =
+      typeof cacheOptions.tags === 'function'
+        ? cacheOptions.tags(request)
+        : cacheOptions.tags;
 
-    if (!isGetRequest) {
-      const cacheTags = this._extractCacheTagsToRemove(requestUrl);
-      console.log('⛔ cache tags to remove: ', cacheTags);
-      if (cacheTags.length > 0) {
-        process.nextTick(async () => {
-          for (const tag of cacheTags) {
-            try {
-              await this._invalidateCacheTags(tag);
-            } catch (e) {
-              console.error(`Redis is down`, e);
-              return undefined;
-            }
-          }
-        });
-      }
-      return undefined;
-    }
-
+    // 비동기로 태그에 캐시 키 저장
     process.nextTick(async () => {
       try {
-        const baseEntity = getBaseEntityFromUrl(baseUrl);
-        await this._saveCacheTags(requestUrl, baseEntity);
+        for (const tag of tags) {
+          await this._saveCacheTags(requestUrl, tag);
+        }
       } catch (e) {
-        console.error(`Redis is down`, e);
-        return undefined;
+        console.error('Redis is down', e);
       }
     });
 
@@ -113,6 +110,7 @@ export class HttpCacheInterceptor extends CacheInterceptor {
     const { httpAdapter } = this.httpAdapterHost;
     const isGetRequest = httpAdapter.getRequestMethod(request) === 'GET';
 
+    // x-clear-cache 헤더 처리 (기존 유지)
     if (request.headers['x-clear-cache']) {
       console.log('🗑️ redis: CLEAR');
 
@@ -124,6 +122,7 @@ export class HttpCacheInterceptor extends CacheInterceptor {
       }
     }
 
+    // GET 요청 시 캐시 HIT/MISS 로깅 (기존 유지)
     if (isGetRequest) {
       const requestUrl = httpAdapter.getRequestUrl(request);
       const cachedResponse = await this.cacheManager.get(requestUrl);
@@ -131,6 +130,49 @@ export class HttpCacheInterceptor extends CacheInterceptor {
         console.log('😎 cache: HIT');
       } else {
         console.log('😱 cache: MISS');
+      }
+    } else {
+      // POST/PUT/DELETE/PATCH 요청 시 invalidation
+      const invalidateOptions = this.reflector.get<CacheInvalidateOptions>(
+        CACHE_INVALIDATE_KEY,
+        context.getHandler(),
+      );
+
+      if (invalidateOptions) {
+        // 태그 평가 (함수면 실행, 배열이면 그대로 사용)
+        const tags =
+          typeof invalidateOptions.tags === 'function'
+            ? invalidateOptions.tags(request)
+            : invalidateOptions.tags;
+
+        if (tags.length > 0) {
+          // 응답 후에 비동기로 무효화
+          const observable$ = super.intercept(context, next);
+          return from(observable$).pipe(
+            switchMap(
+              (obs) =>
+                new Observable((subscriber) => {
+                  obs.subscribe({
+                    next: (value) => subscriber.next(value),
+                    error: (err) => subscriber.error(err),
+                    complete: () => {
+                      // 응답 완료 후 캐시 무효화 (비동기)
+                      process.nextTick(async () => {
+                        for (const tag of tags) {
+                          try {
+                            await this._invalidateCacheTags(`tag:${tag}`);
+                          } catch (e) {
+                            console.error('Cache invalidation failed', e);
+                          }
+                        }
+                      });
+                      subscriber.complete();
+                    },
+                  });
+                }),
+            ),
+          );
+        }
       }
     }
 
@@ -148,7 +190,7 @@ export class HttpCacheInterceptor extends CacheInterceptor {
       `;
       await client?.eval(luaScript, {
         keys: [],
-        arguments: ['cache:*'],
+        arguments: ['tag:*'],
       });
 
       return true;

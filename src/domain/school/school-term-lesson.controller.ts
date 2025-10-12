@@ -16,18 +16,20 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
+import { CacheInvalidate } from 'src/common/decorators/cache-invalidate.decorator';
+import { HttpCache } from 'src/common/decorators/http-cache.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CreateLessonRequestDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { SchoolTermLessonService } from 'src/domain/school/school-term-lesson.service';
 import {
-  CreateSchoolTermLessonsBulkDocs,
-  CreateSchoolTermLessonsBulkDryRunDocs,
-  DeleteAllSchoolTermLessonsDocs,
-  DownloadSchoolTermLessonsExcelDocs,
-  SchoolTermLessonListDocs,
-  SchoolTermLessonPaginatedListDocs,
-  UploadSchoolTermLessonsExcelDocs,
+  SchoolTermLessonsCreateBulkDocs,
+  SchoolTermLessonsCreateBulkDryrunDocs,
+  SchoolTermLessonsDeleteAllDocs,
+  SchoolTermLessonsDocs,
+  SchoolTermLessonsDownloadExcelDocs,
+  SchoolTermLessonsPaginatedDocs,
+  SchoolTermLessonsUploadExcelDocs,
 } from 'src/domain/school/swagger/school-term-lesson-swagger.decorator';
 
 @ApiTags('✳️ Schools > Terms > Lessons ( 학교 > 학기 > 과목 )')
@@ -44,7 +46,7 @@ export class SchoolTermLessonController {
 
   //! create() 의 모든 로직이 무사히 실행되는지 persist 하지 않고, 실험해보기 위한 것이
   //! dryrun() 인데, 그냥 중복 강좌 레코드가 있는지만 확인하고 말았다. ㅠ.ㅠ
-  @CreateSchoolTermLessonsBulkDryRunDocs()
+  @SchoolTermLessonsCreateBulkDryrunDocs()
   @Post(':schoolId/terms/:termId/lessons/bulk/dryrun')
   @HttpCode(200)
   async createBulkDryRun(
@@ -63,9 +65,14 @@ export class SchoolTermLessonController {
     );
   }
 
-  @CreateSchoolTermLessonsBulkDocs()
+  @SchoolTermLessonsCreateBulkDocs()
   @Post(':schoolId/terms/:termId/lessons/bulk')
   @HttpCode(200)
+  @CacheInvalidate({
+    tags: (req) => [
+      `schools:${req.params.schoolId}:terms:${req.params.termId}:lessons`,
+    ],
+  })
   async createBulk(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
@@ -84,9 +91,14 @@ export class SchoolTermLessonController {
     );
   }
 
-  @UploadSchoolTermLessonsExcelDocs()
+  @SchoolTermLessonsUploadExcelDocs()
   @Post(':schoolId/terms/:termId/lessons/upload')
   @UseInterceptors(FileInterceptor('file'))
+  @CacheInvalidate({
+    tags: (req) => [
+      `schools:${req.params.schoolId}:terms:${req.params.termId}:lessons`,
+    ],
+  })
   async uploadStudents(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
@@ -114,7 +126,7 @@ export class SchoolTermLessonController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @DownloadSchoolTermLessonsExcelDocs()
+  @SchoolTermLessonsDownloadExcelDocs()
   @Public()
   @Get(':schoolId/terms/:termId/lessons/download')
   async downloadExcel(
@@ -147,9 +159,15 @@ export class SchoolTermLessonController {
     res.end();
   }
 
-  @SchoolTermLessonPaginatedListDocs()
+  @SchoolTermLessonsPaginatedDocs()
   @Public()
   @Get(':schoolId/terms/:termId/lessons/paginated')
+  @HttpCache({
+    ttl: 180, // 3분
+    tags: (req) => [
+      `schools:${req.params.schoolId}:terms:${req.params.termId}:lessons`,
+    ],
+  })
   async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
@@ -162,9 +180,15 @@ export class SchoolTermLessonController {
     );
   }
 
-  @SchoolTermLessonListDocs()
+  @SchoolTermLessonsDocs()
   @Public()
   @Get(':schoolId/terms/:termId/lessons')
+  @HttpCache({
+    ttl: 300, // 5분
+    tags: (req) => [
+      `schools:${req.params.schoolId}:terms:${req.params.termId}:lessons`,
+    ],
+  })
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
@@ -176,8 +200,13 @@ export class SchoolTermLessonController {
   //? DELETE
   //? ---------------------------------------------------------------------- ?//
 
-  @DeleteAllSchoolTermLessonsDocs()
+  @SchoolTermLessonsDeleteAllDocs()
   @Delete(':schoolId/terms/:termId/lessons')
+  @CacheInvalidate({
+    tags: (req) => [
+      `schools:${req.params.schoolId}:terms:${req.params.termId}:lessons`,
+    ],
+  })
   async deleteAll(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,

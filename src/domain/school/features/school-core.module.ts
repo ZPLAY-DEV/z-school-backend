@@ -7,6 +7,7 @@ import { SchoolCalendarService } from 'src/domain/school/school-calendar.service
 import { SchoolController } from 'src/domain/school/school.controller';
 import { SchoolService } from 'src/domain/school/school.service';
 import { S3Module } from 'src/services/aws/s3.module';
+import { CacheModule } from 'src/services/cache/cache.module';
 import { NeisModule } from 'src/services/neis/neis.module';
 import { RedisModule } from 'src/services/redis/redis.module';
 import { UploadModule } from 'src/services/upload/upload.module';
@@ -18,6 +19,7 @@ import { UploadModule } from 'src/services/upload/upload.module';
     S3Module,
     NeisModule,
     RedisModule,
+    CacheModule,
   ],
   controllers: [SchoolController, SchoolCalendarController],
   providers: [SchoolService, SchoolCalendarService],

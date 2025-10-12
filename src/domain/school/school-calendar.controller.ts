@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
+import { CacheInvalidate } from 'src/common/decorators/cache-invalidate.decorator';
+import { HttpCache } from 'src/common/decorators/http-cache.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Calendar } from 'src/domain/calendar/entities/calendar.entity';
 
@@ -40,6 +42,9 @@ export class SchoolCalendarController {
   @CreateSchoolCalendarDocs()
   @Public()
   @Post(':schoolId/calendars')
+  @CacheInvalidate({
+    tags: (req) => [`schools:${req.params.schoolId}:calendars`],
+  })
   async create(
     @Param('schoolId', ParseIntPipe) schoolId: number,
   ): Promise<number> {
@@ -52,6 +57,10 @@ export class SchoolCalendarController {
 
   @ListSchoolCalendarsDocs()
   @Get(':schoolId/calendars')
+  @HttpCache({
+    ttl: 60 * 60, // 1시간
+    tags: (req) => [`schools:${req.params.schoolId}:calendars`],
+  })
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
   ): Promise<Calendar[]> {
@@ -60,6 +69,10 @@ export class SchoolCalendarController {
 
   @PaginatedSchoolCalendarsDocs()
   @Get(':schoolId/calendars/paginated')
+  @HttpCache({
+    ttl: 60 * 60, // 1시간
+    tags: (req) => [`schools:${req.params.schoolId}:calendars`],
+  })
   async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Paginate() query: PaginateQuery,
