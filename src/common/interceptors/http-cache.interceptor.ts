@@ -21,24 +21,34 @@ import {
 
 @Injectable()
 export class HttpCacheInterceptor extends CacheInterceptor {
+  private redisClient: any; // Redis 클라이언트를 캐싱
+
   constructor(
     @Inject(CACHE_MANAGER) cacheManager: Cache,
     @Inject(KEYV_REDIS) private readonly keyvRedis: KeyvRedis<string>,
     reflector: Reflector,
   ) {
     super(cacheManager, reflector);
+    // Redis 클라이언트를 초기화 시 한 번만 가져옴 (성능 최적화)
+    this.keyvRedis.getClient().then((client) => {
+      this.redisClient = client;
+    });
   }
 
   async _getRedisClient() {
-    return await this.keyvRedis.getClient();
+    // 이미 캐싱된 클라이언트가 있으면 반환, 없으면 새로 가져옴
+    if (!this.redisClient) {
+      this.redisClient = await this.keyvRedis.getClient();
+    }
+    return this.redisClient;
   }
 
   async _saveCacheTags(requestUrl: string, tag: string) {
     const tagKey = `tag:${tag}`;
     const client = await this._getRedisClient();
-    const exists = await client?.sIsMember(tagKey, requestUrl);
-    if (!exists) {
-      await client?.sAdd(tagKey, requestUrl);
+    // sAdd는 이미 존재하면 무시하므로, sIsMember 체크 없이 바로 sAdd 호출 (성능 최적화)
+    const added = await client?.sAdd(tagKey, requestUrl);
+    if (added) {
       console.log(`✅ cache updated for: ${requestUrl} [tag: ${tag}]`);
     } else {
       console.log(`⚠️ cache bypassed for: ${requestUrl} [tag: ${tag}]`);
@@ -88,11 +98,15 @@ export class HttpCacheInterceptor extends CacheInterceptor {
         ? cacheOptions.tags(request)
         : cacheOptions.tags;
 
-    // 비동기로 태그에 캐시 키 저장
+    // 캐시 HIT 여부를 먼저 확인하여 불필요한 Redis 연산 방지 (성능 최적화)
     process.nextTick(async () => {
       try {
-        for (const tag of tags) {
-          await this._saveCacheTags(requestUrl, tag);
+        const cachedResponse = await this.cacheManager.get(requestUrl);
+        // 캐시 MISS인 경우에만 태그 저장 (캐시 HIT면 이미 태그가 있음)
+        if (!cachedResponse) {
+          for (const tag of tags) {
+            await this._saveCacheTags(requestUrl, tag);
+          }
         }
       } catch (e) {
         console.error('Redis is down', e);

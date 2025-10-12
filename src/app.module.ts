@@ -83,11 +83,13 @@ import { UploadModule } from './services/upload/upload.module';
         );
         const port = configService.getOrThrow<number>('redis.port', 6379);
         const url = `redis://${host}:${port}`;
+        // KeyvRedis는 내부적으로 node-redis를 사용하며, 기본 커넥션 풀을 사용
         const redisStore = new KeyvRedis(url);
         const keyvStore = new Keyv({ store: redisStore });
 
         return {
           stores: [keyvStore],
+          max: 1024, // 캐시 항목 최대 개수 (동시 연결과 무관)
           ttl: 60 * 5 * 1000, // 5분 (300,000ms)
         };
       },

@@ -41,6 +41,12 @@ export class OrmConfig implements TypeOrmOptionsFactory {
       bigNumberStrings: true,
       supportBigNumbers: true,
       logging: this.environment !== 'prod',
+      // Connection pool settings for high concurrency
+      extra: {
+        connectionLimit: 100, // MySQL 커넥션 풀 크기 (기본값: 10)
+        waitForConnections: true,
+        queueLimit: 0, // 무제한 큐
+      },
       // migrations: ['dist/database/migrations/*.js'],
       // migrationsTableName: 'migrations',
       // migrationsRun: false,
