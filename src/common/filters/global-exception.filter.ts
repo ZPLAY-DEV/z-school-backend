@@ -12,11 +12,10 @@ import { KnownBlock } from '@slack/types';
 import { ValidationError } from 'class-validator';
 import { HttpErrorFormat } from 'src/common/interfaces';
 import { SlackService } from 'src/services/slack/slack.service';
-import { EntityNotFoundError } from 'typeorm';
+import { EntityNotFoundError, QueryFailedError } from 'typeorm';
 
-// original one to use with slack
 @Catch()
-export class CustomCatchAllFilter extends BaseExceptionFilter {
+export class GlobalExceptionFilter extends BaseExceptionFilter {
   private readonly environment: string;
 
   constructor(
@@ -141,8 +140,20 @@ export class CustomCatchAllFilter extends BaseExceptionFilter {
         }
       }
     } else {
-      // TypeORM EntityNotFoundError 처리
-      if (exception instanceof EntityNotFoundError) {
+      // TypeORM QueryFailedError 처리 (중복 에러)
+      if (
+        exception instanceof QueryFailedError &&
+        (exception.message.match(/.*?Unique constraint/) ||
+          exception.message.match(/.*?Duplicate entry/))
+      ) {
+        httpStatus = 409;
+        errorResponse = {
+          error: 'CONFLICT',
+          message: 'already taken',
+          description: req.url,
+        };
+      } else if (exception instanceof EntityNotFoundError) {
+        // TypeORM EntityNotFoundError 처리
         httpStatus = 404;
         errorResponse = {
           error: 'ENTITY_NOT_FOUND',

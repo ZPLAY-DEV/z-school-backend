@@ -13,9 +13,8 @@ import { join } from 'path';
 import { AppController } from 'src/app.controller';
 import { AppService } from 'src/app.service';
 import { configuration } from 'src/common/config/configuration';
-import { CustomCatchAllFilter } from 'src/common/filters/custom-catch-all.filter';
+import { GlobalExceptionFilter } from 'src/common/filters/global-exception.filter';
 import { JwtContextGuard } from 'src/common/guards/jwt-context.guard';
-import { DuplicateEntryErrorInterceptor } from 'src/common/interceptors/duplicate-entry-error.interceptor';
 import { HttpCacheInterceptor } from 'src/common/interceptors/http-cache.interceptor';
 import { AttendanceModule } from 'src/domain/attendance/attendance.module';
 import { AuthModule } from 'src/domain/auth/auth.module';
@@ -156,15 +155,11 @@ import { UploadModule } from './services/upload/upload.module';
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: DuplicateEntryErrorInterceptor, // 중복입력은 400으로 전환
-    },
-    {
-      provide: APP_INTERCEPTOR,
       useClass: HttpCacheInterceptor, // Redis tag 기반 opt-in 캐시
     },
     {
       provide: APP_FILTER,
-      useClass: CustomCatchAllFilter, // 모든 오류 처리 (validation 오류 상세 메시지 + Sentry/Slack 보고)
+      useClass: GlobalExceptionFilter, // 모든 오류 처리 (중복 에러, validation 오류 상세 메시지 + Sentry/Slack 보고)
     },
     AppService,
   ],
