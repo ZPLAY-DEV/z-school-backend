@@ -30,12 +30,12 @@ export class HttpCacheInterceptor extends CacheInterceptor {
   ) {
     super(cacheManager, reflector);
     // Redis 클라이언트를 초기화 시 한 번만 가져옴 (성능 최적화)
-    this.keyvRedis.getClient().then((client) => {
+    void this.keyvRedis.getClient().then((client) => {
       this.redisClient = client;
     });
   }
 
-  async _getRedisClient() {
+  async _getRedisClient(): Promise<any> {
     // 이미 캐싱된 클라이언트가 있으면 반환, 없으면 새로 가져옴
     if (!this.redisClient) {
       this.redisClient = await this.keyvRedis.getClient();
@@ -98,15 +98,11 @@ export class HttpCacheInterceptor extends CacheInterceptor {
         ? cacheOptions.tags(request)
         : cacheOptions.tags;
 
-    // 캐시 HIT 여부를 먼저 확인하여 불필요한 Redis 연산 방지 (성능 최적화)
+    // 비동기로 태그에 캐시 키 저장 (sAdd는 멱등성을 가지므로 중복 체크 불필요)
     process.nextTick(async () => {
       try {
-        const cachedResponse = await this.cacheManager.get(requestUrl);
-        // 캐시 MISS인 경우에만 태그 저장 (캐시 HIT면 이미 태그가 있음)
-        if (!cachedResponse) {
-          for (const tag of tags) {
-            await this._saveCacheTags(requestUrl, tag);
-          }
+        for (const tag of tags) {
+          await this._saveCacheTags(requestUrl, tag);
         }
       } catch (e) {
         console.error('Redis is down', e);
@@ -136,16 +132,8 @@ export class HttpCacheInterceptor extends CacheInterceptor {
       }
     }
 
-    // GET 요청 시 캐시 HIT/MISS 로깅 (기존 유지)
-    if (isGetRequest) {
-      const requestUrl = httpAdapter.getRequestUrl(request);
-      const cachedResponse = await this.cacheManager.get(requestUrl);
-      if (cachedResponse) {
-        console.log('😎 cache: HIT');
-      } else {
-        console.log('😱 cache: MISS');
-      }
-    } else {
+    // POST/PUT/DELETE/PATCH 요청 시 invalidation (GET 요청은 부모 CacheInterceptor가 처리)
+    if (!isGetRequest) {
       // POST/PUT/DELETE/PATCH 요청 시 invalidation
       const invalidateOptions = this.reflector.get<CacheInvalidateOptions>(
         CACHE_INVALIDATE_KEY,
