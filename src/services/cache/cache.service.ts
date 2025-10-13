@@ -2,6 +2,7 @@ import KeyvRedis from '@keyv/redis';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
+import { RedisClientType } from 'redis';
 import { KEYV_REDIS } from 'src/common/constants';
 
 @Injectable()
@@ -20,7 +21,7 @@ export class CacheService {
    * Redis SET 사용 (pipeline으로 일괄 처리)
    */
   async invalidateTags(tags: string[]): Promise<void> {
-    const client = await this._getRedisClient();
+    const client = (await this._getRedisClient()) as RedisClientType;
 
     for (const tag of tags) {
       const tagKey = `tag:${tag}`;

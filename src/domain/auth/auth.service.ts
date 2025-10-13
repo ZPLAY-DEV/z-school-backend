@@ -1107,7 +1107,7 @@ export class AuthService {
 
     const accessTokenOptions = {
       secret: this.configService.get('jwt.authSecret'),
-      expiresIn: '10m', //? ONE_HOUR,
+      expiresIn: '1h' as const, //? ONE_HOUR,
     };
 
     return this.jwtService.signAsync(tokenClaims, accessTokenOptions);

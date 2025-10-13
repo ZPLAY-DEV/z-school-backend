@@ -33,7 +33,6 @@ export class RedisTrackingService implements OnModuleInit {
       },
       password: this.redisOptions.password,
       database: this.redisOptions.db,
-      legacyMode: false, // 최신 방식 사용
     });
     // Connect to Redis when service is instantiated
     this.redisClient.connect().catch((error) => {

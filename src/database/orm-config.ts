@@ -46,7 +46,6 @@ export class OrmConfig implements TypeOrmOptionsFactory {
         connectionLimit: 30, // MySQL 커넥션 풀 크기 (Redis 캐시 사용 시 충분)
         waitForConnections: true,
         queueLimit: 0, // 무제한 큐
-        acquireTimeout: 10000, // 커넥션 획득 타임아웃: 10초
         connectTimeout: 10000, // 연결 타임아웃: 10초
       },
       // migrations: ['dist/database/migrations/*.js'],

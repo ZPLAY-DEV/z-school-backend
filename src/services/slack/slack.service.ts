@@ -14,7 +14,10 @@ export class SlackService {
   }
 
   async sendMessage(
-    options: Partial<ChatPostMessageArguments> & { blocks?: any },
+    options: Partial<ChatPostMessageArguments> & {
+      blocks?: any;
+      text?: string;
+    },
   ) {
     try {
       const channelId = this.getChannelId(options.channel ?? 'activity');

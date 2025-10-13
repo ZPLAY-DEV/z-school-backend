@@ -136,7 +136,7 @@ export class SchoolTermLessonService {
     file: Express.Multer.File,
   ): Promise<CreateLessonDto[]> {
     const workbook = new ExcelJS.Workbook();
-    // file.buffer가 실제로는 ExcelJS가 처리할 수 있는 형태이지만 TypeScript 타입 시스템에서 정확히 매칭되지 않음.
+    // @ts-expect-error - Buffer 타입 호환성 이슈
     await workbook.xlsx.load(file.buffer);
     const term = await this.termRepository.findOne({
       where: { id: termId },
