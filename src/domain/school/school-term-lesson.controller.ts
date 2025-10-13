@@ -160,7 +160,7 @@ export class SchoolTermLessonController {
   }
 
   @SchoolTermLessonsPaginatedDocs()
-  @Public()
+  @Public() // 공개 API - JWT 인증 불필요
   @Get(':schoolId/terms/:termId/lessons/paginated')
   @HttpCache({
     ttl: 180, // 3분
@@ -181,7 +181,7 @@ export class SchoolTermLessonController {
   }
 
   @SchoolTermLessonsDocs()
-  @Public()
+  @Public() // 공개 API - JWT 인증 불필요
   @Get(':schoolId/terms/:termId/lessons')
   @HttpCache({
     ttl: 300, // 5분

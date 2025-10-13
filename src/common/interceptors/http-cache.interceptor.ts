@@ -47,12 +47,7 @@ export class HttpCacheInterceptor extends CacheInterceptor {
     const tagKey = `tag:${tag}`;
     const client = await this._getRedisClient();
     // sAdd는 이미 존재하면 무시하므로, sIsMember 체크 없이 바로 sAdd 호출 (성능 최적화)
-    const added = await client?.sAdd(tagKey, requestUrl);
-    if (added) {
-      console.log(`✅ cache updated for: ${requestUrl} [tag: ${tag}]`);
-    } else {
-      console.log(`⚠️ cache bypassed for: ${requestUrl} [tag: ${tag}]`);
-    }
+    await client?.sAdd(tagKey, requestUrl);
   }
 
   async _invalidateCacheTags(tagKey: string) {
@@ -64,7 +59,6 @@ export class HttpCacheInterceptor extends CacheInterceptor {
         for (const key of keys) {
           pipeline.sRem(tagKey, key);
           pipeline.del(key);
-          console.log(`🚫 cache removed for: ${key}`);
         }
         pipeline.del(tagKey);
         await pipeline.exec(); // node-redis에서도 exec()로 실행
@@ -122,8 +116,6 @@ export class HttpCacheInterceptor extends CacheInterceptor {
 
     // x-clear-cache 헤더 처리 (기존 유지)
     if (request.headers['x-clear-cache']) {
-      console.log('🗑️ redis: CLEAR');
-
       try {
         await this.cacheManager.clear();
         await this.clearAllCacheSets();

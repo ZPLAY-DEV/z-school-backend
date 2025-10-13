@@ -121,11 +121,7 @@ export class JwtContextGuard implements CanActivate {
         }
       }
 
-      // 성공적인 검증 로그
-      this.logger.debug(
-        `Token validated successfully for user ${payload.sub}, role ${payload.role}, schoolId ${payload.schoolId}`,
-      );
-
+      // 성공적인 검증 (로그 제거 - 성능 최적화)
       request['user'] = payload;
       return true;
     } catch (error) {
@@ -175,17 +171,11 @@ export class JwtContextGuard implements CanActivate {
    */
   private cleanExpiredCache(): void {
     const now = Date.now();
-    let cleaned = 0;
 
     for (const [token, cached] of this.tokenCache.entries()) {
       if (now >= cached.exp) {
         this.tokenCache.delete(token);
-        cleaned++;
       }
-    }
-
-    if (cleaned > 0) {
-      this.logger.debug(`Cleaned ${cleaned} expired JWT cache entries`);
     }
   }
 
