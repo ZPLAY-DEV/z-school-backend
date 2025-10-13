@@ -16,6 +16,7 @@ import { configuration } from 'src/common/config/configuration';
 import { GlobalExceptionFilter } from 'src/common/filters/global-exception.filter';
 import { JwtContextGuard } from 'src/common/guards/jwt-context.guard';
 import { HttpCacheInterceptor } from 'src/common/interceptors/http-cache.interceptor';
+import { MetricsInterceptor } from 'src/common/interceptors/metrics-interceptor';
 import { AttendanceModule } from 'src/domain/attendance/attendance.module';
 import { AuthModule } from 'src/domain/auth/auth.module';
 import { BookingModule } from 'src/domain/booking/booking.module';
@@ -45,6 +46,7 @@ import { SurveyModule } from 'src/domain/survey/survey.module';
 import { TermModule } from 'src/domain/term/term.module';
 import { TextModule } from 'src/domain/text/text.module';
 import { UserModule } from 'src/domain/user/user.module';
+import { MetricsModule } from 'src/metrics.module';
 import { RedisModule } from 'src/services/redis/redis.module';
 import { SlackModule } from 'src/services/slack/slack.module';
 import { DataSource, DataSourceOptions } from 'typeorm';
@@ -53,6 +55,7 @@ import { UploadModule } from './services/upload/upload.module';
 
 @Module({
   imports: [
+    MetricsModule,
     SentryModule.forRoot(),
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
@@ -154,6 +157,10 @@ import { UploadModule } from './services/upload/upload.module';
     {
       provide: APP_GUARD,
       useClass: JwtContextGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MetricsInterceptor, // Prometheus 메트릭 수집
     },
     {
       provide: APP_INTERCEPTOR,

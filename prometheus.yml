@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s # 15초마다 메트릭 수집
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'nestjs-app'
+    static_configs:
+      - targets: ['host.docker.internal:3001'] # NestJS 앱 (로컬 개발환경)
+        labels:
+          app: 'schoolhub'
+          environment: 'development'
+    metrics_path: '/v1/metrics' # Prometheus 메트릭 엔드포인트 (버전 prefix 포함)
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
