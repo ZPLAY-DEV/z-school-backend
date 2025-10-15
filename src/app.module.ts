@@ -53,9 +53,15 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 import { OrmConfig } from './database/orm-config';
 import { UploadModule } from './services/upload/upload.module';
 
+// Prometheus 메트릭 환경변수 체크
+const isMetricsEnabled = process.env.PROMETHEUS_METRICS === 'true';
+
+// 조건부 imports 배열 생성
+const conditionalImports = isMetricsEnabled ? [MetricsModule] : [];
+
 @Module({
   imports: [
-    MetricsModule,
+    ...conditionalImports,
     SentryModule.forRoot(),
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
@@ -158,10 +164,15 @@ import { UploadModule } from './services/upload/upload.module';
       provide: APP_GUARD,
       useClass: JwtContextGuard,
     },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: MetricsInterceptor, // Prometheus 메트릭 수집
-    },
+    // Prometheus 메트릭이 활성화된 경우에만 MetricsInterceptor 등록
+    ...(isMetricsEnabled
+      ? [
+          {
+            provide: APP_INTERCEPTOR,
+            useClass: MetricsInterceptor, // Prometheus 메트릭 수집
+          },
+        ]
+      : []),
     {
       provide: APP_INTERCEPTOR,
       useClass: HttpCacheInterceptor, // Redis tag 기반 opt-in 캐시

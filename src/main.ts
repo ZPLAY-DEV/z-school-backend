@@ -62,9 +62,9 @@ async function bootstrap() {
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5175',
+    'https://xn--ov3b17fd5n5vf.kr',
     'https://qa.xn--ov3b17fd5n5vf.kr',
     'https://app.xn--ov3b17fd5n5vf.kr',
-    'https://xn--ov3b17fd5n5vf.kr',
   ];
 
   app.enableCors({
