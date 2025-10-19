@@ -1,3 +1,4 @@
+import { IsEnum } from '@nestjs/class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
@@ -10,6 +11,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { SamStatus } from 'src/common/enums';
 import { UpdateInstructorDto } from 'src/domain/instructor/dto/update-instructor.dto';
 
 export class UpdateSamDto {
@@ -64,6 +66,16 @@ export class UpdateSamDto {
   @IsOptional()
   @IsBoolean({ message: '픽업 편집 권한은 불린 값이어야 합니다' })
   editPickPermission?: boolean;
+
+  @ApiProperty({
+    description: '상태',
+    type: String,
+    example: 'ACTIVE',
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(SamStatus, { message: '상태는 유효, 전학 중 하나여야 합니다' })
+  status?: SamStatus;
 
   @ApiProperty({
     description: '비고 - 담임쌤에 대한 추가 정보나 특이사항 (최대 255자)',
