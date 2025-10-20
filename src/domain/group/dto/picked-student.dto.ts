@@ -5,6 +5,13 @@ import { Student } from 'src/domain/student/entities/student.entity';
 
 export class PickedStudentDto extends Student {
   @ApiProperty({
+    description: '그룹 ID',
+    example: 1,
+  })
+  @Expose()
+  groupId: number;
+
+  @ApiProperty({
     description: '그룹 이름',
     example: '배드민턴A',
   })

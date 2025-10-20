@@ -119,6 +119,7 @@ export class LessonService {
       .leftJoin('group.lesson', 'lesson')
       .where('lesson.id = :lessonId', { lessonId })
       .orderBy('student.id', 'ASC')
+      .addOrderBy('pick.groupId', 'ASC')
       .addOrderBy('student.grade', 'ASC')
       .addOrderBy('student.class', 'ASC')
       .addOrderBy('student.studentCode', 'ASC')
@@ -134,7 +135,7 @@ export class LessonService {
     const data: PickedStudentDto[] = uniqueStudents.map((student) => {
       const groupName =
         student.picks && student.picks.length > 1
-          ? `${student.picks[0].group.groupName} 외 ${student.picks.length - 1}개`
+          ? `${student.picks.map((pick) => pick.group.groupName).join(',')}`
           : student.picks?.[0]?.group?.groupName || '';
       // picks 속성을 제외한 student 객체 생성
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
