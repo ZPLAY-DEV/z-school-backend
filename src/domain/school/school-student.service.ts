@@ -49,17 +49,22 @@ export class SchoolStudentService {
     schoolId: number,
     dtos: CreateStudentDto[],
   ): Promise<number> {
-    if (!dtos.length) {
+    if (dtos === undefined || dtos.length < 1) {
       return 0;
     }
+
+    console.log(`💚💚💚💚`, JSON.stringify(dtos, null, 2));
 
     // 전화번호 정규화 at the DTO level
     const normalizedDtos = dtos.map((dto: CreateStudentDto) => ({
       ...dto,
       klass: dto.klass.trim().replace(/반$/, ''),
+      phone: dto.phone ? normalizePhone(dto.phone)! : dto.phone,
       parent: {
         ...dto.parent,
-        phone: normalizePhone(dto.parent.phone)!,
+        phone: dto.parent.phone
+          ? normalizePhone(dto.parent.phone)!
+          : dto.parent.phone,
       },
     }));
 
@@ -635,7 +640,7 @@ ORDER BY grade, klass',
     // grade별로 그룹화하여 classes 배열로 변환
     const gradeMap = new Map<number, string[]>();
 
-    result.forEach((row: { grade: number; class: string }) => {
+    result.forEach((row: { grade: number; klass: string }) => {
       if (!gradeMap.has(row.grade)) {
         gradeMap.set(row.grade, []);
       }
@@ -644,7 +649,7 @@ ORDER BY grade, klass',
 
     // Map을 배열로 변환하고 grade 순으로 정렬
     return Array.from(gradeMap.entries())
-      .map(([grade, classes]) => ({ grade, classes }))
+      .map(([grade, klasses]) => ({ grade, klasses }))
       .sort((a, b) => a.grade - b.grade);
   }
 }

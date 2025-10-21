@@ -5,5 +5,5 @@ export class ResponseSchoolGradesDto {
   grade: number;
 
   @ApiProperty({ type: [String] })
-  classes: string[];
+  klasses: string[];
 }

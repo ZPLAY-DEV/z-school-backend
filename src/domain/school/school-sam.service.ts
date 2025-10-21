@@ -45,12 +45,14 @@ export class SchoolSamService {
   }
 
   async createBulk(schoolId: number, dtos: CreateSamDto[]): Promise<number> {
-    if (!dtos.length) {
+    if (dtos === undefined || dtos.length < 1) {
       return 0;
     }
 
+    console.log(`💚💚💚💚`, JSON.stringify(dtos, null, 2));
+
     // 전화번호 정규화 at the DTO level
-    const normalizedDtos = dtos.map((dto) => {
+    const normalizedDtos = dtos.map((dto: CreateSamDto) => {
       return {
         ...dto,
         instructor: {
@@ -135,7 +137,7 @@ export class SchoolSamService {
     dtos: CreateSamDto[],
   ): Promise<Sam[]> {
     const phoneNumbers = dtos
-      .map((dto) => dto.instructor?.phone)
+      .map((dto) => normalizePhone(dto.instructor?.phone)!)
       .filter(Boolean);
 
     if (phoneNumbers.length === 0) {
@@ -471,7 +473,6 @@ export class SchoolSamService {
     query: PaginateQuery,
     schoolId: number,
   ): Promise<Paginated<Sam>> {
-    console.log(`🌳🌳🌳🌳🌳🌳🌳🌳🌳🌳`, query.filter);
     const queryBuilder = this.samRepository
       .createQueryBuilder('sam')
       .where('sam.schoolId = :schoolId', { schoolId });
