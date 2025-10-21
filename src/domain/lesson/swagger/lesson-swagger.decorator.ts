@@ -465,7 +465,7 @@ export const GetStudentsByLessonIdDocs = () => {
       example: 3,
     }),
     ApiQuery({
-      name: 'filter.class',
+      name: 'filter.klass',
       required: false,
       type: String,
       description: '반 필터',

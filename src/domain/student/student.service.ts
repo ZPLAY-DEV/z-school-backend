@@ -237,7 +237,7 @@ export class StudentService {
 
     // class 조건 추가
     if (dto.klass) {
-      whereClause.class = dto.klass;
+      whereClause.klass = dto.klass;
     }
 
     // bunho 조건 추가

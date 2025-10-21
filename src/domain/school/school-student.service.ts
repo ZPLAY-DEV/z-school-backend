@@ -624,11 +624,11 @@ export class SchoolStudentService {
 
   async getGradeClasses(schoolId: number): Promise<ResponseSchoolGradesDto[]> {
     const result = await this.studentRepository.query(
-      'SELECT grade, class \
+      'SELECT grade, klass \
 FROM students \
 WHERE schoolId = ? \
-GROUP BY grade, class \
-ORDER BY grade, class',
+GROUP BY grade, klass \
+ORDER BY grade, klass',
       [schoolId],
     );
 
@@ -639,7 +639,7 @@ ORDER BY grade, class',
       if (!gradeMap.has(row.grade)) {
         gradeMap.set(row.grade, []);
       }
-      gradeMap.get(row.grade)!.push(row.class);
+      gradeMap.get(row.grade)!.push(row.klass);
     });
 
     // Map을 배열로 변환하고 grade 순으로 정렬

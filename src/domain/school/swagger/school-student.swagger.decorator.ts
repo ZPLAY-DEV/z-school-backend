@@ -645,11 +645,11 @@ export const SchoolStudentListPaginatedDocs = () => {
 
 **🎯 필터링 기능**
 - **grade**: 학년별 필터 (\`?filter.grade=3\`)
-- **class**: 반별 필터 (\`?filter.class=2\`)
+- **klass**: 반별 필터 (\`?filter.klass=2\`)
 - **bunho**: 학번별 필터 (\`?filter.bunho=15\`)
 - **name**: 이름 정확 매치 또는 부분 매치 (\`?filter.name=홍길동\`)
 - **status**: 학생 상태별 필터 (\`?filter.status=ATTENDING\`)
-- **복합 필터**: \`?filter.grade=3&filter.class=2\`
+- **복합 필터**: \`?filter.grade=3&filter.klass=2\`
 
 **📊 정렬 기능**
 - **기본 정렬**: 학년 → 반 → 학번 순 (ASC)

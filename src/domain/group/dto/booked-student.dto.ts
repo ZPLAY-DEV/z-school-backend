@@ -42,7 +42,7 @@ export class BookedStudentDto {
     description: '반',
     example: '1반',
   })
-  class: string;
+  klass: string;
 
   @ApiProperty({
     description: '학번/번호',
