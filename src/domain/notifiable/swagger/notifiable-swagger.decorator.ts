@@ -301,7 +301,7 @@ export const GetNotifiableStatusItemsPaginatedDocs = () => {
       required: false,
     }),
     ApiQuery({
-      name: 'filter.student.class',
+      name: 'filter.student.klass',
       type: String,
       description: '반 필터 (예: 1 또는 $in:1,2)',
       example: '1',

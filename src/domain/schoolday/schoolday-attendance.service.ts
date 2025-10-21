@@ -1,14 +1,14 @@
 import {
-  CreateTableCommand,
-  DeleteTableCommand,
-  DescribeTableCommand,
+    CreateTableCommand,
+    DeleteTableCommand,
+    DescribeTableCommand,
 } from '@aws-sdk/client-dynamodb';
 import {
-  DeleteCommand,
-  PutCommand,
-  ScanCommand,
-  ScanCommandInput,
-  TransactWriteCommand,
+    DeleteCommand,
+    PutCommand,
+    ScanCommand,
+    ScanCommandInput,
+    TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -18,27 +18,27 @@ import { fromZonedTime } from 'date-fns-tz';
 import { ClassStatus } from 'src/common/enums';
 import { AttendanceStatus } from 'src/common/enums/attendance-status';
 import {
-  IAttendance,
-  IAttendanceCore,
+    IAttendance,
+    IAttendanceCore,
 } from 'src/domain/attendance/entities/attendance.interface';
 import {
-  DeleteRequest,
-  WriteRequest,
+    DeleteRequest,
+    WriteRequest,
 } from 'src/domain/attendance/types/attendance.types';
 import {
-  buildAttendanceItem,
-  generateDailyStudentKey,
-  generateGroupKey,
+    buildAttendanceItem,
+    generateDailyStudentKey,
+    generateGroupKey,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import {
-  BuildAttendanceBodyDto,
-  CreateDynamoRecordWithDateDto,
-  CreateDynamoRecordWithRangeDto,
-  DeleteAttendanceBySchoolTermDto,
-  DeleteGroupAttendanceWithDateDto,
-  ResponseAttendanceDto,
+    BuildAttendanceBodyDto,
+    CreateDynamoRecordWithDateDto,
+    CreateDynamoRecordWithRangeDto,
+    DeleteAttendanceBySchoolTermDto,
+    DeleteGroupAttendanceWithDateDto,
+    ResponseAttendanceDto,
 } from 'src/domain/schoolday/dto/response-attendance.dto';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -719,8 +719,8 @@ export class SchooldayAttendanceService {
       dto.localDate,
       dto.pick.student.id,
       dto.pick.student.grade,
-      dto.pick.student.class,
-      dto.pick.student.studentCode,
+      dto.pick.student.klass,
+      dto.pick.student.bunho,
     );
 
     return {
@@ -949,8 +949,8 @@ export class SchooldayAttendanceService {
             localDate,
             pick.student.id,
             pick.student.grade,
-            pick.student.class,
-            pick.student.studentCode,
+            pick.student.klass,
+            pick.student.bunho,
           ),
         );
 

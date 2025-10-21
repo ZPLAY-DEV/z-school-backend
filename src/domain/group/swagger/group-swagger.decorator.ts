@@ -714,7 +714,7 @@ export const ListBookedPendingStudentsDocs = () => {
             },
             grade: { type: 'number', example: 2, description: '학년' },
             class: { type: 'string', example: '1', description: '반' },
-            studentCode: {
+            bunho: {
               type: 'number',
               example: 11,
               description: '학번/번호',
@@ -749,7 +749,7 @@ export const ListBookedPendingStudentsDocs = () => {
             name: '홍길동',
             grade: 2,
             class: '1',
-            studentCode: 11,
+            bunho: 11,
             schoolId: 1,
             parentId: 45,
             status: 'ACTIVE',
@@ -762,7 +762,7 @@ export const ListBookedPendingStudentsDocs = () => {
             name: '김영희',
             grade: 3,
             class: '1',
-            studentCode: 12,
+            bunho: 12,
             schoolId: 1,
             parentId: 46,
             status: 'ACTIVE',

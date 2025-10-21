@@ -26,17 +26,17 @@ const SCHOOL_STUDENT_CONFIG: PaginateConfig<Student> = {
     parent: true,
     picks: true,
   },
-  sortableColumns: ['grade', 'class', 'studentCode'],
+  sortableColumns: ['grade', 'klass', 'bunho'],
   searchableColumns: ['name', 'parent.phone'],
   defaultSortBy: [
     ['grade', 'ASC'],
-    ['class', 'ASC'],
-    ['studentCode', 'ASC'],
+    ['klass', 'ASC'],
+    ['bunho', 'ASC'],
   ],
   filterableColumns: {
     grade: [FilterOperator.EQ],
     class: [FilterOperator.EQ],
-    studentCode: [FilterOperator.EQ],
+    bunho: [FilterOperator.EQ],
     name: [FilterOperator.EQ, FilterOperator.ILIKE],
     status: [FilterOperator.EQ, FilterOperator.IN],
   },
@@ -63,7 +63,7 @@ export const CreateSchoolStudentBulkDocs = () => {
 4. 처리된 학생 수를 반환
 
 **⚠️ 중요 제약사항**
-- schoolId + grade + class + studentCode 조합은 반드시 유니크
+- schoolId + grade + class + bunho 조합은 반드시 유니크
 - 학생 이름은 필수 입력 (2-10자)
 - 학년은 1-6학년 범위 내
 - 반은 1-20 범위 내 문자열
@@ -94,7 +94,7 @@ export const CreateSchoolStudentBulkDocs = () => {
               schoolId: 1,
               grade: 3,
               class: '2',
-              studentCode: 15,
+              bunho: 15,
               name: '홍길동',
               phone: '01012345678',
               escortPhone: '01087654321',
@@ -112,7 +112,7 @@ export const CreateSchoolStudentBulkDocs = () => {
               schoolId: 1,
               grade: 3,
               class: '2',
-              studentCode: 15,
+              bunho: 15,
               name: '홍길동',
               phone: '01012345678',
               escortPhone: '01087654321',
@@ -125,7 +125,7 @@ export const CreateSchoolStudentBulkDocs = () => {
               schoolId: 1,
               grade: 2,
               class: '1',
-              studentCode: 8,
+              bunho: 8,
               name: '김영희',
               phone: '01023456789',
               escortPhone: '01076543210',
@@ -143,7 +143,7 @@ export const CreateSchoolStudentBulkDocs = () => {
               schoolId: 1,
               grade: 4,
               class: '3',
-              studentCode: 22,
+              bunho: 22,
               name: '이수현',
               phone: '01034567890',
               status: 'ATTENDING',
@@ -225,7 +225,7 @@ export const CreateSchoolStudentExcelUploadDocs = () => {
 
 **🔄 비즈니스 로직**
 1. Excel 파일 파싱 및 데이터 검증
-2. schoolId + grade + class + studentCode 조합으로 중복 체크
+2. schoolId + grade + class + bunho 조합으로 중복 체크
 3. 기존 학생은 정보 업데이트, 새로운 학생은 생성
 4. 학부모 정보도 함께 생성/업데이트
 5. 처리된 학생 수 반환
@@ -326,7 +326,7 @@ export const CreateSchoolStudentsBulkDryRunDocs = () => {
 
 **⚠️ 중요 제약사항**
 - 실제 데이터베이스에는 변경사항이 적용되지 않음
-- schoolId + grade + class + studentCode 기준으로 중복 검사
+- schoolId + grade + class + bunho 기준으로 중복 검사
 - 반환된 배열이 비어있으면 새로운 학생들만 등록 예정
 - 반환된 배열에 데이터가 있으면 해당 학생들이 업데이트 예정
 
@@ -354,7 +354,7 @@ export const CreateSchoolStudentsBulkDryRunDocs = () => {
               schoolId: 1,
               grade: 3,
               class: '2',
-              studentCode: 15,
+              bunho: 15,
               name: '홍길동',
               phone: '01012345678',
               status: 'ATTENDING',
@@ -371,7 +371,7 @@ export const CreateSchoolStudentsBulkDryRunDocs = () => {
               schoolId: 1,
               grade: 1,
               class: '1',
-              studentCode: 1,
+              bunho: 1,
               name: '신입생1',
               phone: '01011111111',
               status: 'ATTENDING',
@@ -383,7 +383,7 @@ export const CreateSchoolStudentsBulkDryRunDocs = () => {
               schoolId: 1,
               grade: 1,
               class: '1',
-              studentCode: 2,
+              bunho: 2,
               name: '신입생2',
               phone: '01033333333',
               status: 'ATTENDING',
@@ -583,7 +583,7 @@ export const SchoolStudentListDocs = () => {
             name: '홍길동',
             grade: 3,
             class: '2',
-            studentCode: 15,
+            bunho: 15,
             phone: '01012345678',
             escortPhone: '01087654321',
             status: 'ATTENDING',
@@ -646,7 +646,7 @@ export const SchoolStudentListPaginatedDocs = () => {
 **🎯 필터링 기능**
 - **grade**: 학년별 필터 (\`?filter.grade=3\`)
 - **class**: 반별 필터 (\`?filter.class=2\`)
-- **studentCode**: 학번별 필터 (\`?filter.studentCode=15\`)
+- **bunho**: 학번별 필터 (\`?filter.bunho=15\`)
 - **name**: 이름 정확 매치 또는 부분 매치 (\`?filter.name=홍길동\`)
 - **status**: 학생 상태별 필터 (\`?filter.status=ATTENDING\`)
 - **복합 필터**: \`?filter.grade=3&filter.class=2\`
@@ -654,7 +654,7 @@ export const SchoolStudentListPaginatedDocs = () => {
 **📊 정렬 기능**
 - **기본 정렬**: 학년 → 반 → 학번 순 (ASC)
 - **커스텀 정렬**: \`?sortBy=grade:DESC&sortBy=class:ASC\`
-- **정렬 가능 필드**: grade, class, studentCode
+- **정렬 가능 필드**: grade, class, bunho
 
 **📱 앱 사용 여부 판단**
 - parent.userId가 null: 앱 미사용 학부모

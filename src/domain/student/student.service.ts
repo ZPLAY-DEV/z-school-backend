@@ -112,8 +112,8 @@ export class StudentService {
     return await this.dataSource.transaction(async (manager) => {
       const { parent: parentDto, parentId, ...studentDto } = dto;
 
-      if (studentDto.class) {
-        studentDto.class = studentDto.class.trim().replace(/반$/, '');
+      if (studentDto.klass) {
+        studentDto.klass = studentDto.klass.trim().replace(/반$/, '');
       }
 
       let finalParentId: number;
@@ -162,11 +162,11 @@ export class StudentService {
         schoolId: studentDto.schoolId,
         grade: studentDto.grade,
       };
-      if (studentDto.class) {
-        whereCondition.class = studentDto.class;
+      if (studentDto.klass) {
+        whereCondition.klass = studentDto.klass;
       }
-      if (studentDto.studentCode) {
-        whereCondition.studentCode = studentDto.studentCode;
+      if (studentDto.bunho) {
+        whereCondition.bunho = studentDto.bunho;
       }
 
       const existingStudent = await manager.findOne(Student, {
@@ -236,13 +236,13 @@ export class StudentService {
     };
 
     // class 조건 추가
-    if (dto.class) {
-      whereClause.class = dto.class;
+    if (dto.klass) {
+      whereClause.class = dto.klass;
     }
 
-    // studentCode 조건 추가
-    if (dto.studentCode) {
-      whereClause.studentCode = dto.studentCode;
+    // bunho 조건 추가
+    if (dto.bunho) {
+      whereClause.bunho = dto.bunho;
     }
 
     return await this.studentRepository.findOne({
@@ -308,8 +308,8 @@ export class StudentService {
         v.today,
         student.id,
         student.grade,
-        student.class,
-        student.studentCode,
+        student.klass,
+        student.bunho,
       );
       return {
         groupKey,
@@ -330,8 +330,8 @@ export class StudentService {
         schoolday.today,
         student.id,
         student.grade,
-        student.class,
-        student.studentCode,
+        student.klass,
+        student.bunho,
       );
       const attendance = attendanceMap.get(dailyStudentKey);
 
@@ -560,12 +560,12 @@ export class StudentService {
       return student;
     }
 
-    if (dto.class && dto.grade && dto.studentCode) {
+    if (dto.grade && dto.klass && dto.bunho) {
       const otherStudent = await this.studentRepository.findOneOrFail({
         where: {
-          class: dto.class,
           grade: dto.grade,
-          studentCode: dto.studentCode,
+          klass: dto.klass,
+          bunho: dto.bunho,
           schoolId: student.schoolId,
         },
       });

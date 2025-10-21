@@ -121,8 +121,8 @@ export class LessonService {
       .orderBy('student.id', 'ASC')
       .addOrderBy('pick.groupId', 'ASC')
       .addOrderBy('student.grade', 'ASC')
-      .addOrderBy('student.class', 'ASC')
-      .addOrderBy('student.studentCode', 'ASC')
+      .addOrderBy('student.klass', 'ASC')
+      .addOrderBy('student.bunho', 'ASC')
       .getMany();
 
     //! edge case 대응. 혹시 모를 중복 학생 제거 (동일한 student.id를 가진 경우)
@@ -173,13 +173,13 @@ export class LessonService {
       query || { page: 1, limit: 20, path: '' },
       queryBuilder,
       {
-        sortableColumns: ['id', 'name', 'grade', 'class', 'studentCode'],
+        sortableColumns: ['id', 'name', 'grade', 'klass', 'bunho'],
         searchableColumns: ['name'],
         defaultSortBy: [
           ['id', 'ASC'],
           ['grade', 'ASC'],
-          ['class', 'ASC'],
-          ['studentCode', 'ASC'],
+          ['klass', 'ASC'],
+          ['bunho', 'ASC'],
         ],
         filterableColumns: {
           grade: [FilterOperator.EQ],
@@ -251,8 +251,8 @@ export class LessonService {
             studentId: booking.student.id,
             name: booking.student.name,
             grade: booking.student.grade,
-            class: booking.student.class,
-            studentCode: booking.student.studentCode,
+            class: booking.student.klass,
+            bunho: booking.student.bunho,
             parentPhone: booking.student.parent.phone,
             status: booking.student.status,
             waitingPosition: booking.waitingPosition,
@@ -269,8 +269,8 @@ export class LessonService {
         studentId: booking.student.id,
         name: booking.student.name,
         grade: booking.student.grade,
-        class: booking.student.class,
-        studentCode: booking.student.studentCode,
+        class: booking.student.klass,
+        bunho: booking.student.bunho,
         parentPhone: booking.student.parent.phone,
         status: booking.student.status,
         waitingPosition: booking.waitingPosition,

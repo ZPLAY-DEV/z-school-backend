@@ -15,7 +15,7 @@ export class NotifiableStatusItemDto {
   class: string;
 
   @ApiProperty({ description: '학번' })
-  studentCode: number;
+  bunho: number;
 
   @ApiProperty({ description: '링크', nullable: true })
   link: string | null;

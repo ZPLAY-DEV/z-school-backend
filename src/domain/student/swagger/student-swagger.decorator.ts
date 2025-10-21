@@ -4,12 +4,12 @@
 
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiResponse,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
+    ApiQuery,
+    ApiResponse,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -49,7 +49,7 @@ export const CreateStudentDocs = () =>
 ### 📌 비즈니스 규칙
 - **필수 정보**: schoolId, grade, parent (또는 parentId)
 - **부모 정보**: parent 객체는 항상 필수 (parentId 미제공시)
-- **선택 정보**: class, studentCode, name, phone, status, note
+- **선택 정보**: class, bunho, name, phone, status, note
 - **중복 체크**: 동일 학교 내 학번 중복 불가
 - **학년 범위**: 1~6학년만 가능
 
@@ -73,7 +73,7 @@ export const CreateStudentDocs = () =>
             schoolId: 1,
             grade: 3,
             class: '5',
-            studentCode: 4,
+            bunho: 4,
             name: '이학상',
             status: 'ATTENDING',
             phone: '01011112222',
@@ -89,7 +89,7 @@ export const CreateStudentDocs = () =>
             schoolId: 1,
             grade: 3,
             class: '5',
-            studentCode: 4,
+            bunho: 4,
             name: '이학상',
             status: 'ATTENDING',
             phone: '01011112222',
@@ -107,7 +107,7 @@ export const CreateStudentDocs = () =>
             schoolId: 1,
             grade: 3,
             class: '5',
-            studentCode: 4,
+            bunho: 4,
             name: '이학상',
             status: 'ATTENDING',
             phone: '01011112222',
@@ -124,7 +124,7 @@ export const CreateStudentDocs = () =>
             schoolId: 1,
             grade: 3,
             class: '5',
-            studentCode: 4,
+            bunho: 4,
             name: '이학상',
             status: 'ATTENDING',
             phone: '01011112222',
@@ -205,7 +205,7 @@ export const CreateStudentDryRunDocs = () =>
             schoolId: 1,
             grade: 3,
             class: '5',
-            studentCode: 4,
+            bunho: 4,
             name: '이학상',
             parentId: 1,
           },
@@ -217,7 +217,7 @@ export const CreateStudentDryRunDocs = () =>
             schoolId: 1,
             grade: 3,
             class: '5',
-            studentCode: 4,
+            bunho: 4,
             name: '이학상',
             parent: {
               id: 1,
@@ -231,7 +231,7 @@ export const CreateStudentDryRunDocs = () =>
             schoolId: 1,
             grade: 3,
             class: '5',
-            studentCode: 4,
+            bunho: 4,
             name: '이학상',
             parent: {
               phone: '01066661031',
@@ -484,7 +484,7 @@ export const UpdateStudentDocs = () =>
 {
   "grade": 4,
   "class": "2",
-  "studentCode": 15,
+  "bunho": 15,
   "name": "김학생",
   "phone": "01098765432",
   "nextStops": [
@@ -512,7 +512,7 @@ export const UpdateStudentDocs = () =>
           value: {
             grade: 4,
             class: '2',
-            studentCode: 15,
+            bunho: 15,
             name: '김학생',
             phone: '01098765432',
           },
@@ -554,7 +554,7 @@ export const UpdateStudentDocs = () =>
           value: {
             grade: 5,
             class: '3',
-            studentCode: 20,
+            bunho: 20,
             name: '이학생',
             phone: '01055556666',
             nextStops: [

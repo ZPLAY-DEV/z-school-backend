@@ -1,9 +1,9 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiParam,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
@@ -341,7 +341,7 @@ export const GetBookingsDocs = () => {
       "name": "김철수",
       "grade": 3,
       "class": "1반",
-      "studentCode": 12,
+      "bunho": 12,
       "schoolName": "서울초등학교",
       "parentName": "김부모",
       "phoneNumber": "010-1234-5678"

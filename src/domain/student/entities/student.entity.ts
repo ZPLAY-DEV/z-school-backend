@@ -24,7 +24,7 @@ import {
 } from 'typeorm';
 
 @Entity('students')
-@Unique(['schoolId', 'grade', 'class', 'studentCode'])
+@Unique(['schoolId', 'grade', 'klass', 'bunho'])
 export class Student {
   @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
@@ -53,7 +53,7 @@ export class Student {
     length: 8,
     comment: '반은 다양한 형태로 생성될 수 있음 (1반, 2반, 기쁨반 ..)',
   })
-  class: string;
+  klass: string;
 
   @ApiProperty({ description: '학번/번호', example: 10 })
   @Column({
@@ -61,7 +61,7 @@ export class Student {
     unsigned: true,
     comment: '학번/번호',
   })
-  studentCode: number;
+  bunho: number;
 
   @ApiProperty({ description: 'up to 16 characters' })
   @Column({ type: 'varchar', length: 16, comment: '이름' })

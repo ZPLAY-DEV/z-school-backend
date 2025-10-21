@@ -1,16 +1,16 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiBody,
-  ApiOkResponse,
-  ApiOperation,
-  ApiQuery,
-  ApiResponse,
+    ApiBody,
+    ApiOkResponse,
+    ApiOperation,
+    ApiQuery,
+    ApiResponse,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import {
-  AttendanceKeyDto,
-  UpsertAttendanceDto,
+    AttendanceKeyDto,
+    UpsertAttendanceDto,
 } from '../dto/upsert-attendance.dto';
 
 // Fetch Attendance Records
@@ -437,7 +437,7 @@ export const BatchGetByIdAndKeysDocs = () =>
 
 **🔐 키 형식**
 - groupKey: "GROUP#{groupId}" 형식 (예: GROUP#123)
-- dailyStudentKey: "DATE#YYYY-MM-DD#STUDENT#{studentId}#{grade}-{class}-{studentCode}" 형식
+- dailyStudentKey: "DATE#YYYY-MM-DD#STUDENT#{studentId}#{grade}-{class}-{bunho}" 형식
 - rangeKeys: 쉼표로 구분된 dailyStudentKey 문자열
 
 **⚠️ 중요 제약사항**
@@ -473,7 +473,7 @@ export const BatchGetByIdAndKeysDocs = () =>
       description: `
 **Range Keys (필수)**
 - 쉼표로 구분된 dailyStudentKey 문자열
-- 각 키는 "DATE#YYYY-MM-DD#STUDENT#{studentId}#{grade}-{class}-{studentCode}" 형식
+- 각 키는 "DATE#YYYY-MM-DD#STUDENT#{studentId}#{grade}-{class}-{bunho}" 형식
 - 빈 문자열이면 빈 배열 반환
 - 잘못된 형식의 키는 조회에서 제외
       `,

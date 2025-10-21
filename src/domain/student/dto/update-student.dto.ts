@@ -43,7 +43,7 @@ export class UpdateStudentDto {
   @IsOptional()
   @IsString({ message: '반은 문자열이어야 합니다' })
   @MaxLength(8, { message: '반은 8자 이하여야 합니다' })
-  class?: string;
+  klass?: string;
 
   @ApiPropertyOptional({
     description: '학번/번호 - 반 번호',
@@ -52,7 +52,7 @@ export class UpdateStudentDto {
   })
   @IsOptional()
   @IsInt({ message: '번호는 정수여야 합니다' })
-  studentCode?: number;
+  bunho?: number;
 
   @ApiPropertyOptional({
     description: '학생 이름 - 학생의 실명 (최대 16자, 한글/영문/숫자만 허용)',

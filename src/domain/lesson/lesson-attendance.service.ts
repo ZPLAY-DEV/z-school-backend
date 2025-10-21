@@ -120,8 +120,8 @@ export class LessonAttendanceService {
           date,
           pick.studentId,
           pick.student.grade,
-          pick.student.class,
-          pick.student.studentCode,
+          pick.student.klass,
+          pick.student.bunho,
         );
 
         const existingItem = itemMap.get(dailyStudentKey);
@@ -363,7 +363,7 @@ export class LessonAttendanceService {
       const student = pick.student;
       const rowData = [
         index + 1,
-        `${student.grade}학년 ${student.class}반 ${student.studentCode}번`,
+        `${student.grade}학년 ${student.klass}반 ${student.bunho}번`,
         student.name,
       ];
 
@@ -556,7 +556,7 @@ export class LessonAttendanceService {
       const student = pick.student;
       const rowData = [
         index + 1,
-        `${student.grade}학년 ${student.class}반 ${student.studentCode}번`,
+        `${student.grade}학년 ${student.klass}반 ${student.bunho}번`,
         student.name,
       ];
 
@@ -726,8 +726,8 @@ export class LessonAttendanceService {
             schoolday.today,
             pick.student.id,
             pick.student.grade,
-            pick.student.class,
-            pick.student.studentCode,
+            pick.student.klass,
+            pick.student.bunho,
           );
 
           keys.push({
@@ -790,8 +790,8 @@ export class LessonAttendanceService {
             schoolday.today,
             pick.student.id,
             pick.student.grade,
-            pick.student.class,
-            pick.student.studentCode,
+            pick.student.klass,
+            pick.student.bunho,
           );
 
           const existingAttendance = attendanceMap.get(dailyStudentKey);

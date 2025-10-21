@@ -240,8 +240,8 @@ export class NotifiableService {
       order: {
         student: {
           grade: 'ASC',
-          class: 'ASC',
-          studentCode: 'ASC',
+          klass: 'ASC',
+          bunho: 'ASC',
         },
       },
     });
@@ -251,8 +251,8 @@ export class NotifiableService {
       id: recipient.student.id,
       name: recipient.student.name,
       grade: recipient.student.grade,
-      class: recipient.student.class,
-      studentCode: recipient.student.studentCode,
+      class: recipient.student.klass,
+      bunho: recipient.student.bunho,
       link: recipient.nanoid ? `${this.domain}/${recipient.nanoid}` : null,
       type: notifiable.type,
       readAt: recipient.readAt,
@@ -282,26 +282,26 @@ export class NotifiableService {
       .leftJoinAndSelect('recipient.student', 'student')
       .where('recipient.notifiableId = :notifiableId', { notifiableId: id })
       .orderBy('student.grade', 'ASC')
-      .addOrderBy('student.class', 'ASC')
-      .addOrderBy('student.studentCode', 'ASC');
+      .addOrderBy('student.klass', 'ASC')
+      .addOrderBy('student.bunho', 'ASC');
 
     const paginatedResult = await paginate<Recipient>(query, queryBuilder, {
       relations: ['student'],
       sortableColumns: [
         'id',
         'student.grade',
-        'student.class',
-        'student.studentCode',
+        'student.klass',
+        'student.bunho',
       ],
       searchableColumns: ['student.name'],
       defaultSortBy: [
         ['student.grade', 'ASC'],
-        ['student.class', 'ASC'],
-        ['student.studentCode', 'ASC'],
+        ['student.klass', 'ASC'],
+        ['student.bunho', 'ASC'],
       ],
       filterableColumns: {
         'student.grade': [FilterOperator.EQ, FilterOperator.IN],
-        'student.class': [FilterOperator.EQ, FilterOperator.IN],
+        'student.klass': [FilterOperator.EQ, FilterOperator.IN],
       },
     });
 
@@ -311,8 +311,8 @@ export class NotifiableService {
         id: recipient.student.id,
         name: recipient.student.name,
         grade: recipient.student.grade,
-        class: recipient.student.class,
-        studentCode: recipient.student.studentCode,
+        class: recipient.student.klass,
+        bunho: recipient.student.bunho,
         link: recipient.nanoid ? `${this.domain}/${recipient.nanoid}` : null,
         type: notifiable.type,
         readAt: recipient.readAt,

@@ -101,10 +101,10 @@ export class SchoolStudentController {
     const dtos: CreateStudentDto[] = [];
 
     for (let grade = 1; grade <= 6; grade++) {
-      for (let classNum = 1; classNum <= 2; classNum++) {
+      for (let klass = 1; klass <= 2; klass++) {
         const classDtos: CreateStudentDto[] = [];
 
-        for (let studentCode = 1; studentCode <= 20; studentCode++) {
+        for (let bunho = 1; bunho <= 20; bunho++) {
           const firstName = koreanFaker.person.firstName();
           const lastName = koreanFaker.person.lastName();
           const koreanName = lastName + firstName;
@@ -113,8 +113,8 @@ export class SchoolStudentController {
           const dto = new CreateStudentDto();
           dto.schoolId = schoolId;
           dto.grade = grade;
-          dto.class = classNum.toString();
-          dto.studentCode = studentCode;
+          dto.klass = klass.toString();
+          dto.bunho = bunho;
           dto.name = koreanName;
           dto.phone = `010${koreanFaker.string.numeric(8)}`;
           dto.status = StudentStatus.ATTENDING;
@@ -129,9 +129,9 @@ export class SchoolStudentController {
         // // 각 반의 20명 학생들을 name 기준으로 오름차순 정렬
         // classDtos.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-        // // 정렬 후 studentCode를 1부터 20까지 순차적으로 재할당
+        // // 정렬 후 bunho를 1부터 20까지 순차적으로 재할당
         // classDtos.forEach((dto, index) => {
-        //   dto.studentCode = index + 1;
+        //   dto.bunho = index + 1;
         // });
 
         dtos.push(...classDtos);

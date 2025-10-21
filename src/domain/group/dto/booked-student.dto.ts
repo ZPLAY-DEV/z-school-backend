@@ -48,7 +48,7 @@ export class BookedStudentDto {
     description: '학번/번호',
     example: 10,
   })
-  studentCode: number;
+  bunho: number;
 
   @ApiProperty({
     description: '학생 부모 전화번호',

@@ -324,7 +324,7 @@ export interface HttpErrorFormat {
 //   name: string;
 //   grade: number;
 //   class: string;
-//   studentCode: number;
+//   bunho: number;
 //   link: string | null;
 //   read: boolean;
 // };

@@ -10,10 +10,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import * as dynamoose from 'dynamoose';
 import * as ExcelJS from 'exceljs';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import {
-  AttendanceStatus,
-  NotifiableSourceType
-} from 'src/common/enums';
+import { AttendanceStatus, NotifiableSourceType } from 'src/common/enums';
 import { INextStop } from 'src/common/interfaces';
 import {
   CreateAttendanceWithGroupStudentDto,
@@ -362,8 +359,8 @@ export class GroupAttendanceService {
       date,
       student.id,
       student.grade,
-      student.class,
-      student.studentCode,
+      student.klass,
+      student.bunho,
     );
 
     const itemKey = {
@@ -438,8 +435,8 @@ export class GroupAttendanceService {
           groupName: v.group.groupName,
           name: v.student.name,
           grade: v.student.grade,
-          class: v.student.class,
-          studentCode: v.student.studentCode,
+          klass: v.student.klass,
+          bunho: v.student.bunho,
           status: v.student.status,
           phone: v.student.phone,
           parentPhone: v.student.parent.phone,
@@ -474,8 +471,8 @@ export class GroupAttendanceService {
           date,
           student.id,
           student.grade,
-          student.class,
-          student.studentCode,
+          student.klass,
+          student.bunho,
         );
 
         recordsToCreate.push({
@@ -646,8 +643,8 @@ export class GroupAttendanceService {
           date,
           pick.studentId,
           pick.student.grade,
-          pick.student.class,
-          pick.student.studentCode,
+          pick.student.klass,
+          pick.student.bunho,
         );
 
         const existingItem = itemMap.get(dailyStudentKey);
@@ -688,8 +685,8 @@ export class GroupAttendanceService {
           'id',
           'name',
           'grade',
-          'class',
-          'studentCode',
+          'klass',
+          'bunho',
           'nextStops',
           'parent',
         ],
@@ -1007,7 +1004,7 @@ export class GroupAttendanceService {
       const student = pick.student;
       const rowData = [
         index + 1, // 순번
-        `${student.grade}학년 ${student.class}반 ${student.studentCode}번`, // 학년,반,번호
+        `${student.grade}학년 ${student.klass}반 ${student.bunho}번`, // 학년,반,번호
         student.name, // 이름
       ];
       if (
@@ -1218,8 +1215,8 @@ export class GroupAttendanceService {
           schoolday.today,
           pick.student.id,
           pick.student.grade,
-          pick.student.class,
-          pick.student.studentCode,
+          pick.student.klass,
+          pick.student.bunho,
         );
         return {
           groupKey,
@@ -1272,8 +1269,8 @@ export class GroupAttendanceService {
           schoolday.today,
           pick.student.id,
           pick.student.grade,
-          pick.student.class,
-          pick.student.studentCode,
+          pick.student.klass,
+          pick.student.bunho,
         );
         const existingAttendance = attendanceMap.get(dailyStudentKey);
         const finalAttendance = existingAttendance
@@ -1379,8 +1376,8 @@ export class GroupAttendanceService {
             schoolday.today,
             pick.student.id,
             pick.student.grade,
-            pick.student.class,
-            pick.student.studentCode,
+            pick.student.klass,
+            pick.student.bunho,
           );
 
           keys.push({
@@ -1443,8 +1440,8 @@ export class GroupAttendanceService {
             schoolday.today,
             pick.student.id,
             pick.student.grade,
-            pick.student.class,
-            pick.student.studentCode,
+            pick.student.klass,
+            pick.student.bunho,
           );
 
           const existingAttendance = attendanceMap.get(dailyStudentKey);

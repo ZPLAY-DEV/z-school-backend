@@ -56,7 +56,7 @@ export class SchoolStudentService {
     // 전화번호 정규화 at the DTO level
     const normalizedDtos = dtos.map((dto: CreateStudentDto) => ({
       ...dto,
-      class: dto.class.trim().replace(/반$/, ''),
+      klass: dto.klass.trim().replace(/반$/, ''),
       parent: {
         ...dto.parent,
         phone: normalizePhone(dto.parent.phone)!,
@@ -123,7 +123,7 @@ export class SchoolStudentService {
 
   /**
    * Check for existing Students that would be overwritten based on the compound unique key
-   * (schoolId, grade, class, studentCode)
+   * (schoolId, grade, class, bunho)
    */
   private async checkExistingStudents(
     schoolId: number,
@@ -133,8 +133,8 @@ export class SchoolStudentService {
     const uniqueKeyCombinations = dtos.map((dto) => ({
       schoolId: dto.schoolId ?? schoolId,
       grade: dto.grade,
-      class: dto.class,
-      studentCode: dto.studentCode,
+      klass: dto.klass,
+      bunho: dto.bunho,
     }));
 
     // Find existing lessons that match any of these combinations
@@ -142,8 +142,8 @@ export class SchoolStudentService {
       where: uniqueKeyCombinations.map((combo) => ({
         schoolId: combo.schoolId,
         grade: combo.grade,
-        class: combo.class,
-        studentCode: combo.studentCode,
+        klass: combo.klass,
+        bunho: combo.bunho,
       })),
     });
 
@@ -313,11 +313,11 @@ export class SchoolStudentService {
 
     const studentValues = dtos.flatMap((dto) => [
       dto.name || null,
-      dto.parent.phone ? parentMap.get(dto.parent.phone) || null : null,
       schoolId,
+      dto.parent.phone ? parentMap.get(dto.parent.phone) || null : null,
       dto.grade || null,
-      dto.class || null,
-      dto.studentCode || null,
+      dto.klass || null,
+      dto.bunho || null,
       dto.phone || null,
       dto.nextStops || null,
       dto.note || null,
@@ -328,11 +328,11 @@ export class SchoolStudentService {
       `
       INSERT INTO students (
         name,
-        parentId,
         schoolId,
+        parentId,
         grade,
-        class,
-        studentCode,
+        klass,
+        bunho,
         phone,
         nextStops,
         note,
@@ -340,23 +340,23 @@ export class SchoolStudentService {
       )
       VALUES ${studentPlaceholders} AS new_student(
         name,
-        parentId,
         schoolId,
+        parentId,
         grade,
-        class,
-        studentCode,
+        klass,
+        bunho,
         phone,
         nextStops,
         note,
         status
       )
       ON DUPLICATE KEY UPDATE 
-        schoolId = new_student.schoolId,
-        grade = new_student.grade,
-        class = new_student.class,
         name = new_student.name,
+        schoolId = new_student.schoolId,
         parentId = new_student.parentId,
-        studentCode = new_student.studentCode,
+        grade = new_student.grade,
+        klass = new_student.klass,
+        bunho = new_student.bunho,
         phone = new_student.phone,
         nextStops = new_student.nextStops,
         note = new_student.note,
@@ -390,20 +390,11 @@ export class SchoolStudentService {
     worksheet.eachRow((row, index) => {
       if (index < 3) return;
 
-      const [
-        ,
-        name,
-        grade,
-        className,
-        studentCode,
-        parentPhone,
-        phone,
-        note,
-        status,
-      ] = row.values as any[]; // row.values[0] 은 항상 undefined
+      const [, name, grade, klass, bunho, parentPhone, phone, note, status] =
+        row.values as any[]; // row.values[0] 은 항상 undefined
 
       if (
-        (!name && !grade && !className && !studentCode && !parentPhone) ||
+        (!name && !grade && !klass && !bunho && !parentPhone) ||
         status === '전학'
       )
         return;
@@ -411,8 +402,8 @@ export class SchoolStudentService {
       const studentData = {
         name: name?.toString().trim(),
         grade: Number(grade),
-        class: className?.toString().trim(),
-        studentCode: Number(studentCode),
+        klass: klass?.toString().trim(),
+        bunho: Number(bunho),
         parent: {
           name: `${name?.toString().trim()} 보호자`,
           phone: parentPhone?.toString().trim(),
@@ -520,8 +511,8 @@ export class SchoolStudentService {
       const row = worksheet.addRow([
         student.name,
         student.grade,
-        student.class,
-        student.studentCode,
+        student.klass,
+        student.bunho,
         formatPhone(student.parent.phone),
         formatPhone(student.phone),
         student.note || '',
@@ -573,8 +564,8 @@ export class SchoolStudentService {
       .createQueryBuilder('student')
       .where('student.schoolId = :schoolId', { schoolId })
       .orderBy('student.grade', 'ASC')
-      .addOrderBy('student.class', 'ASC')
-      .addOrderBy('student.studentCode', 'ASC');
+      .addOrderBy('student.klass', 'ASC')
+      .addOrderBy('student.bunho', 'ASC');
 
     // relations 파라미터에 따라 동적으로 조인 추가
     if (relations && relations.length > 0) {
@@ -612,17 +603,17 @@ export class SchoolStudentService {
         parent: true,
         picks: true,
       },
-      sortableColumns: ['grade', 'class', 'studentCode'],
+      sortableColumns: ['grade', 'klass', 'bunho'],
       searchableColumns: ['name', 'parent.phone'],
       defaultSortBy: [
         ['grade', 'ASC'],
-        ['class', 'ASC'],
-        ['studentCode', 'ASC'],
+        ['klass', 'ASC'],
+        ['bunho', 'ASC'],
       ],
       filterableColumns: {
         grade: [FilterOperator.EQ, FilterOperator.IN],
         class: [FilterOperator.EQ, FilterOperator.IN],
-        studentCode: [FilterOperator.EQ, FilterOperator.IN],
+        bunho: [FilterOperator.EQ, FilterOperator.IN],
         name: [FilterOperator.EQ, FilterOperator.ILIKE],
         status: [FilterOperator.EQ, FilterOperator.IN],
         'picks.termId': [FilterOperator.EQ],

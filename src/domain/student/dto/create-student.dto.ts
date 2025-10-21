@@ -26,7 +26,7 @@ import { NextStopDto } from 'src/domain/student/dto/next-stop.dto';
  *   - 기존 부모 연결: parent.id 포함 (다른 parent 필드들은 무시됨)
  *   - 새로운 부모 생성: parent.id 제외, parent.phone 필수
  *   - 직접 참조: parentId 제공 (parent 객체 무시됨)
- * - 선택: class, studentCode, name, phone, monday~saturday(요일별 보호자 정보), status, note
+ * - 선택: class, bunho, name, phone, monday~saturday(요일별 보호자 정보), status, note
  */
 export class CreateStudentDto {
   @ApiProperty({
@@ -61,7 +61,7 @@ export class CreateStudentDto {
   @IsNotEmpty()
   @IsString({ message: '반은 문자열이어야 합니다' })
   @MaxLength(8, { message: '반은 8자 이하여야 합니다' })
-  class: string;
+  klass: string;
 
   @ApiProperty({
     description: '학번/번호 - 학교 내 학생 고유번호 (1~99999)',
@@ -75,7 +75,7 @@ export class CreateStudentDto {
   @Type(() => Number)
   @Min(1, { message: '학번은 1 이상이어야 합니다' })
   @Max(99, { message: '학번은 99 이하여야 합니다' })
-  studentCode: number;
+  bunho: number;
 
   @ApiProperty({
     description: '학생 이름 - 학생의 실명 (최대 16자, 한글/영문만 허용)',

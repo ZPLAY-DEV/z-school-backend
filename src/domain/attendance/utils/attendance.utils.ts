@@ -1,7 +1,7 @@
 import { AttendanceStatus } from 'src/common/enums';
 import {
   IAttendance,
-  IAttendanceCore
+  IAttendanceCore,
 } from 'src/domain/attendance/entities/attendance.interface';
 import {
   AttendanceReport,
@@ -49,11 +49,11 @@ export function generateDailyStudentKey(
   studentId: number,
   grade: number,
   klass: string,
-  studentCode: number,
+  bunho: number,
 ): string {
-  const zeroPaddedCode = studentCode.toString().padStart(2, '0');
-  const studentCodeStr = `${grade}-${klass}-${zeroPaddedCode}`;
-  return `DATE#${dateStr}#STUDENT#${studentId}#${studentCodeStr}`;
+  const twoDigitBunho = bunho.toString().padStart(2, '0');
+  const hakBanBunho = `${grade}-${klass}-${twoDigitBunho}`;
+  return `DATE#${dateStr}#STUDENT#${studentId}#${hakBanBunho}`;
 }
 
 /**
@@ -187,8 +187,8 @@ export function createFallbackAttendanceItem(
           id: number;
           name?: string;
           grade: number;
-          class: string;
-          studentCode: number;
+          klass: string;
+          bunho: number;
         };
       }>;
     };
@@ -210,8 +210,8 @@ export function createFallbackAttendanceItem(
       schoolday.today,
       pick.student.id,
       pick.student.grade,
-      pick.student.class,
-      pick.student.studentCode,
+      pick.student.klass,
+      pick.student.bunho,
     ),
     lessonId: schoolday.lessonId,
     lessonName: schoolday.group?.lesson?.lessonName || '수업명',
