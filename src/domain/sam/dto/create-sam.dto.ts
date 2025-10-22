@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDefined,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -13,6 +14,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
+import { SamStatus } from 'src/common/enums';
 import { CreateInstructorDto } from 'src/domain/instructor/dto/create-instructor.dto';
 
 /**
@@ -84,6 +86,16 @@ export class CreateSamDto {
   @IsOptional()
   @IsBoolean({ message: '픽업 편집 권한은 불린 값이어야 합니다' })
   editPickPermission?: boolean;
+
+  @ApiPropertyOptional({
+    description: '상태 - 담임쌤의 상태 (기본값: ACTIVE)',
+    type: String,
+    example: SamStatus.ACTIVE,
+    default: SamStatus.ACTIVE,
+  })
+  @IsOptional()
+  @IsEnum(SamStatus, { message: '상태는 유효한 SamStatus 값이어야 합니다' })
+  status: SamStatus;
 
   @ApiPropertyOptional({
     description: '비고 - 담임쌤에 대한 추가 정보나 특이사항 (최대 255자)',

@@ -608,7 +608,7 @@ export class SchoolStudentService {
         parent: true,
         picks: true,
       },
-      sortableColumns: ['grade', 'klass', 'bunho'],
+      sortableColumns: ['id', 'name', 'grade', 'klass', 'bunho'],
       searchableColumns: ['name', 'parent.phone'],
       defaultSortBy: [
         ['grade', 'ASC'],

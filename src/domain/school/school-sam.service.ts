@@ -14,6 +14,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
+import { SamStatus } from 'src/common/enums';
 import { Instructor } from 'src/domain/instructor/entities/instructor.entity';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
@@ -482,7 +483,7 @@ export class SchoolSamService {
         instructor: true,
         groups: true,
       },
-      sortableColumns: ['id', 'alias'],
+      sortableColumns: ['id', 'alias', 'instructor.name'],
       searchableColumns: ['alias', 'instructor.phone'],
       defaultSortBy: [['alias', 'ASC']],
       filterableColumns: {
@@ -528,6 +529,7 @@ export class SchoolSamService {
           name: name ? name.toString().trim() : null,
           phone: phone ? phone.toString().trim() : null,
         },
+        status: SamStatus.ACTIVE,
         note: note ? note.toString().trim() : null,
         schoolId,
       };

@@ -17,6 +17,7 @@ import { GroupWithPicksCount, Sam } from 'src/domain/sam/entities/sam.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { getKoreanWeekday } from 'src/helpers/date';
+import { normalizePhone } from 'src/helpers/phone';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 @Injectable()
@@ -51,7 +52,7 @@ export class SamService {
         throw new NotFoundException('School not found');
       }
 
-      let finalInstructorId: number;
+      let thisInstructorId: number;
 
       // 2. 강사 처리: instructorId 우선, 없으면 instructor 객체 방식 사용
       if (instructorId) {
@@ -62,7 +63,7 @@ export class SamService {
         if (!existingInstructor) {
           throw new NotFoundException('Instructor not found');
         }
-        finalInstructorId = instructorId;
+        thisInstructorId = instructorId;
       } else if (instructorDto.id) {
         // instructor.id가 있으면 기존 강사 연결
         const existingInstructor = await manager.findOne(Instructor, {
@@ -71,16 +72,16 @@ export class SamService {
         if (!existingInstructor) {
           throw new NotFoundException('Instructor not found');
         }
-        finalInstructorId = instructorDto.id;
+        thisInstructorId = instructorDto.id;
       } else {
         // instructorDto.phone을 사용해서 기존 강사 검사
         if (instructorDto.phone) {
           const existingInstructor = await manager.findOne(Instructor, {
-            where: { phone: instructorDto.phone },
+            where: { phone: normalizePhone(instructorDto.phone) },
           });
           if (existingInstructor) {
             // 기존 강사가 있으면 해당 강사 사용
-            finalInstructorId = existingInstructor.id;
+            thisInstructorId = existingInstructor.id;
           } else {
             // 기존 강사가 없으면 새로 생성
             const newInstructor = manager.create(Instructor, {
@@ -94,7 +95,7 @@ export class SamService {
               Instructor,
               newInstructor,
             );
-            finalInstructorId = savedInstructor.id;
+            thisInstructorId = savedInstructor.id;
           }
         } else {
           // phone이 없는 경우 새로 생성
@@ -106,7 +107,7 @@ export class SamService {
             termsAgreedAt: instructorDto.termsAgreedAt,
           });
           const savedInstructor = await manager.save(Instructor, newInstructor);
-          finalInstructorId = savedInstructor.id;
+          thisInstructorId = savedInstructor.id;
         }
       }
 
@@ -114,7 +115,7 @@ export class SamService {
       const existingSam = await manager.findOne(Sam, {
         where: {
           schoolId: dto.schoolId,
-          instructorId: finalInstructorId,
+          instructorId: thisInstructorId,
         },
       });
 
@@ -127,7 +128,7 @@ export class SamService {
       // 4. Sam 생성
       const sam = manager.create(Sam, {
         ...samDto,
-        instructorId: finalInstructorId,
+        instructorId: thisInstructorId,
         score: dto.score ?? 0,
         editFeePermission: dto.editFeePermission ?? false,
         editPickPermission: dto.editPickPermission ?? false,
@@ -170,7 +171,7 @@ export class SamService {
     } else if (instructorDto.phone) {
       // 새로운 강사 생성 방식 - 전화번호로 기존 강사 확인
       const existingInstructor = await this.instructorRepository.findOne({
-        where: { phone: instructorDto.phone },
+        where: { phone: normalizePhone(instructorDto.phone) },
       });
       if (existingInstructor) {
         targetInstructorId = existingInstructor.id;
@@ -472,7 +473,7 @@ export class SamService {
           console.log('✅ Sam found:', existingSam.id, existingSam.alias);
 
           const { instructor: instructorDto, instructorId, ...samDto } = dto;
-          let finalInstructorId = existingSam.instructorId;
+          let thisInstructorId = existingSam.instructorId;
 
           // 2. 강사 정보 처리
           console.log('👨‍🏫 2단계: 강사 정보 처리 시작');
@@ -497,7 +498,7 @@ export class SamService {
               existingInstructor.id,
               existingInstructor.name,
             );
-            finalInstructorId = instructorId;
+            thisInstructorId = instructorId;
           } else if (instructorDto) {
             if (instructorDto.id) {
               // instructor.id가 있으면 해당 강사 정보 업데이트
@@ -527,7 +528,7 @@ export class SamService {
               );
               await manager.save(Instructor, updatedInstructor);
               console.log('✅ 강사 정보 저장 완료');
-              finalInstructorId = instructorDto.id;
+              thisInstructorId = instructorDto.id;
             } else {
               // instructor.id가 없으면 현재 연결된 강사의 정보를 업데이트
               console.log(
@@ -560,7 +561,7 @@ export class SamService {
                 );
                 await manager.save(Instructor, updatedInstructor);
                 console.log('✅ 현재 강사 정보 저장 완료');
-                finalInstructorId = existingSam.instructorId;
+                thisInstructorId = existingSam.instructorId;
               } else {
                 // 현재 연결된 강사가 없으면 새로운 강사 생성
                 console.log('🆕 새로운 강사 생성');
@@ -578,22 +579,17 @@ export class SamService {
                   '✅ 새로운 강사 생성 완료 - ID:',
                   savedInstructor.id,
                 );
-                finalInstructorId = savedInstructor.id;
+                thisInstructorId = savedInstructor.id;
               }
             }
           }
 
           // 3. Sam 정보 업데이트
           console.log('🔄 3단계: Sam 정보 업데이트 시작');
-          console.log(
-            'finalInstructorId:',
-            finalInstructorId,
-            'samDto:',
-            samDto,
-          );
+          console.log('thisInstructorId:', thisInstructorId, 'samDto:', samDto);
           const updatedSam = manager.merge(Sam, existingSam, {
             ...samDto,
-            instructorId: finalInstructorId,
+            instructorId: thisInstructorId,
           });
           console.log('💾 Sam 저장 시작');
           const savedSam = await manager.save(Sam, updatedSam);

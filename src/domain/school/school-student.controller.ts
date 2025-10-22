@@ -21,7 +21,6 @@ import { StudentStatus } from 'src/common/enums';
 import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-grades.dto';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { UploadService } from 'src/services/upload/upload.service';
 import { SchoolStudentService } from './school-student.service';
 import {
   CreateSchoolStudentBulkDocs,
@@ -37,10 +36,7 @@ import {
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller('schools')
 export class SchoolStudentController {
-  constructor(
-    private readonly schoolStudentService: SchoolStudentService,
-    private readonly uploadService: UploadService,
-  ) {}
+  constructor(private readonly schoolStudentService: SchoolStudentService) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? Create
