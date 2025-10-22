@@ -13,7 +13,17 @@ export function getRange(start: number, end: number): number[] {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
-export function parseRangeFormat(input?: string): number[] {
+export function parseRangeFormat(input?: string | number[]): number[] {
+  // input이 배열인 경우 그대로 반환
+  if (Array.isArray(input)) {
+    return input.filter((n) => typeof n === 'number' && !isNaN(n));
+  }
+
+  // input이 문자열이 아닌 경우 기본값 반환
+  if (typeof input !== 'string') {
+    return [1, 2, 3, 4, 5, 6];
+  }
+
   if (!input) {
     return [1, 2, 3, 4, 5, 6];
   }

@@ -314,15 +314,21 @@ export class LessonCoreService {
       operationFeeRule: school.operationFeeRule,
     };
 
+    // groups 제외하고 업데이트
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { groups: _, ...lessonData } = updateData;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { groups: __, ...dtoData } = dto;
+
     // dto에서 undefined가 아닌 필드들만 업데이트
-    Object.keys(dto).forEach((key) => {
-      if (dto[key] !== undefined) {
-        updateData[key] = dto[key];
+    Object.keys(dtoData).forEach((key) => {
+      if (dtoData[key] !== undefined) {
+        lessonData[key] = dtoData[key];
       }
     });
 
     const updatedLesson = await manager
-      .save(Lesson, updateData)
+      .save(Lesson, lessonData)
       .catch((error) => {
         console.log(
           `🔴 update 허용하지 않는 입력 조합 오류`,
@@ -1006,9 +1012,9 @@ export class LessonCoreService {
 
       const groupStart = parseTimeFormat(parseTime(groupData.start));
       const groupEnd = parseTimeFormat(parseTime(groupData.end));
-      const groupAllowedGrades = parseRangeFormat(
-        groupData.allowedGrades as string,
-      ).join(',');
+      const groupAllowedGrades = parseRangeFormat(groupData.allowedGrades).join(
+        ',',
+      );
 
       const upsertData: DeepPartial<Group> = {
         termId: lesson.termId,
