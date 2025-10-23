@@ -17,6 +17,8 @@ export class SchoolTermReminderService {
   //? ---------------------------------------------------------------------- ?//
 
   async getReminder(schoolId: number, termId: number): Promise<Reminder> {
+    console.log('schoolId', schoolId);
+    console.log('termId', termId);
     return await this.reminderRepository.findOneOrFail({
       where: {
         schoolId,

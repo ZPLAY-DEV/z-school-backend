@@ -1,46 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-    IsArray,
-    IsDateString,
-    IsEnum,
-    IsInt,
-    IsOptional,
-    IsString,
-    MaxLength,
-    ValidateNested
+  IsArray,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
 } from 'class-validator';
-import { NotifiableTarget } from 'src/common/enums';
-
-/**
- * Reminder 발송 정보 (optional)
- */
-export class SendReminderDto {
-  @ApiProperty({
-    description: '🈵 발송 대상 유형 (Reminder는 항상 SCHOOL)',
-    enum: NotifiableTarget,
-    example: NotifiableTarget.SCHOOL,
-  })
-  @IsEnum(NotifiableTarget)
-  target: NotifiableTarget;
-
-  @ApiProperty({
-    description: '🈳 발송예약 시각 (없으면 즉시 발송)',
-    example: '2025-06-26T00:30:00Z',
-    required: false,
-  })
-  @IsDateString()
-  @IsOptional()
-  scheduledAt?: Date;
-}
+import { SendNotifiableDto } from 'src/domain/notifiable/dto/send-notifiable.dto';
 
 export class CreateReminderDto {
   @ApiProperty({ description: '🈵 schoolId', type: Number, example: 1 })
-  @IsInt()
+  @IsNumber()
   schoolId: number;
 
   @ApiProperty({ description: '🈵 termId', type: Number, example: 1 })
-  @IsInt()
+  @IsNumber()
   termId: number;
 
   @ApiProperty({ description: '🈵 notifiableId', type: Number, example: 1 })
@@ -96,12 +73,11 @@ export class CreateReminderDto {
 
   @ApiProperty({
     description: '🈳 발송 정보 (발송하려면 필수)',
-    type: SendReminderDto,
+    type: SendNotifiableDto,
     required: false,
   })
   @IsOptional()
   @ValidateNested()
-  @Type(() => SendReminderDto)
-  send?: SendReminderDto;
+  @Type(() => SendNotifiableDto)
+  send?: SendNotifiableDto;
 }
-

@@ -106,6 +106,9 @@ export class TermService {
   async update(id: number, dto: UpdateTermDto): Promise<Term> {
     const existingTerm = await this.findById(id);
 
+    // 날짜 validation: termRange와 bookingRange 겹침 검사
+    this.validateTermBookingDateRange(dto, existingTerm);
+
     // pickRule 변경 시 비즈니스 로직 검증
     if (dto.pickRule && existingTerm.pickRule !== dto.pickRule) {
       if (existingTerm.isOfferingReady) {
@@ -143,5 +146,49 @@ export class TermService {
       throw new BadRequestException('Term has lessons');
     }
     return await this.termRepository.softRemove(term);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Private Methods
+  //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * 학기 기간과 수강신청 기간의 겹침을 검사합니다.
+   * termRange (start~end)는 bookingRange (bookingStart~bookingEnd)와 겹치지 않고 이후에 존재해야 합니다.
+   */
+  private validateTermBookingDateRange(
+    dto: UpdateTermDto,
+    existingTerm: Term,
+  ): void {
+    // 업데이트할 날짜 정보를 결정 (DTO에서 제공되지 않으면 기존 값 사용)
+    const termStart = dto.start || existingTerm.start;
+    const termEnd = dto.end || existingTerm.end;
+    const bookingStart =
+      dto.bookingStart !== undefined
+        ? dto.bookingStart
+        : existingTerm.bookingStart;
+    const bookingEnd =
+      dto.bookingEnd !== undefined ? dto.bookingEnd : existingTerm.bookingEnd;
+
+    // 수강신청 기간이 설정되지 않은 경우는 검사하지 않음
+    if (!bookingStart || !bookingEnd) {
+      return;
+    }
+
+    // termRange와 bookingRange가 겹치는지 검사
+    const termStartDate = new Date(termStart);
+    const termEndDate = new Date(termEnd);
+    const bookingStartDate = new Date(bookingStart);
+    const bookingEndDate = new Date(bookingEnd);
+
+    // 날짜 범위 겹침 검사: 두 기간이 겹치는 경우
+    const isOverlapping =
+      termStartDate <= bookingEndDate && termEndDate >= bookingStartDate;
+
+    if (isOverlapping) {
+      throw new BadRequestException(
+        '수강신청기간은 학기시작일 이전만 가능합니다.',
+      );
+    }
   }
 }

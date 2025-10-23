@@ -50,6 +50,7 @@ export class TermController {
     const term = await this.termService.findById(id, [
       'offerings',
       'newsletters',
+      'reminder',
     ]);
     return term;
   }

@@ -56,7 +56,10 @@ export class ReminderController {
   async findDetailById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Reminder> {
-    return await this.reminderService.findById(id);
+    return await this.reminderService.findById(id, [
+      'notifiable',
+      'notifiable.recipients',
+    ]);
   }
 
   //? ---------------------------------------------------------------------- ?//

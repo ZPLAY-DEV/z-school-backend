@@ -2,11 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose } from 'class-transformer';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import {
-  PickRule,
-  TermStatus,
-  TermType
-} from 'src/common/enums';
+import { PickRule, TermStatus, TermType } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -26,6 +22,7 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
@@ -169,6 +166,11 @@ export class Term {
   @JoinColumn({ name: 'schoolId' })
   school: School;
 
+  //* 1-to-1 hasOne -------------------------------------------------------- *//
+
+  @OneToOne(() => Reminder, (reminder: Reminder) => reminder.term)
+  reminder: Reminder;
+
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
   @OneToMany(() => Lesson, (lesson: Lesson) => lesson.term)
@@ -185,10 +187,6 @@ export class Term {
   @OneToMany(() => Newsletter, (newsletter: Newsletter) => newsletter.term)
   @Exclude()
   newsletters: Newsletter[];
-
-  @OneToMany(() => Reminder, (reminder: Reminder) => reminder.term)
-  @Exclude()
-  reminders: Reminder[];
 
   @OneToMany(() => Notifiable, (notifiable) => notifiable.term, {
     cascade: ['insert', 'update'],

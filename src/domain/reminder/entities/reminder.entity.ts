@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Transform } from 'class-transformer';
+import { Exclude } from 'class-transformer';
 import { IsArray } from 'class-validator';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { School } from 'src/domain/school/entities/school.entity';
@@ -64,28 +64,6 @@ export class Reminder {
 
   // ------------------------------------------------------------------------ //
 
-  @ApiProperty({
-    description: '🈵 발송대상자 리스트. 발송하려면 deduped studentIds 필요',
-    example: [1, 2, 3],
-  })
-  @Column({
-    type: 'simple-array',
-    comment: '발송대상자 리스트. 발송하려면 deduped studentIds 필요',
-    nullable: true,
-  })
-  @Transform(({ value }) => {
-    if (!value) return null;
-    if (Array.isArray(value)) {
-      return value.map((id: string | number) =>
-        typeof id === 'string' ? parseInt(id, 10) : id,
-      );
-    }
-    return value as number[] | null;
-  })
-  studentIds: number[] | null;
-
-  // ------------------------------------------------------------------------ //
-
   @ApiProperty({ description: '🈵 createdAt' })
   @CreateDateColumn()
   createdAt: Date;
@@ -105,7 +83,7 @@ export class Reminder {
   @JoinColumn({ name: 'schoolId' })
   school: School;
 
-  @ManyToOne(() => Term, (term: Term) => term.reminders)
+  @OneToOne(() => Term, (term: Term) => term.reminder)
   @JoinColumn({ name: 'termId' })
   term: Term;
 

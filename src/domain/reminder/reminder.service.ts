@@ -63,12 +63,12 @@ export class ReminderService {
 
     if (existing) {
       throw new BadRequestException(
-        '이미 해당 학기에 수강신청 안내가 존재합니다.',
+        '이미 해당 학기 수강신청 안내문이 존재합니다.',
       );
     }
 
     const title =
-      dto.title || `[${school.name}] ${term.termName} 수강신청 안내`;
+      dto.title || `[${school.name}] ${term.termName} 수강신청 안내문`;
 
     // Notifiable 생성 (send 정보가 있는 경우)
     let notifiable: Notifiable | null = null;
@@ -80,6 +80,8 @@ export class ReminderService {
         title: title,
         status: SendStatus.INIT,
         target: dto.send.target,
+        targetItems: dto.send.targetItems,
+        targetLabel: dto.send.targetLabel,
         scheduledAt: dto.send.scheduledAt,
       });
     }
@@ -169,6 +171,8 @@ export class ReminderService {
             {
               title: dto.title || existingReminder.title || '',
               target: dto.send.target,
+              targetItems: dto.send.targetItems || undefined,
+              targetLabel: dto.send.targetLabel || undefined,
               scheduledAt: dto.send.scheduledAt || null,
             },
           );
@@ -182,6 +186,8 @@ export class ReminderService {
           title: dto.title || existingReminder.title || '',
           status: SendStatus.INIT,
           target: dto.send.target,
+          targetItems: dto.send.targetItems,
+          targetLabel: dto.send.targetLabel,
           scheduledAt: dto.send.scheduledAt,
         });
 

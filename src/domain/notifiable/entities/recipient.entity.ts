@@ -30,8 +30,6 @@ export class Recipient {
   studentId: number;
 
   // ------------------------------------------------------------------------ //
-  // Shortlink
-  // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈵 21자리 나노아이디 값' })
   @Column({ type: 'varchar', length: 32 })
