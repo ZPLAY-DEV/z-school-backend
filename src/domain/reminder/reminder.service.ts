@@ -156,44 +156,22 @@ export class ReminderService {
         throw new NotFoundException('Reminder not found');
       }
 
+      // SENT 상태인 경우 오류 발생
       if (existingReminder.notifiable) {
         const { status } = existingReminder.notifiable;
 
-        // SCHEDULED나 SENT 상태인 경우 오류 발생
-        if (status === SendStatus.SCHEDULED || status === SendStatus.SENT) {
+        if (status === SendStatus.SENT) {
           throw new BadRequestException('변경 가능한 상태가 아닙니다.');
         }
 
-        // INIT 상태인 경우 notifiable 업데이트
-        if (status === SendStatus.INIT) {
-          await this.notifiableRepository.update(
-            existingReminder.notifiable.id,
-            {
-              title: dto.title || existingReminder.title || '',
-              target: dto.send.target,
-              targetItems: dto.send.targetItems || undefined,
-              targetLabel: dto.send.targetLabel || undefined,
-              scheduledAt: dto.send.scheduledAt || null,
-            },
-          );
-        }
-      } else {
-        // notifiable이 없는 경우 새로 생성
-        const notifiable = await this.notifiableService.save({
-          schoolId: existingReminder.schoolId,
-          termId: existingReminder.termId,
-          type: NotifiableSourceType.REMINDER,
-          title: dto.title || existingReminder.title || '',
-          status: SendStatus.INIT,
-          target: dto.send.target,
-          targetItems: dto.send.targetItems,
-          targetLabel: dto.send.targetLabel,
-          scheduledAt: dto.send.scheduledAt,
+        await this.notifiableRepository.update(existingReminder.notifiable.id, {
+          ...(dto.title !== existingReminder.title && { title: dto.title }),
+          ...(dto.send?.scheduledAt !==
+            existingReminder.notifiable.scheduledAt && {
+            scheduledAt: dto.send.scheduledAt,
+          }),
+          message: 'updated',
         });
-
-        // Reminder에 notifiableId 연결
-        existingReminder.notifiableId = notifiable.id;
-        await this.reminderRepository.save(existingReminder);
       }
     }
 

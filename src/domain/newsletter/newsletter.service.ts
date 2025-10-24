@@ -13,6 +13,7 @@ import {
 import { CreateNewsletterDto } from 'src/domain/newsletter/dto/create-newsletter.dto';
 import { UpdateNewsletterDto } from 'src/domain/newsletter/dto/update-newsletter.dto';
 import { Newsletter } from 'src/domain/newsletter/entities/newsletter.entity';
+import { UpdateNotifiableDto } from 'src/domain/notifiable/dto/update-notifiable.dto';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
 import { NotifiableService } from 'src/domain/notifiable/notifiable.service';
@@ -69,7 +70,7 @@ export class NewsletterService {
         }),
       );
 
-      // 발송 예약 (send 정보의 scheduledAt가 있는 경우)
+      //! 발송 예약 (send 정보의 scheduledAt가 있는 경우)
       if (dto.send && dto.send.scheduledAt && notifiable) {
         await this.notifiableService.send(notifiable.id);
       }
@@ -117,26 +118,50 @@ export class NewsletterService {
       if (existingNewsletter.notifiable) {
         const { status } = existingNewsletter.notifiable;
 
-        // SCHEDULED나 SENT 상태인 경우 오류 발생
-        if (status === SendStatus.SCHEDULED || status === SendStatus.SENT) {
+        // SENT 상태인 경우 오류 발생
+        if (status === SendStatus.SENT) {
           throw new BadRequestException('변경 가능한 상태가 아닙니다.');
         }
 
-        // INIT 상태인 경우 notifiable 업데이트
-        if (status === SendStatus.INIT) {
-          await this.notifiableRepository.update(
-            existingNewsletter.notifiable.id,
-            {
-              title: dto.title || existingNewsletter.title || '',
-              target: dto.send.target,
-              targetItems: dto.send.targetItems || undefined,
-              targetLabel: dto.send.targetLabel || undefined,
-              scheduledAt: dto.send.scheduledAt || null,
-            },
-          );
+        const updateData: UpdateNotifiableDto = {
+          ...(dto.title !== existingNewsletter.title && { title: dto.title }),
+          ...(dto.send?.target !== existingNewsletter.notifiable.target && {
+            target: dto.send.target,
+          }),
+          ...(dto.send?.targetItems !==
+            existingNewsletter.notifiable.targetItems && {
+            targetItems: dto.send.targetItems,
+          }),
+          ...(dto.send?.targetLabel !==
+            existingNewsletter.notifiable.targetLabel && {
+            targetLabel: dto.send.targetLabel,
+          }),
+          ...(dto.send?.scheduledAt !==
+            existingNewsletter.notifiable.scheduledAt && {
+            scheduledAt: dto.send.scheduledAt,
+          }),
+          message: 'updated',
+        };
+        await this.notifiableRepository.update(
+          existingNewsletter.notifiable.id,
+          updateData,
+        );
+
+        //! 발송 예약 (target 또는 targetItems가 변경된 경우)
+        if (
+          dto.send &&
+          (dto.send.target !== existingNewsletter.notifiable.target ||
+            dto.send.targetItems !== existingNewsletter.notifiable.targetItems)
+        ) {
+          // 모든 현재 연관 recipient를 삭제
+          await this.recipientRepository.delete({
+            notifiableId: existingNewsletter.notifiable.id,
+          });
+
+          await this.notifiableService.send(existingNewsletter.notifiable.id);
         }
       } else {
-        // notifiable이 없는 경우 새로 생성
+        // notifiable이 없는 경우는 없지만, 혹시 모를 상황을 대비해서 로직 추가
         const notifiable = await this.notifiableService.save({
           schoolId: existingNewsletter.schoolId,
           termId: existingNewsletter.termId,

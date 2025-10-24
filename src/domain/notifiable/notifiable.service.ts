@@ -137,9 +137,6 @@ export class NotifiableService {
     ]);
 
     // 이미 발송된 경우 예외 처리
-    if (notifiable.status === SendStatus.SCHEDULED) {
-      throw new BadRequestException('이미 발송 예약된 알림입니다.');
-    }
     if (notifiable.status === SendStatus.SENT) {
       throw new BadRequestException('이미 발송된 알림입니다.');
     }

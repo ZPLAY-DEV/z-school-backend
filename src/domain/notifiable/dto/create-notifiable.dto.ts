@@ -40,6 +40,15 @@ export class CreateNotifiableDto {
   title: string;
 
   @ApiProperty({
+    description: '🈳 메시지',
+    example: '새로운 공지사항',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  message?: string | null;
+
+  @ApiProperty({
     description: '🈳 발송 상태',
     enum: SendStatus,
     example: SendStatus.INIT,
