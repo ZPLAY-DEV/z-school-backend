@@ -31,6 +31,7 @@ import {
   SchoolStudentListDocs,
   SchoolStudentListPaginatedDocs,
 } from './swagger/school-student.swagger.decorator';
+import { HttpCache } from 'src/common/decorators/http-cache.decorator';
 
 @ApiTags('✳️ Schools > Students ( 학교 > 학생 )')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -227,6 +228,10 @@ export class SchoolStudentController {
   @SchoolStudentListPaginatedDocs()
   @Public()
   @Get(':schoolId/students/paginated')
+  @HttpCache({
+    ttl: 180, // 3분
+    tags: (req) => [`schools:${req.params.schoolId}:students`],
+  })
   async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Paginate() query: PaginateQuery,

@@ -28,6 +28,8 @@ import {
   SchoolSamPaginatedDocs,
   UploadSchoolSamExcelDocs,
 } from './swagger/school-sam.swagger.decorator';
+import { HttpCache } from 'src/common/decorators/http-cache.decorator';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('✳️ Schools > Sams ( 학교 > 담임쌤 )')
 @Controller('schools')
@@ -116,7 +118,12 @@ export class SchoolSamController {
   }
 
   @SchoolSamPaginatedDocs()
+  @Public()
   @Get(':schoolId/sams/paginated')
+  @HttpCache({
+    ttl: 180, // 3분
+    tags: (req) => [`schools:${req.params.schoolId}:sams`],
+  })
   async infiniteList(
     @Paginate() query: PaginateQuery,
     @Param('schoolId', ParseIntPipe) schoolId: number,
