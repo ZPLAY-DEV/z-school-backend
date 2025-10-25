@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { NotifiableSourceType, SendStatus } from 'src/common/enums';
+import { UpdateNotifiableDto } from 'src/domain/notifiable/dto/update-notifiable.dto';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
 import { NotifiableService } from 'src/domain/notifiable/notifiable.service';
@@ -18,7 +19,7 @@ import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { NotificationService } from 'src/services/notification/notification.service';
 import { SlackService } from 'src/services/slack/slack.service';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 @Injectable()
 export class ReminderService {
@@ -156,36 +157,54 @@ export class ReminderService {
         throw new NotFoundException('Reminder not found');
       }
 
-      // SENT 상태인 경우 오류 발생
       if (existingReminder.notifiable) {
         const { status } = existingReminder.notifiable;
 
+        // SENT 상태인 경우 오류 발생
         if (status === SendStatus.SENT) {
           throw new BadRequestException('변경 가능한 상태가 아닙니다.');
         }
 
-        await this.notifiableRepository.update(existingReminder.notifiable.id, {
+        const updateData: UpdateNotifiableDto = {
           ...(dto.title !== existingReminder.title && { title: dto.title }),
           ...(dto.send?.scheduledAt !==
             existingReminder.notifiable.scheduledAt && {
             scheduledAt: dto.send.scheduledAt,
           }),
           message: 'updated',
-        });
+        };
+
+        await this.notifiableRepository.update(
+          existingReminder.notifiable.id,
+          updateData,
+        );
+
+        //! 발송 예약 (target 또는 targetItems가 변경된 경우)
+        if (
+          dto.send &&
+          dto.send.scheduledAt &&
+          (dto.send.target !== existingReminder.notifiable.target ||
+            dto.send.targetItems !== existingReminder.notifiable.targetItems)
+        ) {
+          // 모든 현재 연관 recipient를 삭제
+          await this.recipientRepository.delete({
+            notifiableId: existingReminder.notifiable.id,
+          });
+
+          await this.notifiableService.send(existingReminder.notifiable.id);
+        }
       }
     }
 
     // Reminder 업데이트
-    return await this.dataSource.transaction(async (manager: EntityManager) => {
-      const reminder = await this.reminderRepository.preload({
-        id,
-        ...dto,
-      });
-      if (!reminder) {
-        throw new NotFoundException('Reminder not found');
-      }
-      return await manager.save(reminder);
+    const reminder = await this.reminderRepository.preload({
+      id,
+      ...dto,
     });
+    if (!reminder) {
+      throw new NotFoundException('Reminder not found');
+    }
+    return await this.reminderRepository.save(reminder);
   }
 
   /**

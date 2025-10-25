@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { NotifiableSourceType, SendStatus } from 'src/common/enums';
+import { UpdateNotifiableDto } from 'src/domain/notifiable/dto/update-notifiable.dto';
 import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
 import { NotifiableService } from 'src/domain/notifiable/notifiable.service';
@@ -144,38 +145,50 @@ export class SurveyService {
       if (existingSurvey.notifiable) {
         const { status } = existingSurvey.notifiable;
 
-        // SCHEDULED나 SENT 상태인 경우 오류 발생
-        if (status === SendStatus.SCHEDULED || status === SendStatus.SENT) {
+        // SENT 상태인 경우 오류 발생
+        if (status === SendStatus.SENT) {
           throw new BadRequestException('변경 가능한 상태가 아닙니다.');
         }
 
-        // INIT 상태인 경우 notifiable 업데이트
-        if (status === SendStatus.INIT) {
-          await this.notifiableRepository.update(existingSurvey.notifiable.id, {
-            title: dto.title || existingSurvey.title,
+        const updateData: UpdateNotifiableDto = {
+          ...(dto.title !== existingSurvey.title && { title: dto.title }),
+          ...(dto.send?.target !== existingSurvey.notifiable.target && {
             target: dto.send.target,
-            targetItems: dto.send.targetItems || null,
-            targetLabel: dto.send.targetLabel || null,
-            scheduledAt: dto.send.scheduledAt || null,
-          });
-        }
-      } else {
-        // notifiable이 없는 경우 새로 생성
-        const notifiable = await this.notifiableService.save({
-          schoolId: existingSurvey.schoolId,
-          termId: existingSurvey.termId,
-          type: NotifiableSourceType.SURVEY,
-          title: dto.title || existingSurvey.title,
-          status: SendStatus.INIT,
-          target: dto.send.target,
-          targetItems: dto.send.targetItems,
-          targetLabel: dto.send.targetLabel,
-          scheduledAt: dto.send.scheduledAt,
-        });
+          }),
+          ...(dto.send?.targetItems !==
+            existingSurvey.notifiable.targetItems && {
+            targetItems: dto.send.targetItems,
+          }),
+          ...(dto.send?.targetLabel !==
+            existingSurvey.notifiable.targetLabel && {
+            targetLabel: dto.send.targetLabel,
+          }),
+          ...(dto.send?.scheduledAt !==
+            existingSurvey.notifiable.scheduledAt && {
+            scheduledAt: dto.send.scheduledAt,
+          }),
+          message: 'updated',
+        };
 
-        // Survey에 notifiableId 연결
-        existingSurvey.notifiableId = notifiable.id;
-        await this.surveyRepository.save(existingSurvey);
+        await this.notifiableRepository.update(
+          existingSurvey.notifiable.id,
+          updateData,
+        );
+
+        //! 발송 예약 (target 또는 targetItems가 변경된 경우)
+        if (
+          dto.send &&
+          dto.send.scheduledAt &&
+          (dto.send.target !== existingSurvey.notifiable.target ||
+            dto.send.targetItems !== existingSurvey.notifiable.targetItems)
+        ) {
+          // 모든 현재 연관 recipient를 삭제
+          await this.recipientRepository.delete({
+            notifiableId: existingSurvey.notifiable.id,
+          });
+
+          await this.notifiableService.send(existingSurvey.notifiable.id);
+        }
       }
     }
 

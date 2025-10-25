@@ -412,8 +412,8 @@ export class SchoolTermOfferingService {
     const queryBuilder = this.offeringRepository
       .createQueryBuilder('offering')
       .leftJoinAndSelect('offering.lesson', 'lesson')
-      .leftJoinAndSelect('offering.picks', 'picks')
-      .leftJoinAndSelect('offering.bookings', 'bookings')
+      .leftJoin('offering.picks', 'picks')
+      .leftJoin('offering.bookings', 'bookings')
       .where('offering.schoolId = :schoolId', { schoolId })
       .andWhere('offering.termId = :termId', { termId });
 

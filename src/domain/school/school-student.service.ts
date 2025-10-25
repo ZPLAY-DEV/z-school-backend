@@ -606,7 +606,7 @@ export class SchoolStudentService {
     return await paginate<Student>(query, queryBuilder, {
       relations: {
         parent: true,
-        picks: true,
+        // picks: true,
       },
       sortableColumns: ['id', 'name', 'grade', 'klass', 'bunho'],
       searchableColumns: ['name', 'parent.phone'],

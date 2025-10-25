@@ -18,7 +18,7 @@ import { Notifiable } from 'src/domain/notifiable/entities/notifiable.entity';
 import { Recipient } from 'src/domain/notifiable/entities/recipient.entity';
 import { NotifiableService } from 'src/domain/notifiable/notifiable.service';
 import { Student } from 'src/domain/student/entities/student.entity';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 @Injectable()
 export class NewsletterService {
@@ -142,6 +142,7 @@ export class NewsletterService {
           }),
           message: 'updated',
         };
+
         await this.notifiableRepository.update(
           existingNewsletter.notifiable.id,
           updateData,
@@ -150,6 +151,7 @@ export class NewsletterService {
         //! 발송 예약 (target 또는 targetItems가 변경된 경우)
         if (
           dto.send &&
+          dto.send.scheduledAt &&
           (dto.send.target !== existingNewsletter.notifiable.target ||
             dto.send.targetItems !== existingNewsletter.notifiable.targetItems)
         ) {
@@ -160,37 +162,18 @@ export class NewsletterService {
 
           await this.notifiableService.send(existingNewsletter.notifiable.id);
         }
-      } else {
-        // notifiable이 없는 경우는 없지만, 혹시 모를 상황을 대비해서 로직 추가
-        const notifiable = await this.notifiableService.save({
-          schoolId: existingNewsletter.schoolId,
-          termId: existingNewsletter.termId,
-          type: NotifiableSourceType.NEWSLETTER,
-          title: dto.title || existingNewsletter.title || '',
-          status: SendStatus.INIT,
-          target: dto.send.target,
-          targetItems: dto.send.targetItems,
-          targetLabel: dto.send.targetLabel,
-          scheduledAt: dto.send.scheduledAt,
-        });
-
-        // Newsletter에 notifiableId 연결
-        existingNewsletter.notifiableId = notifiable.id;
-        await this.newsletterRepository.save(existingNewsletter);
       }
     }
 
     // Newsletter 업데이트
-    return await this.dataSource.transaction(async (manager: EntityManager) => {
-      const newsletter = await this.newsletterRepository.preload({
-        id,
-        ...dto,
-      });
-      if (!newsletter) {
-        throw new NotFoundException('Newsletter not found');
-      }
-      return await manager.save(newsletter);
+    const newsletter = await this.newsletterRepository.preload({
+      id,
+      ...dto,
     });
+    if (!newsletter) {
+      throw new NotFoundException('Newsletter not found');
+    }
+    return await this.newsletterRepository.save(newsletter);
   }
 
   /**

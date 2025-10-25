@@ -206,7 +206,7 @@ export class Term {
 
   @ApiProperty({
     description: '학기 기간 (예: 2월1일~3월1일)',
-    example: '2월1일~3월1일',
+    example: '2월1일 ~ 3월1일',
   })
   @Expose()
   get period(): string {
@@ -215,7 +215,7 @@ export class Term {
     const startFormatted = format(startDate, 'M월d일');
     const endFormatted = format(endDate, 'M월d일');
 
-    return `${startFormatted}~${endFormatted}`;
+    return `${startFormatted} ~ ${endFormatted}`;
   }
 
   @ApiProperty({
@@ -238,7 +238,7 @@ export class Term {
       'M월d일 HH:mm',
     );
 
-    return `${startFormatted}~${endFormatted}`;
+    return `${startFormatted} ~ ${endFormatted}`;
   }
 
   //? Constructor ---------------------------------------------------------- ?//
