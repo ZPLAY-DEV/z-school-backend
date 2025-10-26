@@ -11,11 +11,10 @@ import {
   Post,
   Query,
   Res,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
-import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
@@ -88,11 +87,10 @@ export class StudentController {
   }
 
   @GetPaginatedStudentsDocs()
-  @Get('paginated')
-  async infiniteList(
-    @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<Student>> {
-    return await this.studentService.infiniteList(query);
+  @Get('many')
+  async findByIds(@Query('ids') ids: string): Promise<Student[]> {
+    const userIds = ids.split(',').map(Number);
+    return await this.studentService.findByIds(userIds);
   }
 
   @FindByIdDocs()

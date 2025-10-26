@@ -12,7 +12,7 @@ export class NotifiableStatusItemDto {
   grade: number;
 
   @ApiProperty({ description: '반' })
-  class: string;
+  klass: string;
 
   @ApiProperty({ description: '학번' })
   bunho: number;

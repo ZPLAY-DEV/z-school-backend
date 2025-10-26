@@ -114,7 +114,7 @@ export class OfferingService {
       return Array.from(uniqueStudentsMap.values());
     } catch (error) {
       console.error(error);
-      throw new NotFoundException(`Offering not found`);
+      throw new NotFoundException(error.message || `Offering not found`);
     }
   }
 
@@ -159,7 +159,7 @@ export class OfferingService {
 
     const { term } = offering;
     if (!term || !term.school || !term.school.terms) {
-      throw new Error(`no term`);
+      throw new Error(`Offering corrupted`);
     }
 
     // Find the direct previous term based on dates
@@ -180,7 +180,7 @@ export class OfferingService {
         lessonName: offering.lessonName,
       };
     } else {
-      throw new Error(`no term`);
+      throw new Error(`No previous term found`);
     }
   }
 }

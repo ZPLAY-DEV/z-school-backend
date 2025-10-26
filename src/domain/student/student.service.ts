@@ -37,7 +37,7 @@ import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { getKoreanWeekday } from 'src/helpers/date';
 import { normalizePhone } from 'src/helpers/phone';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 @Injectable()
 export class StudentService {
@@ -277,6 +277,20 @@ export class StudentService {
     }
 
     return student;
+  }
+
+  //? 여러 학생 정보 조회
+  async findByIds(ids: number[]): Promise<Student[]> {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+
+    const students = await this.studentRepository.find({
+      where: { id: In(ids) },
+      relations: ['parent'],
+    });
+
+    return students;
   }
 
   //? 학생의 수업일 조회 (SQL 레벨 최적화)
