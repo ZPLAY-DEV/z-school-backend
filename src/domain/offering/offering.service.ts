@@ -52,13 +52,16 @@ export class OfferingService {
   async findBookings(offeringId: number): Promise<Booking[]> {
     const offering = await this.offeringRepository.findOneOrFail({
       where: { id: offeringId },
-      relations: ['bookings', 'bookings.student', 'bookings.student.parent'],
+      relations: ['bookings', 'bookings.student'],
     });
 
-    const students = await this.studentRepository.find({
-      where: { id: In(offering.prepickedStudentIds) },
-      relations: ['parent'],
-    });
+    let students: Student[] = [];
+    if (offering.prepickedStudentIds?.length > 0) {
+      students = await this.studentRepository.find({
+        where: { id: In(offering.prepickedStudentIds) },
+        relations: ['parent'],
+      });
+    }
 
     const prepickedBookings = students.map((student) => {
       return {

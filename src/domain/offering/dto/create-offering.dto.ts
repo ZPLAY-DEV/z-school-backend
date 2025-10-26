@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
   IsEnum,
   IsInt,
@@ -8,6 +9,7 @@ import {
   IsOptional,
   IsString,
   Length,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { ClassStatus, PickRule, Weekday } from 'src/common/enums';
@@ -97,6 +99,9 @@ export class CreateOfferingDto {
 
   @ApiProperty({ description: '이전 수강자 ID 목록', type: [Number] })
   @IsArray()
+  @ArrayMinSize(0)
+  @IsInt({ each: true })
+  @Min(1, { each: true })
   prepickedStudentIds: number[];
 
   @ApiProperty({ description: '마지막 동기화 시간', type: Number })

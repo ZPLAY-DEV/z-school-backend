@@ -67,4 +67,5 @@ export class OfferingSubscriber implements EntitySubscriberInterface<Offering> {
       );
     }
   }
+
 }
