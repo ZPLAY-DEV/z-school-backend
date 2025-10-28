@@ -59,15 +59,14 @@ export class HttpCacheInterceptor extends CacheInterceptor {
       keys,
     );
     if (keys && keys.length > 0) {
-      for (const key of keys) {
-        try {
-          await client?.sRem(tagKey, key);
-          await this.cacheManager.del(key); // Keyv/CacheManager가 사용하는 실제 키 삭제
-          console.log(`  🗑️  Deleting cache key via cacheManager: ${key}`);
-        } catch (e) {
-          console.error('❌ Cache deletion failed', e);
-        }
-      }
+      // 캐시 삭제와 태그 정리를 병렬 처리하여 응답 지연 최소화
+      const deleteTasks = keys.map((key) =>
+        Promise.allSettled([
+          this.cacheManager.del(key),
+          client?.sRem(tagKey, key),
+        ]),
+      );
+      await Promise.allSettled(deleteTasks);
       await client?.del(tagKey);
       console.log(
         `✅ [Cache Invalidate] Completed for ${tagKey}, deleted ${keys.length} keys`,
