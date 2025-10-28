@@ -48,21 +48,32 @@ export class HttpCacheInterceptor extends CacheInterceptor {
     const client = await this._getRedisClient();
     // sAdd는 이미 존재하면 무시하므로, sIsMember 체크 없이 바로 sAdd 호출 (성능 최적화)
     await client?.sAdd(tagKey, requestUrl);
+    console.log(`💾 [Cache Save] Added to ${tagKey}: ${requestUrl}`);
   }
 
   async _invalidateCacheTags(tagKey: string) {
     const client = await this._getRedisClient();
     const keys = await client?.sMembers(tagKey);
+    console.log(
+      `🔍 [Cache Invalidate] Tag: ${tagKey}, Found ${keys?.length || 0} keys:`,
+      keys,
+    );
     if (keys && keys.length > 0) {
-      const pipeline = client?.multi(); // node-redis에서는 multi() 사용
-      if (pipeline) {
-        for (const key of keys) {
-          pipeline.sRem(tagKey, key);
-          pipeline.del(key);
+      for (const key of keys) {
+        try {
+          await client?.sRem(tagKey, key);
+          await this.cacheManager.del(key); // Keyv/CacheManager가 사용하는 실제 키 삭제
+          console.log(`  🗑️  Deleting cache key via cacheManager: ${key}`);
+        } catch (e) {
+          console.error('❌ Cache deletion failed', e);
         }
-        pipeline.del(tagKey);
-        await pipeline.exec(); // node-redis에서도 exec()로 실행
       }
+      await client?.del(tagKey);
+      console.log(
+        `✅ [Cache Invalidate] Completed for ${tagKey}, deleted ${keys.length} keys`,
+      );
+    } else {
+      console.log(`⚠️  [Cache Invalidate] No keys found for tag: ${tagKey}`);
     }
   }
 
@@ -92,8 +103,10 @@ export class HttpCacheInterceptor extends CacheInterceptor {
         ? cacheOptions.tags(request)
         : cacheOptions.tags;
 
-    // 비동기로 태그에 캐시 키 저장 (sAdd는 멱등성을 가지므로 중복 체크 불필요)
-    process.nextTick(async () => {
+    // 동기적으로 태그에 캐시 키 저장 (캐시가 확실히 저장되도록)
+    console.log(`📌 [Cache trackBy] URL: ${requestUrl}, Tags:`, tags);
+    // 비동기 저장이지만 fire-and-forget이 아닌 즉시 실행
+    void (async () => {
       try {
         for (const tag of tags) {
           await this._saveCacheTags(requestUrl, tag);
@@ -101,7 +114,7 @@ export class HttpCacheInterceptor extends CacheInterceptor {
       } catch (e) {
         console.error('Redis is down', e);
       }
-    });
+    })();
 
     return requestUrl;
   }
@@ -139,28 +152,47 @@ export class HttpCacheInterceptor extends CacheInterceptor {
             ? invalidateOptions.tags(request)
             : invalidateOptions.tags;
 
+        console.log(
+          `🔄 [Cache Invalidate Request] Method: ${httpAdapter.getRequestMethod(request)}, URL: ${httpAdapter.getRequestUrl(request)}, Tags:`,
+          tags,
+        );
+
         if (tags.length > 0) {
-          // 응답 후에 비동기로 무효화
+          // 핸들러 실행 후, 응답 전에 동기적으로 캐시 무효화
           const observable$ = super.intercept(context, next);
           return from(observable$).pipe(
             switchMap(
               (obs) =>
                 new Observable((subscriber) => {
+                  const results: any[] = [];
                   obs.subscribe({
-                    next: (value) => subscriber.next(value),
-                    error: (err) => subscriber.error(err),
+                    next: (value) => {
+                      results.push(value);
+                    },
+                    error: (err) => {
+                      subscriber.error(err);
+                    },
                     complete: () => {
-                      // 응답 완료 후 캐시 무효화 (비동기)
-                      process.nextTick(async () => {
+                      // 핸들러 완료 후, 응답 전에 캐시 무효화
+                      console.log(
+                        `🚀 [Cache Invalidate] Handler completed, starting invalidation BEFORE response:`,
+                        tags,
+                      );
+                      void (async () => {
                         for (const tag of tags) {
                           try {
                             await this._invalidateCacheTags(`tag:${tag}`);
                           } catch (e) {
-                            console.error('Cache invalidation failed', e);
+                            console.error('❌ Cache invalidation failed', e);
                           }
                         }
-                      });
-                      subscriber.complete();
+                        console.log(
+                          `✨ [Cache Invalidate] Completed, sending response now`,
+                        );
+                        // 응답 전송
+                        results.forEach((value) => subscriber.next(value));
+                        subscriber.complete();
+                      })();
                     },
                   });
                 }),
