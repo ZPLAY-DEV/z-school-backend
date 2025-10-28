@@ -1,3 +1,27 @@
+// Redis 실제 저장 구조:
+//
+// ┌───────────────────────────────────────────┐
+// │ Cached Data (String)                      │
+// ├───────────────────────────────────────────┤
+// │ keyv::keyv:/v1/offerings?page=1  → {...}  │
+// │ keyv::keyv:/v1/offerings?page=2  → {...}  │
+// │ keyv::keyv:/v1/students?id=123   → {...}  │
+// └───────────────────────────────────────────┘
+
+// ┌───────────────────────────────────────────┐
+// │ Tag Sets (Set)                            │
+// ├───────────────────────────────────────────┤
+// │ tag:offerings → {                         │
+// │   "/api/offerings?page=1",                │
+// │   "/api/offerings?page=2"                 │
+// │ }                                         │
+// │                                           │
+// │ tag:students → {                          │
+// │   "/api/students?id=123"                  │
+// │ }                                         │
+// └───────────────────────────────────────────┘
+//
+
 import KeyvRedis from '@keyv/redis';
 import { CACHE_MANAGER, CacheInterceptor } from '@nestjs/cache-manager';
 import {
@@ -8,7 +32,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Cache } from 'cache-manager';
-import { from, Observable, switchMap } from 'rxjs';
+import { Observable } from 'rxjs';
 import { KEYV_REDIS } from 'src/common/constants';
 import {
   CACHE_INVALIDATE_KEY,
@@ -22,6 +46,7 @@ import {
 @Injectable()
 export class HttpCacheInterceptor extends CacheInterceptor {
   private redisClient: any; // Redis 클라이언트를 캐싱
+  private readonly CACHE_NAMESPACE = 'keyv::keyv'; // Keyv의 실제 namespace (keyv::keyv: prefix)
 
   constructor(
     @Inject(CACHE_MANAGER) cacheManager: Cache,
@@ -48,31 +73,49 @@ export class HttpCacheInterceptor extends CacheInterceptor {
     const client = await this._getRedisClient();
     // sAdd는 이미 존재하면 무시하므로, sIsMember 체크 없이 바로 sAdd 호출 (성능 최적화)
     await client?.sAdd(tagKey, requestUrl);
-    console.log(`💾 [Cache Save] Added to ${tagKey}: ${requestUrl}`);
+  }
+
+  async _saveCacheTagsBulk(requestUrl: string, tags: string[]) {
+    if (!tags || tags.length === 0) return;
+    const client = await this._getRedisClient();
+    if (!client) return;
+
+    // Pipeline을 사용하여 여러 태그를 한 번에 저장 (네트워크 왕복 1번)
+    const pipeline = typeof client.multi === 'function' ? client.multi() : null;
+    if (pipeline) {
+      for (const tag of tags) {
+        pipeline.sAdd(`tag:${tag}`, requestUrl);
+      }
+      await pipeline.exec();
+      return;
+    }
+
+    // Pipeline이 없으면 병렬 처리
+    await Promise.allSettled<void>(
+      tags.map(async (tag: string) => {
+        await client.sAdd(`tag:${tag}`, requestUrl);
+      }),
+    );
   }
 
   async _invalidateCacheTags(tagKey: string) {
     const client = await this._getRedisClient();
-    const keys = await client?.sMembers(tagKey);
-    console.log(
-      `🔍 [Cache Invalidate] Tag: ${tagKey}, Found ${keys?.length || 0} keys:`,
-      keys,
-    );
+    const rawKeys = client ? await client.sMembers(tagKey) : [];
+    const keys: string[] = Array.isArray(rawKeys) ? (rawKeys as string[]) : [];
+
     if (keys && keys.length > 0) {
-      // 캐시 삭제와 태그 정리를 병렬 처리하여 응답 지연 최소화
-      const deleteTasks = keys.map((key) =>
-        Promise.allSettled([
-          this.cacheManager.del(key),
-          client?.sRem(tagKey, key),
-        ]),
-      );
-      await Promise.allSettled(deleteTasks);
-      await client?.del(tagKey);
-      console.log(
-        `✅ [Cache Invalidate] Completed for ${tagKey}, deleted ${keys.length} keys`,
-      );
-    } else {
-      console.log(`⚠️  [Cache Invalidate] No keys found for tag: ${tagKey}`);
+      const pipeline = client?.multi();
+      if (pipeline) {
+        // Pipeline으로 한 번에 처리 (네트워크 왕복 1번으로 최적화)
+        for (const key of keys) {
+          // Keyv namespace를 추가하여 실제 캐시 키 삭제
+          const fullKey = `${this.CACHE_NAMESPACE}:${key}`;
+          pipeline.del(fullKey); // 실제 캐시 데이터 삭제
+          pipeline.sRem(tagKey, key); // Tag Set에서 제거
+        }
+        pipeline.del(tagKey); // Tag Set 자체 삭제
+        await pipeline.exec();
+      }
     }
   }
 
@@ -102,18 +145,10 @@ export class HttpCacheInterceptor extends CacheInterceptor {
         ? cacheOptions.tags(request)
         : cacheOptions.tags;
 
-    // 동기적으로 태그에 캐시 키 저장 (캐시가 확실히 저장되도록)
-    console.log(`📌 [Cache trackBy] URL: ${requestUrl}, Tags:`, tags);
-    // 비동기 저장이지만 fire-and-forget이 아닌 즉시 실행
-    void (async () => {
-      try {
-        for (const tag of tags) {
-          await this._saveCacheTags(requestUrl, tag);
-        }
-      } catch (e) {
-        console.error('Redis is down', e);
-      }
-    })();
+    // 태그 저장은 bulk pipeline + fire-and-forget (process.nextTick)으로 성능 최적화
+    process.nextTick(() => {
+      void this._saveCacheTagsBulk(requestUrl, tags).catch(() => {});
+    });
 
     return requestUrl;
   }
@@ -126,19 +161,16 @@ export class HttpCacheInterceptor extends CacheInterceptor {
     const { httpAdapter } = this.httpAdapterHost;
     const isGetRequest = httpAdapter.getRequestMethod(request) === 'GET';
 
-    // x-clear-cache 헤더 처리 (기존 유지)
+    // x-clear-cache 헤더 처리
     if (request.headers['x-clear-cache']) {
-      try {
-        await this.cacheManager.clear();
-        await this.clearAllCacheSets();
-      } catch (e) {
-        console.error(`Redis is down`, e);
-      }
+      await Promise.allSettled([
+        this.cacheManager.clear(),
+        this.clearAllCacheSets(),
+      ]);
     }
 
     // POST/PUT/DELETE/PATCH 요청 시 invalidation (GET 요청은 부모 CacheInterceptor가 처리)
     if (!isGetRequest) {
-      // POST/PUT/DELETE/PATCH 요청 시 invalidation
       const invalidateOptions = this.reflector.get<CacheInvalidateOptions>(
         CACHE_INVALIDATE_KEY,
         context.getHandler(),
@@ -151,52 +183,19 @@ export class HttpCacheInterceptor extends CacheInterceptor {
             ? invalidateOptions.tags(request)
             : invalidateOptions.tags;
 
-        console.log(
-          `🔄 [Cache Invalidate Request] Method: ${httpAdapter.getRequestMethod(request)}, URL: ${httpAdapter.getRequestUrl(request)}, Tags:`,
-          tags,
-        );
-
         if (tags.length > 0) {
-          // 핸들러 실행 후, 응답 전에 동기적으로 캐시 무효화
-          const observable$ = super.intercept(context, next);
-          return from(observable$).pipe(
-            switchMap(
-              (obs) =>
-                new Observable((subscriber) => {
-                  const results: any[] = [];
-                  obs.subscribe({
-                    next: (value) => {
-                      results.push(value);
-                    },
-                    error: (err) => {
-                      subscriber.error(err);
-                    },
-                    complete: () => {
-                      // 핸들러 완료 후, 응답 전에 캐시 무효화
-                      console.log(
-                        `🚀 [Cache Invalidate] Handler completed, starting invalidation BEFORE response:`,
-                        tags,
-                      );
-                      void (async () => {
-                        for (const tag of tags) {
-                          try {
-                            await this._invalidateCacheTags(`tag:${tag}`);
-                          } catch (e) {
-                            console.error('❌ Cache invalidation failed', e);
-                          }
-                        }
-                        console.log(
-                          `✨ [Cache Invalidate] Completed, sending response now`,
-                        );
-                        // 응답 전송
-                        results.forEach((value) => subscriber.next(value));
-                        subscriber.complete();
-                      })();
-                    },
-                  });
-                }),
-            ),
-          );
+          // 응답 지연 최소화를 위해 fire-and-forget 스케줄링 (단순하고 효율적)
+          process.nextTick(() => {
+            void (async () => {
+              for (const tag of tags) {
+                try {
+                  await this._invalidateCacheTags(`tag:${tag}`);
+                } catch {
+                  // ignore
+                }
+              }
+            })().catch(() => {});
+          });
         }
       }
     }
@@ -219,8 +218,7 @@ export class HttpCacheInterceptor extends CacheInterceptor {
       });
 
       return true;
-    } catch (error) {
-      console.error('Failed to clear cache sets:', error);
+    } catch {
       return false;
     }
   }

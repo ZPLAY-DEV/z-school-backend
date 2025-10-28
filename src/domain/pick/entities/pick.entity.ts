@@ -154,7 +154,8 @@ export class Pick {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Offering, (offering) => offering.picks)
+  //! 순환참조때문에 문자열로 변경.
+  @ManyToOne(() => Offering, (offering: Offering) => offering.picks)
   @JoinColumn({ name: 'offeringId' })
   offering: Offering;
 
