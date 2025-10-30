@@ -1,17 +1,17 @@
 import {
-    Body,
-    ClassSerializerInterceptor,
-    Controller,
-    Get,
-    HttpCode,
-    Logger,
-    Param,
-    Patch,
-    Post,
-    Req,
-    Res,
-    UnauthorizedException,
-    UseInterceptors,
+  Body,
+  ClassSerializerInterceptor,
+  Controller,
+  Get,
+  HttpCode,
+  Logger,
+  Param,
+  Patch,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiTags } from '@nestjs/swagger';
@@ -27,22 +27,22 @@ import { LoginCredentialsDto } from 'src/domain/auth/dto/login-credentials.dto';
 import { LoginResponseDto } from 'src/domain/auth/dto/login-response.dto';
 import { LogoutDto } from 'src/domain/auth/dto/logout.dto';
 import {
-    RegisterCredentialsDto,
-    RegisterManagerCredentialsDto,
+  RegisterCredentialsDto,
+  RegisterManagerCredentialsDto,
 } from 'src/domain/auth/dto/register-credentials.dto';
 import { ResetPasswordDto } from 'src/domain/auth/dto/reset-password.dto';
 import { SwitchSchoolDto } from 'src/domain/auth/dto/switch-school.dto';
 import { UserDto } from 'src/domain/auth/dto/user.dto';
 import {
-    GetMeDocs,
-    LoginDocs,
-    LoginWithNanoidDocs,
-    LogOutDocs,
-    RefreshDocs,
-    RegisterDocs,
-    RegisterManagerDocs,
-    ResetPasswordDocs,
-    SwitchSchoolDocs,
+  GetMeDocs,
+  LoginDocs,
+  LoginWithNanoidDocs,
+  LogOutDocs,
+  RefreshDocs,
+  RegisterDocs,
+  RegisterManagerDocs,
+  ResetPasswordDocs,
+  SwitchSchoolDocs,
 } from 'src/domain/auth/swagger/auth-swagger.decorator';
 import { HashPasswordPipe } from 'src/domain/user/pipes/hash-password.pipe';
 
@@ -341,6 +341,7 @@ export class AuthController {
   @Get('me')
   async getMe(@Req() req: ExpressRequest): Promise<UserDto> {
     const user = req['user'] as IRequestUser;
+
     if (!user) {
       throw new UnauthorizedException('User not authenticated');
     }

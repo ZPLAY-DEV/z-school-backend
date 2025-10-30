@@ -59,7 +59,14 @@ export class JwtContextGuard implements CanActivate {
       // 캐시 확인 (성능 최적화: JWT 검증 15ms → 0.1ms)
       const cached = this.tokenCache.get(token);
       if (cached && Date.now() < cached.exp) {
-        request['user'] = cached.payload;
+        // IRequestUser 형태로 변환
+        const user = {
+          id: cached.payload.sub,
+          username: cached.payload.username,
+          role: cached.payload.role,
+          schoolId: cached.payload.schoolId,
+        };
+        request['user'] = user;
         return true;
       }
 
@@ -121,8 +128,14 @@ export class JwtContextGuard implements CanActivate {
         }
       }
 
-      // 성공적인 검증 (로그 제거 - 성능 최적화)
-      request['user'] = payload;
+      // 성공적인 검증 - IRequestUser 형태로 변환
+      const user = {
+        id: payload.sub,
+        username: payload.username,
+        role: payload.role,
+        schoolId: payload.schoolId,
+      };
+      request['user'] = user;
       return true;
     } catch (error) {
       if (error instanceof UnauthorizedException) {
@@ -135,8 +148,15 @@ export class JwtContextGuard implements CanActivate {
   }
 
   private extractTokenFromHeader(request: Request): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    return type === 'Bearer' ? token : undefined;
+    const authHeader = request.headers.authorization;
+    const cookieToken = (request as any).cookies?.accessToken as
+      | string
+      | undefined;
+
+    const [type, token] = authHeader?.split(' ') ?? [];
+
+    // 헤더 우선, 없으면 쿠키
+    return type === 'Bearer' ? token : cookieToken;
   }
 
   private generateContextHash(role: Role, schoolId: number | null): string {

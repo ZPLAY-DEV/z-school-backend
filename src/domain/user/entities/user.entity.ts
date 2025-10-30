@@ -78,19 +78,16 @@ export class User {
 
   //* 1-to-1 hasOne -------------------------------------------------------- *//
 
-  @Exclude()
   @OneToOne(() => Instructor, (instructor) => instructor.user, {
     cascade: ['insert', 'update'],
   })
   instructor?: Instructor;
 
-  @Exclude()
   @OneToOne(() => Manager, (manager) => manager.user, {
     cascade: ['insert', 'update'],
   })
   manager?: Manager;
 
-  @Exclude()
   @OneToOne(() => Parent, (parent) => parent.user, {
     cascade: ['insert', 'update'],
   })

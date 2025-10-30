@@ -437,10 +437,10 @@ export class AuthService {
         relations: [
           'instructor',
           'instructor.sams',
-          //'instructor.sams.school',
+          'instructor.sams.school',
           'parent',
           'parent.students',
-          // 'parent.students.school',
+          'parent.students.school',
           'manager',
           'manager.affiliations',
         ],
@@ -805,9 +805,10 @@ export class AuthService {
       relations: [
         'instructor',
         'instructor.sams',
-        // 'instructor.sams.school', // wonder if this is needed
+        'instructor.sams.school',
         'parent',
         'parent.students',
+        'parent.students.school',
         'manager',
       ],
     });
@@ -1001,8 +1002,10 @@ export class AuthService {
       relations: [
         'instructor',
         'instructor.sams',
+        'instructor.sams.school',
         'parent',
         'parent.students',
+        'parent.students.school',
         'manager',
         'manager.affiliations',
       ],
