@@ -16,6 +16,7 @@ import {
 } from 'nestjs-paginate';
 import { StudentStatus } from 'src/common/enums';
 import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-grades.dto';
+import { ResponseSchoolStudentListDto } from 'src/domain/school/dto/response-school-student-list.dto';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { formatPhone, normalizePhone } from 'src/helpers/phone';
@@ -598,16 +599,13 @@ export class SchoolStudentService {
   async infiniteList(
     schoolId: number,
     query: PaginateQuery,
-  ): Promise<Paginated<Student>> {
+  ): Promise<Paginated<ResponseSchoolStudentListDto>> {
     const queryBuilder = this.studentRepository
       .createQueryBuilder('student')
+      .leftJoinAndSelect('student.parent', 'parent')
       .where('student.schoolId = :schoolId', { schoolId });
 
-    return await paginate<Student>(query, queryBuilder, {
-      relations: {
-        parent: true,
-        // picks: true,
-      },
+    const result = await paginate<Student>(query, queryBuilder, {
       sortableColumns: ['id', 'name', 'grade', 'klass', 'bunho'],
       searchableColumns: ['name', 'parent.phone'],
       defaultSortBy: [
@@ -625,6 +623,24 @@ export class SchoolStudentService {
         note: [FilterOperator.EQ, FilterOperator.ILIKE, FilterOperator.NULL],
       },
     });
+
+    // Student 엔티티를 ResponseSchoolStudentListDto로 변환
+    const mappedData = result.data.map((student) => ({
+      id: student.id,
+      grade: student.grade,
+      klass: student.klass,
+      bunho: student.bunho,
+      name: student.name,
+      status: student.status,
+      parentPhone: student.parent?.phone || null,
+      createdAt: student.createdAt,
+      updatedAt: student.updatedAt,
+    }));
+
+    return {
+      ...result,
+      data: mappedData,
+    } as Paginated<ResponseSchoolStudentListDto>;
   }
 
   async getGradeClasses(schoolId: number): Promise<ResponseSchoolGradesDto[]> {

@@ -16,9 +16,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
+import { HttpCache } from 'src/common/decorators/http-cache.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { StudentStatus } from 'src/common/enums';
 import { ResponseSchoolGradesDto } from 'src/domain/school/dto/response-school-grades.dto';
+import { ResponseSchoolStudentListDto } from 'src/domain/school/dto/response-school-student-list.dto';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { SchoolStudentService } from './school-student.service';
@@ -31,7 +33,6 @@ import {
   SchoolStudentListDocs,
   SchoolStudentListPaginatedDocs,
 } from './swagger/school-student.swagger.decorator';
-import { HttpCache } from 'src/common/decorators/http-cache.decorator';
 
 @ApiTags('✳️ Schools > Students ( 학교 > 학생 )')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -235,7 +236,7 @@ export class SchoolStudentController {
   async infiniteList(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Paginate() query: PaginateQuery,
-  ): Promise<Paginated<Student>> {
+  ): Promise<Paginated<ResponseSchoolStudentListDto>> {
     return await this.schoolStudentService.infiniteList(schoolId, query);
   }
 }
