@@ -4,10 +4,10 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  Matches,
   MaxLength,
   Min,
 } from 'class-validator';
+import { AllowedGradesTransform } from 'src/common/decorators/allow-grades-transform.decorator';
 import { ClassStatus, Weekday } from 'src/common/enums';
 
 /**
@@ -50,16 +50,21 @@ export class CreateGroupDto {
 
   @ApiPropertyOptional({
     description:
-      '허용 학년 - 쉼표로 구분하거나 범위로 표시 (예: "1,2,3" 또는 "1-6" 또는 "1~6")',
-    type: String,
-    example: '1,2,3',
+      '허용 학년 - 다양한 형식 지원:\n' +
+      '• 문자열: "1,2,3"\n' +
+      '• 숫자 배열: [1,2,3]\n' +
+      '• 범위(하이픈): "1-3" → "1,2,3"으로 확장\n' +
+      '• 범위(물결표): "1~6" → "1,2,3,4,5,6"으로 확장\n' +
+      '• 혼합: "1,3-5,7" → "1,3,4,5,7"로 확장\n' +
+      '※ DB에는 항상 쉼표로 구분된 정렬된 문자열로 저장됩니다',
+    oneOf: [
+      { type: 'string', example: '1,2,3' },
+      { type: 'array', items: { type: 'number' }, example: [1, 2, 3] },
+    ],
   })
   @IsOptional()
-  @IsString({ message: '허용 학년은 문자열이어야 합니다' })
-  @Matches(/^[1-9,\-~\s]+$/, {
-    message: '허용 학년은 숫자, 쉼표, 하이픈, 물결표시만 허용됩니다',
-  })
-  allowedGrades?: string;
+  @AllowedGradesTransform()
+  allowedGrades?: string | number[];
 
   @ApiProperty({
     description: '수업 요일 - 반복 수업이 진행되는 요일',
