@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Paginated, PaginateQuery } from 'nestjs-paginate';
+import { CacheInvalidate } from 'src/common/decorators/cache-invalidate.decorator';
 import { PickedStudentDto } from 'src/domain/group/dto/picked-student.dto';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
@@ -41,6 +42,11 @@ export class LessonController {
 
   @CreateLessonDocs()
   @Post()
+  @CacheInvalidate({
+    tags: (req) => [
+      `schools:${req.body.schoolId}:terms:${req.body.termId}:lessons`,
+    ],
+  })
   async create(@Body() dto: CreateLessonDto): Promise<Lesson> {
     return await this.lessonService.create(dto);
   }
@@ -99,6 +105,20 @@ export class LessonController {
 
   @UpdateLessonDocs()
   @Patch(':id')
+  @CacheInvalidate({
+    tags: (req) => {
+      // req.body에 schoolId와 termId가 있으면 사용
+      if (req.body?.schoolId && req.body?.termId) {
+        return [
+          `schools:${req.body.schoolId}:terms:${req.body.termId}:lessons`,
+        ];
+      }
+      // 없으면 req.params.id를 사용 (실제 Lesson 조회는 서비스 레벨에서 처리하거나
+      // 클라이언트가 항상 schoolId, termId를 포함하도록 함)
+      // 여기서는 빈 배열 반환하여 무효화하지 않음 (req.body에 정보가 있을 때만 무효화)
+      return [];
+    },
+  })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateLessonDto,

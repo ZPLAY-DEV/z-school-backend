@@ -97,8 +97,10 @@ export class LessonCoreService {
       }
 
       //? 3. 새로운 강좌 생성
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { groups, ...lessonData } = dto;
       const createData = {
-        ...dto,
+        ...lessonData,
         start: dto.start ?? term.start,
         end: term.end,
         schoolName: school.name,

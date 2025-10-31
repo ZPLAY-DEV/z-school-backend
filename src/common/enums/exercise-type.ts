@@ -1,0 +1,6 @@
+export enum ExerciseType {
+  MEDITATION = 'MEDITATION',
+  BALANCE = 'BALANCE',
+  FLEXIBILITY = 'FLEXIBILITY',
+  STRENGTH = 'STRENGTH',
+}

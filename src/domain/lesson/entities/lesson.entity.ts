@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { ClassStatus } from 'src/common/enums';
 import { Category } from 'src/domain/category/entities/category.entity';
 import { Contract } from 'src/domain/contract/entities/contract.entity';
+import { Curriculum } from 'src/domain/curriculum/entities/curriculum.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Ledger } from 'src/domain/ledger/entities/ledger.entity';
 import { FeeItemDto } from 'src/domain/lesson/dto/create-lesson.dto';
@@ -190,6 +191,9 @@ export class Lesson {
 
   @OneToMany(() => Contract, (contract) => contract.lesson)
   contracts: Contract[];
+
+  @OneToMany(() => Curriculum, (curriculum) => curriculum.lesson)
+  curricula: Curriculum[];
 
   //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
 

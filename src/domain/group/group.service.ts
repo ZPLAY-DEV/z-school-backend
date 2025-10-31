@@ -28,11 +28,7 @@ import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
-import {
-  parseRangeFormat,
-  parseTime,
-  parseTimeFormat,
-} from 'src/helpers/parse';
+import { parseTime, parseTimeFormat } from 'src/helpers/parse';
 import { DataSource, Repository } from 'typeorm';
 
 @Injectable()
@@ -64,9 +60,11 @@ export class GroupService {
       if (dto.end) {
         dto.end = parseTimeFormat(parseTime(dto.end));
       }
-      if (dto.allowedGrades) {
-        dto.allowedGrades = parseRangeFormat(dto.allowedGrades).join(',');
-      }
+      const allowedGradesString: string | undefined = dto.allowedGrades
+        ? typeof dto.allowedGrades === 'string'
+          ? dto.allowedGrades
+          : dto.allowedGrades.join(',')
+        : undefined;
 
       // 2. 필수 검증
       if (!dto.lessonId) {
@@ -160,6 +158,7 @@ export class GroupService {
         ...dto,
         samId: sam.id,
         samName: dto.instructorName,
+        allowedGrades: allowedGradesString,
       };
 
       const savedGroup = await manager.save(
@@ -485,12 +484,15 @@ export class GroupService {
     if (dto.end) {
       dto.end = parseTimeFormat(parseTime(dto.end));
     }
-    if (dto.allowedGrades) {
-      dto.allowedGrades = parseRangeFormat(dto.allowedGrades).join(',');
-    }
+    const allowedGradesString: string | undefined = dto.allowedGrades
+      ? typeof dto.allowedGrades === 'string'
+        ? dto.allowedGrades
+        : dto.allowedGrades.join(',')
+      : undefined;
     const group = await this.groupRepository.preload({
       id,
       ...dto,
+      allowedGrades: allowedGradesString,
     });
     if (!group) {
       throw new NotFoundException('Group not found');

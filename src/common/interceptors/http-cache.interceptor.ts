@@ -184,18 +184,24 @@ export class HttpCacheInterceptor extends CacheInterceptor {
             : invalidateOptions.tags;
 
         if (tags.length > 0) {
-          // 응답 지연 최소화를 위해 fire-and-forget 스케줄링 (단순하고 효율적)
-          process.nextTick(() => {
-            void (async () => {
-              for (const tag of tags) {
-                try {
-                  await this._invalidateCacheTags(`tag:${tag}`);
-                } catch {
-                  // ignore
-                }
+          // 캐시 무효화를 즉시 실행 (타이밍 문제 방지)
+          // 응답 지연을 최소화하기 위해 await하지 않고 비동기로 실행
+          void (async () => {
+            for (const tag of tags) {
+              try {
+                await this._invalidateCacheTags(`tag:${tag}`);
+                // 디버깅: 캐시 무효화 완료 로그 (선택적)
+                console.log(`🗑️ Cache invalidated for tag: ${tag}`);
+              } catch (error) {
+                // 디버깅: 에러 로그 (필요시 주석 해제)
+                console.error(
+                  `❌ Cache invalidation failed for tag: ${tag}`,
+                  error,
+                );
+                // ignore
               }
-            })().catch(() => {});
-          });
+            }
+          })();
         }
       }
     }

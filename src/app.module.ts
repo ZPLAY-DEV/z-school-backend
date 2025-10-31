@@ -23,6 +23,7 @@ import { BookingModule } from 'src/domain/booking/booking.module';
 import { CalendarModule } from 'src/domain/calendar/calendar.module';
 import { CategoryModule } from 'src/domain/category/category.module';
 import { ContractModule } from 'src/domain/contract/contract.module';
+import { CurriculumModule } from 'src/domain/curriculum/curriculum.module';
 import { DepartureModule } from 'src/domain/departure/departure.module';
 import { GroupModule } from 'src/domain/group/group.module';
 import { InstructorModule } from 'src/domain/instructor/instructor.module';
@@ -35,6 +36,7 @@ import { OfferingModule } from 'src/domain/offering/offering.module';
 import { ParentModule } from 'src/domain/parent/parent.module';
 import { PayoutModule } from 'src/domain/payout/payout.module';
 import { PickModule } from 'src/domain/pick/pick.module';
+import { ProgramModule } from 'src/domain/program/program.module';
 import { ReminderModule } from 'src/domain/reminder/reminder.module';
 import { SamModule } from 'src/domain/sam/sam.module';
 import { SchoolModule } from 'src/domain/school/school.module';
@@ -43,6 +45,7 @@ import { StatementModule } from 'src/domain/statement/statement.module';
 import { StudentModule } from 'src/domain/student/student.module';
 import { SubsidyModule } from 'src/domain/subsidy/subsidy.module';
 import { SurveyModule } from 'src/domain/survey/survey.module';
+import { SyllabusModule } from 'src/domain/syllabus/syllabus.module';
 import { TermModule } from 'src/domain/term/term.module';
 import { TextModule } from 'src/domain/text/text.module';
 import { UserModule } from 'src/domain/user/user.module';
@@ -130,6 +133,7 @@ const conditionalImports = isMetricsEnabled ? [MetricsModule] : [];
     CalendarModule,
     CategoryModule,
     ContractModule,
+    CurriculumModule,
     DepartureModule,
     GroupModule,
     InstructorModule,
@@ -144,6 +148,7 @@ const conditionalImports = isMetricsEnabled ? [MetricsModule] : [];
     ParentModule,
     PayoutModule,
     PickModule,
+    ProgramModule,
     RedisModule,
     SamModule,
     SchooldayModule,
@@ -153,6 +158,7 @@ const conditionalImports = isMetricsEnabled ? [MetricsModule] : [];
     StudentModule,
     SubsidyModule,
     SurveyModule,
+    SyllabusModule,
     TermModule,
     TextModule,
     UploadModule,
