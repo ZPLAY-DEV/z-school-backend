@@ -52,10 +52,9 @@ export class CreateProgramDto {
     example: '초급,기초,척추',
     required: false,
   })
-  @IsString()
-  @MaxLength(255)
-  @IsOptional()
-  tags?: string;
+  @IsArray()
+  @IsString({ each: true })
+  tags: string[] | null;
 
   @ApiProperty({
     description: '🈵 난이도',

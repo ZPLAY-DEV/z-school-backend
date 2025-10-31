@@ -42,9 +42,9 @@ export class Program {
   @Column({ type: 'enum', enum: ExerciseType })
   type: ExerciseType;
 
-  @ApiProperty({ description: '🈳 태그', example: '초급,기초,척추' })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  tags: string | null;
+  @ApiProperty({ description: '🈳 태그', example: 'LEG,WAIST' })
+  @Column({ type: 'simple-array', nullable: true })
+  tags: string[] | null;
 
   @ApiProperty({
     description: '🈵 난이도',

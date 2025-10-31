@@ -16,11 +16,16 @@ import { CreateSyllabusDto } from './dto/create-syllabus.dto';
 import { UpdateSyllabusDto } from './dto/update-syllabus.dto';
 import { Syllabus } from './entities/syllabus.entity';
 import { SyllabusService } from './syllabus.service';
+import { IS3Urls } from 'src/common/interfaces';
+import { UploadService } from 'src/services/upload/upload.service';
 
 @ApiTags('Syllabus')
 @Controller('syllabuses')
 export class SyllabusController {
-  constructor(private readonly syllabusService: SyllabusService) {}
+  constructor(
+    private readonly syllabusService: SyllabusService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: '커리큘럼 생성' })
@@ -142,5 +147,25 @@ export class SyllabusController {
     @Body('lessonIds') lessonIds: number[],
   ): Promise<Syllabus> {
     return await this.syllabusService.removeLessons(id, lessonIds);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Extras
+  //? ---------------------------------------------------------------------- ?//
+
+  @Post('s3urls')
+  async generateS3Urls(
+    @Body()
+    dto: {
+      mimeType: string;
+      filename?: string;
+    },
+  ): Promise<IS3Urls> {
+    const path = [`syllabuses`, `hero`].join('/');
+    return await this.uploadService.generateUploadUrls(
+      path,
+      dto.mimeType,
+      dto.filename,
+    );
   }
 }

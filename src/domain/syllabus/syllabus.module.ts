@@ -5,9 +5,13 @@ import { Lesson } from '../lesson/entities/lesson.entity';
 import { Syllabus } from './entities/syllabus.entity';
 import { SyllabusController } from './syllabus.controller';
 import { SyllabusService } from './syllabus.service';
+import { UploadModule } from 'src/services/upload/upload.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Syllabus, Curriculum, Lesson])],
+  imports: [
+    TypeOrmModule.forFeature([Syllabus, Curriculum, Lesson]),
+    UploadModule,
+  ],
   controllers: [SyllabusController],
   providers: [SyllabusService],
   exports: [SyllabusService],
