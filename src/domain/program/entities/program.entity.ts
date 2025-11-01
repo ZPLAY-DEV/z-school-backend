@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsBoolean } from 'class-validator';
 import { ExerciseType, StudentLevel } from 'src/common/enums';
 import { Syllabus } from 'src/domain/syllabus/entities/syllabus.entity';
 import {
@@ -55,6 +56,14 @@ export class Program {
   level: StudentLevel;
 
   @ApiProperty({
+    description: '🈵 점수 측정 여부',
+    example: true,
+  })
+  @Column({ type: 'boolean', default: false })
+  @IsBoolean()
+  isScorable: boolean;
+
+  @ApiProperty({
     description: '🈳 자막 배열',
     example: ['안녕하세요', '오늘은 전사 자세를 배워볼게요'],
   })
@@ -74,6 +83,13 @@ export class Program {
   })
   @Column({ type: 'varchar', length: 255, nullable: true })
   audioUrl: string | null;
+  @ApiProperty({
+    description: '🈵 점수 측정 여부',
+    example: true,
+  })
+  @Column({ type: 'boolean', default: false })
+  @IsBoolean()
+  isScoring: boolean;
 
   // ------------------------------------------------------------------------ //
 

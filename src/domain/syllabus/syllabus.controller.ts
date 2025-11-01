@@ -12,12 +12,12 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
+import { IS3Urls } from 'src/common/interfaces';
+import { UploadService } from 'src/services/upload/upload.service';
 import { CreateSyllabusDto } from './dto/create-syllabus.dto';
 import { UpdateSyllabusDto } from './dto/update-syllabus.dto';
 import { Syllabus } from './entities/syllabus.entity';
 import { SyllabusService } from './syllabus.service';
-import { IS3Urls } from 'src/common/interfaces';
-import { UploadService } from 'src/services/upload/upload.service';
 
 @ApiTags('Syllabus')
 @Controller('syllabuses')
@@ -26,6 +26,10 @@ export class SyllabusController {
     private readonly syllabusService: SyllabusService,
     private readonly uploadService: UploadService,
   ) {}
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Create
+  //? ---------------------------------------------------------------------- ?//
 
   @Post()
   @ApiOperation({ summary: '커리큘럼 생성' })
@@ -43,6 +47,10 @@ export class SyllabusController {
   ): Promise<Syllabus> {
     return await this.syllabusService.create(createSyllabusDto);
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
 
   @Get()
   @ApiOperation({ summary: '전체 커리큘럼 조회' })
@@ -84,6 +92,10 @@ export class SyllabusController {
     return await this.syllabusService.findOne(id);
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
   @Patch(':id')
   @ApiOperation({ summary: '커리큘럼 수정' })
   @ApiParam({ name: 'id', description: '커리큘럼 ID' })
@@ -103,6 +115,10 @@ export class SyllabusController {
     return await this.syllabusService.update(id, updateSyllabusDto);
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Delete
+  //? ---------------------------------------------------------------------- ?//
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: '커리큘럼 삭제 (soft delete)' })
@@ -118,6 +134,10 @@ export class SyllabusController {
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     await this.syllabusService.remove(id);
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Manage Curriculums
+  //? ---------------------------------------------------------------------- ?//
 
   @Post(':id/lessons')
   @ApiOperation({ summary: '커리큘럼에 레슨 추가' })

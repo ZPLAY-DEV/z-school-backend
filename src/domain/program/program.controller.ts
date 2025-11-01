@@ -22,6 +22,10 @@ import { ProgramService } from './program.service';
 export class ProgramController {
   constructor(private readonly programService: ProgramService) {}
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Create
+  //? ---------------------------------------------------------------------- ?//
+
   @Post()
   @ApiOperation({ summary: '프로그램 생성' })
   @ApiResponse({
@@ -33,13 +37,34 @@ export class ProgramController {
     status: HttpStatus.BAD_REQUEST,
     description: '잘못된 요청',
   })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: '해당 커리큘럼을 찾을 수 없음',
-  })
   async create(@Body() createProgramDto: CreateProgramDto): Promise<Program> {
     return await this.programService.create(createProgramDto);
   }
+
+  @Post('bulk')
+  @ApiOperation({ summary: '프로그램 대량 생성' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: '프로그램들이 성공적으로 생성됨',
+    type: [Program],
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: '잘못된 요청',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: '일부 syllabus를 찾을 수 없음',
+  })
+  async bulkCreate(
+    @Body() createProgramDtos: CreateProgramDto[],
+  ): Promise<Program[]> {
+    return await this.programService.bulkCreate(createProgramDtos);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
 
   @Get()
   @ApiOperation({ summary: '전체 프로그램 조회 또는 커리큘럼별 프로그램 조회' })
@@ -74,6 +99,10 @@ export class ProgramController {
     return await this.programService.findOne(id);
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
   @Patch(':id')
   @ApiOperation({ summary: '프로그램 수정' })
   @ApiParam({ name: 'id', description: '프로그램 ID' })
@@ -92,6 +121,10 @@ export class ProgramController {
   ): Promise<Program> {
     return await this.programService.update(id, updateProgramDto);
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Delete
+  //? ---------------------------------------------------------------------- ?//
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)

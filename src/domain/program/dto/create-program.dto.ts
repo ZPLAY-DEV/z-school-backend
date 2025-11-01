@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -64,6 +65,14 @@ export class CreateProgramDto {
   @IsEnum(StudentLevel)
   @IsNotEmpty()
   level: StudentLevel;
+
+  @ApiProperty({
+    description: '🈵 점수 측정 여부',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isScorable: boolean;
 
   @ApiProperty({
     description: '🈳 자막 배열',

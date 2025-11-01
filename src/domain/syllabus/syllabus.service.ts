@@ -19,10 +19,18 @@ export class SyllabusService {
     private readonly lessonRepository: Repository<Lesson>,
   ) {}
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Create
+  //? ---------------------------------------------------------------------- ?//
+
   async create(createSyllabusDto: CreateSyllabusDto): Promise<Syllabus> {
     const syllabus = this.syllabusRepository.create(createSyllabusDto);
     return await this.syllabusRepository.save(syllabus);
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
 
   async list(): Promise<Syllabus[]> {
     return await this.syllabusRepository.find({
@@ -54,6 +62,10 @@ export class SyllabusService {
     return syllabus;
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
   async update(
     id: number,
     updateSyllabusDto: UpdateSyllabusDto,
@@ -63,10 +75,18 @@ export class SyllabusService {
     return await this.syllabusRepository.save(syllabus);
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Delete
+  //? ---------------------------------------------------------------------- ?//
+
   async remove(id: number): Promise<void> {
     const syllabus = await this.findOne(id);
     await this.syllabusRepository.softRemove(syllabus);
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Manage Curriculums
+  //? ---------------------------------------------------------------------- ?//
 
   async addLessons(id: number, lessonIds: number[]): Promise<Syllabus> {
     // Syllabus 존재 여부 확인
