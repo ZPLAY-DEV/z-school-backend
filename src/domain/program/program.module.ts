@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Syllabus } from '../syllabus/entities/syllabus.entity';
+import { Week } from '../week/entities/week.entity';
 import { Program } from './entities/program.entity';
 import { ProgramController } from './program.controller';
 import { ProgramService } from './program.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Program, Syllabus])],
+  imports: [TypeOrmModule.forFeature([Program, Week])],
   controllers: [ProgramController],
   providers: [ProgramService],
   exports: [ProgramService],

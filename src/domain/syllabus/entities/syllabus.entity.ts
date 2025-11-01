@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Curriculum } from 'src/domain/curriculum/entities/curriculum.entity';
-import { Program } from 'src/domain/program/entities/program.entity';
+import { Week } from 'src/domain/week/entities/week.entity';
 import {
   Column,
   CreateDateColumn,
@@ -44,10 +44,10 @@ export class Syllabus {
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 
-  @OneToMany(() => Program, (program) => program.syllabus, {
+  @OneToMany(() => Week, (week) => week.syllabus, {
     cascade: ['insert', 'update'],
   })
-  programs: Program[];
+  weeks: Week[];
 
   //* N-to-M belongsToMany using 1-to-M ------------------------------------ *//
 

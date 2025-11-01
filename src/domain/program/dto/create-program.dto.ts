@@ -15,23 +15,10 @@ import {
 import { ExerciseType, StudentLevel } from 'src/common/enums';
 
 export class CreateProgramDto {
-  @ApiProperty({ description: '🈵 syllabusId', example: 1 })
+  @ApiProperty({ description: '🈵 weekId', example: 1 })
   @IsInt()
   @IsNotEmpty()
-  syllabusId: number;
-
-  @ApiProperty({ description: '🈵 주차', example: 1 })
-  @IsInt()
-  @Min(1)
-  @Max(255)
-  @IsNotEmpty()
-  week: number;
-
-  @ApiProperty({ description: '🈵 주제', example: '척추 건강' })
-  @IsString()
-  @MaxLength(100)
-  @IsNotEmpty()
-  subject: string;
+  weekId: number;
 
   @ApiProperty({ description: '🈵 자세이름', example: '전사 자세' })
   @IsString()

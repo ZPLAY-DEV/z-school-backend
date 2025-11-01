@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { Syllabus } from '../syllabus/entities/syllabus.entity';
+import { Week } from '../week/entities/week.entity';
 import { CreateProgramDto } from './dto/create-program.dto';
 import { UpdateProgramDto } from './dto/update-program.dto';
 import { Program } from './entities/program.entity';
@@ -11,8 +11,8 @@ export class ProgramService {
   constructor(
     @InjectRepository(Program)
     private readonly programRepository: Repository<Program>,
-    @InjectRepository(Syllabus)
-    private readonly syllabusRepository: Repository<Syllabus>,
+    @InjectRepository(Week)
+    private readonly weekRepository: Repository<Week>,
   ) {}
 
   //? ---------------------------------------------------------------------- ?//
@@ -20,13 +20,13 @@ export class ProgramService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(createProgramDto: CreateProgramDto): Promise<Program> {
-    const syllabus = await this.syllabusRepository.findOne({
-      where: { id: createProgramDto.syllabusId },
+    const week = await this.weekRepository.findOne({
+      where: { id: createProgramDto.weekId },
     });
 
-    if (!syllabus) {
+    if (!week) {
       throw new NotFoundException(
-        `Syllabus with id ${createProgramDto.syllabusId} not found`,
+        `Week with id ${createProgramDto.weekId} not found`,
       );
     }
 
@@ -39,21 +39,21 @@ export class ProgramService {
       return [];
     }
 
-    // 모든 syllabusId를 수집하고 중복 제거
-    const syllabusIds = [
-      ...new Set(createProgramDtos.map((dto) => dto.syllabusId)),
+    // 모든 weekId를 수집하고 중복 제거
+    const weekIds = [
+      ...new Set(createProgramDtos.map((dto) => dto.weekId)),
     ];
 
-    // syllabusId 유효성 검증
-    const syllabuses = await this.syllabusRepository.find({
-      where: { id: In(syllabusIds) },
+    // weekId 유효성 검증
+    const weeks = await this.weekRepository.find({
+      where: { id: In(weekIds) },
     });
 
-    if (syllabuses.length !== syllabusIds.length) {
-      const foundIds = syllabuses.map((s) => s.id);
-      const missingIds = syllabusIds.filter((id) => !foundIds.includes(id));
+    if (weeks.length !== weekIds.length) {
+      const foundIds = weeks.map((w) => w.id);
+      const missingIds = weekIds.filter((id) => !foundIds.includes(id));
       throw new NotFoundException(
-        `Syllabus with id(s) ${missingIds.join(', ')} not found`,
+        `Week with id(s) ${missingIds.join(', ')} not found`,
       );
     }
 
@@ -68,30 +68,39 @@ export class ProgramService {
 
   async findAll(): Promise<Program[]> {
     return await this.programRepository.find({
-      relations: ['syllabus'],
-      order: { week: 'ASC', createdAt: 'ASC' },
+      relations: ['week', 'week.syllabus'],
+      order: { createdAt: 'ASC' },
     });
   }
 
   async findByCurriculum(syllabusId: number): Promise<Program[]> {
-    const syllabus = await this.syllabusRepository.findOne({
-      where: { id: syllabusId },
-    });
-
-    if (!syllabus) {
-      throw new NotFoundException(`Syllabus with id ${syllabusId} not found`);
-    }
-
-    return await this.programRepository.find({
+    const weeks = await this.weekRepository.find({
       where: { syllabusId },
-      order: { week: 'ASC', createdAt: 'ASC' },
+      relations: ['programs'],
+      order: { week: 'ASC' },
     });
+
+    // 모든 weeks의 programs를 평탄화하고 week 정보와 함께 매핑
+    const programsWithWeek = weeks.flatMap((week) =>
+      (week.programs || []).map((program) => ({ program, week })),
+    );
+
+    // week.week 순서로 정렬, 같은 week 내에서는 createdAt 순서로 정렬
+    return programsWithWeek
+      .sort((a, b) => {
+        const weekDiff = a.week.week - b.week.week;
+        if (weekDiff !== 0) return weekDiff;
+        return (
+          a.program.createdAt.getTime() - b.program.createdAt.getTime()
+        );
+      })
+      .map((item) => item.program);
   }
 
   async findOne(id: number): Promise<Program> {
     const program = await this.programRepository.findOne({
       where: { id },
-      relations: ['syllabus'],
+      relations: ['week', 'week.syllabus'],
     });
 
     if (!program) {
@@ -112,16 +121,16 @@ export class ProgramService {
     const program = await this.findOne(id);
 
     if (
-      updateProgramDto.syllabusId &&
-      updateProgramDto.syllabusId !== program.syllabusId
+      updateProgramDto.weekId &&
+      updateProgramDto.weekId !== program.weekId
     ) {
-      const syllabus = await this.syllabusRepository.findOne({
-        where: { id: updateProgramDto.syllabusId },
+      const week = await this.weekRepository.findOne({
+        where: { id: updateProgramDto.weekId },
       });
 
-      if (!syllabus) {
+      if (!week) {
         throw new NotFoundException(
-          `Syllabus with id ${updateProgramDto.syllabusId} not found`,
+          `Week with id ${updateProgramDto.weekId} not found`,
         );
       }
     }

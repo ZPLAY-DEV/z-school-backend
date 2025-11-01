@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean } from 'class-validator';
 import { ExerciseType, StudentLevel } from 'src/common/enums';
-import { Syllabus } from 'src/domain/syllabus/entities/syllabus.entity';
+import { Week } from 'src/domain/week/entities/week.entity';
 import {
   Column,
   CreateDateColumn,
@@ -19,17 +19,9 @@ export class Program {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
-  @ApiProperty({ description: '🈵 syllabusId', example: 1 })
+  @ApiProperty({ description: '🈵 weekId', example: 1 })
   @Column({ type: 'int', unsigned: true })
-  syllabusId: number;
-
-  @ApiProperty({ description: '🈵 주차', example: 1 })
-  @Column({ type: 'tinyint', unsigned: true })
-  week: number;
-
-  @ApiProperty({ description: '🈵 주제', example: '척추 건강' })
-  @Column({ type: 'varchar', length: 100 })
-  subject: string;
+  weekId: number;
 
   @ApiProperty({ description: '🈵 자세이름', example: '전사 자세' })
   @Column({ type: 'varchar', length: 100 })
@@ -108,14 +100,14 @@ export class Program {
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
   @ApiProperty({
-    description: '관련 syllabus',
-    type: () => Syllabus,
+    description: '관련 week',
+    type: () => Week,
   })
-  @ManyToOne(() => Syllabus, (syllabus) => syllabus.programs, {
+  @ManyToOne(() => Week, (week) => week.programs, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'syllabusId' })
-  syllabus: Syllabus;
+  @JoinColumn({ name: 'weekId' })
+  week: Week;
 
   //? Constructor ---------------------------------------------------------- ?//
 

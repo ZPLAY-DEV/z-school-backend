@@ -34,7 +34,7 @@ export class SyllabusService {
 
   async list(): Promise<Syllabus[]> {
     return await this.syllabusRepository.find({
-      relations: ['curricula', 'curricula.lesson', 'programs'],
+      relations: ['curricula', 'curricula.lesson', 'weeks', 'weeks.programs'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -43,7 +43,7 @@ export class SyllabusService {
     const queryBuilder = this.syllabusRepository.createQueryBuilder('syllabus');
 
     return await paginate<Syllabus>(query, queryBuilder, {
-      relations: ['programs'],
+      relations: ['weeks', 'weeks.programs'],
       sortableColumns: ['createdAt'],
       defaultSortBy: [['createdAt', 'DESC']],
     });
@@ -52,7 +52,7 @@ export class SyllabusService {
   async findOne(id: number): Promise<Syllabus> {
     const syllabus = await this.syllabusRepository.findOne({
       where: { id },
-      relations: ['curricula', 'curricula.lesson', 'programs'],
+      relations: ['curricula', 'curricula.lesson', 'weeks', 'weeks.programs'],
     });
 
     if (!syllabus) {
