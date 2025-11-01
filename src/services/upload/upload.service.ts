@@ -141,6 +141,10 @@ export class UploadService {
       'image/gif',
       'image/webp',
       'application/pdf',
+      'video/mp4',
+      'audio/mpeg',
+      'audio/mp3',
+      'audio/ogg',
     ];
     return allowedTypes.includes(mimeType.toLowerCase());
   }
