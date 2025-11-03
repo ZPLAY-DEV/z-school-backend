@@ -71,6 +71,7 @@ export class LessonController {
       'groups.sam.instructor',
       'groups.picks',
       'category',
+      'curriculums',
     ]);
   }
 

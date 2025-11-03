@@ -8,12 +8,14 @@ import {
 } from 'nestjs-paginate';
 import { BookingStatus, ClassStatus } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { Curriculum } from 'src/domain/curriculum/entities/curriculum.entity';
 import { BookedStudentDto } from 'src/domain/group/dto/booked-student.dto';
 import { PickedStudentDto } from 'src/domain/group/dto/picked-student.dto';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { Syllabus } from 'src/domain/syllabus/entities/syllabus.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { Repository } from 'typeorm';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
@@ -26,10 +28,14 @@ export class LessonService {
   constructor(
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
+    @InjectRepository(Curriculum)
+    private readonly curriculumRepository: Repository<Curriculum>,
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
     @InjectRepository(School)
     private readonly schoolRepository: Repository<School>,
+    @InjectRepository(Syllabus)
+    private readonly syllabusRepository: Repository<Syllabus>,
     @InjectRepository(Term)
     private readonly termRepository: Repository<Term>,
     @InjectRepository(Student)
@@ -42,6 +48,16 @@ export class LessonService {
   //? ---------------------------------------------------------------------- ?//
 
   async create(dto: CreateLessonDto): Promise<Lesson> {
+    let syllabus: Syllabus | null = null;
+    if (dto.syllabusSlug) {
+      syllabus = await this.syllabusRepository.findOne({
+        where: { slug: dto.syllabusSlug },
+      });
+      if (!syllabus) {
+        throw new NotFoundException('Syllabus not found');
+      }
+    }
+
     const school = await this.schoolRepository.findOne({
       where: { id: dto.schoolId },
     });
@@ -56,7 +72,17 @@ export class LessonService {
       throw new NotFoundException('Term not found');
     }
 
-    return await this.lessonCoreService.create(school, term, dto);
+    const lesson = await this.lessonCoreService.create(school, term, dto);
+
+    if (dto.syllabusSlug && syllabus) {
+      const curriculum = this.curriculumRepository.create({
+        lessonId: lesson.id,
+        syllabusId: syllabus.id,
+      });
+      await this.curriculumRepository.save(curriculum);
+    }
+
+    return lesson;
   }
 
   //! create() 의 모든 로직이 무사히 실행되는지 persist 하지 않고, 실험해보기 위한 것이

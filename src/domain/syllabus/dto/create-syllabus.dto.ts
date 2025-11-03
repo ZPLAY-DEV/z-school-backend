@@ -1,7 +1,26 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateSyllabusDto {
+  @ApiProperty({
+    description: '🈵 slug (고유 식별자, URL-safe)',
+    example: 'beginner-yoga',
+  })
+  @IsString()
+  @MaxLength(32)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+    message:
+      'slug는 소문자, 숫자, 하이픈(-)만 사용 가능합니다 (예: beginner-yoga)',
+  })
+  @IsNotEmpty()
+  slug: string;
+
   @ApiProperty({ description: '🈵 커리큘럼명', example: '요가 입문 커리큘럼' })
   @IsString()
   @MaxLength(100)

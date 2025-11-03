@@ -17,6 +17,10 @@ export class Syllabus {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
+  @ApiProperty({ description: '🈵 slug (고유)', example: 'hero' })
+  @Column({ type: 'varchar', length: 32, unique: true })
+  slug: string;
+
   @ApiProperty({ description: '🈵 커리큘럼명', example: '요가 입문 커리큘럼' })
   @Column({ type: 'varchar', length: 100 })
   name: string;
@@ -52,7 +56,7 @@ export class Syllabus {
   //* N-to-M belongsToMany using 1-to-M ------------------------------------ *//
 
   @OneToMany(() => Curriculum, (curriculum) => curriculum.syllabus)
-  curricula: Curriculum[];
+  curriculums: Curriculum[];
 
   //? Constructor ---------------------------------------------------------- ?//
 

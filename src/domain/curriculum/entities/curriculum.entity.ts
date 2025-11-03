@@ -49,13 +49,13 @@ export class Curriculum {
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
-  @ManyToOne(() => Lesson, (lesson) => lesson.curricula, {
+  @ManyToOne(() => Lesson, (lesson) => lesson.curriculums, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'lessonId' })
   lesson: Lesson;
 
-  @ManyToOne(() => Syllabus, (syllabus) => syllabus.curricula, {
+  @ManyToOne(() => Syllabus, (syllabus) => syllabus.curriculums, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'syllabusId' })

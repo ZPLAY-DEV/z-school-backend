@@ -5,6 +5,7 @@ import { AttendanceSchema } from 'src/domain/attendance/entities/attendance.sche
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { CalendarModule } from 'src/domain/calendar/calendar.module';
 import { Category } from 'src/domain/category/entities/category.entity';
+import { Curriculum } from 'src/domain/curriculum/entities/curriculum.entity';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Lesson } from 'src/domain/lesson/entities/lesson.entity';
@@ -17,6 +18,7 @@ import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { Syllabus } from 'src/domain/syllabus/entities/syllabus.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 
 @Module({
@@ -24,6 +26,7 @@ import { Term } from 'src/domain/term/entities/term.entity';
     TypeOrmModule.forFeature([
       Booking,
       Category,
+      Curriculum,
       Departure,
       Group,
       Lesson,
@@ -31,6 +34,7 @@ import { Term } from 'src/domain/term/entities/term.entity';
       School,
       Schoolday,
       Student,
+      Syllabus,
       Term,
     ]),
     DynamooseModule.forFeature([

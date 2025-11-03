@@ -193,7 +193,7 @@ export class Lesson {
   contracts: Contract[];
 
   @OneToMany(() => Curriculum, (curriculum) => curriculum.lesson)
-  curricula: Curriculum[];
+  curriculums: Curriculum[];
 
   //? 날짜 문자열을 Date 객체로 변환하는 getter ----------------------------------- ?//
 

@@ -45,6 +45,12 @@ export class CreateLessonDto {
   @IsPositive()
   schoolId: number;
 
+  @ApiProperty({ description: '🈵 syllabusSlug', example: 'hero' })
+  @IsString()
+  @MaxLength(32)
+  @IsOptional()
+  syllabusSlug?: string | null;
+
   @ApiProperty({
     description: '🈳 관리자 편의를 위한 학교명',
     required: false,

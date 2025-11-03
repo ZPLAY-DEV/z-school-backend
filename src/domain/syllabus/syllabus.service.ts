@@ -34,7 +34,12 @@ export class SyllabusService {
 
   async list(): Promise<Syllabus[]> {
     return await this.syllabusRepository.find({
-      relations: ['curricula', 'curricula.lesson', 'weeks', 'weeks.programs'],
+      relations: [
+        'curriculums',
+        'curriculums.lesson',
+        'weeks',
+        'weeks.programs',
+      ],
       order: { createdAt: 'DESC' },
     });
   }
@@ -52,7 +57,12 @@ export class SyllabusService {
   async findOne(id: number): Promise<Syllabus> {
     const syllabus = await this.syllabusRepository.findOne({
       where: { id },
-      relations: ['curricula', 'curricula.lesson', 'weeks', 'weeks.programs'],
+      relations: [
+        'curriculums',
+        'curriculums.lesson',
+        'weeks',
+        'weeks.programs',
+      ],
     });
 
     if (!syllabus) {
@@ -112,14 +122,14 @@ export class SyllabusService {
     );
 
     if (newLessons.length > 0) {
-      const curricula = newLessons.map((lesson) =>
+      const curriculums = newLessons.map((lesson) =>
         this.curriculumRepository.create({
           syllabusId: id,
           lessonId: lesson.id,
         }),
       );
 
-      await this.curriculumRepository.save(curricula);
+      await this.curriculumRepository.save(curriculums);
     }
 
     return await this.findOne(id);
