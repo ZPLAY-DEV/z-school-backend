@@ -41,9 +41,13 @@ export class Week {
     required: false,
   })
   @Column('json', { nullable: true })
-  gameDetail: {} | null;
+  gameDetail: Record<string, any> | null;
 
-  @ApiProperty({ description: '🈳 스토리', example: '스토리명', required: false })
+  @ApiProperty({
+    description: '🈳 스토리',
+    example: '스토리명',
+    required: false,
+  })
   @Column({ type: 'varchar', length: 255, nullable: true })
   story: string | null;
 
@@ -53,7 +57,7 @@ export class Week {
     required: false,
   })
   @Column('json', { nullable: true })
-  storyDetail: {} | null;
+  storyDetail: Record<string, any> | null;
 
   // ------------------------------------------------------------------------ //
 

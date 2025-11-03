@@ -49,6 +49,7 @@ import { SyllabusModule } from 'src/domain/syllabus/syllabus.module';
 import { TermModule } from 'src/domain/term/term.module';
 import { TextModule } from 'src/domain/text/text.module';
 import { UserModule } from 'src/domain/user/user.module';
+import { WeekModule } from 'src/domain/week/week.module';
 import { MetricsModule } from 'src/metrics.module';
 import { RedisModule } from 'src/services/redis/redis.module';
 import { SlackModule } from 'src/services/slack/slack.module';
@@ -163,6 +164,7 @@ const conditionalImports = isMetricsEnabled ? [MetricsModule] : [];
     TextModule,
     UploadModule,
     UserModule,
+    WeekModule,
   ],
   controllers: [AppController],
   providers: [

@@ -40,6 +40,13 @@ export class Program {
   tags: string[] | null;
 
   @ApiProperty({
+    description: '🈳 자막 배열',
+    example: ['안녕하세요', '오늘은 전사 자세를 배워볼게요'],
+  })
+  @Column('json', { nullable: true })
+  captions: string[] | null;
+
+  @ApiProperty({
     description: '🈵 난이도',
     enum: StudentLevel,
     example: StudentLevel.JUNIOR,
@@ -56,13 +63,6 @@ export class Program {
   isScorable: boolean;
 
   @ApiProperty({
-    description: '🈳 자막 배열',
-    example: ['안녕하세요', '오늘은 전사 자세를 배워볼게요'],
-  })
-  @Column('json', { nullable: true })
-  captions: string[] | null;
-
-  @ApiProperty({
     description: '🈳 비디오 URL',
     example: 'https://example.com/video.mp4',
   })
@@ -75,13 +75,6 @@ export class Program {
   })
   @Column({ type: 'varchar', length: 255, nullable: true })
   audioUrl: string | null;
-  @ApiProperty({
-    description: '🈵 점수 측정 여부',
-    example: true,
-  })
-  @Column({ type: 'boolean', default: false })
-  @IsBoolean()
-  isScoring: boolean;
 
   // ------------------------------------------------------------------------ //
 

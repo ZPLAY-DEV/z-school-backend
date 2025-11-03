@@ -8,9 +8,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
-  Max,
-  MaxLength,
-  Min,
+  MaxLength
 } from 'class-validator';
 import { ExerciseType, StudentLevel } from 'src/common/enums';
 
