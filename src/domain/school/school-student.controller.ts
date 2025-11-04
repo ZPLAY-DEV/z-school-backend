@@ -58,7 +58,7 @@ export class SchoolStudentController {
   async createBulk(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Body() dtos: CreateStudentDto[],
-  ): Promise<number> {
+  ): Promise<Student[]> {
     return await this.schoolStudentService.createBulk(schoolId, dtos);
   }
 
@@ -68,7 +68,7 @@ export class SchoolStudentController {
   async uploadStudents(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @UploadedFile() file: Express.Multer.File,
-  ): Promise<number> {
+  ): Promise<Student[]> {
     if (!file) {
       throw new Error('파일이 업로드되지 않았습니다.');
     }

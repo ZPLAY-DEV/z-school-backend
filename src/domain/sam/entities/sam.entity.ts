@@ -42,6 +42,13 @@ export class Sam {
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({
+    description: '🈵 학교 이름',
+    example: '서울초등학교',
+  })
+  @Column({ type: 'varchar', length: 24, comment: '학교 이름' })
+  schoolName: string | null;
+
+  @ApiProperty({
     description: '🈵 학교에서 사용하는 강사 별칭',
     example: '강사 별칭',
   })

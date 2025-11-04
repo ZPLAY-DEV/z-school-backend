@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer';
 import { IsNumber, IsString } from 'class-validator';
 
-export class AuthAffiliationDto {
+export class AuthStudentDto {
   @Expose({ name: 'id' })
   @IsNumber()
   id: number;

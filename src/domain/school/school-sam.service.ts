@@ -45,23 +45,10 @@ export class SchoolSamService {
     return await this.checkExistingSams(schoolId, dtos);
   }
 
-  async createBulk(schoolId: number, dtos: CreateSamDto[]): Promise<number> {
+  async createBulk(schoolId: number, dtos: CreateSamDto[]): Promise<Sam[]> {
     if (dtos === undefined || dtos.length < 1) {
-      return 0;
+      return [];
     }
-
-    console.log(`💚💚💚💚`, JSON.stringify(dtos, null, 2));
-
-    // 전화번호 정규화 at the DTO level
-    const normalizedDtos = dtos.map((dto: CreateSamDto) => {
-      return {
-        ...dto,
-        instructor: {
-          ...dto.instructor,
-          phone: normalizePhone(dto.instructor.phone)!,
-        },
-      };
-    });
 
     // 학교 존재 여부 확인
     const school = await this.schoolRepository.findOne({
@@ -70,6 +57,18 @@ export class SchoolSamService {
     if (!school) {
       throw new NotFoundException(`School not found: ${schoolId}`);
     }
+
+    // 전화번호 정규화 at the DTO level
+    const normalizedDtos = dtos.map((dto: CreateSamDto) => {
+      return {
+        ...dto,
+        schoolName: dto.schoolName ?? school.name,
+        instructor: {
+          ...dto.instructor,
+          phone: normalizePhone(dto.instructor.phone)!,
+        },
+      };
+    });
 
     // 트랜잭션 시작
     const queryRunner = this.dataSource.createQueryRunner();
@@ -103,6 +102,14 @@ export class SchoolSamService {
         `Upserted ${normalizedDtos.length} sams for school ${schoolId}`,
       );
 
+      // 3. Upsert된 레코드들을 unique key로 조회 (최적화: 인덱스 활용)
+      const upsertedSams = await this.fetchUpsertedSams(
+        queryRunner,
+        schoolId,
+        normalizedDtos,
+        instructorMap,
+      );
+
       // 요청에 포함되지 않은 기존 Sam 레코드 삭제 (죽은 데이터 정리)
       // await this.cleanupOrphanedSams(
       //   queryRunner,
@@ -114,7 +121,7 @@ export class SchoolSamService {
       // 트랜잭션 커밋
       await queryRunner.commitTransaction();
 
-      return normalizedDtos.length;
+      return upsertedSams;
     } catch (error) {
       // 트랜잭션이 활성 상태인 경우에만 롤백
       if (queryRunner.isTransactionActive) {
@@ -336,6 +343,48 @@ export class SchoolSamService {
   }
 
   /**
+   * Upsert된 Sam 레코드들을 unique key로 조회
+   * 최적화: unique key (schoolId, instructorId) 인덱스를 활용하여 단일 쿼리로 조회
+   */
+  private async fetchUpsertedSams(
+    queryRunner: QueryRunner,
+    schoolId: number,
+    dtos: CreateSamDto[],
+    instructorMap: Map<string, number>,
+  ): Promise<Sam[]> {
+    if (dtos.length === 0) {
+      return [];
+    }
+
+    // unique key 조합을 prepared statement 파라미터로 구성
+    // 각 조합을 (schoolId, instructorId) 튜플로 처리
+    const conditions: string[] = [];
+    const values: number[] = [];
+
+    dtos.forEach((dto) => {
+      const instructorId = this.getInstructorId(dto, instructorMap);
+      if (instructorId) {
+        conditions.push('(schoolId = ? AND instructorId = ?)');
+        values.push(schoolId, instructorId);
+      }
+    });
+
+    if (conditions.length === 0) {
+      return [];
+    }
+
+    const query = `
+      SELECT * FROM sams 
+      WHERE ${conditions.join(' OR ')}
+    `;
+
+    const results = (await queryRunner.query(query, values)) as Sam[];
+
+    // TypeORM 엔티티로 변환
+    return results.map((row) => this.samRepository.create(row));
+  }
+
+  /**
    * Sam 일괄 Upsert
    */
   private async upsertSams(
@@ -348,7 +397,9 @@ export class SchoolSamService {
       return;
     }
 
-    const samPlaceholders = dtos.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+    const samPlaceholders = dtos
+      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?)')
+      .join(', ');
 
     const samValues: (string | number | boolean | null)[] = dtos.flatMap(
       (dto) => {
@@ -363,6 +414,7 @@ export class SchoolSamService {
         return [
           instructorId,
           schoolId,
+          dto.schoolName || null,
           dto.alias || null,
           dto.editFeePermission ?? false,
           dto.editPickPermission ?? false,
@@ -377,6 +429,7 @@ export class SchoolSamService {
       INSERT INTO sams (
         instructorId,
         schoolId,
+        schoolName,
         alias,
         editFeePermission,
         editPickPermission,
@@ -386,6 +439,7 @@ export class SchoolSamService {
       VALUES ${samPlaceholders} AS new_sam(
         instructorId,
         schoolId,
+        schoolName,
         alias,
         editFeePermission,
         editPickPermission,
@@ -394,6 +448,7 @@ export class SchoolSamService {
       )
       ON DUPLICATE KEY UPDATE 
         alias = new_sam.alias,
+        schoolName = new_sam.schoolName,
         editFeePermission = new_sam.editFeePermission,
         editPickPermission = new_sam.editPickPermission,
         note = new_sam.note,

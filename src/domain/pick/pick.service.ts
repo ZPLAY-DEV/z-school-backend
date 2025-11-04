@@ -210,6 +210,8 @@ export class PickService {
       // 각 기존 pick과 새로운 group의 시간 충돌 검증
       for (const existingPick of existingPicks) {
         if (
+          existingPick.group &&
+          newGroup.id !== existingPick.group.id &&
           isTimeConflict(
             existingPick.group.weekday,
             existingPick.group.start,

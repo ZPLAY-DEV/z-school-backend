@@ -40,6 +40,13 @@ export class Student {
 
   // ------------------------------------------------------------------------ //
 
+  @ApiProperty({
+    description: '🈵 학교 이름',
+    example: '서울초등학교',
+  })
+  @Column({ type: 'varchar', length: 24, comment: '학교 이름' })
+  schoolName: string | null;
+
   @ApiProperty({ description: '학년', example: 1 })
   @Column({ type: 'tinyint', unsigned: true, default: 1 })
   grade: number;

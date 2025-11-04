@@ -1,5 +1,6 @@
-import { Expose } from 'class-transformer';
-import { IsNumber, IsString } from 'class-validator';
+import { Expose, Type } from 'class-transformer';
+import { IsArray, IsNumber, IsString } from 'class-validator';
+import { AuthStudentDto } from 'src/domain/auth/dto/auth-student.dto';
 
 export class AuthParentDto {
   @Expose()
@@ -13,4 +14,9 @@ export class AuthParentDto {
   @Expose()
   @IsString()
   phone: string | null;
+
+  @Expose()
+  @IsArray()
+  @Type(() => AuthStudentDto)
+  students: AuthStudentDto[];
 }

@@ -22,6 +22,17 @@ import { NextStopDto } from './next-stop.dto';
  */
 export class UpdateStudentDto {
   @ApiPropertyOptional({
+    description:
+      '학교 이름 - 담임쌤이 소속될 학교의 이름. 생략시 param 에서 전달',
+    type: String,
+    example: '서울초등학교',
+    maxLength: 24,
+  })
+  @IsOptional()
+  @IsString({ message: '학교 이름은 문자열이어야 합니다' })
+  schoolName?: string;
+
+  @ApiPropertyOptional({
     description: '학년 - 학생의 현재 학년 (1~6학년)',
     type: Number,
     example: 4,

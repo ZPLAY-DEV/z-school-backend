@@ -49,25 +49,10 @@ export class SchoolStudentService {
   async createBulk(
     schoolId: number,
     dtos: CreateStudentDto[],
-  ): Promise<number> {
+  ): Promise<Student[]> {
     if (dtos === undefined || dtos.length < 1) {
-      return 0;
+      return [];
     }
-
-    console.log(`💚💚💚💚`, JSON.stringify(dtos, null, 2));
-
-    // 전화번호 정규화 at the DTO level
-    const normalizedDtos = dtos.map((dto: CreateStudentDto) => ({
-      ...dto,
-      klass: dto.klass.trim().replace(/반$/, ''),
-      phone: dto.phone ? normalizePhone(dto.phone)! : dto.phone,
-      parent: {
-        ...dto.parent,
-        phone: dto.parent.phone
-          ? normalizePhone(dto.parent.phone)!
-          : dto.parent.phone,
-      },
-    }));
 
     // 학교 존재 여부 확인
     const school = await this.schoolRepository.findOne({
@@ -76,6 +61,20 @@ export class SchoolStudentService {
     if (!school) {
       throw new NotFoundException(`School not found: ${schoolId}`);
     }
+
+    // 전화번호 정규화 at the DTO level
+    const normalizedDtos = dtos.map((dto: CreateStudentDto) => ({
+      ...dto,
+      klass: dto.klass.trim().replace(/반$/, ''),
+      phone: dto.phone ? normalizePhone(dto.phone)! : dto.phone,
+      schoolName: dto.schoolName ?? school.name,
+      parent: {
+        ...dto.parent,
+        phone: dto.parent.phone
+          ? normalizePhone(dto.parent.phone)!
+          : dto.parent.phone,
+      },
+    }));
 
     // 트랜잭션 시작
     const queryRunner = this.dataSource.createQueryRunner();
@@ -103,12 +102,19 @@ export class SchoolStudentService {
         `Upserted ${normalizedDtos.length} students for school ${schoolId}`,
       );
 
+      // 3. Upsert된 레코드들을 unique key로 조회 (최적화: 인덱스 활용)
+      const upsertedStudents = await this.fetchUpsertedStudents(
+        queryRunner,
+        schoolId,
+        normalizedDtos,
+      );
+
       // 요청에 포함되지 않은 기존 Student 레코드는 business 로직상 남겨두는게 낫다.
 
       // 트랜잭션 커밋
       await queryRunner.commitTransaction();
 
-      return normalizedDtos.length;
+      return upsertedStudents;
     } catch (error) {
       // 트랜잭션이 활성 상태인 경우에만 롤백
       if (queryRunner.isTransactionActive) {
@@ -301,6 +307,43 @@ export class SchoolStudentService {
   }
 
   /**
+   * Upsert된 학생 레코드들을 unique key로 조회
+   * 최적화: unique key (schoolId, grade, klass, bunho) 인덱스를 활용하여 단일 쿼리로 조회
+   */
+  private async fetchUpsertedStudents(
+    queryRunner: QueryRunner,
+    schoolId: number,
+    dtos: CreateStudentDto[],
+  ): Promise<Student[]> {
+    if (dtos.length === 0) {
+      return [];
+    }
+
+    // unique key 조합을 prepared statement 파라미터로 구성
+    // 각 조합을 (schoolId, grade, klass, bunho) 튜플로 처리
+    const conditions: string[] = [];
+    const values: (string | number)[] = [];
+
+    dtos.forEach((dto) => {
+      const klass = dto.klass.trim().replace(/반$/, '');
+      conditions.push(
+        '(schoolId = ? AND grade = ? AND klass = ? AND bunho = ?)',
+      );
+      values.push(schoolId, dto.grade, klass, dto.bunho);
+    });
+
+    const query = `
+      SELECT * FROM students 
+      WHERE ${conditions.join(' OR ')}
+    `;
+
+    const results = (await queryRunner.query(query, values)) as Student[];
+
+    // TypeORM 엔티티로 변환
+    return results.map((row) => this.studentRepository.create(row));
+  }
+
+  /**
    * 학생 일괄 Upsert 처리
    */
   private async upsertStudents(
@@ -314,12 +357,13 @@ export class SchoolStudentService {
     }
 
     const studentPlaceholders = dtos
-      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .join(', ');
 
     const studentValues = dtos.flatMap((dto) => [
       dto.name || null,
       schoolId,
+      dto.schoolName || null,
       dto.parent.phone ? parentMap.get(dto.parent.phone) || null : null,
       dto.grade || null,
       dto.klass || null,
@@ -335,6 +379,7 @@ export class SchoolStudentService {
       INSERT INTO students (
         name,
         schoolId,
+        schoolName,
         parentId,
         grade,
         klass,
@@ -347,6 +392,7 @@ export class SchoolStudentService {
       VALUES ${studentPlaceholders} AS new_student(
         name,
         schoolId,
+        schoolName,
         parentId,
         grade,
         klass,
@@ -359,6 +405,7 @@ export class SchoolStudentService {
       ON DUPLICATE KEY UPDATE 
         name = new_student.name,
         schoolId = new_student.schoolId,
+        schoolName = new_student.schoolName,
         parentId = new_student.parentId,
         grade = new_student.grade,
         klass = new_student.klass,

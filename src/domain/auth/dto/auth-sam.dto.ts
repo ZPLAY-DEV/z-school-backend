@@ -2,9 +2,9 @@ import { Expose } from 'class-transformer';
 import { IsNumber, IsString } from 'class-validator';
 
 export class AuthSamDto {
-  @Expose()
+  @Expose({ name: 'id' })
   @IsNumber()
-  samId: number;
+  id: number;
 
   @Expose()
   @IsNumber()

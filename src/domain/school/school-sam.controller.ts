@@ -16,6 +16,8 @@ import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
+import { HttpCache } from 'src/common/decorators/http-cache.decorator';
+import { Public } from 'src/common/decorators/public.decorator';
 import { CreateSamDto } from 'src/domain/sam/dto/create-sam.dto';
 import { Sam } from 'src/domain/sam/entities/sam.entity';
 import { SchoolSamService } from 'src/domain/school/school-sam.service';
@@ -28,8 +30,6 @@ import {
   SchoolSamPaginatedDocs,
   UploadSchoolSamExcelDocs,
 } from './swagger/school-sam.swagger.decorator';
-import { HttpCache } from 'src/common/decorators/http-cache.decorator';
-import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('✳️ Schools > Sams ( 학교 > 담임쌤 )')
 @Controller('schools')
@@ -59,7 +59,7 @@ export class SchoolSamController {
   async createBulk(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Body() dtos: CreateSamDto[],
-  ): Promise<number> {
+  ): Promise<Sam[]> {
     return await this.schoolSamService.createBulk(schoolId, dtos);
   }
 
@@ -69,7 +69,7 @@ export class SchoolSamController {
   async uploadStudents(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @UploadedFile() file: Express.Multer.File,
-  ): Promise<number> {
+  ): Promise<Sam[]> {
     if (!file) {
       throw new Error('파일이 업로드되지 않았습니다.');
     }

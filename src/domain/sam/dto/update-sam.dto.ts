@@ -25,6 +25,17 @@ export class UpdateSamDto {
   @IsInt({ message: '학교 ID는 정수여야 합니다' })
   schoolId?: number;
 
+  @ApiPropertyOptional({
+    description:
+      '학교 이름 - 담임쌤이 소속될 학교의 이름. 생략시 param 에서 전달',
+    type: String,
+    example: '서울초등학교',
+    maxLength: 24,
+  })
+  @IsOptional()
+  @IsString({ message: '학교 이름은 문자열이어야 합니다' })
+  schoolName?: string;
+
   @ApiProperty({
     description: '별칭 - 담임쌤의 호칭/닉네임 (최대 16자)',
     type: String,

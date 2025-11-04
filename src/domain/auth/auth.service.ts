@@ -12,7 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { plainToClass } from 'class-transformer';
 import * as crypto from 'crypto';
 import { THIRTY_DAYS } from 'src/common/constants';
-import { Role } from 'src/common/enums';
+import { Role, SamStatus, StudentStatus } from 'src/common/enums';
 import { AuthTokenDto } from 'src/domain/auth/dto/auth-token.dto';
 import { LoginCredentialsDto } from 'src/domain/auth/dto/login-credentials.dto';
 import {
@@ -98,11 +98,10 @@ export class AuthService {
     const user = await this.userRepository.findOne({
       where: { username },
       relations: [
-        'instructor',
-        'instructor.sams',
-        'instructor.sams.school',
         'parent',
         'parent.students',
+        'instructor',
+        'instructor.sams',
         'manager',
         'manager.affiliations',
       ],
@@ -569,7 +568,7 @@ export class AuthService {
   /**
    * ✅ Determine schoolId based on user role - for fallback only
    */
-  private async determineSchoolId(user: User, role: Role): Promise<number> {
+  private determineSchoolId(user: User, role: Role): number {
     try {
       switch (role) {
         case Role.MANAGER: {
@@ -578,17 +577,17 @@ export class AuthService {
             user.manager.affiliations.length === 0
           ) {
             throw new BadRequestException(
-              `연결된 학교정보가 없는 관리자 사용자(${user.id}) 입니다.`,
+              `연결된 학교가 없는 관리자 User (${user.id}) 입니다.`,
             );
           }
 
           // 활성화된 첫 번째 학교를 사용
           const activeSchool = user.manager.affiliations.find(
-            (ms) => ms.isActive,
+            (v) => v.isActive,
           );
           if (!activeSchool) {
             throw new BadRequestException(
-              `활성화된 학교가 없는 관리자 사용자(${user.id}) 입니다.`,
+              `활성화된 학교가 없는 관리자 User (${user.id}) 입니다.`,
             );
           }
 
@@ -596,49 +595,41 @@ export class AuthService {
         }
 
         case Role.PARENT: {
-          const parent = await this.parentRepository.findOne({
-            where: { userId: user.id },
-            relations: ['students', 'students.school'],
-          });
-
-          if (!parent || !parent.students || parent.students.length === 0) {
+          if (!user.parent?.students || user.parent.students.length === 0) {
             throw new BadRequestException(
-              `연결된 학생정보가 없는 학부모 사용자(${user.id}) 입니다.`,
+              `연결된 학교가 없는 학부모 User (${user.id}) 입니다.`,
+            );
+          }
+          const activeSchool = user.parent.students.find(
+            (v) => v.status === StudentStatus.ATTENDING,
+          );
+
+          if (!activeSchool) {
+            throw new BadRequestException(
+              `활성화된 학생가 없는 학부모 User (${user.id}) 입니다.`,
             );
           }
 
-          // fallback: 학생의 첫번째 학교를 사용
-          const firstStudent = parent.students[0];
-          if (!firstStudent.schoolId) {
-            throw new BadRequestException(
-              `학교정보없이 잘못 등록된 학생(${firstStudent.id})의 학부모 사용자(${user.id}) 입니다.`,
-            );
-          }
-
-          return firstStudent.schoolId;
+          return activeSchool.schoolId;
         }
 
         case Role.INSTRUCTOR: {
-          const instructor = await this.instructorRepository.findOne({
-            where: { userId: user.id },
-            relations: ['sams', 'sams.school'],
-          });
-
-          if (!instructor || !instructor.sams || instructor.sams.length === 0) {
+          if (!user.instructor?.sams || user.instructor.sams.length === 0) {
             throw new BadRequestException(
-              `강의정보가 없는 강사 사용자(${user.id})입니다.`,
+              `연결된 학교가 없는 강사 User (${user.id}) 입니다.`,
+            );
+          }
+          const activeSchool = user.instructor.sams.find(
+            (v) => v.status === SamStatus.ACTIVE,
+          );
+
+          if (!activeSchool) {
+            throw new BadRequestException(
+              `활성화된 강의가 없는 강사 User (${user.id}) 입니다.`,
             );
           }
 
-          // fallback: 담임쌤의 첫번째 학교를 사용
-          const firstSam = instructor.sams[0];
-          if (!firstSam.schoolId) {
-            throw new BadRequestException(
-              `강의정보없이 잘못 등록된 단임쌤(${firstSam.id})의 강사 사용자(${user.id}) 입니다.`,
-            );
-          }
-
-          return firstSam.schoolId;
+          return activeSchool.schoolId;
         }
 
         default:
