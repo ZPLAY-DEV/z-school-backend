@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DynamooseModule } from 'nestjs-dynamoose';
 import { AttendanceSchema } from 'src/domain/attendance/entities/attendance.schema';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
+import { School } from 'src/domain/school/entities/school.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
 import { UploadModule } from 'src/services/upload/upload.module';
@@ -14,7 +15,15 @@ import { StudentService } from './student.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Parent, Student, Pick, Booking, Group, Term]),
+    TypeOrmModule.forFeature([
+      Booking,
+      Group,
+      Parent,
+      Pick,
+      School,
+      Student,
+      Term,
+    ]),
     DynamooseModule.forFeature([
       {
         name: 'Attendance',

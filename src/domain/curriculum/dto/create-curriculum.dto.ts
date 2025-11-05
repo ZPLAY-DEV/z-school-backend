@@ -18,6 +18,16 @@ export class CreateCurriculumDto {
   @IsNotEmpty()
   syllabusId: number;
 
+  @ApiProperty({ description: '🈵 termId', example: 1 })
+  @IsInt()
+  @IsNotEmpty()
+  termId: number;
+
+  @ApiProperty({ description: '🈵 schoolId', example: 1 })
+  @IsInt()
+  @IsNotEmpty()
+  schoolId: number;
+
   @ApiProperty({
     description: '🈳 학교명',
     example: '홍익대학교 사범대학 부속 초등학교',
@@ -28,4 +38,3 @@ export class CreateCurriculumDto {
   @IsOptional()
   schoolName?: string;
 }
-

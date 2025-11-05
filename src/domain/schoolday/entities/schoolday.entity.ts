@@ -88,6 +88,10 @@ export class Schoolday {
   })
   original: string | null; // '2025-07-20'
 
+  @ApiProperty({ description: '주차', example: 1 })
+  @Column({ type: 'tinyint', unsigned: true })
+  weekNumber: number;
+
   @ApiProperty({
     description: '수업 요일',
     enum: Weekday,
@@ -95,10 +99,6 @@ export class Schoolday {
   })
   @Column({ type: 'enum', enum: Weekday, default: Weekday.MONDAY })
   weekday: Weekday;
-
-  @ApiProperty({ description: '주차', example: 1 })
-  @Column({ type: 'tinyint', unsigned: true })
-  weekNumber: number;
 
   @ApiProperty({
     description: '시작시각 DateTime',

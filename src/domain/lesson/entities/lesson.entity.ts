@@ -81,6 +81,10 @@ export class Lesson {
   })
   frequency: number;
 
+  @ApiProperty({ description: '🈵 total weeks', example: 12 })
+  @Column({ type: 'tinyint', unsigned: true, default: 0 })
+  weeks: number;
+
   // ------------------------------------------------------------------------ //
 
   // todo: 어떻게 finalizing 할 지 나중에 결정할 것

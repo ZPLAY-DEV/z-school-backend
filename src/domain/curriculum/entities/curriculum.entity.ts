@@ -26,6 +26,14 @@ export class Curriculum {
   @Column({ type: 'int', unsigned: true })
   syllabusId: number;
 
+  @ApiProperty({ description: '🈵 termId', example: 1 })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  termId: number;
+
+  @ApiProperty({ description: '🈵 schoolId', example: 1 })
+  @Column({ type: 'int', unsigned: true })
+  schoolId: number; // 관리자 편의를 위한 Column.
+
   @ApiProperty({
     description: '🈳 학교명',
     example: '홍익대학교 사범대학 부속 초등학교',

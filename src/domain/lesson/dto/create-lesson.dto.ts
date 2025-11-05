@@ -105,6 +105,12 @@ export class CreateLessonDto {
   @IsOptional()
   frequency?: number;
 
+  @ApiProperty({ description: '🈳 weeks', required: false, example: 12 })
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  weeks?: number;
+
   @ApiProperty({
     description: '🈳 수업료 합계 (A - D)',
     required: false,

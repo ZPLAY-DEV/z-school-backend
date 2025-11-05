@@ -29,6 +29,7 @@ import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
 import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
@@ -48,6 +49,8 @@ export class StudentService {
     private readonly parentRepository: Repository<Parent>,
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
+    @InjectRepository(School)
+    private readonly schoolRepository: Repository<School>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(Booking)
@@ -109,6 +112,10 @@ export class StudentService {
   async create(
     dto: CreateStudentDto,
   ): Promise<{ student: Student; isCreated: boolean }> {
+    const school = await this.schoolRepository.findOneOrFail({
+      where: { id: dto.schoolId },
+    });
+
     return await this.dataSource.transaction(async (manager) => {
       const { parent: parentDto, parentId, ...studentDto } = dto;
 
@@ -176,6 +183,7 @@ export class StudentService {
       // 3. Student 데이터 정리
       const normalizedStudentDto = {
         ...studentDto,
+        schoolName: school?.name || null,
         ...(studentDto.phone && { phone: normalizePhone(studentDto.phone) }),
         parentId: finalParentId,
         status: dto.status,

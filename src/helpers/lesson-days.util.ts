@@ -70,7 +70,13 @@ export function generateSchooldays(
   // 연속적인 주차 번호를 위해 모든 calendarDays에 대해 순차적으로 처리
   let weekNumber = 1; // 첫 번째 주차부터 시작
 
-  const filteredDays = calendarDays.filter((day) => day.isClassDay);
+  // isClassDay가 true인 날짜들만 필터링
+  let filteredDays = calendarDays.filter((day) => day.isClassDay);
+
+  // lesson.weeks가 0 이상인 경우, 최대 weeks 개수까지만 schoolday 생성
+  if (lesson.weeks && lesson.weeks > 0) {
+    filteredDays = filteredDays.slice(0, lesson.weeks);
+  }
 
   const schooldays = filteredDays.map((day) => {
     const [startDateStr, startTimeStr] = day.start.split(' ');

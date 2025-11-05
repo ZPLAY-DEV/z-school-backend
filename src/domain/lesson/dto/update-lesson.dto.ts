@@ -101,13 +101,19 @@ export class UpdateLessonDto {
     description: '🈳 주당 수업 횟수 수정',
     required: false,
     minimum: 1,
-    maximum: 7,
+    maximum: 6,
     example: 2,
   })
   @IsOptional()
   @IsInt()
   @IsPositive()
   frequency?: number;
+
+  @ApiProperty({ description: '🈳 weeks', required: false, example: 12 })
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  weeks?: number;
 
   @ApiProperty({
     description: '🈳 전체 수업료 합계 수정 (A - D)',
