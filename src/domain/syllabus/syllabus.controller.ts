@@ -177,11 +177,14 @@ export class SyllabusController {
   async generateS3Urls(
     @Body()
     dto: {
+      // schoolId: number;
+      // termId: number;
+      target: 'story' | 'game' | 'program';
       mimeType: string;
       filename?: string;
     },
   ): Promise<IS3Urls> {
-    const path = [`syllabuses`, `hero`].join('/');
+    const path = [`syllabuses`, `${dto.target}`].join('/');
     return await this.uploadService.generateUploadUrls(
       path,
       dto.mimeType,

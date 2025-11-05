@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IStoryDetail } from 'src/common/interfaces';
 import { Program } from 'src/domain/program/entities/program.entity';
 import { Syllabus } from 'src/domain/syllabus/entities/syllabus.entity';
 import {
@@ -53,11 +54,19 @@ export class Week {
 
   @ApiProperty({
     description: '🈳 스토리 상세',
-    example: {},
+    example: {
+      url: 'https://example.com/story.mp4',
+      title: '히어로 영상제목',
+      description: '히어로 미션',
+      questions: [
+        { question: '질문1', answer: '답변1' },
+        { question: '질문2', answer: '답변2' },
+      ],
+    },
     required: false,
   })
   @Column('json', { nullable: true })
-  storyDetail: Record<string, any> | null;
+  storyDetail: IStoryDetail | null;
 
   // ------------------------------------------------------------------------ //
 

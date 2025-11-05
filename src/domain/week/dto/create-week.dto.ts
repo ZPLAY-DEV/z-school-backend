@@ -8,6 +8,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { IStoryDetail } from 'src/common/interfaces';
 
 export class CreateWeekDto {
   @ApiProperty({ description: '🈵 syllabusId', example: 1 })
@@ -44,7 +45,7 @@ export class CreateWeekDto {
     required: false,
   })
   @IsOptional()
-  gameDetail?: any;
+  gameDetail?: Record<string, any>;
 
   @ApiProperty({
     description: '🈳 스토리',
@@ -62,5 +63,5 @@ export class CreateWeekDto {
     required: false,
   })
   @IsOptional()
-  storyDetail?: any;
+  storyDetail?: IStoryDetail;
 }

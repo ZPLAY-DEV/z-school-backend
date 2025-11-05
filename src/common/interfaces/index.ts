@@ -328,3 +328,13 @@ export interface HttpErrorFormat {
 //   link: string | null;
 //   read: boolean;
 // };
+
+export interface IStoryDetail {
+  url: string | null;
+  title: string | null;
+  description: string | null;
+  questions: {
+    question: string;
+    answer: string;
+  }[];
+}

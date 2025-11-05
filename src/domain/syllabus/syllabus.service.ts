@@ -63,6 +63,11 @@ export class SyllabusService {
         'weeks',
         'weeks.programs',
       ],
+      order: {
+        weeks: {
+          id: 'ASC',
+        },
+      },
     });
 
     if (!syllabus) {

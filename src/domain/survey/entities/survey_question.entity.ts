@@ -3,13 +3,10 @@ import { QuestionType } from 'src/common/enums/question-type';
 import { Survey } from 'src/domain/survey/entities/survey.entity';
 import {
   Column,
-  CreateDateColumn,
-  DeleteDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+  PrimaryGeneratedColumn
 } from 'typeorm';
 
 @Entity('survey_questions')
