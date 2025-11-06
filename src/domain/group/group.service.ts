@@ -253,6 +253,7 @@ export class GroupService {
           parentPhone: v.student.parent.phone,
           nextStops: v.student.nextStops,
           note: v.note,
+          history: v.history,
           startedBy: v.startedBy,
           endedBy: v.endedBy,
           start: v.start || null,

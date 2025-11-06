@@ -122,6 +122,55 @@ export class LessonService {
 
   async findById(id: number, relations: string[] = []): Promise<Lesson> {
     try {
+      // groups.picks를 포함할 때 isActive = true 조건 추가
+      const includesPicks = relations.includes('groups.picks');
+
+      if (includesPicks) {
+        // QueryBuilder를 사용하여 picks에 조건 추가
+        const queryBuilder = this.lessonRepository
+          .createQueryBuilder('lesson')
+          .where('lesson.id = :id', { id })
+          .leftJoinAndSelect('lesson.groups', 'groups');
+
+        // 나머지 relations 추가
+        if (relations.includes('groups.sam')) {
+          queryBuilder.leftJoinAndSelect('groups.sam', 'sam');
+        }
+        if (relations.includes('groups.sam.instructor')) {
+          queryBuilder.leftJoinAndSelect('sam.instructor', 'instructor');
+        }
+        if (relations.includes('category')) {
+          queryBuilder.leftJoinAndSelect('lesson.category', 'category');
+        }
+        if (relations.includes('curriculums')) {
+          queryBuilder.leftJoinAndSelect('lesson.curriculums', 'curriculums');
+        }
+
+        // picks는 isActive = true 조건과 함께 조인
+        queryBuilder.leftJoinAndSelect(
+          'groups.picks',
+          'picks',
+          'picks.isActive = :isActive',
+          { isActive: true },
+        );
+
+        const lesson = await queryBuilder.getOneOrFail();
+
+        // picks 배열 필터링 (안전을 위해 이중 필터링)
+        if (lesson.groups) {
+          lesson.groups.forEach((group) => {
+            if (group.picks) {
+              group.picks = group.picks.filter(
+                (pick) => pick.isActive === true,
+              );
+            }
+          });
+        }
+
+        return lesson;
+      }
+
+      // picks를 포함하지 않는 경우 기존 로직 사용
       return relations.length > 0
         ? await this.lessonRepository.findOneOrFail({
             where: { id },

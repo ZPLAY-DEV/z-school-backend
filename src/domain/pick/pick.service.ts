@@ -85,7 +85,9 @@ export class PickService {
         throw new NotFoundException('sam entity not found');
       }
       if (!sam.editPickPermission) {
-        throw new ForbiddenException('You are not allowed to edit student');
+        throw new ForbiddenException(
+          '학생추가/삭제 권한이 없습니다. 관리자에게 요청하세요.',
+        );
       }
     }
 

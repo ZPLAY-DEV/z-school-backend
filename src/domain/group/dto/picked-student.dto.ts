@@ -54,6 +54,12 @@ export class PickedStudentDto extends Student {
   })
   endedBy: Actor | null;
 
+  history: {
+    date: string;
+    event: 'JOIN' | 'CANCEL';
+    by: 'MANAGER' | 'INSTRUCTOR' | 'OTHER';
+  }[];
+
   @ApiProperty({
     description: '수업 여부',
     example: true,
