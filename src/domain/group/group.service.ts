@@ -239,26 +239,27 @@ export class GroupService {
     const picks = await queryBuilder.getMany();
 
     return picks.map(
-      (v: Pick) =>
+      (pick: Pick) =>
         new PickedStudentDto({
-          id: v.studentId,
-          groupId: v.groupId,
-          groupName: v.group.groupName,
-          name: v.student.name,
-          grade: v.student.grade,
-          klass: v.student.klass,
-          bunho: v.student.bunho,
-          status: v.student.status,
-          phone: v.student.phone,
-          parentPhone: v.student.parent.phone,
-          nextStops: v.student.nextStops,
-          note: v.note,
-          history: v.history,
-          startedBy: v.startedBy,
-          endedBy: v.endedBy,
-          start: v.start || null,
-          end: v.end || null,
-          isActive: v.isActive,
+          id: pick.studentId,
+          index: pick.index,
+          // groupId: pick.groupId,
+          groupName: pick.group.groupName,
+          name: pick.student.name,
+          grade: pick.student.grade,
+          klass: pick.student.klass,
+          bunho: pick.student.bunho,
+          status: pick.student.status,
+          phone: pick.student.phone,
+          parentPhone: pick.student.parent.phone,
+          nextStops: pick.student.nextStops,
+          note: pick.note,
+          history: pick.history,
+          startedBy: pick.startedBy,
+          endedBy: pick.endedBy,
+          start: pick.start || null,
+          end: pick.end || null,
+          isActive: pick.isActive,
         }),
     );
   }
@@ -306,6 +307,7 @@ export class GroupService {
 
       return new PickedStudentDto({
         id: pick.studentId,
+        index: pick.index,
         // groupId: pick.groupId,
         groupName: pick.group.groupName,
         name: pick.student.name,

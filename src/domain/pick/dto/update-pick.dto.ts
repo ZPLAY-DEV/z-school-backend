@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsInt,
   IsOptional,
+  IsPositive,
   IsString,
   Matches,
   MaxLength,
@@ -15,6 +16,50 @@ import { Actor } from 'src/common/enums';
  * - groupId, studentId, offeringId, termId는 수정 불가 (비즈니스 규칙)
  */
 export class UpdatePickDto {
+  @ApiPropertyOptional({
+    description: '반 ID - 해당 반의 고유 식별자',
+    example: 1,
+  })
+  @IsInt({ message: '반 ID는 정수여야 합니다' })
+  @IsOptional()
+  @IsPositive({ message: '반 ID는 1 이상이어야 합니다' })
+  groupId?: number;
+
+  @ApiPropertyOptional({
+    description: '학생 ID - 해당 학생의 고유 식별자',
+    example: 1,
+  })
+  @IsInt({ message: '학생 ID는 정수여야 합니다' })
+  @IsOptional()
+  @IsPositive({ message: '학생 ID는 1 이상이어야 합니다' })
+  studentId?: number;
+
+  @ApiPropertyOptional({
+    description: '학교 ID - 해당 학교의 고유 식별자',
+    example: 1,
+  })
+  @IsInt({ message: '학교 ID는 정수여야 합니다' })
+  @IsOptional()
+  @IsPositive({ message: '학교 ID는 1 이상이어야 합니다' })
+  schoolId?: number;
+
+  @ApiPropertyOptional({
+    description: '학기 ID - 해당 학기의 고유 식별자',
+    example: 1,
+  })
+  @IsInt({ message: '학기 ID는 정수여야 합니다' })
+  @IsOptional()
+  @IsPositive({ message: '학기 ID는 1 이상이어야 합니다' })
+  termId?: number;
+
+  @ApiPropertyOptional({
+    description: '학기 ID - 해당 학기의 고유 식별자',
+    example: 1,
+  })
+  @IsInt({ message: '학기 ID는 정수여야 합니다' })
+  @IsOptional()
+  index?: number;
+
   @ApiPropertyOptional({
     description:
       '수업시작일 등록자 구분 - MANAGER: 관리자, INSTRUCTOR: 강사, OTHER: 기타',

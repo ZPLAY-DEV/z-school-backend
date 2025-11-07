@@ -19,6 +19,13 @@ export class PickedStudentDto extends Student {
   groupName: string;
 
   @ApiProperty({
+    description: '인덱스',
+    example: 1,
+  })
+  @Expose()
+  index: number | null;
+
+  @ApiProperty({
     description: '부모 전화번호',
     example: '01012345678',
   })

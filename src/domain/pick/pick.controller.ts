@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -16,6 +17,7 @@ import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor } from 'src/common/enums';
 import { EndPickDto, StartPickDto } from 'src/domain/pick/dto/create-pick.dto';
+import { StudentIndexComboDto } from 'src/domain/pick/dto/reorder-pick.dto';
 import { UpdatePickDto } from 'src/domain/pick/dto/update-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { PickService } from 'src/domain/pick/pick.service';
@@ -24,6 +26,7 @@ import {
   EndPickDocs,
   ListGroupsDocs,
   PaginatedListGroupsDocs,
+  ReorderPickDocs,
   RestartPickDocs,
   StartPickDocs,
   UpdatePickDocs,
@@ -132,6 +135,14 @@ export class PickController {
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//
+
+  @ReorderPickDocs()
+  @Put('reorder')
+  async reorder(
+    @Body() combos: StudentIndexComboDto[],
+  ): Promise<{ affectedRows: number }> {
+    return await this.pickService.reorder(combos);
+  }
 
   @UpdatePickDocs()
   @Patch(':id')

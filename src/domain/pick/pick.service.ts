@@ -21,6 +21,7 @@ import {
   EndPickDto,
   StartPickDto,
 } from 'src/domain/pick/dto/create-pick.dto';
+import { StudentIndexComboDto } from 'src/domain/pick/dto/reorder-pick.dto';
 import { UpdatePickDto } from 'src/domain/pick/dto/update-pick.dto';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
@@ -477,6 +478,52 @@ export class PickService {
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
   //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * Pick 인덱스 일괄 재정렬
+   * - raw query를 사용하여 대량 업데이트를 효율적으로 처리
+   * - CASE WHEN 문을 사용하여 한번에 여러 레코드 업데이트
+   */
+  async reorder(
+    combos: StudentIndexComboDto[],
+  ): Promise<{ affectedRows: number }> {
+    if (!combos || combos.length === 0) {
+      throw new BadRequestException(
+        'combo 배열은 최소 1개 이상의 항목이 필요합니다',
+      );
+    }
+
+    // studentId 배열 추출
+    const studentIds = combos.map((item) => item.studentId);
+
+    // CASE WHEN 문 생성 및 파라미터 준비
+    const caseWhenParts: string[] = [];
+    const params: number[] = [];
+
+    combos.forEach((item) => {
+      caseWhenParts.push('WHEN ? THEN ?');
+      params.push(item.studentId, item.index);
+    });
+
+    const caseWhen = caseWhenParts.join(' ');
+    const placeholders = studentIds.map(() => '?').join(',');
+
+    // Raw query 실행
+    const query = `
+      UPDATE picks
+      SET \`index\` = CASE studentId
+        ${caseWhen}
+        ELSE \`index\`
+      END
+      WHERE studentId IN (${placeholders})
+    `;
+
+    const allParams = [...params, ...studentIds];
+
+    const result = await this.dataSource.query(query, allParams);
+
+    return { affectedRows: combos.length };
+  }
 
   async update(id: number, dto: UpdatePickDto): Promise<Pick> {
     const group = await this.pickRepository.preload({

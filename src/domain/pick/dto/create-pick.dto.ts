@@ -32,6 +32,26 @@ export class CreatePickDto {
   studentId: number;
 
   @ApiProperty({
+    description: '학기 ID - 해당 학기의 고유 식별자',
+    example: 1,
+    minimum: 1,
+  })
+  @IsInt({ message: '학기 ID는 정수여야 합니다' })
+  @IsOptional()
+  @IsPositive({ message: '학기 ID는 1 이상이어야 합니다' })
+  schoolId?: number;
+
+  @ApiProperty({
+    description: '학기 ID - 해당 학기의 고유 식별자',
+    example: 1,
+    minimum: 1,
+  })
+  @IsInt({ message: '학기 ID는 정수여야 합니다' })
+  @IsOptional()
+  @IsPositive({ message: '학기 ID는 1 이상이어야 합니다' })
+  termId?: number;
+
+  @ApiProperty({
     description: 'Offering ID - 수강신청 상품의 고유 식별자',
     example: 1,
     minimum: 1,
@@ -49,7 +69,7 @@ export class CreatePickDto {
   @IsInt({ message: '학기 ID는 정수여야 합니다' })
   @IsOptional()
   @IsPositive({ message: '학기 ID는 1 이상이어야 합니다' })
-  termId?: number;
+  index?: number;
 
   @ApiPropertyOptional({
     description:

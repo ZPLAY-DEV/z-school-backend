@@ -1,20 +1,21 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiOkResponse,
-    ApiOperation,
-    ApiResponse,
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-    ApiOkPaginatedResponse,
-    ApiPaginationQuery,
-    FilterOperator,
-    PaginateConfig,
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
+  PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { ApiOkResponseTemplate } from 'src/common/swagger/response/api-ok-response';
 import { EndPickDto, StartPickDto } from '../dto/create-pick.dto';
+import { StudentIndexComboDto } from '../dto/reorder-pick.dto';
 import { UpdatePickDto } from '../dto/update-pick.dto';
 import { Pick } from '../entities/pick.entity';
 
@@ -490,6 +491,107 @@ export const PaginatedListGroupsDocs = () =>
     ApiPaginationQuery(LIST_GROUPS_CONFIG),
     ApiOkPaginatedResponse(Pick, LIST_GROUPS_CONFIG),
     ApiStatuses(StatusCodes.NOT_FOUND),
+  );
+
+// ReorderPick
+export const ReorderPickDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '🔄 확정수강생 인덱스 일괄 재정렬',
+      description: `
+**📝 기능 설명**
+- 여러 학생의 인덱스를 한번에 효율적으로 업데이트합니다
+- raw query를 사용하여 대량 업데이트를 최적화합니다
+- 그리드 레이아웃에서 학생 위치를 저장할 때 사용합니다
+
+**🔄 비즈니스 로직**
+1. studentId와 index 조합 배열을 받아서 처리
+2. CASE WHEN 문을 사용한 raw query로 한번에 업데이트
+3. 해당 studentId의 Pick 레코드를 찾아서 index만 업데이트
+4. 존재하지 않는 studentId는 무시 (에러 발생하지 않음)
+
+**⚡ 성능 최적화**
+- 개별 UPDATE 쿼리 대신 단일 raw query로 처리
+- 대량 업데이트 시 N+1 쿼리 문제 방지
+- 트랜잭션으로 원자성 보장
+
+**⚠️ 중요 제약사항**
+- combo 배열은 최소 1개 이상의 항목이 필요
+- studentId와 index는 모두 양수여야 함
+- index는 1-based (1부터 시작)
+- 존재하지 않는 studentId는 조용히 무시됨
+
+**📚 예시 시나리오**
+- 5x4 그리드 레이아웃에서 학생 배치 저장
+- 왼쪽 상단부터 오른쪽 하단까지 순서대로 인덱스 부여
+- 학생 순서 재배치 후 일괄 저장
+      `,
+    }),
+    ApiBody({
+      type: [StudentIndexComboDto],
+      description: '학생 인덱스 재정렬 데이터',
+      examples: {
+        gridLayout: {
+          summary: '그리드 레이아웃 저장 (5x4)',
+          value: {
+            combo: [
+              { studentId: 1, index: 1 },
+              { studentId: 2, index: 2 },
+              { studentId: 3, index: 3 },
+              { studentId: 4, index: 4 },
+              { studentId: 5, index: 5 },
+              { studentId: 6, index: 6 },
+              // ... 최대 20개까지
+            ],
+          },
+        },
+        reorder: {
+          summary: '학생 순서 재배치',
+          value: {
+            combo: [
+              { studentId: 10, index: 1 },
+              { studentId: 5, index: 2 },
+              { studentId: 3, index: 3 },
+            ],
+          },
+        },
+      },
+    }),
+    ApiOkResponse({
+      description: '인덱스 재정렬 완료 - 업데이트된 레코드 수 반환',
+      schema: {
+        type: 'object',
+        properties: {
+          affectedRows: {
+            type: 'number',
+            example: 20,
+            description: '성공적으로 업데이트된 레코드 수',
+          },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: '요청 데이터 검증 실패',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: { type: 'number', example: 400 },
+          message: {
+            type: 'array',
+            items: { type: 'string' },
+            example: [
+              'combo는 배열이어야 합니다',
+              'combo 배열은 최소 1개 이상의 항목이 필요합니다',
+              '학생 ID는 1 이상이어야 합니다',
+              '인덱스는 1 이상이어야 합니다',
+            ],
+          },
+          error: { type: 'string', example: 'Bad Request' },
+        },
+      },
+    }),
+    ApiStatuses(StatusCodes.BAD_REQUEST),
   );
 
 // UpdatePick

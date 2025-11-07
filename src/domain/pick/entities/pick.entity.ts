@@ -33,15 +33,25 @@ export class Pick {
   @Column({ type: 'int', unsigned: true, nullable: true })
   studentId: number;
 
-  // 관리때문에 추가) 재수강생 고를때, 수강신청과목 리스트 pick 여부 확인에 필요함
-  @ApiProperty({ description: 'offeringId', example: 1 })
+  // a clear way to know which group belongs to which school
+  @ApiProperty({ description: 'schoolId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
-  offeringId: number;
+  schoolId: number | null;
 
   // a clear way to know which group belongs to which term
   @ApiProperty({ description: 'termId', example: 1 })
   @Column({ type: 'int', unsigned: true, nullable: true })
-  termId: number;
+  termId: number | null;
+
+  // 관리때문에 추가) 재수강생 고를때, 수강신청과목 리스트 pick 여부 확인에 필요함
+  @ApiProperty({ description: 'offeringId', example: 1 })
+  @Column({ type: 'int', unsigned: true, nullable: true })
+  offeringId: number | null;
+
+  // slot index
+  @ApiProperty({ description: 'index', example: 1 })
+  @Column({ type: 'tinyint', unsigned: true, nullable: true })
+  index: number | null;
 
   // ------------------------------------------------------------------------ //
 
