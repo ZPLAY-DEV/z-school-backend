@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsPositive } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsInt, IsOptional, IsPositive } from 'class-validator';
 
 /**
  * 학생 인덱스 조합 DTO
@@ -15,12 +15,11 @@ export class StudentIndexComboDto {
   @IsPositive({ message: '학생 ID는 1 이상이어야 합니다' })
   studentId: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: '인덱스 - 학생의 위치 인덱스 (1-based)',
     example: 1,
-    minimum: 1,
   })
+  @IsOptional()
   @IsInt({ message: '인덱스는 정수여야 합니다' })
-  @IsPositive({ message: '인덱스는 1 이상이어야 합니다' })
-  index: number;
+  index: number | null;
 }

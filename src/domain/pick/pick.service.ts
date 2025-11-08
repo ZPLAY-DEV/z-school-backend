@@ -498,11 +498,11 @@ export class PickService {
 
     // CASE WHEN 문 생성 및 파라미터 준비
     const caseWhenParts: string[] = [];
-    const params: number[] = [];
+    const params: Array<number | null> = [];
 
     combos.forEach((item) => {
       caseWhenParts.push('WHEN ? THEN ?');
-      params.push(item.studentId, item.index);
+      params.push(item.studentId, item.index ?? null);
     });
 
     const caseWhen = caseWhenParts.join(' ');
