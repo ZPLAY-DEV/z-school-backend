@@ -18,6 +18,10 @@ export class CurriculumService {
     private readonly syllabusRepository: Repository<Syllabus>,
   ) {}
 
+  //? ---------------------------------------------------------------------- ?//
+  //? CREATE
+  //? ---------------------------------------------------------------------- ?//
+
   async create(createCurriculumDto: CreateCurriculumDto): Promise<Curriculum> {
     const lesson = await this.lessonRepository.findOne({
       where: { id: createCurriculumDto.lessonId },
@@ -42,6 +46,10 @@ export class CurriculumService {
     const curriculum = this.curriculumRepository.create(createCurriculumDto);
     return await this.curriculumRepository.save(curriculum);
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? READ
+  //? ---------------------------------------------------------------------- ?//
 
   async findAll(): Promise<Curriculum[]> {
     return await this.curriculumRepository.find({
@@ -75,6 +83,10 @@ export class CurriculumService {
       relations: ['lesson'],
     });
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? UPDATE
+  //? ---------------------------------------------------------------------- ?//
 
   async update(
     id: number,
@@ -116,8 +128,32 @@ export class CurriculumService {
     return await this.curriculumRepository.save(curriculum);
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? DELETE
+  //? ---------------------------------------------------------------------- ?//
+
   async remove(id: number): Promise<void> {
     const curriculum = await this.findOne(id);
-    await this.curriculumRepository.softRemove(curriculum);
+    await this.curriculumRepository.remove(curriculum);
+  }
+
+  async removeByIds(dto: {
+    lessonId: number;
+    syllabusId: number;
+  }): Promise<void> {
+    const curriculum = await this.curriculumRepository.findOne({
+      where: {
+        lessonId: dto.lessonId,
+        syllabusId: dto.syllabusId,
+      },
+    });
+
+    if (!curriculum) {
+      throw new NotFoundException(
+        `Curriculum with lessonId ${dto.lessonId} and syllabusId ${dto.syllabusId} not found`,
+      );
+    }
+
+    await this.curriculumRepository.remove(curriculum);
   }
 }

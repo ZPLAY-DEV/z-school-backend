@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   FilterOperator,
@@ -8,6 +13,7 @@ import {
 } from 'nestjs-paginate';
 import { BookingStatus, ClassStatus } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
+import { SyncCurriculumDto } from 'src/domain/curriculum/dto/sync-curriculum.dto';
 import { Curriculum } from 'src/domain/curriculum/entities/curriculum.entity';
 import { BookedStudentDto } from 'src/domain/group/dto/booked-student.dto';
 import { PickedStudentDto } from 'src/domain/group/dto/picked-student.dto';
@@ -17,7 +23,7 @@ import { School } from 'src/domain/school/entities/school.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Syllabus } from 'src/domain/syllabus/entities/syllabus.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { LessonCoreService } from './lesson-core.service';
 
@@ -115,10 +121,6 @@ export class LessonService {
       },
     });
   }
-
-  //? ---------------------------------------------------------------------- ?//
-  //? FIND
-  //? ---------------------------------------------------------------------- ?//
 
   async findById(id: number, relations: string[] = []): Promise<Lesson> {
     try {
@@ -376,6 +378,51 @@ export class LessonService {
 
     const totalDays = lesson.groups.reduce((sum, group) => sum + group.days, 0);
     return totalDays;
+  }
+
+  async syncCurriculums(
+    lessonId: number,
+    dtos: SyncCurriculumDto[],
+  ): Promise<void> {
+    await this.lessonRepository.findOneOrFail({ where: { id: lessonId } });
+
+    const syllabusIds = dtos.map((item) => item.syllabusId);
+    const uniqueCount = new Set(syllabusIds).size;
+    if (uniqueCount !== syllabusIds.length) {
+      throw new BadRequestException('syllabusId 항목이 중복되었습니다');
+    }
+
+    if (uniqueCount > 0) {
+      const foundCount = await this.syllabusRepository.count({
+        where: { id: In(syllabusIds) },
+      });
+      if (foundCount !== uniqueCount) {
+        throw new NotFoundException(
+          '존재하지 않는 syllabusId가 포함되어 있습니다',
+        );
+      }
+    }
+
+    await this.curriculumRepository.manager.transaction(async (manager) => {
+      const repo = manager.getRepository(Curriculum);
+      await repo.delete({ lessonId });
+
+      if (dtos.length === 0) {
+        return;
+      }
+
+      const entities = dtos.map((item) =>
+        repo.create({
+          lessonId,
+          syllabusId: item.syllabusId,
+          termId: item.termId,
+          schoolId: item.schoolId,
+          schoolName: item.schoolName ?? null,
+        }),
+      );
+
+      await repo.insert(entities);
+    });
   }
 
   //? ---------------------------------------------------------------------- ?//

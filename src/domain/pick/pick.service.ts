@@ -485,22 +485,20 @@ export class PickService {
    * - CASE WHEN 문을 사용하여 한번에 여러 레코드 업데이트
    */
   async reorder(
-    combos: StudentIndexComboDto[],
+    dtos: StudentIndexComboDto[],
   ): Promise<{ affectedRows: number }> {
-    if (!combos || combos.length === 0) {
-      throw new BadRequestException(
-        'combo 배열은 최소 1개 이상의 항목이 필요합니다',
-      );
+    if (!dtos || dtos.length === 0) {
+      throw new BadRequestException('최소 1개 이상의 항목이 필요합니다');
     }
 
     // studentId 배열 추출
-    const studentIds = combos.map((item) => item.studentId);
+    const studentIds = dtos.map((item) => item.studentId);
 
     // CASE WHEN 문 생성 및 파라미터 준비
     const caseWhenParts: string[] = [];
     const params: Array<number | null> = [];
 
-    combos.forEach((item) => {
+    dtos.forEach((item) => {
       caseWhenParts.push('WHEN ? THEN ?');
       params.push(item.studentId, item.index ?? null);
     });
@@ -522,7 +520,7 @@ export class PickService {
 
     const result = await this.dataSource.query(query, allParams);
 
-    return { affectedRows: combos.length };
+    return { affectedRows: dtos.length };
   }
 
   async update(id: number, dto: UpdatePickDto): Promise<Pick> {

@@ -4,15 +4,16 @@ import { Syllabus } from 'src/domain/syllabus/entities/syllabus.entity';
 import {
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
+  Unique,
+  UpdateDateColumn
 } from 'typeorm';
 
 @Entity('curriculums')
+@Unique(['lessonId', 'syllabusId'])
 export class Curriculum {
   @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
@@ -50,10 +51,6 @@ export class Curriculum {
   @ApiProperty({ description: '🈵 updatedAt' })
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @ApiProperty({ description: '🈳 deletedAt', example: null })
-  @DeleteDateColumn()
-  deletedAt: Date | null;
 
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 

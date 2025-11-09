@@ -9,7 +9,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Query,
+  Query
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurriculumService } from './curriculum.service';
@@ -20,7 +20,11 @@ import { Curriculum } from './entities/curriculum.entity';
 @ApiTags('Curriculum')
 @Controller('curriculums')
 export class CurriculumController {
-  constructor(private readonly _curriculumService: CurriculumService) {}
+  constructor(private readonly curriculumService: CurriculumService) {}
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Create
+  //? ---------------------------------------------------------------------- ?//
 
   @Post()
   @ApiOperation({ summary: '커리큘럼 생성' })
@@ -40,8 +44,12 @@ export class CurriculumController {
   async create(
     @Body() createCurriculumDto: CreateCurriculumDto,
   ): Promise<Curriculum> {
-    return await this._curriculumService.create(createCurriculumDto);
+    return await this.curriculumService.create(createCurriculumDto);
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
 
   @Get()
   @ApiOperation({
@@ -59,12 +67,12 @@ export class CurriculumController {
     syllabusId?: number,
   ): Promise<Curriculum[]> {
     if (lessonId) {
-      return await this._curriculumService.findByLesson(lessonId);
+      return await this.curriculumService.findByLesson(lessonId);
     }
     if (syllabusId) {
-      return await this._curriculumService.findBySyllabus(syllabusId);
+      return await this.curriculumService.findBySyllabus(syllabusId);
     }
-    return await this._curriculumService.findAll();
+    return await this.curriculumService.findAll();
   }
 
   @Get(':id')
@@ -80,12 +88,16 @@ export class CurriculumController {
     description: '해당 커리큘럼을 찾을 수 없음',
   })
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Curriculum> {
-    return await this._curriculumService.findOne(id);
+    return await this.curriculumService.findOne(id);
   }
 
-  @Patch(':id')
+  //? ---------------------------------------------------------------------- ?//
+  //? Update
+  //? ---------------------------------------------------------------------- ?//
+
+  @Patch(':lessonId')
   @ApiOperation({ summary: '커리큘럼 수정' })
-  @ApiParam({ name: 'id', description: '커리큘럼 ID' })
+  @ApiParam({ name: 'lessonId', description: 'Lesson ID' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: '커리큘럼이 성공적으로 수정됨',
@@ -96,11 +108,15 @@ export class CurriculumController {
     description: '해당 커리큘럼을 찾을 수 없음',
   })
   async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateCurriculumDto: UpdateCurriculumDto,
+    @Param('lessonId', ParseIntPipe) lessonId: number,
+    @Body() dto: UpdateCurriculumDto,
   ): Promise<Curriculum> {
-    return await this._curriculumService.update(id, updateCurriculumDto);
+    return await this.curriculumService.update(lessonId, dto);
   }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Delete
+  //? ---------------------------------------------------------------------- ?//
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -115,6 +131,23 @@ export class CurriculumController {
     description: '해당 커리큘럼을 찾을 수 없음',
   })
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    await this._curriculumService.remove(id);
+    await this.curriculumService.remove(id);
+  }
+
+  @Delete()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'lessonId와 syllabusId에 해당하는 커리큘럼 삭제' })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: '커리큘럼이 성공적으로 삭제됨',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: '해당 커리큘럼을 찾을 수 없음',
+  })
+  async removeByIds(
+    @Body() dto: { lessonId: number; syllabusId: number },
+  ): Promise<void> {
+    await this.curriculumService.removeByIds(dto);
   }
 }

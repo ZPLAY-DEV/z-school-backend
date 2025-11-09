@@ -5,16 +5,19 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
   Post,
+  Put,
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CacheInvalidate } from 'src/common/decorators/cache-invalidate.decorator';
+import { SyncCurriculumDto } from 'src/domain/curriculum/dto/sync-curriculum.dto';
 import { PickedStudentDto } from 'src/domain/group/dto/picked-student.dto';
 import { CreateLessonDto } from 'src/domain/lesson/dto/create-lesson.dto';
 import { UpdateLessonDto } from 'src/domain/lesson/dto/update-lesson.dto';
@@ -125,6 +128,22 @@ export class LessonController {
     @Body() dto: UpdateLessonDto,
   ): Promise<Lesson> {
     return await this.lessonService.update(id, dto);
+  }
+
+  @Put(':lessonId/sync')
+  @ApiOperation({
+    summary: 'lesson에 연결된 커리큘럼 관계를 sync 방식으로 갱신',
+  })
+  @ApiParam({ name: 'lessonId', description: 'Lesson ID' })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: '커리큘럼 연결 관계가 성공적으로 갱신됨',
+  })
+  async sync(
+    @Param('lessonId', ParseIntPipe) lessonId: number,
+    @Body() dtos: SyncCurriculumDto[],
+  ): Promise<void> {
+    await this.lessonService.syncCurriculums(lessonId, dtos);
   }
 
   //? ---------------------------------------------------------------------- ?//

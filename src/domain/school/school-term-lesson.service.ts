@@ -549,11 +549,10 @@ export class SchoolTermLessonService {
 
     return await paginate(query, queryBuilder, {
       relations: {
-        groups: {
-          contracts: { sam: true },
-          // picks: true,
+        groups: true,
+        curriculums: {
+          syllabus: true,
         },
-        category: true,
       },
       sortableColumns: ['id', 'lessonName', 'termId', 'groups.weekday'],
       searchableColumns: ['lessonName'],
@@ -563,25 +562,26 @@ export class SchoolTermLessonService {
       ],
       filterableColumns: {
         termId: [FilterOperator.EQ],
-        categoryId: [FilterOperator.EQ],
-        'category.name': [FilterOperator.EQ, FilterOperator.IN],
-        'category.slug': [FilterOperator.EQ, FilterOperator.IN],
-        'groups.weekday': [FilterOperator.EQ, FilterOperator.IN],
         lessonName: [FilterOperator.EQ, FilterOperator.ILIKE],
+        'curriculums.syllabusId': [FilterOperator.EQ, FilterOperator.IN],
+        'groups.weekday': [FilterOperator.EQ, FilterOperator.IN],
       },
     });
   }
 
   async list(schoolId: number, termId: number): Promise<Lesson[]> {
-    return this.lessonRepository
-      .createQueryBuilder('lesson')
-      .leftJoinAndSelect('lesson.category', 'category')
-      .leftJoinAndSelect('lesson.groups', 'group')
-      .leftJoinAndSelect('group.sam', 'sam')
-      .where('lesson.schoolId = :schoolId', { schoolId })
-      .andWhere('lesson.termId = :termId', { termId })
-      .orderBy('lesson.id', 'DESC')
-      .getMany();
+    return (
+      this.lessonRepository
+        .createQueryBuilder('lesson')
+        // .leftJoinAndSelect('lesson.category', 'category')
+        .leftJoinAndSelect('lesson.groups', 'group')
+        .leftJoinAndSelect('lesson.curriculums', 'curriculum')
+        .leftJoinAndSelect('curriculum.syllabus', 'syllabus')
+        .where('lesson.schoolId = :schoolId', { schoolId })
+        .andWhere('lesson.termId = :termId', { termId })
+        .orderBy('lesson.id', 'DESC')
+        .getMany()
+    );
   }
 
   //? ---------------------------------------------------------------------- ?//
