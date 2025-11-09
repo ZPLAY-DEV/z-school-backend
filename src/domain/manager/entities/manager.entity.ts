@@ -23,13 +23,13 @@ export class Manager {
   @Column({ type: 'int', unique: true, unsigned: true, nullable: true })
   userId: number | null;
 
-  @ApiProperty({ description: '🈳 미리 허가받은 전화번호' })
-  @Column({ type: 'varchar', length: 16, unique: true, nullable: true })
-  phone: string | null;
-
   @ApiProperty({ description: '🈳 관리자 이름' })
   @Column({ type: 'varchar', length: 16, nullable: true })
   name: string | null;
+
+  @ApiProperty({ description: '🈳 미리 허가받은 전화번호' })
+  @Column({ type: 'varchar', length: 16, unique: true, nullable: true })
+  phone: string | null;
 
   @ApiProperty({ description: '🈳 내용' })
   @Column({ type: 'varchar', length: 255, nullable: true })

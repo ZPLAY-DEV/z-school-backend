@@ -220,8 +220,15 @@ export class BookingService {
   //? ---------------------------------------------------------------------- ?//
 
   async createWithRedis(dto: CreateBookingDto): Promise<ResponseBookingDto> {
-    const { termId, offeringId, studentId, lessonName, capacity, pickRule } =
-      dto;
+    const {
+      schoolId,
+      termId,
+      offeringId,
+      studentId,
+      lessonName,
+      capacity,
+      pickRule,
+    } = dto;
     const timestamp = Date.now();
 
     await this.validateOffering(offeringId);
@@ -274,6 +281,7 @@ export class BookingService {
         await this.sqsClient.sendMessage({
           type: 'CREATE_BOOKING',
           data: {
+            schoolId,
             termId,
             offeringId,
             studentId,

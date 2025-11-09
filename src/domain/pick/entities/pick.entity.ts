@@ -3,6 +3,8 @@ import { Exclude } from 'class-transformer';
 import { Actor } from 'src/common/enums';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
+import { Presence } from 'src/domain/presence/entities/presence.entity';
+import { Score } from 'src/domain/score/entities/score.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import {
   Column,
@@ -11,6 +13,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
@@ -176,4 +179,12 @@ export class Pick {
   @ManyToOne(() => Group, (group) => group.picks)
   @JoinColumn({ name: 'groupId' })
   group: Group;
+
+  //* 1-to-M hasMany ------------------------------------------------------- *//
+
+  @OneToMany(() => Presence, (presence) => presence.pick)
+  presences: Presence[];
+
+  @OneToMany(() => Score, (score) => score.pick)
+  scores: Score[];
 }

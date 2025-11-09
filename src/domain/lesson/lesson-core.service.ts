@@ -1019,6 +1019,7 @@ export class LessonCoreService {
       );
 
       const upsertData: DeepPartial<Group> = {
+        schoolId: lesson.schoolId,
         termId: lesson.termId,
         lessonId: lesson.id,
         groupName: groupData.groupName,

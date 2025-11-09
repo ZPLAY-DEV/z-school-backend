@@ -1,18 +1,18 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-    ApiBody,
-    ApiCreatedResponse,
-    ApiExtraModels,
-    ApiOkResponse,
-    ApiOperation,
-    ApiParam,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
 } from '@nestjs/swagger';
 import { StatusCodes } from 'http-status-codes';
 import {
-    ApiOkPaginatedResponse,
-    ApiPaginationQuery,
-    FilterOperator,
-    PaginateConfig,
+  ApiOkPaginatedResponse,
+  ApiPaginationQuery,
+  FilterOperator,
+  PaginateConfig,
 } from 'nestjs-paginate';
 import { ApiStatuses } from 'src/common/decorators/simple-status.decorator';
 import { CreateManagerDto } from '../dto/create-manager.dto';
@@ -77,7 +77,6 @@ export const CreateManagerDocs = () => {
             schoolName: '홍익대학교 사범대학 부속 초등학교',
             name: '김관리',
             phone: '010-9876-5432',
-            platform: 'WEB',
             note: '시스템 총괄 관리자',
             termsAgreedAt: '2025-01-01T12:00:00Z',
           },
@@ -210,7 +209,7 @@ export const UpdateManagerDocs = () => {
 
 **🔄 수정 가능 필드**
 - name, phone, schoolId, schoolName
-- platform, note, termsAgreedAt
+- note, termsAgreedAt
 
 **⚠️ 중요 제약사항**
 - userId는 수정 불가 (계정 연결 변경 불가)
@@ -250,7 +249,6 @@ export const UpdateManagerDocs = () => {
             name: '박종합',
             phone: '010-7777-8888',
             schoolId: 2,
-            platform: 'IOS',
             note: '부산 지역 총괄 관리자',
           },
         },

@@ -20,6 +20,7 @@ export * from './permission';
 export * from './pick-rule';
 export * from './platform-type';
 export * from './post-category';
+export * from './presence-status';
 export * from './question-status';
 export * from './question-type';
 export * from './region';

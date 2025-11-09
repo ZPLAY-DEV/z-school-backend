@@ -159,6 +159,26 @@ export class UpdateGroupDto {
   instructorId?: number;
 
   @ApiPropertyOptional({
+    description: '학교 ID',
+    type: Number,
+    example: 1,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt({ message: '학교 ID는 정수여야 합니다' })
+  schoolId?: number;
+
+  @ApiPropertyOptional({
+    description: '학기 ID',
+    type: Number,
+    example: 1,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt({ message: '학기 ID는 정수여야 합니다' })
+  termId?: number;
+
+  @ApiPropertyOptional({
     description: '강사명 - 담당 강사의 이름 (최대 16자, 한글/영문만 허용)',
     type: String,
     example: '이선생',

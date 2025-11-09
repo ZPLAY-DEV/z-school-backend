@@ -36,8 +36,10 @@ import { OfferingModule } from 'src/domain/offering/offering.module';
 import { ParentModule } from 'src/domain/parent/parent.module';
 import { PayoutModule } from 'src/domain/payout/payout.module';
 import { PickModule } from 'src/domain/pick/pick.module';
+import { PresenceModule } from 'src/domain/presence/presence.module';
 import { ProgramModule } from 'src/domain/program/program.module';
 import { ReminderModule } from 'src/domain/reminder/reminder.module';
+import { ScoreModule } from 'src/domain/score/score.module';
 import { SamModule } from 'src/domain/sam/sam.module';
 import { SchoolModule } from 'src/domain/school/school.module';
 import { SchooldayModule } from 'src/domain/schoolday/schoolday.module';
@@ -149,6 +151,7 @@ const conditionalImports = isMetricsEnabled ? [MetricsModule] : [];
     ParentModule,
     PayoutModule,
     PickModule,
+    PresenceModule,
     ProgramModule,
     RedisModule,
     SamModule,
@@ -157,6 +160,7 @@ const conditionalImports = isMetricsEnabled ? [MetricsModule] : [];
     SlackModule,
     StatementModule,
     StudentModule,
+    ScoreModule,
     SubsidyModule,
     SurveyModule,
     SyllabusModule,

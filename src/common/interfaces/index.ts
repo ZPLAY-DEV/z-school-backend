@@ -338,3 +338,22 @@ export interface IStoryDetail {
     answer: string;
   }[];
 }
+
+// 4x4
+export interface IScores {
+  game: {
+    record1: number;
+    record2: number;
+    record3: number;
+  };
+  result: {
+    record1: number;
+    record2: number;
+    record3: number;
+  };
+  measurement: {
+    height: number;
+    weight: number;
+    bmi: number;
+  };
+}

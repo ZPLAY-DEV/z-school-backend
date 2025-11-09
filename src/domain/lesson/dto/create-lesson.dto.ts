@@ -27,6 +27,12 @@ export class FeeItemDto {
 }
 
 export class CreateLessonDto {
+  @ApiProperty({ description: '🈵 School ID', required: true, example: 1 })
+  @IsNotEmpty()
+  @IsInt()
+  @IsPositive()
+  schoolId: number;
+
   @ApiProperty({ description: '🈵 Term ID', required: true, example: 1 })
   @IsNotEmpty()
   @IsInt()
@@ -38,12 +44,6 @@ export class CreateLessonDto {
   @IsInt()
   @IsPositive()
   categoryId: number;
-
-  @ApiProperty({ description: '🈵 School ID', required: true, example: 1 })
-  @IsNotEmpty()
-  @IsInt()
-  @IsPositive()
-  schoolId: number;
 
   @ApiProperty({ description: '🈵 syllabusSlug', example: 'hero' })
   @IsString()

@@ -61,7 +61,7 @@ export class Schoolday {
     description: '검색용 날짜',
     example: '2025-07-16',
   })
-  @Column({ type: 'varchar', length: 10, comment: '수업일' })
+  @Column({ type: 'date', comment: '수업일' })
   today: string; // '2025-07-16'
 
   @ApiProperty({
@@ -69,20 +69,18 @@ export class Schoolday {
     example: '2025-07-16',
   })
   @Column({
-    type: 'varchar',
-    length: 10,
+    type: 'date',
     nullable: true,
     comment: '원래 수업일 (불변)',
   })
-  initial: string; // '2025-07-20'
+  initial: string | null; // '2025-07-20'
 
   @ApiProperty({
     description: '이전 수업일',
     example: '2025-07-16',
   })
   @Column({
-    type: 'varchar',
-    length: 10,
+    type: 'date',
     nullable: true,
     comment: '이전 수업일',
   })

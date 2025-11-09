@@ -417,7 +417,6 @@ export class LessonService {
           syllabusId: item.syllabusId,
           termId: item.termId,
           schoolId: item.schoolId,
-          schoolName: item.schoolName ?? null,
         }),
       );
 

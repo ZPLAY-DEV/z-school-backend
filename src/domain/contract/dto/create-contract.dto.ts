@@ -26,9 +26,12 @@ export class CreateContractDto {
   @IsPositive()
   lessonId: number;
 
-  @ApiProperty({ description: '학기 ID', example: 1 })
+  @ApiProperty({ description: 'school ID', example: 1 })
   @IsInt()
-  @IsPositive()
+  schoolId: number;
+
+  @ApiProperty({ description: 'term ID', example: 1 })
+  @IsInt()
   termId: number;
 
   // ------------------------------------------------------------------------ //
@@ -97,6 +100,11 @@ class ContractBaseDto {
   @IsInt()
   @IsPositive()
   lessonId: number;
+
+  @ApiProperty({ description: '학교 ID', example: 1 })
+  @IsInt()
+  @IsPositive()
+  schoolId: number;
 
   @ApiProperty({ description: '학기 ID', example: 1 })
   @IsInt()

@@ -174,6 +174,16 @@ export class CreateGroupDto {
   instructorId?: number;
 
   @ApiPropertyOptional({
+    description: '학교 ID',
+    type: Number,
+    example: 1,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt({ message: '학교 ID는 정수여야 합니다' })
+  schoolId?: number;
+
+  @ApiPropertyOptional({
     description: '학기 ID',
     type: Number,
     example: 1,

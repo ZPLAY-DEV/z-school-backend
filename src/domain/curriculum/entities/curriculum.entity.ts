@@ -9,7 +9,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('curriculums')
@@ -34,13 +34,6 @@ export class Curriculum {
   @ApiProperty({ description: '🈵 schoolId', example: 1 })
   @Column({ type: 'int', unsigned: true })
   schoolId: number; // 관리자 편의를 위한 Column.
-
-  @ApiProperty({
-    description: '🈳 학교명',
-    example: '홍익대학교 사범대학 부속 초등학교',
-  })
-  @Column({ type: 'varchar', length: 24, nullable: true })
-  schoolName: string | null;
 
   // ------------------------------------------------------------------------ //
 

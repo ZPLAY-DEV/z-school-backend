@@ -2,19 +2,13 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsDate,
-  IsEnum,
   IsInt,
   IsOptional,
   IsString,
-  MaxLength,
+  MaxLength
 } from 'class-validator';
-import { PlatformType } from 'src/common/enums';
 
 export class CreateManagerDto {
-  @ApiProperty({ description: 'User ID', example: 1 })
-  @IsInt()
-  userId: number;
-
   @ApiPropertyOptional({ description: 'School ID', example: 1 })
   @IsInt()
   @IsOptional()
@@ -29,6 +23,10 @@ export class CreateManagerDto {
   @MaxLength(24)
   @IsOptional()
   schoolName?: string;
+
+  @ApiProperty({ description: 'User ID', example: 1 })
+  @IsInt()
+  userId: number;
 
   @ApiPropertyOptional({
     description: '성함',
@@ -50,14 +48,14 @@ export class CreateManagerDto {
   @IsOptional()
   phone?: string;
 
-  @ApiPropertyOptional({
-    description: '마지막 로그인 기기 web, ios, or android',
-    enum: PlatformType,
-    default: PlatformType.WEB,
-  })
-  @IsEnum(PlatformType)
-  @IsOptional()
-  platform?: PlatformType;
+  // @ApiPropertyOptional({
+  //   description: '마지막 로그인 기기 web, ios, or android',
+  //   enum: PlatformType,
+  //   default: PlatformType.WEB,
+  // })
+  // @IsEnum(PlatformType)
+  // @IsOptional()
+  // platform?: PlatformType;
 
   @ApiPropertyOptional({ description: '내용', maxLength: 255 })
   @IsString()
