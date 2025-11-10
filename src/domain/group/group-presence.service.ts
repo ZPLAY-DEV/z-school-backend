@@ -5,13 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PresenceStatus } from 'src/common/enums';
+import { StudentPresence } from 'src/common/interfaces';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
-import { Group } from 'src/domain/group/entities/group.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { CreatePresenceDto } from 'src/domain/presence/dto/create-presence.dto';
 import { Presence } from 'src/domain/presence/entities/presence.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { Student } from 'src/domain/student/entities/student.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -19,10 +19,6 @@ export class GroupPresenceService {
   private readonly logger = new Logger(GroupPresenceService.name);
 
   constructor(
-    @InjectRepository(Group)
-    private readonly groupRepository: Repository<Group>,
-    @InjectRepository(Student)
-    private readonly studentRepository: Repository<Student>,
     @InjectRepository(Pick)
     private readonly pickRepository: Repository<Pick>,
     @InjectRepository(Schoolday)
@@ -37,9 +33,7 @@ export class GroupPresenceService {
   //? Create 또는 Update
   //? ---------------------------------------------------------------------- ?//
 
-  async upsert(
-    dto: CreatePresenceDto & { studentId: number },
-  ): Promise<Presence> {
+  async upsert(dto: CreatePresenceDto): Promise<Presence> {
     const { groupId, studentId, week, lessonDate, status, note } = dto;
 
     if (!groupId || !studentId) {
@@ -67,7 +61,7 @@ export class GroupPresenceService {
       pickId: pick.id,
       week,
       lessonDate: typeof lessonDate === 'string' ? lessonDate : null,
-      status,
+      status: status as unknown as PresenceStatus,
       note: typeof note === 'string' ? note : null,
     };
 
@@ -84,23 +78,139 @@ export class GroupPresenceService {
   async findByWeek(
     groupId: number,
     week: number,
-    studentId?: number,
-  ): Promise<Presence[]> {
+    filters: { studentId?: number; userId?: number } = {},
+  ): Promise<StudentPresence[]> {
     if (!Number.isInteger(week) || week < 1) {
       throw new BadRequestException('주차는 1 이상의 정수여야 합니다.');
     }
 
-    const query = this.presenceRepository
-      .createQueryBuilder('presence')
-      .innerJoinAndSelect('presence.pick', 'pick')
-      .leftJoinAndSelect('pick.student', 'student')
+    const { studentId, userId } = filters;
+
+    const schoolday = await this.schooldayRepository.findOne({
+      where: { groupId, weekNumber: week },
+      order: { today: 'ASC' },
+    });
+
+    const query = this.pickRepository
+      .createQueryBuilder('pick')
+      .innerJoinAndSelect('pick.student', 'student')
+      .leftJoin('student.parent', 'parent')
+      .leftJoinAndSelect(
+        'pick.presences',
+        'presence',
+        'presence.week = :week',
+        { week },
+      )
       .where('pick.groupId = :groupId', { groupId })
-      .andWhere('presence.week = :week', { week });
+      .andWhere('pick.isActive = :isActive', { isActive: true });
 
     if (typeof studentId === 'number') {
       query.andWhere('pick.studentId = :studentId', { studentId });
     }
 
-    return await query.orderBy('pick.id', 'ASC').getMany();
+    if (typeof userId === 'number') {
+      query.andWhere('parent.userId = :userId', { userId });
+    }
+
+    const picks = await query.orderBy('student.name', 'ASC').getMany();
+
+    const fallbackDate = schoolday?.today ?? '';
+
+    return picks.map((pick) => {
+      const presence =
+        pick.presences?.find((item) => item.week === week) ??
+        pick.presences?.[0];
+
+      return {
+        week,
+        lessonDate: presence?.lessonDate ?? fallbackDate,
+        studentId: pick.studentId,
+        studentName: pick.student?.name ?? '',
+        status: presence?.status ?? PresenceStatus.INIT,
+        note: presence?.note ?? null,
+      } satisfies StudentPresence;
+    });
+  }
+
+  async findByStudent(
+    groupId: number,
+    studentId: number,
+    week?: number,
+  ): Promise<StudentPresence[]> {
+    if (typeof week === 'number') {
+      if (!Number.isInteger(week) || week < 1) {
+        throw new BadRequestException('주차는 1 이상의 정수여야 합니다.');
+      }
+    }
+
+    const pick = await this.pickRepository.findOne({
+      where: { groupId, studentId },
+      relations: ['student'],
+    });
+
+    if (!pick) {
+      throw new NotFoundException('해당 반에서 학생을 찾을 수 없습니다.');
+    }
+
+    const schooldays = await this.schooldayRepository.find({
+      where: { groupId },
+      order: { weekNumber: 'ASC', today: 'ASC' },
+    });
+
+    const schooldayMap = new Map<number, string>();
+    for (const record of schooldays) {
+      if (typeof week === 'number' && record.weekNumber !== week) {
+        continue;
+      }
+      if (!schooldayMap.has(record.weekNumber)) {
+        schooldayMap.set(record.weekNumber, record.today);
+      }
+    }
+
+    const presenceWhere: { pickId: number; week?: number } = {
+      pickId: pick.id,
+    };
+
+    if (typeof week === 'number') {
+      presenceWhere.week = week;
+    }
+
+    const presences = await this.presenceRepository.find({
+      where: presenceWhere,
+      order: { week: 'ASC', lessonDate: 'ASC' },
+    });
+
+    const presenceMap = new Map<number, Presence>();
+    for (const presence of presences) {
+      if (!presenceMap.has(presence.week)) {
+        presenceMap.set(presence.week, presence);
+      }
+    }
+
+    const baseWeeks =
+      typeof week === 'number'
+        ? presenceMap.has(week) || schooldayMap.has(week)
+          ? [week]
+          : []
+        : Array.from(
+            new Set([...schooldayMap.keys(), ...presenceMap.keys()]),
+          ).sort((a, b) => a - b);
+
+    if (!baseWeeks.length) {
+      return [];
+    }
+
+    return baseWeeks.map((weekNumber) => {
+      const presence = presenceMap.get(weekNumber);
+      const date = presence?.lessonDate ?? schooldayMap.get(weekNumber) ?? '';
+      return {
+        week: weekNumber,
+        lessonDate: date,
+        studentId: pick.studentId,
+        studentName: pick.student?.name ?? '',
+        status: presence?.status ?? PresenceStatus.INIT,
+        note: presence?.note ?? null,
+      } satisfies StudentPresence;
+    });
   }
 }

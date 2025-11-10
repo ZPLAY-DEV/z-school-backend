@@ -5,14 +5,15 @@ import { AttendanceSchema } from 'src/domain/attendance/entities/attendance.sche
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
-import { GroupAttendanceController } from 'src/domain/group/group-attendance.controller';
-import { GroupAttendanceService } from 'src/domain/group/group-attendance.service';
+import { GroupPresenceController } from 'src/domain/group/group-presence.controller';
+import { GroupPresenceService } from 'src/domain/group/group-presence.service';
 import { GroupSchooldayController } from 'src/domain/group/group-schoolday.controller';
 import { GroupSchooldayService } from 'src/domain/group/group-schoolday.service';
 import { GroupController } from 'src/domain/group/group.controller';
 import { GroupService } from 'src/domain/group/group.service';
 import { Offering } from 'src/domain/offering/entities/offering.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
+import { Presence } from 'src/domain/presence/entities/presence.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { NotificationModule } from 'src/services/notification/notification.module';
@@ -27,6 +28,7 @@ import { NotificationModule } from 'src/services/notification/notification.modul
       Schoolday,
       Departure,
       Offering,
+      Presence,
     ]),
     DynamooseModule.forFeature([
       {
@@ -39,11 +41,17 @@ import { NotificationModule } from 'src/services/notification/notification.modul
     ]),
     NotificationModule,
   ],
-  providers: [GroupService, GroupAttendanceService, GroupSchooldayService],
+  providers: [
+    GroupService,
+    // GroupAttendanceService,
+    GroupSchooldayService,
+    GroupPresenceService,
+  ],
   controllers: [
     GroupController,
-    GroupAttendanceController,
+    // GroupAttendanceController,
     GroupSchooldayController,
+    GroupPresenceController,
   ],
 })
 export class GroupModule {}

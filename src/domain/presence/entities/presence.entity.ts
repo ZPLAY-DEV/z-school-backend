@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AttendanceStatus } from 'src/common/enums';
+import { PresenceStatus } from 'src/common/enums';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import {
   Column,
@@ -44,16 +44,16 @@ export class Presence {
 
   @ApiProperty({
     description: '출석 상태',
-    enum: AttendanceStatus,
-    enumName: 'AttendanceStatus',
-    example: AttendanceStatus.PRESENT,
+    enum: PresenceStatus,
+    enumName: 'PresenceStatus',
+    example: PresenceStatus.PRESENT,
   })
   @Column({
     type: 'enum',
-    enum: AttendanceStatus,
-    default: AttendanceStatus.INIT,
+    enum: PresenceStatus,
+    default: PresenceStatus.INIT,
   })
-  status: AttendanceStatus;
+  status: PresenceStatus;
 
   @ApiPropertyOptional({
     description: '메모 - 출결 관련 특이사항',

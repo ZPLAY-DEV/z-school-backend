@@ -1,8 +1,8 @@
 {
   "name": "z-school-backend",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "",
-  "author": "z-rangers",
+  "author": "z-player",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

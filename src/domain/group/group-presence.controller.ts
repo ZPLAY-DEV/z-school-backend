@@ -11,6 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { StudentPresence } from 'src/common/interfaces';
 import { GroupPresenceService } from 'src/domain/group/group-presence.service';
 import { CreatePresenceDto } from 'src/domain/presence/dto/create-presence.dto';
 import { Presence } from 'src/domain/presence/entities/presence.entity';
@@ -25,7 +26,6 @@ export class GroupPresenceController {
   //? Create/Upsert
   //? ---------------------------------------------------------------------- ?//
 
-  //
   @HttpCode(200)
   @Post(':groupId/students/:studentId/presences/:week')
   async upsert(
@@ -46,20 +46,32 @@ export class GroupPresenceController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @Get(':groupId/presences/:week')
+  @Get(':groupId/students/:studentId/presences')
+  async findByStudent(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Query('week', new ParseIntPipe({ optional: true }))
+    week?: number,
+  ): Promise<StudentPresence[]> {
+    return await this.groupPresenceService.findByStudent(
+      groupId,
+      studentId,
+      week,
+    );
+  }
+
+  @Get(':groupId/weeks/:week/presences')
   async findByWeek(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('week', ParseIntPipe) week: number,
-    @Query('studentId', ParseIntPipe) studentId?: number,
-  ): Promise<Presence[]> {
-    return await this.groupPresenceService.findByWeek(groupId, week, studentId);
+    @Query('studentId', new ParseIntPipe({ optional: true }))
+    studentId?: number,
+    @Query('userId', new ParseIntPipe({ optional: true }))
+    userId?: number,
+  ): Promise<StudentPresence[]> {
+    return await this.groupPresenceService.findByWeek(groupId, week, {
+      studentId,
+      userId,
+    });
   }
-
-  // @Get(':groupId/presences/:date/weeks')
-  // async findPresencesByWeek(
-  //   @Param('groupId', ParseIntPipe) groupId: number,
-  //   @Param('date') date: string, //! "2025-06-06"
-  // ): Promise<Presence[]> {
-  //   return await this.groupPresenceService.findWeeklyPresencesByDate(groupId, date);
-  // }
 }

@@ -1,6 +1,6 @@
 // import * as admin from 'firebase-admin';
 
-import { BookingStatus, Role, Weekday } from 'src/common/enums';
+import { BookingStatus, PresenceStatus, Role, Weekday } from 'src/common/enums';
 
 export interface IAwsConfig {
   defaultRegion: string;
@@ -356,4 +356,13 @@ export interface IScores {
     weight: number;
     bmi: number;
   };
+}
+
+export interface StudentPresence {
+  week: number;
+  lessonDate: string;
+  studentId: number;
+  studentName: string;
+  status: PresenceStatus;
+  note: string | null;
 }

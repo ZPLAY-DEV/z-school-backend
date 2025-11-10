@@ -3,13 +3,12 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsPositive,
   IsString,
   MaxLength,
 } from 'class-validator';
-import { AttendanceStatus } from 'src/common/enums';
+import { PresenceStatus } from 'src/common/enums';
 
 export class CreatePresenceDto {
   @ApiProperty({
@@ -17,21 +16,32 @@ export class CreatePresenceDto {
     example: 3,
     minimum: 1,
   })
-  groupId: number;
+  @IsInt({ message: 'groupId는 정수여야 합니다' })
+  @IsOptional()
+  groupId?: number;
 
   @ApiProperty({
-    description: 'StudentId - 1부터 시작하는 수업 주차 숫자',
+    description: 'StudentId',
     example: 3,
     minimum: 1,
   })
+  @IsInt({ message: 'studentId는 정수여야 합니다' })
+  @IsOptional()
   studentId?: number;
+
+  @ApiPropertyOptional({
+    description: '학생 이름',
+    example: '2025-09-01',
+  })
+  @IsOptional()
+  @IsString()
+  studentName?: string;
 
   @ApiProperty({
     description: 'week - 1부터 시작하는 수업 주차 숫자',
     example: 3,
     minimum: 1,
   })
-  @IsNotEmpty({ message: '주차는 필수입니다' })
   @IsInt({ message: '주차는 정수여야 합니다' })
   @IsPositive({ message: '주차는 1 이상이어야 합니다' })
   week: number;
@@ -46,14 +56,14 @@ export class CreatePresenceDto {
 
   @ApiProperty({
     description: '출석 상태',
-    enum: AttendanceStatus,
-    enumName: 'AttendanceStatus',
-    example: AttendanceStatus.PRESENT,
+    enum: PresenceStatus,
+    enumName: 'PresenceStatus',
+    example: PresenceStatus.PRESENT,
   })
-  @IsEnum(AttendanceStatus, {
-    message: '출석 상태는 AttendanceStatus enum 값이어야 합니다',
+  @IsEnum(PresenceStatus, {
+    message: '출석 상태는 PresenceStatus enum 값이어야 합니다',
   })
-  status: AttendanceStatus;
+  status: PresenceStatus;
 
   @ApiPropertyOptional({
     description: '출석 메모',
