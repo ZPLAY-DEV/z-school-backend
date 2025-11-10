@@ -361,8 +361,13 @@ export interface IScores {
 export interface StudentPresence {
   week: number;
   lessonDate: string;
+  index: number | null;
   studentId: number;
   studentName: string;
+  isActive: boolean;
+  grade: number;
+  klass: string;
+  bunho: number;
   status: PresenceStatus;
   note: string | null;
 }

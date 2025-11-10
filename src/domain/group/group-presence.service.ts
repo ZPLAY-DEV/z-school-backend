@@ -75,6 +75,10 @@ export class GroupPresenceService {
     return await this.presenceRepository.save(presence);
   }
 
+  //? ---------------------------------------------------------------------- ?//
+  //? Read
+  //? ---------------------------------------------------------------------- ?//
+
   async findByWeek(
     groupId: number,
     week: number,
@@ -101,8 +105,7 @@ export class GroupPresenceService {
         'presence.week = :week',
         { week },
       )
-      .where('pick.groupId = :groupId', { groupId })
-      .andWhere('pick.isActive = :isActive', { isActive: true });
+      .where('pick.groupId = :groupId', { groupId });
 
     if (typeof studentId === 'number') {
       query.andWhere('pick.studentId = :studentId', { studentId });
@@ -124,8 +127,13 @@ export class GroupPresenceService {
       return {
         week,
         lessonDate: presence?.lessonDate ?? fallbackDate,
+        index: pick.index,
         studentId: pick.studentId,
         studentName: pick.student?.name ?? '',
+        isActive: pick.isActive,
+        grade: pick.student?.grade ?? 0,
+        klass: pick.student?.klass ?? '',
+        bunho: pick.student?.bunho ?? 0,
         status: presence?.status ?? PresenceStatus.INIT,
         note: presence?.note ?? null,
       } satisfies StudentPresence;
@@ -206,8 +214,13 @@ export class GroupPresenceService {
       return {
         week: weekNumber,
         lessonDate: date,
+        index: pick.index,
         studentId: pick.studentId,
         studentName: pick.student?.name ?? '',
+        isActive: pick.isActive,
+        grade: pick.student?.grade ?? 0,
+        klass: pick.student?.klass ?? '',
+        bunho: pick.student?.bunho ?? 0,
         status: presence?.status ?? PresenceStatus.INIT,
         note: presence?.note ?? null,
       } satisfies StudentPresence;

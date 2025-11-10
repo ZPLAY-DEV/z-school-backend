@@ -46,6 +46,7 @@ export class GroupPresenceController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
+  // 학생별 출석부
   @Get(':groupId/students/:studentId/presences')
   async findByStudent(
     @Param('groupId', ParseIntPipe) groupId: number,
@@ -60,6 +61,7 @@ export class GroupPresenceController {
     );
   }
 
+  // 주차별 출석부
   @Get(':groupId/weeks/:week/presences')
   async findByWeek(
     @Param('groupId', ParseIntPipe) groupId: number,
