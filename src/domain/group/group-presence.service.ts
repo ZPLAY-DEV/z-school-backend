@@ -7,12 +7,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { PresenceStatus } from 'src/common/enums';
 import { StudentPresence } from 'src/common/interfaces';
-import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { CreatePresenceDto } from 'src/domain/presence/dto/create-presence.dto';
+import { UpsertPresenceDto } from 'src/domain/presence/dto/upsert-presence.dto';
 import { Presence } from 'src/domain/presence/entities/presence.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 @Injectable()
 export class GroupPresenceService {
@@ -23,8 +23,6 @@ export class GroupPresenceService {
     private readonly pickRepository: Repository<Pick>,
     @InjectRepository(Schoolday)
     private readonly schooldayRepository: Repository<Schoolday>,
-    @InjectRepository(Departure)
-    private readonly departureRepository: Repository<Departure>,
     @InjectRepository(Presence)
     private readonly presenceRepository: Repository<Presence>,
   ) {}
@@ -32,6 +30,109 @@ export class GroupPresenceService {
   //? ---------------------------------------------------------------------- ?//
   //? Create 또는 Update
   //? ---------------------------------------------------------------------- ?//
+
+  async upsertBulk(dtos: UpsertPresenceDto[]): Promise<Presence[]> {
+    if (!Array.isArray(dtos) || dtos.length === 0) {
+      throw new BadRequestException('출석 정보 배열이 필요합니다.');
+    }
+
+    // 모든 DTO에 대해 기본 검증
+    for (const dto of dtos) {
+      if (!dto.groupId || !dto.studentId) {
+        throw new BadRequestException('groupId와 studentId는 필수입니다.');
+      }
+
+      if (!dto.week || !Number.isInteger(dto.week) || dto.week < 1) {
+        throw new BadRequestException('주차는 1 이상의 정수여야 합니다.');
+      }
+    }
+
+    // 모든 studentId를 수집하여 한 번에 Pick 조회 (성능 최적화)
+    const studentIds = [...new Set(dtos.map((dto) => dto.studentId))];
+    const groupId = dtos[0].groupId; // 모든 DTO는 같은 groupId를 가져야 함
+
+    // 모든 DTO가 같은 groupId를 가지는지 확인
+    if (!dtos.every((dto) => dto.groupId === groupId)) {
+      throw new BadRequestException(
+        '모든 출석 정보는 같은 groupId를 가져야 합니다.',
+      );
+    }
+
+    const picks = await this.pickRepository.find({
+      where: {
+        groupId,
+        studentId: In(studentIds),
+      },
+    });
+
+    // Pick이 없는 studentId 확인
+    const foundStudentIds = new Set(picks.map((pick) => pick.studentId));
+    const missingStudentIds = studentIds.filter(
+      (id) => !foundStudentIds.has(id),
+    );
+
+    if (missingStudentIds.length > 0) {
+      this.logger.warn(
+        `Pick not found for groupId=${groupId}, studentIds=[${missingStudentIds.join(', ')}]`,
+      );
+      throw new NotFoundException(
+        `해당 반에서 학생을 찾을 수 없습니다: studentIds=[${missingStudentIds.join(', ')}]`,
+      );
+    }
+
+    // Pick을 studentId로 매핑
+    const pickMap = new Map<number, Pick>();
+    for (const pick of picks) {
+      pickMap.set(pick.studentId, pick);
+    }
+
+    // 모든 pickId와 week 조합으로 기존 Presence 조회 (성능 최적화)
+    const pickIds = picks.map((pick) => pick.id);
+    const weeks = [...new Set(dtos.map((dto) => dto.week))];
+
+    const existingPresences = await this.presenceRepository.find({
+      where: {
+        pickId: In(pickIds),
+        week: In(weeks),
+      },
+    });
+
+    // Presence를 (pickId, week) 키로 매핑
+    const presenceMap = new Map<string, Presence>();
+    for (const presence of existingPresences) {
+      const key = `${presence.pickId}-${presence.week}`;
+      presenceMap.set(key, presence);
+    }
+
+    // 각 DTO에 대해 Presence 생성 또는 업데이트
+    const presencesToSave: Presence[] = [];
+
+    for (const dto of dtos) {
+      const pick = pickMap.get(dto.studentId);
+      if (!pick) {
+        continue; // 이미 위에서 검증했지만 안전장치
+      }
+
+      const key = `${pick.id}-${dto.week}`;
+      const existingPresence = presenceMap.get(key);
+
+      const payload: Partial<Presence> = {
+        pickId: pick.id,
+        week: dto.week,
+        lessonDate: typeof dto.lessonDate === 'string' ? dto.lessonDate : null,
+        status: dto.status as unknown as PresenceStatus,
+        note: typeof dto.note === 'string' ? dto.note : null,
+      };
+
+      const presence = existingPresence
+        ? Object.assign(existingPresence, payload)
+        : this.presenceRepository.create(payload);
+
+      presencesToSave.push(presence);
+    }
+
+    return await this.presenceRepository.save(presencesToSave);
+  }
 
   async upsert(dto: CreatePresenceDto): Promise<Presence> {
     const { groupId, studentId, week, lessonDate, status, note } = dto;

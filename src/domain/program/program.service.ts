@@ -34,7 +34,7 @@ export class ProgramService {
     return await this.programRepository.save(program);
   }
 
-  async bulkCreate(createProgramDtos: CreateProgramDto[]): Promise<Program[]> {
+  async createBulk(createProgramDtos: CreateProgramDto[]): Promise<Program[]> {
     if (!createProgramDtos || createProgramDtos.length === 0) {
       return [];
     }

@@ -14,6 +14,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { StudentPresence } from 'src/common/interfaces';
 import { GroupPresenceService } from 'src/domain/group/group-presence.service';
 import { CreatePresenceDto } from 'src/domain/presence/dto/create-presence.dto';
+import { UpsertPresenceDto } from 'src/domain/presence/dto/upsert-presence.dto';
 import { Presence } from 'src/domain/presence/entities/presence.entity';
 
 @ApiTags('✳️ Groups > Presence ( 반 > 출석부 조회 )')
@@ -25,6 +26,22 @@ export class GroupPresenceController {
   //? ---------------------------------------------------------------------- ?//
   //? Create/Upsert
   //? ---------------------------------------------------------------------- ?//
+
+  @HttpCode(200)
+  @Post(':groupId/presences/:week')
+  async upsertBulk(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('week', ParseIntPipe) week: number,
+    @Body() dtos: UpsertPresenceDto[],
+  ): Promise<Presence[]> {
+    return await this.groupPresenceService.upsertBulk(
+      dtos.map((dto) => ({
+        ...dto,
+        groupId,
+        week,
+      })),
+    );
+  }
 
   @HttpCode(200)
   @Post(':groupId/students/:studentId/presences/:week')

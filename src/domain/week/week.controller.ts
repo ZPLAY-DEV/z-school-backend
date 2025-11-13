@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
+    Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateWeekDto } from './dto/create-week.dto';
@@ -56,8 +56,8 @@ export class WeekController {
     status: HttpStatus.NOT_FOUND,
     description: '일부 syllabus를 찾을 수 없음',
   })
-  async bulkCreate(@Body() createWeekDtos: CreateWeekDto[]): Promise<Week[]> {
-    return await this.weekService.bulkCreate(createWeekDtos);
+  async createBulk(@Body() createWeekDtos: CreateWeekDto[]): Promise<Week[]> {
+    return await this.weekService.createBulk(createWeekDtos);
   }
 
   //? ---------------------------------------------------------------------- ?//

@@ -34,7 +34,7 @@ export class WeekService {
     return await this.weekRepository.save(week);
   }
 
-  async bulkCreate(createWeekDtos: CreateWeekDto[]): Promise<Week[]> {
+  async createBulk(createWeekDtos: CreateWeekDto[]): Promise<Week[]> {
     if (!createWeekDtos || createWeekDtos.length === 0) {
       return [];
     }

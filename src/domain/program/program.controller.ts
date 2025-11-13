@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
+    Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateProgramDto } from './dto/create-program.dto';
@@ -56,10 +56,10 @@ export class ProgramController {
     status: HttpStatus.NOT_FOUND,
     description: '일부 syllabus를 찾을 수 없음',
   })
-  async bulkCreate(
+  async createBulk(
     @Body() createProgramDtos: CreateProgramDto[],
   ): Promise<Program[]> {
-    return await this.programService.bulkCreate(createProgramDtos);
+    return await this.programService.createBulk(createProgramDtos);
   }
 
   //? ---------------------------------------------------------------------- ?//
