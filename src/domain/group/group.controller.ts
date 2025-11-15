@@ -16,6 +16,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { CurrentUserIdAndRole } from 'src/common/decorators/current-user-id.decorator';
 import { Actor, RemovalStatus } from 'src/common/enums';
+import { IS3Urls } from 'src/common/interfaces';
 import { BookedStudentDto } from 'src/domain/group/dto/booked-student.dto';
 import { CreateGroupDto } from 'src/domain/group/dto/create-group.dto';
 import { DeleteGroupDto } from 'src/domain/group/dto/delete-group.dto';
@@ -35,12 +36,16 @@ import {
   UpdateGroupDocs,
 } from 'src/domain/group/swagger/group-swagger.decorator';
 import { Student } from 'src/domain/student/entities/student.entity';
+import { UploadService } from 'src/services/upload/upload.service';
 
 @ApiTags('✳️ Groups ( 반 )')
 @Controller('groups')
 @UseInterceptors(ClassSerializerInterceptor)
 export class GroupController {
-  constructor(private readonly groupService: GroupService) {}
+  constructor(
+    private readonly groupService: GroupService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? Create
@@ -149,5 +154,37 @@ export class GroupController {
           ? Actor.INSTRUCTOR
           : Actor.OTHER;
     return await this.groupService.removeWithDto(id, { ...dto, role });
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Extras
+  //? ---------------------------------------------------------------------- ?//
+
+  @Post('s3urls')
+  async generateS3Urls(
+    @Body()
+    dto: {
+      schoolId: number;
+      termId: number;
+      groupId: number;
+      mimeType: string;
+      filename?: string;
+    },
+  ): Promise<IS3Urls> {
+    const path = [
+      `ai`,
+      `schools`,
+      `${dto.schoolId}`,
+      `terms`,
+      `${dto.termId}`,
+      `groups`,
+      `${dto.groupId}`,
+      `students`,
+    ].join('/');
+    return await this.uploadService.generateUploadUrls(
+      path,
+      dto.mimeType,
+      dto.filename,
+    );
   }
 }

@@ -51,7 +51,8 @@ export class UploadService {
     console.log('📎 options', options);
 
     const name = filename ?? randomFileName('file', mimeType);
-    const fullPath = `${this.environment}/${path}/${name}`;
+    // const fullPath = `${this.environment}/${path}/${name}`;
+    const fullPath = `${path}/${name}`;
     const expiresIn = options?.expiresIn ?? this.DEFAULT_EXPIRES_IN;
 
     try {

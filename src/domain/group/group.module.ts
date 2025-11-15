@@ -17,6 +17,7 @@ import { Presence } from 'src/domain/presence/entities/presence.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { NotificationModule } from 'src/services/notification/notification.module';
+import { UploadModule } from 'src/services/upload/upload.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { NotificationModule } from 'src/services/notification/notification.modul
       },
     ]),
     NotificationModule,
+    UploadModule,
   ],
   providers: [
     GroupService,
