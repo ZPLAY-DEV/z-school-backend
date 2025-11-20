@@ -157,12 +157,12 @@ export class ProgramController {
     dto: {
       // schoolId: number;
       // termId: number;
-      target: 'image' | 'video' | 'audio';
+      resource: string;
       mimeType: string;
       filename?: string;
     },
   ): Promise<IS3Urls> {
-    const path = [`programs`, `${dto.target || 'any'}`].join('/');
+    const path = [`programs`, `${dto.resource}`].join('/');
     return await this.uploadService.generateUploadUrls(
       path,
       dto.mimeType,

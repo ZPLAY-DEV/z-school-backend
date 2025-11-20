@@ -110,25 +110,20 @@ export class ProgramService {
   //? Update
   //? ---------------------------------------------------------------------- ?//
 
-  async update(
-    id: number,
-    updateProgramDto: UpdateProgramDto,
-  ): Promise<Program> {
+  async update(id: number, dto: UpdateProgramDto): Promise<Program> {
     const program = await this.findOne(id);
 
-    if (updateProgramDto.weekId && updateProgramDto.weekId !== program.weekId) {
+    if (dto.weekId && dto.weekId !== program.weekId) {
       const week = await this.weekRepository.findOne({
-        where: { id: updateProgramDto.weekId },
+        where: { id: dto.weekId },
       });
 
       if (!week) {
-        throw new NotFoundException(
-          `Week with id ${updateProgramDto.weekId} not found`,
-        );
+        throw new NotFoundException(`Week with id ${dto.weekId} not found`);
       }
     }
 
-    Object.assign(program, updateProgramDto);
+    Object.assign(program, dto);
     return await this.programRepository.save(program);
   }
 
