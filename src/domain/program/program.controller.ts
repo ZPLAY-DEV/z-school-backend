@@ -122,9 +122,9 @@ export class ProgramController {
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateProgramDto: UpdateProgramDto,
+    @Body() dto: UpdateProgramDto,
   ): Promise<Program> {
-    return await this.programService.update(id, updateProgramDto);
+    return await this.programService.update(id, dto);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -157,12 +157,12 @@ export class ProgramController {
     dto: {
       // schoolId: number;
       // termId: number;
-      resource: string;
+      resource: string; // `programs/week1/video`
       mimeType: string;
       filename?: string;
     },
   ): Promise<IS3Urls> {
-    const path = [`programs`, `${dto.resource}`].join('/');
+    const path = [`${dto.resource}`].join('/');
     return await this.uploadService.generateUploadUrls(
       path,
       dto.mimeType,
