@@ -44,18 +44,18 @@ export class GroupPresenceController {
   }
 
   @HttpCode(200)
-  @Post(':groupId/students/:studentId/presences/:week')
+  @Post(':groupId/students/:studentId/presences/:weekNumber')
   async upsert(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('studentId', ParseIntPipe) studentId: number,
-    @Param('week', ParseIntPipe) week: number,
+    @Param('weekNumber', ParseIntPipe) weekNumber: number,
     @Body() dto: CreatePresenceDto,
   ): Promise<Presence> {
     return await this.groupPresenceService.upsert({
       ...dto,
       groupId,
       studentId,
-      week,
+      weekNumber,
     });
   }
 

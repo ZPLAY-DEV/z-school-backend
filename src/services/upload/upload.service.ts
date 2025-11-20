@@ -28,7 +28,7 @@ export class UploadService {
     );
     this.s3FilesBucket = this.configService.get<string>(
       'aws.s3FilesBucket',
-      'afterschool-files-bucket',
+      'school-hub-media-files-bucket', // fallback bucket name
     );
   }
 

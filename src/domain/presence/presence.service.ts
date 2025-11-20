@@ -19,7 +19,7 @@ export class PresenceService {
     await this._ensurePickExists(pickId);
     return await this.presenceRepository.find({
       where: { pickId },
-      order: { week: 'ASC', lessonDate: 'ASC' },
+      order: { weekNumber: 'ASC', lessonDate: 'ASC' },
     });
   }
 

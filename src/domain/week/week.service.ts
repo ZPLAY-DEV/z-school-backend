@@ -77,7 +77,7 @@ export class WeekService {
     return await this.weekRepository.find({
       where: { syllabusId },
       relations: ['programs'],
-      order: { week: 'ASC' },
+      order: { weekNumber: 'ASC' },
     });
   }
 

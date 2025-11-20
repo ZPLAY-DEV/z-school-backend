@@ -8,15 +8,20 @@ import {
   IsOptional,
   IsString,
   IsUrl,
-  MaxLength
+  MaxLength,
 } from 'class-validator';
-import { ExerciseType, StudentLevel } from 'src/common/enums';
+import { ExerciseType, Orientation, StudentLevel } from 'src/common/enums';
 
 export class CreateProgramDto {
   @ApiProperty({ description: '🈵 weekId', example: 1 })
   @IsInt()
   @IsNotEmpty()
   weekId: number;
+
+  @ApiProperty({ description: '🈵 zero based index', example: 0 })
+  @IsInt()
+  @IsNotEmpty()
+  index: number;
 
   @ApiProperty({ description: '🈵 자세이름', example: '전사 자세' })
   @IsString()
@@ -44,6 +49,15 @@ export class CreateProgramDto {
 
   @ApiProperty({
     description: '🈵 난이도',
+    enum: Orientation,
+    example: Orientation.CENTER,
+  })
+  @IsEnum(Orientation)
+  @IsOptional()
+  orientation?: Orientation;
+
+  @ApiProperty({
+    description: '🈵 난이도',
     enum: StudentLevel,
     example: StudentLevel.JUNIOR,
   })
@@ -68,6 +82,16 @@ export class CreateProgramDto {
   @IsString({ each: true })
   @IsOptional()
   captions?: string[];
+
+  @ApiProperty({
+    description: '🈳 이미지 URL',
+    example: 'https://example.com/image.png',
+    required: false,
+  })
+  @IsUrl()
+  @MaxLength(255)
+  @IsOptional()
+  imageUrl?: string;
 
   @ApiProperty({
     description: '🈳 비디오 URL',

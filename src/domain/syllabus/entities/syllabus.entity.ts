@@ -21,7 +21,11 @@ export class Syllabus {
   @Column({ type: 'varchar', length: 32, unique: true })
   slug: string;
 
-  @ApiProperty({ description: '🈵 커리큘럼명', example: '요가 입문 커리큘럼' })
+  @ApiProperty({ description: '🈵 주차수', example: '몇주차 프로그램' })
+  @Column({ type: 'tinyint', unsigned: true, default: 0 })
+  weekCount: number;
+
+  @ApiProperty({ description: '🈵 커리큘럼명', example: '요가 입문 프로그램' })
   @Column({ type: 'varchar', length: 100 })
   name: string;
 

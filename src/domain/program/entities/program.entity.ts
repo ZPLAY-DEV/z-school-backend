@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean } from 'class-validator';
-import { ExerciseType, StudentLevel } from 'src/common/enums';
+import { ExerciseType, Orientation, StudentLevel } from 'src/common/enums';
 import { Week } from 'src/domain/week/entities/week.entity';
 import {
   Column,
@@ -22,6 +22,10 @@ export class Program {
   @ApiProperty({ description: '🈵 weekId', example: 1 })
   @Column({ type: 'int', unsigned: true })
   weekId: number;
+
+  @ApiProperty({ description: '🈵 주차수', example: 1 })
+  @Column({ type: 'tinyint', unsigned: true, default: 0 })
+  weekNumber: number;
 
   @ApiProperty({ description: '🈵 자세이름', example: '전사 자세' })
   @Column({ type: 'varchar', length: 100 })
@@ -55,12 +59,31 @@ export class Program {
   level: StudentLevel;
 
   @ApiProperty({
+    description: '🈵 방향',
+    enum: Orientation,
+    example: Orientation.CENTER,
+  })
+  @Column({ type: 'enum', enum: Orientation })
+  orientation: Orientation;
+
+  @ApiProperty({ description: '🈳 zero based sorting order', example: 1 })
+  @Column({ type: 'tinyint', unsigned: true, default: 0 })
+  index: number;
+
+  @ApiProperty({
     description: '🈵 점수 측정 여부',
     example: true,
   })
   @Column({ type: 'boolean', default: false })
   @IsBoolean()
   isScorable: boolean;
+
+  @ApiProperty({
+    description: '🈳 이미지 URL',
+    example: 'https://example.com/image.png',
+  })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  imageUrl: string | null;
 
   @ApiProperty({
     description: '🈳 비디오 URL',

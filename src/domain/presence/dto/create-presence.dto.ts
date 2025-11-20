@@ -44,7 +44,7 @@ export class CreatePresenceDto {
   })
   @IsInt({ message: '주차는 정수여야 합니다' })
   @IsPositive({ message: '주차는 1 이상이어야 합니다' })
-  week: number;
+  weekNumber: number;
 
   @ApiPropertyOptional({
     description: '수업 일자 - YYYY-MM-DD 형식',

@@ -26,7 +26,7 @@ export class Week {
 
   @ApiProperty({ description: '🈵 주차', example: 1 })
   @Column({ type: 'tinyint', unsigned: true })
-  week: number;
+  weekNumber: number;
 
   @ApiProperty({ description: '🈵 주제', example: '척추 건강' })
   @Column({ type: 'varchar', length: 100 })

@@ -115,6 +115,17 @@ export class SyllabusController {
     return await this.syllabusService.update(id, updateSyllabusDto);
   }
 
+  @Patch(':id/weeks')
+  @ApiOperation({ summary: '커리큘럼 수정' })
+  @ApiParam({ name: 'id', description: '커리큘럼 ID' })
+  async updateWeeks(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('count') count: number,
+  ): Promise<Syllabus> {
+    const syllabus = await this.syllabusService.updateWeeks(id, count);
+    return syllabus;
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Delete
   //? ---------------------------------------------------------------------- ?//

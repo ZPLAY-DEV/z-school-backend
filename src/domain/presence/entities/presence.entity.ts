@@ -14,7 +14,7 @@ import {
 } from 'typeorm';
 
 @Entity('presences')
-@Unique(['pickId', 'week'])
+@Unique(['pickId', 'weekNumber'])
 export class Presence {
   @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
@@ -33,7 +33,7 @@ export class Presence {
     minimum: 1,
   })
   @Column({ type: 'tinyint', unsigned: true })
-  week: number;
+  weekNumber: number;
 
   @ApiPropertyOptional({
     description: '수업 일자 - YYYY-MM-DD 형식의 출석 기준 날짜',

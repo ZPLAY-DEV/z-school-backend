@@ -40,9 +40,7 @@ export class ProgramService {
     }
 
     // 모든 weekId를 수집하고 중복 제거
-    const weekIds = [
-      ...new Set(createProgramDtos.map((dto) => dto.weekId)),
-    ];
+    const weekIds = [...new Set(createProgramDtos.map((dto) => dto.weekId))];
 
     // weekId 유효성 검증
     const weeks = await this.weekRepository.find({
@@ -77,7 +75,7 @@ export class ProgramService {
     const weeks = await this.weekRepository.find({
       where: { syllabusId },
       relations: ['programs'],
-      order: { week: 'ASC' },
+      order: { weekNumber: 'ASC' },
     });
 
     // 모든 weeks의 programs를 평탄화하고 week 정보와 함께 매핑
@@ -88,11 +86,9 @@ export class ProgramService {
     // week.week 순서로 정렬, 같은 week 내에서는 createdAt 순서로 정렬
     return programsWithWeek
       .sort((a, b) => {
-        const weekDiff = a.week.week - b.week.week;
+        const weekDiff = a.week.weekNumber - b.week.weekNumber;
         if (weekDiff !== 0) return weekDiff;
-        return (
-          a.program.createdAt.getTime() - b.program.createdAt.getTime()
-        );
+        return a.program.createdAt.getTime() - b.program.createdAt.getTime();
       })
       .map((item) => item.program);
   }
@@ -120,10 +116,7 @@ export class ProgramService {
   ): Promise<Program> {
     const program = await this.findOne(id);
 
-    if (
-      updateProgramDto.weekId &&
-      updateProgramDto.weekId !== program.weekId
-    ) {
+    if (updateProgramDto.weekId && updateProgramDto.weekId !== program.weekId) {
       const week = await this.weekRepository.findOne({
         where: { id: updateProgramDto.weekId },
       });

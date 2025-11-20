@@ -16,6 +16,7 @@ export * from './ledger-type';
 export * from './newsletter-type';
 export * from './notifiable-source-type';
 export * from './notifiable-target';
+export * from './orientation';
 export * from './permission';
 export * from './pick-rule';
 export * from './platform-type';

@@ -359,7 +359,7 @@ export interface IScores {
 }
 
 export interface StudentPresence {
-  week: number;
+  weekNumber: number;
   lessonDate: string;
   index: number | null;
   studentId: number;

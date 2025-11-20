@@ -42,7 +42,11 @@ export class GroupPresenceService {
         throw new BadRequestException('groupId와 studentId는 필수입니다.');
       }
 
-      if (!dto.week || !Number.isInteger(dto.week) || dto.week < 1) {
+      if (
+        !dto.weekNumber ||
+        !Number.isInteger(dto.weekNumber) ||
+        dto.weekNumber < 1
+      ) {
         throw new BadRequestException('주차는 1 이상의 정수여야 합니다.');
       }
     }
@@ -88,19 +92,19 @@ export class GroupPresenceService {
 
     // 모든 pickId와 week 조합으로 기존 Presence 조회 (성능 최적화)
     const pickIds = picks.map((pick) => pick.id);
-    const weeks = [...new Set(dtos.map((dto) => dto.week))];
+    const weeks = [...new Set(dtos.map((dto) => dto.weekNumber))];
 
     const existingPresences = await this.presenceRepository.find({
       where: {
         pickId: In(pickIds),
-        week: In(weeks),
+        weekNumber: In(weeks),
       },
     });
 
     // Presence를 (pickId, week) 키로 매핑
     const presenceMap = new Map<string, Presence>();
     for (const presence of existingPresences) {
-      const key = `${presence.pickId}-${presence.week}`;
+      const key = `${presence.pickId}-${presence.weekNumber}`;
       presenceMap.set(key, presence);
     }
 
@@ -113,12 +117,12 @@ export class GroupPresenceService {
         continue; // 이미 위에서 검증했지만 안전장치
       }
 
-      const key = `${pick.id}-${dto.week}`;
+      const key = `${pick.id}-${dto.weekNumber}`;
       const existingPresence = presenceMap.get(key);
 
       const payload: Partial<Presence> = {
         pickId: pick.id,
-        week: dto.week,
+        weekNumber: dto.weekNumber,
         lessonDate: typeof dto.lessonDate === 'string' ? dto.lessonDate : null,
         status: dto.status as unknown as PresenceStatus,
         note: typeof dto.note === 'string' ? dto.note : null,
@@ -135,13 +139,13 @@ export class GroupPresenceService {
   }
 
   async upsert(dto: CreatePresenceDto): Promise<Presence> {
-    const { groupId, studentId, week, lessonDate, status, note } = dto;
+    const { groupId, studentId, weekNumber, lessonDate, status, note } = dto;
 
     if (!groupId || !studentId) {
       throw new BadRequestException('groupId와 studentId는 필수입니다.');
     }
 
-    if (!Number.isInteger(week) || week < 1) {
+    if (!Number.isInteger(weekNumber) || weekNumber < 1) {
       throw new BadRequestException('주차는 1 이상의 정수여야 합니다.');
     }
 
@@ -160,7 +164,7 @@ export class GroupPresenceService {
 
     const payload: Partial<Presence> = {
       pickId: pick.id,
-      week,
+      weekNumber,
       lessonDate: typeof lessonDate === 'string' ? lessonDate : null,
       status: status as unknown as PresenceStatus,
       note: typeof note === 'string' ? note : null,
@@ -168,7 +172,7 @@ export class GroupPresenceService {
 
     const presence =
       (await this.presenceRepository.findOne({
-        where: { pickId: pick.id, week },
+        where: { pickId: pick.id, weekNumber },
       })) ?? this.presenceRepository.create(payload);
 
     Object.assign(presence, payload);
@@ -182,17 +186,17 @@ export class GroupPresenceService {
 
   async findByWeek(
     groupId: number,
-    week: number,
+    weekNumber: number,
     filters: { studentId?: number; userId?: number } = {},
   ): Promise<StudentPresence[]> {
-    if (!Number.isInteger(week) || week < 1) {
+    if (!Number.isInteger(weekNumber) || weekNumber < 1) {
       throw new BadRequestException('주차는 1 이상의 정수여야 합니다.');
     }
 
     const { studentId, userId } = filters;
 
     const schoolday = await this.schooldayRepository.findOne({
-      where: { groupId, weekNumber: week },
+      where: { groupId, weekNumber: weekNumber },
       order: { today: 'ASC' },
     });
 
@@ -203,8 +207,8 @@ export class GroupPresenceService {
       .leftJoinAndSelect(
         'pick.presences',
         'presence',
-        'presence.week = :week',
-        { week },
+        'presence.weekNumber = :weekNumber',
+        { weekNumber },
       )
       .where('pick.groupId = :groupId', { groupId });
 
@@ -222,11 +226,11 @@ export class GroupPresenceService {
 
     return picks.map((pick) => {
       const presence =
-        pick.presences?.find((item) => item.week === week) ??
+        pick.presences?.find((item) => item.weekNumber === weekNumber) ??
         pick.presences?.[0];
 
       return {
-        week,
+        weekNumber,
         lessonDate: presence?.lessonDate ?? fallbackDate,
         index: pick.index,
         studentId: pick.studentId,
@@ -286,13 +290,13 @@ export class GroupPresenceService {
 
     const presences = await this.presenceRepository.find({
       where: presenceWhere,
-      order: { week: 'ASC', lessonDate: 'ASC' },
+      order: { weekNumber: 'ASC', lessonDate: 'ASC' },
     });
 
     const presenceMap = new Map<number, Presence>();
     for (const presence of presences) {
-      if (!presenceMap.has(presence.week)) {
-        presenceMap.set(presence.week, presence);
+      if (!presenceMap.has(presence.weekNumber)) {
+        presenceMap.set(presence.weekNumber, presence);
       }
     }
 
@@ -313,7 +317,7 @@ export class GroupPresenceService {
       const presence = presenceMap.get(weekNumber);
       const date = presence?.lessonDate ?? schooldayMap.get(weekNumber) ?? '';
       return {
-        week: weekNumber,
+        weekNumber: weekNumber,
         lessonDate: date,
         index: pick.index,
         studentId: pick.studentId,
