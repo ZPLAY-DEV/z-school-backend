@@ -24,7 +24,7 @@ export class UploadService {
     this.environment = this.configService.get<string>('nodeEnv', 'dev');
     this.cloudfrontUrl = this.configService.get<string>(
       'aws.cloudfrontUrl',
-      'https://localhost.localstack.cloud:4566', // fallback url
+      'https://cdn.스쿨허브.kr', // fallback url
     );
     this.s3FilesBucket = this.configService.get<string>(
       'aws.s3FilesBucket',

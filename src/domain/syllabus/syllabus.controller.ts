@@ -190,12 +190,12 @@ export class SyllabusController {
     dto: {
       // schoolId: number;
       // termId: number;
-      target: 'story' | 'game' | 'program';
+      target: 'story' | 'game';
       mimeType: string;
       filename?: string;
     },
   ): Promise<IS3Urls> {
-    const path = [`syllabuses`, `${dto.target}`].join('/');
+    const path = [`syllabuses`, `${dto.target || 'any'}`].join('/');
     return await this.uploadService.generateUploadUrls(
       path,
       dto.mimeType,

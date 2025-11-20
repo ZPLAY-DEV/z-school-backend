@@ -12,6 +12,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { IS3Urls } from 'src/common/interfaces';
+import { UploadService } from 'src/services/upload/upload.service';
 import { CreateProgramDto } from './dto/create-program.dto';
 import { UpdateProgramDto } from './dto/update-program.dto';
 import { Program } from './entities/program.entity';
@@ -20,7 +22,10 @@ import { ProgramService } from './program.service';
 @ApiTags('Program')
 @Controller('programs')
 export class ProgramController {
-  constructor(private readonly programService: ProgramService) {}
+  constructor(
+    private readonly programService: ProgramService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   //? ---------------------------------------------------------------------- ?//
   //? Create
@@ -140,5 +145,28 @@ export class ProgramController {
   })
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     await this.programService.remove(id);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Extras
+  //? ---------------------------------------------------------------------- ?//
+
+  @Post('s3urls')
+  async generateS3Urls(
+    @Body()
+    dto: {
+      // schoolId: number;
+      // termId: number;
+      target: 'image' | 'video' | 'audio';
+      mimeType: string;
+      filename?: string;
+    },
+  ): Promise<IS3Urls> {
+    const path = [`programs`, `${dto.target || 'any'}`].join('/');
+    return await this.uploadService.generateUploadUrls(
+      path,
+      dto.mimeType,
+      dto.filename,
+    );
   }
 }
