@@ -28,17 +28,17 @@ export class GroupPresenceController {
   //? ---------------------------------------------------------------------- ?//
 
   @HttpCode(200)
-  @Post(':groupId/presences/:week')
+  @Post(':groupId/presences/:weekNumber')
   async upsertBulk(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Param('week', ParseIntPipe) week: number,
+    @Param('weekNumber', ParseIntPipe) weekNumber: number,
     @Body() dtos: UpsertPresenceDto[],
   ): Promise<Presence[]> {
     return await this.groupPresenceService.upsertBulk(
       dtos.map((dto) => ({
         ...dto,
         groupId,
-        week,
+        weekNumber,
       })),
     );
   }
@@ -68,27 +68,27 @@ export class GroupPresenceController {
   async findByStudent(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('studentId', ParseIntPipe) studentId: number,
-    @Query('week', new ParseIntPipe({ optional: true }))
-    week?: number,
+    @Query('weekNumber', new ParseIntPipe({ optional: true }))
+    weekNumber?: number,
   ): Promise<StudentPresence[]> {
     return await this.groupPresenceService.findByStudent(
       groupId,
       studentId,
-      week,
+      weekNumber,
     );
   }
 
   // 주차별 출석부
-  @Get(':groupId/weeks/:week/presences')
+  @Get(':groupId/weeks/:weekNumber/presences')
   async findByWeek(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Param('week', ParseIntPipe) week: number,
+    @Param('weekNumber', ParseIntPipe) weekNumber: number,
     @Query('studentId', new ParseIntPipe({ optional: true }))
     studentId?: number,
     @Query('userId', new ParseIntPipe({ optional: true }))
     userId?: number,
   ): Promise<StudentPresence[]> {
-    return await this.groupPresenceService.findByWeek(groupId, week, {
+    return await this.groupPresenceService.findByWeek(groupId, weekNumber, {
       studentId,
       userId,
     });

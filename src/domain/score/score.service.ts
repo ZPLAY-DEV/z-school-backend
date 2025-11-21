@@ -19,7 +19,7 @@ export class ScoreService {
     await this._ensurePickExists(pickId);
     return await this.scoreRepository.find({
       where: { pickId },
-      order: { week: 'ASC', lessonDate: 'ASC', id: 'ASC' },
+      order: { weekNumber: 'ASC', lessonDate: 'ASC', id: 'ASC' },
     });
   }
 

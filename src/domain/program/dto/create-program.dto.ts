@@ -18,6 +18,11 @@ export class CreateProgramDto {
   @IsNotEmpty()
   weekId: number;
 
+  @ApiProperty({ description: '🈵 주차', example: 1 })
+  @IsInt()
+  @IsNotEmpty()
+  weekNumber: number;
+
   @ApiProperty({ description: '🈵 zero based index', example: 0 })
   @IsInt()
   @IsNotEmpty()
@@ -91,7 +96,7 @@ export class CreateProgramDto {
   @IsUrl()
   @MaxLength(255)
   @IsOptional()
-  imageUrl?: string;
+  imageUrl?: string | null;
 
   @ApiProperty({
     description: '🈳 비디오 URL',
@@ -101,7 +106,7 @@ export class CreateProgramDto {
   @IsUrl()
   @MaxLength(255)
   @IsOptional()
-  videoUrl?: string;
+  videoUrl?: string | null;
 
   @ApiProperty({
     description: '🈳 오디오 URL',
@@ -111,5 +116,5 @@ export class CreateProgramDto {
   @IsUrl()
   @MaxLength(255)
   @IsOptional()
-  audioUrl?: string;
+  audioUrl?: string | null;
 }

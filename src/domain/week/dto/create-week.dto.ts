@@ -4,9 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  Max,
   MaxLength,
-  Min,
 } from 'class-validator';
 import { IStoryDetail } from 'src/common/interfaces';
 
@@ -18,16 +16,14 @@ export class CreateWeekDto {
 
   @ApiProperty({ description: '🈵 주차', example: 1 })
   @IsInt()
-  @Min(1)
-  @Max(255)
   @IsNotEmpty()
-  week: number;
+  weekNumber: number;
 
   @ApiProperty({ description: '🈵 주제', example: '척추 건강' })
   @IsString()
   @MaxLength(100)
-  @IsNotEmpty()
-  subject: string;
+  @IsOptional()
+  subject?: string;
 
   @ApiProperty({
     description: '🈳 게임',
