@@ -10,7 +10,10 @@ import { Curriculum } from '../curriculum/entities/curriculum.entity';
 import { Lesson } from '../lesson/entities/lesson.entity';
 import { Program } from '../program/entities/program.entity';
 import { Week } from '../week/entities/week.entity';
-import { CreateSyllabusDto } from './dto/create-syllabus.dto';
+import {
+  CreateSyllabusDto,
+  CreateSyllabusWithWeeksDto,
+} from './dto/create-syllabus.dto';
 import { UpdateSyllabusDto } from './dto/update-syllabus.dto';
 import { Syllabus } from './entities/syllabus.entity';
 
@@ -33,12 +36,21 @@ export class SyllabusService {
   //? Create
   //? ---------------------------------------------------------------------- ?//
 
-  async create(dto: CreateSyllabusDto): Promise<Syllabus> {
+  async create(dto: CreateSyllabusWithWeeksDto): Promise<Syllabus> {
+    // CreateSyllabusWithWeeksDto에서 weeks 분리
+    const { weeks, ...syllabusData } = dto;
+
+    // Syllabus 생성
     const syllabus = await this.syllabusRepository.save(
-      this.syllabusRepository.create(dto),
+      this.syllabusRepository.create(syllabusData),
     );
-    if (dto.weekCount) {
-      for (let i = 1; i <= dto.weekCount; i++) {
+
+    // weeks가 있으면 weeks와 programs를 함께 생성
+    if (weeks && weeks.length > 0) {
+      await this._createWeeksWithPrograms(syllabus.id, weeks);
+    } else if (syllabusData.weekCount) {
+      // weeks가 없고 weekCount만 있으면 빈 weeks 생성 (기존 로직)
+      for (let i = 1; i <= syllabusData.weekCount; i++) {
         const week = this.weekRepository.create({
           syllabusId: syllabus.id,
           subject: ``,
@@ -47,7 +59,8 @@ export class SyllabusService {
         await this.weekRepository.save(week);
       }
     }
-    return await this.syllabusRepository.save(syllabus);
+
+    return await this.findOne(syllabus.id);
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -175,6 +188,43 @@ export class SyllabusService {
     }
 
     return await this.findOne(id);
+  }
+
+  private async _createWeeksWithPrograms(
+    syllabusId: number,
+    weeksData: CreateSyllabusWithWeeksDto['weeks'],
+  ): Promise<void> {
+    if (!weeksData || weeksData.length === 0) {
+      return;
+    }
+
+    for (const weekData of weeksData) {
+      const { programs, ...weekFields } = weekData;
+
+      // 새로운 week 생성
+      const newWeek = this.weekRepository.create({
+        ...weekFields,
+        syllabusId,
+      } as Partial<Week>);
+      const savedWeek = await this.weekRepository.save(newWeek);
+
+      // Programs 생성
+      if (programs && programs.length > 0) {
+        for (let i = 0; i < programs.length; i++) {
+          const programData = programs[i];
+          const resolvedIndex =
+            programData.index !== undefined ? programData.index : i;
+
+          const newProgram = this.programRepository.create({
+            ...programData,
+            weekId: savedWeek.id,
+            index: resolvedIndex,
+          } as Partial<Program>);
+
+          await this.programRepository.save(newProgram);
+        }
+      }
+    }
   }
 
   private async _updateWeeksAndPrograms(

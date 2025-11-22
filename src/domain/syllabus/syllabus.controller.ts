@@ -14,7 +14,7 @@ import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { IS3Urls } from 'src/common/interfaces';
 import { UploadService } from 'src/services/upload/upload.service';
-import { CreateSyllabusDto } from './dto/create-syllabus.dto';
+import { CreateSyllabusWithWeeksDto } from './dto/create-syllabus.dto';
 import { UpdateSyllabusDto } from './dto/update-syllabus.dto';
 import { Syllabus } from './entities/syllabus.entity';
 import { SyllabusService } from './syllabus.service';
@@ -43,7 +43,7 @@ export class SyllabusController {
     description: '잘못된 요청',
   })
   async create(
-    @Body() createSyllabusDto: CreateSyllabusDto,
+    @Body() createSyllabusDto: CreateSyllabusWithWeeksDto,
   ): Promise<Syllabus> {
     return await this.syllabusService.create(createSyllabusDto);
   }

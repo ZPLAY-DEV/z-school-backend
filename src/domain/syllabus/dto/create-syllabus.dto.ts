@@ -1,12 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
+import { CreateWeekWithProgramsDto } from 'src/domain/week/dto/create-week.dto';
 
 export class CreateSyllabusDto {
   @ApiProperty({
@@ -42,4 +46,13 @@ export class CreateSyllabusDto {
   @MaxLength(255)
   @IsOptional()
   description?: string;
+}
+
+export class CreateSyllabusWithWeeksDto extends CreateSyllabusDto {
+  @ApiProperty({ description: '🈵 weeks', type: [CreateWeekWithProgramsDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateWeekWithProgramsDto)
+  @IsOptional()
+  weeks?: CreateWeekWithProgramsDto[];
 }

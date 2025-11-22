@@ -15,24 +15,30 @@ import { ExerciseType, Orientation, StudentLevel } from 'src/common/enums';
 export class CreateProgramDto {
   @ApiProperty({ description: '🈵 weekId', example: 1 })
   @IsInt()
-  @IsNotEmpty()
-  weekId: number;
+  @IsOptional()
+  weekId?: number;
 
   @ApiProperty({ description: '🈵 주차', example: 1 })
   @IsInt()
-  @IsNotEmpty()
-  weekNumber: number;
+  @IsOptional()
+  weekNumber?: number;
 
   @ApiProperty({ description: '🈵 zero based index', example: 0 })
   @IsInt()
   @IsNotEmpty()
   index: number;
 
-  @ApiProperty({ description: '🈵 자세이름', example: '전사 자세' })
+  @ApiProperty({ description: '🈵 자세이름', example: 'korean name' })
   @IsString()
   @MaxLength(100)
   @IsNotEmpty()
   name: string;
+
+  @ApiProperty({ description: '🈵 자세이름', example: 'english identifier' })
+  @IsString()
+  @MaxLength(100)
+  @IsNotEmpty()
+  slug: string;
 
   @ApiProperty({
     description: '🈵 분류',
@@ -45,7 +51,7 @@ export class CreateProgramDto {
 
   @ApiProperty({
     description: '🈳 태그',
-    example: '초급,기초,척추',
+    example: '팔,다리,허리,골반,척추',
     required: false,
   })
   @IsArray()

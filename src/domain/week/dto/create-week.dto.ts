@@ -1,23 +1,26 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
 import { IStoryDetail } from 'src/common/interfaces';
+import { CreateProgramDto } from 'src/domain/program/dto/create-program.dto';
 
 export class CreateWeekDto {
   @ApiProperty({ description: '🈵 syllabusId', example: 1 })
   @IsInt()
-  @IsNotEmpty()
-  syllabusId: number;
+  @IsOptional()
+  syllabusId?: number;
 
   @ApiProperty({ description: '🈵 주차', example: 1 })
   @IsInt()
-  @IsNotEmpty()
-  weekNumber: number;
+  @IsOptional()
+  weekNumber?: number;
 
   @ApiProperty({ description: '🈵 주제', example: '척추 건강' })
   @IsString()
@@ -60,4 +63,12 @@ export class CreateWeekDto {
   })
   @IsOptional()
   storyDetail?: IStoryDetail;
+}
+
+export class CreateWeekWithProgramsDto extends CreateWeekDto {
+  @ApiProperty({ description: '🈵 programs', type: [CreateProgramDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProgramDto)
+  programs: CreateProgramDto[];
 }
