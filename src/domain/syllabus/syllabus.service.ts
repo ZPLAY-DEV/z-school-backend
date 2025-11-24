@@ -10,9 +10,7 @@ import { Curriculum } from '../curriculum/entities/curriculum.entity';
 import { Lesson } from '../lesson/entities/lesson.entity';
 import { Program } from '../program/entities/program.entity';
 import { Week } from '../week/entities/week.entity';
-import {
-  CreateSyllabusWithWeeksDto
-} from './dto/create-syllabus.dto';
+import { CreateSyllabusWithWeeksDto } from './dto/create-syllabus.dto';
 import { UpdateSyllabusDto } from './dto/update-syllabus.dto';
 import { Syllabus } from './entities/syllabus.entity';
 
@@ -73,6 +71,7 @@ export class SyllabusService {
         'curriculums.lesson',
         'weeks',
         'weeks.programs',
+        'weeks.story',
       ],
       order: { createdAt: 'DESC' },
     });
@@ -96,6 +95,7 @@ export class SyllabusService {
         'curriculums.lesson',
         'weeks',
         'weeks.programs',
+        'weeks.story',
       ],
       order: {
         weeks: {
@@ -164,8 +164,6 @@ export class SyllabusService {
           subject: '',
           game: null,
           gameDetail: null,
-          story: null,
-          storyDetail: null,
         } as Partial<Week>);
 
         await this.weekRepository.save(week);
@@ -349,7 +347,7 @@ export class SyllabusService {
           updateData.isScorable = programData.isScorable;
         }
         if (programData.scripts !== undefined) {
-          updateData.captions = programData.scripts;
+          updateData.scripts = programData.scripts;
         }
         if (programData.videoUrl !== undefined) {
           updateData.videoUrl = programData.videoUrl;

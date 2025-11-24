@@ -39,11 +39,12 @@ import { PickModule } from 'src/domain/pick/pick.module';
 import { PresenceModule } from 'src/domain/presence/presence.module';
 import { ProgramModule } from 'src/domain/program/program.module';
 import { ReminderModule } from 'src/domain/reminder/reminder.module';
-import { ScoreModule } from 'src/domain/score/score.module';
 import { SamModule } from 'src/domain/sam/sam.module';
 import { SchoolModule } from 'src/domain/school/school.module';
 import { SchooldayModule } from 'src/domain/schoolday/schoolday.module';
+import { ScoreModule } from 'src/domain/score/score.module';
 import { StatementModule } from 'src/domain/statement/statement.module';
+import { StoryModule } from 'src/domain/story/story.module';
 import { StudentModule } from 'src/domain/student/student.module';
 import { SubsidyModule } from 'src/domain/subsidy/subsidy.module';
 import { SurveyModule } from 'src/domain/survey/survey.module';
@@ -161,6 +162,7 @@ const conditionalImports = isMetricsEnabled ? [MetricsModule] : [];
     StatementModule,
     StudentModule,
     ScoreModule,
+    StoryModule,
     SubsidyModule,
     SurveyModule,
     SyllabusModule,

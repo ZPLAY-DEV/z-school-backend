@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean } from 'class-validator';
-import { ExerciseType, Orientation, StudentLevel } from 'src/common/enums';
+import { IStoryQuestion } from 'src/common/interfaces';
 import { Week } from 'src/domain/week/entities/week.entity';
 import {
   Column,
@@ -8,13 +7,13 @@ import {
   DeleteDateColumn,
   Entity,
   JoinColumn,
-  ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('programs')
-export class Program {
+@Entity('stories')
+export class Story {
   @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
@@ -28,55 +27,24 @@ export class Program {
   weekNumber: number;
 
   @ApiProperty({ description: '🈵 자세이름', example: '전사 자세' })
-  @Column({ type: 'varchar', length: 100 })
-  name: string;
+  @Column({ type: 'varchar', length: 64 })
+  title: string;
+
+  @ApiProperty({ description: '🈵 자세이름', example: '전사 자세' })
+  @Column({ type: 'text' })
+  description: string;
 
   @ApiProperty({
-    description: '🈵 분류',
-    enum: ExerciseType,
-    example: ExerciseType.MEDITATION,
-  })
-  @Column({ type: 'enum', enum: ExerciseType })
-  type: ExerciseType;
-
-  @ApiProperty({ description: '🈳 태그', example: 'LEG,WAIST' })
-  @Column({ type: 'simple-array', nullable: true })
-  tags: string[] | null;
-
-  @ApiProperty({
-    description: '🈳 자막 배열',
-    example: ['안녕하세요', '오늘은 전사 자세를 배워볼게요'],
+    description: '🈳 히어로 스토리 질문',
+    example: {
+      questions: [
+        { id: 1, question: '질문1', answer: '답변1' },
+        { id: 2, question: '질문2', answer: '답변2' },
+      ],
+    },
   })
   @Column('json', { nullable: true })
-  scripts: string[] | null;
-
-  @ApiProperty({
-    description: '🈵 난이도',
-    enum: StudentLevel,
-    example: StudentLevel.JUNIOR,
-  })
-  @Column({ type: 'enum', enum: StudentLevel })
-  level: StudentLevel;
-
-  @ApiProperty({
-    description: '🈵 방향',
-    enum: Orientation,
-    example: Orientation.CENTER,
-  })
-  @Column({ type: 'enum', enum: Orientation })
-  orientation: Orientation;
-
-  @ApiProperty({ description: '🈳 zero based sorting order', example: 1 })
-  @Column({ type: 'tinyint', unsigned: true, default: 0 })
-  index: number;
-
-  @ApiProperty({
-    description: '🈵 점수 측정 여부',
-    example: true,
-  })
-  @Column({ type: 'boolean', default: false })
-  @IsBoolean()
-  isScorable: boolean;
+  questions: IStoryQuestion[] | null;
 
   @ApiProperty({
     description: '🈳 이미지 URL',
@@ -119,7 +87,7 @@ export class Program {
     description: '관련 week',
     type: () => Week,
   })
-  @ManyToOne(() => Week, (week) => week.programs, {
+  @OneToOne(() => Week, (week) => week.story, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'weekId' })
@@ -127,7 +95,7 @@ export class Program {
 
   //? Constructor ---------------------------------------------------------- ?//
 
-  constructor(partial: Partial<Program>) {
+  constructor(partial: Partial<Story>) {
     Object.assign(this, partial);
   }
 }

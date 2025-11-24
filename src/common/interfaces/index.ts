@@ -329,14 +329,10 @@ export interface HttpErrorFormat {
 //   read: boolean;
 // };
 
-export interface IStoryDetail {
-  url: string | null;
-  title: string | null;
-  description: string | null;
-  questions: {
-    question: string;
-    answer: string;
-  }[];
+export interface IStoryQuestion {
+  id: number;
+  question: string;
+  answer: string;
 }
 
 // 4x4

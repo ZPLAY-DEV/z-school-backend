@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IStoryDetail } from 'src/common/interfaces';
 import { Program } from 'src/domain/program/entities/program.entity';
+import { Story } from 'src/domain/story/entities/story.entity';
 import { Syllabus } from 'src/domain/syllabus/entities/syllabus.entity';
 import {
   Column,
@@ -10,6 +10,7 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -44,30 +45,6 @@ export class Week {
   @Column('json', { nullable: true })
   gameDetail: Record<string, any> | null;
 
-  @ApiProperty({
-    description: '🈳 스토리',
-    example: '스토리명',
-    required: false,
-  })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  story: string | null;
-
-  @ApiProperty({
-    description: '🈳 스토리 상세',
-    example: {
-      url: 'https://example.com/story.mp4',
-      title: '히어로 영상제목',
-      description: '히어로 미션',
-      questions: [
-        { question: '질문1', answer: '답변1' },
-        { question: '질문2', answer: '답변2' },
-      ],
-    },
-    required: false,
-  })
-  @Column('json', { nullable: true })
-  storyDetail: IStoryDetail | null;
-
   // ------------------------------------------------------------------------ //
 
   @ApiProperty({ description: '🈵 createdAt' })
@@ -93,6 +70,13 @@ export class Week {
   })
   @JoinColumn({ name: 'syllabusId' })
   syllabus: Syllabus;
+
+  //* 1-to-1 hasOne ------------------------------------------------------- *//
+
+  @OneToOne(() => Story, (story) => story.week, {
+    cascade: ['insert', 'update'],
+  })
+  story: Story;
 
   //* 1-to-M hasMany ------------------------------------------------------- *//
 

@@ -89,7 +89,7 @@ export class ProgramService {
       (week.programs || []).map((program) => ({ program, week })),
     );
 
-    // week.week 순서로 정렬, 같은 week 내에서는 createdAt 순서로 정렬
+    // week.weekNumber 순서로 정렬, 같은 week 내에서는 createdAt 순서로 정렬
     return programsWithWeek
       .sort((a, b) => {
         const weekDiff = a.week.weekNumber - b.week.weekNumber;

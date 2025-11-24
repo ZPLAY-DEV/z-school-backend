@@ -8,8 +8,8 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
-import { IStoryDetail } from 'src/common/interfaces';
 import { CreateProgramDto } from 'src/domain/program/dto/create-program.dto';
+import { CreateStoryDto } from 'src/domain/story/dto/create-story.dto';
 
 export class CreateWeekDto {
   @ApiProperty({ description: '🈵 syllabusId', example: 1 })
@@ -45,24 +45,6 @@ export class CreateWeekDto {
   })
   @IsOptional()
   gameDetail?: Record<string, any>;
-
-  @ApiProperty({
-    description: '🈳 스토리',
-    example: '스토리명',
-    required: false,
-  })
-  @IsString()
-  @MaxLength(255)
-  @IsOptional()
-  story?: string;
-
-  @ApiProperty({
-    description: '🈳 스토리 상세',
-    example: {},
-    required: false,
-  })
-  @IsOptional()
-  storyDetail?: IStoryDetail;
 }
 
 export class CreateWeekWithProgramsDto extends CreateWeekDto {
@@ -71,4 +53,23 @@ export class CreateWeekWithProgramsDto extends CreateWeekDto {
   @ValidateNested({ each: true })
   @Type(() => CreateProgramDto)
   programs: CreateProgramDto[];
+}
+
+export class CreateWeekWithStoryDto extends CreateWeekDto {
+  @ApiProperty({ description: '🈵 story', type: CreateStoryDto })
+  @ValidateNested()
+  @Type(() => CreateStoryDto)
+  story: CreateStoryDto;
+}
+export class CreateWeekWithProgramsAndStoryDto extends CreateWeekDto {
+  @ApiProperty({ description: '🈵 programs', type: [CreateProgramDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateProgramDto)
+  programs: CreateProgramDto[];
+
+  @ApiProperty({ description: '🈵 story', type: CreateStoryDto })
+  @ValidateNested()
+  @Type(() => CreateStoryDto)
+  story: CreateStoryDto;
 }
