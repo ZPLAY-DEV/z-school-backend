@@ -12,6 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Public } from 'src/common/decorators/public.decorator';
 import { IS3Urls } from 'src/common/interfaces';
 import { UploadService } from 'src/services/upload/upload.service';
 import { CreateProgramDto } from './dto/create-program.dto';
@@ -88,6 +89,7 @@ export class ProgramController {
     return await this.programService.findAll();
   }
 
+  @Public()
   @Get(':id')
   @ApiOperation({ summary: '특정 프로그램 상세 조회' })
   @ApiParam({ name: 'id', description: '프로그램 ID' })

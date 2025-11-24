@@ -1,17 +1,18 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    HttpStatus,
-    Param,
-    ParseIntPipe,
-    Patch,
-    Post,
-    Query,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Public } from 'src/common/decorators/public.decorator';
 import { CreateWeekDto } from './dto/create-week.dto';
 import { UpdateWeekDto } from './dto/update-week.dto';
 import { Week } from './entities/week.entity';
@@ -81,6 +82,7 @@ export class WeekController {
     return await this.weekService.findAll();
   }
 
+  @Public()
   @Get(':id')
   @ApiOperation({ summary: '특정 Week 상세 조회' })
   @ApiParam({ name: 'id', description: 'Week ID' })
