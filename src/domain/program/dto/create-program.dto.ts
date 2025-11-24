@@ -30,14 +30,14 @@ export class CreateProgramDto {
 
   @ApiProperty({ description: '🈵 자세이름', example: 'korean name' })
   @IsString()
-  @MaxLength(100)
+  @MaxLength(64)
   @IsNotEmpty()
   name: string;
 
   @ApiProperty({ description: '🈵 자세이름', example: 'english identifier' })
   @IsString()
-  @MaxLength(100)
-  @IsNotEmpty()
+  @MaxLength(64)
+  @IsOptional()
   slug: string;
 
   @ApiProperty({

@@ -28,8 +28,12 @@ export class Program {
   weekNumber: number;
 
   @ApiProperty({ description: '🈵 자세이름', example: '전사 자세' })
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 64 })
   name: string;
+
+  @ApiProperty({ description: '🈵 slug', example: 'english slug' })
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  slug: string | null;
 
   @ApiProperty({
     description: '🈵 분류',
