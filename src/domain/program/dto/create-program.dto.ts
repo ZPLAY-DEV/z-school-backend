@@ -92,7 +92,7 @@ export class CreateProgramDto {
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
-  captions?: string[];
+  scripts?: string[];
 
   @ApiProperty({
     description: '🈳 이미지 URL',

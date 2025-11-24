@@ -41,7 +41,11 @@ export class WeekService {
 
     // 모든 syllabusId를 수집하고 중복 제거
     const syllabusIds = [
-      ...new Set(createWeekDtos.map((dto) => dto.syllabusId)),
+      ...new Set(
+        createWeekDtos
+          .map((dto) => dto.syllabusId)
+          .filter((id): id is number => id !== undefined),
+      ),
     ];
 
     // syllabusId 유효성 검증

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
+import { Public } from 'src/common/decorators/public.decorator';
 import { IS3Urls } from 'src/common/interfaces';
 import { UploadService } from 'src/services/upload/upload.service';
 import { CreateSyllabusWithWeeksDto } from './dto/create-syllabus.dto';
@@ -76,6 +77,7 @@ export class SyllabusController {
     return await this.syllabusService.infiniteList(query);
   }
 
+  @Public()
   @Get(':id')
   @ApiOperation({ summary: '특정 커리큘럼 상세 조회' })
   @ApiParam({ name: 'id', description: '커리큘럼 ID' })

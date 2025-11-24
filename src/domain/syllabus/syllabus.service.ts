@@ -11,8 +11,7 @@ import { Lesson } from '../lesson/entities/lesson.entity';
 import { Program } from '../program/entities/program.entity';
 import { Week } from '../week/entities/week.entity';
 import {
-  CreateSyllabusDto,
-  CreateSyllabusWithWeeksDto,
+  CreateSyllabusWithWeeksDto
 } from './dto/create-syllabus.dto';
 import { UpdateSyllabusDto } from './dto/update-syllabus.dto';
 import { Syllabus } from './entities/syllabus.entity';
@@ -349,8 +348,8 @@ export class SyllabusService {
         if (programData.isScorable !== undefined) {
           updateData.isScorable = programData.isScorable;
         }
-        if (programData.captions !== undefined) {
-          updateData.captions = programData.captions;
+        if (programData.scripts !== undefined) {
+          updateData.captions = programData.scripts;
         }
         if (programData.videoUrl !== undefined) {
           updateData.videoUrl = programData.videoUrl;

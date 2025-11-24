@@ -40,7 +40,13 @@ export class ProgramService {
     }
 
     // 모든 weekId를 수집하고 중복 제거
-    const weekIds = [...new Set(createProgramDtos.map((dto) => dto.weekId))];
+    const weekIds = [
+      ...new Set(
+        createProgramDtos
+          .map((dto) => dto.weekId)
+          .filter((id): id is number => id !== undefined),
+      ),
+    ];
 
     // weekId 유효성 검증
     const weeks = await this.weekRepository.find({
