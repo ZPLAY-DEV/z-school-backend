@@ -10,14 +10,20 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('programs')
+@Unique(['syllabusId', 'weekId', 'slug', 'orientation'])
 export class Program {
   @ApiProperty({ description: 'primary key', example: 1 })
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
+
+  @ApiProperty({ description: '🈵 syllabusId', example: 1 })
+  @Column({ type: 'int', unsigned: true })
+  syllabusId: number;
 
   @ApiProperty({ description: '🈵 weekId', example: 1 })
   @Column({ type: 'int', unsigned: true })
@@ -34,6 +40,18 @@ export class Program {
   @ApiProperty({ description: '🈵 slug', example: 'english slug' })
   @Column({ type: 'varchar', length: 128, nullable: true })
   slug: string | null;
+
+  @ApiProperty({
+    description: '🈵 방향',
+    enum: Orientation,
+    example: Orientation.CENTER,
+  })
+  @Column({ type: 'enum', enum: Orientation })
+  orientation: Orientation;
+
+  @ApiProperty({ description: '🈳 zero based sorting order', example: 1 })
+  @Column({ type: 'tinyint', unsigned: true, default: 0 })
+  index: number;
 
   @ApiProperty({
     description: '🈵 분류',
@@ -61,18 +79,6 @@ export class Program {
   })
   @Column({ type: 'enum', enum: StudentLevel })
   level: StudentLevel;
-
-  @ApiProperty({
-    description: '🈵 방향',
-    enum: Orientation,
-    example: Orientation.CENTER,
-  })
-  @Column({ type: 'enum', enum: Orientation })
-  orientation: Orientation;
-
-  @ApiProperty({ description: '🈳 zero based sorting order', example: 1 })
-  @Column({ type: 'tinyint', unsigned: true, default: 0 })
-  index: number;
 
   @ApiProperty({
     description: '🈵 점수 측정 여부',

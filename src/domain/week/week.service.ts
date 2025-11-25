@@ -34,7 +34,42 @@ export class WeekService {
     return await this.weekRepository.save(week);
   }
 
-  async createBulk(createWeekDtos: CreateWeekDto[]): Promise<Week[]> {
+  async upsert(upsertWeekDto: CreateWeekDto): Promise<Week[]> {
+    const { syllabusId, weekNumber, subject } = upsertWeekDto;
+
+    // Syllabus 유효성 검증
+    const syllabus = await this.syllabusRepository.findOne({
+      where: { id: syllabusId },
+    });
+
+    if (!syllabus) {
+      throw new NotFoundException(`Syllabus with id ${syllabusId} not found`);
+    }
+
+    // MySQL 8.0.20+ INSERT ... ON DUPLICATE KEY UPDATE 사용
+    // syllabusId와 weekNumber의 unique constraint를 활용
+    const query = `
+      INSERT INTO weeks (syllabusId, weekNumber, subject, createdAt, updatedAt)
+      VALUES (?, ?, ?, NOW(), NOW()) AS new
+      ON DUPLICATE KEY UPDATE
+        subject = new.subject,
+        updatedAt = NOW()
+    `;
+
+    await this.weekRepository.query(query, [syllabusId, weekNumber, subject]);
+
+    // upsert된 Week 조회
+    const week = await this.weekRepository.findOne({
+      where: { syllabusId, weekNumber },
+      relations: ['syllabus'],
+    });
+
+    return [week!];
+  }
+
+  async upsertBulk(
+    createWeekDtos: CreateWeekDto[],
+  ): Promise<{ weekId: number; weekNumber: number }[]> {
     if (!createWeekDtos || createWeekDtos.length === 0) {
       return [];
     }
@@ -61,9 +96,56 @@ export class WeekService {
       );
     }
 
-    // 모든 weeks 생성
-    const weeks = this.weekRepository.create(createWeekDtos);
-    return await this.weekRepository.save(weeks);
+    // Raw query를 사용한 bulk upsert
+    // Unique constraint: syllabusId + weekNumber
+    const queryParams: any[] = [];
+    const valueStrings: string[] = [];
+
+    createWeekDtos.forEach((dto) => {
+      valueStrings.push('(?, ?, ?, ?, ?)');
+
+      queryParams.push(
+        dto.syllabusId,
+        dto.weekNumber,
+        dto.subject,
+        dto.game ?? null,
+        dto.gameDetail ? JSON.stringify(dto.gameDetail) : null,
+      );
+    });
+
+    const query = `
+      INSERT INTO weeks 
+        (syllabusId, weekNumber, subject, game, gameDetail)
+      VALUES ${valueStrings.join(', ')}
+      ON DUPLICATE KEY UPDATE
+        subject = VALUES(subject),
+        game = VALUES(game),
+        gameDetail = VALUES(gameDetail),
+        updatedAt = CURRENT_TIMESTAMP
+    `;
+
+    await this.weekRepository.query(query, queryParams);
+
+    // 생성/업데이트된 weeks 조회하여 반환
+    const upsertedWeeks = await this.weekRepository.find({
+      where: createWeekDtos.map((dto) => ({
+        syllabusId: dto.syllabusId,
+        weekNumber: dto.weekNumber,
+      })),
+    });
+
+    const sortedWeeks = [...upsertedWeeks].sort(
+      (a, b) => a.weekNumber - b.weekNumber,
+    );
+
+    if (sortedWeeks.length !== createWeekDtos.length) {
+      throw new NotFoundException(`Some weeks were not created or updated`);
+    }
+
+    return sortedWeeks.map((v) => ({
+      weekId: v.id,
+      weekNumber: v.weekNumber,
+    }));
   }
 
   //? ---------------------------------------------------------------------- ?//

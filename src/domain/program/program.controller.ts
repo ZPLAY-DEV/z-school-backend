@@ -62,16 +62,13 @@ export class ProgramController {
     status: HttpStatus.NOT_FOUND,
     description: '일부 syllabus를 찾을 수 없음',
   })
-  async createBulk(
-    @Body() createProgramDtos: CreateProgramDto[],
-  ): Promise<Program[]> {
-    return await this.programService.createBulk(createProgramDtos);
+  async upsertBulk(@Body() dtos: CreateProgramDto[]): Promise<Program[]> {
+    return await this.programService.upsertBulk(dtos);
   }
 
   //? ---------------------------------------------------------------------- ?//
   //? Read
   //? ---------------------------------------------------------------------- ?//
-
   @Get()
   @ApiOperation({ summary: '전체 프로그램 조회 또는 커리큘럼별 프로그램 조회' })
   @ApiResponse({

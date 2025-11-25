@@ -13,9 +13,12 @@ import {
 import { ExerciseType, Orientation, StudentLevel } from 'src/common/enums';
 
 export class CreateProgramDto {
+  @ApiProperty({ description: '🈵 syllabusId', example: 1 })
+  @IsInt()
+  syllabusId?: number;
+
   @ApiProperty({ description: '🈵 weekId', example: 1 })
   @IsInt()
-  @IsOptional()
   weekId?: number;
 
   @ApiProperty({ description: '🈵 주차', example: 1 })
@@ -41,6 +44,15 @@ export class CreateProgramDto {
   slug: string;
 
   @ApiProperty({
+    description: '🈵 방향',
+    enum: Orientation,
+    example: Orientation.CENTER,
+  })
+  @IsEnum(Orientation)
+  @IsOptional()
+  orientation?: Orientation;
+
+  @ApiProperty({
     description: '🈵 분류',
     enum: ExerciseType,
     example: ExerciseType.MEDITATION,
@@ -57,15 +69,6 @@ export class CreateProgramDto {
   @IsArray()
   @IsString({ each: true })
   tags: string[] | null;
-
-  @ApiProperty({
-    description: '🈵 난이도',
-    enum: Orientation,
-    example: Orientation.CENTER,
-  })
-  @IsEnum(Orientation)
-  @IsOptional()
-  orientation?: Orientation;
 
   @ApiProperty({
     description: '🈵 난이도',

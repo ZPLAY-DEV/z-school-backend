@@ -32,11 +32,11 @@ export class Week {
   weekNumber: number;
 
   @ApiProperty({ description: '🈵 주제', example: '척추 건강' })
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 64 })
   subject: string;
 
   @ApiProperty({ description: '🈳 게임', example: '게임명', required: false })
-  @Column({ type: 'varchar', length: 100, nullable: true })
+  @Column({ type: 'varchar', length: 64, nullable: true })
   game: string | null;
 
   @ApiProperty({

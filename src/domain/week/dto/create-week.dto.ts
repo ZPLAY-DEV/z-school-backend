@@ -1,3 +1,4 @@
+import { IsNotEmpty } from '@nestjs/class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
@@ -14,19 +15,19 @@ import { CreateStoryDto } from 'src/domain/story/dto/create-story.dto';
 export class CreateWeekDto {
   @ApiProperty({ description: '🈵 syllabusId', example: 1 })
   @IsInt()
-  @IsOptional()
-  syllabusId?: number;
+  @IsNotEmpty()
+  syllabusId: number;
 
   @ApiProperty({ description: '🈵 주차', example: 1 })
   @IsInt()
-  @IsOptional()
-  weekNumber?: number;
+  @IsNotEmpty()
+  weekNumber: number;
 
   @ApiProperty({ description: '🈵 주제', example: '척추 건강' })
   @IsString()
-  @MaxLength(100)
-  @IsOptional()
-  subject?: string;
+  @MaxLength(64)
+  @IsNotEmpty()
+  subject: string;
 
   @ApiProperty({
     description: '🈳 게임',

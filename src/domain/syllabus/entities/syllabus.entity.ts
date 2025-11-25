@@ -17,6 +17,10 @@ export class Syllabus {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
   id: number;
 
+  @ApiProperty({ description: '🈵 커리큘럼명', example: '요가 입문 프로그램' })
+  @Column({ type: 'varchar', length: 100 })
+  name: string;
+
   @ApiProperty({ description: '🈵 slug (고유)', example: 'hero' })
   @Column({ type: 'varchar', length: 32, unique: true })
   slug: string;
@@ -24,10 +28,6 @@ export class Syllabus {
   @ApiProperty({ description: '🈵 주차수', example: '몇주차 프로그램' })
   @Column({ type: 'tinyint', unsigned: true, default: 0 })
   weekCount: number;
-
-  @ApiProperty({ description: '🈵 커리큘럼명', example: '요가 입문 프로그램' })
-  @Column({ type: 'varchar', length: 100 })
-  name: string;
 
   @ApiProperty({
     description: '🈳 커리큘럼 설명',

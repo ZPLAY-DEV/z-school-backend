@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
+import { generateSlug } from 'src/helpers/formatter';
 import { In, Repository } from 'typeorm';
 import { Curriculum } from '../curriculum/entities/curriculum.entity';
 import { Lesson } from '../lesson/entities/lesson.entity';
@@ -36,6 +37,11 @@ export class SyllabusService {
   async create(dto: CreateSyllabusWithWeeksDto): Promise<Syllabus> {
     // CreateSyllabusWithWeeksDto에서 weeks 분리
     const { weeks, ...syllabusData } = dto;
+
+    // slug가 없거나 null이거나 빈 문자열이면 name으로 생성
+    if (!syllabusData.slug || syllabusData.slug === '') {
+      syllabusData.slug = generateSlug(syllabusData.name);
+    }
 
     // Syllabus 생성
     const syllabus = await this.syllabusRepository.save(

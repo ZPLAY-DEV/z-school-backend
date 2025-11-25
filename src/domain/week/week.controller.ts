@@ -42,6 +42,21 @@ export class WeekController {
     return await this.weekService.create(createWeekDto);
   }
 
+  @Post('upsert')
+  @ApiOperation({ summary: 'Week upsert (생성 또는 업데이트)' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Week가 성공적으로 생성 또는 업데이트됨',
+    type: [Week],
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Syllabus를 찾을 수 없음',
+  })
+  async upsert(@Body() upsertWeekDto: CreateWeekDto): Promise<Week[]> {
+    return await this.weekService.upsert(upsertWeekDto);
+  }
+
   @Post('bulk')
   @ApiOperation({ summary: 'Week 대량 생성' })
   @ApiResponse({
@@ -57,8 +72,10 @@ export class WeekController {
     status: HttpStatus.NOT_FOUND,
     description: '일부 syllabus를 찾을 수 없음',
   })
-  async createBulk(@Body() createWeekDtos: CreateWeekDto[]): Promise<Week[]> {
-    return await this.weekService.createBulk(createWeekDtos);
+  async upsertBulk(
+    @Body() createWeekDtos: CreateWeekDto[],
+  ): Promise<{ weekId: number; weekNumber: number }[]> {
+    return await this.weekService.upsertBulk(createWeekDtos);
   }
 
   //? ---------------------------------------------------------------------- ?//
