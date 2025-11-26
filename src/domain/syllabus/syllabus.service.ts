@@ -355,11 +355,20 @@ export class SyllabusService {
         if (programData.scripts !== undefined) {
           updateData.scripts = programData.scripts;
         }
-        if (programData.videoUrl !== undefined) {
-          updateData.videoUrl = programData.videoUrl;
+        if (programData.imageUrl !== undefined) {
+          updateData.imageUrl = programData.imageUrl;
         }
         if (programData.audioUrl !== undefined) {
           updateData.audioUrl = programData.audioUrl;
+        }
+        if (programData.audioUrl !== undefined) {
+          updateData.audioUrl = programData.audioUrl;
+        }
+        if (programData.fullVideoUrl !== undefined) {
+          updateData.fullVideoUrl = programData.fullVideoUrl;
+        }
+        if (programData.miniVideoUrl !== undefined) {
+          updateData.miniVideoUrl = programData.miniVideoUrl;
         }
 
         void this.programRepository.update(programData.id, updateData);

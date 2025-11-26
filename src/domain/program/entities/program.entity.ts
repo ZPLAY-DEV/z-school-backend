@@ -96,18 +96,25 @@ export class Program {
   imageUrl: string | null;
 
   @ApiProperty({
-    description: '🈳 비디오 URL',
-    example: 'https://example.com/video.mp4',
-  })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  videoUrl: string | null;
-
-  @ApiProperty({
     description: '🈳 오디오 URL',
     example: 'https://example.com/audio.mp3',
   })
   @Column({ type: 'varchar', length: 255, nullable: true })
   audioUrl: string | null;
+
+  @ApiProperty({
+    description: '🈳 전체화면 비디오 URL',
+    example: 'https://example.com/video.mp4',
+  })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  fullVideoUrl: string | null;
+
+  @ApiProperty({
+    description: '🈳 작은화면 비디오 URL',
+    example: 'https://example.com/video.mp4',
+  })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  miniVideoUrl: string | null;
 
   // ------------------------------------------------------------------------ //
 

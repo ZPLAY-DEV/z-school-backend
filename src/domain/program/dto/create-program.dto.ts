@@ -108,16 +108,6 @@ export class CreateProgramDto {
   imageUrl?: string | null;
 
   @ApiProperty({
-    description: '🈳 비디오 URL',
-    example: 'https://example.com/video.mp4',
-    required: false,
-  })
-  @IsUrl()
-  @MaxLength(255)
-  @IsOptional()
-  videoUrl?: string | null;
-
-  @ApiProperty({
     description: '🈳 오디오 URL',
     example: 'https://example.com/audio.mp3',
     required: false,
@@ -126,4 +116,24 @@ export class CreateProgramDto {
   @MaxLength(255)
   @IsOptional()
   audioUrl?: string | null;
+
+  @ApiProperty({
+    description: '🈳 전체화면 비디오 URL',
+    example: 'https://example.com/video.mp4',
+    required: false,
+  })
+  @IsUrl()
+  @MaxLength(255)
+  @IsOptional()
+  fullVideoUrl?: string | null;
+
+  @ApiProperty({
+    description: '🈳 작은화면 비디오 URL',
+    example: 'https://example.com/video.mp4',
+    required: false,
+  })
+  @IsUrl()
+  @MaxLength(255)
+  @IsOptional()
+  miniVideoUrl?: string | null;
 }

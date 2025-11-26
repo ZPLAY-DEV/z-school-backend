@@ -135,7 +135,8 @@ export class ProgramService {
         dto.index,
         dto.isScorable ? 1 : 0,
         dto.imageUrl ?? null,
-        dto.videoUrl ?? null,
+        dto.fullVideoUrl ?? null,
+        dto.miniVideoUrl ?? null,
         dto.audioUrl ?? null,
       );
     });
@@ -155,7 +156,8 @@ export class ProgramService {
         \`index\` = VALUES(\`index\`),
         isScorable = VALUES(isScorable),
         imageUrl = VALUES(imageUrl),
-        videoUrl = VALUES(videoUrl),
+        fullVideoUrl = VALUES(fullVideoUrl),
+        miniVideoUrl = VALUES(miniVideoUrl),
         audioUrl = VALUES(audioUrl),
         updatedAt = CURRENT_TIMESTAMP
     `;
