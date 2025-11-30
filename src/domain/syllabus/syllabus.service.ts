@@ -106,6 +106,9 @@ export class SyllabusService {
       order: {
         weeks: {
           id: 'ASC',
+          programs: {
+            index: 'ASC',
+          },
         },
       },
     });
