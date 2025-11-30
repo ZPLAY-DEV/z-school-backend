@@ -1,8 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Pick } from 'src/domain/pick/entities/pick.entity';
-import { CreateScoreDto } from 'src/domain/score/dto/create-score.dto';
-import { UpdateScoreDto } from 'src/domain/score/dto/update-score.dto';
 import { Score } from 'src/domain/score/entities/score.entity';
 import { Repository } from 'typeorm';
 
@@ -11,68 +8,74 @@ export class ScoreService {
   constructor(
     @InjectRepository(Score)
     private readonly scoreRepository: Repository<Score>,
-    @InjectRepository(Pick)
-    private readonly pickRepository: Repository<Pick>,
   ) {}
 
-  async listByPick(pickId: number): Promise<Score[]> {
-    await this._ensurePickExists(pickId);
-    return await this.scoreRepository.find({
-      where: { pickId },
-      order: { weekNumber: 'ASC', lessonDate: 'ASC', id: 'ASC' },
-    });
+  /**
+   * 특정 syllabus와 학생의 주차별 점수 조회
+   * @param syllabusId - 교육과정 ID
+   * @param studentId - 학생 ID
+   * @returns 주차별로 정렬된 점수 목록
+   */
+  async listBySyllabusAndStudent(
+    syllabusId: number,
+    studentId: number,
+  ): Promise<Score[]> {
+    return await this.scoreRepository
+      .createQueryBuilder('score')
+      .innerJoin('score.pick', 'pick', 'pick.studentId = :studentId', {
+        studentId,
+      })
+      .innerJoin('pick.group', 'group')
+      .innerJoin('group.lesson', 'lesson')
+      .innerJoin(
+        'lesson.curriculums',
+        'curriculum',
+        'curriculum.syllabusId = :syllabusId',
+        { syllabusId },
+      )
+      .andWhere('pick.isActive = :isActive', { isActive: true })
+      .orderBy('score.weekNumber', 'ASC')
+      .getMany();
   }
 
-  async create(pickId: number, dto: CreateScoreDto): Promise<Score> {
-    await this._ensurePickExists(pickId);
-    const entity: Score = this.scoreRepository.create({
-      ...dto,
-      pickId,
-    });
-    return await this.scoreRepository.save(entity);
+  /**
+   * 특정 그룹의 특정 주차 전체 학생 점수 조회
+   * @param groupId - 그룹(반) ID
+   * @param weekNumber - 주차 번호
+   * @returns 학생 순서(index)대로 정렬된 점수 목록
+   */
+  async listByGroupAndWeek(
+    groupId: number,
+    weekNumber: number,
+  ): Promise<Score[]> {
+    return await this.scoreRepository
+      .createQueryBuilder('score')
+      .innerJoin('score.pick', 'pick', 'pick.groupId = :groupId', { groupId })
+      .where('score.weekNumber = :weekNumber', { weekNumber })
+      .andWhere('pick.isActive = :isActive', { isActive: true })
+      .orderBy('pick.index', 'ASC')
+      .getMany();
   }
 
-  async update(
-    pickId: number,
-    scoreId: number,
-    dto: UpdateScoreDto,
-  ): Promise<Score> {
-    const score = await this._findOneOrFail(pickId, scoreId);
-    Object.assign(score, dto);
-    return await this.scoreRepository.save(score);
-  }
-
-  async remove(pickId: number, scoreId: number): Promise<Score> {
-    const score = await this._findOneOrFail(pickId, scoreId);
-    return await this.scoreRepository.softRemove(score);
-  }
-
-  private async _ensurePickExists(pickId: number): Promise<void> {
-    const pickExists = await this.pickRepository.exist({
-      where: { id: pickId },
-    });
-
-    if (!pickExists) {
-      throw new NotFoundException(
-        `pickId ${pickId}에 해당하는 Pick이 없습니다`,
-      );
-    }
-  }
-
-  private async _findOneOrFail(
-    pickId: number,
-    scoreId: number,
-  ): Promise<Score> {
-    const score = await this.scoreRepository.findOne({
-      where: { id: scoreId, pickId },
-    });
-
-    if (!score) {
-      throw new NotFoundException(
-        `pickId ${pickId} 하위에서 scoreId ${scoreId}를 찾을 수 없습니다`,
-      );
-    }
-
-    return score;
+  /**
+   * 특정 그룹의 특정 학생 점수 조회
+   * @param groupId - 그룹(반) ID
+   * @param studentId - 학생 ID
+   * @returns 주차별로 정렬된 점수 목록
+   */
+  async listByGroupAndStudent(
+    groupId: number,
+    studentId: number,
+  ): Promise<Score[]> {
+    return await this.scoreRepository
+      .createQueryBuilder('score')
+      .innerJoin('score.pick', 'pick')
+      .where('pick.groupId = :groupId', { groupId })
+      .andWhere('pick.studentId = :studentId', { studentId })
+      .andWhere('pick.isActive = :isActive', { isActive: true })
+      .orderBy('score.weekNumber', 'ASC')
+      .addOrderBy('score.lessonDate', 'ASC')
+      .addOrderBy('score.id', 'ASC')
+      .getMany();
   }
 }
