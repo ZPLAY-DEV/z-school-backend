@@ -370,9 +370,8 @@ export interface IScores {
     secondary: number;
   };
   result: {
-    record1: number;
-    record2: number;
-    record3: number;
+    primary: number;
+    secondary: number;
   };
   measurement: {
     height: number;

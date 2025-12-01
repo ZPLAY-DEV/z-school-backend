@@ -5,6 +5,8 @@ import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { GroupPresenceController } from 'src/domain/group/group-presence.controller';
 import { GroupPresenceService } from 'src/domain/group/group-presence.service';
+import { GroupSchooldayController } from 'src/domain/group/group-schoolday.controller';
+import { GroupSchooldayService } from 'src/domain/group/group-schoolday.service';
 import { GroupScoreController } from 'src/domain/group/group-score.controller';
 import { GroupScoreService } from 'src/domain/group/group-score.service';
 import { GroupController } from 'src/domain/group/group.controller';
@@ -36,16 +38,15 @@ import { UploadModule } from 'src/services/upload/upload.module';
   ],
   providers: [
     GroupService,
-
     // GroupAttendanceService,
-    // GroupSchooldayService,
+    GroupSchooldayService,
     GroupScoreService,
     GroupPresenceService,
   ],
   controllers: [
     GroupController,
     // GroupAttendanceController,
-    // GroupSchooldayController,
+    GroupSchooldayController,
     GroupScoreController,
     GroupPresenceController,
   ],

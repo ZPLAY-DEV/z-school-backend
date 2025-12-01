@@ -50,9 +50,8 @@ export class Score {
         secondary: 92,
       },
       result: {
-        record1: 92,
-        record2: 92,
-        record3: 92,
+        primary: 92,
+        secondary: 88,
       },
       measurement: {
         height: 170,

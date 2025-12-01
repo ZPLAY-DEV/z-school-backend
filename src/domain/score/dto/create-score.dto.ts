@@ -45,9 +45,8 @@ export class CreateScoreDto {
         secondary: 92,
       },
       result: {
-        record1: 92,
-        record2: 92,
-        record3: 92,
+        primary: 92,
+        secondary: 92,
       },
       measurement: {
         height: 170,

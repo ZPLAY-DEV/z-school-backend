@@ -107,9 +107,8 @@ export class GroupScoreService {
           secondary: 0,
         },
         result: {
-          record1: 0,
-          record2: 0,
-          record3: 0,
+          primary: 0,
+          secondary: 0,
         },
         measurement: {
           height: 0,
