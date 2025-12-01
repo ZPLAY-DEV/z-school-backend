@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Score } from 'src/domain/score/entities/score.entity';
 import { ScoreController } from 'src/domain/score/score.controller';
 import { ScoreService } from 'src/domain/score/score.service';
-import { Score } from 'src/domain/score/entities/score.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Score])],
@@ -11,4 +11,3 @@ import { Score } from 'src/domain/score/entities/score.entity';
   exports: [ScoreService],
 })
 export class ScoreModule {}
-

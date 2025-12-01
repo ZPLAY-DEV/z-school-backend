@@ -4,11 +4,12 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { IStudentScore } from 'src/common/interfaces';
 import { GroupScoreService } from 'src/domain/group/group-score.service';
-import { Score } from 'src/domain/score/entities/score.entity';
 
 @ApiTags('✳️ Groups > Score ( 반 > 점수 조회 )')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -20,11 +21,18 @@ export class GroupScoreController {
   //? Read
   //? ---------------------------------------------------------------------- ?//
 
-  @Get(':groupId/students/:studentId/score-list')
-  async getStudentScores(
+  // 학생별 점수
+  @Get(':groupId/students/:studentId/scores')
+  async findByStudent(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('studentId', ParseIntPipe) studentId: number,
-  ): Promise<Score[]> {
-    return await this.groupScoreService.getStudentScores(groupId, studentId);
+    @Query('weekNumber', new ParseIntPipe({ optional: true }))
+    weekNumber?: number,
+  ): Promise<IStudentScore[]> {
+    return await this.groupScoreService.findByStudent(
+      groupId,
+      studentId,
+      weekNumber,
+    );
   }
 }

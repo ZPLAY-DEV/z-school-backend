@@ -119,7 +119,7 @@ export class ProgramService {
     const valueStrings: string[] = [];
 
     dtos.forEach((dto) => {
-      valueStrings.push('(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+      valueStrings.push('(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
 
       queryParams.push(
         dto.syllabusId,
@@ -134,16 +134,18 @@ export class ProgramService {
         dto.orientation ?? 'CENTER',
         dto.index,
         dto.isScorable ? 1 : 0,
-        dto.imageUrl ?? null,
-        dto.fullVideoUrl ?? null,
-        dto.miniVideoUrl ?? null,
-        dto.audioUrl ?? null,
+        dto.primaryImageUrl ?? null,
+        dto.secondaryImageUrl ?? null,
+        dto.primaryAudioUrl ?? null,
+        dto.secondaryAudioUrl ?? null,
+        dto.primaryVideoUrl ?? null,
+        dto.secondaryVideoUrl ?? null,
       );
     });
 
     const query = `
       INSERT INTO programs 
-        (syllabusId, weekId, weekNumber, name, slug, type, tags, scripts, level, orientation, \`index\`, isScorable, imageUrl, videoUrl, audioUrl)
+        (syllabusId, weekId, weekNumber, name, slug, type, tags, scripts, level, orientation, \`index\`, isScorable, primaryImageUrl, secondaryImageUrl, primaryAudioUrl, secondaryAudioUrl, primaryVideoUrl, secondaryVideoUrl)
       VALUES ${valueStrings.join(', ')}
       ON DUPLICATE KEY UPDATE
         weekNumber = VALUES(weekNumber),
@@ -155,10 +157,12 @@ export class ProgramService {
         orientation = VALUES(orientation),
         \`index\` = VALUES(\`index\`),
         isScorable = VALUES(isScorable),
-        imageUrl = VALUES(imageUrl),
-        fullVideoUrl = VALUES(fullVideoUrl),
-        miniVideoUrl = VALUES(miniVideoUrl),
-        audioUrl = VALUES(audioUrl),
+        primaryImageUrl = VALUES(primaryImageUrl),
+        secondaryImageUrl = VALUES(secondaryImageUrl),
+        primaryAudioUrl = VALUES(primaryAudioUrl),
+        secondaryAudioUrl = VALUES(secondaryAudioUrl),
+        primaryVideoUrl = VALUES(primaryVideoUrl),
+        secondaryVideoUrl = VALUES(secondaryVideoUrl),
         updatedAt = CURRENT_TIMESTAMP
     `;
 

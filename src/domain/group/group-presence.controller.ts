@@ -11,7 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { StudentPresence } from 'src/common/interfaces';
+import { IStudentPresence } from 'src/common/interfaces';
 import { GroupPresenceService } from 'src/domain/group/group-presence.service';
 import { CreatePresenceDto } from 'src/domain/presence/dto/create-presence.dto';
 import { UpsertPresenceDto } from 'src/domain/presence/dto/upsert-presence.dto';
@@ -70,7 +70,7 @@ export class GroupPresenceController {
     @Param('studentId', ParseIntPipe) studentId: number,
     @Query('weekNumber', new ParseIntPipe({ optional: true }))
     weekNumber?: number,
-  ): Promise<StudentPresence[]> {
+  ): Promise<IStudentPresence[]> {
     return await this.groupPresenceService.findByStudent(
       groupId,
       studentId,
@@ -87,7 +87,7 @@ export class GroupPresenceController {
     studentId?: number,
     @Query('userId', new ParseIntPipe({ optional: true }))
     userId?: number,
-  ): Promise<StudentPresence[]> {
+  ): Promise<IStudentPresence[]> {
     return await this.groupPresenceService.findByWeek(groupId, weekNumber, {
       studentId,
       userId,

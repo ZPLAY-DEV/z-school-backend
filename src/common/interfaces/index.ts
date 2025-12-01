@@ -17,6 +17,7 @@ export interface IAwsConfig {
   // firehoseStreamName: string;
   ssmParameterName: string;
 }
+
 export interface IRdbConfig {
   engine: string;
   host: string;
@@ -25,29 +26,35 @@ export interface IRdbConfig {
   username: string;
   password: string;
 }
+
 export interface IRmqConfig {
   user: string;
   password: string;
   host: string;
   queue: string;
 }
+
 export interface IRedisConfig {
   host: string;
   port: number;
 }
+
 export interface IJwtConfig {
   authSecret: string;
   refreshSecret: number;
 }
+
 export interface IGoogleConfig {
   clientId: string;
   secret: string;
 }
+
 export interface IFirebaseConfig {
   projectId: string;
   privateKey: string;
   clientEmail: string;
 }
+
 // export interface INaverConfig {
 //   accessKey: string;
 //   secretKey: string;
@@ -63,25 +70,30 @@ export interface IMessageEvent {
   type?: string;
   retry?: number;
 }
+
 export interface IKeyVal {
   key: string;
   val: string;
 }
+
 export interface IPackCompositeIds {
   artistId: number;
   artworkIds: number[];
 }
+
 export interface IShortItem {
   id: number;
   image: string;
   title: string;
 }
+
 export interface IShortArtist {
   id: number;
   name: string;
   avatar: string;
   items: Array<IShortItem>;
 }
+
 export interface IPaginationMeta {
   itemsPerPage: number;
   totalItems: number;
@@ -174,6 +186,7 @@ export interface IHistory {
   };
   description: string;
 }
+
 export interface IRequestUser {
   id: number;
   username: string;
@@ -181,6 +194,7 @@ export interface IRequestUser {
   schoolId: number | null;
   refreshToken?: string;
 }
+
 export interface INextStop {
   place: string;
   name: string | null;
@@ -313,6 +327,7 @@ export interface ICalendarDay {
   end: string;
   isClassDay: boolean; // 수업이 있는지 여부
 }
+
 export interface HttpErrorFormat {
   error: string;
   description?: string;
@@ -335,26 +350,7 @@ export interface IStoryQuestion {
   answer: string;
 }
 
-// 4x4
-export interface IScores {
-  game: {
-    record1: number;
-    record2: number;
-    record3: number;
-  };
-  result: {
-    record1: number;
-    record2: number;
-    record3: number;
-  };
-  measurement: {
-    height: number;
-    weight: number;
-    bmi: number;
-  };
-}
-
-export interface StudentPresence {
+export interface IStudentPresence {
   weekNumber: number;
   lessonDate: string;
   index: number | null;
@@ -365,5 +361,35 @@ export interface StudentPresence {
   klass: string;
   bunho: number;
   status: PresenceStatus;
+  note: string | null;
+}
+
+export interface IScores {
+  game: {
+    primary: number;
+    secondary: number;
+  };
+  result: {
+    record1: number;
+    record2: number;
+    record3: number;
+  };
+  measurement: {
+    height: number;
+    weight: number;
+  };
+}
+
+export interface IStudentScore {
+  weekNumber: number;
+  lessonDate: string;
+  index: number | null;
+  studentId: number;
+  studentName: string;
+  isActive: boolean;
+  grade: number;
+  klass: string;
+  bunho: number;
+  value: IScores;
   note: string | null;
 }

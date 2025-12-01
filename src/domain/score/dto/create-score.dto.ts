@@ -6,9 +6,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  Max,
   MaxLength,
-  Min,
 } from 'class-validator';
 import { IScores } from 'src/common/interfaces';
 
@@ -31,16 +29,6 @@ export class CreateScoreDto {
   @IsDateString({}, { message: '수업 일자는 YYYY-MM-DD 형식이어야 합니다' })
   lessonDate?: string | null;
 
-  @ApiProperty({
-    description: '수업 제목 또는 주제',
-    example: '분수의 덧셈 복습',
-    maxLength: 120,
-  })
-  @IsNotEmpty({ message: '수업 제목은 필수입니다' })
-  @IsString({ message: '수업 제목은 문자열이어야 합니다' })
-  @MaxLength(120, { message: '수업 제목은 120자를 초과할 수 없습니다' })
-  title: string;
-
   @ApiPropertyOptional({
     description: '수업 내용 요약',
     example: '교과서 5단원 2차시 진행, 개념 점검 퀴즈 포함',
@@ -50,12 +38,11 @@ export class CreateScoreDto {
   description?: string | null;
 
   @ApiPropertyOptional({
-    description: '평가 점수 묶음',
+    description: '평가 점수. no point unless it exists',
     example: {
       game: {
-        record1: 92,
-        record2: 92,
-        record3: 92,
+        primary: 100,
+        secondary: 92,
       },
       result: {
         record1: 92,
@@ -65,11 +52,18 @@ export class CreateScoreDto {
       measurement: {
         height: 170,
         weight: 70,
-        bmi: 24.2,
       },
     },
   })
-  @IsOptional()
-  value?: IScores | null;
-}
+  value: IScores;
 
+  @ApiPropertyOptional({
+    description: '점수 메모',
+    example: '이런 저런',
+    maxLength: 255,
+  })
+  @IsOptional()
+  @IsString({ message: '메모는 문자열이어야 합니다' })
+  @MaxLength(255, { message: '메모는 255자를 초과할 수 없습니다' })
+  note?: string | null;
+}

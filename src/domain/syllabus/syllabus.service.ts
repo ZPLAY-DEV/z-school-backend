@@ -358,20 +358,23 @@ export class SyllabusService {
         if (programData.scripts !== undefined) {
           updateData.scripts = programData.scripts;
         }
-        if (programData.imageUrl !== undefined) {
-          updateData.imageUrl = programData.imageUrl;
+        if (programData.primaryImageUrl !== undefined) {
+          updateData.primaryImageUrl = programData.primaryImageUrl;
         }
-        if (programData.audioUrl !== undefined) {
-          updateData.audioUrl = programData.audioUrl;
+        if (programData.secondaryImageUrl !== undefined) {
+          updateData.secondaryImageUrl = programData.secondaryImageUrl;
         }
-        if (programData.audioUrl !== undefined) {
-          updateData.audioUrl = programData.audioUrl;
+        if (programData.primaryAudioUrl !== undefined) {
+          updateData.primaryAudioUrl = programData.primaryAudioUrl;
         }
-        if (programData.fullVideoUrl !== undefined) {
-          updateData.fullVideoUrl = programData.fullVideoUrl;
+        if (programData.secondaryAudioUrl !== undefined) {
+          updateData.secondaryAudioUrl = programData.secondaryAudioUrl;
         }
-        if (programData.miniVideoUrl !== undefined) {
-          updateData.miniVideoUrl = programData.miniVideoUrl;
+        if (programData.primaryVideoUrl !== undefined) {
+          updateData.primaryVideoUrl = programData.primaryVideoUrl;
+        }
+        if (programData.secondaryVideoUrl !== undefined) {
+          updateData.secondaryVideoUrl = programData.secondaryVideoUrl;
         }
 
         void this.programRepository.update(programData.id, updateData);

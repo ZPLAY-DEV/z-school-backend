@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PresenceStatus } from 'src/common/enums';
-import { StudentPresence } from 'src/common/interfaces';
+import { IStudentPresence } from 'src/common/interfaces';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { CreatePresenceDto } from 'src/domain/presence/dto/create-presence.dto';
 import { UpsertPresenceDto } from 'src/domain/presence/dto/upsert-presence.dto';
@@ -188,7 +188,7 @@ export class GroupPresenceService {
     groupId: number,
     weekNumber: number,
     filters: { studentId?: number; userId?: number } = {},
-  ): Promise<StudentPresence[]> {
+  ): Promise<IStudentPresence[]> {
     if (!Number.isInteger(weekNumber) || weekNumber < 1) {
       throw new BadRequestException('주차는 1 이상의 정수여야 합니다.');
     }
@@ -241,17 +241,17 @@ export class GroupPresenceService {
         bunho: pick.student?.bunho ?? 0,
         status: presence?.status ?? PresenceStatus.INIT,
         note: presence?.note ?? null,
-      } satisfies StudentPresence;
+      } satisfies IStudentPresence;
     });
   }
 
   async findByStudent(
     groupId: number,
     studentId: number,
-    week?: number,
-  ): Promise<StudentPresence[]> {
-    if (typeof week === 'number') {
-      if (!Number.isInteger(week) || week < 1) {
+    weekNumber?: number,
+  ): Promise<IStudentPresence[]> {
+    if (typeof weekNumber === 'number') {
+      if (!Number.isInteger(weekNumber) || weekNumber < 1) {
         throw new BadRequestException('주차는 1 이상의 정수여야 합니다.');
       }
     }
@@ -272,7 +272,7 @@ export class GroupPresenceService {
 
     const schooldayMap = new Map<number, string>();
     for (const record of schooldays) {
-      if (typeof week === 'number' && record.weekNumber !== week) {
+      if (typeof weekNumber === 'number' && record.weekNumber !== weekNumber) {
         continue;
       }
       if (!schooldayMap.has(record.weekNumber)) {
@@ -280,12 +280,12 @@ export class GroupPresenceService {
       }
     }
 
-    const presenceWhere: { pickId: number; week?: number } = {
+    const presenceWhere: { pickId: number; weekNumber?: number } = {
       pickId: pick.id,
     };
 
-    if (typeof week === 'number') {
-      presenceWhere.week = week;
+    if (typeof weekNumber === 'number') {
+      presenceWhere.weekNumber = weekNumber;
     }
 
     const presences = await this.presenceRepository.find({
@@ -301,9 +301,9 @@ export class GroupPresenceService {
     }
 
     const baseWeeks =
-      typeof week === 'number'
-        ? presenceMap.has(week) || schooldayMap.has(week)
-          ? [week]
+      typeof weekNumber === 'number'
+        ? presenceMap.has(weekNumber) || schooldayMap.has(weekNumber)
+          ? [weekNumber]
           : []
         : Array.from(
             new Set([...schooldayMap.keys(), ...presenceMap.keys()]),
@@ -328,7 +328,7 @@ export class GroupPresenceService {
         bunho: pick.student?.bunho ?? 0,
         status: presence?.status ?? PresenceStatus.INIT,
         note: presence?.note ?? null,
-      } satisfies StudentPresence;
+      } satisfies IStudentPresence;
     });
   }
 }

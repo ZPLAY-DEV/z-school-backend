@@ -1,7 +1,7 @@
 import {
-    BadRequestException,
-    Injectable,
-    NotFoundException,
+  BadRequestException,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { lastDayOfMonth } from 'date-fns';
@@ -9,19 +9,19 @@ import * as ExcelJS from 'exceljs';
 import { InjectModel, Model } from 'nestjs-dynamoose';
 import { AttendanceStatus } from 'src/common/enums';
 import {
-    IAttendance,
-    IAttendanceKey,
+  IAttendance,
+  IAttendanceKey,
 } from 'src/domain/attendance/entities/attendance.interface';
 import { AttendanceReport } from 'src/domain/attendance/types/attendance.types';
 import {
-    createFallbackAttendanceItem,
-    generateDailyStudentKey,
-    generateGroupKey,
-    getDateFromDailyStudentKey,
-    getStudentIdFromDailyStudentKey,
-    normalizeAttendance,
-    normalizeAttendances,
-    processAttendanceReport,
+  createFallbackAttendanceItem,
+  generateDailyStudentKey,
+  generateGroupKey,
+  getDateFromDailyStudentKey,
+  getStudentIdFromDailyStudentKey,
+  normalizeAttendance,
+  normalizeAttendances,
+  processAttendanceReport,
 } from 'src/domain/attendance/utils/attendance.utils';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
 import { Group } from 'src/domain/group/entities/group.entity';

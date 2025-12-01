@@ -42,20 +42,12 @@ export class Score {
   @Column({ type: 'date', nullable: true })
   lessonDate: string | null;
 
-  @ApiProperty({
-    description: '수업 제목 또는 주제',
-    example: '분수의 덧셈 복습',
-  })
-  @Column({ type: 'varchar', length: 120 })
-  title: string;
-
   @ApiPropertyOptional({
     description: '평가 점수',
     example: {
       game: {
-        record1: 92,
-        record2: 92,
-        record3: 92,
+        primary: 100,
+        secondary: 92,
       },
       result: {
         record1: 92,
@@ -65,12 +57,14 @@ export class Score {
       measurement: {
         height: 170,
         weight: 70,
-        bmi: 24.2,
       },
     },
   })
-  @Column('json', { nullable: true })
-  value: IScores | null;
+  @Column('json')
+  value: IScores;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  note: string | null;
 
   @ApiProperty({ description: '생성일자', example: '2025-09-01T09:00:00.000Z' })
   @CreateDateColumn()

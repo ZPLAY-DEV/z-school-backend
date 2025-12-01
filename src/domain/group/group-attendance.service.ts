@@ -1133,7 +1133,7 @@ export class GroupAttendanceService {
   async getStudentAttendances(
     groupId: number,
     studentId: number,
-    monthStr?: string, //? ex. "2025-08"
+    monthStr?: string, //? ex. "2025-11"
   ): Promise<IAttendanceWithDate[]> {
     let year = 0;
     let month = 0;
