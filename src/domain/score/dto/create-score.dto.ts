@@ -2,9 +2,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
   IsInt,
-  IsNotEmpty,
+  IsObject,
   IsOptional,
-  IsPositive,
   IsString,
   MaxLength,
 } from 'class-validator';
@@ -12,14 +11,30 @@ import { IScores } from 'src/common/interfaces';
 
 export class CreateScoreDto {
   @ApiProperty({
-    description: '주차 - 1부터 시작하는 수업 주차',
-    example: 4,
+    description: 'GroupId, param 전달시 dto 는 생략하므로 optional 처리',
+    example: 3,
     minimum: 1,
   })
-  @IsNotEmpty({ message: '주차는 필수입니다' })
+  @IsInt({ message: 'groupId는 정수여야 합니다' })
+  @IsOptional()
+  groupId?: number;
+
+  @ApiProperty({
+    description: 'StudentId, param 전달시 dto 는 생략하므로 optional 처리',
+    example: 3,
+    minimum: 1,
+  })
+  @IsInt({ message: 'studentId는 정수여야 합니다' })
+  @IsOptional()
+  studentId?: number;
+
+  @ApiProperty({
+    description: 'week - 1부터 시작하는 수업 주차 숫자',
+    example: 3,
+    minimum: 1,
+  })
   @IsInt({ message: '주차는 정수여야 합니다' })
-  @IsPositive({ message: '주차는 1 이상이어야 합니다' })
-  weekIndex: number;
+  weekNumber: number;
 
   @ApiPropertyOptional({
     description: '수업 일자 - YYYY-MM-DD 형식',
@@ -29,16 +44,8 @@ export class CreateScoreDto {
   @IsDateString({}, { message: '수업 일자는 YYYY-MM-DD 형식이어야 합니다' })
   lessonDate?: string | null;
 
-  @ApiPropertyOptional({
-    description: '수업 내용 요약',
-    example: '교과서 5단원 2차시 진행, 개념 점검 퀴즈 포함',
-  })
-  @IsOptional()
-  @IsString({ message: '수업 내용은 문자열이어야 합니다' })
-  description?: string | null;
-
-  @ApiPropertyOptional({
-    description: '평가 점수. no point unless it exists',
+  @ApiProperty({
+    description: '평가 점수. need to exist',
     example: {
       game: {
         primary: 100,
@@ -54,6 +61,7 @@ export class CreateScoreDto {
       },
     },
   })
+  @IsObject({ message: 'value는 객체여야 합니다' })
   value: IScores;
 
   @ApiPropertyOptional({

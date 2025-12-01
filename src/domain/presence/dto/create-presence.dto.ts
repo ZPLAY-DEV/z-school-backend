@@ -4,7 +4,6 @@ import {
   IsEnum,
   IsInt,
   IsOptional,
-  IsPositive,
   IsString,
   MaxLength,
 } from 'class-validator';
@@ -12,7 +11,7 @@ import { PresenceStatus } from 'src/common/enums';
 
 export class CreatePresenceDto {
   @ApiProperty({
-    description: 'GroupId - 1부터 시작하는 수업 주차 숫자',
+    description: 'GroupId, param 전달시 dto 는 생략하므로 optional 처리',
     example: 3,
     minimum: 1,
   })
@@ -21,21 +20,13 @@ export class CreatePresenceDto {
   groupId?: number;
 
   @ApiProperty({
-    description: 'StudentId',
+    description: 'StudentId, param 전달시 dto 는 생략하므로 optional 처리',
     example: 3,
     minimum: 1,
   })
   @IsInt({ message: 'studentId는 정수여야 합니다' })
   @IsOptional()
-  studentId?: number;
-
-  @ApiPropertyOptional({
-    description: '학생 이름',
-    example: '2025-09-01',
-  })
-  @IsOptional()
-  @IsString()
-  studentName?: string;
+  studentId: number;
 
   @ApiProperty({
     description: 'week - 1부터 시작하는 수업 주차 숫자',
@@ -43,7 +34,6 @@ export class CreatePresenceDto {
     minimum: 1,
   })
   @IsInt({ message: '주차는 정수여야 합니다' })
-  @IsPositive({ message: '주차는 1 이상이어야 합니다' })
   weekNumber: number;
 
   @ApiPropertyOptional({

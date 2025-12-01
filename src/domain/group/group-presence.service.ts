@@ -9,7 +9,6 @@ import { PresenceStatus } from 'src/common/enums';
 import { IStudentPresence } from 'src/common/interfaces';
 import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { CreatePresenceDto } from 'src/domain/presence/dto/create-presence.dto';
-import { UpsertPresenceDto } from 'src/domain/presence/dto/upsert-presence.dto';
 import { Presence } from 'src/domain/presence/entities/presence.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { In, Repository } from 'typeorm';
@@ -31,7 +30,7 @@ export class GroupPresenceService {
   //? Create 또는 Update
   //? ---------------------------------------------------------------------- ?//
 
-  async upsertBulk(dtos: UpsertPresenceDto[]): Promise<Presence[]> {
+  async upsertBulk(dtos: CreatePresenceDto[]): Promise<Presence[]> {
     if (!Array.isArray(dtos) || dtos.length === 0) {
       throw new BadRequestException('출석 정보 배열이 필요합니다.');
     }
@@ -332,3 +331,4 @@ export class GroupPresenceService {
     });
   }
 }
+

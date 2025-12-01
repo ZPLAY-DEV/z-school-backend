@@ -14,7 +14,6 @@ import { ApiTags } from '@nestjs/swagger';
 import { IStudentPresence } from 'src/common/interfaces';
 import { GroupPresenceService } from 'src/domain/group/group-presence.service';
 import { CreatePresenceDto } from 'src/domain/presence/dto/create-presence.dto';
-import { UpsertPresenceDto } from 'src/domain/presence/dto/upsert-presence.dto';
 import { Presence } from 'src/domain/presence/entities/presence.entity';
 
 @ApiTags('✳️ Groups > Presence ( 반 > 출석부 조회 )')
@@ -28,11 +27,11 @@ export class GroupPresenceController {
   //? ---------------------------------------------------------------------- ?//
 
   @HttpCode(200)
-  @Post(':groupId/presences/:weekNumber')
+  @Post(':groupId/weeks/:weekNumber/presences/bulk')
   async upsertBulk(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('weekNumber', ParseIntPipe) weekNumber: number,
-    @Body() dtos: UpsertPresenceDto[],
+    @Body() dtos: CreatePresenceDto[],
   ): Promise<Presence[]> {
     return await this.groupPresenceService.upsertBulk(
       dtos.map((dto) => ({
@@ -44,18 +43,16 @@ export class GroupPresenceController {
   }
 
   @HttpCode(200)
-  @Post(':groupId/students/:studentId/presences/:weekNumber')
+  @Post(':groupId/students/:studentId/presences')
   async upsert(
     @Param('groupId', ParseIntPipe) groupId: number,
     @Param('studentId', ParseIntPipe) studentId: number,
-    @Param('weekNumber', ParseIntPipe) weekNumber: number,
     @Body() dto: CreatePresenceDto,
   ): Promise<Presence> {
     return await this.groupPresenceService.upsert({
       ...dto,
       groupId,
       studentId,
-      weekNumber,
     });
   }
 
