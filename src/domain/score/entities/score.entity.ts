@@ -45,18 +45,15 @@ export class Score {
   @ApiPropertyOptional({
     description: '평가 점수',
     example: {
-      game: {
-        primary: 100,
-        secondary: 92,
-      },
-      result: {
-        primary: 92,
-        secondary: 88,
-      },
-      measurement: {
-        height: 170,
-        weight: 70,
-      },
+      game: 100,
+      height: 150,
+      weight: 40,
+      result: [
+        {
+          key: '전갈자세',
+          val: '50',
+        },
+      ],
     },
   })
   @Column('json')

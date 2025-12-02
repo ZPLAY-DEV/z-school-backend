@@ -236,18 +236,10 @@ export class GroupScoreService {
         pick.scores?.[0];
 
       const value = score?.value ?? {
-        game: {
-          primary: 0,
-          secondary: 0,
-        },
-        result: {
-          primary: 0,
-          secondary: 0,
-        },
-        measurement: {
-          height: 0,
-          weight: 0,
-        },
+        game: 0,
+        height: 0,
+        weight: 0,
+        result: [],
       };
 
       return {
@@ -344,18 +336,10 @@ export class GroupScoreService {
     return baseWeeks.map((weekNumber) => {
       const score = scoreMap.get(weekNumber);
       const value = score?.value ?? {
-        game: {
-          primary: 0,
-          secondary: 0,
-        },
-        result: {
-          primary: 0,
-          secondary: 0,
-        },
-        measurement: {
-          height: 0,
-          weight: 0,
-        },
+        game: 0,
+        height: 0,
+        weight: 0,
+        result: [],
       };
       const date = score?.lessonDate ?? schooldayMap.get(weekNumber) ?? '';
       return {

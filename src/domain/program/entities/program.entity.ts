@@ -179,6 +179,15 @@ export class Program {
   })
   silhouetteAudioUrl?: string | null;
 
+  @ApiProperty({
+    description: '🈳 인트로 이미지 URL (isScorable이 true인 경우만)',
+    example:
+      'https://cdn.스쿨허브.kr/syllabuses/1/week1/programs/intro/warrior-pose.png',
+    nullable: true,
+    required: false,
+  })
+  coverImageUrl?: string | null;
+
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
   @ApiProperty({

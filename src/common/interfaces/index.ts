@@ -365,18 +365,10 @@ export interface IStudentPresence {
 }
 
 export interface IScores {
-  game: {
-    primary: number;
-    secondary: number;
-  };
-  result: {
-    primary: number;
-    secondary: number;
-  };
-  measurement: {
-    height: number;
-    weight: number;
-  };
+  game: number;
+  height: number;
+  weight: number;
+  result: IKeyVal[];
 }
 
 export interface IStudentScore {

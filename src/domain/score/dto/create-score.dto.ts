@@ -47,18 +47,15 @@ export class CreateScoreDto {
   @ApiProperty({
     description: '평가 점수. need to exist',
     example: {
-      game: {
-        primary: 100,
-        secondary: 92,
-      },
-      result: {
-        primary: 92,
-        secondary: 92,
-      },
-      measurement: {
-        height: 170,
-        weight: 70,
-      },
+      game: 92,
+      height: 170,
+      weight: 70,
+      result: [
+        {
+          key: '전갈자세',
+          val: 92,
+        },
+      ],
     },
   })
   @IsObject({ message: 'value는 객체여야 합니다' })

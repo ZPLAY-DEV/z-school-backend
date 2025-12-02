@@ -506,6 +506,7 @@ export class SyllabusService {
     program.fullAudioUrl = this._getFullAudioUrl(syllabusId, program);
     program.miniVideoUrl = this._getMiniVideoUrl(syllabusId, program);
     program.miniAudioUrl = this._getMiniAudioUrl(syllabusId, program);
+    program.coverImageUrl = this._getCoverImageUrl(syllabusId, program);
     program.introImageUrl = this._getIntroImageUrl(syllabusId, program);
     program.introAudioUrl = this._getIntroAudioUrl(syllabusId, program);
     program.silhouetteImageUrl = this._getSilhouetteImageUrl(
@@ -533,6 +534,10 @@ export class SyllabusService {
 
   private _getMiniAudioUrl(syllabusId: number, program: Program): string {
     return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/miniVideo/${program.slug}.mp3`;
+  }
+
+  private _getCoverImageUrl(syllabusId: number, program: Program): string {
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/cover/${program.slug}.jpg`;
   }
 
   private _getIntroImageUrl(
