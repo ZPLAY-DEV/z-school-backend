@@ -99,8 +99,13 @@ export class SyllabusController {
 
   @Public()
   @Get(':id/programs')
-  @ApiOperation({ summary: '특정 커리큘럼 상세 조회' })
+  @ApiOperation({ summary: '특정 커리큘럼의 프로그램 목록 조회' })
   @ApiParam({ name: 'id', description: '커리큘럼 ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: '프로그램 목록이 성공적으로 조회됨',
+    type: [Program],
+  })
   async findPrograms(
     @Param('id', ParseIntPipe) id: number,
     @Query('isScorable', new ParseBoolPipe({ optional: true }))

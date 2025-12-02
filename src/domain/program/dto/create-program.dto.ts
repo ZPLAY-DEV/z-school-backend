@@ -1,14 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-    IsArray,
-    IsBoolean,
-    IsEnum,
-    IsInt,
-    IsNotEmpty,
-    IsOptional,
-    IsString,
-    IsUrl,
-    MaxLength,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
 } from 'class-validator';
 import { ExerciseType, Orientation, StudentLevel } from 'src/common/enums';
 
@@ -106,54 +106,4 @@ export class CreateProgramDto {
   @MaxLength(255)
   @IsOptional()
   imageUrl?: string | null;
-
-  @ApiProperty({
-    description: '🈳 이미지 URL',
-    example: 'https://example.com/image.png',
-    required: false,
-  })
-  @IsUrl()
-  @MaxLength(255)
-  @IsOptional()
-  secondaryImageUrl?: string | null;
-
-  @ApiProperty({
-    description: '🈳 오디오 URL',
-    example: 'https://example.com/audio.mp3',
-    required: false,
-  })
-  @IsUrl()
-  @MaxLength(255)
-  @IsOptional()
-  primaryAudioUrl?: string | null;
-
-  @ApiProperty({
-    description: '🈳 오디오 URL',
-    example: 'https://example.com/audio.mp3',
-    required: false,
-  })
-  @IsUrl()
-  @MaxLength(255)
-  @IsOptional()
-  secondaryAudioUrl?: string | null;
-
-  @ApiProperty({
-    description: '🈳 전체화면 비디오 URL',
-    example: 'https://example.com/video.mp4',
-    required: false,
-  })
-  @IsUrl()
-  @MaxLength(255)
-  @IsOptional()
-  primaryVideoUrl?: string | null;
-
-  @ApiProperty({
-    description: '🈳 작은화면 비디오 URL',
-    example: 'https://example.com/video.mp4',
-    required: false,
-  })
-  @IsUrl()
-  @MaxLength(255)
-  @IsOptional()
-  secondaryVideoUrl?: string | null;
 }

@@ -119,7 +119,7 @@ export class ProgramService {
     const valueStrings: string[] = [];
 
     dtos.forEach((dto) => {
-      valueStrings.push('(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+      valueStrings.push('(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
 
       queryParams.push(
         dto.syllabusId,
@@ -135,11 +135,6 @@ export class ProgramService {
         dto.index,
         dto.isScorable ? 1 : 0,
         dto.imageUrl ?? null,
-        dto.secondaryImageUrl ?? null,
-        dto.primaryAudioUrl ?? null,
-        dto.secondaryAudioUrl ?? null,
-        dto.primaryVideoUrl ?? null,
-        dto.secondaryVideoUrl ?? null,
       );
     });
 

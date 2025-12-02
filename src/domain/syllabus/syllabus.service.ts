@@ -126,6 +126,17 @@ export class SyllabusService {
       throw new NotFoundException(`Syllabus with id ${id} not found`);
     }
 
+    // extraFields 추가
+    if (syllabus.weeks) {
+      syllabus.weeks.forEach((week) => {
+        if (week.programs && week.programs.length > 0) {
+          week.programs.forEach((program) => {
+            this._addProgramExtraUrls(id, program);
+          });
+        }
+      });
+    }
+
     return syllabus;
   }
 
@@ -156,18 +167,8 @@ export class SyllabusService {
 
     const programs = await queryBuilder.getMany();
 
-    // 각 program에 video와 audio URL 추가
-    return programs.map((program) => ({
-      ...program,
-      fullVideoUrl: this._getFullVideoUrl(id, program),
-      fullAudioUrl: this._getFullAudioUrl(id, program),
-      miniVideoUrl: this._getMiniVideoUrl(id, program),
-      miniAudioUrl: this._getMiniAudioUrl(id, program),
-      introImageUrl: this._getIntroImageUrl(id, program),
-      introAudioUrl: this._getIntroAudioUrl(id, program),
-      silhouetteImageUrl: this._getSilhouetteImageUrl(id, program),
-      silhouetteAudioUrl: this._getSilhouetteAudioUrl(id, program),
-    }));
+    // 각 program에 URL 추가 (공통 유틸 함수 사용)
+    return programs.map((program) => this._addProgramExtraUrls(id, program));
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -494,6 +495,29 @@ export class SyllabusService {
   //? ---------------------------------------------------------------------- ?//
   //? Private Helper Methods
   //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * Program에 URL 속성들을 추가하는 공통 유틸 함수
+   * findOne()과 findPrograms()에서 공통으로 사용
+   */
+  private _addProgramExtraUrls(syllabusId: number, program: Program): Program {
+    // 원본 객체에 직접 속성 추가 (TypeORM 직렬화 문제 방지)
+    program.fullVideoUrl = this._getFullVideoUrl(syllabusId, program);
+    program.fullAudioUrl = this._getFullAudioUrl(syllabusId, program);
+    program.miniVideoUrl = this._getMiniVideoUrl(syllabusId, program);
+    program.miniAudioUrl = this._getMiniAudioUrl(syllabusId, program);
+    program.introImageUrl = this._getIntroImageUrl(syllabusId, program);
+    program.introAudioUrl = this._getIntroAudioUrl(syllabusId, program);
+    program.silhouetteImageUrl = this._getSilhouetteImageUrl(
+      syllabusId,
+      program,
+    );
+    program.silhouetteAudioUrl = this._getSilhouetteAudioUrl(
+      syllabusId,
+      program,
+    );
+    return program;
+  }
 
   private _getFullVideoUrl(syllabusId: number, program: Program): string {
     return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/fullVideo/${program.slug}.mp4`;

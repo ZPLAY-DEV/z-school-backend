@@ -109,6 +109,76 @@ export class Program {
   @DeleteDateColumn()
   deletedAt: Date | null;
 
+  //* Extra Fields (동적으로 생성되는 URL 필드들) --------------------------- *//
+
+  @ApiProperty({
+    description: '🈳 전체 화면 비디오 URL',
+    example:
+      'https://cdn.스쿨허브.kr/syllabuses/1/week1/programs/fullVideo/warrior-pose.mp4',
+    required: false,
+  })
+  fullVideoUrl?: string;
+
+  @ApiProperty({
+    description: '🈳 전체 화면 오디오 URL',
+    example:
+      'https://cdn.스쿨허브.kr/syllabuses/1/week1/programs/fullVideo/warrior-pose.mp3',
+    required: false,
+  })
+  fullAudioUrl?: string;
+
+  @ApiProperty({
+    description: '🈳 작은 화면 비디오 URL',
+    example:
+      'https://cdn.스쿨허브.kr/syllabuses/1/week1/programs/miniVideo/warrior-pose.mp4',
+    required: false,
+  })
+  miniVideoUrl?: string;
+
+  @ApiProperty({
+    description: '🈳 작은 화면 오디오 URL',
+    example:
+      'https://cdn.스쿨허브.kr/syllabuses/1/week1/programs/miniVideo/warrior-pose.mp3',
+    required: false,
+  })
+  miniAudioUrl?: string;
+
+  @ApiProperty({
+    description: '🈳 인트로 이미지 URL (isScorable이 true인 경우만)',
+    example:
+      'https://cdn.스쿨허브.kr/syllabuses/1/week1/programs/intro/warrior-pose.png',
+    nullable: true,
+    required: false,
+  })
+  introImageUrl?: string | null;
+
+  @ApiProperty({
+    description: '🈳 인트로 오디오 URL (isScorable이 true인 경우만)',
+    example:
+      'https://cdn.스쿨허브.kr/syllabuses/1/week1/programs/intro/warrior-pose.mp3',
+    nullable: true,
+    required: false,
+  })
+  introAudioUrl?: string | null;
+
+  @ApiProperty({
+    description: '🈳 실루엣 이미지 URL (isScorable이 true인 경우만)',
+    example:
+      'https://cdn.스쿨허브.kr/syllabuses/1/week1/programs/silhouette/warrior-pose.png',
+    nullable: true,
+    required: false,
+  })
+  silhouetteImageUrl?: string | null;
+
+  @ApiProperty({
+    description: '🈳 실루엣 오디오 URL (isScorable이 true인 경우만)',
+    example:
+      'https://cdn.스쿨허브.kr/syllabuses/1/week1/programs/silhouette/warrior-pose.mp3',
+    nullable: true,
+    required: false,
+  })
+  silhouetteAudioUrl?: string | null;
+
   //* M-to-1 belongsTo ----------------------------------------------------- *//
 
   @ApiProperty({
