@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { generateSlug } from 'src/helpers/formatter';
@@ -17,6 +18,8 @@ import { Syllabus } from './entities/syllabus.entity';
 
 @Injectable()
 export class SyllabusService {
+  private readonly cloudfrontUrl: string;
+
   constructor(
     @InjectRepository(Syllabus)
     private readonly syllabusRepository: Repository<Syllabus>,
@@ -28,7 +31,13 @@ export class SyllabusService {
     private readonly weekRepository: Repository<Week>,
     @InjectRepository(Program)
     private readonly programRepository: Repository<Program>,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.cloudfrontUrl = this.configService.get<string>(
+      'aws.cloudfrontUrl',
+      'https://cdn.스쿨허브.kr', // fallback url
+    );
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Create
@@ -145,7 +154,20 @@ export class SyllabusService {
       });
     }
 
-    return await queryBuilder.getMany();
+    const programs = await queryBuilder.getMany();
+
+    // 각 program에 video와 audio URL 추가
+    return programs.map((program) => ({
+      ...program,
+      fullVideoUrl: this._getFullVideoUrl(id, program),
+      fullAudioUrl: this._getFullAudioUrl(id, program),
+      miniVideoUrl: this._getMiniVideoUrl(id, program),
+      miniAudioUrl: this._getMiniAudioUrl(id, program),
+      introImageUrl: this._getIntroImageUrl(id, program),
+      introAudioUrl: this._getIntroAudioUrl(id, program),
+      silhouetteImageUrl: this._getSilhouetteImageUrl(id, program),
+      silhouetteAudioUrl: this._getSilhouetteAudioUrl(id, program),
+    }));
   }
 
   //? ---------------------------------------------------------------------- ?//
@@ -386,23 +408,8 @@ export class SyllabusService {
         if (programData.scripts !== undefined) {
           updateData.scripts = programData.scripts;
         }
-        if (programData.primaryImageUrl !== undefined) {
-          updateData.primaryImageUrl = programData.primaryImageUrl;
-        }
-        if (programData.secondaryImageUrl !== undefined) {
-          updateData.secondaryImageUrl = programData.secondaryImageUrl;
-        }
-        if (programData.primaryAudioUrl !== undefined) {
-          updateData.primaryAudioUrl = programData.primaryAudioUrl;
-        }
-        if (programData.secondaryAudioUrl !== undefined) {
-          updateData.secondaryAudioUrl = programData.secondaryAudioUrl;
-        }
-        if (programData.primaryVideoUrl !== undefined) {
-          updateData.primaryVideoUrl = programData.primaryVideoUrl;
-        }
-        if (programData.secondaryVideoUrl !== undefined) {
-          updateData.secondaryVideoUrl = programData.secondaryVideoUrl;
+        if (programData.imageUrl !== undefined) {
+          updateData.imageUrl = programData.imageUrl;
         }
 
         void this.programRepository.update(programData.id, updateData);
@@ -482,5 +489,57 @@ export class SyllabusService {
     });
 
     return await this.findOne(id);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Private Helper Methods
+  //? ---------------------------------------------------------------------- ?//
+
+  private _getFullVideoUrl(syllabusId: number, program: Program): string {
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/fullVideo/${program.slug}.mp4`;
+  }
+
+  private _getFullAudioUrl(syllabusId: number, program: Program): string {
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/fullVideo/${program.slug}.mp3`;
+  }
+
+  private _getMiniVideoUrl(syllabusId: number, program: Program): string {
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/miniVideo/${program.slug}.mp4`;
+  }
+
+  private _getMiniAudioUrl(syllabusId: number, program: Program): string {
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/miniVideo/${program.slug}.mp3`;
+  }
+
+  private _getIntroImageUrl(
+    syllabusId: number,
+    program: Program,
+  ): string | null {
+    if (!program.isScorable) return null;
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/intro/${program.slug}.png`;
+  }
+
+  private _getIntroAudioUrl(
+    syllabusId: number,
+    program: Program,
+  ): string | null {
+    if (!program.isScorable) return null;
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/intro/${program.slug}.mp3`;
+  }
+
+  private _getSilhouetteImageUrl(
+    syllabusId: number,
+    program: Program,
+  ): string | null {
+    if (!program.isScorable) return null;
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/silhouette/${program.slug}.png`;
+  }
+
+  private _getSilhouetteAudioUrl(
+    syllabusId: number,
+    program: Program,
+  ): string | null {
+    if (!program.isScorable) return null;
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/silhouette/${program.slug}.mp3`;
   }
 }

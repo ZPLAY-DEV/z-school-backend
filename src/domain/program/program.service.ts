@@ -134,7 +134,7 @@ export class ProgramService {
         dto.orientation ?? 'CENTER',
         dto.index,
         dto.isScorable ? 1 : 0,
-        dto.primaryImageUrl ?? null,
+        dto.imageUrl ?? null,
         dto.secondaryImageUrl ?? null,
         dto.primaryAudioUrl ?? null,
         dto.secondaryAudioUrl ?? null,
@@ -145,7 +145,7 @@ export class ProgramService {
 
     const query = `
       INSERT INTO programs 
-        (syllabusId, weekId, weekNumber, name, slug, type, tags, scripts, level, orientation, \`index\`, isScorable, primaryImageUrl, secondaryImageUrl, primaryAudioUrl, secondaryAudioUrl, primaryVideoUrl, secondaryVideoUrl)
+        (syllabusId, weekId, weekNumber, name, slug, type, tags, scripts, level, orientation, \`index\`, isScorable, imageUrl, secondaryImageUrl, primaryAudioUrl, secondaryAudioUrl, primaryVideoUrl, secondaryVideoUrl)
       VALUES ${valueStrings.join(', ')}
       ON DUPLICATE KEY UPDATE
         weekNumber = VALUES(weekNumber),
@@ -157,7 +157,7 @@ export class ProgramService {
         orientation = VALUES(orientation),
         \`index\` = VALUES(\`index\`),
         isScorable = VALUES(isScorable),
-        primaryImageUrl = VALUES(primaryImageUrl),
+        imageUrl = VALUES(imageUrl),
         secondaryImageUrl = VALUES(secondaryImageUrl),
         primaryAudioUrl = VALUES(primaryAudioUrl),
         secondaryAudioUrl = VALUES(secondaryAudioUrl),

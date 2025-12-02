@@ -93,42 +93,7 @@ export class Program {
     example: 'https://example.com/image.png',
   })
   @Column({ type: 'varchar', length: 255, nullable: true })
-  primaryImageUrl: string | null;
-
-  @ApiProperty({
-    description: '🈳 이미지 URL',
-    example: 'https://example.com/image.png',
-  })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  secondaryImageUrl: string | null;
-
-  @ApiProperty({
-    description: '🈳 오디오 URL',
-    example: 'https://example.com/audio.mp3',
-  })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  primaryAudioUrl: string | null;
-
-  @ApiProperty({
-    description: '🈳 오디오 URL',
-    example: 'https://example.com/audio.mp3',
-  })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  secondaryAudioUrl: string | null;
-
-  @ApiProperty({
-    description: '🈳 전체화면 비디오 URL',
-    example: 'https://example.com/video.mp4',
-  })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  primaryVideoUrl: string | null;
-
-  @ApiProperty({
-    description: '🈳 작은화면 비디오 URL',
-    example: 'https://example.com/video.mp4',
-  })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  secondaryVideoUrl: string | null;
+  imageUrl: string | null;
 
   // ------------------------------------------------------------------------ //
 

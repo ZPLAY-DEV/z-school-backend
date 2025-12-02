@@ -1,14 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsArray,
-  IsBoolean,
-  IsEnum,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsUrl,
-  MaxLength,
+    IsArray,
+    IsBoolean,
+    IsEnum,
+    IsInt,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+    IsUrl,
+    MaxLength,
 } from 'class-validator';
 import { ExerciseType, Orientation, StudentLevel } from 'src/common/enums';
 
@@ -105,7 +105,7 @@ export class CreateProgramDto {
   @IsUrl()
   @MaxLength(255)
   @IsOptional()
-  primaryImageUrl?: string | null;
+  imageUrl?: string | null;
 
   @ApiProperty({
     description: '🈳 이미지 URL',
