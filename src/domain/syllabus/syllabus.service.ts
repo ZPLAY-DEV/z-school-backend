@@ -120,6 +120,34 @@ export class SyllabusService {
     return syllabus;
   }
 
+  async findPrograms(
+    id: number,
+    isScorable?: boolean,
+    weekNumber?: number,
+  ): Promise<Program[]> {
+    // Syllabus 존재 여부 확인
+    await this.findOne(id);
+
+    const queryBuilder = this.programRepository
+      .createQueryBuilder('program')
+      .where('program.syllabusId = :syllabusId', { syllabusId: id })
+      .orderBy('program.weekNumber', 'ASC')
+      .addOrderBy('program.index', 'ASC');
+
+    if (isScorable !== undefined) {
+      queryBuilder.andWhere('program.isScorable = :isScorable', {
+        isScorable,
+      });
+    }
+    if (weekNumber !== undefined) {
+      queryBuilder.andWhere('program.weekNumber = :weekNumber', {
+        weekNumber,
+      });
+    }
+
+    return await queryBuilder.getMany();
+  }
+
   //? ---------------------------------------------------------------------- ?//
   //? Update
   //? ---------------------------------------------------------------------- ?//

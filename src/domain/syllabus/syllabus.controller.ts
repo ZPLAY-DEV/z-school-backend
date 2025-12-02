@@ -6,14 +6,17 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseBoolPipe,
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Paginate, Paginated, PaginateQuery } from 'nestjs-paginate';
 import { Public } from 'src/common/decorators/public.decorator';
 import { IS3Urls } from 'src/common/interfaces';
+import { Program } from 'src/domain/program/entities/program.entity';
 import { UploadService } from 'src/services/upload/upload.service';
 import { CreateSyllabusWithWeeksDto } from './dto/create-syllabus.dto';
 import { UpdateSyllabusDto } from './dto/update-syllabus.dto';
@@ -92,6 +95,20 @@ export class SyllabusController {
   })
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Syllabus> {
     return await this.syllabusService.findOne(id);
+  }
+
+  @Public()
+  @Get(':id/programs')
+  @ApiOperation({ summary: '특정 커리큘럼 상세 조회' })
+  @ApiParam({ name: 'id', description: '커리큘럼 ID' })
+  async findPrograms(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('isScorable', new ParseBoolPipe({ optional: true }))
+    isScorable?: boolean,
+    @Query('weekNumber', new ParseIntPipe({ optional: true }))
+    weekNumber?: number,
+  ): Promise<Program[]> {
+    return await this.syllabusService.findPrograms(id, isScorable, weekNumber);
   }
 
   //? ---------------------------------------------------------------------- ?//
