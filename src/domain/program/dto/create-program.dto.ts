@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -27,6 +28,7 @@ export class CreateProgramDto {
   weekNumber?: number;
 
   @ApiProperty({ description: '🈵 zero based index', example: 0 })
+  @Type(() => Number)
   @IsInt()
   @IsNotEmpty()
   index: number;

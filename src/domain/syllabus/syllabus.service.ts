@@ -330,12 +330,14 @@ export class SyllabusService {
             syllabusId, // syllabusId는 항상 현재 syllabus로 설정
           });
 
-          // Programs 업데이트 처리
+          // programs relation 제거 (cascade로 기존 index가 덮어씌워지는 것 방지)
+          (existingWeek as any).programs = undefined;
+          await this.weekRepository.save(existingWeek);
+
+          // Programs 업데이트 처리 (week 저장 후 실행)
           if (programs !== undefined) {
             await this._updatePrograms(weekData.id, programs);
           }
-
-          await this.weekRepository.save(existingWeek);
         }
       } else {
         // 새로운 week 생성
@@ -376,12 +378,10 @@ export class SyllabusService {
       await this.programRepository.softRemove(programsToDelete);
     }
 
-    // 각 program 처리
-    programsData.forEach((programData, orderIndex) => {
-      // index는 0-based ordering 기준으로 항상 재계산하되,
-      // DTO에서 명시적으로 전달된 값이 있으면 그것을 우선 사용
-      const resolvedIndex =
-        programData.index !== undefined ? programData.index : orderIndex;
+    // 각 program 처리 - FE에서 전달되는 순서대로 항상 index를 0부터 갱신
+    for (let orderIndex = 0; orderIndex < programsData.length; orderIndex++) {
+      const programData = programsData[orderIndex];
+      const resolvedIndex = orderIndex;
 
       if (programData.id) {
         // 기존 program 업데이트 - repository.update()를 사용하여 직접 업데이트
@@ -413,7 +413,7 @@ export class SyllabusService {
           updateData.imageUrl = programData.imageUrl;
         }
 
-        void this.programRepository.update(programData.id, updateData);
+        await this.programRepository.update(programData.id, updateData);
       } else {
         // 새로운 program 생성 - id를 제거하고 나머지 필드만 사용
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -425,9 +425,9 @@ export class SyllabusService {
         };
 
         const newProgram = this.programRepository.create(createData);
-        void this.programRepository.save(newProgram);
+        await this.programRepository.save(newProgram);
       }
-    });
+    }
   }
 
   //? ---------------------------------------------------------------------- ?//

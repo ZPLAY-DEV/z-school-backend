@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { BodyPart } from 'src/common/enums/body-part';
 import { Syllabus } from 'src/domain/syllabus/entities/syllabus.entity';
 import { generateSlug } from 'src/helpers/formatter';
 import { In, Repository } from 'typeorm';
@@ -7,6 +8,14 @@ import { Week } from '../week/entities/week.entity';
 import { CreateProgramDto } from './dto/create-program.dto';
 import { UpdateProgramDto } from './dto/update-program.dto';
 import { Program } from './entities/program.entity';
+
+const BODY_PART_MAP: Record<string, BodyPart> = {
+  팔: BodyPart.ARM,
+  다리: BodyPart.LEG,
+  허리: BodyPart.WAIST,
+  골반: BodyPart.PELVIS,
+  척추: BodyPart.SPINE,
+};
 
 @Injectable()
 export class ProgramService {
@@ -128,7 +137,7 @@ export class ProgramService {
         dto.name,
         dto.slug,
         dto.type,
-        dto.tags ? dto.tags.join(',') : null,
+        dto.tags ? dto.tags.map((tag) => BODY_PART_MAP[tag]).join(',') : null,
         dto.scripts ? JSON.stringify(dto.scripts) : null,
         dto.level,
         dto.orientation ?? 'CENTER',
@@ -140,7 +149,7 @@ export class ProgramService {
 
     const query = `
       INSERT INTO programs 
-        (syllabusId, weekId, weekNumber, name, slug, type, tags, scripts, level, orientation, \`index\`, isScorable, imageUrl, secondaryImageUrl, primaryAudioUrl, secondaryAudioUrl, primaryVideoUrl, secondaryVideoUrl)
+        (syllabusId, weekId, weekNumber, name, slug, type, tags, scripts, level, orientation, \`index\`, isScorable, imageUrl)
       VALUES ${valueStrings.join(', ')}
       ON DUPLICATE KEY UPDATE
         weekNumber = VALUES(weekNumber),
@@ -153,11 +162,6 @@ export class ProgramService {
         \`index\` = VALUES(\`index\`),
         isScorable = VALUES(isScorable),
         imageUrl = VALUES(imageUrl),
-        secondaryImageUrl = VALUES(secondaryImageUrl),
-        primaryAudioUrl = VALUES(primaryAudioUrl),
-        secondaryAudioUrl = VALUES(secondaryAudioUrl),
-        primaryVideoUrl = VALUES(primaryVideoUrl),
-        secondaryVideoUrl = VALUES(secondaryVideoUrl),
         updatedAt = CURRENT_TIMESTAMP
     `;
 
