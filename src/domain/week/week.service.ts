@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { Program } from '../program/entities/program.entity';
 import { Syllabus } from '../syllabus/entities/syllabus.entity';
 import { CreateWeekDto } from './dto/create-week.dto';
 import { UpdateWeekDto } from './dto/update-week.dto';
@@ -8,12 +10,20 @@ import { Week } from './entities/week.entity';
 
 @Injectable()
 export class WeekService {
+  private readonly cloudfrontUrl: string;
+
   constructor(
     @InjectRepository(Week)
     private readonly weekRepository: Repository<Week>,
     @InjectRepository(Syllabus)
     private readonly syllabusRepository: Repository<Syllabus>,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.cloudfrontUrl = this.configService.get<string>(
+      'aws.cloudfrontUrl',
+      'https://cdn.스쿨허브.kr', // fallback url
+    );
+  }
 
   //? ---------------------------------------------------------------------- ?//
   //? Create
@@ -170,11 +180,18 @@ export class WeekService {
   async findOne(id: number): Promise<Week> {
     const week = await this.weekRepository.findOne({
       where: { id },
-      relations: ['syllabus', 'programs'],
+      relations: ['syllabus', 'programs', 'story'],
     });
 
     if (!week) {
       throw new NotFoundException(`Week with id ${id} not found`);
+    }
+
+    // programs에 extraUrls 추가
+    if (week.programs && week.programs.length > 0) {
+      week.programs.forEach((program) => {
+        this._addProgramExtraUrls(week.syllabusId, program);
+      });
     }
 
     return week;
@@ -213,5 +230,84 @@ export class WeekService {
   async remove(id: number): Promise<void> {
     const week = await this.findOne(id);
     await this.weekRepository.softRemove(week);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Private Helper Methods
+  //? ---------------------------------------------------------------------- ?//
+
+  /**
+   * Program에 URL 속성들을 추가하는 공통 유틸 함수
+   */
+  private _addProgramExtraUrls(syllabusId: number, program: Program): Program {
+    // 원본 객체에 직접 속성 추가 (TypeORM 직렬화 문제 방지)
+    program.fullVideoUrl = this._getFullVideoUrl(syllabusId, program);
+    program.fullAudioUrl = this._getFullAudioUrl(syllabusId, program);
+    program.miniVideoUrl = this._getMiniVideoUrl(syllabusId, program);
+    program.miniAudioUrl = this._getMiniAudioUrl(syllabusId, program);
+    program.coverImageUrl = this._getCoverImageUrl(syllabusId, program);
+    program.introImageUrl = this._getIntroImageUrl(syllabusId, program);
+    program.introAudioUrl = this._getIntroAudioUrl(syllabusId, program);
+    program.silhouetteImageUrl = this._getSilhouetteImageUrl(
+      syllabusId,
+      program,
+    );
+    program.silhouetteAudioUrl = this._getSilhouetteAudioUrl(
+      syllabusId,
+      program,
+    );
+    return program;
+  }
+
+  private _getFullVideoUrl(syllabusId: number, program: Program): string {
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/fullVideo/${program.slug}.mp4`;
+  }
+
+  private _getFullAudioUrl(syllabusId: number, program: Program): string {
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/fullVideo/${program.slug}.mp3`;
+  }
+
+  private _getMiniVideoUrl(syllabusId: number, program: Program): string {
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/miniVideo/${program.slug}.mp4`;
+  }
+
+  private _getMiniAudioUrl(syllabusId: number, program: Program): string {
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/miniVideo/${program.slug}.mp3`;
+  }
+
+  private _getCoverImageUrl(syllabusId: number, program: Program): string {
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/cover/${program.slug}.jpg`;
+  }
+
+  private _getIntroImageUrl(
+    syllabusId: number,
+    program: Program,
+  ): string | null {
+    if (!program.isScorable) return null;
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/intro/${program.slug}.png`;
+  }
+
+  private _getIntroAudioUrl(
+    syllabusId: number,
+    program: Program,
+  ): string | null {
+    if (!program.isScorable) return null;
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/intro/${program.slug}.mp3`;
+  }
+
+  private _getSilhouetteImageUrl(
+    syllabusId: number,
+    program: Program,
+  ): string | null {
+    if (!program.isScorable) return null;
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/silhouette/${program.slug}.png`;
+  }
+
+  private _getSilhouetteAudioUrl(
+    syllabusId: number,
+    program: Program,
+  ): string | null {
+    if (!program.isScorable) return null;
+    return `${this.cloudfrontUrl}/syllabuses/${syllabusId}/week${program.weekNumber}/programs/silhouette/${program.slug}.mp3`;
   }
 }

@@ -8,6 +8,26 @@ export class AuthStudentDto {
 
   @Expose()
   @IsNumber()
+  grade: number;
+
+  @Expose()
+  @IsString()
+  klass: string;
+
+  @Expose()
+  @IsNumber()
+  bunho: number;
+
+  @Expose()
+  @IsString()
+  name: string | null;
+
+  @Expose()
+  @IsString()
+  avatarUrl: string | null;
+
+  @Expose()
+  @IsNumber()
   schoolId: number;
 
   @Expose()

@@ -651,3 +651,37 @@ export const RemoveStudentDocs = () =>
       description: '🔒 권한 없음 - 삭제 권한 없는 사용자',
     }),
   );
+
+//? ---------------------------------------------------------------------- ?//
+//? Extras
+//? ---------------------------------------------------------------------- ?//
+
+export const GenerateStudentS3UrlsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: '📤 S3 업로드 URL 생성',
+      description: '학생 관련 파일 업로드를 위한 S3 presigned URL을 생성합니다.',
+    }),
+    ApiBody({
+      schema: {
+        type: 'object',
+        required: ['schoolId', 'resource', 'mimeType'],
+        properties: {
+          schoolId: { type: 'number', example: 1 },
+          resource: { type: 'string', example: 'students/3-2-15' },
+          mimeType: { type: 'string', example: 'image/jpeg' },
+          filename: { type: 'string', example: 'profile.jpg' },
+        },
+      },
+    }),
+    ApiOkResponse({
+      description: '✅ S3 URL 생성 완료',
+      schema: {
+        type: 'object',
+        properties: {
+          uploadUrl: { type: 'string', description: 'Presigned upload URL' },
+          fileUrl: { type: 'string', description: 'Public file URL' },
+        },
+      },
+    }),
+  );

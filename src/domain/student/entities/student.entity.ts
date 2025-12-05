@@ -74,6 +74,15 @@ export class Student {
   @Column({ type: 'varchar', length: 16, comment: '이름' })
   name: string;
 
+  @ApiProperty({ description: 'up to 16 characters' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    comment: 'avatar url',
+    nullable: true,
+  })
+  avatarUrl: string | null;
+
   @ApiProperty({
     description: '학생 전화번호 (숫자만 입력)',
     example: '01012345678',

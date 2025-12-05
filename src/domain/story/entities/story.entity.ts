@@ -26,13 +26,20 @@ export class Story {
   @Column({ type: 'tinyint', unsigned: true, default: 0 })
   weekNumber: number;
 
-  @ApiProperty({ description: '🈵 자세이름', example: '전사 자세' })
+  @ApiProperty({ description: '🈵 자세이름', example: '이야기 제목' })
   @Column({ type: 'varchar', length: 64 })
   title: string;
 
-  @ApiProperty({ description: '🈵 자세이름', example: '전사 자세' })
+  @ApiProperty({ description: '🈵 자세이름', example: '이야기 설명' })
   @Column({ type: 'text' })
   description: string;
+
+  @ApiProperty({
+    description: '🈵 자세이름',
+    example: '마무리 멘트 in markdown',
+  })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  outro: string;
 
   @ApiProperty({
     description: '🈳 히어로 스토리 질문',
@@ -47,25 +54,25 @@ export class Story {
   questions: IStoryQuestion[] | null;
 
   @ApiProperty({
-    description: '🈳 이미지 URL',
+    description: '🈳 overview 이미지 URL',
     example: 'https://example.com/image.png',
   })
   @Column({ type: 'varchar', length: 255, nullable: true })
   imageUrl: string | null;
 
   @ApiProperty({
-    description: '🈳 비디오 URL',
-    example: 'https://example.com/video.mp4',
-  })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  videoUrl: string | null;
-
-  @ApiProperty({
-    description: '🈳 오디오 URL',
+    description: '🈳 overview 오디오 URL',
     example: 'https://example.com/audio.mp3',
   })
   @Column({ type: 'varchar', length: 255, nullable: true })
   audioUrl: string | null;
+
+  @ApiProperty({
+    description: '🈳 storybook 비디오 URL',
+    example: 'https://example.com/video.mp4',
+  })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  videoUrl: string | null;
 
   // ------------------------------------------------------------------------ //
 

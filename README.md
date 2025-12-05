@@ -2,9 +2,43 @@
 
 z-school backend application
 
-## AVOID OVER-ENGINEERING
+## S3 BUCKET STRUCTURES
 
-좋은 엔지니어링은 "완벽한 코드"가 아니라 "비즈니스 가치를 만드는 코드"입니다. 🚀
+excels : common
+icons : common
+images: common
+syllabuses
+  - 1
+    - week1
+      - cover
+      - fullVideo
+      - intro
+      - miniVideo
+      - silhouette
+      - stories
+    - week2
+      - cover
+      - fullVideo
+      - intro
+      - miniVideo
+      - silhouette
+      - stories
+    - week3
+      : 
+students
+  schools
+    - 1
+      - avatars
+        - {studentId}
+          - file.jpg
+input
+  schools
+    - 1
+      - groups
+        - 28
+          - file.jpg (수업중캡쳐사진)
+
+
 
 ## Project setup
 

@@ -16,6 +16,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { Public } from 'src/common/decorators/public.decorator';
+import { IS3Urls } from 'src/common/interfaces';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
@@ -25,6 +26,7 @@ import {
   CreateStudentDocs,
   CreateStudentDryRunDocs,
   FindByIdDocs,
+  GenerateStudentS3UrlsDocs,
   GetAllSchooldaysDocs,
   GetPaginatedStudentsDocs,
   GetSchooldayByDateDocs,
@@ -147,5 +149,29 @@ export class StudentController {
   ): Promise<Student> {
     const shouldForceDelete = forceDelete === 'true';
     return await this.studentService.remove(id, shouldForceDelete);
+  }
+
+  //? ---------------------------------------------------------------------- ?//
+  //? Extras
+  //? ---------------------------------------------------------------------- ?//
+
+  @GenerateStudentS3UrlsDocs()
+  @Post('s3urls')
+  async generateS3Urls(
+    @Body()
+    dto: {
+      schoolId: number;
+      // termId: number;
+      resource: string; // `students/1-1-1/
+      mimeType: string;
+      filename?: string;
+    },
+  ): Promise<IS3Urls> {
+    const path = [`schools`, `${dto.schoolId}`, `${dto.resource}`].join('/');
+    return await this.uploadService.generateUploadUrls(
+      path,
+      dto.mimeType,
+      dto.filename,
+    );
   }
 }

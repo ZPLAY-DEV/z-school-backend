@@ -55,6 +55,15 @@ export class CreateStoryDto {
   description: string;
 
   @ApiProperty({
+    description: '🈵 설명',
+    example: '전사 자세에 대한 설명입니다',
+  })
+  @IsString()
+  @MaxLength(255)
+  @IsOptional()
+  outro?: string;
+
+  @ApiProperty({
     description: '🈳 스토리 상세',
     type: [StoryQuestionDto],
     example: [
@@ -90,16 +99,6 @@ export class CreateStoryDto {
   imageUrl?: string;
 
   @ApiProperty({
-    description: '🈳 비디오 URL',
-    example: 'https://example.com/video.mp4',
-    required: false,
-  })
-  @IsUrl()
-  @MaxLength(255)
-  @IsOptional()
-  videoUrl?: string;
-
-  @ApiProperty({
     description: '🈳 오디오 URL',
     example: 'https://example.com/audio.mp3',
     required: false,
@@ -108,4 +107,14 @@ export class CreateStoryDto {
   @MaxLength(255)
   @IsOptional()
   audioUrl?: string;
+
+  @ApiProperty({
+    description: '🈳 비디오 URL',
+    example: 'https://example.com/video.mp4',
+    required: false,
+  })
+  @IsUrl()
+  @MaxLength(255)
+  @IsOptional()
+  videoUrl?: string;
 }
