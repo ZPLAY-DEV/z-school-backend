@@ -172,7 +172,7 @@ export class GroupController {
     },
   ): Promise<IS3Urls> {
     const path = [
-      `ai`,
+      `input`,
       `schools`,
       `${dto.schoolId}`,
       `terms`,

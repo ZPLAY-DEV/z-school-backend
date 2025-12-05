@@ -4,10 +4,10 @@ z-school backend application
 
 ## S3 BUCKET STRUCTURES
 
-excels : common
-icons : common
-images: common
-syllabuses
+- excels : common
+- icons : common
+- images: common
+- syllabuses
   - 1
     - week1
       - cover
@@ -16,6 +16,9 @@ syllabuses
       - miniVideo
       - silhouette
       - stories
+      overview.png
+      overview.mp3
+      story.mp4
     - week2
       - cover
       - fullVideo
@@ -23,22 +26,21 @@ syllabuses
       - miniVideo
       - silhouette
       - stories
+      overview.png
+      overview.mp3
+      story.mp4
     - week3
       : 
-students
-  schools
-    - 1
-      - avatars
-        - {studentId}
-          - file.jpg
-input
-  schools
+- schools
+  - 1
+    - students
+      - {studentId}-filename.jpg
+- input
+  - schools
     - 1
       - groups
         - 28
           - file.jpg (수업중캡쳐사진)
-
-
 
 ## Project setup
 

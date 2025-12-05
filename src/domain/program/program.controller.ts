@@ -156,13 +156,20 @@ export class ProgramController {
     dto: {
       // schoolId: number;
       // termId: number;
-      resource: string; // `syllabuses/1/programs/week1/video`
+      syllabusId: number;
+      weekNumber: number;
       mimeType: string;
       filename?: string;
     },
   ): Promise<IS3Urls> {
+    const path = [
+      `syllabuses`,
+      `${dto.syllabusId}`,
+      `week${dto.weekNumber}`,
+      `programs`,
+    ].join('/');
     return await this.uploadService.generateUploadUrls(
-      dto.resource,
+      path,
       dto.mimeType,
       dto.filename,
     );

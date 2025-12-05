@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { format } from 'date-fns-tz';
-import { InjectModel, Model } from 'nestjs-dynamoose';
 import {
   FilterOperator,
   FilterSuffix,
@@ -16,15 +15,7 @@ import {
   Paginated,
   PaginateQuery,
 } from 'nestjs-paginate';
-import { AttendanceStatus, ClassStatus } from 'src/common/enums';
-import {
-  IAttendance,
-  IAttendanceKey,
-} from 'src/domain/attendance/entities/attendance.interface';
-import {
-  generateDailyStudentKey,
-  generateGroupKey,
-} from 'src/domain/attendance/utils/attendance.utils';
+import { ClassStatus } from 'src/common/enums';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Group } from 'src/domain/group/entities/group.entity';
 import { Parent } from 'src/domain/parent/entities/parent.entity';
@@ -32,7 +23,6 @@ import { Pick } from 'src/domain/pick/entities/pick.entity';
 import { School } from 'src/domain/school/entities/school.entity';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
 import { CreateStudentDto } from 'src/domain/student/dto/create-student.dto';
-import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { Term } from 'src/domain/term/entities/term.entity';
@@ -57,8 +47,6 @@ export class StudentService {
     private readonly bookingRepository: Repository<Booking>,
     @InjectRepository(Term)
     private readonly termRepository: Repository<Term>,
-    @InjectModel('Attendance')
-    private readonly model: Model<IAttendance, IAttendanceKey>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -306,8 +294,8 @@ export class StudentService {
     id: number,
     termId: number,
     date: string, //! YYYY-MM-DD
-  ): Promise<SchooldayWithAttendanceDto[]> {
-    const student = await this.studentRepository.findOneOrFail({
+  ): Promise<Schoolday[]> {
+    await this.studentRepository.findOneOrFail({
       where: { id },
     });
 
@@ -324,49 +312,7 @@ export class StudentService {
       });
 
     const schooldays = await queryBuilder.getMany();
-    const attendanceKeys: IAttendanceKey[] = schooldays.map((v) => {
-      const groupKey = generateGroupKey(v.groupId);
-      const dailyStudentKey = generateDailyStudentKey(
-        v.today,
-        student.id,
-        student.grade,
-        student.klass,
-        student.bunho,
-      );
-      return {
-        groupKey,
-        dailyStudentKey,
-      };
-    });
-    const attendances = await this.fetchByAttendanceKeys(attendanceKeys);
-
-    // attendances를 dailyStudentKey로 매핑
-    const attendanceMap = new Map<string, IAttendance>();
-    attendances.forEach((attendance) => {
-      attendanceMap.set(attendance.dailyStudentKey, attendance);
-    });
-
-    const result: SchooldayWithAttendanceDto[] = [];
-    for (const schoolday of schooldays) {
-      const dailyStudentKey = generateDailyStudentKey(
-        schoolday.today,
-        student.id,
-        student.grade,
-        student.klass,
-        student.bunho,
-      );
-      const attendance = attendanceMap.get(dailyStudentKey);
-
-      result.push({
-        ...schoolday,
-        status: attendance?.status || AttendanceStatus.NONE,
-        parentNote: attendance?.parentNote || null,
-        parentNotedAt: attendance?.parentNotedAt || null,
-        schoolNote: attendance?.schoolNote || null,
-        schoolNotedAt: attendance?.schoolNotedAt || null,
-      });
-    }
-    return result;
+    return schooldays;
   }
 
   //? 학생의 수업일 조회 (SQL 레벨 최적화)
@@ -570,6 +516,7 @@ export class StudentService {
 
   //? ---------------------------------------------------------------------- ?//
   //? UPDATE
+  //? 수정시에는 절대로 parent 정보를 새롭게 생성하지 않고 기존 parent 를 업데이트한다.
   //? ---------------------------------------------------------------------- ?//
 
   async update(id: number, dto: UpdateStudentDto): Promise<Student> {
@@ -582,93 +529,71 @@ export class StudentService {
       return student;
     }
 
-    if (dto.grade && dto.klass && dto.bunho) {
-      const otherStudent = await this.studentRepository.findOneOrFail({
-        where: {
-          grade: dto.grade,
-          klass: dto.klass,
-          bunho: dto.bunho,
-          schoolId: student.schoolId,
-        },
-      });
+    // 학년/반/번호 중복 체크
+    const grade = dto.grade ?? student.grade;
+    const klass = dto.klass ?? student.klass;
+    const bunho = dto.bunho ?? student.bunho;
 
-      if (otherStudent && otherStudent.id !== id) {
-        throw new ConflictException('학년,반,번호의 다른학생 이미 존재합니다.');
-      }
+    const duplicate = await this.studentRepository.findOne({
+      where: {
+        schoolId: student.schoolId,
+        grade,
+        klass,
+        bunho,
+      },
+    });
+
+    if (duplicate && duplicate.id !== id) {
+      throw new ConflictException(
+        '해당 학년,반,번호를 사용하는 학생이 이미 존재합니다.',
+      );
     }
+
     return await this.dataSource.transaction(async (manager: EntityManager) => {
       const { parent: parentDto, parentId, ...studentDto } = dto;
+      let finalParentId = parentId ?? student.parentId;
 
-      // 부모 정보 처리 - create 메서드와 동일한 우선순위 적용
-      let finalParentId = student.parentId; // 기본값: 기존 부모 ID
-
-      if (parentId) {
-        // 1️⃣ parentId 우선: 제공시 parent 객체 무시
+      // 1. 부모 정보 처리
+      if (parentDto?.phone) {
+        const normalizedPhone = normalizePhone(parentDto.phone);
         const existingParent = await manager.findOne(Parent, {
-          where: { id: parentId },
+          where: { phone: normalizedPhone },
         });
-        if (!existingParent) {
-          throw new NotFoundException('Parent not found');
-        }
-        finalParentId = parentId;
-      } else if (parentDto) {
-        if (parentDto.id) {
-          // 2️⃣ parent.id: 기존 부모 연결
-          const existingParent = await manager.findOne(Parent, {
-            where: { id: parentDto.id },
-          });
-          if (!existingParent) {
-            throw new NotFoundException('Parent not found');
-          }
-          finalParentId = parentDto.id;
-        } else if (parentDto.phone) {
-          // 3️⃣ parent 객체: 전화번호로 기존 부모 찾기 또는 새로 생성
-          const existingParent = await manager.findOne(Parent, {
-            where: { phone: normalizePhone(parentDto.phone) },
-          });
 
-          if (existingParent) {
-            // 기존 부모 발견 - 정보 업데이트
-            await manager.update(Parent, existingParent.id, {
-              ...(parentDto.name && { name: parentDto.name }),
-              ...(parentDto.note && { note: parentDto.note }),
-              ...(parentDto.termsAgreedAt && {
-                termsAgreedAt: parentDto.termsAgreedAt,
-              }),
-            });
-            finalParentId = existingParent.id;
-          } else {
-            // 새로운 부모 생성
-            const newParent = manager.create(Parent, {
-              name: parentDto.name,
-              phone: normalizePhone(parentDto.phone),
-              note: parentDto.note,
-              termsAgreedAt: parentDto.termsAgreedAt,
-            });
-            const savedParent = await manager.save(Parent, newParent);
-            finalParentId = savedParent.id;
-          }
+        if (existingParent) {
+          // 해당 phone을 가진 parent가 이미 존재 → 그 parent로 연결
+          finalParentId = existingParent.id;
         } else if (student.parentId) {
-          // 기존 부모 정보만 업데이트 (전화번호 없이)
+          // 해당 phone이 없고, 기존 parent가 있으면 → 기존 parent 정보 업데이트
           await manager.update(Parent, student.parentId, {
             ...(parentDto.name && { name: parentDto.name }),
+            phone: normalizedPhone,
             ...(parentDto.note && { note: parentDto.note }),
             ...(parentDto.termsAgreedAt && {
               termsAgreedAt: parentDto.termsAgreedAt,
             }),
           });
         }
+      } else if (parentDto && student.parentId) {
+        // phone 변경 없이 다른 필드만 업데이트
+        await manager.update(Parent, student.parentId, {
+          ...(parentDto.name && { name: parentDto.name }),
+          ...(parentDto.note && { note: parentDto.note }),
+          ...(parentDto.termsAgreedAt && {
+            termsAgreedAt: parentDto.termsAgreedAt,
+          }),
+        });
       }
 
-      // 학생 데이터 정리
+      // 2. 학생 정보 업데이트
       const normalizedDto = {
         ...studentDto,
         ...(studentDto.phone && { phone: normalizePhone(studentDto.phone) }),
         parentId: finalParentId,
       };
 
-      // 일반 업데이트
       await manager.update(Student, id, normalizedDto);
+
       return await manager.findOneOrFail(Student, {
         where: { id },
         relations: ['parent'],
@@ -740,31 +665,5 @@ export class StudentService {
         withDeleted: true,
       });
     });
-  }
-
-  private async fetchByAttendanceKeys(
-    keys: IAttendanceKey[],
-  ): Promise<IAttendance[]> {
-    try {
-      if (keys.length === 0) {
-        return [];
-      }
-
-      // 25개 미만이므로 한 번의 batchGet으로 충분
-      const batchResults = await this.model.batchGet(keys);
-
-      // 결과 필터링 및 반환
-      const results: IAttendance[] = [];
-      for (const item of batchResults) {
-        if (item) {
-          results.push(item as IAttendance);
-        }
-      }
-
-      return results;
-    } catch (error) {
-      console.error(`[dynamodb] fetchByAttendanceKeys error:`, error);
-      throw new BadRequestException(error.message);
-    }
   }
 }

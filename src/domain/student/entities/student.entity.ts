@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { StudentStatus } from 'src/common/enums';
+import { DEFAULT_AVATAR_URL } from 'src/common/constants';
+import { Gender, StudentStatus } from 'src/common/enums';
 import { INextStop } from 'src/common/interfaces';
 import { Booking } from 'src/domain/booking/entities/booking.entity';
 import { Departure } from 'src/domain/departure/entities/departure.entity';
@@ -74,14 +75,14 @@ export class Student {
   @Column({ type: 'varchar', length: 16, comment: '이름' })
   name: string;
 
-  @ApiProperty({ description: 'up to 16 characters' })
+  @ApiProperty({ description: 'photo url' })
   @Column({
     type: 'varchar',
     length: 255,
-    comment: 'avatar url',
-    nullable: true,
+    comment: 'photo url',
+    default: DEFAULT_AVATAR_URL,
   })
-  avatarUrl: string | null;
+  photo: string;
 
   @ApiProperty({
     description: '학생 전화번호 (숫자만 입력)',
@@ -89,6 +90,14 @@ export class Student {
   })
   @Column({ type: 'varchar', length: 16, nullable: true, comment: '학생번호' })
   phone: string | null;
+
+  @ApiProperty({ description: '학생의 성별', example: 'MALE' })
+  @Column({
+    type: 'enum',
+    enum: Gender,
+    default: Gender.UNKNOWN,
+  })
+  gender: Gender;
 
   @ApiProperty({ description: '학생의 상태. 유효, 전학', example: 'ATTENDING' })
   @Column({

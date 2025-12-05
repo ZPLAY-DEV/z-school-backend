@@ -49,7 +49,6 @@ export class SchoolTermStudentController {
   @SchoolTermStudentListDocs()
   @Public()
   @Get(':schoolId/terms/:termId/students')
-  @UseInterceptors(ClassSerializerInterceptor)
   async list(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
@@ -59,7 +58,6 @@ export class SchoolTermStudentController {
 
   @SchoolTermStudentBookingsDocs()
   @Get(':schoolId/terms/:termId/students/:studentId/bookings')
-  @UseInterceptors(ClassSerializerInterceptor)
   async listBookings(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,
@@ -74,7 +72,6 @@ export class SchoolTermStudentController {
 
   @SchoolTermStudentBookingStatsDocs()
   @Get(':schoolId/terms/:termId/students/:studentId/booking-stats')
-  @UseInterceptors(ClassSerializerInterceptor)
   async listBookingStats(
     @Param('schoolId', ParseIntPipe) schoolId: number,
     @Param('termId', ParseIntPipe) termId: number,

@@ -18,7 +18,6 @@ import { Response } from 'express';
 import { Public } from 'src/common/decorators/public.decorator';
 import { IS3Urls } from 'src/common/interfaces';
 import { Schoolday } from 'src/domain/schoolday/entities/schoolday.entity';
-import { SchooldayWithAttendanceDto } from 'src/domain/student/dto/schoolday-with-attendance.dto';
 import { UpdateStudentDto } from 'src/domain/student/dto/update-student.dto';
 import { Student } from 'src/domain/student/entities/student.entity';
 import { StudentService } from 'src/domain/student/student.service';
@@ -120,7 +119,7 @@ export class StudentController {
     @Param('id') id: number,
     @Query('termId') termId: number,
     @Query('date') date: string,
-  ): Promise<SchooldayWithAttendanceDto[]> {
+  ): Promise<Schoolday[]> {
     return await this.studentService.getSchooldaysByDate(id, termId, date);
   }
 
@@ -162,12 +161,17 @@ export class StudentController {
     dto: {
       schoolId: number;
       // termId: number;
-      resource: string; // `students/1-1-1/
+      studentId: number;
       mimeType: string;
       filename?: string;
     },
   ): Promise<IS3Urls> {
-    const path = [`schools`, `${dto.schoolId}`, `${dto.resource}`].join('/');
+    const path = [
+      `schools`,
+      `${dto.schoolId}`,
+      `students`,
+      `${dto.studentId}`,
+    ].join('/');
     return await this.uploadService.generateUploadUrls(
       path,
       dto.mimeType,

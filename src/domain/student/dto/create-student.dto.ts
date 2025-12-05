@@ -14,7 +14,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { StudentStatus } from 'src/common/enums';
+import { Gender, StudentStatus } from 'src/common/enums';
 import { CreateParentDto } from 'src/domain/parent/dto/create-parent.dto';
 import { NextStopDto } from 'src/domain/student/dto/next-stop.dto';
 
@@ -101,6 +101,37 @@ export class CreateStudentDto {
   name: string;
 
   @ApiPropertyOptional({
+    description: 'avatar url',
+    type: String,
+    example: 'https://example.com/avatar.png',
+    maxLength: 255,
+  })
+  @IsOptional()
+  @IsString({ message: 'photo은 문자열이어야 합니다' })
+  photo?: string;
+
+  @ApiPropertyOptional({
+    description: '학생 전화번호',
+    type: String,
+    example: '010-1234-5678',
+  })
+  @IsOptional()
+  @IsString({ message: '학생 전화번호는 문자열이어야 합니다' })
+  phone?: string;
+
+  @ApiPropertyOptional({
+    description: '학생 성별 - MALE: 남자, FEMALE: 여자, UNKNOWN: 미지정',
+    enum: Gender,
+    enumName: 'Gender',
+    example: Gender.MALE,
+  })
+  @IsOptional()
+  @IsEnum(Gender, {
+    message: 'gender는 유효한 Gender 값이어야 합니다 (MALE, FEMALE, UNKNOWN)',
+  })
+  gender?: Gender;
+
+  @ApiPropertyOptional({
     description:
       '재학 상태 - ATTENDING: 재학중, TRANSFERRED: 전학 (기본값: ATTENDING)',
     enum: StudentStatus,
@@ -115,18 +146,9 @@ export class CreateStudentDto {
   })
   status: StudentStatus = StudentStatus.ATTENDING;
 
-  @ApiPropertyOptional({
-    description: '학생 전화번호',
-    type: String,
-    example: '010-1234-5678',
-  })
-  @IsOptional()
-  @IsString({ message: '학생 전화번호는 문자열이어야 합니다' })
-  phone?: string;
-
-  @IsOptional()
-  @IsString({ message: '하교후 가는 곳은 문자열이어야 합니다' })
-  nextStop?: string | null;
+  // @IsOptional()
+  // @IsString({ message: '하교후 가는 곳은 문자열이어야 합니다' })
+  // nextStop?: string | null;
 
   @ApiPropertyOptional({
     description: '요일별 하교장소',

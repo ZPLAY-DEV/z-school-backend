@@ -24,7 +24,7 @@ export class AuthStudentDto {
 
   @Expose()
   @IsString()
-  avatarUrl: string | null;
+  photo: string | null;
 
   @Expose()
   @IsNumber()

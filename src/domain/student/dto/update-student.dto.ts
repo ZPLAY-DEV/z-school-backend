@@ -10,7 +10,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { StudentStatus } from 'src/common/enums';
+import { Gender, StudentStatus } from 'src/common/enums';
 import { UpdateParentDto } from 'src/domain/parent/dto/update-parent.dto';
 import { NextStopDto } from './next-stop.dto';
 
@@ -77,6 +77,16 @@ export class UpdateStudentDto {
   name?: string;
 
   @ApiPropertyOptional({
+    description: 'avatar url',
+    type: String,
+    example: 'https://example.com/avatar.png',
+    maxLength: 255,
+  })
+  @IsOptional()
+  @IsString({ message: 'photo은 문자열이어야 합니다' })
+  photo?: string;
+
+  @ApiPropertyOptional({
     description: '학생 전화번호',
     type: String,
     example: '01098765432',
@@ -85,22 +95,17 @@ export class UpdateStudentDto {
   @IsString({ message: '학생 전화번호는 문자열이어야 합니다' })
   phone?: string;
 
-  @IsOptional()
-  @IsString({ message: '하교후 가는 곳은 문자열이어야 합니다' })
-  nextStop?: string | null;
-
   @ApiPropertyOptional({
-    description: '요일별 하교장소 정보 (배열 형식 - 권장)',
-    type: [NextStopDto],
-    example: [
-      { place: '집', name: '엄마', phone: '01012345678' },
-      { place: '학원', name: null, phone: null },
-    ],
+    description: '학생 성별 - MALE: 남자, FEMALE: 여자, UNKNOWN: 미지정',
+    enum: Gender,
+    enumName: 'Gender',
+    example: Gender.MALE,
   })
   @IsOptional()
-  @ValidateNested({ each: true, message: '하교장소 정보가 올바르지 않습니다' })
-  @Type(() => NextStopDto)
-  nextStops?: NextStopDto[];
+  @IsEnum(Gender, {
+    message: 'gender는 유효한 Gender 값이어야 합니다 (MALE, FEMALE, UNKNOWN)',
+  })
+  gender?: Gender;
 
   @ApiPropertyOptional({
     description: '재학 상태 - ATTENDING: 재학중, TRANSFERRED: 전학',
@@ -114,6 +119,23 @@ export class UpdateStudentDto {
       'status는 유효한 StudentStatus 값이어야 합니다 (ATTENDING, TRANSFERRED)',
   })
   status?: StudentStatus;
+
+  // @IsOptional()
+  // @IsString({ message: '하교후 가는 곳은 문자열이어야 합니다' })
+  // nextStop?: string | null;
+
+  @ApiPropertyOptional({
+    description: '요일별 하교장소 정보 (배열 형식 - 권장)',
+    type: [NextStopDto],
+    example: [
+      { place: '집', name: '엄마', phone: '01012345678' },
+      { place: '학원', name: null, phone: null },
+    ],
+  })
+  @IsOptional()
+  @ValidateNested({ each: true, message: '하교장소 정보가 올바르지 않습니다' })
+  @Type(() => NextStopDto)
+  nextStops?: NextStopDto[];
 
   @ApiPropertyOptional({
     description: '비고 - 학생에 대한 추가 정보나 특이사항 (최대 255자)',
