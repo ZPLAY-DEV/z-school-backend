@@ -1,5 +1,7 @@
+import { IsEnum } from '@nestjs/class-validator';
 import { Expose } from 'class-transformer';
 import { IsNumber, IsString } from 'class-validator';
+import { Gender } from 'src/common/enums';
 
 export class AuthStudentDto {
   @Expose({ name: 'id' })
@@ -21,6 +23,10 @@ export class AuthStudentDto {
   @Expose()
   @IsString()
   name: string | null;
+
+  @Expose()
+  @IsEnum(Gender)
+  gender: Gender;
 
   @Expose()
   @IsString()
